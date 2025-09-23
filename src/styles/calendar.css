@@ -1,0 +1,267 @@
+/* التقويم */
+#calendar {
+  background: var(--clr-card);
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(76, 110, 245, 0.08);
+}
+
+html[dir="rtl"] #calendar-reservation-details,
+body[dir="rtl"] #calendar-reservation-details {
+  direction: rtl;
+  text-align: right;
+}
+
+:is(html.dark-mode, body.dark-mode) #calendar {
+  background: rgba(10, 16, 32, 0.95) !important;
+  border: 1px solid rgba(59, 130, 246, 0.28) !important;
+  box-shadow: 0 22px 54px rgba(5, 12, 28, 0.65);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc-theme-standard td,
+:is(html.dark-mode, body.dark-mode) .fc-theme-standard th {
+  border-color: rgba(71, 85, 105, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-scrollgrid {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day-number,
+:is(html.dark-mode, body.dark-mode) .fc .fc-col-header-cell-cushion {
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day.fc-day-today {
+  background: rgba(96, 165, 250, 0.24);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-event {
+  color: #0f172a;
+  border: none;
+  font-weight: 600;
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-toolbar-title {
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-button {
+  background: rgba(30, 42, 68, 0.9);
+  border: 1px solid rgba(93, 133, 255, 0.3);
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-button:not(:disabled):hover {
+  background: rgba(37, 55, 88, 0.95);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+:is(html.dark-mode, body.dark-mode) .fc .fc-button-primary:not(:disabled):active,
+:is(html.dark-mode, body.dark-mode) .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.calendar-reservation-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+html[dir="rtl"] .calendar-reservation-status,
+body[dir="rtl"] .calendar-reservation-status {
+  justify-content: flex-end;
+}
+
+.calendar-reservation-info {
+  background: rgba(248, 250, 255, 0.9);
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+html[dir="rtl"] .calendar-reservation-info,
+body[dir="rtl"] .calendar-reservation-info {
+  direction: rtl;
+  text-align: left;
+  align-items: flex-start;
+}
+
+html[dir="rtl"] .calendar-reservation-info .calendar-info-row,
+body[dir="rtl"] .calendar-reservation-info .calendar-info-row {
+  justify-content: flex-start;
+}
+
+html[dir="rtl"] .calendar-reservation-info .calendar-info-row .label,
+body[dir="rtl"] .calendar-reservation-info .calendar-info-row .label {
+  text-align: left;
+}
+
+html[dir="rtl"] .calendar-reservation-info .calendar-info-row .value,
+body[dir="rtl"] .calendar-reservation-info .calendar-info-row .value {
+  text-align: left;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-reservation-info {
+  background: rgba(24, 33, 59, 0.92);
+  border: 1px solid rgba(93, 133, 255, 0.2);
+  box-shadow: 0 8px 20px rgba(3, 10, 26, 0.5);
+}
+
+.calendar-info-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(76, 110, 245, 0.08);
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-info-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.calendar-info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.calendar-info-row .label {
+  color: var(--clr-muted);
+  font-size: 0.9rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-info-row .label {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.calendar-info-row .value {
+  color: #1d2b56;
+  font-weight: 600;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-info-row .value {
+  color: var(--clr-text);
+}
+
+html[dir="rtl"] .calendar-info-row,
+body[dir="rtl"] .calendar-info-row {
+  direction: rtl;
+  text-align: right;
+  justify-content: flex-end;
+}
+
+html[dir="rtl"] .calendar-info-row .label,
+html[dir="rtl"] .calendar-info-row .value,
+body[dir="rtl"] .calendar-info-row .label,
+body[dir="rtl"] .calendar-info-row .value {
+  text-align: inherit;
+}
+
+.calendar-section-title {
+  margin: 18px 0 10px;
+  font-weight: 700;
+  color: #26334d;
+}
+
+html[dir="rtl"] .calendar-section-title,
+body[dir="rtl"] .calendar-section-title {
+  text-align: right;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-section-title {
+  color: var(--clr-text);
+}
+
+.calendar-reservation-technicians {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 255, 0.65);
+}
+
+.calendar-reservation-technicians li {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(76, 110, 245, 0.1);
+  font-weight: 600;
+  color: #1f2d52;
+}
+
+html[dir="rtl"] .calendar-reservation-technicians li,
+body[dir="rtl"] .calendar-reservation-technicians li {
+  text-align: right;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-reservation-technicians {
+  border: 1px solid rgba(93, 133, 255, 0.22);
+  background: rgba(30, 42, 68, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-reservation-technicians li {
+  border-bottom: 1px solid rgba(93, 133, 255, 0.18);
+  color: var(--clr-text);
+}
+
+.calendar-reservation-technicians li:last-child {
+  border-bottom: none;
+}
+
+.calendar-empty-state {
+  margin: 0;
+  padding: 12px 16px;
+  background: rgba(245, 248, 255, 0.75);
+  border-radius: var(--radius-md);
+  color: #32405b;
+}
+
+html[dir="rtl"] .calendar-empty-state,
+body[dir="rtl"] .calendar-empty-state {
+  text-align: right;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-empty-state {
+  background: rgba(30, 42, 68, 0.82);
+  color: rgba(226, 232, 240, 0.85);
+  border: 1px solid rgba(93, 133, 255, 0.18);
+}
+
+.calendar-reservation-summary {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(243, 247, 255, 0.9);
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  display: grid;
+  gap: 6px;
+  color: #1d2b56;
+  font-weight: 600;
+}
+
+html[dir="rtl"] .calendar-reservation-summary,
+body[dir="rtl"] .calendar-reservation-summary {
+  text-align: right;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-reservation-summary {
+  background: rgba(24, 33, 59, 0.92);
+  border: 1px solid rgba(93, 133, 255, 0.2);
+  color: var(--clr-text);
+}

@@ -1,0 +1,46 @@
+import { registerTranslations } from '../language.js';
+
+registerTranslations({
+  ar: {
+    'technicianDetails.pageTitle': 'معلومات عضو الطاقم',
+    'technicianDetails.title': '😎 بيانات عضو الطاقم',
+    'technicianDetails.actions.back': '⬅️ العودة',
+    'technicianDetails.actions.edit': '✏️ تعديل عضو الطاقم',
+    'technicianDetails.filters.search': '🔍 ابحث باسم العميل أو رقم الحجز...',
+    'technicianDetails.fields.role': '👔 الوظيفة:',
+    'technicianDetails.fields.department': '🧩 القسم:',
+    'technicianDetails.fields.phone': '📞 الجوال:',
+    'technicianDetails.fields.wage': '💰 الأجر اليومي:',
+    'technicianDetails.fields.baseStatus': '⚙️ الحالة الأساسية:',
+    'technicianDetails.fields.notes': '📝 الملاحظات:',
+    'technicianDetails.fallback.name': '—',
+    'technicianDetails.fallback.role': 'غير محدد',
+    'technicianDetails.fallback.department': '—',
+    'technicianDetails.fallback.notes': '—',
+    'technicianDetails.errors.missingId': '⚠️ لا يوجد معرف عضو طاقم في الرابط.',
+    'technicianDetails.errors.notFound': '⚠️ لم يتم العثور على هذا العضو.',
+    'technicianDetails.edit.modalTitle': '✏️ تعديل بيانات عضو الطاقم',
+    'technicians.picker.actions.apply': 'تم'
+  },
+  en: {
+    'technicianDetails.pageTitle': 'Crew Member Details',
+    'technicianDetails.title': '😎 Crew Member Profile',
+    'technicianDetails.actions.back': '⬅️ Back',
+    'technicianDetails.actions.edit': '✏️ Edit Crew Member',
+    'technicianDetails.filters.search': '🔍 Search by client or reservation ID...',
+    'technicianDetails.fields.role': '👔 Role:',
+    'technicianDetails.fields.department': '🧩 Department:',
+    'technicianDetails.fields.phone': '📞 Phone:',
+    'technicianDetails.fields.wage': '💰 Daily Rate:',
+    'technicianDetails.fields.baseStatus': '⚙️ Base Status:',
+    'technicianDetails.fields.notes': '📝 Notes:',
+    'technicianDetails.fallback.name': '—',
+    'technicianDetails.fallback.role': 'Not specified',
+    'technicianDetails.fallback.department': '—',
+    'technicianDetails.fallback.notes': '—',
+    'technicianDetails.errors.missingId': '⚠️ Missing crew member identifier in the URL.',
+    'technicianDetails.errors.notFound': '⚠️ Crew member not found.',
+    'technicianDetails.edit.modalTitle': '✏️ Edit Crew Member',
+    'technicians.picker.actions.apply': 'Done'
+  }
+});

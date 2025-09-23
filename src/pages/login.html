@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تسجيل الدخول</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('app-theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (error) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      }
+    })();
+  </script>
+
+  <!-- Bootstrap RTL -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/src/styles/index.css">
+</head>
+<body>
+
+  <div class="theme-toggle-fixed">
+    <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle">🌙 الوضع الليلي</button>
+  </div>
+
+  <div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="box w-100" style="max-width: 400px;">
+      <h3 class="text-center mb-4">🔐 تسجيل الدخول</h3>
+      <form id="login-form">
+        <div class="mb-3">
+          <label for="username" class="form-label">اسم المستخدم</label>
+          <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">كلمة المرور</label>
+          <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">دخول</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { login } from '/src/scripts/auth.js';
+    import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
+
+    applyStoredTheme();
+    initThemeToggle();
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      await login(username, password);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+/* التبويبات */
+.tab-buttons,
+.sub-tab-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+body[dir="rtl"] .tab-buttons,
+body[dir="rtl"] .sub-tab-buttons {
+  flex-direction: row;
+  justify-content: flex-end;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+body[dir="ltr"] .tab-buttons,
+body[dir="ltr"] .sub-tab-buttons {
+  flex-direction: row;
+  justify-content: flex-start;
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.tab-button {
+  border: 1px solid rgba(76, 110, 245, 0.25);
+  background: linear-gradient(135deg, #f8faff, #e6edff);
+  color: #2c3e66;
+  padding: 10px 22px;
+  cursor: pointer;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+}
+
+.tab-button:hover {
+  background: linear-gradient(135deg, #eff4ff, #d6e1ff);
+  color: #1f2d52;
+  transform: translateY(-1px);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #4c6ef5, #5a8dff);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.25);
+  border-color: transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .tab-button {
+  border: 1px solid rgba(93, 133, 255, 0.25);
+  background: linear-gradient(135deg, rgba(30, 42, 68, 0.95), rgba(24, 38, 64, 0.85));
+  color: var(--clr-text);
+  box-shadow: 0 4px 10px rgba(4, 10, 25, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode) .tab-button:hover {
+  background: linear-gradient(135deg, rgba(37, 55, 88, 0.95), rgba(30, 48, 82, 0.88));
+  color: #f8fafc;
+}
+
+:is(html.dark-mode, body.dark-mode) .tab-button.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+}
+
+body.tabs-loading .tab-buttons,
+body.tabs-loading .tab-content-wrapper {
+  visibility: hidden;
+  opacity: 0;
+}
+
+body.tabs-loading .tab {
+  display: none !important;
+}
+
+.tab {
+  display: none;
+}
+
+.tab.active {
+  display: block;
+}
+
+.tab-content-wrapper {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sub-tab {
+  display: none;
+}
+
+.sub-tab.active {
+  display: block;
+}
+
+.sub-tab-button {
+  border: 1px solid rgba(76, 110, 245, 0.2);
+  background: linear-gradient(135deg, #f9fafc, #eef3ff);
+  color: #30406f;
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.sub-tab-button:hover {
+  background: linear-gradient(135deg, #eff4ff, #dbe4ff);
+  color: #1d2b56;
+  transform: translateY(-1px);
+}
+
+.sub-tab-button.active {
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-soft));
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(76, 110, 245, 0.25);
+  border-color: transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .sub-tab-button {
+  border: 1px solid rgba(93, 133, 255, 0.2);
+  background: linear-gradient(135deg, rgba(30, 42, 68, 0.9), rgba(22, 36, 60, 0.82));
+  color: var(--clr-text);
+  box-shadow: 0 3px 8px rgba(4, 10, 25, 0.5);
+}
+
+:is(html.dark-mode, body.dark-mode) .sub-tab-button:hover {
+  background: linear-gradient(135deg, rgba(40, 57, 92, 0.92), rgba(32, 49, 80, 0.88));
+  color: #f8fafc;
+}
+
+#reservations-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+#reservations-tab > h2 {
+  order: 1;
+}
+
+#reservations-tab > .sub-tab-buttons {
+  order: 2;
+}
+
+#reservations-tab > .sub-tab {
+  order: 3;
+}
+
+body[dir="rtl"] #reservations-tab {
+  align-items: flex-end;
+  text-align: right;
+}
+
+body[dir="rtl"] #reservations-tab > .sub-tab-buttons {
+  order: 1;
+  align-self: flex-end;
+}
+
+body[dir="rtl"] #reservations-tab > h2 {
+  order: 2;
+  align-self: flex-end;
+}

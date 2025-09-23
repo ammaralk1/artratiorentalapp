@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title data-i18n data-i18n-key="technicianDetails.pageTitle">معلومات عضو الطاقم</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('app-theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (error) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      }
+    })();
+  </script>
+
+  <!-- Bootstrap RTL -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/src/styles/index.css">
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+      <h2 class="mb-0" data-i18n data-i18n-key="technicianDetails.title">😎 بيانات عضو الطاقم</h2>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+        <a href="dashboard.html" class="btn btn-secondary" data-i18n data-i18n-key="technicianDetails.actions.back">⬅️ العودة</a>
+      </div>
+    </div>
+
+    <div class="box">
+      <div id="technician-details">
+        <!-- تفاصيل عضو الطاقم سيتم عرضها هنا -->
+      </div>
+    </div>
+
+    <section class="technician-reservations-section mt-4">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3 filters-bar">
+        <input type="text" id="technician-search-reservation" class="form-control w-auto" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
+        <input type="text" id="technician-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+        <input type="text" id="technician-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+        <select id="technician-reservation-date-range" class="form-select w-auto">
+          <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+          <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+          <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+          <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+        </select>
+        <select id="technician-reservation-status-filter" class="form-select w-auto">
+          <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+          <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
+          <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
+          <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+        </select>
+        <button type="button" class="btn btn-outline-secondary" id="technician-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+      </div>
+      <div id="technician-reservations" class="mt-3"></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script type="module" src="/src/scripts/translations/common.js"></script>
+  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
+  <script type="module" src="/src/scripts/translations/technician.js"></script>
+
+  <script type="module">
+    import { getTechnicianById, syncTechniciansStatuses } from '/src/scripts/technicians.js';
+    import { renderTechnicianReservations } from '/src/scripts/technicianDetails.js';
+    import { showReservationDetails } from '/src/scripts/reservationsUI.js';
+    import { normalizeNumbers } from '/src/scripts/utils.js';
+    import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
+    import { t } from '/src/scripts/language.js';
+
+    applyStoredTheme();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const technicianId = urlParams.get('id');
+    const container = document.getElementById('technician-details');
+
+    window.showReservationDetails = showReservationDetails;
+    initThemeToggle();
+
+    function formatWageValue(wage) {
+      const wageNumber = Number(wage ?? 0);
+      if (!Number.isFinite(wageNumber)) return '0';
+      return wageNumber.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function renderTechnicianDetails(technician) {
+      const nameDisplay = technician.name || t('technicianDetails.fallback.name', '—');
+      const statusKey = technician.status === 'busy'
+        ? 'technicians.status.busy'
+        : 'technicians.status.available';
+      const statusClass = technician.status === 'busy' ? 'bg-danger' : 'bg-success';
+      const statusBadge = `
+        <span class="badge ${statusClass}" data-i18n data-i18n-key="${statusKey}">
+          ${t(statusKey)}
+        </span>
+      `;
+
+      const phoneValue = technician.phone
+        ? normalizeNumbers(technician.phone)
+        : `<span data-i18n data-i18n-key="reservations.details.technicians.phoneUnknown">${t('reservations.details.technicians.phoneUnknown', 'غير متوفر')}</span>`;
+
+      const roleValue = technician.role
+        ? technician.role
+        : `<span data-i18n data-i18n-key="technicianDetails.fallback.role">${t('technicianDetails.fallback.role', 'غير محدد')}</span>`;
+
+      const departmentValue = technician.department
+        ? technician.department
+        : `<span data-i18n data-i18n-key="technicianDetails.fallback.department">${t('technicianDetails.fallback.department', '—')}</span>`;
+
+      const notesValue = technician.notes
+        ? technician.notes
+        : `<span data-i18n data-i18n-key="technicianDetails.fallback.notes">${t('technicianDetails.fallback.notes', '—')}</span>`;
+
+      const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+      const currencySpan = `<span data-i18n data-i18n-key="reservations.create.summary.currency">${currencyLabel}</span>`;
+      const wageValue = `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
+
+      const baseStatus = technician.baseStatus || technician.status || 'available';
+      const baseStatusKey = baseStatus === 'busy'
+        ? 'technicians.status.busy'
+        : 'technicians.status.available';
+      const baseStatusValue = `<span data-i18n data-i18n-key="${baseStatusKey}">${t(baseStatusKey)}</span>`;
+      const editButtonLabel = t('technicianDetails.actions.edit', '✏️ تعديل عضو الطاقم');
+
+      const detailRows = [
+        { key: 'technicianDetails.fields.role', value: roleValue },
+        { key: 'technicianDetails.fields.department', value: departmentValue },
+        { key: 'technicianDetails.fields.phone', value: phoneValue },
+        { key: 'technicianDetails.fields.wage', value: wageValue },
+        { key: 'technicianDetails.fields.baseStatus', value: baseStatusValue },
+        { key: 'technicianDetails.fields.notes', value: notesValue }
+      ].map(({ key, value }) => `
+        <p class="technician-detail-row">
+          <strong data-i18n data-i18n-key="${key}">${t(key)}</strong>
+          <span>${value}</span>
+        </p>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="technician-details">
+          <div class="d-flex align-items-center gap-2 technician-header">
+            <h3 class="mb-0 technician-name">${nameDisplay}</h3>
+            ${statusBadge}
+          </div>
+          <div class="technician-details-body">
+            ${detailRows}
+          </div>
+          <div class="d-flex justify-content-start mt-3 gap-2">
+            <button type="button" class="btn btn-warning" id="edit-technician-btn" data-i18n data-i18n-key="technicianDetails.actions.edit">${editButtonLabel}</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function loadTechnicianDetails() {
+      if (!technicianId) {
+        container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.missingId">${t('technicianDetails.errors.missingId', '⚠️ لا يوجد معرف عضو طاقم في الرابط.')}</p>`;
+        return;
+      }
+
+      syncTechniciansStatuses();
+      const technician = getTechnicianById(technicianId);
+
+      if (!technician) {
+        container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.notFound">${t('technicianDetails.errors.notFound', '⚠️ لم يتم العثور على هذا العضو.')}</p>`;
+      } else {
+        renderTechnicianDetails(technician);
+        renderTechnicianReservations(technicianId);
+        const inlineBtn = document.getElementById('edit-technician-btn');
+        if (inlineBtn) {
+          inlineBtn.onclick = () => {
+            const modalEl = document.getElementById('editTechnicianModal');
+            document.dispatchEvent(new CustomEvent('technician:prefill', { detail: technician }));
+            if (modalEl && window.bootstrap?.Modal) {
+              window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+          };
+        }
+      }
+    }
+
+    document.addEventListener('technicians:updated', () => {
+      if (!technicianId) return;
+      const refreshed = getTechnicianById(technicianId);
+      if (!refreshed) return;
+      renderTechnicianDetails(refreshed);
+      if (typeof window.refreshTechnicianReservationsViews === 'function') {
+        window.refreshTechnicianReservationsViews();
+      }
+      const inlineBtn = document.getElementById('edit-technician-btn');
+      if (inlineBtn && refreshed) {
+        inlineBtn.onclick = () => {
+          const modalEl = document.getElementById('editTechnicianModal');
+          document.dispatchEvent(new CustomEvent('technician:prefill', { detail: refreshed }));
+          if (modalEl && window.bootstrap?.Modal) {
+            window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          }
+        };
+      }
+    });
+
+    loadTechnicianDetails();
+  </script>
+
+  <!-- ✅ مودال تفاصيل الحجز -->
+  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="reservation-details-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل الحجز -->
+  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-reservation-form" class="row g-3">
+            <input type="hidden" id="edit-res-index">
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+              <input type="text" class="form-control" id="edit-res-id" disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+              <input type="text" class="form-control" id="edit-res-customer" disabled>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+              <input type="text" class="form-control" id="edit-res-start">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+              <input type="text" class="form-control" id="edit-res-start-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
+                <select id="edit-res-discount-type" class="form-select">
+                  <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
+                  <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-3">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
+              <select id="edit-res-paid" class="form-select">
+                <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
+              <textarea class="form-control" id="edit-res-notes" rows="3" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
+              <div id="edit-selected-technicians-list" class="selected-technicians-list"></div>
+              <button type="button" class="btn btn-outline-primary mt-2" id="open-edit-technician-picker" data-i18n data-i18n-key="technicians.picker.editButton">🔁 تعديل الطاقم</button>
+            </div>
+
+            <div class="col-12">
+              <div id="edit-res-summary" class="alert alert-info"></div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <input type="text" class="form-control" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
+                </div>
+                <div class="col-md-6">
+                  <input type="text" class="form-control" id="edit-res-equipment-description" list="edit-res-equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.description">
+                  <datalist id="edit-res-equipment-description-options"></datalist>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle reservation-items-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.code">الكود</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.description">الوصف</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.price">السعر</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.image">الصورة</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.delete">حذف</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-items">
+                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال اختيار طاقم العمل -->
+  <div class="modal fade" id="selectTechniciansModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 align-items-center mb-3">
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="technician-picker-search" placeholder="🔍 ابحث بالاسم أو الوظيفة أو القسم..." data-i18n data-i18n-placeholder-key="technicians.search.placeholder">
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="technician-picker-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:40px;"></th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.name">الاسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.role">الوظيفة</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.department">القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.status">الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="5" class="text-center text-muted" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span class="text-muted me-auto" id="technician-picker-selection-info"></span>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="apply-technician-selection" data-i18n data-i18n-key="technicians.picker.actions.apply">تم</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل عضو الطاقم -->
+  <div class="modal fade" id="editTechnicianModal" tabindex="-1" aria-labelledby="editTechnicianModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editTechnicianModalLabel" data-i18n data-i18n-key="technicianDetails.edit.modalTitle">✏️ تعديل بيانات عضو الطاقم</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-technician-form" class="row g-3">
+            <input type="hidden" id="edit-technician-id">
+            <div class="col-md-6">
+              <label for="edit-technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+              <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+            </div>
+            <div class="col-md-6">
+              <label for="edit-technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+              <input type="text" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+            </div>
+            <div class="col-md-6">
+              <label for="edit-technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+              <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+            </div>
+            <div class="col-md-6">
+              <label for="edit-technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+              <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+            </div>
+            <div class="col-md-6">
+              <label for="edit-technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+              <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+            </div>
+            <div class="col-md-6">
+              <label for="edit-technician-status" class="form-label" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
+              <select id="edit-technician-status" class="form-select" required>
+                <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
+                <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label for="edit-technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+              <textarea id="edit-technician-notes" class="form-control" rows="2" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-technician-changes" data-i18n data-i18n-key="technicians.form.actions.update">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

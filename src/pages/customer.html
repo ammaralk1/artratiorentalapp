@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title data-i18n data-i18n-key="customerDetails.pageTitle">معلومات العميل</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('app-theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (error) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      }
+    })();
+  </script>
+
+  <!-- Bootstrap RTL -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/src/styles/index.css">
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+  <div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h2 class="mb-0" data-i18n data-i18n-key="customerDetails.title">👤 بيانات العميل</h2>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+        <a href="dashboard.html" class="btn btn-secondary" data-i18n data-i18n-key="customerDetails.actions.back">⬅️ العودة</a>
+      </div>
+    </div>
+
+    <div class="box">
+      <div id="customer-details">
+        <!-- تفاصيل العميل سيتم عرضها هنا تلقائيًا -->
+      </div>
+    </div>
+
+    <!-- ✅ الحجوزات -->
+    <section class="customer-reservations-section mt-4">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3 filters-bar">
+        <input type="text" id="customer-search-reservation" class="form-control w-auto" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="customerDetails.filters.search">
+        <input type="text" id="customer-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+        <input type="text" id="customer-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+        <select id="customer-reservation-date-range" class="form-select w-auto">
+          <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+          <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+          <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+          <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+        </select>
+        <select id="customer-reservation-status-filter" class="form-select w-auto">
+          <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+          <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
+          <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
+          <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+        </select>
+        <button type="button" class="btn btn-outline-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+      </div>
+      <div id="customer-reservations" class="mt-3"></div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script type="module" src="/src/scripts/translations/common.js"></script>
+  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
+  <script type="module" src="/src/scripts/translations/customer.js"></script>
+
+  <!-- سكربت موحد -->
+  <script type="module">
+    import { getCustomerById } from '/src/scripts/customers.js';
+    import { renderCustomerReservations } from '/src/scripts/customerDetails.js';
+    import { showReservationDetails } from '/src/scripts/reservationsUI.js';
+    import { showToast } from '/src/scripts/utils.js';
+    import { normalizeNumbers } from '/src/scripts/utils.js';
+    import { t, getCurrentLanguage, setLanguage } from '/src/scripts/language.js';
+    import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
+
+    applyStoredTheme();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get("id");
+    const container = document.getElementById("customer-details");
+
+    window.showReservationDetails = showReservationDetails;
+    initThemeToggle();
+
+    if (customerId) {
+      const customer = getCustomerById(customerId);
+      if (customer) {
+        const customerDetailsHtml = [
+          {
+            key: 'customerDetails.fields.name',
+            value: customer.customerName || '—'
+          },
+          {
+            key: 'customerDetails.fields.phone',
+            value: customer.phone ? normalizeNumbers(customer.phone) : '—'
+          },
+          {
+            key: 'customerDetails.fields.company',
+            value: customer.companyName || '—'
+          },
+          {
+            key: 'customerDetails.fields.email',
+            value: customer.email || '—'
+          },
+          {
+            key: 'customerDetails.fields.address',
+            value: customer.address || '—'
+          },
+          {
+            key: 'customerDetails.fields.notes',
+            value: customer.notes || '—'
+          }
+        ].map(({ key, value }) => `
+          <p class="customer-detail-row">
+            <strong data-i18n data-i18n-key="${key}">${t(key)}</strong>
+            <span>${value}</span>
+          </p>
+        `).join('');
+
+        container.innerHTML = `
+          <div class="customer-details">
+            ${customerDetailsHtml}
+          </div>
+          <button class="btn btn-warning mt-3" id="edit-btn" data-i18n data-i18n-key="customerDetails.actions.edit">${t('customerDetails.actions.edit', '✏️ تعديل العميل')}</button>
+        `;
+
+        setLanguage(getCurrentLanguage());
+
+        renderCustomerReservations(customerId);
+
+        // ✅ زر فتح المودال
+        document.getElementById("edit-btn")?.addEventListener("click", () => {
+          document.getElementById("edit-id").value = customer.id;
+          document.getElementById("edit-name").value = customer.customerName;
+          document.getElementById("edit-phone").value = customer.phone;
+          document.getElementById("edit-company").value = customer.companyName || "";
+          document.getElementById("edit-email").value = customer.email || "";
+          document.getElementById("edit-address").value = customer.address || "";
+          document.getElementById("edit-notes").value = customer.notes || "";
+
+          const modal = new bootstrap.Modal(document.getElementById("editCustomerModal"));
+          modal.show();
+        });
+
+        // ✅ زر حفظ التعديل
+        document.getElementById("save-edit-btn")?.addEventListener("click", () => {
+          const id = document.getElementById("edit-id").value;
+          const name = document.getElementById("edit-name").value.trim();
+          const phone = document.getElementById("edit-phone").value.trim();
+          const company = document.getElementById("edit-company").value.trim();
+          const email = document.getElementById("edit-email").value.trim();
+          const address = document.getElementById("edit-address").value.trim();
+          const notes = document.getElementById("edit-notes").value.trim();
+
+          if (!name || !phone) {
+            showToast(t('customerDetails.toast.missingRequired', '⚠️ الاسم ورقم الهاتف إلزاميان'));
+            return;
+          }
+
+          const data = JSON.parse(localStorage.getItem("customersList") || "[]");
+          const idx = data.findIndex(c => c.id === id);
+          if (idx === -1) {
+            showToast(t('customerDetails.toast.notFound', '⚠️ العميل غير موجود'));
+            return;
+          }
+
+          data[idx] = {
+            ...data[idx],
+            customerName: name,
+            phone,
+            companyName: company,
+            email,
+            address,
+            notes
+          };
+
+          localStorage.setItem("customersList", JSON.stringify(data));
+          showToast(t('customerDetails.toast.updateSuccess', '✅ تم تحديث بيانات العميل'));
+          window.location.reload();
+        });
+
+      } else {
+        container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.notFound">⚠️ لم يتم العثور على هذا العميل.</p>`;
+        setLanguage(getCurrentLanguage());
+      }
+    } else {
+      container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.missingId">⚠️ لا يوجد معرف عميل في الرابط.</p>`;
+      setLanguage(getCurrentLanguage());
+    }
+  </script>
+
+  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="reservation-details-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل الحجز -->
+  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-reservation-form" class="row g-3">
+            <input type="hidden" id="edit-res-index">
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+              <input type="text" class="form-control" id="edit-res-id" disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+              <input type="text" class="form-control" id="edit-res-customer" disabled>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+              <input type="text" class="form-control" id="edit-res-start">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+              <input type="text" class="form-control" id="edit-res-start-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
+                <select id="edit-res-discount-type" class="form-select">
+                  <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
+                  <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-3">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
+              <select id="edit-res-paid" class="form-select">
+                <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
+              <textarea class="form-control" id="edit-res-notes" rows="3" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+            </div>
+
+            <div class="col-12">
+              <div id="edit-res-summary" class="alert alert-info"></div>
+            </div>
+
+            <div class="col-12">
+              <label for="edit-res-equipment-barcode" class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
+              <input type="text" class="form-control mb-2" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.code">الكود</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.description">الوصف</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.price">السعر</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.image">الصورة</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.delete">حذف</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-items">
+                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل العميل -->
+  <div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="customerDetails.edit.modalTitle">✏️ تعديل العميل</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-id">
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-name" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+            <input class="form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+            <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+            <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+            <input class="form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+            <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+            <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="save-edit-btn" data-i18n data-i18n-key="customers.form.actions.update">💾 حفظ التعديل</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
