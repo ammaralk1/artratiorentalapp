@@ -1815,6 +1815,10 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 
+.theme-loading .theme-toggle-btn {
+  visibility: hidden;
+}
+
 .theme-toggle-btn {
   display: inline-flex;
   align-items: center;

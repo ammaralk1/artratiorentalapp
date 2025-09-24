@@ -13,11 +13,15 @@ import {
 } from './scripts/reservationsUI.js';
 import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
+import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
+
+applyStoredTheme();
 
 function initApp() {
   checkAuth();
   setupTabs();
   initCustomers();
+  initThemeToggle();
   renderEquipment();
   renderCalendar();
 

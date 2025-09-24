@@ -2,7 +2,8 @@ import { t } from './language.js';
 
 const THEME_KEY = 'app-theme';
 const DARK_CLASS = 'dark-mode';
-let themeClickListenerAttached = false;
+const boundButtons = new WeakSet();
+const THEME_LOADING_CLASS = 'theme-loading';
 
 function getStoredTheme() {
   try {
@@ -33,6 +34,12 @@ function persistTheme(theme) {
   }
 }
 
+function markThemeReady() {
+  document.documentElement.classList.remove(THEME_LOADING_CLASS);
+  const body = document.body;
+  if (body) body.classList.remove(THEME_LOADING_CLASS);
+}
+
 export function applyTheme(theme) {
   const root = document.documentElement;
   const body = document.body;
@@ -50,6 +57,12 @@ export function getCurrentTheme() {
   const body = document.body;
   if (body && body.classList.contains(DARK_CLASS)) return 'dark';
   return document.documentElement.classList.contains(DARK_CLASS) ? 'dark' : 'light';
+}
+
+function toggleTheme() {
+  const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(newTheme);
+  updateAllToggleButtons(newTheme);
 }
 
 function updateToggleButton(button, theme) {
@@ -70,28 +83,25 @@ function updateToggleButton(button, theme) {
 
 function updateAllToggleButtons(theme) {
   document.querySelectorAll('.theme-toggle-btn').forEach((btn) => updateToggleButton(btn, theme));
+  markThemeReady();
 }
 
 export function initThemeToggle() {
+  const buttons = document.querySelectorAll('.theme-toggle-btn');
   updateAllToggleButtons(getCurrentTheme());
 
-  document.querySelectorAll('.theme-toggle-btn').forEach((btn) => {
+  buttons.forEach((btn) => {
+    if (!btn) return;
     if (!btn.getAttribute('type')) {
       btn.setAttribute('type', 'button');
     }
-  });
-
-  if (!themeClickListenerAttached) {
-    document.addEventListener('click', (event) => {
-      const trigger = event.target.closest('.theme-toggle-btn');
-      if (!trigger) return;
+    if (boundButtons.has(btn)) return;
+    btn.addEventListener('click', (event) => {
       event.preventDefault();
-      const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
-      applyTheme(newTheme);
-      updateAllToggleButtons(newTheme);
+      toggleTheme();
     });
-    themeClickListenerAttached = true;
-  }
+    boundButtons.add(btn);
+  });
 }
 
 export function applyStoredTheme() {
@@ -102,4 +112,5 @@ export function applyStoredTheme() {
 
 document.addEventListener('language:changed', () => {
   updateAllToggleButtons(getCurrentTheme());
+  initThemeToggle();
 });
