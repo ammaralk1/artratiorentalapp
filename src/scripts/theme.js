@@ -3,6 +3,8 @@ import { t } from './language.js';
 const THEME_KEY = 'app-theme';
 const DARK_CLASS = 'dark-mode';
 
+let globalToggleHandlerAttached = false;
+
 function getStoredTheme() {
   try {
     const stored = localStorage.getItem(THEME_KEY);
@@ -72,25 +74,19 @@ function updateAllToggleButtons(theme) {
 }
 
 export function initThemeToggle(buttonId = 'theme-toggle') {
-  const initialTheme = getCurrentTheme();
-  updateAllToggleButtons(initialTheme);
+  updateAllToggleButtons(getCurrentTheme());
 
-  const buttons = Array.from(document.querySelectorAll('.theme-toggle-btn'));
-  const primaryButton = document.getElementById(buttonId);
-
-  if (primaryButton && !buttons.includes(primaryButton)) {
-    buttons.unshift(primaryButton);
-  }
-
-  buttons.forEach((btn) => {
-    if (!btn || btn.dataset.listenerAttached) return;
-    btn.addEventListener('click', () => {
+  if (!globalToggleHandlerAttached) {
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('.theme-toggle-btn');
+      if (!trigger) return;
+      event.preventDefault();
       const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
       applyTheme(newTheme);
       updateAllToggleButtons(newTheme);
     });
-    btn.dataset.listenerAttached = 'true';
-  });
+    globalToggleHandlerAttached = true;
+  }
 }
 
 export function applyStoredTheme() {
