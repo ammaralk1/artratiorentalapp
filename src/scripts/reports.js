@@ -37,6 +37,12 @@ function handleLanguageChange() {
   }, 60);
 }
 
+function renderIfCustomRange() {
+  if (state.range === 'custom') {
+    renderReports();
+  }
+}
+
 function resetFormatters() {
   cachedLocale = null;
   numberFormatter = null;
@@ -106,10 +112,12 @@ export function initReports() {
 
   startInput?.addEventListener('change', () => {
     state.start = startInput.value || null;
+    renderIfCustomRange();
   });
 
   endInput?.addEventListener('change', () => {
     state.end = endInput.value || null;
+    renderIfCustomRange();
   });
 
   refreshBtn?.addEventListener('click', () => {
@@ -172,9 +180,11 @@ function setupCustomRangePickers(startInput, endInput) {
         } else {
           endPickerInstance.set('minDate', null);
         }
+        renderIfCustomRange();
       },
       onValueUpdate(_, dateStr) {
         state.start = dateStr || null;
+        renderIfCustomRange();
       }
     });
   }
@@ -193,9 +203,11 @@ function setupCustomRangePickers(startInput, endInput) {
         } else {
           startPickerInstance.set('maxDate', null);
         }
+        renderIfCustomRange();
       },
       onValueUpdate(_, dateStr) {
         state.end = dateStr || null;
+        renderIfCustomRange();
       }
     });
   }
@@ -254,6 +266,19 @@ function resolveRange({ range, start, end }) {
     case 'last30': {
       startDate = new Date(now);
       startDate.setDate(startDate.getDate() - 29);
+      break;
+    }
+    case 'thisWeek': {
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+      const diff = ((day - 6) + 7) % 7; // اجعل السبت بداية الأسبوع
+      startOfWeek.setDate(startOfWeek.getDate() - diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      startDate = startOfWeek;
+      endDate.setTime(endOfWeek.getTime());
       break;
     }
     case 'thisMonth': {

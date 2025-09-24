@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  base: '/artratiorentalapp/',
   server: {
     port: 5173,
     open: '/src/pages/dashboard.html'

@@ -3,8 +3,6 @@ import { setupTabs } from './scripts/tabs.js';
 import { initCustomers } from './scripts/customers.js';
 import {
   uploadEquipmentFromExcel,
-  clearEquipment,
-  searchEquipment,
   renderEquipment
 } from './scripts/equipment.js';
 import { renderCalendar } from './scripts/calendar.js';
@@ -14,6 +12,7 @@ import {
   renderReservations
 } from './scripts/reservationsUI.js';
 import { loadData } from './scripts/storage.js';
+import { initMaintenance } from './scripts/maintenance.js';
 
 function initApp() {
   checkAuth();
@@ -21,6 +20,8 @@ function initApp() {
   initCustomers();
   renderEquipment();
   renderCalendar();
+
+  initMaintenance();
 
   loadReservationForm();
   setupReservationEvents();
@@ -44,36 +45,6 @@ function initApp() {
       excelUploadInput.click();
     });
   }
-
-  // ✅ تصفية المعدات
-  const searchInput = document.getElementById("search-equipment");
-  const filterStatus = document.getElementById("filter-status");
-  const filterCategory = document.getElementById("filter-category");
-  const container = document.getElementById("equipment-list");
-
-  function applyFilters() {
-    const query = searchInput.value.trim();
-    const status = filterStatus.value;
-    const category = filterCategory.value;
-    const results = searchEquipment(query, status, category);
-
-    container.innerHTML = results.length
-      ? results.map((item, i) => `
-        <div class="border-bottom py-2">
-          🏷️ <strong>${item.desc}</strong> (${item.category} - ${item.sub})<br>
-          📦 الكمية: ${item.qty} | 💵 السعر: ${item.price}<br>
-          🔖 الباركود: ${item.barcode}<br>
-          ⚙️ الحالة: ${item.status}<br>
-          <button class="btn btn-sm btn-warning" onclick="editEquipment(${i})">✏️ تعديل</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteEquipment(${i})">🗑️ حذف</button>
-        </div>
-      `).join("")
-      : "<em>⚠️ لا توجد معدات مطابقة.</em>";
-  }
-
-  searchInput?.addEventListener("input", applyFilters);
-  filterStatus?.addEventListener("change", applyFilters);
-  filterCategory?.addEventListener("change", applyFilters);
 
   // ✅ زر تسجيل الخروج
   document.getElementById("logout-btn")?.addEventListener("click", logout);
