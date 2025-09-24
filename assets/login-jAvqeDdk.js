@@ -1,1 +1,0 @@
-import"./utils-BcYEmFqz.js";import{a}from"./auth-CM0vrJIa.js";import{a as n,i as o}from"./theme-BbjGP3KI.js";n();o();document.getElementById("login-form").addEventListener("submit",async e=>{e.preventDefault();const t=document.getElementById("username").value.trim(),m=document.getElementById("password").value.trim();await a(t,m)});
