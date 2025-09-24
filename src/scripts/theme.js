@@ -2,7 +2,7 @@ import { t } from './language.js';
 
 const THEME_KEY = 'app-theme';
 const DARK_CLASS = 'dark-mode';
-let toggleHandler = null;
+let themeClickListenerAttached = false;
 
 function getStoredTheme() {
   try {
@@ -72,32 +72,26 @@ function updateAllToggleButtons(theme) {
   document.querySelectorAll('.theme-toggle-btn').forEach((btn) => updateToggleButton(btn, theme));
 }
 
-export function initThemeToggle(buttonId = 'theme-toggle') {
-  const buttons = Array.from(document.querySelectorAll('.theme-toggle-btn'));
-  const primaryButton = document.getElementById(buttonId);
-  if (primaryButton && !buttons.includes(primaryButton)) {
-    buttons.unshift(primaryButton);
-  }
+export function initThemeToggle() {
+  updateAllToggleButtons(getCurrentTheme());
 
-  if (!toggleHandler) {
-    toggleHandler = (event) => {
+  document.querySelectorAll('.theme-toggle-btn').forEach((btn) => {
+    if (!btn.getAttribute('type')) {
+      btn.setAttribute('type', 'button');
+    }
+  });
+
+  if (!themeClickListenerAttached) {
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('.theme-toggle-btn');
+      if (!trigger) return;
       event.preventDefault();
       const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
       applyTheme(newTheme);
       updateAllToggleButtons(newTheme);
-    };
+    });
+    themeClickListenerAttached = true;
   }
-
-  buttons.forEach((btn) => {
-    if (!btn || btn.dataset.themeListenerAttached === 'true') return;
-    if (!btn.getAttribute('type')) {
-      btn.setAttribute('type', 'button');
-    }
-    btn.addEventListener('click', toggleHandler);
-    btn.dataset.themeListenerAttached = 'true';
-  });
-
-  updateAllToggleButtons(getCurrentTheme());
 }
 
 export function applyStoredTheme() {
