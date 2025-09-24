@@ -2,8 +2,7 @@ import { t } from './language.js';
 
 const THEME_KEY = 'app-theme';
 const DARK_CLASS = 'dark-mode';
-
-let globalToggleHandlerAttached = false;
+let toggleHandler = null;
 
 function getStoredTheme() {
   try {
@@ -74,19 +73,31 @@ function updateAllToggleButtons(theme) {
 }
 
 export function initThemeToggle(buttonId = 'theme-toggle') {
-  updateAllToggleButtons(getCurrentTheme());
+  const buttons = Array.from(document.querySelectorAll('.theme-toggle-btn'));
+  const primaryButton = document.getElementById(buttonId);
+  if (primaryButton && !buttons.includes(primaryButton)) {
+    buttons.unshift(primaryButton);
+  }
 
-  if (!globalToggleHandlerAttached) {
-    document.addEventListener('click', (event) => {
-      const trigger = event.target.closest('.theme-toggle-btn');
-      if (!trigger) return;
+  if (!toggleHandler) {
+    toggleHandler = (event) => {
       event.preventDefault();
       const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
       applyTheme(newTheme);
       updateAllToggleButtons(newTheme);
-    });
-    globalToggleHandlerAttached = true;
+    };
   }
+
+  buttons.forEach((btn) => {
+    if (!btn || btn.dataset.themeListenerAttached === 'true') return;
+    if (!btn.getAttribute('type')) {
+      btn.setAttribute('type', 'button');
+    }
+    btn.addEventListener('click', toggleHandler);
+    btn.dataset.themeListenerAttached = 'true';
+  });
+
+  updateAllToggleButtons(getCurrentTheme());
 }
 
 export function applyStoredTheme() {
