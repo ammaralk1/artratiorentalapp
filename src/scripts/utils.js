@@ -52,16 +52,30 @@ export function formatDateTime(dateStr, overrides = {}) {
 
   const docLang = document?.documentElement?.getAttribute('lang') || window?.localStorage?.getItem('app-language') || 'ar';
   const isArabic = String(docLang).toLowerCase().startsWith('ar');
-  const locale = isArabic ? 'ar-SA' : 'en-US';
+  const locale = isArabic ? 'ar-SA-u-ca-gregory' : 'en-US';
 
   const formatter = new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',
     timeStyle: 'short',
     hour12: true,
+    calendar: 'gregory',
     ...overrides
   });
 
-  return normalizeNumbers(formatter.format(date));
+  const parts = formatter.formatToParts(date);
+  const meridiem = date.getHours() >= 12 ? 'PM' : 'AM';
+
+  const formatted = parts
+    .map((part) => {
+      if (part.type === 'dayPeriod') {
+        return meridiem;
+      }
+      return part.value;
+    })
+    .join('')
+    .replace(/\u200f/g, ''); // remove RTL marks if present
+
+  return normalizeNumbers(formatted);
 }
 
 export function normalizeNumbers(str) {
@@ -78,4 +92,3 @@ export function normalizeNumbers(str) {
     return index > -1 ? englishNumbers[index] : ch;
   }).join("");
 }
-

@@ -1,9 +1,7 @@
 import { loadData } from './storage.js';
-import { normalizeNumbers } from './utils.js';
+import { normalizeBarcodeValue } from './reservations/state.js';
 
-export function normalizeBarcodeValue(value) {
-  return normalizeNumbers(String(value || '')).trim();
-}
+export { normalizeBarcodeValue } from './reservations/state.js';
 
 export function resolveItemImage(item = {}) {
   return item.image || item.imageUrl || item.img || '';
