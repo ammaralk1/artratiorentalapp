@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <title>لوحة التحكم - نظام التأجير</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('app-theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (error) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      }
+    })();
+  </script>
+
+  <!-- ✅ Bootstrap RTL -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ✅ FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <!-- 📤 مكتبة Excel (SheetJS) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ✅ ملف CSS -->
+
+  <!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-B1E2H3iJ.js"></script>
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/utils-C0DqWSLe.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/reservationsUI-BwO38w_2.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/auth-BCGpaEK2.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/customers-C-_eQ3rP.js">
+  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/utils-nOFp6L00.css">
+</head>
+<body class="tabs-loading">
+
+  <!-- ✅ Toast -->
+  <div class="toast-container position-fixed bottom-0 start-0 p-3"></div>
+
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
+      <h2 class="mb-0" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</h2>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+        <button class="btn btn-danger" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+      </div>
+    </div>
+
+    <!-- ✅ أزرار التبويبات الرئيسية -->
+    <div class="tab-buttons mb-4">
+      <button class="tab-button active" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
+      <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
+      <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
+      <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
+      <button class="tab-button" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
+    </div>
+
+    <!-- ✅ محتويات التبويبات -->
+    <div class="tab-content-wrapper">
+
+      <!-- ✅ تبويب: العملاء -->
+      <div class="tab active" id="customers-tab">
+        <h2 data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+
+        <!-- ✅ نموذج إضافة عميل -->
+        <div class="box customer-form-box management-form-box mb-4">
+          <div class="management-form-header">
+            <div>
+              <h4 data-i18n data-i18n-key="customers.form.title">📋 إضافة / تعديل عميل</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
+            </div>
+            <div class="management-form-icon">👤</div>
+          </div>
+          <form id="customer-form" class="management-form">
+            <input type="hidden" id="customer-id">
+            <div class="management-form-grid">
+              <div class="form-field">
+                <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                <input type="text" class="form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                <input type="tel" class="form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                <input type="email" class="form-control" id="customer-email" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+              </div>
+              <div class="form-field">
+                <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                <input type="text" class="form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+              </div>
+              <div class="form-field">
+                <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                <input type="text" class="form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+              </div>
+              <div class="form-field form-field-notes">
+                <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                <textarea class="form-control" id="customer-notes" rows="2" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+              </div>
+            </div>
+            <div class="management-form-actions">
+              <button type="button" class="btn btn-outline-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
+              <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ✅ شريط البحث -->
+        <div class="mb-3 management-search-bar">
+          <input
+            type="text"
+            id="search-customer-input"
+            class="form-control"
+            placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
+            data-i18n data-i18n-placeholder-key="customers.search.placeholder"
+          >
+        </div>
+
+        <!-- ✅ جدول العملاء -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th data-i18n data-i18n-key="customers.table.headers.name">👤 الاسم</th>
+                <th data-i18n data-i18n-key="customers.table.headers.phone">📞 الجوال</th>
+                <th data-i18n data-i18n-key="customers.table.headers.company">🏢 الشركة</th>
+                <th class="table-notes-head" data-i18n data-i18n-key="customers.table.headers.notes">📝 ملاحظات</th>
+                <th class="table-actions-head" data-i18n data-i18n-key="customers.table.headers.actions">⚙️ الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="customers-table">
+              <tr>
+                <td colspan="5" class="text-center" data-i18n data-i18n-key="customers.table.loading">جاري التحميل...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div> <!-- نهاية تبويب العملاء -->
+
+      <!-- ✅ تبويب: الفريق الفني -->
+      <div class="tab" id="technicians-tab">
+        <h2 data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+
+        <!-- ✅ نموذج إضافة فني -->
+        <div class="box add-technicians-box management-form-box mb-4">
+          <div class="management-form-header">
+            <div>
+              <h4 data-i18n data-i18n-key="technicians.form.title">📝 إضافة / تعديل عضو طاقم</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
+            </div>
+            <div class="management-form-icon">😎</div>
+          </div>
+          <form id="technician-form" class="management-form technician-form">
+            <input type="hidden" id="technician-id">
+            <div class="management-form-grid">
+              <div class="form-field">
+                <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                <input type="text" class="form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+              </div>
+              <div class="form-field">
+                <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+              </div>
+              <div class="form-field">
+                <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+                <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+              </div>
+              <div class="form-field">
+                <label for="technician-status" class="form-label" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
+                <select id="technician-status" class="form-select" required>
+                  <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
+                  <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
+                </select>
+              </div>
+              <div class="form-field form-field-notes">
+                <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+              </div>
+            </div>
+            <div class="management-form-actions">
+              <button type="button" class="btn btn-outline-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
+              <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ✅ شريط البحث -->
+        <div class="mb-3 d-flex flex-wrap gap-2">
+          <input
+            type="text"
+            id="search-technician-input"
+            class="form-control w-auto"
+            placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+            data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+          >
+          <select id="technician-role-filter" class="form-select w-auto">
+            <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+          </select>
+        </div>
+
+        <!-- ✅ جدول الفريق الفني -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                <th data-i18n data-i18n-key="technicians.table.headers.phone">📞 الجوال</th>
+                <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
+                <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="technicians-table">
+              <tr>
+                <td colspan="8" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div> <!-- نهاية تبويب الفريق الفني -->
+
+            <!-- ✅ تبويب: المعدات -->
+      <div class="tab" id="equipment-tab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h3>
+          <div>
+            <button class="btn btn-danger btn-sm" onclick="clearEquipment()" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
+            <button type="button" id="excel-upload-trigger" class="btn btn-primary btn-sm" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
+            <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden>
+          </div>
+        </div>
+
+        <div class="box management-form-box equipment-form-box mb-4">
+          <div class="management-form-header">
+            <div>
+              <h4 data-i18n data-i18n-key="equipment.form.title">🎥 إضافة معدة</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="equipment.form.hint">أدخل بيانات المعدة ليتم حفظها ضمن قائمة المعدات.</p>
+            </div>
+          </div>
+          <form id="add-equipment-form" class="management-form">
+            <div class="management-form-grid equipment-form-grid">
+              <div class="form-field">
+                <label for="new-equipment-desc" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
+                <input type="text" class="form-control" id="new-equipment-desc" placeholder="وصف المعدة" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.description">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-barcode" class="form-label" data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</label>
+                <input type="text" class="form-control" id="new-equipment-barcode" placeholder="الباركود" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.barcode">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
+                <input type="number" class="form-control" id="new-equipment-price" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.price">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-qty" class="form-label" data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</label>
+                <input type="number" class="form-control" id="new-equipment-qty" placeholder="1" min="1" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.quantity">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
+                <input type="text" class="form-control" id="new-equipment-image" placeholder="https://..." data-i18n data-i18n-placeholder-key="equipment.form.placeholders.image">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
+                <input type="text" class="form-control" id="new-equipment-category" placeholder="القسم" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.category">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-sub" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
+                <input type="text" class="form-control" id="new-equipment-sub" placeholder="القسم الثانوي" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.subcategory">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-status" class="form-label" data-i18n data-i18n-key="equipment.form.labels.status">⚙️ الحالة</label>
+                <select id="new-equipment-status" class="form-select">
+                  <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
+                  <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
+                  <option value="صيانة" data-i18n data-i18n-key="equipment.form.options.maintenance">🛠️ صيانة</option>
+                </select>
+              </div>
+            </div>
+            <div class="management-form-actions equipment-form-actions">
+              <button type="submit" class="btn btn-success" data-i18n data-i18n-key="equipment.form.actions.submit">➕ إضافة معدة</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ✅ البحث والفلترة -->
+        <div class="d-flex flex-wrap gap-2 mb-3 filters-bar">
+          <!-- 🔍 البحث -->
+          <input type="text" id="search-equipment" class="form-control w-auto" placeholder="🔍 ابحث عن معدة..." data-i18n data-i18n-placeholder-key="equipment.filters.search">
+
+          <!-- ⚙️ الحالة -->
+          <select id="filter-status" class="form-select w-auto">
+            <option value="" data-i18n data-i18n-key="equipment.filters.status.all">⚙️ كل الحالات</option>
+            <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
+            <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
+            <option value="صيانة" data-i18n data-i18n-key="equipment.form.options.maintenance">🛠️ صيانة</option>
+          </select>
+
+          <!-- 📂 القسم -->
+          <select id="filter-category" class="form-select w-auto">
+            <option value="" data-i18n data-i18n-key="equipment.filters.category.all">📂 كل الأقسام</option>
+          </select>
+
+          <!-- 📑 القسم الثانوي -->
+          <select id="filter-sub" class="form-select w-auto">
+            <option value="" data-i18n data-i18n-key="equipment.filters.subcategory.all">📑 كل الأقسام الثانوية</option>
+          </select>
+        </div>
+
+        <!-- ✅ قائمة المعدات -->
+        <div class="box equipment-list-box">
+          <div class="equipment-list-header">
+            <h5 data-i18n data-i18n-key="equipment.list.title">📋 كل المعدات</h5>
+            <span class="equipment-list-count" id="equipment-list-count">—</span>
+          </div>
+          <div id="equipments" class="tab-content"></div>
+      <div id="equipment-list"></div>
+    </div>
+  </div> <!-- نهاية تبويب المعدات -->
+
+      <!-- ✅ تبويب: الصيانة -->
+      <div class="tab" id="maintenance-tab">
+        <h2 data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
+
+        <div class="box maintenance-form-box">
+          <div class="maintenance-form-header">
+            <div>
+              <h4 data-i18n data-i18n-key="maintenance.form.title">➕ إنشاء تذكرة صيانة</h4>
+              <p class="maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
+            </div>
+            <div class="maintenance-form-icon">🔧</div>
+          </div>
+          <form id="maintenance-form" class="maintenance-form">
+            <div class="maintenance-form-grid">
+              <div class="form-field">
+                <label for="maintenance-equipment-barcode" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.barcode">🏷️ الباركود</label>
+                <input type="text" id="maintenance-equipment-barcode" class="form-control" placeholder="🖨️ امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.barcode">
+              </div>
+              <div class="form-field">
+                <label for="maintenance-equipment-search" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.search">🎥 البحث باسم المعدة</label>
+                <input type="text" id="maintenance-equipment-search" class="form-control" list="maintenance-equipment-options" placeholder="اكتب اسم المعدة..." data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.search">
+                <datalist id="maintenance-equipment-options"></datalist>
+              </div>
+              <div class="form-field">
+                <label for="maintenance-priority" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.priority">⚠️ الأولوية</label>
+                <select id="maintenance-priority" class="form-select">
+                  <option value="high" data-i18n data-i18n-key="maintenance.form.options.priority.high">مرتفعة</option>
+                  <option value="medium" selected data-i18n data-i18n-key="maintenance.form.options.priority.medium">متوسطة</option>
+                  <option value="low" data-i18n data-i18n-key="maintenance.form.options.priority.low">منخفضة</option>
+                </select>
+              </div>
+            </div>
+            <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
+            <input type="hidden" id="maintenance-selected-barcode">
+            <div class="form-field">
+              <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
+              <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
+            </div>
+            <div class="maintenance-form-actions">
+              <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="box maintenance-list-box">
+          <div class="maintenance-list-header">
+            <div>
+              <h4 data-i18n data-i18n-key="maintenance.list.title">📋 تذاكر الصيانة</h4>
+              <p class="maintenance-list-hint" data-i18n data-i18n-key="maintenance.list.hint">تابع حالة الأعطال وقم بإغلاق التذاكر بعد إتمام الإصلاح.</p>
+            </div>
+            <div class="maintenance-stats" id="maintenance-stats"></div>
+          </div>
+          <div class="maintenance-filters">
+            <label for="maintenance-status-filter" class="form-label" data-i18n data-i18n-key="maintenance.filters.status.label">الحالة</label>
+            <select id="maintenance-status-filter" class="form-select w-auto">
+              <option value="all" data-i18n data-i18n-key="maintenance.filters.status.all">كل الحالات</option>
+              <option value="open" data-i18n data-i18n-key="maintenance.filters.status.open">قيد الصيانة</option>
+              <option value="closed" data-i18n data-i18n-key="maintenance.filters.status.closed">مغلقة</option>
+            </select>
+          </div>
+          <div class="table-responsive">
+            <table class="maintenance-table reservation-items-table">
+              <thead>
+                <tr>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.equipment">المعدة</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.issue">وصف المشكلة</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.priority">الأولوية</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.created">تاريخ الإنشاء</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.status">الحالة</th>
+                  <th data-i18n data-i18n-key="maintenance.table.headers.actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="maintenance-table-body">
+                <tr><td colspan="6" class="text-muted text-center" data-i18n data-i18n-key="maintenance.table.empty">لا توجد تذاكر بعد.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="maintenance-empty-state" class="maintenance-empty-state">
+            <div class="maintenance-empty-icon">✅</div>
+            <h5 data-i18n data-i18n-key="maintenance.empty.title">لا توجد تذاكر صيانة</h5>
+            <p class="text-muted" data-i18n data-i18n-key="maintenance.empty.subtitle">عند إنشاء تذكرة جديدة ستظهر في هذه القائمة.</p>
+          </div>
+        </div>
+      </div> <!-- نهاية تبويب الصيانة -->
+
+      <!-- ✅ تبويب: الحجوزات -->
+      <div class="tab" id="reservations-tab">
+        <h2 data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
+
+        <!-- ✅ التبويبات الفرعية -->
+        <div class="sub-tab-buttons mb-3">
+          <button class="sub-tab-button active" data-sub-tab="create-tab" data-i18n data-i18n-key="reservations.tabs.create">➕ إنشاء حجز</button>
+          <button class="sub-tab-button" data-sub-tab="my-reservations-tab" data-i18n data-i18n-key="reservations.tabs.mine">📋 حجوزاتي</button>
+          <button class="sub-tab-button" data-sub-tab="reports-tab" data-i18n data-i18n-key="reservations.tabs.reports">📊 تقارير</button>
+          <button class="sub-tab-button" data-sub-tab="calendar-tab" data-i18n data-i18n-key="reservations.tabs.calendar">📅 التقويم</button>
+        </div>
+
+        <!-- ✅ تبويب فرعي: إنشاء حجز -->
+        <div class="sub-tab active" id="create-tab">
+          <div class="box">
+            <h4 data-i18n data-i18n-key="reservations.create.title">➕ إنشاء حجز جديد</h4>
+            <form id="reservation-form">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label for="res-start" data-i18n data-i18n-key="reservations.create.labels.startDate">📅 تاريخ البداية</label>
+                  <input type="text" id="res-start" class="form-control">
+
+                  <label for="res-start-time" data-i18n data-i18n-key="reservations.create.labels.startTime">⏰ وقت البداية</label>
+                  <input type="text" id="res-start-time" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label for="res-end" data-i18n data-i18n-key="reservations.create.labels.endDate">📅 تاريخ النهاية</label>
+                  <input type="text" id="res-end" class="form-control">
+
+                  <label for="res-end-time" data-i18n data-i18n-key="reservations.create.labels.endTime">⏰ وقت النهاية</label>
+                  <input type="text" id="res-end-time" class="form-control">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-6 position-relative">
+                  <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
+                  <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
+                  <div id="customer-suggestions" class="suggestions-list"></div>
+                </div>
+              <div class="col-md-6">
+                <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
+                <textarea id="res-notes" class="form-control" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-12">
+                <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
+                <div id="selected-technicians-list" class="selected-technicians-list"></div>
+                <button type="button" class="btn btn-outline-primary mt-2" id="open-technician-picker" data-i18n data-i18n-key="technicians.picker.openButton">➕ اختيار الطاقم</button>
+              </div>
+            </div>
+
+            <div id="reservation-preview" class="mt-3"></div>
+
+            <div class="box mt-3">
+              <h5 data-i18n data-i18n-key="reservations.create.equipment.title">🎥 أضف المعدات</h5>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <input type="text" class="form-control" id="equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.barcode">
+                  </div>
+                  <div class="col-md-6">
+                    <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
+                    <datalist id="equipment-description-options"></datalist>
+                  </div>
+                </div>
+
+                <div class="table-responsive mt-3">
+                  <table class="table table-sm table-hover align-middle reservation-items-table">
+                    <thead>
+                      <tr>
+                        <th data-i18n data-i18n-key="reservations.create.equipment.table.code">الكود</th>
+                        <th data-i18n data-i18n-key="reservations.create.equipment.table.description">الوصف</th>
+                        <th data-i18n data-i18n-key="reservations.create.equipment.table.price">السعر</th>
+                        <th data-i18n data-i18n-key="reservations.create.equipment.table.image">الصورة</th>
+                        <th data-i18n data-i18n-key="reservations.create.equipment.table.delete">حذف</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reservation-items"></tbody>
+                  </table>
+                </div>
+
+                <div id="reservation-preview-bottom" class="mt-3"></div>
+              </div>
+
+              <div class="row mb-3 mt-3 align-items-end g-3 reservation-meta-row">
+                <div class="col-lg-5 col-md-6">
+                  <div class="reservation-meta-card">
+                    <label class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
+                    <div class="input-group reservation-discount-group mb-3">
+                      <input type="text" id="res-discount" class="form-control" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
+                      <select id="res-discount-type" class="form-select">
+                        <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
+                        <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
+                      </select>
+                    </div>
+                    <div class="form-check form-switch reservation-tax-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="res-tax">
+                      <label class="form-check-label" for="res-tax" data-i18n data-i18n-key="reservations.create.billing.taxLabel">شامل الضريبة (15٪)</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                  <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
+                  <select id="res-payment-status" class="form-select">
+                    <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                    <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
+                  </select>
+                </div>
+                <div class="col-lg-3 col-md-12 d-flex justify-content-lg-end justify-content-start mt-3 mt-lg-0">
+                  <button type="button" class="btn btn-primary btn-lg w-100 w-lg-auto" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ✅ تبويب فرعي: حجوزاتي -->
+        <div class="sub-tab" id="my-reservations-tab">
+          <h4 data-i18n data-i18n-key="reservations.list.title">📋 حجوزاتي</h4>
+          <div class="mb-3">
+            <input type="text" id="search-reservation" class="form-control" placeholder="🔍 ابحث باسم العميل أو الكود..." data-i18n data-i18n-placeholder-key="reservations.list.search.placeholder">
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-3 filters-bar">
+            <input type="text" id="filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+            <input type="text" id="filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+            <select id="reservation-date-range" class="form-select w-auto">
+              <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+              <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+              <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+              <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+            </select>
+            <select id="reservation-status-filter" class="form-select w-auto">
+              <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+              <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
+              <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
+              <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+            </select>
+          </div>
+
+          <div id="reservations-list" class="mt-3"></div>
+        </div>
+
+        <!-- ✅ تبويب فرعي: التقارير -->
+        <div class="sub-tab" id="reports-tab">
+          <div class="reports-wrapper">
+            <div class="box reports-header-card">
+              <div class="reports-header-text">
+                <h3 data-i18n data-i18n-key="reservations.reports.title">📊 تقارير الأداء</h3>
+                <p class="reports-subtitle" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
+              </div>
+              <div class="reports-filters" id="reports-filters">
+                <div class="reports-filter-group">
+                  <label for="reports-range" data-i18n data-i18n-key="reservations.reports.filters.rangeLabel">الفترة</label>
+                  <select id="reports-range" class="form-select">
+                    <option value="last30" data-i18n data-i18n-key="reservations.reports.filters.range.last30">آخر 30 يوم</option>
+                    <option value="thisMonth" data-i18n data-i18n-key="reservations.reports.filters.range.thisMonth">هذا الشهر</option>
+                    <option value="thisQuarter" data-i18n data-i18n-key="reservations.reports.filters.range.thisQuarter">هذا الربع</option>
+                    <option value="thisYear" data-i18n data-i18n-key="reservations.reports.filters.range.thisYear">هذا العام</option>
+                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.range.all">كل الوقت</option>
+                    <option value="custom" data-i18n data-i18n-key="reservations.reports.filters.range.custom">مخصص</option>
+                  </select>
+                </div>
+                <div class="reports-filter-group reports-custom-range" id="reports-custom-range">
+                  <label for="reports-start" data-i18n data-i18n-key="reservations.reports.filters.startLabel">من</label>
+                  <input type="date" id="reports-start" class="form-control" placeholder="yyyy-mm-dd">
+                  <label for="reports-end" data-i18n data-i18n-key="reservations.reports.filters.endLabel">إلى</label>
+                  <input type="date" id="reports-end" class="form-control" placeholder="yyyy-mm-dd">
+                </div>
+                <div class="reports-filter-group">
+                  <label for="reports-status-filter" data-i18n data-i18n-key="reservations.reports.filters.statusLabel">الحالة</label>
+                  <select id="reports-status-filter" class="form-select">
+                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.status.all">كل الحالات</option>
+                    <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
+                    <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
+                    <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
+                  </select>
+                </div>
+                <div class="reports-filter-group">
+                  <label for="reports-payment-filter" data-i18n data-i18n-key="reservations.reports.filters.paymentLabel">الدفع</label>
+                  <select id="reports-payment-filter" class="form-select">
+                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.payment.all">الكل</option>
+                    <option value="paid" data-i18n data-i18n-key="reservations.reports.filters.payment.paid">مدفوعة</option>
+                    <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
+                  </select>
+                </div>
+                <button type="button" id="reports-refresh" class="btn btn-outline-secondary reports-refresh-btn" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
+              </div>
+            </div>
+
+            <div class="reports-kpi-grid" id="reports-kpi-grid">
+              <div class="box reports-kpi-card" data-kpi="total">
+                <div class="reports-kpi-icon">🗂️</div>
+                <div class="reports-kpi-content">
+                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.total.label">إجمالي الحجوزات</p>
+                  <h4 class="reports-kpi-value" id="reports-kpi-total">—</h4>
+                  <span class="reports-kpi-meta" id="reports-kpi-total-meta" data-i18n data-i18n-key="reservations.reports.kpi.total.meta">لم يتم تسجيل بيانات بعد</span>
+                </div>
+              </div>
+              <div class="box reports-kpi-card" data-kpi="revenue">
+                <div class="reports-kpi-icon">💰</div>
+                <div class="reports-kpi-content">
+                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</p>
+                  <h4 class="reports-kpi-value" id="reports-kpi-revenue">—</h4>
+                  <span class="reports-kpi-meta" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</span>
+                </div>
+              </div>
+              <div class="box reports-kpi-card" data-kpi="confirmation">
+                <div class="reports-kpi-icon">✅</div>
+                <div class="reports-kpi-content">
+                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.label">معدل التأكيد</p>
+                  <h4 class="reports-kpi-value" id="reports-kpi-confirmed">—</h4>
+                  <span class="reports-kpi-meta" id="reports-kpi-confirmed-meta" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.meta">الحجوزات المؤكدة —</span>
+                </div>
+              </div>
+              <div class="box reports-kpi-card" data-kpi="paid">
+                <div class="reports-kpi-icon">💳</div>
+                <div class="reports-kpi-content">
+                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.paid.label">نسبة المدفوع</p>
+                  <h4 class="reports-kpi-value" id="reports-kpi-paid">—</h4>
+                  <span class="reports-kpi-meta" id="reports-kpi-paid-meta" data-i18n data-i18n-key="reservations.reports.kpi.paid.meta">الحجوزات المدفوعة —</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="reports-analytics-grid">
+              <div class="box reports-chart-card">
+                <div class="reports-card-header">
+                  <h4 data-i18n data-i18n-key="reservations.reports.chart.volume.title">📈 تطور الحجوزات</h4>
+                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.volume.hint">آخر 6 أشهر</span>
+                </div>
+                <div class="reports-chart-bars" id="reports-volume-chart"></div>
+              </div>
+              <div class="box reports-chart-card">
+                <div class="reports-card-header">
+                  <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">📊 توزيع الحالات والدفع</h4>
+                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسب مئوية</span>
+                </div>
+                <div class="reports-status-section">
+                  <h5 data-i18n data-i18n-key="reservations.reports.chart.status.statusLabel">الحالات</h5>
+                  <div class="reports-status-progress" id="reports-status-breakdown"></div>
+                </div>
+                <div class="reports-status-section">
+                  <h5 data-i18n data-i18n-key="reservations.reports.chart.status.paymentLabel">الدفع</h5>
+                  <div class="reports-status-progress" id="reports-payment-breakdown"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="reports-detail-grid">
+              <div class="box reports-table-card">
+                <div class="reports-card-header">
+                  <h4 data-i18n data-i18n-key="reservations.reports.topCustomers.title">👥 أفضل العملاء</h4>
+                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topCustomers.hint">حسب إجمالي الإيراد</span>
+                </div>
+                <table class="reports-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.customer">العميل</th>
+                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.count">عدد الحجوزات</th>
+                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.revenue">الإيراد الكلي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reports-top-customers">
+                    <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="box reports-table-card">
+                <div class="reports-card-header">
+                  <h4 data-i18n data-i18n-key="reservations.reports.topEquipment.title">🎥 المعدات الأكثر استخدامًا</h4>
+                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topEquipment.hint">عدد مرات الحجز</span>
+                </div>
+                <table class="reports-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.item">المعدة</th>
+                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.usage">عدد مرات الاستخدام</th>
+                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.revenue">الإيراد المرتبط</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reports-top-equipment">
+                    <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="reports-empty-state" id="reports-empty-state">
+              <div class="reports-empty-icon">📭</div>
+              <h4 data-i18n data-i18n-key="reservations.reports.empty.title">لا توجد بيانات ضمن المعايير الحالية</h4>
+              <p data-i18n data-i18n-key="reservations.reports.empty.subtitle">جرّب تغيير الفترة الزمنية أو إزالة عوامل التصفية لعرض نتائج أخرى.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ✅ تبويب فرعي: التقويم -->
+        <div class="sub-tab" id="calendar-tab">
+          <h4 data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
+          <div id="calendar" class="p-3 bg-white rounded border mt-3"></div>
+        </div>
+      </div> <!-- نهاية تبويب الحجوزات -->
+
+  </div> <!-- نهاية tab-content-wrapper -->
+</div> <!-- نهاية container -->
+
+  <!-- ✅ مودال تعديل المعدة -->
+  <div class="modal fade" id="editEquipmentModal" tabindex="-1" aria-labelledby="editEquipmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="equipment.modal.title">✏️ تعديل بيانات المعدة</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-equipment-form">
+            <input type="hidden" id="edit-equipment-index">
+
+            <div class="mb-3">
+              <label for="edit-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
+              <input type="text" class="form-control" id="edit-equipment-category">
+            </div>
+
+            <div class="mb-3">
+              <label for="edit-equipment-subcategory" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
+              <input type="text" class="form-control" id="edit-equipment-subcategory">
+            </div>
+
+            <div class="mb-3">
+              <label for="edit-equipment-description" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
+              <input type="text" class="form-control" id="edit-equipment-description" required>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="edit-equipment-quantity" class="form-label" data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</label>
+                <input type="number" class="form-control" id="edit-equipment-quantity" min="1">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="edit-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
+                <input type="number" class="form-control" id="edit-equipment-price" min="0" step="0.01">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="edit-equipment-barcode" class="form-label" data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</label>
+              <input type="text" class="form-control" id="edit-equipment-barcode" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="edit-equipment-status" class="form-label" data-i18n data-i18n-key="equipment.form.labels.status">⚙️ الحالة</label>
+              <select class="form-select" id="edit-equipment-status">
+                <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
+                <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
+                <option value="صيانة" data-i18n data-i18n-key="equipment.form.options.maintenance">🛠️ صيانة</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
+              <input type="text" class="form-control" id="edit-equipment-image" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image">
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="equipment.modal.actions.cancel">❌ إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-equipment-changes" data-i18n data-i18n-key="equipment.modal.actions.save">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل / إضافة عميل -->
+  <div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title">✏️ تعديل العميل</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- ✅ تم توحيد أسماء الحقول -->
+        <input type="hidden" id="customer-id">
+        <input class="form-control mb-2" id="customer-name" placeholder="الاسم">
+        <input class="form-control mb-2" id="customer-phone" placeholder="الجوال">
+        <input class="form-control mb-2" id="customer-company" placeholder="الشركة">
+        <input class="form-control mb-2" id="customer-email" placeholder="البريد الإلكتروني">
+        <input class="form-control mb-2" id="customer-address" placeholder="العنوان">
+        <input class="form-control mb-2" id="customer-notes" placeholder="ملاحظات">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="save-edit-btn">💾 حفظ التعديل</button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تعديل الحجز -->
+  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-reservation-form" class="row g-3">
+            <input type="hidden" id="edit-res-index">
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+              <input type="text" class="form-control" id="edit-res-id" disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+              <input type="text" class="form-control" id="edit-res-customer" disabled>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+              <input type="text" class="form-control" id="edit-res-start">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+              <input type="text" class="form-control" id="edit-res-start-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+              <input type="text" class="form-control" id="edit-res-end-time">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
+                <select id="edit-res-discount-type" class="form-select">
+                  <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
+                  <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6 d-flex align-items-center gap-3">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
+              <select id="edit-res-paid" class="form-select">
+                <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
+              <textarea class="form-control" id="edit-res-notes" rows="3" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
+              <div id="edit-selected-technicians-list" class="selected-technicians-list"></div>
+              <button type="button" class="btn btn-outline-primary mt-2" id="open-edit-technician-picker" data-i18n data-i18n-key="technicians.picker.editButton">🔁 تعديل الطاقم</button>
+            </div>
+
+            <div class="col-12">
+              <div id="edit-res-summary" class="alert alert-info"></div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
+              <div class="row g-2 mb-2">
+                <div class="col-md-6">
+                  <input type="text" class="form-control" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
+                </div>
+                <div class="col-md-6">
+                  <input type="text" class="form-control" id="edit-res-equipment-description" list="edit-res-equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.description">
+                  <datalist id="edit-res-equipment-description-options"></datalist>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle reservation-items-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.code">الكود</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.description">الوصف</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.price">السعر</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.image">الصورة</th>
+                      <th data-i18n data-i18n-key="reservations.edit.table.headers.delete">حذف</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-items">
+                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال اختيار طاقم العمل -->
+  <div class="modal fade" id="selectTechniciansModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 align-items-center mb-3">
+            <div class="col-sm-6">
+              <input type="text" class="form-control" id="technician-picker-search" placeholder="🔍 ابحث بالاسم أو الوظيفة أو القسم...">
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="technician-picker-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:40px;"></th>
+                  <th>الاسم</th>
+                  <th>الوظيفة</th>
+                  <th>القسم</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="4" class="text-center text-muted">جاري التحميل...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <span class="text-muted me-auto" id="technician-picker-selection-info"></span>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="apply-technician-selection">تم</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تفاصيل الحجز (التقويم) -->
+  <div class="modal fade" id="calendarReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="calendar.modal.title">📅 تفاصيل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="calendar-reservation-details"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال تفاصيل الحجز من قائمة الحجوزات -->
+  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="reservation-details-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ سكربت رئيسي لتشغيل النظام -->
+</body>
+</html>
