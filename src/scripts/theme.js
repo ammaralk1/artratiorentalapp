@@ -72,16 +72,25 @@ function updateAllToggleButtons(theme) {
 }
 
 export function initThemeToggle(buttonId = 'theme-toggle') {
-  const button = document.getElementById(buttonId) || document.querySelector('.theme-toggle-btn');
-  updateAllToggleButtons(getCurrentTheme());
-  if (!button || button.dataset.listenerAttached) return;
+  const initialTheme = getCurrentTheme();
+  updateAllToggleButtons(initialTheme);
 
-  button.addEventListener('click', () => {
-    const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
-    applyTheme(newTheme);
-    updateAllToggleButtons(newTheme);
+  const buttons = Array.from(document.querySelectorAll('.theme-toggle-btn'));
+  const primaryButton = document.getElementById(buttonId);
+
+  if (primaryButton && !buttons.includes(primaryButton)) {
+    buttons.unshift(primaryButton);
+  }
+
+  buttons.forEach((btn) => {
+    if (!btn || btn.dataset.listenerAttached) return;
+    btn.addEventListener('click', () => {
+      const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme);
+      updateAllToggleButtons(newTheme);
+    });
+    btn.dataset.listenerAttached = 'true';
   });
-  button.dataset.listenerAttached = 'true';
 }
 
 export function applyStoredTheme() {
