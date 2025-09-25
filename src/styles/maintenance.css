@@ -1,0 +1,227 @@
+/* ===================== الصيانة ===================== */
+
+.maintenance-form-box .maintenance-form-header,
+.maintenance-list-box .maintenance-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.maintenance-form-icon {
+  font-size: 2.4rem;
+}
+
+.maintenance-form-hint,
+.maintenance-list-hint {
+  margin: 0;
+  color: var(--clr-muted);
+}
+
+.maintenance-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.maintenance-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.maintenance-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.maintenance-selected-info {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(76, 110, 245, 0.08);
+  background: rgba(248, 250, 255, 0.72);
+  font-size: 0.9rem;
+  color: var(--clr-muted);
+}
+
+.maintenance-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.maintenance-stat {
+  background: rgba(76, 110, 245, 0.08);
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #1f2d52;
+}
+
+.maintenance-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.maintenance-table {
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.maintenance-table {
+  width: 100%;
+}
+
+.maintenance-table thead th,
+.maintenance-table td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.maintenance-table td:first-child,
+.maintenance-table th:first-child,
+.maintenance-table td:nth-child(2),
+.maintenance-table th:nth-child(2) {
+  text-align: right;
+}
+
+body[dir="ltr"] .maintenance-table td:first-child,
+body[dir="ltr"] .maintenance-table th:first-child,
+body[dir="ltr"] .maintenance-table td:nth-child(2),
+body[dir="ltr"] .maintenance-table th:nth-child(2) {
+  text-align: left;
+}
+
+.maintenance-table td:last-child,
+.maintenance-table th:last-child {
+  text-align: center;
+}
+
+.maintenance-issue-text {
+  max-width: none;
+  white-space: normal;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.maintenance-list-box .table-responsive {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.maintenance-empty-state {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px dashed rgba(76, 110, 245, 0.22);
+  border-radius: 16px;
+  text-align: center;
+  margin-top: 18px;
+}
+
+.maintenance-empty-state.active {
+  display: flex;
+}
+
+.maintenance-empty-icon {
+  font-size: 2rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-form-hint,
+:is(html.dark-mode, body.dark-mode) .maintenance-list-hint {
+  color: rgba(203, 213, 225, 0.8);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-selected-info {
+  border: 1px solid rgba(59, 76, 117, 0.35);
+  background: rgba(24, 33, 59, 0.88);
+  color: rgba(203, 213, 225, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-search {
+  background-color: #1f2a44 !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  color: var(--clr-text) !important;
+}
+
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode:focus,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-search:focus {
+  background-color: #1d2942 !important;
+  border-color: rgba(93, 133, 255, 0.75) !important;
+  box-shadow: 0 0 0 4px rgba(76, 110, 245, 0.28);
+  color: var(--clr-text) !important;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-stat {
+  background: rgba(37, 55, 88, 0.7);
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table {
+  border: 1px solid rgba(59, 76, 117, 0.45);
+  background: transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table thead {
+  background: rgba(37, 55, 88, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table thead th {
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody {
+  background: transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr {
+  background: rgba(24, 33, 59, 0.88);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(even) {
+  background: rgba(28, 40, 68, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table td {
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-empty-state {
+  border-color: rgba(93, 133, 255, 0.28);
+  color: rgba(203, 213, 225, 0.75);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-list-box .table-responsive {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody {
+  background: transparent;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(even) {
+  background: rgba(28, 40, 68, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table td {
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.2);
+}
+

@@ -1,4 +1,7 @@
-@import './base.css';
+@import './core.css';
+@import './reservations.css';
+@import './reports.css';
+@import './maintenance.css';
 @import './tabs.css';
 @import './calendar.css';
 @import './forms.css';
