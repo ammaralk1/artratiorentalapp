@@ -46,11 +46,11 @@
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-BTDcW0Eb.js"></script>
+  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-Rl62qDIz.js"></script>
   <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/theme-C7llKhek.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/events-B-cR5B1c.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/events-gPRGQZjE.js">
   <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/auth-5W6mzyky.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/customers-I3zYb6m0.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/customers-DKy8Oalm.js">
   <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/theme-BgWebbgc.css">
 </head>
 <body class="tabs-loading">
@@ -626,6 +626,10 @@
                     <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
                   </select>
                 </div>
+                <div class="reports-filter-group reports-search-group">
+                  <label for="reports-search" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</label>
+                  <input type="text" id="reports-search" class="form-control" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
+                </div>
                 <button type="button" id="reports-refresh" class="btn btn-outline-secondary reports-refresh-btn" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
               </div>
             </div>
@@ -723,6 +727,30 @@
                   </thead>
                   <tbody id="reports-top-equipment">
                     <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="box reports-table-card">
+              <div class="reports-card-header">
+                <h4 data-i18n data-i18n-key="reservations.reports.results.title">📄 تفاصيل الحجوزات</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.results.hint">أحدث الحجوزات المطابقة لعوامل التصفية</span>
+              </div>
+              <div class="table-responsive">
+                <table class="reports-table reports-results-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reports-reservations-body">
+                    <tr><td colspan="6" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -979,13 +1007,14 @@
               <thead class="table-light">
                 <tr>
                   <th style="width:40px;"></th>
-                  <th>الاسم</th>
-                  <th>الوظيفة</th>
-                  <th>القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="4" class="text-center text-muted">جاري التحميل...</td></tr>
+                <tr><td colspan="5" class="text-center text-muted">جاري التحميل...</td></tr>
               </tbody>
             </table>
           </div>
