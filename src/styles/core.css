@@ -457,6 +457,7 @@ textarea {
 .form-select {
   background-position: left 12px center;
   padding-inline-end: 32px;
+}
 
 /* Table Helpers */
 .table-action-buttons {

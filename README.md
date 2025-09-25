@@ -29,8 +29,14 @@ src/
     reservationsTechnicians.js  # وحدة مستقلة لإدارة اختيار الطاقم
     reservationsSummary.js      # حساب وعرض ملخصات الحجوزات
     reservationsFilters.js      # منطق فلاتر الحجوزات ونطاقات التواريخ
-    reservationsList.js         # تصفية الحجوزات وبناء واجهة القائمة والتفاصيل
     reservationsShared.js       # دوال مشتركة (تنسيق النص، حالة الحجز)
+    reservations/
+      renderers.js              # تحكم في التقديم والربط مع DOM
+      list/
+        filter.js               # تصفية الحجوزات وبناء قائمة الإدخالات
+        tiles.js                # إنشاء بطاقات الحجز للواجهة
+        details.js              # إنشاء تفاصيل الحجز للنوافذ المنبثقة
+        index.js                # نقطة تجميع لتصدير دوال القائمة
   styles/
     index.css         # ملف التجميع الرئيسي
     core.css          # المتغيرات الأساسية والمكونات المشتركة
@@ -52,6 +58,8 @@ package.json          # تعريف الحزم وأوامر npm
 - `reservations/controller.js` يتعامل مع طبقة التحكم (تحميل البيانات من التخزين، تنفيذ إجراءات الحذف/التأكيد، تجهيز سياق التعديل، وتسجيل الدوال على `window` عند الحاجة للتكامل مع HTML الحالي).
 - `reservations/events.js` مسؤول عن تهيئة واجهة الحجوزات عند `DOMContentLoaded`؛ يقوم بربط فلاتر البحث، تهيئة Flatpickr، توصيل اختيار الفنيين، واستدعاء `controller.registerReservationGlobals()` و `controller.loadReservationForm()`.
 - `reservations/formUtils.js` يجمع الأدوات المشتركة بين استمارات الإنشاء والتعديل (إضافة المعدات بالوصف، ضبط قيم Flatpickr، توليد قوائم الوصف).
+
+كما تم تفكيك منطق قائمة الحجوزات داخل المجلد `src/scripts/reservations/list/` بحيث تتولى `filter.js` التصفية، و`tiles.js` إنشاء بطاقات الواجهة، و`details.js` بناء تفاصيل الحجز للنوافذ المنبثقة، بينما يوفر `index.js` نقطة تصدير موحدة لهذه الدوال.
 
 يتكامل هذا التنظيم مع نقطة الدخول `src/main.js` التي تستدعي `applyStoredTheme()` ثم `initApp()`؛ وأثناء تهيئة التطبيق يتم استدعاء `setupReservationEvents()` من `reservations/events.js` عبر وحدة التصدير `reservationsUI.js`، مما يضمن تفعيل جميع الوحدات السابقة بالترتيب الصحيح دون الحاجة للاعتماد المباشر على ملف ضخم واحد.
 

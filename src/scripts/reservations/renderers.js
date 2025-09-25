@@ -7,7 +7,7 @@ import {
   filterReservationEntries,
   buildReservationTilesHtml,
   buildReservationDetailsHtml
-} from '../reservationsList.js';
+} from './list/index.js';
 
 export function renderReservationsList({
   containerId = 'reservations-list',
