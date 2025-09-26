@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <title data-i18n data-i18n-key="projects.reports.pageTitle">تقارير المشاريع - نظام التأجير</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <script>
+    (function () {
+      document.documentElement.classList.add('theme-loading');
+      try {
+        var theme = localStorage.getItem('app-theme');
+        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (error) {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      }
+    })();
+  </script>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/artratiorentalapp/assets/projectsReports-3U-pttP6.js"></script>
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/auth-CNAfl19F.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/storage-DOnDLvtb.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/projects-B5HGRUVy.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/projectsCommon-D-frPOvU.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/reservationsSummary-CBdNx1nm.js">
+  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/auth-BVA1-zST.css">
+  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/reports-D2YLlBwg.css">
+</head>
+<body class="theme-loading">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <a href="home.html" class="btn btn-outline-primary btn-lg" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
+        <h2 class="mb-0" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <button class="btn btn-outline-secondary theme-toggle-btn" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+        <button class="btn btn-danger" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+      </div>
+    </div>
+
+    <div class="tab-buttons mb-4">
+      <a class="tab-button active" href="projects.html" data-i18n data-i18n-key="projects.nav.projects">المشاريع</a>
+      <a class="tab-button" href="customer.html" data-i18n data-i18n-key="projects.nav.customers">العملاء</a>
+      <a class="tab-button" href="technician.html" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</a>
+    </div>
+
+    <div class="sub-tab-buttons mb-4">
+      <a class="sub-tab-button" href="projects.html#tab=create" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</a>
+      <a class="sub-tab-button" href="projects.html#tab=list" data-i18n data-i18n-key="projects.subtabs.list">قائمة المشاريع</a>
+      <a class="sub-tab-button active" aria-current="page" href="projects-reports.html" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
+      <a class="sub-tab-button" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+    </div>
+
+    <section class="reports-wrapper">
+      <div class="box p-4 reports-header-card">
+        <div class="reports-header-text">
+          <h1 class="fw-bold mb-2" data-i18n data-i18n-key="projects.reports.title">لوحة تقارير المشاريع</h1>
+          <p class="reports-subtitle" data-i18n data-i18n-key="projects.reports.subtitle">تحليلات تفصيلية لأداء المشاريع، المواعيد النهائية، ونسب التنفيذ.</p>
+        </div>
+        <div class="reports-filters" id="reports-filters">
+          <div class="reports-filter-group">
+            <label for="reports-search" data-i18n data-i18n-key="projects.reports.filters.search">بحث</label>
+            <input type="search" id="reports-search" class="form-control" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
+          </div>
+          <div class="reports-filter-group reports-filter-group--status">
+            <label data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</label>
+            <div class="reports-status-chips" id="reports-status-chips"></div>
+          </div>
+          <div class="reports-filter-group">
+            <label for="reports-payment" data-i18n data-i18n-key="projects.reports.filters.payment">حالة الدفع</label>
+            <select id="reports-payment" class="form-select">
+              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
+              <option value="paid" data-i18n data-i18n-key="projects.paymentStatus.paid">مدفوع</option>
+              <option value="unpaid" data-i18n data-i18n-key="projects.paymentStatus.unpaid">غير مدفوع</option>
+            </select>
+          </div>
+          <div class="reports-filter-group">
+            <label for="reports-date-range" data-i18n data-i18n-key="projects.reports.filters.dateRange">نطاق التاريخ</label>
+            <select id="reports-date-range" class="form-select">
+              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
+              <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
+              <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
+              <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
+              <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
+            </select>
+          </div>
+          <div class="reports-custom-range" id="reports-custom-range">
+            <div class="reports-filter-group">
+              <label for="reports-start-date" data-i18n data-i18n-key="projects.reports.filters.start">من</label>
+              <input type="date" id="reports-start-date" class="form-control">
+            </div>
+            <div class="reports-filter-group">
+              <label for="reports-end-date" data-i18n data-i18n-key="projects.reports.filters.end">إلى</label>
+              <input type="date" id="reports-end-date" class="form-control">
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline-primary reports-refresh-btn" id="reports-refresh" data-i18n data-i18n-key="projects.reports.filters.refresh">تحديث</button>
+        </div>
+      </div>
+
+      <div class="reports-kpi-grid" id="reports-kpi-grid"></div>
+
+      <div class="reports-analytics-grid">
+        <div class="reports-chart-card">
+          <div class="reports-card-header">
+            <h4 data-i18n data-i18n-key="projects.reports.charts.status">توزيع الحالات</h4>
+            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.statusHint">نسبة المشاريع حسب حالة التنفيذ</span>
+          </div>
+          <canvas id="reports-status-chart" height="320"></canvas>
+        </div>
+        <div class="reports-chart-card">
+          <div class="reports-card-header">
+            <h4 data-i18n data-i18n-key="projects.reports.charts.timeline">الإيرادات عبر الزمن</h4>
+            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.timelineHint">إجمالي قيمة المشاريع شهريًا</span>
+          </div>
+          <canvas id="reports-timeline-chart" height="320"></canvas>
+        </div>
+        <div class="reports-chart-card">
+          <div class="reports-card-header">
+            <h4 data-i18n data-i18n-key="projects.reports.charts.expenses">المصاريف مقابل القيمة</h4>
+            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.expensesHint">مقارنة المصاريف مع إجمالي قيمة المشروع</span>
+          </div>
+          <canvas id="reports-expense-chart" height="320"></canvas>
+        </div>
+      </div>
+
+      <div class="reports-detail-grid">
+        <div class="reports-chart-card">
+          <div class="reports-card-header">
+            <h4 data-i18n data-i18n-key="projects.reports.charts.clients">أفضل العملاء</h4>
+            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.clientsHint">أعلى العملاء حسب قيمة المشاريع</span>
+          </div>
+          <canvas id="reports-clients-chart" height="320"></canvas>
+        </div>
+        <div class="reports-table-card">
+          <div class="reports-card-header">
+            <h4 data-i18n data-i18n-key="projects.reports.table.title">قائمة المشاريع</h4>
+            <span class="reports-card-hint" id="reports-table-meta"></span>
+          </div>
+          <div class="table-responsive">
+            <table class="reports-table" id="reports-table">
+              <thead>
+                <tr>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.project">المشروع</th>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.client">العميل</th>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.status">الحالة</th>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.period">الفترة</th>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.value">القيمة</th>
+                  <th data-i18n data-i18n-key="projects.reports.table.columns.payment">الدفع</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="reports-empty-state" id="reports-empty">
+            <span class="reports-empty-icon">📭</span>
+            <p data-i18n data-i18n-key="projects.reports.table.empty">لا توجد مشاريع مطابقة للبحث الحالي.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</body>
+</html>

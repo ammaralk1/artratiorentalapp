@@ -1,0 +1,1 @@
+import{a as e,c as a,i as o,l as d}from"./auth-CNAfl19F.js";import{m as n}from"./storage-DOnDLvtb.js";e();n();a();document.addEventListener("DOMContentLoaded",()=>{o();const t=document.getElementById("logout-btn");t&&!t.dataset.listenerAttached&&(t.addEventListener("click",()=>d()),t.dataset.listenerAttached="true")});
