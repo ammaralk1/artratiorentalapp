@@ -45,6 +45,13 @@ export function generateReservationId() {
   return "RSV-" + String(counter).padStart(4, "0");
 }
 
+export function generateProjectCode() {
+  let counter = parseInt(localStorage.getItem('projectCounter') || '0', 10);
+  counter += 1;
+  localStorage.setItem('projectCounter', counter);
+  return 'PRJ-' + String(counter).padStart(4, '0');
+}
+
 export function formatDateTime(dateStr, overrides = {}) {
   if (!dateStr) return "-";
   const date = new Date(dateStr);

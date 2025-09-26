@@ -18,7 +18,9 @@ registerTranslations({
     'customerDetails.toast.updateSuccess': '✅ تم تحديث بيانات العميل',
     'customerDetails.errors.notFound': '⚠️ لم يتم العثور على هذا العميل.',
     'customerDetails.errors.missingId': '⚠️ لا يوجد معرف عميل في الرابط.',
-    'customerDetails.edit.modalTitle': '✏️ تعديل العميل'
+    'customerDetails.edit.modalTitle': '✏️ تعديل العميل',
+    'customerProjects.title': '📁 مشاريع العميل',
+    'customerProjects.empty': 'لا توجد مشاريع مرتبطة بهذا العميل.'
   },
   en: {
     'customerDetails.pageTitle': 'Customer Details',
@@ -37,6 +39,8 @@ registerTranslations({
     'customerDetails.toast.updateSuccess': '✅ Client information updated',
     'customerDetails.errors.notFound': '⚠️ This client could not be found.',
     'customerDetails.errors.missingId': '⚠️ Missing client identifier in the URL.',
-    'customerDetails.edit.modalTitle': '✏️ Edit Client'
+    'customerDetails.edit.modalTitle': '✏️ Edit Client',
+    'customerProjects.title': '📁 Client Projects',
+    'customerProjects.empty': 'No projects are linked to this client.'
   }
 });

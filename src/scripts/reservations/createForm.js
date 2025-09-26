@@ -90,6 +90,7 @@ function applyProjectContextToForm(project, { forceNotes = false } = {}) {
     notesInput.value = project.description;
   }
 
+  updateCreateProjectTaxState();
   renderDraftReservationSummary();
 }
 
@@ -121,6 +122,28 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
   } else {
     select.value = '';
   }
+
+  updateCreateProjectTaxState();
+}
+
+function updateCreateProjectTaxState() {
+  const projectSelect = document.getElementById('res-project');
+  const taxCheckbox = document.getElementById('res-tax');
+  if (!taxCheckbox) return;
+
+  const isLinked = Boolean(projectSelect?.value);
+  if (isLinked) {
+    taxCheckbox.checked = false;
+    taxCheckbox.disabled = true;
+    taxCheckbox.classList.add('disabled');
+  } else {
+    const wasDisabled = taxCheckbox.disabled;
+    taxCheckbox.disabled = false;
+    taxCheckbox.classList.remove('disabled');
+    if (wasDisabled) {
+      taxCheckbox.checked = false;
+    }
+  }
 }
 
 function setupProjectSelection() {
@@ -130,6 +153,9 @@ function setupProjectSelection() {
     const project = findProjectById(select.value);
     if (project) {
       applyProjectContextToForm(project);
+    } else {
+      updateCreateProjectTaxState();
+      renderDraftReservationSummary();
     }
   });
   select.dataset.listenerAttached = 'true';
@@ -145,10 +171,13 @@ function applyPendingProjectContext() {
     const select = document.getElementById('res-project');
     if (select) {
       select.value = String(context.projectId);
+      updateCreateProjectTaxState();
     }
     const project = findProjectById(context.projectId);
     if (project) {
       applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
+    } else {
+      renderDraftReservationSummary();
     }
     if (context.start) {
       setDateTimeInputs('res-start', 'res-start-time', context.start);
@@ -332,7 +361,9 @@ function renderDraftReservationSummary() {
   const discount = parseFloat(normalizeNumbers(rawValue)) || 0;
 
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
-  const applyTax = document.getElementById('res-tax')?.checked || false;
+  const projectLinked = Boolean(document.getElementById('res-project')?.value);
+  const taxCheckbox = document.getElementById('res-tax');
+  const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
   const { start, end } = getCreateReservationDateRange();
 
@@ -479,7 +510,6 @@ function handleReservationSubmit() {
   const notes = document.getElementById('res-notes')?.value || '';
   const discount = parseFloat(normalizeNumbers(document.getElementById('res-discount')?.value)) || 0;
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
-  const applyTax = document.getElementById('res-tax')?.checked || false;
   const paymentStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
 
   const technicianIds = getSelectedTechnicians();
@@ -515,6 +545,10 @@ function handleReservationSubmit() {
       return;
     }
   }
+
+  const taxCheckbox = document.getElementById('res-tax');
+  const projectLinked = Boolean(projectIdValue);
+  const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
   const newReservation = {
     id: Date.now(),
@@ -562,7 +596,12 @@ function resetForm() {
   document.getElementById('res-end-time').value = '';
   document.getElementById('res-notes').value = '';
   document.getElementById('res-discount').value = '';
-  document.getElementById('res-tax').checked = false;
+  const taxCheckbox = document.getElementById('res-tax');
+  if (taxCheckbox) {
+    taxCheckbox.checked = false;
+    taxCheckbox.disabled = false;
+    taxCheckbox.classList.remove('disabled');
+  }
   const projectSelect = document.getElementById('res-project');
   if (projectSelect) projectSelect.value = '';
   const descriptionInput = document.getElementById('equipment-description');
@@ -572,6 +611,7 @@ function resetForm() {
   resetSelectedTechnicians();
   setSelectedItems([]);
   renderReservationItems();
+  updateCreateProjectTaxState();
   renderDraftReservationSummary();
 }
 

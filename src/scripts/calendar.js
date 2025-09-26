@@ -1,6 +1,7 @@
 import { loadData } from './storage.js';
 import { formatDateTime, normalizeNumbers } from './utils.js';
 import { syncTechniciansStatuses } from './technicians.js';
+import { calculateReservationDays } from './reservationsSummary.js';
 import { t, getCurrentLanguage } from './language.js';
 
 let calendarInstance = null;
@@ -93,14 +94,41 @@ function showReservationModal(reservation) {
   const assignedTechnicians = (reservation.technicians || [])
     .map((id) => techniciansMap.get(String(id)))
     .filter(Boolean);
-  const baseCost = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.price || 0)), 0);
+  const rentalDays = calculateReservationDays(reservation.start, reservation.end);
+  const equipmentDailyTotal = items.reduce(
+    (sum, item) => sum + ((item.qty || 1) * (item.price || 0)),
+    0
+  );
+  const equipmentTotal = equipmentDailyTotal * rentalDays;
+  const resolveTechnicianDailyRate = (technician = {}) => {
+    const candidates = [
+      technician.dailyWage,
+      technician.daily_rate,
+      technician.dailyRate,
+      technician.wage,
+      technician.rate
+    ];
+
+    for (const value of candidates) {
+      if (value == null) continue;
+      const parsed = parseFloat(normalizeNumbers(String(value)));
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return 0;
+  };
+  const crewDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
+  const crewTotal = crewDailyTotal * rentalDays;
+  const discountBase = equipmentTotal + crewTotal;
   const discountAmount = (() => {
     const discountValue = parseFloat(reservation.discount) || 0;
     if (!discountValue) return 0;
     if (reservation.discountType === 'amount') return discountValue;
-    return baseCost * (discountValue / 100);
+    return discountBase * (discountValue / 100);
   })();
-  const taxableAmount = Math.max(0, baseCost - discountAmount);
+  const taxableAmount = Math.max(0, discountBase - discountAmount);
   const taxAmount = reservation.applyTax ? taxableAmount * 0.15 : 0;
   const finalTotal = reservation.cost ?? Math.round(taxableAmount + taxAmount);
 
@@ -128,7 +156,9 @@ function showReservationModal(reservation) {
     : `<tr><td colspan="6" class="text-center">${t('calendar.labels.noEquipment', 'لا توجد معدات')}</td></tr>`;
 
   const summaryRows = [
-    `<div>${t('calendar.summary.baseCost', '💵 إجمالي المعدات: <strong>{value} ريال</strong>').replace('{value}', baseCost.toFixed(2))}</div>`
+    `<div>${t('calendar.summary.baseCost', '💵 إجمالي المعدات: <strong>{value} ريال</strong>').replace('{value}', equipmentTotal.toFixed(2))}</div>`,
+    `<div>${t('calendar.summary.crewTotal', '😎 إجمالي الفريق: <strong>{value} ريال</strong>').replace('{value}', crewTotal.toFixed(2))}</div>`,
+    `<div>${t('calendar.summary.duration', '⏱️ عدد الأيام: <strong>{value}</strong>').replace('{value}', normalizeNumbers(String(rentalDays)))}</div>`
   ];
 
   if (discountAmount > 0) {

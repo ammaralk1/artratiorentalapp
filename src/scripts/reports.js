@@ -11,12 +11,14 @@ const state = {
   range: 'last30',
   status: 'all',
   payment: 'all',
+  search: '',
   start: null,
   end: null
 };
 
 let initialized = false;
 let languageListenerAttached = false;
+let searchDebounceTimer = null;
 
 function translate(key, arFallback, enFallback = arFallback) {
   const fallback = getCurrentLanguage() === 'en' ? (enFallback ?? arFallback) : arFallback;
@@ -51,7 +53,7 @@ function resetFormatters() {
 
 function getActiveLocale() {
   const lang = (getCurrentLanguage() || 'ar').toLowerCase();
-  return lang.startsWith('ar') ? 'ar-SA' : 'en-US';
+  return lang.startsWith('ar') ? 'ar-EG' : 'en-US';
 }
 
 function getFormatters() {
@@ -85,6 +87,7 @@ export function initReports() {
   const endInput = document.getElementById('reports-end');
   const refreshBtn = document.getElementById('reports-refresh');
   const customRangeWrapper = document.getElementById('reports-custom-range');
+  const searchInput = document.getElementById('reports-search');
 
   if (!rangeSelect) {
     return;
@@ -108,6 +111,17 @@ export function initReports() {
   paymentSelect?.addEventListener('change', () => {
     state.payment = paymentSelect.value;
     renderReports();
+  });
+
+  searchInput?.addEventListener('input', () => {
+    const value = searchInput.value || '';
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+    searchDebounceTimer = setTimeout(() => {
+      state.search = value;
+      renderReports();
+    }, 220);
   });
 
   startInput?.addEventListener('change', () => {
@@ -140,9 +154,9 @@ export function initReports() {
 }
 
 export function renderReports() {
-  const { reservations = [], customers = [], equipment = [] } = loadData();
+  const { reservations = [], customers = [], equipment = [], technicians = [] } = loadData();
 
-  const filtered = filterReservations(reservations, state);
+  const filtered = filterReservations(reservations, state, customers, equipment, technicians);
   const metrics = calculateMetrics(filtered);
   const trend = calculateMonthlyTrend(filtered);
   const statusBreakdown = calculateStatusBreakdown(filtered);
@@ -156,6 +170,7 @@ export function renderReports() {
   renderProgressSection('reports-payment-breakdown', paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
+  renderReservationsTable(filtered, customers, technicians);
   toggleEmptyState(filtered.length === 0);
 }
 
@@ -228,8 +243,18 @@ function toggleCustomRange(wrapper, isActive) {
   wrapper.classList.toggle('active', Boolean(isActive));
 }
 
-function filterReservations(reservations, filters) {
+function normalizeSearchText(value) {
+  return normalizeNumbers(String(value || '')).toLowerCase().trim();
+}
+
+function filterReservations(reservations, filters, customers, equipment, technicians) {
   const { startDate, endDate } = resolveRange(filters);
+  const searchTerm = normalizeSearchText(filters.search);
+  const hasSearch = Boolean(searchTerm);
+
+  const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
+  const equipmentMap = new Map((equipment || []).map((item) => [normalizeBarcode(item?.barcode), item]));
+  const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
 
   return (reservations || []).filter((reservation) => {
     const start = reservation?.start ? new Date(reservation.start) : null;
@@ -238,15 +263,65 @@ function filterReservations(reservations, filters) {
     if (startDate && start < startDate) return false;
     if (endDate && start > endDate) return false;
 
-    if (filters.status === 'confirmed' && !isReservationConfirmed(reservation)) return false;
-    if (filters.status === 'pending' && isReservationConfirmed(reservation)) return false;
-    if (filters.status === 'completed' && !isReservationCompleted(reservation)) return false;
+    const statusValue = getReservationStatusValue(reservation);
+    if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed')) return false;
+    if (filters.status === 'pending' && statusValue !== 'pending') return false;
+    if (filters.status === 'completed' && statusValue !== 'completed') return false;
 
-    if (filters.payment === 'paid' && !reservation?.paid) return false;
-    if (filters.payment === 'unpaid' && reservation?.paid) return false;
+    const paid = isReservationPaid(reservation);
+    if (filters.payment === 'paid' && !paid) return false;
+    if (filters.payment === 'unpaid' && paid) return false;
+
+    if (hasSearch && !matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, technicianMap)) {
+      return false;
+    }
 
     return true;
   });
+}
+
+function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, technicianMap) {
+  const parts = [];
+
+  const reservationCode = reservation?.reservationId || reservation?.id;
+  if (reservationCode) parts.push(reservationCode);
+
+  if (reservation?.notes) parts.push(reservation.notes);
+
+  const statusValue = getReservationStatusValue(reservation);
+  if (statusValue) parts.push(statusValue);
+
+  const paymentStatus = reservation?.paymentStatus || reservation?.payment_status;
+  if (paymentStatus) parts.push(paymentStatus);
+  if (reservation?.paid != null) {
+    parts.push(reservation.paid ? 'paid' : 'unpaid');
+  }
+
+  const customer = customerMap.get(String(reservation?.customerId));
+  if (customer) {
+    parts.push(customer.customerName, customer.company_name || customer.companyName, customer.contact_person || '');
+  }
+
+  parts.push(paymentLabelText(reservation));
+
+  (reservation?.items || []).forEach((item) => {
+    if (item?.desc) parts.push(item.desc);
+    if (item?.barcode) parts.push(item.barcode);
+    const equipmentRecord = equipmentMap.get(normalizeBarcode(item?.barcode));
+    if (equipmentRecord) {
+      parts.push(equipmentRecord.desc, equipmentRecord.description, equipmentRecord.name);
+    }
+  });
+
+  (reservation?.technicians || []).forEach((technicianId) => {
+    const technician = technicianMap.get(String(technicianId));
+    if (technician) {
+      parts.push(technician.name, technician.role, technician.department);
+    }
+  });
+
+  const haystack = normalizeSearchText(parts.filter(Boolean).join(' '));
+  return haystack.includes(searchTerm);
 }
 
 function resolveRange({ range, start, end }) {
@@ -283,20 +358,27 @@ function resolveRange({ range, start, end }) {
     }
     case 'thisMonth': {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      endDate.setTime(endOfMonth.setHours(23, 59, 59, 999));
       break;
     }
     case 'thisQuarter': {
       const quarter = Math.floor(now.getMonth() / 3);
       startDate = new Date(now.getFullYear(), quarter * 3, 1);
+      const endOfQuarter = new Date(now.getFullYear(), (quarter + 1) * 3, 0);
+      endDate.setTime(endOfQuarter.setHours(23, 59, 59, 999));
       break;
     }
     case 'thisYear': {
       startDate = new Date(now.getFullYear(), 0, 1);
+      const endOfYear = new Date(now.getFullYear(), 12, 0);
+      endDate.setTime(endOfYear.setHours(23, 59, 59, 999));
       break;
     }
     case 'all':
     default:
       startDate = null;
+      endDate = null;
       break;
   }
 
@@ -312,14 +394,101 @@ function isValidDate(date) {
 }
 
 function isReservationConfirmed(reservation) {
+  const statusValue = getReservationStatusValue(reservation);
+  if (statusValue === 'confirmed' || statusValue === 'completed') {
+    return true;
+  }
   return reservation?.confirmed === true || reservation?.confirmed === 'true';
+}
+
+const STATUS_MAP = new Map([
+  ['confirmed', 'confirmed'],
+  ['مؤكد', 'confirmed'],
+  ['مؤكدة', 'confirmed'],
+  ['approved', 'confirmed'],
+  ['pending', 'pending'],
+  ['قيد التأكيد', 'pending'],
+  ['غير مؤكد', 'pending'],
+  ['in-progress', 'pending'],
+  ['awaiting', 'pending'],
+  ['completed', 'completed'],
+  ['منتهي', 'completed'],
+  ['منتهية', 'completed'],
+  ['done', 'completed'],
+  ['finished', 'completed'],
+  ['cancelled', 'cancelled'],
+  ['ملغي', 'cancelled']
+]);
+
+const PAYMENT_MAP = new Map([
+  ['paid', true],
+  ['مدفوع', true],
+  ['مدفوعة', true],
+  ['تم الدفع', true],
+  ['completed', true],
+  ['unpaid', false],
+  ['غير مدفوع', false],
+  ['غير مدفوعة', false],
+  ['pending', false],
+  ['قيد الدفع', false]
+]);
+
+function normalizeStatusValue(value = '') {
+  const key = String(value).toLowerCase().trim();
+  if (!key) return '';
+  return STATUS_MAP.get(key) || key;
+}
+
+function isReservationPaid(reservation) {
+  const paymentFields = [
+    reservation?.paymentStatus,
+    reservation?.payment_status,
+    reservation?.payment,
+    reservation?.paymentState,
+    reservation?.payment_state
+  ];
+
+  for (const field of paymentFields) {
+    const key = String(field || '').toLowerCase().trim();
+    if (!key) continue;
+    if (PAYMENT_MAP.has(key)) {
+      return PAYMENT_MAP.get(key);
+    }
+  }
+
+  return reservation?.paid === true || reservation?.paid === 'true';
+}
+
+function getReservationStatusValue(reservation) {
+  const statusFields = [
+    reservation?.status,
+    reservation?.reservationStatus,
+    reservation?.reservation_status,
+    reservation?.state
+  ];
+
+  for (const field of statusFields) {
+    const value = normalizeStatusValue(field);
+    if (value) {
+      if (value === 'cancelled') return 'pending';
+      return value;
+    }
+  }
+
+  if (isReservationCompleted(reservation)) {
+    return 'completed';
+  }
+  if (reservation?.confirmed === true || reservation?.confirmed === 'true') {
+    return 'confirmed';
+  }
+  return 'pending';
 }
 
 function calculateMetrics(reservations) {
   const total = reservations.length;
   const confirmed = reservations.filter(isReservationConfirmed).length;
   const completed = reservations.filter(isReservationCompleted).length;
-  const paidCount = reservations.filter((res) => res?.paid).length;
+  const paidCount = reservations.filter(isReservationPaid).length;
 
   const revenue = reservations.reduce((sum, res) => sum + (Number(res?.cost) || 0), 0);
   const average = total ? revenue / total : 0;
@@ -360,10 +529,27 @@ function calculateMonthlyTrend(reservations) {
 }
 
 function calculateStatusBreakdown(reservations) {
-  const total = reservations.length || 1;
-  const confirmed = reservations.filter(isReservationConfirmed).length;
-  const pending = reservations.length - confirmed;
-  const completed = reservations.filter(isReservationCompleted).length;
+  const counts = {
+    confirmed: 0,
+    pending: 0,
+    completed: 0
+  };
+
+  (reservations || []).forEach((reservation) => {
+    const status = getReservationStatusValue(reservation);
+    if (status === 'completed') {
+      counts.completed += 1;
+    } else if (status === 'confirmed') {
+      counts.confirmed += 1;
+    } else {
+      counts.pending += 1;
+    }
+  });
+
+  const total = Math.max(1, (reservations || []).length);
+  const confirmed = counts.confirmed;
+  const pending = counts.pending;
+  const completed = counts.completed;
 
   return [
     {
@@ -392,7 +578,7 @@ function calculateStatusBreakdown(reservations) {
 
 function calculatePaymentBreakdown(reservations) {
   const total = reservations.length || 1;
-  const paid = reservations.filter((res) => res?.paid).length;
+  const paid = reservations.filter(isReservationPaid).length;
   const unpaid = reservations.length - paid;
 
   return [
@@ -464,6 +650,37 @@ function calculateTopEquipment(reservations, equipment) {
   return Array.from(totals.values())
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
+}
+
+function renderReservationsTable(reservations, customers, technicians) {
+  const tbody = document.getElementById('reports-reservations-body');
+  if (!tbody) return;
+
+  if (!reservations || reservations.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-muted">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return;
+  }
+
+  const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
+  const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
+
+  const rows = [...reservations]
+    .sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0))
+    .slice(0, 20)
+    .map((reservation) => formatReservationRow(reservation, customerMap, technicianMap));
+
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr>
+        <td>${row.code}</td>
+        <td>${row.customer}</td>
+        <td>${row.date}</td>
+        <td>${row.status}</td>
+        <td>${row.payment}</td>
+        <td>${row.total}</td>
+      </tr>
+    `)
+    .join('');
 }
 
 function renderTrendChart(data) {
@@ -556,6 +773,75 @@ function renderTopEquipment(rows) {
     .join('');
 }
 
+function formatReservationRow(reservation, customerMap, technicianMap) {
+  const code = reservation?.reservationId || reservation?.id || '—';
+  const customer = customerMap.get(String(reservation?.customerId));
+  const customerName = customer?.customerName
+    || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
+
+  const dateLabel = formatDateTime(reservation?.start);
+  const statusLabel = formatReservationStatus(reservation);
+  const paymentLabel = paymentLabelText(reservation);
+  const totalLabel = formatCurrency(reservation?.cost || 0);
+
+  const technicians = (reservation?.technicians || [])
+    .map((id) => technicianMap.get(String(id))?.name)
+    .filter(Boolean);
+
+  const separator = translate('reservations.list.crew.separator', '، ', ', ');
+  const techniciansDisplay = technicians
+    .map((name) => escapeHtml(name))
+    .join(escapeHtml(separator));
+
+  const customerDisplay = technicians.length
+    ? `${escapeHtml(customerName)}<br><small class="text-muted">${techniciansDisplay}</small>`
+    : escapeHtml(customerName);
+
+  return {
+    code: escapeHtml(code),
+    customer: customerDisplay,
+    date: escapeHtml(dateLabel),
+    status: escapeHtml(statusLabel),
+    payment: escapeHtml(paymentLabel),
+    total: escapeHtml(totalLabel)
+  };
+}
+
+function paymentLabelText(reservation) {
+  return isReservationPaid(reservation)
+    ? translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid')
+    : translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid');
+}
+
+function formatReservationStatus(reservation) {
+  const statusValue = getReservationStatusValue(reservation);
+  if (statusValue === 'completed') {
+    return translate('reservations.list.status.completed', '📁 منتهي', 'Completed');
+  }
+  if (statusValue === 'confirmed') {
+    return translate('reservations.list.status.confirmed', '✅ مؤكد', 'Confirmed');
+  }
+  if (statusValue === 'pending') {
+    return translate('reservations.list.status.pending', '⏳ غير مؤكد', 'Pending');
+  }
+  return escapeHtml(statusValue);
+}
+
+function formatDateTime(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  const locale = getActiveLocale();
+  const formatter = new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  return normalizeNumbers(formatter.format(date));
+}
+
 function updateKpiCards(metrics) {
   const totalEl = document.getElementById('reports-kpi-total');
   const totalMetaEl = document.getElementById('reports-kpi-total-meta');
@@ -607,6 +893,15 @@ function toggleEmptyState(isEmpty) {
   const emptyState = document.getElementById('reports-empty-state');
   if (!emptyState) return;
   emptyState.classList.toggle('active', Boolean(isEmpty));
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function formatNumber(value) {

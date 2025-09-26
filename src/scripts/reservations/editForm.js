@@ -1,7 +1,11 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers } from '../utils.js';
-import { resolveItemImage, findEquipmentByBarcode } from '../reservationsEquipment.js';
+import {
+  resolveItemImage,
+  findEquipmentByBarcode,
+  isEquipmentInMaintenance
+} from '../reservationsEquipment.js';
 import { renderEditSummary } from '../reservationsSummary.js';
 import {
   editReservation,
@@ -69,7 +73,6 @@ export function updateEditReservationSummary() {
 
   const discountInput = document.getElementById('edit-res-discount');
   const discountTypeSelect = document.getElementById('edit-res-discount-type');
-  const taxCheckbox = document.getElementById('edit-res-tax');
   const paidSelect = document.getElementById('edit-res-paid');
   if (paidSelect && !paidSelect.dataset.listenerAttached) {
     paidSelect.addEventListener('change', updateEditReservationSummary);
@@ -81,17 +84,22 @@ export function updateEditReservationSummary() {
 
   const discount = parseFloat(rawDiscount) || 0;
   const discountType = discountTypeSelect?.value || 'percent';
-  const applyTax = taxCheckbox?.checked || false;
+  const projectLinked = Boolean(document.getElementById('edit-res-project')?.value);
+  const taxCheckbox = document.getElementById('edit-res-tax');
+  const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = paidSelect?.value || 'unpaid';
 
   const { items: editingItems = [] } = getEditingState();
+  const { start, end } = getEditReservationDateRange();
 
   summaryEl.innerHTML = renderEditSummary({
     items: editingItems,
     discount,
     discountType,
     applyTax,
-    paidStatus
+    paidStatus,
+    start,
+    end
   });
 }
 

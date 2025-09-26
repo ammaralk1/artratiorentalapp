@@ -42,6 +42,64 @@ function ensureModalInstance(modalElement, factory) {
   return null;
 }
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function populateEditProjectSelect(projects = [], reservation = null) {
+  const select = document.getElementById('edit-res-project');
+  if (!select) return;
+
+  const placeholder = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
+  const orphanLabel = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
+  const currentValue = reservation?.projectId ? String(reservation.projectId) : '';
+  const sorted = Array.isArray(projects)
+    ? [...projects].sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')))
+    : [];
+
+  const options = [`<option value="">${escapeHtml(placeholder)}</option>`];
+
+  sorted.forEach((project) => {
+    options.push(`<option value="${escapeHtml(project.id)}">${escapeHtml(project.title || placeholder)}</option>`);
+  });
+
+  if (currentValue && !sorted.some((project) => String(project.id) === currentValue)) {
+    options.push(`<option value="${escapeHtml(currentValue)}">${escapeHtml(orphanLabel)}</option>`);
+  }
+
+  select.innerHTML = options.join('');
+  if (currentValue) {
+    select.value = currentValue;
+  } else {
+    select.value = '';
+  }
+}
+
+function updateEditProjectTaxState() {
+  const projectSelect = document.getElementById('edit-res-project');
+  const taxCheckbox = document.getElementById('edit-res-tax');
+  if (!taxCheckbox) return;
+
+  const isLinked = Boolean(projectSelect?.value);
+  if (isLinked) {
+    taxCheckbox.checked = false;
+    taxCheckbox.disabled = true;
+    taxCheckbox.classList.add('disabled');
+  } else {
+    const wasDisabled = taxCheckbox.disabled;
+    taxCheckbox.disabled = false;
+    taxCheckbox.classList.remove('disabled');
+    if (wasDisabled) {
+      taxCheckbox.checked = false;
+    }
+  }
+}
+
 export function editReservation(index, {
   populateEquipmentDescriptionLists,
   setFlatpickrValue,
@@ -50,7 +108,7 @@ export function editReservation(index, {
   updateEditReservationSummary,
   ensureModal
 } = {}) {
-  const { reservations, customers } = loadData();
+  const { reservations, customers, projects } = loadData();
   const reservation = reservations?.[index];
 
   if (!reservation) {
@@ -59,6 +117,7 @@ export function editReservation(index, {
   }
 
   populateEquipmentDescriptionLists?.();
+  populateEditProjectSelect(projects || [], reservation);
 
   const normalizedItems = reservation.items
     ? reservation.items.map(item => ({
@@ -98,7 +157,7 @@ export function editReservation(index, {
   if (discountTypeSelect) discountTypeSelect.value = reservation.discountType || 'percent';
 
   const taxCheckbox = document.getElementById('edit-res-tax');
-  if (taxCheckbox) taxCheckbox.checked = !!reservation.applyTax;
+  if (taxCheckbox) taxCheckbox.checked = reservation.projectId ? false : !!reservation.applyTax;
 
   const confirmedCheckbox = document.getElementById('edit-res-confirmed');
   if (confirmedCheckbox) confirmedCheckbox.checked = reservation.confirmed === true || reservation.confirmed === 'true';
@@ -109,6 +168,7 @@ export function editReservation(index, {
   setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
 
   renderEditItems?.(normalizedItems);
+  updateEditProjectTaxState();
   updateEditReservationSummary?.();
 
   const modalElement = document.getElementById('editReservationModal');
@@ -138,9 +198,9 @@ export function saveReservationChanges({
   const discountRaw = normalizeNumbers(document.getElementById('edit-res-discount')?.value || '0');
   const discount = parseFloat(discountRaw) || 0;
   const discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
-  const applyTax = document.getElementById('edit-res-tax')?.checked || false;
   const confirmed = document.getElementById('edit-res-confirmed')?.checked || false;
   const paidStatus = document.getElementById('edit-res-paid')?.value || 'unpaid';
+  const projectIdValue = document.getElementById('edit-res-project')?.value || '';
   const technicianIds = getEditingTechnicians();
 
   if (!startDate || !endDate) {
@@ -207,19 +267,31 @@ export function saveReservationChanges({
   reservation.notes = notes;
   reservation.discount = discount;
   reservation.discountType = discountType;
+  const taxCheckbox = document.getElementById('edit-res-tax');
+  const projectLinked = Boolean(projectIdValue);
+  const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
+
   reservation.applyTax = applyTax;
   reservation.confirmed = confirmed;
   reservation.paid = paidStatus === 'paid';
   reservation.items = [...editingItems];
   reservation.technicians = [...technicianIds];
-  reservation.cost = calculateReservationTotal(reservation.items || [], discount, discountType, applyTax);
+  reservation.projectId = projectIdValue ? String(projectIdValue) : null;
+  reservation.cost = calculateReservationTotal(
+    reservation.items || [],
+    discount,
+    discountType,
+    applyTax,
+    reservation.technicians || [],
+    { start, end }
+  );
 
   saveData({ reservations });
   showToast(t('reservations.toast.updated', '✅ تم حفظ التعديلات على الحجز'));
 
   updateEditReservationSummary?.();
   clearEditingState();
-  handleReservationsMutation?.();
+  handleReservationsMutation?.({ type: 'updated', reservation });
   renderReservations?.();
   populateEquipmentDescriptionLists?.();
 
@@ -250,6 +322,15 @@ export function setupEditReservationModalEvents(context = {}) {
   if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
     taxCheckbox.addEventListener('change', () => updateEditReservationSummary?.());
     taxCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  const projectSelect = document.getElementById('edit-res-project');
+  if (projectSelect && !projectSelect.dataset.listenerAttached) {
+    projectSelect.addEventListener('change', () => {
+      updateEditProjectTaxState();
+      updateEditReservationSummary?.();
+    });
+    projectSelect.dataset.listenerAttached = 'true';
   }
 
   const saveBtn = document.getElementById('save-reservation-changes');

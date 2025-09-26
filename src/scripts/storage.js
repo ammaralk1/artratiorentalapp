@@ -5,16 +5,18 @@ export function loadData() {
   const equipment = JSON.parse(localStorage.getItem("equipmentList") || "[]");
   const technicians = JSON.parse(localStorage.getItem("techniciansList") || "[]");
   const maintenance = JSON.parse(localStorage.getItem("maintenanceList") || "[]");
+  const projects = JSON.parse(localStorage.getItem("projectsList") || "[]");
 
-  return { customers, reservations, equipment, technicians, maintenance };
+  return { customers, reservations, equipment, technicians, maintenance, projects };
 }
 
-export function saveData({ customers, reservations, equipment, technicians, maintenance }) {
+export function saveData({ customers, reservations, equipment, technicians, maintenance, projects }) {
   if (customers) localStorage.setItem("customersList", JSON.stringify(customers));
   if (reservations) localStorage.setItem("reservationsList", JSON.stringify(reservations));
   if (equipment) localStorage.setItem("equipmentList", JSON.stringify(equipment));
   if (technicians) localStorage.setItem("techniciansList", JSON.stringify(technicians));
   if (maintenance) localStorage.setItem("maintenanceList", JSON.stringify(maintenance));
+  if (projects) localStorage.setItem("projectsList", JSON.stringify(projects));
 }
 
 // ✅ نقل البيانات من النظام القديم إلى الجديد (مرة واحدة)
@@ -30,5 +32,8 @@ export function migrateOldData() {
   }
   if (localStorage.getItem("technicians") && !localStorage.getItem("techniciansList")) {
     localStorage.setItem("techniciansList", localStorage.getItem("technicians"));
+  }
+  if (!localStorage.getItem("projectsList")) {
+    localStorage.setItem("projectsList", "[]");
   }
 }

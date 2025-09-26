@@ -895,13 +895,6 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
-              <select id="edit-res-project" class="form-select">
-                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
               <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
               <input type="text" class="form-control" id="edit-res-start">
             </div>
@@ -920,6 +913,25 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
+              <select id="edit-res-project" class="form-select">
+                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex flex-wrap align-items-center gap-3 mt-4 mt-md-0">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                  <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+                </div>
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                  <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
               <div class="input-group">
                 <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
@@ -927,16 +939,6 @@
                   <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
                   <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
                 </select>
-              </div>
-            </div>
-            <div class="col-md-6 d-flex align-items-center gap-3">
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-tax">
-                <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
-              </div>
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
-                <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
               </div>
             </div>
 

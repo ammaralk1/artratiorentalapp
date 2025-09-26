@@ -9,6 +9,8 @@ import {
   buildReservationDetailsHtml
 } from './list/index.js';
 
+const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
+
 export function renderReservationsList({
   containerId = 'reservations-list',
   filters = null,
@@ -16,8 +18,9 @@ export function renderReservationsList({
   onConfirmReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
-  const { reservations = [], customers = [], technicians: storedTechnicians = [] } = loadData();
+  const { reservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
   const technicians = Array.isArray(syncedTechnicians) ? syncedTechnicians : (storedTechnicians || []);
+  const projectsMap = new Map((projects || []).map((project) => [String(project.id), project]));
 
   const container = document.getElementById(containerId);
   if (!container) {
@@ -38,7 +41,8 @@ export function renderReservationsList({
     reservations,
     filters: activeFilters,
     customersMap,
-    techniciansMap
+    techniciansMap,
+    projectsMap
   });
 
   if (filteredEntries.length === 0) {
@@ -49,7 +53,8 @@ export function renderReservationsList({
   container.innerHTML = `<div class="reservations-grid">${buildReservationTilesHtml({
     entries: filteredEntries,
     customersMap,
-    techniciansMap
+    techniciansMap,
+    projectsMap
   })}</div>`;
 
   container.querySelectorAll('[data-action="details"]').forEach((tile) => {
@@ -79,7 +84,7 @@ export function renderReservationDetails(index, {
   onDelete,
   getEditContext
 } = {}) {
-  const { reservations = [], customers = [] } = loadData();
+  const { reservations = [], customers = [], projects = [] } = loadData();
   const reservation = reservations[index];
   if (!reservation) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
@@ -87,10 +92,11 @@ export function renderReservationDetails(index, {
   }
 
   const customer = customers.find((c) => String(c.id) === String(reservation.customerId));
+  const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
   if (body) {
     const techniciansList = syncTechniciansStatuses() || [];
-    body.innerHTML = buildReservationDetailsHtml(reservation, customer, techniciansList, index);
+    body.innerHTML = buildReservationDetailsHtml(reservation, customer, techniciansList, index, project);
   }
 
   const modalEl = document.getElementById('reservationDetailsModal');
@@ -122,6 +128,19 @@ export function renderReservationDetails(index, {
         onDelete(index, { reservation, customer });
       }
     };
+  }
+
+  const openProjectBtn = body?.querySelector('[data-action="open-project"]');
+  if (openProjectBtn && project) {
+    openProjectBtn.addEventListener('click', () => {
+      closeModal();
+      try {
+        localStorage.setItem(PENDING_PROJECT_DETAIL_KEY, String(project.id));
+      } catch (error) {
+        console.warn('⚠️ [reservations] Unable to persist pending project detail id', error);
+      }
+      window.location.href = 'projects.html';
+    });
   }
 
   if (modalEl && window.bootstrap?.Modal) {

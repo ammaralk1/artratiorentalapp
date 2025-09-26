@@ -20,7 +20,9 @@ registerTranslations({
     'technicianDetails.errors.missingId': '⚠️ لا يوجد معرف عضو طاقم في الرابط.',
     'technicianDetails.errors.notFound': '⚠️ لم يتم العثور على هذا العضو.',
     'technicianDetails.edit.modalTitle': '✏️ تعديل بيانات عضو الطاقم',
-    'technicians.picker.actions.apply': 'تم'
+    'technicians.picker.actions.apply': 'تم',
+    'technicianProjects.title': '📁 مشاريع مرتبطة بالطاقم',
+    'technicianProjects.empty': 'لا توجد مشاريع مرتبطة بهذا العضو.'
   },
   en: {
     'technicianDetails.pageTitle': 'Crew Member Details',
@@ -41,6 +43,8 @@ registerTranslations({
     'technicianDetails.errors.missingId': '⚠️ Missing crew member identifier in the URL.',
     'technicianDetails.errors.notFound': '⚠️ Crew member not found.',
     'technicianDetails.edit.modalTitle': '✏️ Edit Crew Member',
-    'technicians.picker.actions.apply': 'Done'
+    'technicians.picker.actions.apply': 'Done',
+    'technicianProjects.title': '📁 Crew Projects',
+    'technicianProjects.empty': 'No projects are linked to this crew member.'
   }
 });

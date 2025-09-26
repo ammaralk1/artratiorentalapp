@@ -34,6 +34,10 @@ body[dir="ltr"] .sub-tab-buttons {
   font-weight: 600;
   transition: all 0.2s ease-in-out;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .tab-button:hover {
@@ -108,6 +112,10 @@ body.tabs-loading .tab {
   font-weight: 600;
   transition: var(--transition);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .sub-tab-button:hover {

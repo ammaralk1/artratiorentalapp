@@ -219,77 +219,331 @@ html.dark-mode .projects-hero-text {
 
 .project-focus-card {
   position: relative;
+  overflow: hidden;
   background: var(--clr-card);
-  border-radius: var(--radius-md);
-  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(76, 110, 245, 0.1);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(76, 110, 245, 0.08);
   transition: var(--transition);
   cursor: pointer;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  min-height: 170px;
+}
+
+.project-focus-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .project-focus-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(76, 110, 245, 0.18);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 34px rgba(76, 110, 245, 0.16);
 }
 
-.project-focus-card__header {
+.project-focus-card__accent {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.16) 0%, rgba(248, 250, 255, 0) 55%);
+  pointer-events: none;
+}
+
+.project-focus-card__top {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .project-focus-card__badge {
   font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.project-focus-card__status-chip {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.project-code-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
   padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(76, 110, 245, 0.14);
+  color: var(--clr-primary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.project-focus-card__code {
+  position: relative;
 }
 
 .project-focus-card__title {
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin-bottom: 6px;
+  margin: 0;
+  color: var(--clr-text);
 }
 
 .project-focus-card__description {
   color: var(--clr-muted);
-  margin-bottom: 0;
-  min-height: 40px;
+  margin: 0;
+  line-height: 1.3;
+  font-size: 0.75rem;
 }
 
-.project-focus-card__stats li {
-  color: var(--clr-muted);
-  line-height: 1.4;
-}
-
-.project-focus-card__footer {
+.project-focus-card__sections {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-focus-card__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.project-focus-card__section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--clr-muted);
+}
+
+.project-focus-card__section-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  background: rgba(248, 250, 255, 0.9);
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  height: 100%;
+}
+
+.project-focus-card__row {
+  display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.project-focus-card__row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--clr-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-focus-card__row-icon {
+  font-size: 1rem;
+}
+
+.project-focus-card__row-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-left: 0;
+  text-align: start;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .project-focus-card__actions {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
 }
 
-.project-focus-card__btn {
-  transition: var(--transition);
+.project-focus-card__confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 12px;
 }
 
-.project-focus-card__btn:hover,
-.project-focus-card__btn:focus {
-  transform: translateY(-2px);
+.project-focus-card__confirm-indicator {
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
-.project-focus-card__status {
-  font-size: 0.75rem;
-  padding: 4px 10px;
+.project-focus-card__payment-chip {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  padding: 0.35em 0.7em;
+  color: #fff;
+}
+
+.project-focus-card--paid {
+  border-color: rgba(40, 167, 69, 0.22);
+}
+
+.project-focus-card--paid .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.16) 0%, rgba(248, 250, 255, 0) 60%);
+}
+
+.project-focus-card--paid .project-focus-card__payment-chip {
+  background: rgba(40, 167, 69, 0.85);
+}
+
+.project-focus-card--unpaid {
+  border-color: rgba(224, 49, 49, 0.2);
+}
+
+.project-focus-card--unpaid .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(224, 49, 49, 0.16) 0%, rgba(248, 250, 255, 0) 60%);
+}
+
+.project-focus-card--unpaid .project-focus-card__payment-chip {
+  background: rgba(224, 49, 49, 0.85);
+}
+
+.project-focus-card__meta-tag,
+.project-focus-card__chip,
+.reservation-chip,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35em 0.7em;
+  border-radius: 999px;
+}
+
+.project-focus-card__meta-tag {
+  background: rgba(76, 110, 245, 0.1);
+  color: var(--clr-primary);
+}
+
+.reservation-chip.status-paid {
+  background: #2f9e44;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(47, 158, 68, 0.2);
+}
+
+.reservation-chip.status-unpaid {
+  background: #c92a2a;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(201, 42, 42, 0.18);
+}
+
+.project-focus-card--confirmed {
+  box-shadow: 0 16px 34px rgba(76, 110, 245, 0.18);
+}
+
+
+.project-focus-card__status-chip.bg-info,
+.project-focus-card__status-chip.bg-warning,
+.project-focus-card__status-chip.bg-success,
+.project-focus-card__status-chip.bg-secondary {
+  color: #fff;
+}
+
+.project-tax-switch,
+.project-edit-tax {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.project-edit-tax {
+  align-self: center;
+}
+
+.project-tax-switch .form-check-label,
+.project-edit-tax .form-check-label {
+  white-space: nowrap;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card {
+  background: rgba(24, 33, 59, 0.92);
+  border-color: rgba(93, 133, 255, 0.25);
+  box-shadow: 0 18px 36px rgba(3, 10, 32, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(15, 23, 42, 0) 55%);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card--paid {
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card--paid .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.22) 0%, rgba(15, 23, 42, 0) 60%);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card--unpaid {
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card--unpaid .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.22) 0%, rgba(15, 23, 42, 0) 60%);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-code-badge {
+  background: rgba(93, 133, 255, 0.28);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__description {
+  color: rgba(226, 232, 240, 0.82);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__section-box {
+  background: rgba(15, 23, 42, 0.82);
+  border-color: rgba(93, 133, 255, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__section-title {
+  color: rgba(148, 163, 184, 0.82);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__row-label {
+  color: rgba(148, 163, 184, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-focus-card__row-value {
+  color: rgba(226, 232, 240, 0.96);
 }
 
 .project-row-highlight {
@@ -474,37 +728,6 @@ html.dark-mode .projects-table td small,
 html.dark-mode .projects-table td span,
 html.dark-mode .projects-table td strong {
   color: rgba(226, 232, 240, 0.88);
-}
-
-html.dark-mode .project-focus-card {
-  background: rgba(24, 33, 59, 0.9);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
-}
-
-html.dark-mode .project-focus-card__description,
-html.dark-mode .project-focus-card__stats li {
-  color: rgba(226, 232, 240, 0.7);
-}
-
-html.dark-mode .project-focus-card__btn.btn-outline-light {
-  color: rgba(226, 232, 240, 0.9);
-  border-color: rgba(226, 232, 240, 0.4);
-}
-
-html.dark-mode .project-focus-card__btn.btn-outline-light:hover,
-html.dark-mode .project-focus-card__btn.btn-outline-light:focus {
-  background-color: rgba(226, 232, 240, 0.12);
-}
-
-html.dark-mode .project-focus-card__btn.btn-outline-primary {
-  border-color: rgba(59, 130, 246, 0.8);
-  color: rgba(191, 219, 254, 0.94);
-}
-
-html.dark-mode .project-focus-card__btn.btn-outline-primary:hover,
-html.dark-mode .project-focus-card__btn.btn-outline-primary:focus {
-  background-color: rgba(59, 130, 246, 0.22);
 }
 
 html.dark-mode .project-row-highlight {
@@ -1555,4 +1778,32 @@ textarea {
 :is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span:hover {
   background: rgba(76, 110, 245, 0.28);
   color: #f8fafc;
+}
+:is(html.dark-mode, body.dark-mode) .project-focus-card--confirmed {
+  box-shadow: 0 18px 40px rgba(34, 197, 94, 0.18);
+}
+.project-form-status {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.project-form-footer {
+  width: 100%;
+}
+
+.project-form-footer .project-form-status {
+  margin-inline-end: auto;
+}
+
+.project-payment-select,
+.project-edit-payment-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 1 auto;
+}
+
+.project-payment-select select,
+.project-edit-payment-select select {
+  min-width: 160px;
 }

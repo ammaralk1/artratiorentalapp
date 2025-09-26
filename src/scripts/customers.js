@@ -4,6 +4,10 @@ import { t } from "./language.js";
 
 let editingCustomerId = null;
 
+function emitCustomersChanged() {
+  document.dispatchEvent(new CustomEvent('customers:changed'));
+}
+
 function getCustomers() {
   return loadData().customers || [];
 }
@@ -79,7 +83,7 @@ function populateCustomerForm(customer) {
 
   if (idInput) idInput.value = customer.id;
   nameInput.value = customer.customerName || "";
-  phoneInput.value = customer.phone || "";
+  phoneInput.value = normalizeNumbers(customer.phone || "");
   if (emailInput) emailInput.value = customer.email || "";
   if (addressInput) addressInput.value = customer.address || "";
   if (companyInput) companyInput.value = customer.companyName || "";
@@ -104,7 +108,7 @@ function collectCustomerForm() {
   if (!nameInput || !phoneInput) return null;
 
   const customerName = nameInput.value.trim();
-  const phone = phoneInput.value.trim();
+  const phone = normalizeNumbers(phoneInput.value.trim());
   phoneInput.value = phone;
   if (!customerName || !phone) {
     showToast(t("customers.toast.missingFields", "يرجى تعبئة الاسم ورقم الهاتف"), "error");
@@ -142,6 +146,7 @@ function handleCustomerSubmit(event) {
 
   renderCustomers();
   resetCustomerForm();
+  emitCustomersChanged();
 }
 
 function handleCustomerTableClick(event) {
@@ -160,6 +165,7 @@ function handleCustomerTableClick(event) {
       resetCustomerForm();
     }
     showToast(t("customers.toast.deleteSuccess", "تم حذف العميل"));
+    emitCustomersChanged();
     return;
   }
 
@@ -221,6 +227,11 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("language:changed", () => {
   refreshCustomerLanguageStrings();
   renderCustomers();
+});
+
+document.addEventListener('customers:refreshRequested', () => {
+  renderCustomers();
+  refreshCustomerLanguageStrings();
 });
 
 export function renderCustomers(customersOverride, options = {}) {

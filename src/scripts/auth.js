@@ -51,7 +51,7 @@ export async function login(username, password) {
     if (isHashMatch(userHash, passHash)) {
       const sanitizedUsername = (username || "").trim();
       localStorage.setItem("loggedInUser", JSON.stringify({ username: sanitizedUsername }));
-      window.location.href = "dashboard.html";
+      window.location.href = "home.html";
       return;
     }
   } catch (error) {

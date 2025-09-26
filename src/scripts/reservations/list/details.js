@@ -1,40 +1,106 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
+import { loadData } from '../../storage.js';
 import { isReservationCompleted } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
+import { calculateReservationDays } from '../../reservationsSummary.js';
 
-export function buildReservationDetailsHtml(reservation, customer, techniciansList = [], index) {
+const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function buildReservationDetailsHtml(reservation, customer, techniciansList = [], index, project = null) {
   const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
 
-  const techniciansMap = new Map(techniciansList.map((tech) => [String(tech.id), tech]));
+  const { technicians: storedTechnicians = [] } = loadData();
+  const technicianSource = []
+    .concat(Array.isArray(techniciansList) ? techniciansList : [])
+    .concat(Array.isArray(storedTechnicians) ? storedTechnicians : []);
+
+  const techniciansMap = new Map();
+  technicianSource.forEach((tech) => {
+    if (!tech || tech.id == null) return;
+    const key = String(tech.id);
+    const existing = techniciansMap.get(key) || {};
+    techniciansMap.set(key, { ...existing, ...tech });
+  });
+
   const assignedTechnicians = (reservation.technicians || [])
     .map((id) => techniciansMap.get(String(id)))
     .filter(Boolean);
 
-  const baseCost = items.reduce((sum, item) => sum + ((item.qty || 1) * (item.price || 0)), 0);
+  const rentalDays = calculateReservationDays(reservation.start, reservation.end);
+
+  const resolveTechnicianDailyRate = (technician = {}) => {
+    const candidates = [
+      technician.dailyWage,
+      technician.daily_rate,
+      technician.dailyRate,
+      technician.wage,
+      technician.rate
+    ];
+
+    for (const value of candidates) {
+      if (value == null) continue;
+      const parsed = parseFloat(normalizeNumbers(String(value)));
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return 0;
+  };
+
+  const equipmentDailyTotal = items.reduce(
+    (sum, item) => sum + ((item.qty || 1) * (item.price || 0)),
+    0
+  );
+  const equipmentTotal = equipmentDailyTotal * rentalDays;
+  const crewDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
+  const crewTotal = crewDailyTotal * rentalDays;
+  const discountBase = equipmentTotal + crewTotal;
   const discountValue = parseFloat(reservation.discount) || 0;
   const discountAmount = reservation.discountType === 'amount'
     ? discountValue
-    : baseCost * (discountValue / 100);
-  const taxableAmount = Math.max(0, baseCost - discountAmount);
-  const taxAmount = reservation.applyTax ? taxableAmount * 0.15 : 0;
-  const finalTotal = reservation.cost ?? Math.round(taxableAmount + taxAmount);
+    : discountBase * (discountValue / 100);
+  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  const projectLinked = Boolean(reservation.projectId);
+  const applyTaxFlag = projectLinked ? false : reservation.applyTax;
+  const taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
+  const storedCost = Number(reservation.cost);
+  const hasStoredCost = Number.isFinite(storedCost);
+  const computedTotal = taxableAmount + taxAmount;
+  const finalTotal = projectLinked
+    ? Math.round(computedTotal)
+    : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
   const techniciansCountDisplay = normalizeNumbers(String(assignedTechnicians.length));
-  const baseCostDisplay = normalizeNumbers(baseCost.toFixed(2));
+  const equipmentTotalDisplay = normalizeNumbers(equipmentTotal.toFixed(2));
   const discountAmountDisplay = normalizeNumbers(discountAmount.toFixed(2));
+  const subtotalAfterDiscountDisplay = normalizeNumbers(taxableAmount.toFixed(2));
   const taxAmountDisplay = normalizeNumbers(taxAmount.toFixed(2));
   const finalTotalDisplay = normalizeNumbers((finalTotal ?? 0).toFixed(2));
+  const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
 
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
   const discountLabel = t('reservations.details.labels.discount', 'الخصم');
   const taxLabel = t('reservations.details.labels.tax', 'الضريبة (15%)');
+  const crewTotalLabel = t('reservations.details.labels.crewTotal', 'إجمالي الفريق');
+  const subtotalAfterDiscountLabel = t('reservations.details.labels.subtotalAfterDiscount', 'الإجمالي');
+  const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
   const tableHeaders = {
     index: '#',
     code: t('reservations.details.table.headers.code', 'الكود'),
@@ -65,6 +131,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const deleteActionLabel = t('reservations.details.actions.delete', '🗑️ حذف');
   const customerLabel = t('reservations.details.labels.customer', 'العميل');
   const contactLabel = t('reservations.details.labels.contact', 'رقم التواصل');
+  const projectLabel = t('reservations.details.labels.project', '📁 المشروع المرتبط');
+  const projectFallback = t('reservations.details.project.unlinked', 'غير مرتبط بأي مشروع.');
+  const projectMissingText = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
+  const openProjectLabel = t('reservations.details.actions.openProject', '📁 فتح المشروع');
   const startLabel = t('reservations.details.labels.start', 'بداية الحجز');
   const endLabel = t('reservations.details.labels.end', 'نهاية الحجز');
   const notesLabel = t('reservations.details.labels.notes', 'ملاحظات');
@@ -81,17 +151,24 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
   const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
 
+  const crewTotalDisplay = normalizeNumbers(crewTotal.toFixed(2));
+
   const summaryDetails = [
     { icon: '💳', label: paymentStatusLabel, value: paymentStatusText },
     { icon: '📦', label: itemsCountLabel, value: itemsCountText },
-    { icon: '💼', label: itemsTotalLabel, value: `${baseCostDisplay} ${currencyLabel}` }
+    { icon: '⏱️', label: durationLabel, value: rentalDaysDisplay },
+    { icon: '💼', label: itemsTotalLabel, value: `${equipmentTotalDisplay} ${currencyLabel}` }
   ];
+
+  summaryDetails.push({ icon: '😎', label: crewTotalLabel, value: `${crewTotalDisplay} ${currencyLabel}` });
 
   if (discountAmount > 0) {
     summaryDetails.push({ icon: '💸', label: discountLabel, value: `${discountAmountDisplay} ${currencyLabel}` });
   }
 
-  if (reservation.applyTax && taxAmount > 0) {
+  summaryDetails.push({ icon: '📊', label: subtotalAfterDiscountLabel, value: `${subtotalAfterDiscountDisplay} ${currencyLabel}` });
+
+  if (applyTaxFlag && taxAmount > 0) {
     summaryDetails.push({ icon: '🧾', label: taxLabel, value: `${taxAmountDisplay} ${currencyLabel}` });
   }
 
@@ -130,13 +207,31 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     </div>
   `;
 
-  const infoRows = [
-    renderInfoRow('👤', customerLabel, customer?.customerName || unknownCustomer),
-    renderInfoRow('📞', contactLabel, customer?.phone || '—'),
-    renderInfoRow('🗓️', startLabel, startDisplay),
-    renderInfoRow('🗓️', endLabel, endDisplay),
-    renderInfoRow('📝', notesLabel, notesDisplay)
-  ];
+  let projectRowHtml = '';
+  if (reservation.projectId) {
+    let projectValueHtml = escapeHtml(projectMissingText);
+    if (project) {
+      const title = project.title || t('projects.fallback.untitled', 'مشروع بدون اسم');
+      projectValueHtml = `${escapeHtml(title)} <button type="button" class="btn btn-sm btn-outline-primary" data-action="open-project" data-project-id="${project.id}">${escapeHtml(openProjectLabel)}</button>`;
+    }
+
+    projectRowHtml = `
+      <div class="res-info-row">
+        <span class="label">📁 ${projectLabel}</span>
+        <span class="value">${projectValueHtml}</span>
+      </div>
+    `;
+  }
+
+  const infoRows = [];
+  infoRows.push(renderInfoRow('👤', customerLabel, customer?.customerName || unknownCustomer));
+  infoRows.push(renderInfoRow('📞', contactLabel, customer?.phone || '—'));
+  infoRows.push(renderInfoRow('🗓️', startLabel, startDisplay));
+  infoRows.push(renderInfoRow('🗓️', endLabel, endDisplay));
+  infoRows.push(renderInfoRow('📝', notesLabel, notesDisplay));
+  if (projectRowHtml) {
+    infoRows.push(projectRowHtml);
+  }
 
   const infoRowsHtml = infoRows.join('');
 
@@ -261,4 +356,3 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     </div>
   `;
 }
-

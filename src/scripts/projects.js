@@ -1,7 +1,7 @@
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { migrateOldData, loadData, saveData } from './storage.js';
 import { checkAuth, logout } from './auth.js';
-import { showToast, normalizeNumbers } from './utils.js';
+import { showToast, normalizeNumbers, generateProjectCode } from './utils.js';
 import { t, getCurrentLanguage } from './language.js';
 import { isReservationCompleted, normalizeText } from './reservationsShared.js';
 import { registerReservationGlobals } from './reservations/controller.js';
@@ -33,6 +33,29 @@ const PENDING_RESERVATION_PROJECT_KEY = 'pendingReservationProjectContext';
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const PROJECT_TAX_RATE = 0.15;
+const MAX_FOCUS_CARDS = 6;
+const PROJECT_MAIN_TAB_STORAGE_KEY = 'projects.activeTab';
+const PROJECT_SUB_TAB_STORAGE_KEY = 'projects.activeSubTab';
+const PROJECT_SUB_TAB_ALIASES = {
+  create: 'create-project-tab',
+  list: 'projects-list-tab'
+};
+
+function getProjectStartTimestamp(project) {
+  if (!project?.start) return Number.NaN;
+  const timestamp = new Date(project.start).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.NaN;
+}
+
+function getProjectCreatedTimestamp(project) {
+  if (project?.createdAt) {
+    const created = new Date(project.createdAt).getTime();
+    if (Number.isFinite(created)) return created;
+  }
+  const startTime = getProjectStartTimestamp(project);
+  if (Number.isFinite(startTime)) return startTime;
+  return Number.NEGATIVE_INFINITY;
+}
 
 function combineProjectDateTime(dateValue, timeValue) {
   if (!dateValue) return '';
@@ -151,6 +174,7 @@ function cacheDom() {
   dom.client = document.getElementById('project-client');
   dom.clientSuggestions = document.getElementById('project-customer-suggestions');
   dom.clientCompany = document.getElementById('project-client-company');
+  dom.paymentStatus = document.getElementById('project-payment-status');
   dom.startDate = document.getElementById('project-start-date');
   dom.startTime = document.getElementById('project-start-time');
   dom.endDate = document.getElementById('project-end-date');
@@ -194,6 +218,108 @@ function cacheDom() {
   }
 }
 
+function persistStorageValue(key, value) {
+  if (!key) return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (error) {
+    /* ignore storage errors */
+  }
+}
+
+function readStorageValue(key) {
+  if (!key) return '';
+  try {
+    return window.localStorage.getItem(key) || '';
+  } catch (error) {
+    return '';
+  }
+}
+
+function persistActiveMainTab(tabId) {
+  if (!tabId) return;
+  persistStorageValue(PROJECT_MAIN_TAB_STORAGE_KEY, tabId);
+}
+
+function getStoredActiveMainTab() {
+  return readStorageValue(PROJECT_MAIN_TAB_STORAGE_KEY);
+}
+
+function persistActiveSubTab(tabId) {
+  if (!tabId) return;
+  persistStorageValue(PROJECT_SUB_TAB_STORAGE_KEY, tabId);
+}
+
+function getStoredActiveSubTab() {
+  return readStorageValue(PROJECT_SUB_TAB_STORAGE_KEY);
+}
+
+function resolveSubTabFromValue(value) {
+  if (!value) return '';
+  const normalized = String(value).trim();
+  if (!normalized) return '';
+  const aliasKey = normalized.toLowerCase();
+  if (PROJECT_SUB_TAB_ALIASES[aliasKey]) {
+    return PROJECT_SUB_TAB_ALIASES[aliasKey];
+  }
+  if (value in PROJECT_SUB_TAB_ALIASES) {
+    return PROJECT_SUB_TAB_ALIASES[value];
+  }
+  if (!dom.projectSubTabButtons || !dom.projectSubTabButtons.length) {
+    return normalized;
+  }
+  const exists = dom.projectSubTabButtons.some((btn) => btn.dataset.projectSubtabTarget === normalized);
+  return exists ? normalized : '';
+}
+
+function getUrlRequestedSubTab() {
+  if (typeof window === 'undefined') return '';
+  const { hash, search } = window.location;
+
+  if (hash) {
+    const rawHash = hash.replace('#', '').trim();
+    if (rawHash) {
+      if (rawHash.toLowerCase().startsWith('tab=')) {
+        const [, value] = rawHash.split('=');
+        const resolvedFromHashParam = resolveSubTabFromValue(value);
+        if (resolvedFromHashParam) return resolvedFromHashParam;
+      }
+      const resolvedFromHash = resolveSubTabFromValue(rawHash);
+      if (resolvedFromHash) return resolvedFromHash;
+    }
+  }
+
+  try {
+    const params = new URLSearchParams(search || '');
+    const paramValue = params.get('tab');
+    if (paramValue) {
+      const resolvedFromParam = resolveSubTabFromValue(paramValue);
+      if (resolvedFromParam) return resolvedFromParam;
+    }
+  } catch (error) {
+    /* ignore malformed search params */
+  }
+
+  return '';
+}
+
+function ensureProjectCodes() {
+  if (!Array.isArray(state.projects) || state.projects.length === 0) return;
+  let mutated = false;
+
+  const projectsWithCodes = state.projects.map((project) => {
+    if (project.projectCode) return project;
+    const projectCode = generateProjectCode();
+    mutated = true;
+    return { ...project, projectCode };
+  });
+
+  if (!mutated) return;
+
+  state.projects = projectsWithCodes;
+  saveData({ projects: state.projects });
+}
+
 function initTabNavigation() {
   if (!dom.tabButtons || !dom.tabButtons.length) return;
 
@@ -214,12 +340,28 @@ function initTabNavigation() {
 
     button.dataset.listenerAttached = 'true';
   });
+
+  const storedTabId = getStoredActiveMainTab();
+  const storedButton = dom.tabButtons.find((btn) => btn.dataset.tabTarget === storedTabId);
+  const defaultActiveButton = dom.tabButtons.find((btn) => btn.classList.contains('active'));
+  const fallbackButton = storedButton || defaultActiveButton || dom.tabButtons[0];
+
+  if (fallbackButton) {
+    const targetId = fallbackButton.dataset.tabTarget;
+    if (targetId) {
+      activateTab(targetId, fallbackButton);
+    }
+  }
 }
 
 function activateTab(targetId, triggerButton) {
   dom.tabButtons.forEach((btn) => {
     btn.classList.toggle('active', btn === triggerButton);
   });
+
+  if (targetId) {
+    persistActiveMainTab(targetId);
+  }
 
   if (!dom.tabPanes || !dom.tabPanes.length) return;
 
@@ -228,6 +370,10 @@ function activateTab(targetId, triggerButton) {
     pane.classList.toggle('d-none', !isTarget);
     pane.classList.toggle('active', isTarget);
   });
+
+  if (targetId === 'projects-section') {
+    restoreProjectSubTab();
+  }
 }
 
 function initProjectSubTabs() {
@@ -277,6 +423,10 @@ function activateProjectSubTab(targetId, triggerButton) {
     pane.classList.toggle('active', isTarget);
   });
 
+  if (targetId) {
+    persistActiveSubTab(targetId);
+  }
+
   if (targetId === 'projects-list-tab') {
     renderProjects();
     if (dom.search) {
@@ -284,6 +434,28 @@ function activateProjectSubTab(targetId, triggerButton) {
     }
   } else if (targetId === 'create-project-tab') {
     renderFocusCards();
+  }
+}
+
+function restoreProjectSubTab() {
+  if (!dom.projectSubTabButtons || !dom.projectSubTabButtons.length) return;
+  const urlRequestedSubTab = getUrlRequestedSubTab();
+  const storedSubTabId = getStoredActiveSubTab();
+  const preferredSubTabId = urlRequestedSubTab || storedSubTabId;
+
+  const preferredButton = preferredSubTabId
+    ? dom.projectSubTabButtons.find((btn) => btn.dataset.projectSubtabTarget === preferredSubTabId)
+    : null;
+  const defaultActiveButton = dom.projectSubTabButtons.find((btn) => btn.classList.contains('active'));
+  const fallbackButton = preferredButton || defaultActiveButton || dom.projectSubTabButtons[0];
+
+  if (!fallbackButton) return;
+  const targetId = fallbackButton.dataset.projectSubtabTarget;
+  if (targetId) {
+    if (urlRequestedSubTab && urlRequestedSubTab !== storedSubTabId) {
+      persistActiveSubTab(targetId);
+    }
+    activateProjectSubTab(targetId, fallbackButton);
   }
 }
 
@@ -305,9 +477,13 @@ function loadAllData() {
     ? projects.map((project) => ({
         ...project,
         type: project.type || project.projectType || '',
-        clientCompany: project.clientCompany || project.company || ''
+        clientCompany: project.clientCompany || project.company || '',
+        paymentStatus: project.paymentStatus === 'paid' ? 'paid' : 'unpaid',
+        confirmed: project.confirmed === true || project.confirmed === 'true'
       }))
     : [];
+
+  ensureProjectCodes();
 
   populateSelects();
   renderSelections();
@@ -528,6 +704,7 @@ function resetProjectFormState() {
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = '';
   if (dom.taxCheckbox) dom.taxCheckbox.checked = false;
+  if (dom.paymentStatus) dom.paymentStatus.value = 'unpaid';
   refreshProjectSubmitButton();
 }
 
@@ -866,6 +1043,8 @@ function handleSubmitProject(event) {
   const expensesTotal = calculateExpensesTotal();
   const equipmentEstimate = calculateEquipmentEstimate();
   const applyTax = dom.taxCheckbox?.checked === true;
+  const selectedPaymentStatus = dom.paymentStatus?.value || 'unpaid';
+  const paymentStatus = selectedPaymentStatus === 'paid' ? 'paid' : 'unpaid';
   const subtotal = equipmentEstimate + expensesTotal;
   const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
   const totalWithTax = Number((subtotal + taxAmount).toFixed(2));
@@ -900,14 +1079,24 @@ function handleSubmitProject(event) {
       applyTax,
       taxAmount,
       totalWithTax,
+      paymentStatus,
       updatedAt: new Date().toISOString()
     };
     state.projects[index] = updatedProject;
-    saveData({ projects: state.projects });
+    const reservationsUpdated = updateLinkedReservationsPaymentStatus(projectId, paymentStatus);
+    const savePayload = reservationsUpdated
+      ? { projects: state.projects, reservations: state.reservations }
+      : { projects: state.projects };
+    saveData(savePayload);
+    if (reservationsUpdated) {
+      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    }
     showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
   } else {
+    const projectCode = generateProjectCode();
     const project = {
       id: projectId,
+      projectCode,
       title,
       type: projectType,
       clientId,
@@ -923,11 +1112,20 @@ function handleSubmitProject(event) {
       applyTax,
       taxAmount,
       totalWithTax,
-      createdAt: new Date().toISOString()
+      paymentStatus,
+      createdAt: new Date().toISOString(),
+      confirmed: false
     };
 
     state.projects.push(project);
-    saveData({ projects: state.projects });
+    const reservationsUpdated = updateLinkedReservationsPaymentStatus(projectId, paymentStatus);
+    const savePayload = reservationsUpdated
+      ? { projects: state.projects, reservations: state.reservations }
+      : { projects: state.projects };
+    saveData(savePayload);
+    if (reservationsUpdated) {
+      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    }
     showToast(t('projects.toast.saved', '✅ تم حفظ المشروع بنجاح'));
   }
 
@@ -959,7 +1157,8 @@ function renderProjects() {
       client?.customerName,
       project.clientCompany,
       getProjectTypeLabel(project.type),
-      project.id
+      project.id,
+      project.projectCode
     ].filter(Boolean).join(' ')).toLowerCase();
     return haystack.includes(search);
   });
@@ -1005,13 +1204,16 @@ function renderProjectRow(project) {
     : '';
   const typeLabel = escapeHtml(getProjectTypeLabel(project.type));
   const typeBadge = `<span class="badge project-type-badge">${typeLabel}</span>`;
+  const projectCodeDisplay = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
+  const projectCodeBadge = `<span class="project-code-badge">#${escapeHtml(projectCodeDisplay)}</span>`;
 
   return `
     <tr data-project-id="${project.id}">
       <td>
         <div class="d-flex flex-column gap-1">
           <div class="fw-bold">${escapeHtml(project.title)}</div>
-          <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="d-flex flex-wrap gap-2 align-items-center project-row-meta">
+            ${projectCodeBadge}
             ${typeBadge}
           </div>
         </div>
@@ -1164,14 +1366,47 @@ function renderFocusCards() {
 function buildFocusCards() {
   if (!Array.isArray(state.projects) || !state.projects.length) return [];
 
-  const today = state.projects.filter(isProjectToday).slice(0, 3);
-  const thisWeek = state.projects
-    .filter((project) => !isProjectToday(project) && isProjectThisWeek(project))
-    .slice(0, 3);
+  const today = state.projects.filter(isProjectToday);
+  const thisWeek = state.projects.filter((project) => !isProjectToday(project) && isProjectThisWeek(project));
 
   const cards = [];
-  today.forEach((project) => cards.push(renderFocusCard(project, 'today')));
-  thisWeek.forEach((project) => cards.push(renderFocusCard(project, 'thisWeek')));
+  const seen = new Set();
+
+  const addCard = (project, category) => {
+    if (!project || seen.has(project.id) || cards.length >= MAX_FOCUS_CARDS) return;
+    seen.add(project.id);
+    cards.push(renderFocusCard(project, category));
+  };
+
+  today
+    .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b))
+    .forEach((project) => addCard(project, 'today'));
+
+  thisWeek
+    .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b))
+    .forEach((project) => addCard(project, 'thisWeek'));
+
+  if (cards.length < MAX_FOCUS_CARDS) {
+    const now = Date.now();
+    const upcomingProjects = [...state.projects]
+      .filter((project) => !seen.has(project.id))
+      .filter((project) => {
+        const startTime = getProjectStartTimestamp(project);
+        return Number.isFinite(startTime) && startTime >= now;
+      })
+      .sort((a, b) => getProjectStartTimestamp(a) - getProjectStartTimestamp(b));
+
+    upcomingProjects.forEach((project) => addCard(project, 'upcoming'));
+  }
+
+  if (cards.length < MAX_FOCUS_CARDS) {
+    const fallbackProjects = [...state.projects]
+      .filter((project) => !seen.has(project.id))
+      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
+
+    fallbackProjects.forEach((project) => addCard(project, 'recent'));
+  }
+
   return cards;
 }
 
@@ -1180,71 +1415,204 @@ function renderFocusCard(project, category) {
   const clientName = client?.customerName || t('projects.fallback.unknownClient', 'Unknown client');
   const companyName = (project.clientCompany || client?.companyName || '').trim();
   const crewCount = Array.isArray(project.technicians) ? project.technicians.length : 0;
-  const reservationsCount = getReservationsForProject(project.id).length;
+  const reservationsForProject = getReservationsForProject(project.id);
+  const reservationsCount = reservationsForProject.length;
   const expensesTotal = getProjectExpenses(project);
-  const { totalWithTax } = resolveProjectTotals(project);
+  const { subtotal: projectSubtotal, applyTax, totalWithTax } = resolveProjectTotals(project);
   const description = (project.description || '').trim();
   const typeLabel = getProjectTypeLabel(project.type);
+  const paymentStatus = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
+  const paymentStatusLabel = t(`projects.paymentStatus.${paymentStatus}`, paymentStatus === 'paid' ? 'Paid' : 'Unpaid');
+  const paymentChipClass = paymentStatus === 'paid' ? 'status-paid' : 'status-unpaid';
+  const cardPaymentClass = paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid';
+  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
+  const projectIdAttr = escapeHtml(String(project.id));
+  const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
+  const projectCodeDisplay = normalizeNumbers(projectCodeValue);
 
-  const categoryKey = category === 'today' ? 'projects.focus.today' : 'projects.focus.thisWeek';
-  const categoryLabel = t(categoryKey, category === 'today' ? 'Today\'s Projects' : 'This Week');
+  const categoryKeyMap = {
+    today: 'projects.focus.today',
+    thisWeek: 'projects.focus.thisWeek',
+    upcoming: 'projects.focus.upcoming',
+    recent: 'projects.focus.recent'
+  };
+  const categoryFallbackMap = {
+    today: "Today's Projects",
+    thisWeek: 'This Week',
+    upcoming: 'Upcoming Projects',
+    recent: 'Latest Projects'
+  };
+  const categoryKey = categoryKeyMap[category] || categoryKeyMap.recent;
+  const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status]);
   const statusClass = statusBadgeClass[status] || 'bg-secondary';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
-
-  const crewLabel = t('projectCards.stats.crew', '👥 Crew members: {count}').replace('{count}', normalizeNumbers(String(crewCount)));
-  const reservationsLabel = t('projectCards.stats.reservations', '🔗 Reservations: {count}').replace('{count}', normalizeNumbers(String(reservationsCount)));
-  const clientDisplay = companyName ? `${clientName} (${companyName})` : clientName;
-  const clientLabel = t('projectCards.stats.client', '👤 Client: {name}').replace('{name}', escapeHtml(clientDisplay));
-  const typeStatLabel = t('projectCards.stats.type', '🏷️ Type: {label}').replace('{label}', escapeHtml(typeLabel));
-  const budgetLabel = t('projectCards.stats.budget', '💰 Estimated budget: {amount}').replace('{amount}', formatCurrency(totalWithTax));
-  const expensesLabel = expensesTotal > 0
-    ? t('projectCards.stats.expenses', '💸 Expenses: {amount}').replace('{amount}', formatCurrency(expensesTotal))
-    : '';
-
-  const crewNames = (project.technicians || [])
-    .map((id) => state.technicians.find((tech) => String(tech.id) === String(id))?.name)
-    .filter(Boolean);
-  let crewPreview = '';
-  if (crewNames.length) {
-    const maxPreview = 2;
-    const preview = crewNames.slice(0, maxPreview);
-    const extra = crewNames.length - preview.length;
-    const separator = getCurrentLanguage() === 'ar' ? '، ' : ', ';
-    crewPreview = `${escapeHtml(preview.join(separator))}${extra > 0 ? escapeHtml(` +${normalizeNumbers(String(extra))}`) : ''}`;
+  const cardStateClasses = [cardPaymentClass];
+  if (isConfirmed) {
+    cardStateClasses.push('project-focus-card--confirmed');
   }
+  const confirmLabel = t('projects.focus.actions.confirm', '✔️ تأكيد المشروع');
+  const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
+
+  const reservationsTotals = reservationsForProject.reduce((acc, reservation) => {
+    const net = resolveReservationNetTotal(reservation);
+    const equipmentTotal = (reservation.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+    const crewTotal = (reservation.technicians || []).length;
+    return {
+      total: acc.total + net,
+      equipment: acc.equipment + equipmentTotal,
+      crew: acc.crew + crewTotal
+    };
+  }, { total: 0, equipment: 0, crew: 0 });
+
+  const reservationsTotal = Number(reservationsTotals.total.toFixed(2));
+  const equipmentCountTotal = reservationsTotals.equipment;
+  const crewAssignmentsTotal = reservationsTotals.crew;
+
+  const combinedTaxAmount = applyTax
+    ? Number(((projectSubtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+    : 0;
+  const overallTotal = Number((projectSubtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+  const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
+  const categoryBadge = `<span class="badge project-focus-card__badge ${statusClass}">${escapeHtml(categoryLabel)}</span>`;
+  const statusChip = `<span class="project-focus-card__status-chip ${statusClass}">${escapeHtml(statusLabel)}</span>`;
+  const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
+
+  const reservationStats = [
+    {
+      icon: '📦',
+      label: t('projectCards.stats.equipmentCount', 'عدد المعدات'),
+      value: normalizeNumbers(String(equipmentCountTotal))
+    },
+    {
+      icon: '😎',
+      label: t('projectCards.stats.crewCount', 'عدد الطاقم'),
+      value: normalizeNumbers(String(crewAssignmentsTotal))
+    },
+    {
+      icon: '💵',
+      label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'),
+      value: formatCurrency(reservationsTotal)
+    }
+  ];
+
+  const paymentStats = [
+    {
+      icon: '💳',
+      label: t('projectCards.stats.paymentStatus', 'حالة الدفع'),
+      value: paymentStatusLabel
+    },
+    {
+      icon: '💸',
+      label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'),
+      value: formatCurrency(expensesTotal)
+    },
+    {
+      icon: '💵',
+      label: t('projectCards.stats.reservationTotal', 'إجمالي الحجز'),
+      value: formatCurrency(reservationsTotal)
+    },
+    {
+      icon: '🧾',
+      label: t('projectCards.stats.taxTotal', 'الضريبة'),
+      value: formatCurrency(combinedTaxAmount)
+    },
+    {
+      icon: '💰',
+      label: t('projectCards.stats.overallTotal', 'المجموع الكلي'),
+      value: formatCurrency(overallTotal)
+    }
+  ];
 
   const descriptionText = description ? escapeHtml(truncateText(description, 110)) : escapeHtml(t('projects.fallback.noDescription', 'No description'));
-  const dateRange = escapeHtml(formatDateRange(project.start, project.end));
+
+  const metaRows = [
+    {
+      icon: '🆔',
+      label: t('projectCards.meta.code', 'رقم المشروع'),
+      value: `#${projectCodeDisplay}`
+    },
+    {
+      icon: '👤',
+      label: t('projectCards.meta.client', 'العميل'),
+      value: clientName
+    },
+    companyName
+      ? {
+          icon: '🏢',
+          label: t('projectCards.meta.company', 'شركة العميل'),
+          value: companyName
+        }
+      : null,
+    {
+      icon: '🏷️',
+      label: t('projectCards.meta.type', 'نوع المشروع'),
+      value: typeLabel
+    },
+    {
+      icon: '📅',
+      label: t('projectCards.meta.startDate', 'تاريخ البداية'),
+      value: formatDateTime(project.start)
+    },
+    {
+      icon: '📅',
+      label: t('projectCards.meta.endDate', 'تاريخ النهاية'),
+      value: project.end ? formatDateTime(project.end) : '—'
+    }
+  ].filter(Boolean);
+
+  const buildSection = (titleKey, fallback, rows = []) => {
+    if (!rows.length) return '';
+    const rowsHtml = rows
+      .map(({ icon, label, value }) => {
+        const iconHtml = icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : '';
+        return `
+          <div class="project-focus-card__row">
+            <span class="project-focus-card__row-label">${iconHtml}${escapeHtml(label)}</span>
+            <span class="project-focus-card__row-value">${escapeHtml(value)}</span>
+          </div>
+        `;
+      })
+      .join('');
+    return `
+      <div class="project-focus-card__section">
+        <span class="project-focus-card__section-title">${escapeHtml(t(titleKey, fallback))}</span>
+        <div class="project-focus-card__section-box">
+          ${rowsHtml}
+        </div>
+      </div>
+    `;
+  };
+
+  const sectionsHtml = [
+    buildSection('projectCards.groups.meta', 'بيانات المشروع', metaRows),
+    buildSection('projectCards.groups.reservations', 'موجز الحجز', reservationStats),
+    buildSection('projectCards.groups.payment', 'ملخص الدفع', paymentStats)
+  ].join('');
+
+  const actionsHtml = isConfirmed
+    ? `<div class="project-focus-card__actions"><span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(confirmedLabel)}</span></div>`
+    : `<div class="project-focus-card__actions"><button type="button" class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(confirmLabel)}</button></div>`;
+
+  const cardClassNames = ['project-focus-card', ...cardStateClasses].join(' ');
 
   return `
     <div class="col-12 col-md-6 col-xl-4">
-      <article class="project-focus-card" data-project-id="${project.id}" data-category="${category}">
-        <div class="project-focus-card__header">
-          <span class="badge project-focus-card__badge ${statusClass}">${escapeHtml(categoryLabel)}</span>
-          <span class="text-muted small">${dateRange}</span>
+      <article class="${cardClassNames}" data-project-id="${projectIdAttr}" data-category="${escapeHtml(String(category))}">
+        <div class="project-focus-card__accent"></div>
+        <div class="project-focus-card__top">
+          ${projectCodeBadge}
+          ${categoryBadge}
+          ${statusChip}
+          ${paymentChip}
         </div>
-        <div class="project-focus-card__body">
-          <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
-          <p class="project-focus-card__description">${descriptionText}</p>
-          <ul class="project-focus-card__stats list-unstyled mb-2 small">
-            <li>${clientLabel}</li>
-            <li>${typeStatLabel}</li>
-            <li>${escapeHtml(crewLabel)}</li>
-            <li>${escapeHtml(reservationsLabel)}</li>
-            ${crewPreview ? `<li>👥 ${crewPreview}</li>` : ''}
-            <li>${escapeHtml(budgetLabel)}</li>
-            ${expensesLabel ? `<li>${escapeHtml(expensesLabel)}</li>` : ''}
-          </ul>
+        <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
+        <p class="project-focus-card__description">${descriptionText}</p>
+        <div class="project-focus-card__sections">
+          ${sectionsHtml}
         </div>
-        <div class="project-focus-card__footer">
-          <div class="project-focus-card__status badge ${statusClass}">${escapeHtml(statusLabel)}</div>
-          <div class="project-focus-card__actions">
-            <button type="button" class="btn btn-sm btn-outline-light project-focus-card__btn" data-action="view" data-id="${project.id}">${escapeHtml(t('projects.focus.view', 'View details'))}</button>
-            <button type="button" class="btn btn-sm btn-outline-primary project-focus-card__btn" data-action="highlight" data-id="${project.id}">${escapeHtml(t('projects.focus.edit', 'Edit'))}</button>
-          </div>
-        </div>
+        ${actionsHtml}
       </article>
     </div>
   `;
@@ -1485,6 +1853,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const titleInput = form.querySelector('[name="project-title"]');
     const typeSelect = form.querySelector('[name="project-type"]');
     const descriptionInput = form.querySelector('[name="project-description"]');
+    const paymentStatusSelect = form.querySelector('[name="project-payment-status"]');
     const taxCheckbox = form.querySelector('[name="project-apply-tax"]');
 
     const title = titleInput?.value.trim() || '';
@@ -1492,6 +1861,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const startDateValue = startDateInput?.value.trim() || '';
     const startTimeValue = startTimeInput?.value.trim() || '';
     const descriptionValue = descriptionInput?.value.trim() || '';
+    const paymentStatusValue = paymentStatusSelect?.value === 'paid' ? 'paid' : 'unpaid';
     const applyTax = taxCheckbox?.checked === true;
 
     if (!title || !projectType || !startDateValue) {
@@ -1537,6 +1907,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       applyTax,
       taxAmount,
       totalWithTax,
+      paymentStatus: paymentStatusValue,
       expenses: editState.expenses.map((expense) => ({
         ...expense,
         amount: Number(expense.amount) || 0
@@ -1546,7 +1917,14 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     };
 
     state.projects[index] = updatedProject;
-    saveData({ projects: state.projects });
+    const reservationsUpdated = updateLinkedReservationsPaymentStatus(project.id, paymentStatusValue);
+    const savePayload = reservationsUpdated
+      ? { projects: state.projects, reservations: state.reservations }
+      : { projects: state.projects };
+    saveData(savePayload);
+    if (reservationsUpdated) {
+      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    }
     showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
 
     renderProjects();
@@ -1602,6 +1980,12 @@ function bindFocusCards() {
     const actionButton = event.target.closest('[data-action]');
     if (actionButton) {
       const { action, id } = actionButton.dataset;
+      if (action === 'confirm-project') {
+        event.preventDefault();
+        event.stopPropagation();
+        confirmProject(id);
+        return;
+      }
       if (action === 'view') {
         openProjectDetails(id);
       } else if (action === 'highlight') {
@@ -1633,6 +2017,95 @@ function focusProjectRow(projectId) {
   window.setTimeout(() => {
     row.classList.remove('project-row-highlight');
   }, 2200);
+}
+
+function confirmProject(projectId) {
+  if (!projectId) return;
+  const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
+  if (index === -1) {
+    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
+    return;
+  }
+
+  const project = state.projects[index];
+  if (project.confirmed === true || project.confirmed === 'true') {
+    showToast(t('projects.toast.alreadyConfirmed', 'ℹ️ المشروع مؤكّد مسبقًا'));
+    return;
+  }
+
+  const updatedProject = {
+    ...project,
+    confirmed: true,
+    updatedAt: new Date().toISOString()
+  };
+
+  state.projects[index] = updatedProject;
+  const reservationsConfirmed = updateLinkedReservationsConfirmation(projectId);
+  const savePayload = reservationsConfirmed
+    ? { projects: state.projects, reservations: state.reservations }
+    : { projects: state.projects };
+  saveData(savePayload);
+  renderProjects();
+  renderFocusCards();
+  updateSummary();
+
+  const isModalOpen = dom.detailsModalEl && dom.detailsModalEl.classList.contains('show');
+  if (isModalOpen && dom.detailsBody?.dataset.projectId === String(projectId)) {
+    openProjectDetails(projectId);
+  }
+
+  document.dispatchEvent(new CustomEvent('projects:changed'));
+  if (reservationsConfirmed) {
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  showToast(t('projects.toast.confirmed', '✅ تم تأكيد المشروع'));
+}
+
+function updateLinkedReservationsPaymentStatus(projectId, paymentStatus) {
+  if (!projectId) return false;
+  const shouldBePaid = paymentStatus === 'paid';
+  let changed = false;
+
+  state.reservations = state.reservations.map((reservation) => {
+    if (String(reservation.projectId) !== String(projectId)) return reservation;
+
+    const desiredPaidValue = shouldBePaid;
+    const desiredStatusValue = shouldBePaid ? 'paid' : 'unpaid';
+    const currentPaidNormalized = reservation.paid === true || reservation.paid === 'paid';
+    const currentStatusValue = reservation.paymentStatus || (currentPaidNormalized ? 'paid' : 'unpaid');
+
+    if (currentPaidNormalized === shouldBePaid && currentStatusValue === desiredStatusValue) {
+      return reservation;
+    }
+
+    changed = true;
+    return {
+      ...reservation,
+      paid: desiredPaidValue,
+      paymentStatus: desiredStatusValue
+    };
+  });
+
+  return changed;
+}
+
+function updateLinkedReservationsConfirmation(projectId) {
+  if (!projectId) return false;
+  let changed = false;
+
+  state.reservations = state.reservations.map((reservation) => {
+    if (String(reservation.projectId) !== String(projectId)) return reservation;
+    const alreadyConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
+    if (alreadyConfirmed) return reservation;
+
+    changed = true;
+    return {
+      ...reservation,
+      confirmed: true
+    };
+  });
+
+  return changed;
 }
 
 function isProjectToday(project) {
@@ -1832,6 +2305,7 @@ function buildProjectTypeOptionsMarkup(selectedType) {
 function buildProjectEditForm(project, editState = { clientName: '', clientCompany: '', expenses: [] }) {
   const titleLabel = t('projects.form.labels.title', 'اسم المشروع');
   const typeLabel = t('projects.form.labels.type', 'نوع المشروع');
+  const paymentStatusLabel = t('projects.form.labels.paymentStatus', 'حالة الدفع');
   const descriptionLabel = t('projects.details.labels.notes', 'ملاحظات المشروع');
   const startDateLabel = t('projects.form.labels.startDate', '📅 تاريخ البداية');
   const startTimeLabel = t('projects.form.labels.startTime', '⏰ وقت البداية');
@@ -1848,6 +2322,9 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
   const subheading = t('projects.details.edit.subheading', 'قم بتحديث بيانات المشروع ثم احفظ التغييرات.');
   const saveLabel = t('projects.details.edit.save', '💾 حفظ التعديلات');
   const cancelLabel = t('projects.details.edit.cancel', 'إلغاء');
+  const paymentStatusPaid = t('projects.form.paymentStatus.paid', 'مدفوع');
+  const paymentStatusUnpaid = t('projects.form.paymentStatus.unpaid', 'غير مدفوع');
+  const paymentStatus = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
 
   const startParts = splitDateTimeParts(project.start || '');
   const endParts = splitDateTimeParts(project.end || '');
@@ -1921,9 +2398,18 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
           </div>
         </div>
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mt-4">
-          <div class="form-check form-switch m-0">
-            <input class="form-check-input" type="checkbox" role="switch" id="project-edit-tax" name="project-apply-tax" ${applyTax ? 'checked' : ''}>
-            <label class="form-check-label" for="project-edit-tax">${escapeHtml(taxLabel)}</label>
+          <div class="project-form-status d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3 flex-grow-1">
+            <div class="project-edit-payment-select">
+              <label class="form-label" for="project-edit-payment-status">${escapeHtml(paymentStatusLabel)}</label>
+              <select class="form-select" id="project-edit-payment-status" name="project-payment-status">
+                <option value="unpaid" ${paymentStatus !== 'paid' ? 'selected' : ''}>${escapeHtml(paymentStatusUnpaid)}</option>
+                <option value="paid" ${paymentStatus === 'paid' ? 'selected' : ''}>${escapeHtml(paymentStatusPaid)}</option>
+              </select>
+            </div>
+            <div class="form-check form-switch m-0 project-edit-tax"> 
+              <input class="form-check-input" type="checkbox" role="switch" id="project-edit-tax" name="project-apply-tax" ${applyTax ? 'checked' : ''}>
+              <label class="form-check-label" for="project-edit-tax">${escapeHtml(taxLabel)}</label>
+            </div>
           </div>
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary" data-action="cancel-edit">${escapeHtml(cancelLabel)}</button>
@@ -2007,6 +2493,8 @@ function openProjectDetails(projectId) {
   const descriptionDisplay = descriptionRaw || t('projects.fallback.noDescription', 'لا يوجد وصف');
   const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
   const projectCompany = (project.clientCompany || client?.companyName || '').trim();
+  const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
+  const projectCodeDisplay = normalizeNumbers(projectCodeValue);
 
   const reservationsForProject = getReservationsForProject(project.id);
   const reservationsTotalRaw = reservationsForProject.reduce(
@@ -2037,8 +2525,20 @@ function openProjectDetails(projectId) {
   const vatChipClass = applyTax ? 'status-paid' : 'status-unpaid';
   const reservationsChipText = t('projects.details.chips.reservations', '{count} حجوزات')
     .replace('{count}', normalizeNumbers(String(reservationsCount)));
+  const paymentStatusValue = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
+  const paymentStatusText = t(`projects.paymentStatus.${paymentStatusValue}`, paymentStatusValue === 'paid' ? 'Paid' : 'Unpaid');
+  const paymentStatusChipClass = paymentStatusValue === 'paid' ? 'status-paid' : 'status-unpaid';
+  const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
+  const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
+    ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
+    : '';
 
   const summaryDetails = [];
+  summaryDetails.push({
+    icon: '💳',
+    label: t('projects.details.summary.paymentStatus', 'حالة الدفع'),
+    value: paymentStatusText
+  });
   summaryDetails.push({
     icon: '💼',
     label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'),
@@ -2069,6 +2569,7 @@ function openProjectDetails(projectId) {
   `).join('');
 
   const infoRows = [];
+  infoRows.push({ icon: '🆔', label: t('projects.details.labels.code', 'رقم المشروع'), value: `#${projectCodeDisplay}` });
   infoRows.push({ icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName });
   if (projectCompany) {
     infoRows.push({ icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: projectCompany });
@@ -2100,6 +2601,7 @@ function openProjectDetails(projectId) {
     : `<div class="text-muted">${escapeHtml(t('projects.details.noItems', 'لا يوجد'))}</div>`;
 
   const reservationsSection = buildProjectReservationsSection(project);
+  const projectCodeChip = `<span class="project-code-badge">#${escapeHtml(projectCodeDisplay)}</span>`;
 
   dom.detailsBody.dataset.projectId = String(project.id);
   dom.detailsBody.innerHTML = `
@@ -2109,12 +2611,15 @@ function openProjectDetails(projectId) {
           <h5 class="mb-2 d-flex flex-wrap align-items-center gap-2">
             <span class="text-muted project-details-title-label">${escapeHtml(t('projects.details.labels.projectTitle', 'اسم المشروع'))}:</span>
             <span class="fw-bold project-details-title-text">${escapeHtml(project.title)}</span>
+            ${projectCodeChip}
           </h5>
         </div>
         <div class="status-chips d-flex flex-wrap gap-2">
           <span class="status-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>
           <span class="status-chip ${vatChipClass}">${escapeHtml(vatChipText)}</span>
-          <span class="status-chip status-confirmed">${escapeHtml(reservationsChipText)}</span>
+          <span class="reservation-chip ${paymentStatusChipClass}">${escapeHtml(paymentStatusText)}</span>
+          <span class="reservation-chip status-confirmed">${escapeHtml(reservationsChipText)}</span>
+          ${confirmedChipHtml}
         </div>
       </div>
     </div>

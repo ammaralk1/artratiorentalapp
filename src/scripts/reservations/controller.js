@@ -43,7 +43,7 @@ export function loadReservationForm() {
   refreshCreateReservationForm();
 }
 
-export function handleReservationsMutation() {
+export function handleReservationsMutation(detail = null) {
   refreshCreateReservationForm();
   renderReservations();
 
@@ -53,6 +53,9 @@ export function handleReservationsMutation() {
   if (typeof window.refreshTechnicianReservationsViews === 'function') {
     window.refreshTechnicianReservationsViews();
   }
+
+  const eventInit = detail != null ? { detail } : {};
+  document.dispatchEvent(new CustomEvent('reservations:changed', eventInit));
 }
 
 function getBootstrapModalInstance(modalElement) {

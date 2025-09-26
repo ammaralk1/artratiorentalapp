@@ -7,6 +7,17 @@ export function resolveItemImage(item = {}) {
   return item.image || item.imageUrl || item.img || '';
 }
 
+export function resolveEquipmentPrice(item = {}) {
+  const candidates = [item.price, item.daily_rate, item.dailyRate, item.rate];
+  for (const value of candidates) {
+    const number = Number(value);
+    if (Number.isFinite(number)) {
+      return number;
+    }
+  }
+  return 0;
+}
+
 export function getEquipmentRecordByBarcode(barcode) {
   if (!barcode) return null;
   const normalized = normalizeBarcodeValue(barcode);

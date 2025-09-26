@@ -2,7 +2,7 @@ import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { isReservationCompleted } from '../../reservationsShared.js';
 
-export function buildReservationTilesHtml({ entries, customersMap, techniciansMap }) {
+export function buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap }) {
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
   const taxIncludedShort = t('reservations.list.taxIncludedShort', '(شامل الضريبة)');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
@@ -14,8 +14,11 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const confirmLabel = t('reservations.list.actions.confirm', '✔️ تأكيد');
+  const projectUnlinkedText = t('reservations.list.project.unlinked', 'غير مرتبط بمشروع');
+  const projectMissingText = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
   const labels = {
     client: t('reservations.list.labels.client', '👤 العميل'),
+    project: t('reservations.list.labels.project', '📁 المشروع'),
     start: t('reservations.list.labels.start', '🗓️ بداية الحجز'),
     end: t('reservations.list.labels.end', '🗓️ نهاية الحجز'),
     cost: t('reservations.list.labels.cost', '💵 التكلفة'),
@@ -25,6 +28,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
 
   return entries.map(({ reservation, index }) => {
     const customer = customersMap.get(String(reservation.customerId));
+    const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
     const completed = isReservationCompleted(reservation);
     const paid = reservation.paid === true || reservation.paid === 'paid';
@@ -67,6 +71,10 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
     const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
     const taxBadge = reservation.applyTax ? `<small>${taxIncludedShort}</small>` : '';
+    let projectNameText = projectUnlinkedText;
+    if (reservation.projectId) {
+      projectNameText = project?.title ? normalizeNumbers(project.title) : projectMissingText;
+    }
 
     return `
       <div class="reservation-tile${stateClass}"${completedAttr} data-reservation-index="${index}" data-action="details">
@@ -81,6 +89,10 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
           <div class="tile-row">
             <span class="tile-label">${labels.client}</span>
             <span class="tile-value">${customer?.customerName || unknownCustomer}</span>
+          </div>
+          <div class="tile-row">
+            <span class="tile-label">${labels.project}</span>
+            <span class="tile-value">${projectNameText}</span>
           </div>
           <div class="tile-row">
             <span class="tile-label">${labels.start}</span>

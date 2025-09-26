@@ -1,6 +1,6 @@
 import { normalizeText, isReservationCompleted } from '../../reservationsShared.js';
 
-export function filterReservationEntries({ reservations = [], filters = {}, customersMap, techniciansMap }) {
+export function filterReservationEntries({ reservations = [], filters = {}, customersMap, techniciansMap, projectsMap }) {
   const entries = reservations.map((reservation, index) => ({ reservation, index }));
 
   const searchTerm = filters.searchTerm || '';
@@ -17,6 +17,7 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
 
   const filtered = entries.filter(({ reservation }) => {
     const customer = customersMap.get(String(reservation.customerId));
+    const project = projectsMap?.get?.(String(reservation.projectId));
     const reservationStart = reservation.start ? new Date(reservation.start) : null;
     const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
     const completed = isReservationCompleted(reservation);
@@ -69,7 +70,8 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
       customer?.customerName,
       reservation.notes,
       itemsText,
-      techniciansText
+      techniciansText,
+      project?.title
     ].filter(Boolean).join(' '));
 
     return haystack.includes(searchTerm);

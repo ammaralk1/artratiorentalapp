@@ -80,7 +80,7 @@ function initializeReservationPickers() {
       altInput: true,
       altFormat: 'h:i K',
       time_24hr: false,
-      defaultHour: 10,
+      defaultHour: 9,
       defaultMinute: 0
     }],
     ['#edit-res-start-time', {
@@ -100,7 +100,7 @@ function initializeReservationPickers() {
       altInput: true,
       altFormat: 'h:i K',
       time_24hr: false,
-      defaultHour: 10,
+      defaultHour: 9,
       defaultMinute: 0
     }]
   ];
@@ -110,6 +110,11 @@ function initializeReservationPickers() {
       fp(selector, config);
     }
   });
+
+  const startTimeInput = document.querySelector('#res-start-time');
+  if (startTimeInput) {
+    startTimeInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 }
 
 export function setupReservationEvents() {

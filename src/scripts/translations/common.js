@@ -12,7 +12,20 @@ registerTranslations({
     'theme.toggle.ariaDark': 'الوضع الليلي مفعل',
     'language.toggle.labelAr': '🇸🇦 العربية',
     'language.toggle.labelEn': '🇬🇧 English',
-    'actions.clearFilters': '🔄 إعادة التصفية'
+    'actions.clearFilters': '🔄 إعادة التصفية',
+    'actions.view': '👁️ عرض',
+    'actions.delete': '🗑️ حذف',
+    'actions.remove': 'إزالة',
+    'home.nav.brand': 'لوحة التحكم',
+    'home.hero.title': 'مرحباً بك',
+    'home.hero.subtitle': 'اختر المسار المناسب لإدارة أعمالك.',
+    'home.hero.greetingUser': 'مرحباً {name}',
+    'home.bookings.title': 'إدارة الحجوزات',
+    'home.bookings.description': 'الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.',
+    'home.bookings.button': 'انتقال إلى لوحة التحكم',
+    'home.projects.title': 'إدارة المشاريع',
+    'home.projects.description': 'إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.',
+    'home.projects.button': 'فتح لوحة المشاريع'
   },
   en: {
     'actions.logout': '🚪 Log Out',
@@ -25,6 +38,19 @@ registerTranslations({
     'theme.toggle.ariaDark': 'Dark mode enabled',
     'language.toggle.labelAr': '🇸🇦 Arabic',
     'language.toggle.labelEn': '🇬🇧 English',
-    'actions.clearFilters': '🔄 Reset filters'
+    'actions.clearFilters': '🔄 Reset filters',
+    'actions.view': '👁️ View',
+    'actions.delete': '🗑️ Delete',
+    'actions.remove': 'Remove',
+    'home.nav.brand': 'Control Panel',
+    'home.hero.title': 'Welcome',
+    'home.hero.subtitle': 'Choose the best path to manage your operations.',
+    'home.hero.greetingUser': 'Welcome {name}',
+    'home.bookings.title': 'Bookings Management',
+    'home.bookings.description': 'Access the full dashboard for bookings, equipment, maintenance, and crew.',
+    'home.bookings.button': 'Open Dashboard',
+    'home.projects.title': 'Projects Management',
+    'home.projects.description': 'Create and follow up on projects, assign crew and equipment, and track expenses.',
+    'home.projects.button': 'Open Projects Hub'
   }
 });

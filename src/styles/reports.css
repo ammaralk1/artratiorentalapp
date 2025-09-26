@@ -48,6 +48,40 @@ body[dir="ltr"] .reports-filters {
   min-width: 150px;
 }
 
+.reports-filter-group--status {
+  min-width: 220px;
+}
+
+.reports-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reports-status-chip {
+  border: 1px solid rgba(76, 110, 245, 0.2);
+  background: rgba(76, 110, 245, 0.06);
+  color: var(--clr-primary);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.reports-status-chip:hover {
+  border-color: rgba(76, 110, 245, 0.4);
+  background: rgba(76, 110, 245, 0.12);
+}
+
+.reports-status-chip.is-active {
+  background: var(--clr-primary);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(76, 110, 245, 0.28);
+}
+
 .reports-filter-group label {
   font-weight: 600;
   color: #425675;
@@ -359,6 +393,17 @@ body[dir="ltr"] .reports-refresh-btn {
   background: linear-gradient(135deg, rgba(76, 110, 245, 0.35), rgba(37, 99, 235, 0.12));
 }
 
+:is(html.dark-mode, body.dark-mode) .reports-status-chip {
+  border-color: rgba(93, 133, 255, 0.35);
+  background: rgba(37, 55, 88, 0.65);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-status-chip.is-active {
+  background: rgba(93, 133, 255, 0.95);
+  box-shadow: 0 10px 22px rgba(64, 87, 204, 0.35);
+}
+
 :is(html.dark-mode, body.dark-mode) .reports-kpi-label {
   color: rgba(203, 213, 225, 0.9);
 }
@@ -394,5 +439,3 @@ body[dir="ltr"] .reports-refresh-btn {
 :is(html.dark-mode, body.dark-mode) .reports-progress-meta {
   color: rgba(203, 213, 225, 0.85);
 }
-
-

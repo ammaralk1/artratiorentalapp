@@ -601,6 +601,12 @@ document.addEventListener("technicians:updated", () => {
   renderTechniciansTable();
 });
 
+document.addEventListener('technicians:refreshRequested', () => {
+  setupTechnicianModule();
+  renderTechniciansTable();
+  refreshTechnicianLanguageStrings();
+});
+
 document.addEventListener("language:changed", () => {
   refreshTechnicianLanguageStrings();
 });

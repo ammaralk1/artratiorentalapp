@@ -1,6 +1,8 @@
-import { normalizeNumbers } from './utils.js';
+import { normalizeNumbers, showToast } from './utils.js';
 import { t } from './language.js';
 import { syncTechniciansStatuses } from './technicians.js';
+import { loadData } from './storage.js';
+import { combineDateTime, hasTechnicianConflict } from './reservations/state.js';
 
 let cachedTechnicians = [];
 let selectedTechnicians = [];
@@ -9,6 +11,37 @@ let technicianPickerContext = 'create';
 
 let onDraftSelectionChange = () => {};
 let onEditSelectionChange = () => {};
+
+function resolveTechnicianWage(technician = {}) {
+  const candidates = [
+    technician.dailyWage,
+    technician.daily_rate,
+    technician.dailyRate,
+    technician.wage,
+    technician.rate
+  ];
+
+  for (const value of candidates) {
+    if (value == null || value === '') continue;
+    const normalized = normalizeNumbers(String(value));
+    const number = Number.parseFloat(normalized);
+    if (Number.isFinite(number)) {
+      return number;
+    }
+  }
+
+  return 0;
+}
+
+function formatTechnicianWage(technician = {}) {
+  const wage = resolveTechnicianWage(technician);
+  if (!Number.isFinite(wage) || wage <= 0) {
+    return '—';
+  }
+
+  const wageSuffix = t('technicians.table.wageSuffix', 'ريال');
+  return `${normalizeNumbers(String(wage))} ${wageSuffix}`;
+}
 
 function normalizeText(value = '') {
   return normalizeNumbers(String(value)).trim().toLowerCase();
@@ -43,11 +76,16 @@ function renderTechnicianChips(containerId, ids = [], context) {
       const fallbackName = t('reservations.crew.fallbackName', 'عضو الطاقم {id}').replace('{id}', technicianId);
       const name = technician.name || fallbackName;
       const role = technician.role ? `<small class="technician-chip-role">${technician.role}</small>` : '';
+      const wageDisplay = formatTechnicianWage(technician);
+      const wageLabel = wageDisplay !== '—'
+        ? `<small class="technician-chip-wage">💰 ${wageDisplay}</small>`
+        : '';
       const removeLabel = t('reservations.crew.removeAria', 'إزالة');
       return `
         <span class="technician-chip" data-id="${technicianId}">
           <span class="technician-chip-name">${name}</span>
           ${role}
+          ${wageLabel}
           <button type="button" class="technician-chip-remove" data-context="${context}" data-id="${technicianId}" aria-label="${removeLabel}">✖</button>
         </span>
       `;
@@ -90,26 +128,67 @@ function populateTechnicianPickerTable() {
 
   if (filtered.length === 0) {
     const noResults = t('reservations.crew.searchEmpty', 'لا يوجد نتائج مطابقة.');
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${noResults}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${noResults}</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map((tech) => `
-    <tr>
-      <td style="width:40px;">
-        <input class="form-check-input technician-picker-checkbox" type="checkbox" value="${tech.id}" ${selectedIds.has(String(tech.id)) ? 'checked' : ''}>
-      </td>
-      <td>${tech.name || '-'}</td>
-      <td>${tech.role || '—'}</td>
-      <td>${tech.department || '—'}</td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = filtered.map((tech) => {
+    const wageDisplay = formatTechnicianWage(tech);
+    return `
+      <tr>
+        <td style="width:40px;">
+          <input class="form-check-input technician-picker-checkbox" type="checkbox" value="${tech.id}" ${selectedIds.has(String(tech.id)) ? 'checked' : ''}>
+        </td>
+        <td>${tech.name || '-'}</td>
+        <td>${tech.role || '—'}</td>
+        <td>${tech.department || '—'}</td>
+        <td>${wageDisplay}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function collectTechnicianPickerSelection() {
   return Array.from(document.querySelectorAll('.technician-picker-checkbox:checked'))
     .map((checkbox) => checkbox.value)
     .filter(Boolean);
+}
+
+function getReservationContextMeta(context = 'create') {
+  if (context === 'edit') {
+    const startDate = document.getElementById('edit-res-start')?.value?.trim();
+    const endDate = document.getElementById('edit-res-end')?.value?.trim();
+    const startTime = document.getElementById('edit-res-start-time')?.value?.trim() || '00:00';
+    const endTime = document.getElementById('edit-res-end-time')?.value?.trim() || '00:00';
+
+    const start = startDate ? combineDateTime(startDate, startTime) : null;
+    const end = endDate ? combineDateTime(endDate, endTime) : null;
+
+    let ignoreReservationId = null;
+    const indexValue = document.getElementById('edit-res-index')?.value;
+    if (indexValue != null) {
+      const index = Number.parseInt(indexValue, 10);
+      if (Number.isInteger(index)) {
+        const { reservations = [] } = loadData();
+        const reservation = reservations?.[index];
+        if (reservation) {
+          ignoreReservationId = reservation.id ?? reservation.reservationId ?? null;
+        }
+      }
+    }
+
+    return { start, end, ignoreReservationId };
+  }
+
+  const startDate = document.getElementById('res-start')?.value?.trim();
+  const endDate = document.getElementById('res-end')?.value?.trim();
+  const startTime = document.getElementById('res-start-time')?.value?.trim() || '00:00';
+  const endTime = document.getElementById('res-end-time')?.value?.trim() || '00:00';
+
+  const start = startDate ? combineDateTime(startDate, startTime) : null;
+  const end = endDate ? combineDateTime(endDate, endTime) : null;
+
+  return { start, end, ignoreReservationId: null };
 }
 
 function updateTechnicianPickerInfo() {
@@ -125,11 +204,43 @@ function updateTechnicianPickerInfo() {
 }
 
 function applyTechnicianSelection() {
-  const selectedIds = collectTechnicianPickerSelection();
+  const selectedIds = collectTechnicianPickerSelection().map(String);
+  const { start, end, ignoreReservationId } = getReservationContextMeta(technicianPickerContext);
+
+  if (start && end) {
+    const conflictingIds = selectedIds.filter((technicianId) =>
+      hasTechnicianConflict(technicianId, start, end, ignoreReservationId)
+    );
+
+    if (conflictingIds.length > 0) {
+      const namesList = conflictingIds
+        .map((id) => getTechnicianByIdLocal(id)?.name || id)
+        .join(t('reservations.list.crew.separator', '، '));
+
+      const message = t(
+        'reservations.toast.technicianSelectionConflict',
+        '⚠️ لا يمكن اختيار {names} لأنهم مرتبطون بحجز آخر في نفس الفترة الزمنية'
+      ).replace('{names}', namesList);
+
+      conflictingIds.forEach((id) => {
+        const checkbox = document.querySelector(
+          `.technician-picker-checkbox[value="${CSS.escape(String(id))}"]`
+        );
+        if (checkbox) {
+          checkbox.checked = false;
+        }
+      });
+
+      showToast(message);
+      updateTechnicianPickerInfo();
+      return;
+    }
+  }
+
   if (technicianPickerContext === 'edit') {
-    setEditingTechnicians(selectedIds.map(String));
+    setEditingTechnicians(selectedIds);
   } else {
-    setSelectedTechnicians(selectedIds.map(String));
+    setSelectedTechnicians(selectedIds);
   }
 
   updateTechnicianPickerInfo();
@@ -273,4 +384,3 @@ export function reconcileTechnicianSelections(latest = []) {
     updateTechnicianPickerInfo();
   }
 }
-

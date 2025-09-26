@@ -16,11 +16,11 @@ export function deleteReservation(index, { onAfterChange } = {}) {
     return false;
   }
 
-  reservations.splice(index, 1);
+  const [removedReservation] = reservations.splice(index, 1);
   saveData({ reservations });
 
   runSharedRefresh();
-  onAfterChange?.();
+  onAfterChange?.({ type: 'deleted', reservation: removedReservation });
   showToast(t('reservations.toast.deleted', '🗑️ تم حذف الحجز'));
   return true;
 }
@@ -37,7 +37,7 @@ export function confirmReservation(index, { onAfterChange } = {}) {
   saveData({ reservations });
 
   runSharedRefresh();
-  onAfterChange?.();
+  onAfterChange?.({ type: 'confirmed', reservation });
   showToast(t('reservations.toast.confirmed', '✅ تم تأكيد الحجز'));
   return true;
 }
