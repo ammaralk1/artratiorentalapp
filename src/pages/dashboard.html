@@ -46,12 +46,10 @@
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-Rl62qDIz.js"></script>
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/theme-C7llKhek.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/events-gPRGQZjE.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/auth-5W6mzyky.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/customers-DKy8Oalm.js">
-  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/theme-BgWebbgc.css">
+  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-By_j8jmx.js"></script>
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/theme-BGfo8loF.js">
+  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/events-ClqfwSpm.js">
+  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/theme-BVA1-zST.css">
 </head>
 <body class="tabs-loading">
 
@@ -60,7 +58,10 @@
 
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
-      <h2 class="mb-0" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</h2>
+      <div class="d-flex align-items-center gap-2">
+        <a href="home.html" class="btn btn-outline-primary btn-lg" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
+        <h2 class="mb-0" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</h2>
+      </div>
       <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
         <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
@@ -471,13 +472,22 @@
                 </div>
               </div>
 
-              <div class="row mb-3">
-                <div class="col-md-6 position-relative">
-                  <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                  <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
-                  <div id="customer-suggestions" class="suggestions-list"></div>
-                </div>
+            <div class="row mb-3">
+              <div class="col-md-6 position-relative">
+                <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
+                <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
+                <div id="customer-suggestions" class="suggestions-list"></div>
+              </div>
               <div class="col-md-6">
+                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <select id="res-project" class="form-select" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+                  <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-12">
                 <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
                 <textarea id="res-notes" class="form-control" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
               </div>
@@ -906,6 +916,25 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
+              <select id="edit-res-project" class="form-select">
+                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex flex-wrap align-items-center gap-3 mt-4 mt-md-0">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                  <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+                </div>
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                  <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
               <div class="input-group">
                 <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
@@ -913,16 +942,6 @@
                   <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
                   <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
                 </select>
-              </div>
-            </div>
-            <div class="col-md-6 d-flex align-items-center gap-3">
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-tax">
-                <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
-              </div>
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
-                <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
               </div>
             </div>
 
