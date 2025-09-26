@@ -11,6 +11,7 @@
   --clr-warning: #f08c00;
   --radius-lg: 18px;
   --radius-md: 14px;
+  --shadow-xs: 0 4px 12px rgba(15, 23, 42, 0.05);
   --shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 15px 35px rgba(15, 23, 42, 0.08);
   --transition: all 0.25s ease;
@@ -22,6 +23,7 @@
   --clr-card: #18213b;
   --clr-text: #e2e8f0;
   --clr-muted: #94a3b8;
+  --shadow-xs: 0 6px 16px rgba(4, 10, 25, 0.55);
   --shadow-sm: 0 10px 24px rgba(4, 10, 25, 0.55);
   --shadow-md: 0 18px 40px rgba(4, 10, 25, 0.75);
   background: linear-gradient(180deg, rgba(10, 15, 40, 0.92) 0%, rgba(15, 23, 42, 1) 45%);
@@ -75,6 +77,10 @@ body[dir="ltr"] {
   color: #bfdbfe;
 }
 
+:is(html.dark-mode, body.dark-mode) .text-muted {
+  color: rgba(226, 232, 240, 0.72) !important;
+}
+
 :is(html.dark-mode, body.dark-mode) .bg-light {
   background-color: rgba(148, 163, 184, 0.18) !important;
   color: var(--clr-text) !important;
@@ -115,6 +121,861 @@ h3, h4 {
   background: rgba(24, 33, 59, 0.92);
   border: 1px solid rgba(59, 130, 246, 0.18);
   box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
+}
+
+.home-navbar {
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+  transition: var(--transition);
+}
+
+.home-navbar .navbar-brand {
+  color: var(--clr-text);
+}
+
+html.dark-mode .home-navbar {
+  background: rgba(24, 33, 59, 0.92) !important;
+  border-color: rgba(59, 130, 246, 0.24) !important;
+  box-shadow: 0 14px 32px rgba(3, 8, 26, 0.55);
+}
+
+html.dark-mode .home-navbar .navbar-brand,
+html.dark-mode .home-navbar .nav-link {
+  color: var(--clr-text) !important;
+}
+
+
+html.dark-mode .home-navbar .btn-outline-secondary,
+html.dark-mode .home-navbar .btn-outline-primary {
+  color: var(--clr-text);
+  border-color: rgba(148, 163, 184, 0.45);
+  background-color: transparent;
+}
+
+html.dark-mode .home-navbar .btn-outline-secondary:hover,
+html.dark-mode .home-navbar .btn-outline-primary:hover {
+  background-color: rgba(148, 163, 184, 0.2);
+  color: var(--clr-text);
+}
+
+html.dark-mode .home-navbar .btn-outline-danger,
+html.dark-mode .home-navbar .btn-danger {
+  color: #fee2e2;
+  border-color: rgba(248, 113, 113, 0.85);
+  background-color: rgba(248, 113, 113, 0.12);
+}
+
+html.dark-mode .home-navbar .btn-outline-danger:hover,
+html.dark-mode .home-navbar .btn-danger:hover {
+  background-color: rgba(248, 113, 113, 0.28);
+  border-color: rgba(252, 165, 165, 0.95);
+  color: #fff;
+}
+
+.home-subtitle {
+  transition: var(--transition);
+}
+
+html.dark-mode .home-subtitle {
+  color: rgba(226, 232, 240, 0.78) !important;
+}
+
+.projects-hero-text {
+  transition: var(--transition);
+}
+
+html.dark-mode .projects-hero-text {
+  color: rgba(226, 232, 240, 0.8) !important;
+}
+
+.projects-table table {
+  background-color: transparent;
+  color: var(--clr-text);
+}
+
+.projects-table thead th {
+  background-color: rgba(76, 110, 245, 0.06);
+  border-bottom: 1px solid rgba(76, 110, 245, 0.15);
+}
+
+.projects-table tbody td {
+  background-color: transparent;
+}
+
+.projects-table tbody tr {
+  transition: var(--transition);
+}
+
+.projects-table tbody tr:hover {
+  background-color: rgba(76, 110, 245, 0.08);
+}
+
+.project-focus-wrapper {
+  padding: 24px;
+}
+
+.project-focus-card {
+  position: relative;
+  background: var(--clr-card);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(76, 110, 245, 0.08);
+  transition: var(--transition);
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-focus-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(76, 110, 245, 0.18);
+}
+
+.project-focus-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.project-focus-card__badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+.project-focus-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.project-focus-card__description {
+  color: var(--clr-muted);
+  margin-bottom: 0;
+  min-height: 40px;
+}
+
+.project-focus-card__stats li {
+  color: var(--clr-muted);
+  line-height: 1.4;
+}
+
+.project-focus-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-focus-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.project-focus-card__btn {
+  transition: var(--transition);
+}
+
+.project-focus-card__btn:hover,
+.project-focus-card__btn:focus {
+  transform: translateY(-2px);
+}
+
+.project-focus-card__status {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+}
+
+.project-row-highlight {
+  outline: 2px solid var(--clr-primary);
+  box-shadow: 0 0 0 4px rgba(76, 110, 245, 0.18);
+}
+
+.project-timeline-box {
+  overflow: hidden;
+}
+
+.project-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-timeline__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--clr-muted);
+  padding-inline: 4px;
+}
+
+.project-timeline__track {
+  position: relative;
+  border-radius: var(--radius-md);
+  padding: 16px 0;
+  background: linear-gradient(90deg, rgba(76, 110, 245, 0.08) 0%, rgba(76, 110, 245, 0.02) 100%);
+  min-height: 70px;
+}
+
+.project-timeline__track::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 6px;
+  inset-inline-end: 6px;
+  top: 50%;
+  height: 2px;
+  background: rgba(76, 110, 245, 0.18);
+  transform: translateY(-50%);
+}
+
+.project-timeline__item {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 6px 14px;
+  color: #fff;
+  font-size: 0.85rem;
+  text-decoration: none;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
+  transition: var(--transition);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.project-timeline__item:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.25);
+  transform: translateY(-55%);
+}
+
+.project-timeline__item-label {
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.project-timeline__item--upcoming {
+  background: linear-gradient(90deg, rgba(76, 110, 245, 0.92) 0%, rgba(90, 141, 255, 0.95) 100%);
+}
+
+.project-timeline__item--ongoing {
+  background: linear-gradient(90deg, rgba(240, 140, 0, 0.95) 0%, rgba(250, 176, 50, 0.95) 100%);
+}
+
+.project-timeline__item--completed {
+  background: linear-gradient(90deg, rgba(47, 158, 68, 0.95) 0%, rgba(64, 201, 97, 0.95) 100%);
+}
+
+.project-timeline__item--conflict {
+  box-shadow: 0 12px 26px rgba(224, 49, 49, 0.32);
+  outline: 2px solid rgba(224, 49, 49, 0.85);
+}
+
+.project-timeline__item-conflict {
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.project-timeline__empty {
+  text-align: center;
+  padding: 12px 0;
+}
+
+.timeline-status-badge {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+}
+
+.timeline-status-badge--upcoming {
+  background: rgba(76, 110, 245, 0.12);
+  color: rgba(76, 110, 245, 0.92);
+}
+
+.timeline-status-badge--ongoing {
+  background: rgba(240, 140, 0, 0.12);
+  color: rgba(240, 140, 0, 0.95);
+}
+
+.timeline-status-badge--completed {
+  background: rgba(47, 158, 68, 0.12);
+  color: rgba(47, 158, 68, 0.95);
+}
+
+.timeline-status-badge--conflict {
+  background: rgba(224, 49, 49, 0.12);
+  color: rgba(224, 49, 49, 0.95);
+}
+
+.project-timeline-legend {
+  text-align: start;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-timeline__track {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.16) 0%, rgba(37, 99, 235, 0.05) 100%);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-timeline__track::before {
+  background: rgba(148, 163, 184, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-timeline__item {
+  box-shadow: 0 12px 28px rgba(8, 47, 73, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-timeline__item--conflict {
+  outline-color: rgba(248, 113, 113, 0.85);
+}
+
+html.dark-mode .projects-table table {
+  color: var(--clr-text);
+  background-color: transparent;
+}
+
+html.dark-mode .projects-table .table-light {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+  color: var(--clr-text) !important;
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
+
+html.dark-mode .projects-table thead th {
+  background-color: rgba(59, 130, 246, 0.18);
+  border-bottom-color: rgba(148, 163, 184, 0.28);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+html.dark-mode .projects-table tbody tr {
+  background-color: rgba(24, 33, 59, 0.86);
+  border-color: rgba(59, 130, 246, 0.18);
+  box-shadow: inset 0 -1px 0 rgba(59, 130, 246, 0.12);
+}
+
+html.dark-mode .projects-table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.22);
+}
+
+html.dark-mode .projects-table td,
+html.dark-mode .projects-table th {
+  border-color: rgba(59, 130, 246, 0.16);
+}
+
+html.dark-mode .projects-table td small,
+html.dark-mode .projects-table td span,
+html.dark-mode .projects-table td strong {
+  color: rgba(226, 232, 240, 0.88);
+}
+
+html.dark-mode .project-focus-card {
+  background: rgba(24, 33, 59, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
+}
+
+html.dark-mode .project-focus-card__description,
+html.dark-mode .project-focus-card__stats li {
+  color: rgba(226, 232, 240, 0.7);
+}
+
+html.dark-mode .project-focus-card__btn.btn-outline-light {
+  color: rgba(226, 232, 240, 0.9);
+  border-color: rgba(226, 232, 240, 0.4);
+}
+
+html.dark-mode .project-focus-card__btn.btn-outline-light:hover,
+html.dark-mode .project-focus-card__btn.btn-outline-light:focus {
+  background-color: rgba(226, 232, 240, 0.12);
+}
+
+html.dark-mode .project-focus-card__btn.btn-outline-primary {
+  border-color: rgba(59, 130, 246, 0.8);
+  color: rgba(191, 219, 254, 0.94);
+}
+
+html.dark-mode .project-focus-card__btn.btn-outline-primary:hover,
+html.dark-mode .project-focus-card__btn.btn-outline-primary:focus {
+  background-color: rgba(59, 130, 246, 0.22);
+}
+
+html.dark-mode .project-row-highlight {
+  outline-color: rgba(59, 130, 246, 0.9);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.22);
+}
+
+.projects-table-empty-row td {
+  background-color: rgba(76, 110, 245, 0.04);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+}
+
+html.dark-mode .projects-table-empty-row td {
+  background-color: rgba(24, 33, 59, 0.82);
+  color: rgba(226, 232, 240, 0.86) !important;
+  border: 1px dashed rgba(59, 130, 246, 0.4);
+}
+
+.project-reservations-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: 6px;
+  background: rgba(76, 110, 245, 0.12);
+  color: rgba(76, 110, 245, 0.92);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.project-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  color: rgba(5, 150, 105, 0.95);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-inline-end: 4px;
+}
+
+.project-reservations-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(76, 110, 245, 0.12);
+}
+
+.project-reservations-header h6 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.project-reservations-count {
+  background: rgba(76, 110, 245, 0.12);
+  color: rgba(76, 110, 245, 0.92);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.project-reservations-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+@media (min-width: 768px) {
+  .project-reservations-list {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+.project-reservations-empty {
+  margin-top: 12px;
+}
+
+.project-reservations-empty.alert {
+  border: 1px solid rgba(76, 110, 245, 0.15);
+  background: rgba(237, 242, 255, 0.85);
+  color: #1d2b56;
+}
+
+html.dark-mode .project-reservations-empty.alert,
+body.dark-mode .project-reservations-empty.alert {
+  border-color: rgba(96, 165, 250, 0.35);
+  background: rgba(15, 23, 42, 0.75);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.project-details-summary {
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 255, 0.9);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-details-summary .summary-details-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
+  color: #26334d;
+}
+
+.project-details-summary .summary-details-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--clr-muted);
+  font-weight: 600;
+}
+
+.project-details-summary .summary-details-value {
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+.project-details-info {
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 255, 0.75);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-details-info .res-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px 0;
+  gap: 12px;
+  border-bottom: 1px solid rgba(76, 110, 245, 0.1);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.project-details-info .res-info-row:last-child {
+  border-bottom: none;
+}
+
+.project-details-info .res-info-row .label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--clr-muted);
+  flex: 0 0 auto;
+}
+
+.project-details-info .res-info-row .separator {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--clr-muted);
+  padding-inline: 4px;
+}
+
+.project-details-info .res-info-row .value {
+  font-weight: 700;
+  color: var(--clr-text);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.project-details-section {
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-lg);
+  background: rgba(248, 250, 255, 0.7);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-xs);
+}
+
+.project-details-section h6 {
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--clr-text);
+}
+
+.project-details-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-details-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--clr-text);
+}
+
+.project-details-list .text-muted {
+  color: var(--clr-muted) !important;
+}
+
+.project-expense-label {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--clr-text);
+  min-width: 0;
+}
+
+.project-expense-amount {
+  flex: 0 0 auto;
+  font-weight: 700;
+  color: var(--clr-text);
+}
+
+body[dir="rtl"] .project-details-list {
+  direction: rtl;
+}
+
+body[dir="ltr"] .project-expense-label {
+  flex: 1 1 auto;
+}
+
+body[dir="rtl"] .project-expense-label,
+body[dir="rtl"] .project-expense-amount {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.project-notes {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--clr-text);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border: 1px solid rgba(76, 110, 245, 0.08);
+}
+
+.project-details-header .badge {
+  font-size: 0.85rem;
+}
+
+.project-details-header h5 {
+  margin: 0;
+}
+
+.project-details-header .status-chips {
+  align-items: center;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-summary {
+  background: rgba(24, 33, 59, 0.9);
+  border-color: rgba(93, 133, 255, 0.22);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-summary .summary-details-label {
+  color: rgba(148, 163, 184, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-summary .summary-details-value {
+  color: rgba(226, 232, 240, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-info {
+  background: rgba(24, 33, 59, 0.88);
+  border-color: rgba(93, 133, 255, 0.18);
+  box-shadow: 0 12px 24px rgba(3, 10, 32, 0.45);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-info .res-info-row {
+  border-bottom-color: rgba(93, 133, 255, 0.15);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-info .res-info-row .label {
+  color: rgba(148, 163, 184, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-section {
+  background: rgba(24, 33, 59, 0.82);
+  border-color: rgba(93, 133, 255, 0.16);
+  box-shadow: 0 16px 30px rgba(3, 10, 32, 0.45);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-notes {
+  background: rgba(10, 20, 43, 0.7);
+  border-color: rgba(93, 133, 255, 0.12);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+body[dir="rtl"] .project-details-info .res-info-row {
+  text-align: right;
+  justify-content: flex-start;
+}
+
+body[dir="ltr"] .project-details-info .res-info-row {
+  text-align: left;
+  justify-content: flex-start;
+}
+
+body[dir="rtl"] .project-details-info .res-info-row .value {
+  text-align: right;
+}
+
+body[dir="ltr"] .project-details-info .res-info-row .value {
+  text-align: left;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-list .text-muted {
+  color: rgba(148, 163, 184, 0.75) !important;
+}
+
+body[dir="rtl"] .project-details-list li {
+  justify-content: flex-start;
+  text-align: right;
+  gap: 8px;
+}
+
+.project-reservation-card {
+  background: var(--clr-card);
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-reservation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(76, 110, 245, 0.12);
+}
+
+.project-reservation-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.project-reservation-card__id {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--clr-text);
+}
+
+.project-reservation-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.project-reservation-card__badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.project-reservation-card__badge--confirmed {
+  background: rgba(47, 158, 68, 0.15);
+  color: rgba(47, 158, 68, 0.95);
+}
+
+.project-reservation-card__badge--pending {
+  background: rgba(240, 140, 0, 0.18);
+  color: rgba(240, 140, 0, 0.95);
+}
+
+.project-reservation-card__badge--paid {
+  background: rgba(76, 110, 245, 0.18);
+  color: rgba(76, 110, 245, 0.95);
+}
+
+.project-reservation-card__badge--unpaid {
+  background: rgba(224, 49, 49, 0.18);
+  color: rgba(224, 49, 49, 0.95);
+}
+
+.project-reservation-card__badge--completed {
+  background: rgba(37, 99, 235, 0.22);
+  color: rgba(37, 99, 235, 0.95);
+}
+
+.project-reservation-card__range {
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.project-reservation-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--clr-muted);
+}
+
+.project-reservation-card__footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.project-reservation-card__footer .btn {
+  font-size: 0.8rem;
+}
+
+.res-info-row .value .btn {
+  margin-inline-start: 8px;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservations-chip {
+  background: rgba(59, 130, 246, 0.2);
+  color: rgba(191, 219, 254, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-type-badge {
+  background: rgba(16, 185, 129, 0.22);
+  color: rgba(209, 250, 229, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservations-section {
+  border-top-color: rgba(59, 130, 246, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservations-count {
+  background: rgba(59, 130, 246, 0.22);
+  color: rgba(191, 219, 254, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card {
+  background: rgba(24, 33, 59, 0.92);
+  border-color: rgba(59, 130, 246, 0.22);
+  box-shadow: 0 12px 28px rgba(3, 10, 32, 0.5);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card__badge--pending {
+  background: rgba(250, 176, 50, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card__badge--confirmed {
+  background: rgba(64, 201, 97, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card__badge--paid {
+  background: rgba(96, 165, 250, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card__badge--unpaid {
+  background: rgba(248, 113, 113, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-reservation-card__badge--completed {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+html.dark-mode .projects-table .badge {
+  filter: saturate(1.1);
 }
 
 input,

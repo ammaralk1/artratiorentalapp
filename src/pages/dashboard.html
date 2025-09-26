@@ -55,7 +55,10 @@
 
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
-      <h2 class="mb-0" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</h2>
+      <div class="d-flex align-items-center gap-2">
+        <a href="home.html" class="btn btn-outline-primary btn-lg" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
+        <h2 class="mb-0" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</h2>
+      </div>
       <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
         <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
@@ -466,13 +469,22 @@
                 </div>
               </div>
 
-              <div class="row mb-3">
-                <div class="col-md-6 position-relative">
-                  <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                  <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
-                  <div id="customer-suggestions" class="suggestions-list"></div>
-                </div>
+            <div class="row mb-3">
+              <div class="col-md-6 position-relative">
+                <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
+                <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
+                <div id="customer-suggestions" class="suggestions-list"></div>
+              </div>
               <div class="col-md-6">
+                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <select id="res-project" class="form-select" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+                  <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-12">
                 <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
                 <textarea id="res-notes" class="form-control" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
               </div>
@@ -621,6 +633,10 @@
                     <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
                   </select>
                 </div>
+                <div class="reports-filter-group reports-search-group">
+                  <label for="reports-search" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</label>
+                  <input type="text" id="reports-search" class="form-control" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
+                </div>
                 <button type="button" id="reports-refresh" class="btn btn-outline-secondary reports-refresh-btn" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
               </div>
             </div>
@@ -718,6 +734,30 @@
                   </thead>
                   <tbody id="reports-top-equipment">
                     <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="box reports-table-card">
+              <div class="reports-card-header">
+                <h4 data-i18n data-i18n-key="reservations.reports.results.title">📄 تفاصيل الحجوزات</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.results.hint">أحدث الحجوزات المطابقة لعوامل التصفية</span>
+              </div>
+              <div class="table-responsive">
+                <table class="reports-table reports-results-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
+                      <th data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reports-reservations-body">
+                    <tr><td colspan="6" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -855,6 +895,13 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
+              <select id="edit-res-project" class="form-select">
+                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
               <input type="text" class="form-control" id="edit-res-start">
             </div>
@@ -974,13 +1021,14 @@
               <thead class="table-light">
                 <tr>
                   <th style="width:40px;"></th>
-                  <th>الاسم</th>
-                  <th>الوظيفة</th>
-                  <th>القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="4" class="text-center text-muted">جاري التحميل...</td></tr>
+                <tr><td colspan="5" class="text-center text-muted">جاري التحميل...</td></tr>
               </tbody>
             </table>
           </div>

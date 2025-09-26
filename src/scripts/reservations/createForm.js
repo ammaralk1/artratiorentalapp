@@ -15,6 +15,7 @@ import {
   getCachedEquipment,
   setCachedEquipment,
   combineDateTime,
+  splitDateTime,
   normalizeBarcodeValue,
   hasEquipmentConflict,
   hasTechnicianConflict
@@ -23,6 +24,151 @@ import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 
 let afterSubmitCallback = null;
+let cachedProjects = [];
+
+const PENDING_RESERVATION_PROJECT_KEY = 'pendingReservationProjectContext';
+
+function setCachedProjects(projects) {
+  cachedProjects = Array.isArray(projects) ? [...projects] : [];
+}
+
+function getCachedProjects() {
+  return cachedProjects;
+}
+
+function findProjectById(projectId) {
+  if (!projectId) return null;
+  return getCachedProjects().find((project) => String(project.id) === String(projectId)) || null;
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function setDateTimeInputs(dateInputId, timeInputId, isoString) {
+  if (!isoString) return;
+  const { date, time } = splitDateTime(isoString);
+  const dateInput = document.getElementById(dateInputId);
+  const timeInput = document.getElementById(timeInputId);
+  if (dateInput && date) {
+    dateInput.value = date;
+    dateInput.dispatchEvent(new Event('input'));
+    dateInput.dispatchEvent(new Event('change'));
+  }
+  if (timeInput && time) {
+    timeInput.value = time;
+    timeInput.dispatchEvent(new Event('input'));
+    timeInput.dispatchEvent(new Event('change'));
+  }
+}
+
+function applyProjectContextToForm(project, { forceNotes = false } = {}) {
+  if (!project) return;
+
+  const customers = getCachedCustomers() || [];
+  const projectCustomer = customers.find((c) => String(c.id) === String(project.clientId));
+  const customerInput = document.getElementById('res-customer');
+  if (customerInput && projectCustomer?.customerName) {
+    customerInput.value = projectCustomer.customerName;
+  }
+
+  if (project.start) {
+    setDateTimeInputs('res-start', 'res-start-time', project.start);
+  }
+
+  if (project.end) {
+    setDateTimeInputs('res-end', 'res-end-time', project.end);
+  }
+
+  const notesInput = document.getElementById('res-notes');
+  if (notesInput && project.description && (forceNotes || !notesInput.value)) {
+    notesInput.value = project.description;
+  }
+
+  renderDraftReservationSummary();
+}
+
+function populateProjectSelect({ projectsList = null, preselectId = null } = {}) {
+  const select = document.getElementById('res-project');
+  if (!select) return;
+
+  const { projects } = projectsList ? { projects: projectsList } : loadData();
+  const list = Array.isArray(projects) ? projects : [];
+  setCachedProjects(list);
+
+  const previousValue = preselectId != null ? String(preselectId) : select.value;
+  const placeholderLabel = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
+
+  const sortedProjects = [...list].sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')));
+
+  const optionsHtml = [`<option value="">${escapeHtml(placeholderLabel)}</option>`]
+    .concat(
+      sortedProjects
+        .map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.title || placeholderLabel)}</option>`)
+    )
+    .join('');
+
+  select.innerHTML = optionsHtml;
+  if (previousValue && list.some((proj) => String(proj.id) === previousValue)) {
+    select.value = previousValue;
+  } else if (preselectId != null) {
+    select.value = String(preselectId);
+  } else {
+    select.value = '';
+  }
+}
+
+function setupProjectSelection() {
+  const select = document.getElementById('res-project');
+  if (!select || select.dataset.listenerAttached) return;
+  select.addEventListener('change', () => {
+    const project = findProjectById(select.value);
+    if (project) {
+      applyProjectContextToForm(project);
+    }
+  });
+  select.dataset.listenerAttached = 'true';
+}
+
+function applyPendingProjectContext() {
+  try {
+    const stored = localStorage.getItem(PENDING_RESERVATION_PROJECT_KEY);
+    if (!stored) return;
+    const context = JSON.parse(stored);
+    localStorage.removeItem(PENDING_RESERVATION_PROJECT_KEY);
+    if (!context || !context.projectId) return;
+    const select = document.getElementById('res-project');
+    if (select) {
+      select.value = String(context.projectId);
+    }
+    const project = findProjectById(context.projectId);
+    if (project) {
+      applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
+    }
+    if (context.start) {
+      setDateTimeInputs('res-start', 'res-start-time', context.start);
+    }
+    if (context.end) {
+      setDateTimeInputs('res-end', 'res-end-time', context.end);
+    }
+    if (context.customerId) {
+      const customers = getCachedCustomers() || [];
+      const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
+      if (projectCustomer?.customerName) {
+        const customerInput = document.getElementById('res-customer');
+        if (customerInput) customerInput.value = projectCustomer.customerName;
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ [reservations/createForm] Failed to apply pending project context', error);
+    localStorage.removeItem(PENDING_RESERVATION_PROJECT_KEY);
+  }
+}
 
 function getCreateReservationDateRange() {
   const startDate = document.getElementById('res-start')?.value?.trim();
@@ -188,13 +334,16 @@ function renderDraftReservationSummary() {
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
   const applyTax = document.getElementById('res-tax')?.checked || false;
   const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
+  const { start, end } = getCreateReservationDateRange();
 
   renderDraftSummary({
     selectedItems: getSelectedItems(),
     discount,
     discountType,
     applyTax,
-    paidStatus
+    paidStatus,
+    start,
+    end
   });
 }
 
@@ -227,8 +376,62 @@ function setupSummaryEvents() {
   }
 }
 
+function setupReservationTimeSync() {
+  const startTimeInput = document.getElementById('res-start-time');
+  const endTimeInput = document.getElementById('res-end-time');
+  if (!startTimeInput || !endTimeInput || startTimeInput.dataset.timeSyncAttached) {
+    return;
+  }
+
+  let suppressEndListener = false;
+
+  const syncEndTimeWithStart = () => {
+    const startValue = startTimeInput.value?.trim();
+    if (!startValue) {
+      renderDraftReservationSummary();
+      return;
+    }
+
+    const syncState = endTimeInput.dataset.syncedWithStart;
+    const shouldSync = !endTimeInput.value?.trim() || syncState !== 'false';
+    if (shouldSync) {
+      suppressEndListener = true;
+      endTimeInput.value = startValue;
+      endTimeInput.dataset.syncedWithStart = 'true';
+      endTimeInput.dataset.syncedValue = startValue;
+      endTimeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      endTimeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      suppressEndListener = false;
+    }
+
+    renderDraftReservationSummary();
+  };
+
+  startTimeInput.addEventListener('change', syncEndTimeWithStart);
+  startTimeInput.addEventListener('input', syncEndTimeWithStart);
+  startTimeInput.addEventListener('blur', syncEndTimeWithStart);
+
+  endTimeInput.addEventListener('input', () => {
+    if (suppressEndListener) return;
+    if (endTimeInput.value === startTimeInput.value) {
+      endTimeInput.dataset.syncedWithStart = 'true';
+      endTimeInput.dataset.syncedValue = endTimeInput.value;
+    } else {
+      endTimeInput.dataset.syncedWithStart = 'false';
+    }
+  });
+
+  if (!endTimeInput.value?.trim()) {
+    syncEndTimeWithStart();
+  }
+
+  startTimeInput.dataset.timeSyncAttached = 'true';
+}
+
 function handleReservationSubmit() {
   const inputValue = document.getElementById('res-customer').value.trim().toLowerCase();
+  const projectSelect = document.getElementById('res-project');
+  const projectIdValue = projectSelect?.value ? String(projectSelect.value) : '';
   const { customers, reservations } = loadData();
 
   let customer = customers.find((c) => c.customerName?.trim().toLowerCase() === inputValue);
@@ -281,6 +484,12 @@ function handleReservationSubmit() {
 
   const technicianIds = getSelectedTechnicians();
 
+  const selectedProject = projectIdValue ? findProjectById(projectIdValue) : null;
+  if (projectIdValue && !selectedProject) {
+    showToast(t('reservations.toast.projectNotFound', '⚠️ لم يتم العثور على المشروع المحدد. حاول تحديث الصفحة.'));
+    return;
+  }
+
   for (const item of draftItems) {
     if (isEquipmentInMaintenance(item.barcode)) {
       showToast(t('reservations.toast.cannotCreateEquipmentMaintenance', '⚠️ لا يمكن إتمام الحجز لأن إحدى المعدات قيد الصيانة'));
@@ -320,8 +529,16 @@ function handleReservationSubmit() {
     discountType,
     applyTax,
     paid: paymentStatus === 'paid',
-    cost: calculateReservationTotal(draftItems, discount, discountType, applyTax),
-    confirmed: false
+    cost: calculateReservationTotal(
+      draftItems,
+      discount,
+      discountType,
+      applyTax,
+      technicianIds,
+      { start, end }
+    ),
+    confirmed: false,
+    projectId: projectIdValue || null
   };
 
   reservations.push(newReservation);
@@ -333,7 +550,7 @@ function handleReservationSubmit() {
   resetForm();
   showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
   if (typeof afterSubmitCallback === 'function') {
-    afterSubmitCallback(newReservation);
+    afterSubmitCallback({ type: 'created', reservation: newReservation });
   }
 }
 
@@ -346,6 +563,8 @@ function resetForm() {
   document.getElementById('res-notes').value = '';
   document.getElementById('res-discount').value = '';
   document.getElementById('res-tax').checked = false;
+  const projectSelect = document.getElementById('res-project');
+  if (projectSelect) projectSelect.value = '';
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
   const paymentSelect = document.getElementById('res-payment-status');
@@ -509,24 +728,36 @@ function setupCustomerAutocomplete() {
 export function initCreateReservationForm({ onAfterSubmit } = {}) {
   afterSubmitCallback = typeof onAfterSubmit === 'function' ? onAfterSubmit : null;
 
-  const { customers } = loadData();
+  const { customers, projects } = loadData();
   setCachedCustomers(customers || []);
+  setCachedProjects(projects || []);
+  populateProjectSelect({ projectsList: projects });
+  setupProjectSelection();
 
   populateEquipmentDescriptionLists();
   setupEquipmentDescriptionInputs();
+  setupReservationTimeSync();
   setupSummaryEvents();
   setupReservationButtons();
   setupBarcodeInput();
   setupFormSubmit();
   setupCustomerAutocomplete();
+  applyPendingProjectContext();
   renderDraftReservationSummary();
   renderReservationItems();
 }
 
 export function refreshCreateReservationForm() {
   populateEquipmentDescriptionLists();
+  populateProjectSelect();
   renderReservationItems();
   renderDraftReservationSummary();
+}
+
+if (typeof document !== 'undefined') {
+  const refreshProjectOptions = () => populateProjectSelect();
+  document.addEventListener('language:changed', refreshProjectOptions);
+  document.addEventListener('language:translationsReady', refreshProjectOptions, { once: false });
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };

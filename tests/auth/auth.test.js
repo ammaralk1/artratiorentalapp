@@ -81,7 +81,7 @@ describe('auth module', () => {
     await login('good-user', 'good-pass');
 
     expect(localStorage.getItem('loggedInUser')).toEqual(JSON.stringify({ username: 'good-user' }));
-    expect(mockedLocation.href).toBe('dashboard.html');
+    expect(mockedLocation.href).toBe('home.html');
     expect(authMocks.showToast).not.toHaveBeenCalled();
     expect(document.getElementById('login-error').textContent).toBe('');
   });
