@@ -1,1 +1,0 @@
-import{a,i as m,b as o}from"./theme-BGfo8loF.js";a();m();document.getElementById("login-form").addEventListener("submit",async e=>{e.preventDefault();const t=document.getElementById("username").value.trim(),n=document.getElementById("password").value.trim();await o(t,n)});
