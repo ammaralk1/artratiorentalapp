@@ -14,6 +14,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
+        home: resolve(__dirname, 'src/pages/home.html'),
         dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
         login: resolve(__dirname, 'src/pages/login.html'),
         customer: resolve(__dirname, 'src/pages/customer.html'),
