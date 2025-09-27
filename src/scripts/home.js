@@ -210,7 +210,7 @@ document.addEventListener('language:changed', () => {
   renderHomeSummary();
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+function bootstrapHome() {
   initThemeToggle();
 
   const logoutBtn = document.getElementById('logout-btn');
@@ -239,9 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('maintenance:updated', handleSummaryRefresh, { passive: true });
   document.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
   document.addEventListener('projects:changed', handleSummaryRefresh, { passive: true });
-});
+}
 
-if (document.readyState !== 'loading') {
-  updateGreetingMessage();
-  renderHomeSummary();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    bootstrapHome();
+  }, { once: true });
+} else {
+  bootstrapHome();
 }

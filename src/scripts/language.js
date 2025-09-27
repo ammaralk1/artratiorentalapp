@@ -1,4 +1,5 @@
-const LANGUAGE_KEY = 'app-language';
+import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from './preferencesService.js';
+
 const DEFAULT_LANGUAGE = 'ar';
 const RTL_LANGUAGE = 'ar';
 
@@ -9,87 +10,37 @@ const translations = {
   en: Object.create(null)
 };
 
-let storageReadFailed = false;
-let storageWriteFailed = false;
 let currentLanguage = DEFAULT_LANGUAGE;
+let initialised = false;
+let initialisationPromise = null;
 
 function normalizeLanguage(value) {
   return value === 'en' ? 'en' : 'ar';
 }
 
-function readLanguagePreference() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = window.localStorage?.getItem(LANGUAGE_KEY);
-    if (stored === 'ar' || stored === 'en') {
-      return stored;
+function ensureLanguagePreference() {
+  if (!initialisationPromise) {
+    const cached = getCachedPreferences();
+    if (cached?.language) {
+      const cachedLanguage = normalizeLanguage(cached.language);
+      setLanguageInternal(cachedLanguage, { persist: false, dispatch: false });
     }
-  } catch (error) {
-    if (!storageReadFailed) {
-      console.warn('⚠️ تعذر قراءة تفضيل اللغة', error);
-      storageReadFailed = true;
-    }
+
+    initialisationPromise = getPreferences()
+      .then((prefs) => {
+        const prefLanguage = normalizeLanguage(prefs?.language ?? DEFAULT_LANGUAGE);
+        setLanguageInternal(prefLanguage, { persist: false });
+        initialised = true;
+        return prefLanguage;
+      })
+      .catch((error) => {
+        console.warn('⚠️ تعذر تحميل تفضيل اللغة من الخادم', error);
+        setLanguageInternal(DEFAULT_LANGUAGE, { persist: false });
+        initialised = true;
+        return DEFAULT_LANGUAGE;
+      });
   }
-  return null;
-}
-
-const initialPreference = readLanguagePreference();
-currentLanguage = normalizeLanguage(initialPreference ?? DEFAULT_LANGUAGE);
-
-function getStoredLanguage() {
-  const storedLanguage = readLanguagePreference();
-  if (storedLanguage) {
-    currentLanguage = normalizeLanguage(storedLanguage);
-  }
-  return currentLanguage;
-}
-
-function persistLanguage(lang) {
-  const normalized = normalizeLanguage(lang);
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage?.setItem(LANGUAGE_KEY, normalized);
-  } catch (error) {
-    if (!storageWriteFailed) {
-      console.warn('⚠️ تعذر حفظ تفضيل اللغة', error);
-      storageWriteFailed = true;
-    }
-  }
-}
-
-function mergeTranslations(language, entries) {
-  if (!entries) return;
-  const store = translations[language] ?? (translations[language] = Object.create(null));
-  Object.entries(entries).forEach(([key, value]) => {
-    if (typeof key !== 'string') return;
-    store[key] = value;
-  });
-}
-
-export function registerTranslations(entries = {}) {
-  mergeTranslations('ar', entries.ar);
-  mergeTranslations('en', entries.en);
-  const activeLanguage = getCurrentLanguage();
-  applyTranslations(activeLanguage);
-  document.dispatchEvent(new CustomEvent('language:changed', { detail: { language: activeLanguage, reason: 'translationsLoaded' } }));
-  document.dispatchEvent(new CustomEvent('language:translationsReady', { detail: { language: activeLanguage } }));
-}
-
-export function t(key, fallback = '') {
-  if (!key) return fallback;
-  const activeLanguage = currentLanguage || DEFAULT_LANGUAGE;
-  const store = translations[activeLanguage];
-  if (store && store[key] !== undefined) {
-    return store[key];
-  }
-
-  const alternateLanguage = activeLanguage === 'en' ? 'ar' : 'en';
-  const alternateStore = translations[alternateLanguage];
-  if (alternateStore && alternateStore[key] !== undefined) {
-    return alternateStore[key];
-  }
-
-  return fallback;
+  return initialisationPromise;
 }
 
 function cacheOriginalContent(element) {
@@ -113,6 +64,15 @@ function cacheOriginalContent(element) {
   });
 
   element.dataset.i18nCached = 'true';
+}
+
+function mergeTranslations(language, entries) {
+  if (!entries) return;
+  const store = translations[language] ?? (translations[language] = Object.create(null));
+  Object.entries(entries).forEach(([key, value]) => {
+    if (typeof key !== 'string') return;
+    store[key] = value;
+  });
 }
 
 function getDictionaryValue(language, key) {
@@ -193,22 +153,32 @@ function updateLanguageButtons(language) {
   });
 }
 
+function setLanguageInternal(language, { persist = false, dispatch = true } = {}) {
+  const normalized = normalizeLanguage(language);
+  if (currentLanguage === normalized && initialised && !persist) {
+    return;
+  }
+  currentLanguage = normalized;
+  initialised = true;
+  updateDocumentDirection(normalized);
+  applyTranslations(normalized);
+  updateLanguageButtons(normalized);
+  if (dispatch) {
+    document.dispatchEvent(new CustomEvent('language:changed', { detail: { language: normalized } }));
+  }
+  if (persist) {
+    updatePreferences({ language: normalized }).catch((error) => {
+      console.warn('⚠️ تعذر حفظ تفضيل اللغة في الخادم', error);
+    });
+  }
+}
+
 function toggleLanguage() {
   const next = currentLanguage === 'ar' ? 'en' : 'ar';
   setLanguage(next);
 }
 
-export function setLanguage(language) {
-  const normalized = normalizeLanguage(language);
-  currentLanguage = normalized;
-  persistLanguage(normalized);
-  updateDocumentDirection(normalized);
-  applyTranslations(normalized);
-  updateLanguageButtons(normalized);
-  document.dispatchEvent(new CustomEvent('language:changed', { detail: { language: normalized } }));
-}
-
-export function initLanguageToggle() {
+function bindLanguageToggleButtons() {
   const toggleButtons = document.querySelectorAll('.language-toggle-btn');
   toggleButtons.forEach((button) => {
     if (button.dataset.listenerAttached) return;
@@ -217,9 +187,45 @@ export function initLanguageToggle() {
     });
     button.dataset.listenerAttached = 'true';
   });
+  updateLanguageButtons(currentLanguage);
+}
 
-  const language = getStoredLanguage();
-  setLanguage(language);
+export function registerTranslations(entries = {}) {
+  mergeTranslations('ar', entries.ar);
+  mergeTranslations('en', entries.en);
+  const activeLanguage = getCurrentLanguage();
+  applyTranslations(activeLanguage);
+  document.dispatchEvent(new CustomEvent('language:translationsReady', { detail: { language: activeLanguage } }));
+}
+
+export function t(key, fallback = '') {
+  if (!key) return fallback;
+  const activeLanguage = currentLanguage || DEFAULT_LANGUAGE;
+  const store = translations[activeLanguage];
+  if (store && store[key] !== undefined) {
+    return store[key];
+  }
+
+  const alternateLanguage = activeLanguage === 'en' ? 'ar' : 'en';
+  const alternateStore = translations[alternateLanguage];
+  if (alternateStore && alternateStore[key] !== undefined) {
+    return alternateStore[key];
+  }
+
+  return fallback;
+}
+
+export function setLanguage(language) {
+  const normalized = normalizeLanguage(language);
+  setLanguageInternal(normalized, { persist: true });
+}
+
+export function initLanguageToggle() {
+  ensureLanguagePreference()
+    .catch(() => DEFAULT_LANGUAGE)
+    .finally(() => {
+      bindLanguageToggleButtons();
+    });
 }
 
 export function getCurrentLanguage() {
@@ -230,9 +236,20 @@ export function isArabic() {
   return currentLanguage === 'ar';
 }
 
-// Initialise automatically when DOM ready
+function bootstrapLanguage() {
+  ensureLanguagePreference().catch(() => DEFAULT_LANGUAGE);
+  bindLanguageToggleButtons();
+}
+
+subscribePreferences((prefs) => {
+  if (!prefs) return;
+  if (prefs.language && normalizeLanguage(prefs.language) !== currentLanguage) {
+    setLanguageInternal(prefs.language, { persist: false });
+  }
+});
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLanguageToggle, { once: true });
+  document.addEventListener('DOMContentLoaded', bootstrapLanguage, { once: true });
 } else {
-  initLanguageToggle();
+  bootstrapLanguage();
 }

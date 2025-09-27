@@ -1,38 +1,10 @@
 import { t } from './language.js';
+import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from './preferencesService.js';
 
-const THEME_KEY = 'app-theme';
 const DARK_CLASS = 'dark-mode';
 const boundButtons = new WeakSet();
 const THEME_LOADING_CLASS = 'theme-loading';
-
-function getStoredTheme() {
-  try {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === 'dark' || stored === 'light') {
-      return stored;
-    }
-  } catch (error) {
-    console.warn('⚠️ تعذر قراءة تفضيل السمة من localStorage', error);
-  }
-  return null;
-}
-
-function getPreferredTheme() {
-  const stored = getStoredTheme();
-  if (stored) return stored;
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
-}
-
-function persistTheme(theme) {
-  try {
-    localStorage.setItem(THEME_KEY, theme);
-  } catch (error) {
-    console.warn('⚠️ تعذر حفظ تفضيل السمة في localStorage', error);
-  }
-}
+let themeInitialized = false;
 
 function markThemeReady() {
   document.documentElement.classList.remove(THEME_LOADING_CLASS);
@@ -41,6 +13,10 @@ function markThemeReady() {
 }
 
 export function applyTheme(theme) {
+  applyThemeInternal(theme, { persist: true });
+}
+
+function applyThemeInternal(theme, { persist = true } = {}) {
   const root = document.documentElement;
   const body = document.body;
   if (theme === 'dark') {
@@ -50,7 +26,13 @@ export function applyTheme(theme) {
     root.classList.remove(DARK_CLASS);
     if (body) body.classList.remove(DARK_CLASS);
   }
-  persistTheme(theme);
+  updateAllToggleButtons(theme);
+
+  if (persist) {
+    updatePreferences({ theme }).catch((error) => {
+      console.warn('⚠️ تعذر حفظ تفضيل السمة في الخادم', error);
+    });
+  }
 }
 
 export function getCurrentTheme() {
@@ -61,8 +43,7 @@ export function getCurrentTheme() {
 
 function toggleTheme() {
   const newTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
-  applyTheme(newTheme);
-  updateAllToggleButtons(newTheme);
+  applyThemeInternal(newTheme, { persist: true });
 }
 
 function updateToggleButton(button, theme) {
@@ -105,12 +86,49 @@ export function initThemeToggle() {
 }
 
 export function applyStoredTheme() {
-  const theme = getPreferredTheme();
-  applyTheme(theme);
-  updateAllToggleButtons(theme);
+  const cached = getCachedPreferences();
+  const initialTheme = cached?.theme === 'dark' ? 'dark' : cached?.theme === 'light' ? 'light' : getSystemPreferredTheme();
+  applyThemeInternal(initialTheme, { persist: false });
+  loadThemePreference();
+}
+
+function getSystemPreferredTheme() {
+  try {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  } catch (error) {
+    // ignore
+  }
+  return 'light';
+}
+
+function loadThemePreference() {
+  if (themeInitialized) {
+    return;
+  }
+  themeInitialized = true;
+
+  getPreferences()
+    .then((prefs) => {
+      const prefTheme = prefs?.theme === 'dark' ? 'dark' : prefs?.theme === 'light' ? 'light' : null;
+      if (prefTheme) {
+        applyThemeInternal(prefTheme, { persist: false });
+      }
+    })
+    .catch((error) => {
+      console.warn('⚠️ تعذر تحميل تفضيل السمة من الخادم', error);
+    });
 }
 
 document.addEventListener('language:changed', () => {
   updateAllToggleButtons(getCurrentTheme());
   initThemeToggle();
+});
+
+subscribePreferences((prefs) => {
+  const prefTheme = prefs?.theme === 'dark' ? 'dark' : prefs?.theme === 'light' ? 'light' : null;
+  if (prefTheme && prefTheme !== getCurrentTheme()) {
+    applyThemeInternal(prefTheme, { persist: false });
+  }
 });

@@ -9,17 +9,11 @@
     (function () {
       document.documentElement.classList.add('theme-loading');
       try {
-        var theme = localStorage.getItem('app-theme');
-        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          theme = 'dark';
-        }
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark-mode');
-        }
-      } catch (error) {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
           document.documentElement.classList.add('dark-mode');
         }
+      } catch (error) {
+        // ignore
       }
     })();
   </script>

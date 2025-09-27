@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use InvalidArgumentException;
 use PDO;
 
 require_once __DIR__ . '/db.php';
@@ -201,4 +202,67 @@ function requireAuthenticated(): void
         respondError('Unauthorized', 401);
         exit;
     }
+}
+
+function getDefaultPreferences(): array
+{
+    return [
+        'language' => 'ar',
+        'theme' => 'light',
+    ];
+}
+
+function normalisePreferenceLanguage(string $language): string
+{
+    $normalized = strtolower(trim($language));
+    return $normalized === 'en' ? 'en' : 'ar';
+}
+
+function normalisePreferenceTheme(string $theme): string
+{
+    $normalized = strtolower(trim($theme));
+    return $normalized === 'dark' ? 'dark' : 'light';
+}
+
+function getUserPreferences(): array
+{
+    $defaults = getDefaultPreferences();
+    $stored = $_SESSION['preferences'] ?? [];
+
+    if (!is_array($stored)) {
+        return $defaults;
+    }
+
+    $filtered = array_intersect_key($stored, $defaults);
+
+    return array_merge($defaults, $filtered);
+}
+
+function updateUserPreferences(array $changes): array
+{
+    $defaults = getDefaultPreferences();
+    $current = $_SESSION['preferences'] ?? [];
+
+    if (!is_array($current)) {
+        $current = [];
+    }
+
+    foreach ($changes as $key => $value) {
+        switch ($key) {
+            case 'language':
+                $current['language'] = normalisePreferenceLanguage((string) $value);
+                break;
+            case 'theme':
+                $current['theme'] = normalisePreferenceTheme((string) $value);
+                break;
+            default:
+                throw new InvalidArgumentException('Unknown preference key supplied');
+        }
+    }
+
+    $_SESSION['preferences'] = $current;
+
+    $filtered = array_intersect_key($current, $defaults);
+
+    return array_merge($defaults, $filtered);
 }
