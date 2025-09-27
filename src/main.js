@@ -17,6 +17,8 @@ import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 
 applyStoredTheme();
 
+let pendingReservationEdit = null;
+
 async function initApp() {
   const user = await checkAuth();
   if (!user) {
@@ -96,37 +98,64 @@ function enhanceDateTimePickers() {
 }
 
 function handlePendingReservationEdit() {
+  const params = new URLSearchParams(window.location.search);
+  const pendingId = params.get('reservationEditId');
+  const pendingIndexValue = params.get('reservationEditIndex');
+
+  if (!pendingId && !pendingIndexValue) {
+    return;
+  }
+
+  pendingReservationEdit = {
+    reservationId: pendingId,
+    reservationIndex: pendingIndexValue != null ? Number(pendingIndexValue) : null,
+  };
+
+  applyPendingReservationEdit();
+
+  params.delete('reservationEditId');
+  params.delete('reservationEditIndex');
+  const newSearch = params.toString();
+  const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash || ''}`;
+  window.history.replaceState({}, document.title, newUrl);
+}
+
+function applyPendingReservationEdit() {
+  if (!pendingReservationEdit) return;
+
   const data = loadData();
-  const pendingId = localStorage.getItem('pendingReservationEditId');
-  const pendingIndexValue = localStorage.getItem('pendingReservationEdit');
+  const reservations = data.reservations || [];
 
   let targetIndex = null;
 
-  if (pendingId !== null) {
-    const reservations = data.reservations || [];
-    const idx = reservations.findIndex(r => String(r.id) === pendingId || String(r.reservationId) === pendingId);
+  if (pendingReservationEdit.reservationId) {
+    const idx = reservations.findIndex((reservation) =>
+      String(reservation?.id) === pendingReservationEdit.reservationId
+      || String(reservation?.reservationId) === pendingReservationEdit.reservationId
+    );
     if (idx !== -1) {
       targetIndex = idx;
     }
-    localStorage.removeItem('pendingReservationEditId');
   }
 
-  if (targetIndex === null && pendingIndexValue !== null) {
-    const numericIndex = Number(pendingIndexValue);
-    if (!Number.isNaN(numericIndex)) {
-      targetIndex = numericIndex;
+  if (targetIndex === null && typeof pendingReservationEdit.reservationIndex === 'number' && !Number.isNaN(pendingReservationEdit.reservationIndex)) {
+    if (pendingReservationEdit.reservationIndex >= 0 && pendingReservationEdit.reservationIndex < reservations.length) {
+      targetIndex = pendingReservationEdit.reservationIndex;
     }
-    localStorage.removeItem('pendingReservationEdit');
   }
 
-  if (targetIndex === null || Number.isNaN(targetIndex)) return;
+  if (targetIndex === null) {
+    return;
+  }
+
+  pendingReservationEdit = null;
 
   setTimeout(() => {
-    const reservationsTabBtn = document.querySelector('[data-tab=\"reservations-tab\"]');
+    const reservationsTabBtn = document.querySelector('[data-tab="reservations-tab"]');
     reservationsTabBtn?.click();
 
     setTimeout(() => {
-      document.querySelector('.sub-tab-button[data-sub-tab=\"create-tab\"]')?.click();
+      document.querySelector('.sub-tab-button[data-sub-tab="my-reservations-tab"]')?.click();
 
       setTimeout(() => {
         const openEditor = window.editReservation;
@@ -137,3 +166,9 @@ function handlePendingReservationEdit() {
     }, 150);
   }, 150);
 }
+
+document.addEventListener('reservations:changed', () => {
+  if (pendingReservationEdit) {
+    applyPendingReservationEdit();
+  }
+});

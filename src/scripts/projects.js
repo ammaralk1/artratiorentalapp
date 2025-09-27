@@ -6,6 +6,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { isReservationCompleted, normalizeText } from './reservationsShared.js';
 import { registerReservationGlobals } from './reservations/controller.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
+import { updatePreferences } from './preferencesService.js';
 import {
   ensureProjectsLoaded,
   getProjectsState,
@@ -46,7 +47,6 @@ const state = {
 };
 
 const dom = {};
-const PENDING_RESERVATION_PROJECT_KEY = 'pendingReservationProjectContext';
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const PROJECT_TAX_RATE = 0.15;
@@ -1756,17 +1756,26 @@ function startReservationForProject(project) {
     end: project.end || null,
     forceNotes: Boolean(project.description)
   };
+  updatePreferences({
+    dashboardTab: 'reservations-tab',
+    dashboardSubTab: 'create-tab'
+  }).catch((error) => {
+    console.warn('⚠️ [projects] Failed to persist dashboard tab preference', error);
+  });
+
+  let encodedContext = '';
   try {
-    localStorage.setItem(PENDING_RESERVATION_PROJECT_KEY, JSON.stringify(context));
-    localStorage.setItem('dashboard-active-tab', 'reservations-tab');
-    localStorage.setItem('dashboard-active-sub-tab', 'create-tab');
+    encodedContext = encodeURIComponent(JSON.stringify(context));
   } catch (error) {
-    console.warn('⚠️ [projects] Unable to persist pending reservation context', error);
+    console.warn('⚠️ [projects] Unable to encode reservation context', error);
   }
+
   if (dom.detailsModalEl && window.bootstrap?.Modal) {
     window.bootstrap.Modal.getOrCreateInstance(dom.detailsModalEl)?.hide();
   }
-  window.location.href = 'dashboard.html#reservations';
+
+  const search = encodedContext ? `?reservationProjectContext=${encodedContext}` : '';
+  window.location.href = `dashboard.html${search}#reservations`;
 }
 
 function startProjectEdit(project) {

@@ -36,6 +36,7 @@ import {
   setFlatpickrValue,
   populateEquipmentDescriptionLists
 } from './formUtils.js';
+import { updatePreferences } from '../preferencesService.js';
 
 export function loadReservationForm() {
   const { technicians } = loadData();
@@ -134,14 +135,25 @@ export function openReservationEditor(index, reservation = null) {
     return;
   }
 
+  const params = new URLSearchParams();
+
   if (reservation?.id || reservation?.reservationId) {
     const fallbackId = reservation.id ?? reservation.reservationId;
-    localStorage.setItem('pendingReservationEditId', String(fallbackId));
+    params.set('reservationEditId', String(fallbackId));
   } else {
-    localStorage.setItem('pendingReservationEditId', String(index));
+    params.set('reservationEditIndex', String(index));
   }
 
-  window.location.href = 'dashboard.html#reservations';
+  updatePreferences({
+    dashboardTab: 'reservations-tab',
+    dashboardSubTab: 'my-reservations-tab',
+  }).catch((error) => {
+    console.warn('⚠️ [reservations/controller] Failed to persist tab preference', error);
+  });
+
+  const search = params.toString();
+  const target = search ? `dashboard.html?${search}#reservations` : 'dashboard.html#reservations';
+  window.location.href = target;
 }
 
 export function registerReservationGlobals() {

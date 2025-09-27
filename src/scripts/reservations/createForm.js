@@ -31,8 +31,6 @@ import {
 let afterSubmitCallback = null;
 let cachedProjects = [];
 
-const PENDING_RESERVATION_PROJECT_KEY = 'pendingReservationProjectContext';
-
 function setCachedProjects(projects) {
   cachedProjects = Array.isArray(projects) ? [...projects] : [];
 }
@@ -167,40 +165,52 @@ function setupProjectSelection() {
 }
 
 function applyPendingProjectContext() {
+  const params = new URLSearchParams(window.location.search);
+  const encoded = params.get('reservationProjectContext');
+  if (!encoded) {
+    return;
+  }
+
+  let context = null;
+
   try {
-    const stored = localStorage.getItem(PENDING_RESERVATION_PROJECT_KEY);
-    if (!stored) return;
-    const context = JSON.parse(stored);
-    localStorage.removeItem(PENDING_RESERVATION_PROJECT_KEY);
-    if (!context || !context.projectId) return;
-    const select = document.getElementById('res-project');
-    if (select) {
-      select.value = String(context.projectId);
-      updateCreateProjectTaxState();
-    }
-    const project = findProjectById(context.projectId);
-    if (project) {
-      applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
-    } else {
-      renderDraftReservationSummary();
-    }
-    if (context.start) {
-      setDateTimeInputs('res-start', 'res-start-time', context.start);
-    }
-    if (context.end) {
-      setDateTimeInputs('res-end', 'res-end-time', context.end);
-    }
-    if (context.customerId) {
-      const customers = getCachedCustomers() || [];
-      const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
-      if (projectCustomer?.customerName) {
-        const customerInput = document.getElementById('res-customer');
-        if (customerInput) customerInput.value = projectCustomer.customerName;
-      }
-    }
+    const decoded = decodeURIComponent(encoded);
+    context = JSON.parse(decoded);
   } catch (error) {
-    console.warn('⚠️ [reservations/createForm] Failed to apply pending project context', error);
-    localStorage.removeItem(PENDING_RESERVATION_PROJECT_KEY);
+    console.warn('⚠️ [reservations/createForm] Failed to decode project context', error);
+  }
+
+  params.delete('reservationProjectContext');
+  const newSearch = params.toString();
+  const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash || ''}`;
+  window.history.replaceState({}, document.title, newUrl);
+
+  if (!context || !context.projectId) return;
+
+  const select = document.getElementById('res-project');
+  if (select) {
+    select.value = String(context.projectId);
+    updateCreateProjectTaxState();
+  }
+  const project = findProjectById(context.projectId);
+  if (project) {
+    applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
+  } else {
+    renderDraftReservationSummary();
+  }
+  if (context.start) {
+    setDateTimeInputs('res-start', 'res-start-time', context.start);
+  }
+  if (context.end) {
+    setDateTimeInputs('res-end', 'res-end-time', context.end);
+  }
+  if (context.customerId) {
+    const customers = getCachedCustomers() || [];
+    const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
+    if (projectCustomer?.customerName) {
+      const customerInput = document.getElementById('res-customer');
+      if (customerInput) customerInput.value = projectCustomer.customerName;
+    }
   }
 }
 
