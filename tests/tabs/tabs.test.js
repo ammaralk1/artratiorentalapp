@@ -1,6 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createPreferencesMock } from '../helpers/preferencesMock.js';
 
-const nextTick = () => new Promise((resolve) => setTimeout(resolve, 110));
+let preferencesMockInstance;
+
+const ensurePreferencesMock = () => {
+  if (!preferencesMockInstance) {
+    preferencesMockInstance = createPreferencesMock();
+  }
+  return preferencesMockInstance;
+};
+
+vi.mock('../../src/scripts/preferencesService.js', () => ensurePreferencesMock().factory());
+
+const {
+  preferenceListeners,
+  setMockPreferences,
+  resetMockPreferences,
+  getMockPreferences
+} = ensurePreferencesMock();
+
+const updatePreferencesMockAccessor = () => ensurePreferencesMock().updatePreferencesMock;
+
+const nextTick = () => new Promise((resolve) => setTimeout(resolve, 150));
 
 const setupDom = () => {
   document.body.innerHTML = `
@@ -46,7 +67,8 @@ vi.mock('../../src/scripts/calendar.js', () => ({ renderCalendar: renderCalendar
 
 const resetState = () => {
   vi.resetModules();
-  localStorage.clear();
+  resetMockPreferences();
+  preferenceListeners.clear();
   setupDom();
   renderCustomersMock.mockClear();
   renderEquipmentMock.mockClear();
@@ -56,6 +78,11 @@ const resetState = () => {
   renderTechniciansMock.mockClear();
   renderReportsMock.mockClear();
   renderMaintenanceMock.mockClear();
+  const updateMock = updatePreferencesMockAccessor();
+  updateMock?.mockClear?.();
+  setMockPreferences.mockClear();
+  getMockPreferences.mockClear();
+  resetMockPreferences.mockClear();
 };
 
 describe('tabs module', () => {
@@ -71,9 +98,11 @@ describe('tabs module', () => {
 
   it('activates stored tab on init and renders corresponding section', async () => {
     resetState();
-    localStorage.setItem('dashboard-active-tab', 'equipment-tab');
+    setMockPreferences({ dashboardTab: 'equipment-tab' });
     const module = await import('../../src/scripts/tabs.js');
     module.setupTabs();
+
+    await nextTick();
 
     expect(renderEquipmentMock).toHaveBeenCalled();
     expect(document.getElementById('equipment-tab').classList.contains('active')).toBe(true);
@@ -85,11 +114,14 @@ describe('tabs module', () => {
     const module = await import('../../src/scripts/tabs.js');
     module.setupTabs();
 
+    await nextTick();
+
+    const updateMock = updatePreferencesMockAccessor();
     const equipmentButton = document.querySelector('[data-tab="equipment-tab"]');
     equipmentButton.click();
 
-    expect(localStorage.getItem('dashboard-active-tab')).toBe('equipment-tab');
-    expect(localStorage.getItem('dashboard-active-sub-tab')).toBeNull();
+    expect(updateMock).toHaveBeenCalledWith({ dashboardTab: 'equipment-tab' });
+    expect(getMockPreferences()).toEqual(expect.objectContaining({ dashboardTab: 'equipment-tab', dashboardSubTab: null }));
     expect(renderEquipmentMock).toHaveBeenCalled();
     expect(document.getElementById('equipment-tab').style.display).toBe('block');
   });
@@ -98,6 +130,8 @@ describe('tabs module', () => {
     resetState();
     const module = await import('../../src/scripts/tabs.js');
     module.setupTabs();
+
+    await nextTick();
 
     const reservationsButton = document.querySelector('[data-tab="reservations-tab"]');
     reservationsButton.click();
@@ -108,7 +142,7 @@ describe('tabs module', () => {
     document.querySelector('.sub-tab-button[data-sub-tab="calendar-tab"]').click();
     await nextTick();
     expect(renderCalendarMock).toHaveBeenCalled();
-    expect(localStorage.getItem('dashboard-active-sub-tab')).toBe('calendar-tab');
+    expect(getMockPreferences().dashboardSubTab).toBe('calendar-tab');
 
     document.querySelector('.sub-tab-button[data-sub-tab="reports-tab"]').click();
     await nextTick();
@@ -117,10 +151,14 @@ describe('tabs module', () => {
 
   it('restores stored sub-tab when re-entering reservations', async () => {
     resetState();
-    localStorage.setItem('dashboard-active-tab', 'reservations-tab');
-    localStorage.setItem('dashboard-active-sub-tab', 'calendar-tab');
+    setMockPreferences({
+      dashboardTab: 'reservations-tab',
+      dashboardSubTab: 'calendar-tab'
+    });
     const module = await import('../../src/scripts/tabs.js');
     module.setupTabs();
+
+    await nextTick();
 
     expect(renderReservationsMock).toHaveBeenCalled();
     await nextTick();

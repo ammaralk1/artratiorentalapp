@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+vi.mock('../../src/scripts/storage.js', () => ({
+  loadData: vi.fn(() => ({ reservations: [], projects: [] })),
+  saveData: vi.fn(),
+}));
+
+vi.mock('../../src/scripts/language.js', () => ({
+  getCurrentLanguage: vi.fn(() => 'ar'),
+}));
+
 import {
   showToast,
   generateReservationId,
@@ -7,16 +16,28 @@ import {
   formatDateTime,
   normalizeNumbers
 } from '../../src/scripts/utils.js';
+import { loadData } from '../../src/scripts/storage.js';
+import { getCurrentLanguage } from '../../src/scripts/language.js';
+
+const storageMock = vi.mocked(loadData);
+const languageMock = vi.mocked(getCurrentLanguage);
 
 describe('utils module', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     document.documentElement.removeAttribute('lang');
-    localStorage.clear();
+    if (globalThis.__APP_SEQUENCE_STATE__) {
+      globalThis.__APP_SEQUENCE_STATE__.reservation = 0;
+      globalThis.__APP_SEQUENCE_STATE__.project = 0;
+    } else {
+      globalThis.__APP_SEQUENCE_STATE__ = { reservation: 0, project: 0 };
+    }
+    storageMock.mockReturnValue({ reservations: [], projects: [] });
+    languageMock.mockReturnValue('ar');
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     document.documentElement.removeAttribute('lang');
   });
 
@@ -57,12 +78,26 @@ describe('utils module', () => {
   });
 
   describe('generateReservationId', () => {
-    it('increments the stored counter and pads the number', () => {
-      localStorage.setItem('reservationCounter', '9');
+    it('derives the next sequence from stored reservations', () => {
+      storageMock.mockReturnValue({
+        reservations: [
+          { reservationCode: 'RSV-0004' },
+          { reservation_code: 'RSV-0009' },
+          { reservationId: 'RSV-0007' }
+        ],
+        projects: [],
+      });
 
       const id = generateReservationId();
       expect(id).toBe('RSV-0010');
-      expect(localStorage.getItem('reservationCounter')).toBe('10');
+
+      storageMock.mockReturnValue({
+        reservations: [{ reservationCode: 'RSV-0010' }],
+        projects: [],
+      });
+
+      const nextId = generateReservationId();
+      expect(nextId).toBe('RSV-0011');
     });
 
     it('starts from 1 when no counter is stored', () => {
@@ -72,12 +107,22 @@ describe('utils module', () => {
   });
 
   describe('generateProjectCode', () => {
-    it('increments the stored project counter', () => {
-      localStorage.setItem('projectCounter', '2');
+    it('derives the next project code from existing projects and cached state', () => {
+      storageMock.mockReturnValue({
+        reservations: [],
+        projects: [
+          { projectCode: 'PRJ-0002' },
+          { code: 'PRJ-0005' },
+          { id: 12 }
+        ],
+      });
 
       const code = generateProjectCode();
-      expect(code).toBe('PRJ-0003');
-      expect(localStorage.getItem('projectCounter')).toBe('3');
+      expect(code).toBe('PRJ-0013');
+
+      storageMock.mockReturnValue({ reservations: [], projects: [] });
+      const nextCode = generateProjectCode();
+      expect(nextCode).toBe('PRJ-0014');
     });
 
     it('starts from 1 when counter is missing', () => {
@@ -119,8 +164,8 @@ describe('utils module', () => {
       expect(result).not.toMatch(/[٠-٩]/);
     });
 
-    it('falls back to storage language and allows overrides', () => {
-      localStorage.setItem('app-language', 'en');
+    it('falls back to cached language and allows overrides', () => {
+      languageMock.mockReturnValue('en');
       const mockFormatter = {
         formatToParts: vi.fn(() => ([
           { type: 'year', value: '2024' },

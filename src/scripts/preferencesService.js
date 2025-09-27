@@ -5,6 +5,8 @@ const DEFAULT_PREFERENCES = Object.freeze({
   theme: 'light',
   dashboardTab: null,
   dashboardSubTab: null,
+  projectsTab: null,
+  projectsSubTab: null,
 });
 
 let cachedPreferences = null;
@@ -16,11 +18,15 @@ function normalizePreferences(raw = {}) {
   const theme = raw.theme === 'dark' ? 'dark' : 'light';
   const dashboardTab = typeof raw.dashboardTab === 'string' ? sanitizeTab(raw.dashboardTab) : null;
   const dashboardSubTab = typeof raw.dashboardSubTab === 'string' ? sanitizeTab(raw.dashboardSubTab) : null;
+  const projectsTab = typeof raw.projectsTab === 'string' ? sanitizeTab(raw.projectsTab) : null;
+  const projectsSubTab = typeof raw.projectsSubTab === 'string' ? sanitizeTab(raw.projectsSubTab) : null;
   return {
     language,
     theme,
     dashboardTab,
     dashboardSubTab,
+    projectsTab,
+    projectsSubTab,
   };
 }
 
@@ -111,6 +117,14 @@ export async function updatePreferences(preferencePatch = {}) {
 
   if (preferencePatch.dashboardSubTab !== undefined) {
     body.dashboardSubTab = preferencePatch.dashboardSubTab;
+  }
+
+  if (preferencePatch.projectsTab !== undefined) {
+    body.projectsTab = preferencePatch.projectsTab;
+  }
+
+  if (preferencePatch.projectsSubTab !== undefined) {
+    body.projectsSubTab = preferencePatch.projectsSubTab;
   }
 
   if (Object.keys(body).length === 0) {

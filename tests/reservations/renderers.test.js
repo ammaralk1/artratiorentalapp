@@ -211,8 +211,7 @@ describe('reservations/renderers module', () => {
     const projectButton = body.querySelector('[data-action="open-project"]');
     expect(projectButton).toBeTruthy();
     projectButton.click();
-    expect(localStorage.getItem('pendingProjectDetailId')).toBe('5');
-    expect(window.location.href).toBe('projects.html');
+    expect(window.location.href).toBe('projects.html?project=5');
     restoreLocation();
   });
 });

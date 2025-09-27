@@ -211,6 +211,8 @@ function getDefaultPreferences(): array
         'theme' => 'light',
         'dashboardTab' => null,
         'dashboardSubTab' => null,
+        'projectsTab' => null,
+        'projectsSubTab' => null,
     ];
 }
 
@@ -276,6 +278,12 @@ function updateUserPreferences(array $changes): array
                 break;
             case 'dashboardSubTab':
                 $current['dashboardSubTab'] = normaliseDashboardTarget((string) $value);
+                break;
+            case 'projectsTab':
+                $current['projectsTab'] = normaliseDashboardTarget((string) $value);
+                break;
+            case 'projectsSubTab':
+                $current['projectsSubTab'] = normaliseDashboardTarget((string) $value);
                 break;
             default:
                 throw new InvalidArgumentException('Unknown preference key supplied');

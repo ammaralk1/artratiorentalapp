@@ -9,8 +9,6 @@ import {
   buildReservationDetailsHtml
 } from './list/index.js';
 
-const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
-
 export function renderReservationsList({
   containerId = 'reservations-list',
   filters = null,
@@ -134,12 +132,9 @@ export function renderReservationDetails(index, {
   if (openProjectBtn && project) {
     openProjectBtn.addEventListener('click', () => {
       closeModal();
-      try {
-        localStorage.setItem(PENDING_PROJECT_DETAIL_KEY, String(project.id));
-      } catch (error) {
-        console.warn('⚠️ [reservations] Unable to persist pending project detail id', error);
-      }
-      window.location.href = 'projects.html';
+      const projectId = project?.id != null ? String(project.id) : '';
+      const target = projectId ? `projects.html?project=${encodeURIComponent(projectId)}` : 'projects.html';
+      window.location.href = target;
     });
   }
 

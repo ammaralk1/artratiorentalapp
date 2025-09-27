@@ -1,4 +1,25 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createPreferencesMock } from '../helpers/preferencesMock.js';
+
+let preferencesMockInstance;
+
+const ensurePreferencesMock = () => {
+  if (!preferencesMockInstance) {
+    preferencesMockInstance = createPreferencesMock();
+  }
+  return preferencesMockInstance;
+};
+
+vi.mock('../../src/scripts/preferencesService.js', () => ensurePreferencesMock().factory());
+
+const {
+  setMockPreferences,
+  resetMockPreferences,
+  getMockPreferences,
+  flushAsync
+} = ensurePreferencesMock();
+
+const updatePreferencesMockAccessor = () => ensurePreferencesMock().updatePreferencesMock;
 
 const setupDom = () => {
   document.body.innerHTML = `
@@ -9,17 +30,22 @@ const setupDom = () => {
   document.body.className = 'theme-loading';
 };
 
-const loadThemeModule = async () => {
+const loadThemeModule = async (prefsPatch = null) => {
   vi.resetModules();
-  localStorage.clear();
+  resetMockPreferences();
+  if (prefsPatch) {
+    setMockPreferences(prefsPatch);
+  }
   setupDom();
-  return await import('../../src/scripts/theme.js');
+  const module = await import('../../src/scripts/theme.js');
+  await flushAsync();
+  return module;
 };
 
 describe('theme module', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(Intl, 'DateTimeFormat'); // prevent accidental global mocks from earlier tests
+    vi.spyOn(Intl, 'DateTimeFormat');
   });
 
   afterEach(() => {
@@ -27,6 +53,11 @@ describe('theme module', () => {
     document.body.innerHTML = '';
     document.documentElement.className = '';
     document.body.className = '';
+    resetMockPreferences();
+    setMockPreferences.mockClear();
+    getMockPreferences.mockClear();
+    const updateMock = updatePreferencesMockAccessor();
+    updateMock?.mockClear?.();
   });
 
   it('applyTheme toggles classes and persists preference', async () => {
@@ -35,19 +66,23 @@ describe('theme module', () => {
     module.applyTheme('dark');
     expect(document.documentElement.classList.contains('dark-mode')).toBe(true);
     expect(document.body.classList.contains('dark-mode')).toBe(true);
-    expect(localStorage.getItem('app-theme')).toBe('dark');
+    await flushAsync();
+    const updateMock = updatePreferencesMockAccessor();
+    expect(updateMock).toHaveBeenCalledWith({ theme: 'dark' });
+    expect(getMockPreferences().theme).toBe('dark');
 
     module.applyTheme('light');
     expect(document.documentElement.classList.contains('dark-mode')).toBe(false);
     expect(document.body.classList.contains('dark-mode')).toBe(false);
-    expect(localStorage.getItem('app-theme')).toBe('light');
+    await flushAsync();
+    expect(getMockPreferences().theme).toBe('light');
   });
 
   it('applyStoredTheme honors stored preference and updates buttons', async () => {
-    const module = await loadThemeModule();
-    localStorage.setItem('app-theme', 'dark');
+    const module = await loadThemeModule({ theme: 'dark' });
 
     module.applyStoredTheme();
+    await flushAsync();
 
     expect(module.getCurrentTheme()).toBe('dark');
     document.querySelectorAll('.theme-toggle-btn').forEach((btn) => {
@@ -68,6 +103,7 @@ describe('theme module', () => {
     });
 
     buttons[0].click();
+    await flushAsync();
     expect(module.getCurrentTheme()).toBe('dark');
     buttons.forEach((btn) => {
       expect(btn.getAttribute('aria-pressed')).toBe('true');
@@ -82,6 +118,7 @@ describe('theme module', () => {
     const module = await loadThemeModule();
 
     module.applyTheme('dark');
+    await flushAsync();
     document.dispatchEvent(new CustomEvent('language:changed'));
 
     document.querySelectorAll('.theme-toggle-btn').forEach((btn) => {

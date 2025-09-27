@@ -6,7 +6,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { isReservationCompleted, normalizeText } from './reservationsShared.js';
 import { registerReservationGlobals } from './reservations/controller.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
-import { updatePreferences } from './preferencesService.js';
+import { updatePreferences, getPreferences, getCachedPreferences, subscribePreferences } from './preferencesService.js';
 import {
   ensureProjectsLoaded,
   getProjectsState,
@@ -43,20 +43,22 @@ const state = {
     search: ''
   },
   visibleProjects: [],
-  editingProjectId: null
+  editingProjectId: null,
+  pendingProjectDetailId: null
 };
 
 const dom = {};
-const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
+const PENDING_PROJECT_QUERY_PARAM = 'project';
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const PROJECT_TAX_RATE = 0.15;
 const MAX_FOCUS_CARDS = 6;
-const PROJECT_MAIN_TAB_STORAGE_KEY = 'projects.activeTab';
-const PROJECT_SUB_TAB_STORAGE_KEY = 'projects.activeSubTab';
+const PROJECT_MAIN_TAB_PREFERENCE_KEY = 'projectsTab';
+const PROJECT_SUB_TAB_PREFERENCE_KEY = 'projectsSubTab';
 const PROJECT_SUB_TAB_ALIASES = {
   create: 'create-project-tab',
   list: 'projects-list-tab'
 };
+let unsubscribeProjectPreferences = null;
 
 function getProjectStartTimestamp(project) {
   if (!project?.start) return Number.NaN;
@@ -81,6 +83,94 @@ function combineProjectDateTime(dateValue, timeValue) {
   const safeHours = hours.padStart(2, '0');
   const safeMinutes = minutes.padStart(2, '0');
   return `${dateValue}T${safeHours}:${safeMinutes}`;
+}
+
+function readPendingProjectIdFromUrl() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const searchValue = params.get(PENDING_PROJECT_QUERY_PARAM);
+    if (searchValue) {
+      return searchValue;
+    }
+  } catch (error) {
+    /* ignore malformed search params */
+  }
+
+  const rawHash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
+  if (rawHash && rawHash.includes(`${PENDING_PROJECT_QUERY_PARAM}=`)) {
+    try {
+      const hashParams = new URLSearchParams(rawHash);
+      const hashValue = hashParams.get(PENDING_PROJECT_QUERY_PARAM);
+      if (hashValue) {
+        return hashValue;
+      }
+    } catch (error) {
+      /* ignore malformed hash params */
+    }
+  }
+
+  return null;
+}
+
+function clearPendingProjectIdFromUrl() {
+  if (typeof window === 'undefined' || typeof window.history?.replaceState !== 'function') {
+    return;
+  }
+
+  try {
+    const searchParams = new URLSearchParams(window.location.search || '');
+    const rawHash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
+
+    const hadSearchValue = searchParams.has(PENDING_PROJECT_QUERY_PARAM);
+    if (hadSearchValue) {
+      searchParams.delete(PENDING_PROJECT_QUERY_PARAM);
+    }
+
+    let nextHash = rawHash;
+    let hashModified = false;
+    if (rawHash && rawHash.includes(`${PENDING_PROJECT_QUERY_PARAM}=`)) {
+      try {
+        const hashParams = new URLSearchParams(rawHash);
+        if (hashParams.has(PENDING_PROJECT_QUERY_PARAM)) {
+          hashParams.delete(PENDING_PROJECT_QUERY_PARAM);
+          nextHash = hashParams.toString();
+          hashModified = true;
+        }
+      } catch (error) {
+        /* ignore malformed hash params */
+      }
+    }
+
+    if (!hadSearchValue && !hashModified) {
+      return;
+    }
+
+    const basePath = window.location.pathname;
+    const nextSearch = searchParams.toString();
+    const updatedUrl = `${basePath}${nextSearch ? `?${nextSearch}` : ''}${nextHash ? `#${nextHash}` : ''}`;
+    window.history.replaceState({}, '', updatedUrl);
+  } catch (error) {
+    /* ignore failures */
+  }
+}
+
+function capturePendingProjectRequest() {
+  const pendingId = readPendingProjectIdFromUrl();
+  if (!pendingId) return;
+  state.pendingProjectDetailId = pendingId;
+  clearPendingProjectIdFromUrl();
+}
+
+function openPendingProjectDetailIfReady() {
+  if (!state.pendingProjectDetailId) return;
+  const pendingId = state.pendingProjectDetailId;
+  const targetProject = state.projects.find((project) => String(project?.id) === String(pendingId));
+  if (!targetProject) return;
+
+  state.pendingProjectDetailId = null;
+  openProjectDetails(targetProject.id ?? pendingId);
 }
 
 function clearProjectDateInputs() {
@@ -145,6 +235,8 @@ function initProjectDatePickers() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initProjectPreferencesSync();
+  capturePendingProjectRequest();
   cacheDom();
   refreshProjectSubmitButton();
   initProjectDatePickers();
@@ -158,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindSelectionRemovalEvents();
   bindTableEvents();
   bindFocusCards();
-  openPendingProjectDetail();
+  openPendingProjectDetailIfReady();
   initializeProjectsData();
 });
 
@@ -251,40 +343,30 @@ function cacheDom() {
   }
 }
 
-function persistStorageValue(key, value) {
-  if (!key) return;
-  try {
-    window.localStorage.setItem(key, value);
-  } catch (error) {
-    /* ignore storage errors */
-  }
-}
-
-function readStorageValue(key) {
-  if (!key) return '';
-  try {
-    return window.localStorage.getItem(key) || '';
-  } catch (error) {
-    return '';
-  }
-}
-
 function persistActiveMainTab(tabId) {
   if (!tabId) return;
-  persistStorageValue(PROJECT_MAIN_TAB_STORAGE_KEY, tabId);
+  if (getStoredActiveMainTab() === tabId) return;
+  updatePreferences({ [PROJECT_MAIN_TAB_PREFERENCE_KEY]: tabId }).catch((error) => {
+    console.warn('⚠️ [projects] Failed to persist projects main tab preference', error);
+  });
 }
 
 function getStoredActiveMainTab() {
-  return readStorageValue(PROJECT_MAIN_TAB_STORAGE_KEY);
+  const prefs = getCachedPreferences();
+  return prefs?.[PROJECT_MAIN_TAB_PREFERENCE_KEY] || '';
 }
 
 function persistActiveSubTab(tabId) {
   if (!tabId) return;
-  persistStorageValue(PROJECT_SUB_TAB_STORAGE_KEY, tabId);
+  if (getStoredActiveSubTab() === tabId) return;
+  updatePreferences({ [PROJECT_SUB_TAB_PREFERENCE_KEY]: tabId }).catch((error) => {
+    console.warn('⚠️ [projects] Failed to persist projects sub-tab preference', error);
+  });
 }
 
 function getStoredActiveSubTab() {
-  return readStorageValue(PROJECT_SUB_TAB_STORAGE_KEY);
+  const prefs = getCachedPreferences();
+  return prefs?.[PROJECT_SUB_TAB_PREFERENCE_KEY] || '';
 }
 
 function resolveSubTabFromValue(value) {
@@ -491,6 +573,55 @@ function restoreProjectSubTab() {
   }
 }
 
+function isProjectsSectionActive() {
+  if (!dom.tabButtons) return false;
+  const activeButton = dom.tabButtons.find((btn) => btn.classList.contains('active'));
+  return activeButton?.dataset.tabTarget === 'projects-section';
+}
+
+function applyStoredProjectPreferences(prefs = {}) {
+  if (!prefs) return;
+
+  if (dom.tabButtons && dom.tabButtons.length) {
+    const activeButton = dom.tabButtons.find((btn) => btn.classList.contains('active'));
+    const activeId = activeButton?.dataset.tabTarget || '';
+    const preferredId = prefs[PROJECT_MAIN_TAB_PREFERENCE_KEY];
+    if (preferredId && preferredId !== activeId) {
+      const button = dom.tabButtons.find((btn) => btn.dataset.tabTarget === preferredId);
+      if (button) {
+        activateTab(preferredId, button);
+      }
+    }
+  }
+
+  if (dom.projectSubTabButtons && dom.projectSubTabButtons.length && isProjectsSectionActive()) {
+    const activeSubButton = dom.projectSubTabButtons.find((btn) => btn.classList.contains('active'));
+    const activeSubId = activeSubButton?.dataset.projectSubtabTarget || '';
+    const preferredSubId = prefs[PROJECT_SUB_TAB_PREFERENCE_KEY];
+    if (preferredSubId && preferredSubId !== activeSubId) {
+      const button = dom.projectSubTabButtons.find((btn) => btn.dataset.projectSubtabTarget === preferredSubId);
+      if (button) {
+        activateProjectSubTab(preferredSubId, button);
+      }
+    }
+  }
+}
+
+function initProjectPreferencesSync() {
+  if (!unsubscribeProjectPreferences) {
+    unsubscribeProjectPreferences = subscribePreferences((prefs) => {
+      applyStoredProjectPreferences(prefs);
+    });
+  }
+  getPreferences()
+    .then((prefs) => {
+      applyStoredProjectPreferences(prefs);
+    })
+    .catch((error) => {
+      console.warn('⚠️ [projects] Failed to synchronise project preferences', error);
+    });
+}
+
 function bindLogout() {
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
@@ -514,6 +645,7 @@ function loadAllData() {
   renderProjects();
   updateSummary();
   renderFocusCards();
+  openPendingProjectDetailIfReady();
 }
 
 function populateSelects() {
@@ -1993,21 +2125,6 @@ function bindProjectDetailsEvents(project) {
       }
     });
   });
-}
-
-function openPendingProjectDetail() {
-  try {
-    const pendingId = localStorage.getItem(PENDING_PROJECT_DETAIL_KEY);
-    if (!pendingId) return;
-    localStorage.removeItem(PENDING_PROJECT_DETAIL_KEY);
-    const projectExists = state.projects.find((project) => String(project.id) === String(pendingId));
-    if (projectExists) {
-      openProjectDetails(pendingId);
-    }
-  } catch (error) {
-    console.warn('⚠️ [projects] Unable to open pending project detail', error);
-    localStorage.removeItem(PENDING_PROJECT_DETAIL_KEY);
-  }
 }
 
 function bindFocusCards() {

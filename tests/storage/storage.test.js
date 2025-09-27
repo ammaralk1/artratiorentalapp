@@ -1,10 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { loadData, saveData, migrateOldData } from '../../src/scripts/storage.js';
+import { loadData, saveData, migrateOldData, __resetLegacyMigrationForTests } from '../../src/scripts/storage.js';
+
+function resetMemoryStore() {
+  if (typeof window !== 'undefined') {
+    delete window.__APP_DATA_STORE__;
+    delete window.__LEGACY_DATA__;
+  } else {
+    delete globalThis.__APP_DATA_STORE__;
+  }
+}
 
 describe('storage module', () => {
   beforeEach(() => {
-    localStorage.clear();
+    resetMemoryStore();
+    __resetLegacyMigrationForTests();
   });
 
   it('loadData returns empty arrays when storage is empty', () => {
@@ -20,13 +30,15 @@ describe('storage module', () => {
     });
   });
 
-  it('loadData parses persisted lists from storage', () => {
-    localStorage.setItem('customersList', JSON.stringify([{ id: 1 }]));
-    localStorage.setItem('reservationsList', JSON.stringify([{ id: 2 }]));
-    localStorage.setItem('equipmentList', JSON.stringify([{ id: 3 }]));
-    localStorage.setItem('techniciansList', JSON.stringify([{ id: 4 }]));
-    localStorage.setItem('maintenanceList', JSON.stringify([{ id: 5 }]));
-    localStorage.setItem('projectsList', JSON.stringify([{ id: 6 }]));
+  it('loadData returns previously saved data', () => {
+    saveData({
+      customers: [{ id: 1 }],
+      reservations: [{ id: 2 }],
+      equipment: [{ id: 3 }],
+      technicians: [{ id: 4 }],
+      maintenance: [{ id: 5 }],
+      projects: [{ id: 6 }]
+    });
 
     const data = loadData();
 
@@ -38,7 +50,7 @@ describe('storage module', () => {
     expect(data.projects).toEqual([{ id: 6 }]);
   });
 
-  it('saveData persists only provided lists', () => {
+  it('saveData ignores undefined or null lists', () => {
     saveData({
       customers: [{ id: 'c1' }],
       reservations: [{ id: 'r1' }],
@@ -48,35 +60,54 @@ describe('storage module', () => {
       projects: [{ id: 'p1' }]
     });
 
-    expect(localStorage.getItem('customersList')).toBe(JSON.stringify([{ id: 'c1' }]));
-    expect(localStorage.getItem('reservationsList')).toBe(JSON.stringify([{ id: 'r1' }]));
-    expect(localStorage.getItem('maintenanceList')).toBe(JSON.stringify([{ id: 'm1' }]));
-    expect(localStorage.getItem('projectsList')).toBe(JSON.stringify([{ id: 'p1' }]));
-    expect(localStorage.getItem('equipmentList')).toBeNull();
-    expect(localStorage.getItem('techniciansList')).toBeNull();
+    const data = loadData();
+
+    expect(data.customers).toEqual([{ id: 'c1' }]);
+    expect(data.reservations).toEqual([{ id: 'r1' }]);
+    expect(data.maintenance).toEqual([{ id: 'm1' }]);
+    expect(data.projects).toEqual([{ id: 'p1' }]);
+    expect(data.equipment).toEqual([]);
+    expect(data.technicians).toEqual([]);
   });
 
-  it('migrateOldData copies legacy keys and initializes missing projects', () => {
-    localStorage.setItem('customers', JSON.stringify([{ legacy: true }]));
-    localStorage.setItem('reservations', JSON.stringify([{ legacy: true }]));
-    localStorage.setItem('equipment', JSON.stringify([{ legacy: true }]));
-    localStorage.setItem('technicians', JSON.stringify([{ legacy: true }]));
+  it('migrateOldData copies legacy payload into memory store once', () => {
+    const legacyPayload = {
+      customers: [{ legacy: true }],
+      reservations: [{ legacy: true }],
+      equipment: [{ legacy: true }],
+      technicians: [{ legacy: true }],
+      maintenance: [{ legacy: true }],
+      projects: [{ legacy: true }]
+    };
+
+    migrateOldData(legacyPayload);
+
+    const data = loadData();
+    expect(data.customers).toEqual([{ legacy: true }]);
+    expect(data.reservations).toEqual([{ legacy: true }]);
+    expect(data.equipment).toEqual([{ legacy: true }]);
+    expect(data.technicians).toEqual([{ legacy: true }]);
+    expect(data.maintenance).toEqual([{ legacy: true }]);
+    expect(data.projects).toEqual([{ legacy: true }]);
+
+    // Subsequent calls do nothing
+    saveData({ customers: [{ legacy: false }] });
+    migrateOldData(legacyPayload);
+    expect(loadData().customers).toEqual([{ legacy: false }]);
+  });
+
+  it('migrateOldData reads from window.__LEGACY_DATA__ when available', () => {
+    if (typeof window === 'undefined') return;
+    window.__LEGACY_DATA__ = {
+      customers: [{ id: 'fromWindow' }],
+      reservations: [{ id: 'fromWindow' }]
+    };
 
     migrateOldData();
 
-    expect(localStorage.getItem('customersList')).toBe(JSON.stringify([{ legacy: true }]));
-    expect(localStorage.getItem('reservationsList')).toBe(JSON.stringify([{ legacy: true }]));
-    expect(localStorage.getItem('equipmentList')).toBe(JSON.stringify([{ legacy: true }]));
-    expect(localStorage.getItem('techniciansList')).toBe(JSON.stringify([{ legacy: true }]));
-    expect(localStorage.getItem('projectsList')).toBe('[]');
-  });
-
-  it('migrateOldData does not overwrite existing new keys', () => {
-    localStorage.setItem('customers', 'legacy');
-    localStorage.setItem('customersList', JSON.stringify([{ fresh: true }]));
-
-    migrateOldData();
-
-    expect(localStorage.getItem('customersList')).toBe(JSON.stringify([{ fresh: true }]));
+    const data = loadData();
+    expect(data.customers).toEqual([{ id: 'fromWindow' }]);
+    expect(data.reservations).toEqual([{ id: 'fromWindow' }]);
+    expect(window.__LEGACY_DATA__).toBeUndefined();
   });
 });
