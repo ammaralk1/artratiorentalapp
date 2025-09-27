@@ -17,8 +17,11 @@ import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 
 applyStoredTheme();
 
-function initApp() {
-  checkAuth();
+async function initApp() {
+  const user = await checkAuth();
+  if (!user) {
+    return;
+  }
   setupTabs();
   initCustomers();
   initThemeToggle();
@@ -57,10 +60,16 @@ function initApp() {
   handlePendingReservationEdit();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp, { once: true });
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initApp().catch((error) => {
+      console.error('❌ Failed to initialise app', error);
+    });
+  }, { once: true });
 } else {
-  initApp();
+  initApp().catch((error) => {
+    console.error('❌ Failed to initialise app', error);
+  });
 }
 
 // ✅ ضبط دقيقة 00 وسلوك blur بعد اختيار الوقت

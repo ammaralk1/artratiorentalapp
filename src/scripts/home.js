@@ -1,5 +1,5 @@
 import { applyStoredTheme, initThemeToggle } from './theme.js';
-import { checkAuth, logout } from './auth.js';
+import { checkAuth, logout, getCurrentUser } from './auth.js';
 import { migrateOldData } from './storage.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -219,13 +219,15 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.dataset.listenerAttached = 'true';
   }
 
-  try {
-    const stored = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
-    cachedUsername = stored?.username?.trim() || '';
-  } catch (error) {
-    console.warn('⚠️ تعذر قراءة اسم المستخدم', error);
-    cachedUsername = '';
-  }
+  getCurrentUser({ refresh: true })
+    .then((user) => {
+      cachedUsername = user?.username || '';
+      updateGreetingMessage();
+    })
+    .catch(() => {
+      cachedUsername = '';
+      updateGreetingMessage();
+    });
 
   updateGreetingMessage();
   renderHomeSummary();
@@ -240,12 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 if (document.readyState !== 'loading') {
-  try {
-    const stored = JSON.parse(localStorage.getItem('loggedInUser') || '{}');
-    cachedUsername = stored?.username?.trim() || '';
-  } catch (error) {
-    cachedUsername = '';
-  }
   updateGreetingMessage();
   renderHomeSummary();
 }

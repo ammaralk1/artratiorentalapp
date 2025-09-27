@@ -12,6 +12,7 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
     $pdo = getDatabaseConnection();
+    requireAuthenticated();
 
     switch ($method) {
         case 'GET':

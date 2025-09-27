@@ -15,6 +15,7 @@ if ($method !== 'GET') {
 
 try {
     $pdo = getDatabaseConnection();
+    requireAuthenticated();
     $data = buildSummaryResponse($pdo);
     respond([
         'ok' => true,
@@ -73,4 +74,3 @@ function countQuery(PDO $pdo, string $sql): int
         return 0;
     }
 }
-
