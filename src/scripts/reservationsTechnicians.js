@@ -245,9 +245,10 @@ function applyTechnicianSelection() {
 
   updateTechnicianPickerInfo();
 
-  const modalEl = document.getElementById('selectTechniciansModal');
-  if (modalEl && window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+ const modalEl = document.getElementById('selectTechniciansModal');
+ if (modalEl && window.bootstrap?.Modal) {
+    const modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    modalInstance?.hide?.();
   }
 }
 

@@ -25,14 +25,14 @@ export function getEquipmentRecordByBarcode(barcode) {
   return (equipment || []).find((item) => normalizeBarcodeValue(item?.barcode) === normalized) || null;
 }
 
-export function isEquipmentInMaintenance(barcode) {
-  const record = getEquipmentRecordByBarcode(barcode);
-  return record?.status === 'صيانة';
-}
-
 export function findEquipmentByBarcode(barcode) {
   const normalized = normalizeBarcodeValue(barcode);
   if (!normalized) return null;
   const { equipment = [] } = loadData();
   return (equipment || []).find((item) => normalizeBarcodeValue(item?.barcode) === normalized) || null;
+}
+
+export function isEquipmentInMaintenance(barcode) {
+  const record = findEquipmentByBarcode(barcode);
+  return record?.status === 'صيانة';
 }
