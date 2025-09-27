@@ -209,6 +209,8 @@ function getDefaultPreferences(): array
     return [
         'language' => 'ar',
         'theme' => 'light',
+        'dashboardTab' => null,
+        'dashboardSubTab' => null,
     ];
 }
 
@@ -222,6 +224,20 @@ function normalisePreferenceTheme(string $theme): string
 {
     $normalized = strtolower(trim($theme));
     return $normalized === 'dark' ? 'dark' : 'light';
+}
+
+function normaliseDashboardTarget(string $value): ?string
+{
+    $trimmed = trim($value);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    if (!preg_match('/^[a-z0-9\-]+$/i', $trimmed)) {
+        throw new InvalidArgumentException('Invalid dashboard tab value');
+    }
+
+    return $trimmed;
 }
 
 function getUserPreferences(): array
@@ -254,6 +270,12 @@ function updateUserPreferences(array $changes): array
                 break;
             case 'theme':
                 $current['theme'] = normalisePreferenceTheme((string) $value);
+                break;
+            case 'dashboardTab':
+                $current['dashboardTab'] = normaliseDashboardTarget((string) $value);
+                break;
+            case 'dashboardSubTab':
+                $current['dashboardSubTab'] = normaliseDashboardTarget((string) $value);
                 break;
             default:
                 throw new InvalidArgumentException('Unknown preference key supplied');

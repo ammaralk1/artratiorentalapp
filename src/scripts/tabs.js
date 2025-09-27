@@ -6,34 +6,14 @@ import { renderCalendar } from "./calendar.js";
 import { renderTechnicians } from "./technicians.js";
 import { renderReports } from "./reports.js";
 import { renderMaintenance } from "./maintenance.js";
+import { getPreferences, updatePreferences, subscribePreferences } from "./preferencesService.js";
 
-const ACTIVE_TAB_KEY = "dashboard-active-tab";
-const ACTIVE_SUB_TAB_KEY = "dashboard-active-sub-tab";
-
-const storage = {
-  get(key) {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.warn("⚠️ [tabs.js] localStorage.getItem failed", { key, error });
-      return null;
-    }
-  },
-  set(key, value) {
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      console.warn("⚠️ [tabs.js] localStorage.setItem failed", { key, value, error });
-    }
-  },
-  remove(key) {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.warn("⚠️ [tabs.js] localStorage.removeItem failed", { key, error });
-    }
-  }
-};
+let currentMainTab = null;
+let currentSubTab = null;
+let tabsInitialised = false;
+let pendingSubTabPreference = null;
+let unsubscribePreferences = null;
+let activateSubTabRef = null;
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
@@ -63,8 +43,22 @@ export function setupTabs() {
       content.classList.toggle("active", isTarget);
     });
 
+    currentMainTab = target;
+
     if (!skipStore) {
-      storage.set(ACTIVE_TAB_KEY, target);
+      updatePreferences({ dashboardTab: target }).catch((error) => {
+        console.warn('⚠️ [tabs.js] Failed to store dashboard tab preference', error);
+      });
+    }
+
+    if (target !== "reservations-tab") {
+      currentSubTab = null;
+      pendingSubTabPreference = null;
+      if (!skipStore) {
+        updatePreferences({ dashboardSubTab: null }).catch((error) => {
+          console.warn('⚠️ [tabs.js] Failed to clear sub-tab preference', error);
+        });
+      }
     }
 
     // 📌 استدعاء الدوال الخاصة بكل تبويب
@@ -88,6 +82,10 @@ export function setupTabs() {
       console.log("📅 Rendering reservations");
       renderReservations();
       setupSubTabs();
+      if (pendingSubTabPreference) {
+        activateStoredSubTab(pendingSubTabPreference);
+        pendingSubTabPreference = null;
+      }
     }
   };
 
@@ -98,22 +96,62 @@ export function setupTabs() {
       activateTab(target);
 
       if (target !== "reservations-tab") {
-        storage.remove(ACTIVE_SUB_TAB_KEY);
+        updatePreferences({ dashboardSubTab: null }).catch((error) => {
+          console.warn('⚠️ [tabs.js] Failed to clear sub-tab preference', error);
+        });
       }
     });
   });
 
-  // ✅ تحديد التبويب المبدئي (مع الأخذ بالحسبان آخر اختيار محفوظ)
-  const storedTab = storage.get(ACTIVE_TAB_KEY);
-  const defaultTab = document.querySelector("[data-tab].active");
-  const initialTarget = storedTab && document.getElementById(storedTab) ? storedTab : defaultTab?.getAttribute("data-tab");
+  const applyInitialTabs = (prefs) => {
+    const defaultTabButton = document.querySelector("[data-tab].active");
+    const storedTab = prefs?.dashboardTab;
+    const initialTarget = storedTab && document.getElementById(storedTab)
+      ? storedTab
+      : defaultTabButton?.getAttribute("data-tab") || tabButtons[0]?.getAttribute("data-tab");
 
-  if (initialTarget) {
-    console.log("⭐ Initial tab:", initialTarget);
-    activateTab(initialTarget, { skipStore: !!storedTab });
+    if (initialTarget) {
+      console.log("⭐ Initial tab:", initialTarget);
+      activateTab(initialTarget, { skipStore: true });
+    }
+
+    const storedSubTab = prefs?.dashboardSubTab;
+    if (storedSubTab) {
+      pendingSubTabPreference = storedSubTab;
+      if (currentMainTab === 'reservations-tab') {
+        activateStoredSubTab(storedSubTab);
+        pendingSubTabPreference = null;
+      }
+    }
+
+    document.body?.classList.remove("tabs-loading");
+    tabsInitialised = true;
+  };
+
+  getPreferences()
+    .then((prefs) => applyInitialTabs(prefs))
+    .catch((error) => {
+      console.warn('⚠️ [tabs.js] Failed to load tab preferences', error);
+      applyInitialTabs(null);
+    });
+
+  if (!unsubscribePreferences) {
+    unsubscribePreferences = subscribePreferences((prefs) => {
+      if (!tabsInitialised || !prefs) return;
+      if (prefs.dashboardTab && prefs.dashboardTab !== currentMainTab) {
+        activateTab(prefs.dashboardTab, { skipStore: true });
+      }
+      if (currentMainTab === 'reservations-tab') {
+        if (prefs.dashboardSubTab && prefs.dashboardSubTab !== currentSubTab) {
+          activateStoredSubTab(prefs.dashboardSubTab);
+        } else if (!prefs.dashboardSubTab && currentSubTab) {
+          activateStoredSubTab(null);
+        }
+      } else if (prefs.dashboardSubTab) {
+        pendingSubTabPreference = prefs.dashboardSubTab;
+      }
+    });
   }
-
-  document.body?.classList.remove("tabs-loading");
 }
 
 // ✅ إدارة التبويبات الفرعية للحجوزات
@@ -141,8 +179,12 @@ function setupSubTabs() {
     });
     subTabContent.classList.add("active");
 
+    currentSubTab = subTarget;
+
     if (!skipStore) {
-      storage.set(ACTIVE_SUB_TAB_KEY, subTarget);
+      updatePreferences({ dashboardSubTab: subTarget }).catch((error) => {
+        console.warn('⚠️ [tabs.js] Failed to store sub-tab preference', error);
+      });
     }
 
     if (subTarget === "my-reservations-tab") {
@@ -163,6 +205,17 @@ function setupSubTabs() {
     }
   };
 
+  activateSubTabRef = (target, options = {}) => {
+    if (target) {
+      activateSubTab(target, options);
+    } else {
+      // Clear active state
+      subTabButtons.forEach((b) => b.classList.remove('active'));
+      subTabContents.forEach((subContent) => subContent.classList.remove('active'));
+      currentSubTab = null;
+    }
+  };
+
   subTabButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const subTarget = btn.getAttribute("data-sub-tab");
@@ -171,15 +224,26 @@ function setupSubTabs() {
     });
   });
 
-  const storedSubTab = storage.get(ACTIVE_SUB_TAB_KEY);
-  const defaultSubTab = document.querySelector(".sub-tab-button.active");
-  const initialSubTarget = storedSubTab && document.getElementById(storedSubTab) ? storedSubTab : defaultSubTab?.getAttribute("data-sub-tab");
-
-  if (initialSubTarget) {
-    console.log("⭐ Initial sub-tab:", initialSubTarget);
-    activateSubTab(initialSubTarget, { skipStore: !!storedSubTab });
+  if (pendingSubTabPreference) {
+    activateSubTab(pendingSubTabPreference, { skipStore: true });
+    pendingSubTabPreference = null;
+  } else {
+    const defaultSubTab = document.querySelector(".sub-tab-button.active");
+    const initialSubTarget = defaultSubTab?.getAttribute("data-sub-tab");
+    if (initialSubTarget) {
+      console.log("⭐ Initial sub-tab:", initialSubTarget);
+      activateSubTab(initialSubTarget, { skipStore: true });
+    }
   }
 
   setupReservationEvents();
+}
+
+function activateStoredSubTab(subTarget) {
+  if (typeof activateSubTabRef === 'function') {
+    activateSubTabRef(subTarget, { skipStore: true });
+  } else if (subTarget) {
+    pendingSubTabPreference = subTarget;
+  }
 }
 // تم استبدال زر توليد التقارير بلوحة تفاعلية في تبويب التقارير

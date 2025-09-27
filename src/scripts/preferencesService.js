@@ -3,6 +3,8 @@ import { apiRequest, ApiError } from './apiClient.js';
 const DEFAULT_PREFERENCES = Object.freeze({
   language: 'ar',
   theme: 'light',
+  dashboardTab: null,
+  dashboardSubTab: null,
 });
 
 let cachedPreferences = null;
@@ -12,10 +14,20 @@ const listeners = new Set();
 function normalizePreferences(raw = {}) {
   const language = raw.language === 'en' ? 'en' : 'ar';
   const theme = raw.theme === 'dark' ? 'dark' : 'light';
+  const dashboardTab = typeof raw.dashboardTab === 'string' ? sanitizeTab(raw.dashboardTab) : null;
+  const dashboardSubTab = typeof raw.dashboardSubTab === 'string' ? sanitizeTab(raw.dashboardSubTab) : null;
   return {
     language,
     theme,
+    dashboardTab,
+    dashboardSubTab,
   };
+}
+
+function sanitizeTab(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return null;
+  return /^[a-z0-9\-]+$/i.test(trimmed) ? trimmed : null;
 }
 
 function notifyListeners() {
@@ -91,6 +103,14 @@ export async function updatePreferences(preferencePatch = {}) {
 
   if (preferencePatch.theme !== undefined) {
     body.theme = preferencePatch.theme;
+  }
+
+  if (preferencePatch.dashboardTab !== undefined) {
+    body.dashboardTab = preferencePatch.dashboardTab;
+  }
+
+  if (preferencePatch.dashboardSubTab !== undefined) {
+    body.dashboardSubTab = preferencePatch.dashboardSubTab;
   }
 
   if (Object.keys(body).length === 0) {
