@@ -1,11 +1,228 @@
-import { loadData } from './storage.js';
 import { formatDateTime, normalizeNumbers } from './utils.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { calculateReservationDays } from './reservationsSummary.js';
 import { t, getCurrentLanguage } from './language.js';
+import { ensureReservationsLoaded } from './reservationsActions.js';
+import { getReservationsState, isApiError as isReservationsApiError } from './reservationsService.js';
+
+const CALENDAR_FETCH_PARAMS = { limit: 200 };
 
 let calendarInstance = null;
 let calendarLanguageListenerAttached = false;
+let calendarReservationsListenerAttached = false;
+let isCalendarLoading = false;
+let calendarErrorMessage = '';
+
+function getCalendarElements() {
+  const calendarEl = document.getElementById('calendar');
+  const panelEl = document.getElementById('calendar-panel') || calendarEl?.parentElement || null;
+  const statusEl = document.getElementById('calendar-status');
+  return { calendarEl, panelEl, statusEl };
+}
+
+function getFullCalendarGlobal() {
+  if (typeof FullCalendar !== 'undefined') return FullCalendar;
+  if (typeof window !== 'undefined' && window.FullCalendar) return window.FullCalendar;
+  if (typeof globalThis !== 'undefined' && globalThis.FullCalendar) return globalThis.FullCalendar;
+  return null;
+}
+
+function setCalendarStatus({ loading = false, error = '', empty = false } = {}) {
+  const { panelEl, statusEl } = getCalendarElements();
+  if (!panelEl || !statusEl) return;
+
+  const hasError = typeof error === 'string' ? error.trim().length > 0 : Boolean(error);
+  const isEmpty = !loading && !hasError && Boolean(empty);
+  const shouldShow = loading || hasError || isEmpty;
+
+  panelEl.classList.toggle('is-loading', loading);
+  panelEl.classList.toggle('has-error', hasError);
+  panelEl.classList.toggle('is-empty', isEmpty);
+
+  if (!shouldShow) {
+    statusEl.textContent = '';
+    return;
+  }
+
+  let message = '';
+  if (loading) {
+    message = t('calendar.status.loading', '⏳ جارٍ تحميل الحجوزات...');
+  } else if (hasError) {
+    message = typeof error === 'string' && error.trim().length > 0
+      ? error
+      : t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
+  } else if (isEmpty) {
+    message = t('calendar.status.empty', 'لا توجد حجوزات لعرضها في هذه الفترة.');
+  }
+
+  statusEl.textContent = message;
+}
+
+function destroyCalendarInstance() {
+  if (!calendarInstance) return;
+  calendarInstance.destroy();
+  calendarInstance = null;
+}
+
+function normalizeReservationForEvent(reservation) {
+  if (!reservation || typeof reservation !== 'object') return null;
+
+  const start = reservation.start ?? reservation.startDatetime ?? reservation.start_datetime ?? null;
+  const endValue = reservation.end ?? reservation.endDatetime ?? reservation.end_datetime ?? start;
+  if (!start) return null;
+
+  const statusValue = String(reservation.status ?? '').toLowerCase();
+  const paidStatus = reservation.paidStatus ?? reservation.paid_status ?? null;
+  const paid = reservation.paid != null
+    ? reservation.paid
+    : paidStatus === 'paid';
+  const confirmed = reservation.confirmed != null
+    ? Boolean(reservation.confirmed)
+    : ['confirmed', 'in_progress', 'completed'].includes(statusValue);
+  const reservationIdentifier = reservation.reservationId
+    ?? reservation.reservationCode
+    ?? reservation.reservation_code
+    ?? reservation.id
+    ?? start;
+  const customerName = reservation.customerName ?? reservation.customer_name ?? '';
+
+  let completed = Boolean(reservation.completed);
+  if (!completed && endValue) {
+    const eventEnd = new Date(endValue);
+    if (!Number.isNaN(eventEnd.getTime())) {
+      completed = eventEnd < new Date();
+    }
+  }
+
+  return {
+    id: reservation.id ?? reservationIdentifier ?? start,
+    start,
+    end: endValue || start,
+    paid,
+    confirmed,
+    completed,
+    reservationId: reservationIdentifier ?? '',
+    customerName,
+    raw: reservation,
+  };
+}
+
+function buildCalendarEvents(reservations = []) {
+  return reservations
+    .map((reservation) => {
+      const normalized = normalizeReservationForEvent(reservation);
+      if (!normalized) return null;
+
+      const palette = getEventPalette({
+        ...reservation,
+        paid: normalized.paid,
+        confirmed: normalized.confirmed,
+        completed: normalized.completed,
+      });
+
+      return {
+        id: normalized.id,
+        title: '',
+        start: normalized.start,
+        end: normalized.end,
+        backgroundColor: palette.background,
+        borderColor: palette.border,
+        textColor: palette.text,
+        display: 'auto',
+        extendedProps: {
+          ...reservation,
+          paid: normalized.paid,
+          confirmed: normalized.confirmed,
+          completed: normalized.completed,
+          reservationId: normalized.reservationId,
+          customerName: normalized.customerName,
+        },
+      };
+    })
+    .filter(Boolean);
+}
+
+function getCalendarButtonText() {
+  return {
+    today: t('calendar.buttons.today', 'اليوم'),
+    month: t('calendar.buttons.month', 'شهر'),
+    week: t('calendar.buttons.week', 'أسبوع'),
+    day: t('calendar.buttons.day', 'يوم'),
+  };
+}
+
+async function loadCalendarData() {
+  if (isCalendarLoading) {
+    return getReservationsState();
+  }
+
+  isCalendarLoading = true;
+  calendarErrorMessage = '';
+
+  try {
+    await ensureReservationsLoaded({ suppressError: false, params: CALENDAR_FETCH_PARAMS });
+  } catch (error) {
+    console.error('❌ [calendar] Failed to load reservations for calendar view', error);
+    calendarErrorMessage = isReservationsApiError(error)
+      ? error.message
+      : (error instanceof Error && error.message) || '';
+  } finally {
+    isCalendarLoading = false;
+  }
+
+  return getReservationsState();
+}
+
+function updateCalendarEvents(events) {
+  if (!calendarInstance) return;
+  calendarInstance.batchRendering(() => {
+    calendarInstance.removeAllEvents();
+    calendarInstance.addEventSource(events);
+  });
+}
+
+function dispatchCalendarUpdated(events) {
+  const detail = { events };
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('calendar:updated', { detail }));
+  } else if (typeof dispatchEvent === 'function') {
+    dispatchEvent(new CustomEvent('calendar:updated', { detail }));
+  }
+}
+
+function refreshCalendarFromState() {
+  const reservations = getReservationsState();
+  const events = buildCalendarEvents(reservations);
+
+  if (!calendarInstance) {
+    renderCalendar();
+    return;
+  }
+
+  calendarInstance.setOption('locale', getCurrentLanguage());
+  updateCalendarEvents(events);
+  setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
+  dispatchCalendarUpdated(events);
+}
+
+function ensureCalendarListeners() {
+  if (!calendarLanguageListenerAttached) {
+    document.addEventListener('language:changed', () => {
+      if (calendarInstance) {
+        calendarInstance.setOption('locale', getCurrentLanguage());
+      }
+      renderCalendar();
+    });
+    calendarLanguageListenerAttached = true;
+  }
+
+  if (!calendarReservationsListenerAttached) {
+    document.addEventListener('reservations:changed', () => {
+      refreshCalendarFromState();
+    });
+    calendarReservationsListenerAttached = true;
+  }
+}
 
 function getEventPalette(reservation) {
   const paid = reservation.paid === true || reservation.paid === 'paid';
@@ -240,71 +457,64 @@ function showReservationModal(reservation) {
 }
 
 export function renderCalendar() {
-  console.log("✅ renderCalendar تعمل");
-  const calendarEl = document.getElementById("calendar");
-  if (!calendarEl) return; // حماية لو ما في عنصر تقويم
+  ensureCalendarListeners();
 
-  if (calendarInstance) {
-    calendarInstance.destroy();
-    calendarInstance = null;
+  const { calendarEl } = getCalendarElements();
+  if (!calendarEl) return;
+
+  const FullCalendarLib = getFullCalendarGlobal();
+  if (!FullCalendarLib || typeof FullCalendarLib.Calendar !== 'function') {
+    const fallbackMessage = t('calendar.status.missingLibrary', 'تعذر تحميل مكتبة التقويم. يرجى تحديث الصفحة.');
+    setCalendarStatus({ error: fallbackMessage });
+    destroyCalendarInstance();
+    return;
   }
 
-  // 📂 تحميل البيانات
-  const { reservations = [], customers = [] } = loadData();
+  (async () => {
+    setCalendarStatus({ loading: true });
 
-  // 📝 تجهيز الأحداث (الحجوزات)
-  const events = reservations.map(r => {
-    const customer = customers.find(c => String(c.id) === String(r.customerId));
-    const completed = r.end ? new Date(r.end) < new Date() : false;
-    const palette = getEventPalette({ ...r, completed });
+    const reservations = await loadCalendarData();
 
-    return {
-      id: r.id,
-      title: '',
-      start: r.start,
-      end: r.end,
-      backgroundColor: palette.background,
-      borderColor: palette.border,
-      textColor: palette.text,
-      display: 'auto',
-      extendedProps: {
-        ...r,
-        customerName: customer?.customerName || t('calendar.labels.unknownCustomer', 'غير معروف'),
-        completed
-      }
-    };
-  });
-
-  // 📅 إنشاء التقويم
-  const calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: "dayGridMonth",
-    locale: getCurrentLanguage(),
-    timeZone: "local",  // التوقيت المحلي
-    headerToolbar: {
-      left: "prev,next today",
-      center: "title",
-      right: "dayGridMonth,timeGridWeek,timeGridDay"
-    },
-    buttonText: {
-      today: t('calendar.buttons.today', 'اليوم'),
-      month: t('calendar.buttons.month', 'شهر'),
-      week: t('calendar.buttons.week', 'أسبوع'),
-      day: t('calendar.buttons.day', 'يوم')
-    },
-    events,
-    eventContent: buildEventContent,
-    eventClick: function(info) {
-      showReservationModal(info.event.extendedProps);
+    if (calendarErrorMessage) {
+      const fallback = t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
+      setCalendarStatus({ loading: false, error: calendarErrorMessage || fallback });
+      destroyCalendarInstance();
+      return;
     }
+
+    const events = buildCalendarEvents(reservations);
+
+    if (!calendarInstance) {
+      calendarInstance = new FullCalendarLib.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: getCurrentLanguage(),
+        timeZone: 'local',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay',
+        },
+        buttonText: getCalendarButtonText(),
+        events,
+        eventContent: buildEventContent,
+        eventClick(info) {
+          showReservationModal(info.event.extendedProps);
+        },
+      });
+      calendarInstance.render();
+    } else {
+      calendarInstance.setOption('locale', getCurrentLanguage());
+      calendarInstance.setOption('buttonText', getCalendarButtonText());
+      updateCalendarEvents(events);
+    }
+
+    dispatchCalendarUpdated(events);
+    setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
+  })().catch((error) => {
+    console.error('❌ [calendar] renderCalendar failed', error);
+    calendarErrorMessage = (error instanceof Error && error.message) || calendarErrorMessage || '';
+    const fallback = t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
+    setCalendarStatus({ loading: false, error: calendarErrorMessage || fallback });
+    destroyCalendarInstance();
   });
-
-  calendar.render();
-  calendarInstance = calendar;
-
-  if (!calendarLanguageListenerAttached) {
-    document.addEventListener('language:changed', () => {
-      renderCalendar();
-    });
-    calendarLanguageListenerAttached = true;
-  }
 }

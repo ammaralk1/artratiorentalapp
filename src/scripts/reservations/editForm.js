@@ -158,6 +158,7 @@ export function addEquipmentToEditingReservation(barcodeInput) {
     ...currentItems,
     {
       id: equipmentItem.id,
+      equipmentId: equipmentItem.id,
       barcode: normalizedCode,
       desc: equipmentItem.desc,
       qty: 1,
@@ -216,6 +217,7 @@ export function addEquipmentToEditingByDescription(inputElement) {
     ...currentItems,
     {
       id: equipmentItem.id,
+      equipmentId: equipmentItem.id,
       barcode: normalizedCode,
       desc: equipmentItem.desc,
       qty: 1,

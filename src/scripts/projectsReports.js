@@ -2,6 +2,14 @@ import { loadData } from './storage.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers, formatDateTime } from './utils.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
+import {
+  ensureProjectsLoaded,
+  getProjectsState,
+  refreshProjectsFromApi,
+  isApiError as isProjectApiError,
+} from './projectsService.js';
+import { ensureReservationsLoaded } from './reservationsActions.js';
+import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 
 const PROJECT_TAX_RATE = 0.15;
 const charts = {};
@@ -44,17 +52,39 @@ const dom = {
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
 
+async function bootstrapReportsData() {
+  try {
+    await ensureReservationsLoaded({ suppressError: true });
+    await ensureProjectsLoaded({ force: true });
+  } catch (error) {
+    console.error('❌ [projectsReports] Failed to load initial data', error);
+    if (isProjectApiError(error)) {
+      // Surface the API message in console; UI already shows fallback states.
+      console.warn('Projects API error:', error.message);
+    }
+  }
+}
+
 async function initReports() {
   await ensureChartLibrary();
   cacheDom();
+  await bootstrapReportsData();
   loadAllData();
   renderStatusChips();
   setupFilters();
   renderAll();
 
   document.addEventListener('language:changed', handleLanguageChanged);
-  document.addEventListener('projects:changed', handleDataMutation);
-  document.addEventListener('reservations:changed', handleDataMutation);
+  document.addEventListener('projects:changed', () => {
+    handleDataMutation().catch((error) => {
+      console.error('❌ [projectsReports] Failed to refresh after projects change', error);
+    });
+  });
+  document.addEventListener('reservations:changed', () => {
+    handleDataMutation().catch((error) => {
+      console.error('❌ [projectsReports] Failed to refresh after reservations change', error);
+    });
+  });
   window.addEventListener('storage', handleStorageSync);
 }
 
@@ -89,11 +119,12 @@ function cacheDom() {
 }
 
 function loadAllData() {
-  const { projects = [], reservations = [], customers = [] } = loadData();
+  const { customers = [] } = loadData();
   state.customers = Array.isArray(customers) ? customers : [];
-  state.reservations = Array.isArray(reservations) ? reservations : [];
+  state.reservations = getReservationsState();
   const customerMap = new Map(state.customers.map((customer) => [String(customer.id), customer]));
 
+  const projects = getProjectsState();
   state.projects = Array.isArray(projects)
     ? projects.map((project) => buildProjectSnapshot(project, customerMap))
     : [];
@@ -272,9 +303,21 @@ function handleDateRangeChange(event) {
   }
 }
 
-function handleDataMutation() {
-  loadAllData();
-  renderAll();
+async function handleDataMutation() {
+  try {
+    await Promise.all([
+      refreshProjectsFromApi(),
+      refreshReservationsFromApi(),
+    ]);
+  } catch (error) {
+    console.error('❌ [projectsReports] Data mutation refresh failed', error);
+    if (isProjectApiError(error)) {
+      console.warn('Projects API error:', error.message);
+    }
+  } finally {
+    loadAllData();
+    renderAll();
+  }
 }
 
 function handleLanguageChanged() {
@@ -284,8 +327,9 @@ function handleLanguageChanged() {
 
 function handleStorageSync(event) {
   if (event.key && !['projects', 'reservations', 'customers'].includes(event.key)) return;
-  loadAllData();
-  renderAll();
+  handleDataMutation().catch((error) => {
+    console.error('❌ [projectsReports] Storage sync failed', error);
+  });
 }
 
 function renderAll() {

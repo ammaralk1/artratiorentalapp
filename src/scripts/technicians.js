@@ -1,22 +1,49 @@
-import { loadData, saveData } from "./storage.js";
+import { loadData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
+import {
+  getTechniciansState,
+  setTechniciansState,
+  refreshTechniciansFromApi,
+  createTechnicianApi,
+  updateTechnicianApi,
+  deleteTechnicianApi,
+  buildTechnicianPayload,
+  isApiError,
+} from "./techniciansService.js";
 
 let editingTechnicianId = null;
 let technicianPrefillListenerAttached = false;
+let techniciansLoading = false;
+let techniciansErrorMessage = "";
+let techniciansHasLoaded = false;
+
+async function loadTechniciansFromApi({ showToastOnError = true } = {}) {
+  if (techniciansLoading) return;
+
+  techniciansLoading = true;
+  techniciansErrorMessage = "";
+  renderTechniciansTable();
+
+  try {
+    await refreshTechniciansFromApi();
+    techniciansHasLoaded = true;
+  } catch (error) {
+    console.error('❌ [technicians] loadTechniciansFromApi failed', error);
+    techniciansErrorMessage = isApiError(error)
+      ? error.message
+      : t('technicians.toast.fetchFailed', 'تعذر تحميل قائمة الطاقم، حاول تحديث الصفحة');
+    if (showToastOnError) {
+      showToast(techniciansErrorMessage, 'error');
+    }
+  } finally {
+    techniciansLoading = false;
+    renderTechniciansTable();
+  }
+}
 
 function getTechnicians() {
-  const { technicians = [] } = loadData();
-  return Array.isArray(technicians) ? technicians : [];
-}
-
-function notifyTechniciansUpdated() {
-  document.dispatchEvent(new CustomEvent("technicians:updated"));
-}
-
-function persistTechnicians(list) {
-  saveData({ technicians: list });
-  notifyTechniciansUpdated();
+  return getTechniciansState();
 }
 
 function normalizeText(value = "") {
@@ -199,36 +226,40 @@ function collectTechnicianForm() {
   };
 }
 
-function handleTechnicianSubmit(event) {
+async function handleTechnicianSubmit(event) {
   event.preventDefault();
   const payload = collectTechnicianForm();
   if (!payload) return;
 
-  const technicians = getTechnicians();
-  let message = t("technicians.toast.addSuccess", "✅ تم إضافة عضو الطاقم");
+  const apiPayload = buildTechnicianPayload({
+    name: payload.name,
+    phone: payload.phone,
+    role: payload.role,
+    department: payload.department,
+    dailyWage: payload.dailyWage,
+    status: payload.status,
+    notes: payload.notes,
+    active: true,
+  });
 
-  if (editingTechnicianId) {
-    const index = technicians.findIndex((tech) => String(tech.id) === String(editingTechnicianId));
-    if (index === -1) {
-      showToast(t("technicians.toast.notFound", "⚠️ تعذر العثور على عضو الطاقم المطلوب"));
-      return;
+  try {
+    if (editingTechnicianId) {
+      await updateTechnicianApi(editingTechnicianId, apiPayload);
+      showToast(t("technicians.toast.updateSuccess", "💾 تم حفظ بيانات عضو الطاقم"));
+    } else {
+      await createTechnicianApi(apiPayload);
+      showToast(t("technicians.toast.addSuccess", "✅ تم إضافة عضو الطاقم"));
     }
 
-    technicians[index] = {
-      ...technicians[index],
-      ...payload,
-      id: editingTechnicianId
-    };
-    message = t("technicians.toast.updateSuccess", "💾 تم حفظ بيانات عضو الطاقم");
-  } else {
-    const newId = Date.now().toString();
-    technicians.push({ id: newId, ...payload });
+    resetTechnicianForm();
+    renderTechniciansTable();
+  } catch (error) {
+    console.error('❌ [technicians] handleTechnicianSubmit failed', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('technicians.toast.saveFailed', 'تعذر حفظ بيانات عضو الطاقم، حاول مرة أخرى');
+    showToast(message, 'error');
   }
-
-  persistTechnicians(technicians);
-  showToast(message);
-  resetTechnicianForm();
-  renderTechniciansTable();
 }
 
 function handleCancelEdit() {
@@ -333,27 +364,38 @@ function collectTechnicianEditModal() {
   };
 }
 
-function handleTechnicianModalSave() {
+async function handleTechnicianModalSave() {
   const payload = collectTechnicianEditModal();
   if (!payload) return;
 
-  const technicians = getTechnicians();
-  const index = technicians.findIndex((tech) => String(tech.id) === String(payload.id));
-  if (index === -1) {
-    showToast(t("technicians.toast.notFound", "⚠️ تعذر العثور على عضو الطاقم المطلوب"));
-    return;
+  const apiPayload = buildTechnicianPayload({
+    name: payload.name,
+    phone: payload.phone,
+    role: payload.role,
+    department: payload.department,
+    dailyWage: payload.dailyWage,
+    status: payload.status,
+    notes: payload.notes,
+    active: true,
+  });
+
+  try {
+    await updateTechnicianApi(payload.id, apiPayload);
+    showToast(t("technicians.toast.updateSuccess", "💾 تم حفظ بيانات عضو الطاقم"));
+
+    const modalEl = document.getElementById("editTechnicianModal");
+    if (modalEl && window.bootstrap?.Modal) {
+      window.bootstrap.Modal.getInstance(modalEl)?.hide();
+    }
+
+    renderTechniciansTable();
+  } catch (error) {
+    console.error('❌ [technicians] handleTechnicianModalSave failed', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('technicians.toast.updateFailed', 'تعذر حفظ بيانات عضو الطاقم');
+    showToast(message, 'error');
   }
-
-  technicians[index] = { ...technicians[index], ...payload };
-  persistTechnicians(technicians);
-  showToast(t("technicians.toast.updateSuccess", "💾 تم حفظ بيانات عضو الطاقم"));
-
-  const modalEl = document.getElementById("editTechnicianModal");
-  if (modalEl && window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getInstance(modalEl)?.hide();
-  }
-
-  renderTechniciansTable();
 }
 
 function renderTechniciansTable() {
@@ -362,6 +404,17 @@ function renderTechniciansTable() {
 
   const searchInput = document.getElementById("search-technician-input");
   const searchTerm = normalizeText(searchInput?.value || "");
+
+  if (techniciansLoading && !techniciansHasLoaded) {
+    const loadingMessage = t("technicians.table.loading", "جاري التحميل...");
+    tableBody.innerHTML = `<tr><td colspan='8' class='text-center text-muted'>${loadingMessage}</td></tr>`;
+    return;
+  }
+
+  if (techniciansErrorMessage && !techniciansHasLoaded) {
+    tableBody.innerHTML = `<tr><td colspan='8' class='text-center text-danger'>${techniciansErrorMessage}</td></tr>`;
+    return;
+  }
 
   const technicians = syncTechniciansStatuses();
   const { reservations = [] } = loadData();
@@ -439,15 +492,23 @@ function handleEditClick(id) {
   showToast(t("technicians.toast.editReady", "✏️ يمكنك تعديل بيانات عضو الطاقم الآن ثم الضغط على حفظ التعديل"));
 }
 
-function handleDeleteClick(id) {
+async function handleDeleteClick(id) {
   if (!confirm(t("technicians.toast.deleteConfirm", "⚠️ هل أنت متأكد من حذف هذا العضو؟"))) return;
-  const technicians = getTechnicians().filter((tech) => String(tech.id) !== String(id));
-  persistTechnicians(technicians);
-  showToast(t("technicians.toast.deleteSuccess", "🗑️ تم حذف عضو الطاقم"));
-  if (editingTechnicianId && String(editingTechnicianId) === String(id)) {
-    resetTechnicianForm();
+
+  try {
+    await deleteTechnicianApi(id);
+    showToast(t("technicians.toast.deleteSuccess", "🗑️ تم حذف عضو الطاقم"));
+    if (editingTechnicianId && String(editingTechnicianId) === String(id)) {
+      resetTechnicianForm();
+    }
+    renderTechniciansTable();
+  } catch (error) {
+    console.error('❌ [technicians] handleDeleteClick failed', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('technicians.toast.deleteFailed', 'تعذر حذف عضو الطاقم، حاول مرة أخرى');
+    showToast(message, 'error');
   }
-  renderTechniciansTable();
 }
 
 export function renderTechnicians() {
@@ -477,19 +538,21 @@ function isTechnicianActiveNow(technicianId, reservations = [], now) {
 }
 
 export function syncTechniciansStatuses() {
-  const { technicians: storedTechnicians = [], reservations = [] } = loadData();
-  if (!Array.isArray(storedTechnicians) || storedTechnicians.length === 0) {
-    return Array.isArray(storedTechnicians) ? storedTechnicians : [];
+  const reservations = loadData().reservations || [];
+  const technicians = getTechniciansState();
+
+  if (!Array.isArray(technicians) || technicians.length === 0) {
+    return technicians;
   }
 
   const now = new Date();
   let changed = false;
 
-  const updated = storedTechnicians.map((tech) => {
+  const updated = technicians.map((tech) => {
     if (!tech) return tech;
 
     const baseStatus = tech.baseStatus || tech.status || "available";
-    let newStatus = baseStatus === "busy" ? "busy" : "available";
+    let newStatus = baseStatus === "busy" ? "busy" : baseStatus;
 
     if (isTechnicianActiveNow(tech.id, reservations, now)) {
       newStatus = "busy";
@@ -502,17 +565,16 @@ export function syncTechniciansStatuses() {
     return {
       ...tech,
       baseStatus,
-      status: newStatus
+      status: newStatus,
     };
   });
 
   if (changed) {
-    saveData({ technicians: updated });
-    notifyTechniciansUpdated();
+    setTechniciansState(updated);
     return updated;
   }
 
-  return storedTechnicians;
+  return technicians;
 }
 
 function setupTechnicianModule() {
@@ -520,7 +582,11 @@ function setupTechnicianModule() {
   const firstInit = form && !form.dataset.initialized;
 
   if (form && !form.dataset.listenerAttached) {
-    form.addEventListener("submit", handleTechnicianSubmit);
+    form.addEventListener("submit", (event) => {
+      handleTechnicianSubmit(event).catch((error) => {
+        console.error('❌ [technicians] submit handler failed', error);
+      });
+    });
     form.dataset.listenerAttached = "true";
   }
   if (form) {
@@ -549,7 +615,9 @@ function setupTechnicianModule() {
 
       if (target.classList.contains("technician-delete-btn")) {
         const id = target.dataset.id;
-        handleDeleteClick(id);
+        handleDeleteClick(id).catch((error) => {
+          console.error('❌ [technicians] delete handler failed', error);
+        });
       }
     });
     tableBody.dataset.listenerAttached = "true";
@@ -574,7 +642,11 @@ function setupTechnicianModule() {
 
   const modalSaveBtn = document.getElementById("save-technician-changes");
   if (modalSaveBtn && !modalSaveBtn.dataset.listenerAttached) {
-    modalSaveBtn.addEventListener("click", handleTechnicianModalSave);
+    modalSaveBtn.addEventListener("click", () => {
+      handleTechnicianModalSave().catch((error) => {
+        console.error('❌ [technicians] modal save failed', error);
+      });
+    });
     modalSaveBtn.dataset.listenerAttached = "true";
   }
 
@@ -591,20 +663,25 @@ function setupTechnicianModule() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", () => {
   setupTechnicianModule();
   renderTechniciansTable();
   refreshTechnicianLanguageStrings();
+  loadTechniciansFromApi();
 });
 
-document.addEventListener("technicians:updated", () => {
+const techniciansUpdatedHandler = () => {
   renderTechniciansTable();
-});
+};
+
+window.addEventListener('technicians:updated', techniciansUpdatedHandler);
+document.addEventListener('technicians:updated', techniciansUpdatedHandler);
 
 document.addEventListener('technicians:refreshRequested', () => {
   setupTechnicianModule();
   renderTechniciansTable();
   refreshTechnicianLanguageStrings();
+  loadTechniciansFromApi({ showToastOnError: false });
 });
 
 document.addEventListener("language:changed", () => {

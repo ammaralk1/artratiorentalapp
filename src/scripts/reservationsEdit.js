@@ -1,9 +1,16 @@
 import { t } from './language.js';
-import { loadData, saveData } from './storage.js';
+import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { normalizeBarcodeValue, isEquipmentInMaintenance } from './reservationsEquipment.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
+import {
+  getReservationsState,
+  updateReservationApi,
+  buildReservationPayload,
+  refreshReservationsFromApi,
+  isApiError,
+} from './reservationsService.js';
 
 let editingIndex = null;
 let editingItems = [];
@@ -108,7 +115,8 @@ export function editReservation(index, {
   updateEditReservationSummary,
   ensureModal
 } = {}) {
-  const { reservations, customers, projects } = loadData();
+  const { customers, projects } = loadData();
+  const reservations = getReservationsState();
   const reservation = reservations?.[index];
 
   if (!reservation) {
@@ -122,6 +130,7 @@ export function editReservation(index, {
   const normalizedItems = reservation.items
     ? reservation.items.map(item => ({
         ...item,
+        equipmentId: item.equipmentId ?? item.equipment_id ?? item.id,
         barcode: normalizeBarcodeValue(item?.barcode)
       }))
     : [];
@@ -176,7 +185,7 @@ export function editReservation(index, {
   modalInstance?.show?.();
 }
 
-export function saveReservationChanges({
+export async function saveReservationChanges({
   combineDateTime,
   hasEquipmentConflict,
   hasTechnicianConflict,
@@ -220,7 +229,7 @@ export function saveReservationChanges({
     return;
   }
 
-  const { reservations } = loadData();
+  const reservations = getReservationsState();
   const reservation = reservations?.[editingIndex];
   if (!reservation) {
     showToast(t('reservations.toast.reservationMissing', '⚠️ تعذر العثور على الحجز المطلوب'));
@@ -262,40 +271,61 @@ export function saveReservationChanges({
     }
   }
 
-  reservation.start = start;
-  reservation.end = end;
-  reservation.notes = notes;
-  reservation.discount = discount;
-  reservation.discountType = discountType;
   const taxCheckbox = document.getElementById('edit-res-tax');
   const projectLinked = Boolean(projectIdValue);
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
-  reservation.applyTax = applyTax;
-  reservation.confirmed = confirmed;
-  reservation.paid = paidStatus === 'paid';
-  reservation.items = [...editingItems];
-  reservation.technicians = [...technicianIds];
-  reservation.projectId = projectIdValue ? String(projectIdValue) : null;
-  reservation.cost = calculateReservationTotal(
-    reservation.items || [],
+  const totalAmount = calculateReservationTotal(
+    editingItems,
     discount,
     discountType,
     applyTax,
-    reservation.technicians || [],
+    technicianIds,
     { start, end }
   );
 
-  saveData({ reservations });
-  showToast(t('reservations.toast.updated', '✅ تم حفظ التعديلات على الحجز'));
+  const payload = buildReservationPayload({
+    reservationCode: reservation.reservationCode ?? reservation.reservationId ?? null,
+    customerId: reservation.customerId,
+    start,
+    end,
+    status: reservation.status ?? (confirmed ? 'confirmed' : 'pending'),
+    title: reservation.title ?? null,
+    location: reservation.location ?? null,
+    notes,
+    projectId: projectIdValue ? String(projectIdValue) : null,
+    totalAmount,
+    discount,
+    discountType,
+    applyTax,
+    paidStatus,
+    confirmed,
+    items: editingItems.map((item) => ({
+      ...item,
+      equipmentId: item.equipmentId ?? item.id,
+    })),
+    technicians: technicianIds,
+  });
 
-  updateEditReservationSummary?.();
-  clearEditingState();
-  handleReservationsMutation?.({ type: 'updated', reservation });
-  renderReservations?.();
-  populateEquipmentDescriptionLists?.();
+  try {
+    const updatedReservation = await updateReservationApi(reservation.id || reservation.reservationId, payload);
+    await refreshReservationsFromApi();
+    showToast(t('reservations.toast.updated', '✅ تم حفظ التعديلات على الحجز'));
 
-  modalInstance?.hide?.();
+    updateEditReservationSummary?.();
+    clearEditingState();
+    handleReservationsMutation?.({ type: 'updated', reservation: updatedReservation });
+    renderReservations?.();
+    populateEquipmentDescriptionLists?.();
+
+    modalInstance?.hide?.();
+  } catch (error) {
+    console.error('❌ [reservationsEdit] Failed to update reservation', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('reservations.toast.updateFailed', 'تعذر تحديث بيانات الحجز');
+    showToast(message, 'error');
+  }
 }
 
 export function setupEditReservationModalEvents(context = {}) {
@@ -335,7 +365,11 @@ export function setupEditReservationModalEvents(context = {}) {
 
   const saveBtn = document.getElementById('save-reservation-changes');
   if (saveBtn && !saveBtn.dataset.listenerAttached) {
-    saveBtn.addEventListener('click', () => saveReservationChanges(modalEventsContext));
+    saveBtn.addEventListener('click', () => {
+      saveReservationChanges(modalEventsContext).catch((error) => {
+        console.error('❌ [reservationsEdit] saveReservationChanges failed', error);
+      });
+    });
     saveBtn.dataset.listenerAttached = 'true';
   }
 

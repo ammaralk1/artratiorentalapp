@@ -1,4 +1,4 @@
-import { loadData, saveData } from '../storage.js';
+import { loadData } from '../storage.js';
 import { showToast, generateReservationId, normalizeNumbers } from '../utils.js';
 import { t } from '../language.js';
 import { resolveItemImage, getEquipmentRecordByBarcode, isEquipmentInMaintenance, findEquipmentByBarcode } from '../reservationsEquipment.js';
@@ -22,6 +22,11 @@ import {
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
+import {
+  createReservationApi,
+  buildReservationPayload,
+  isApiError,
+} from '../reservationsService.js';
 
 let afterSubmitCallback = null;
 let cachedProjects = [];
@@ -270,6 +275,7 @@ function addDraftEquipmentByDescription(inputElement) {
 
   const itemPayload = {
     id: equipmentItem.id,
+    equipmentId: equipmentItem.id,
     barcode: normalizedCode,
     desc: equipmentItem.desc || equipmentItem.description || equipmentItem.name || '',
     qty: 1,
@@ -459,11 +465,11 @@ function setupReservationTimeSync() {
   startTimeInput.dataset.timeSyncAttached = 'true';
 }
 
-function handleReservationSubmit() {
+async function handleReservationSubmit() {
   const inputValue = document.getElementById('res-customer').value.trim().toLowerCase();
   const projectSelect = document.getElementById('res-project');
   const projectIdValue = projectSelect?.value ? String(projectSelect.value) : '';
-  const { customers, reservations } = loadData();
+  const { customers } = loadData();
 
   let customer = customers.find((c) => c.customerName?.trim().toLowerCase() === inputValue);
 
@@ -510,7 +516,7 @@ function handleReservationSubmit() {
   const notes = document.getElementById('res-notes')?.value || '';
   const discount = parseFloat(normalizeNumbers(document.getElementById('res-discount')?.value)) || 0;
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
-  const paymentStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
+  const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
 
   const technicianIds = getSelectedTechnicians();
 
@@ -550,41 +556,56 @@ function handleReservationSubmit() {
   const projectLinked = Boolean(projectIdValue);
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
-  const newReservation = {
-    id: Date.now(),
-    reservationId: generateReservationId(),
-    customerId: parseInt(customerId, 10),
-    start,
-    end,
-    items: [...draftItems],
-    technicians: technicianIds,
-    notes,
+  const totalCost = calculateReservationTotal(
+    draftItems,
     discount,
     discountType,
     applyTax,
-    paid: paymentStatus === 'paid',
-    cost: calculateReservationTotal(
-      draftItems,
-      discount,
-      discountType,
-      applyTax,
-      technicianIds,
-      { start, end }
-    ),
+    technicianIds,
+    { start, end }
+  );
+
+  const reservationCode = generateReservationId();
+
+  const payload = buildReservationPayload({
+    reservationCode,
+    customerId: customerId,
+    start,
+    end,
+    status: 'pending',
+    title: null,
+    location: null,
+    notes,
+    projectId: projectIdValue || null,
+    totalAmount: totalCost,
+    discount,
+    discountType,
+    applyTax,
+    paidStatus,
     confirmed: false,
-    projectId: projectIdValue || null
-  };
+    items: draftItems.map((item) => ({
+      ...item,
+      equipmentId: item.equipmentId ?? item.id,
+    })),
+    technicians: technicianIds,
+  });
 
-  reservations.push(newReservation);
-  saveData({ reservations });
-  syncEquipmentStatuses();
-  populateEquipmentDescriptionLists();
-  syncTechniciansStatuses();
-
-  resetForm();
-  showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
-  if (typeof afterSubmitCallback === 'function') {
-    afterSubmitCallback({ type: 'created', reservation: newReservation });
+  try {
+    const createdReservation = await createReservationApi(payload);
+    syncEquipmentStatuses();
+    populateEquipmentDescriptionLists();
+    syncTechniciansStatuses();
+    resetForm();
+    showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
+    if (typeof afterSubmitCallback === 'function') {
+      afterSubmitCallback({ type: 'created', reservation: createdReservation });
+    }
+  } catch (error) {
+    console.error('❌ [reservations/createForm] Failed to create reservation', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('reservations.toast.createFailed', 'تعذر إنشاء الحجز، حاول مرة أخرى');
+    showToast(message, 'error');
   }
 }
 
@@ -673,6 +694,7 @@ function setupBarcodeInput() {
 
     addSelectedItem({
       id: item.id,
+      equipmentId: item.id,
       barcode: normalizeBarcodeValue(item.barcode),
       desc: item.desc,
       qty: 1,
@@ -692,18 +714,18 @@ function setupBarcodeInput() {
 function setupFormSubmit() {
   const form = document.getElementById('reservation-form');
   if (form && !form.dataset.listenerAttached) {
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      handleReservationSubmit();
+      await handleReservationSubmit();
     });
     form.dataset.listenerAttached = 'true';
   }
 
   const btn = document.getElementById('create-reservation-btn');
   if (btn && !btn.dataset.listenerAttached) {
-    btn.addEventListener('click', (event) => {
+    btn.addEventListener('click', async (event) => {
       event.preventDefault();
-      handleReservationSubmit();
+      await handleReservationSubmit();
     });
     btn.dataset.listenerAttached = 'true';
   }

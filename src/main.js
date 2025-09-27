@@ -29,7 +29,6 @@ function initApp() {
 
   loadReservationForm();
   setupReservationEvents();
-  renderReservations();
 
   // ✅ رفع ملف إكسل
   const excelUploadInput = document.getElementById("excel-upload");

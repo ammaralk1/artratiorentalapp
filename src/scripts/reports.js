@@ -1,7 +1,9 @@
-import { loadData } from './storage.js';
 import { isReservationCompleted } from './reservationsShared.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers } from './utils.js';
+import { apiRequest, ApiError } from './apiClient.js';
+import { mapReservationFromApi } from './reservationsService.js';
+import { mapTechnicianFromApi } from './techniciansService.js';
 
 let cachedLocale = null;
 let numberFormatter = null;
@@ -19,6 +21,24 @@ const state = {
 let initialized = false;
 let languageListenerAttached = false;
 let searchDebounceTimer = null;
+
+const reportsData = {
+  reservations: [],
+  customers: [],
+  equipment: [],
+  technicians: [],
+};
+
+let reportsLoading = false;
+let reportsErrorMessage = '';
+
+const reportsEmptyDefaults = {
+  icon: null,
+  title: null,
+  subtitle: null,
+};
+
+let reportsDataListenersAttached = false;
 
 function translate(key, arFallback, enFallback = arFallback) {
   const fallback = getCurrentLanguage() === 'en' ? (enFallback ?? arFallback) : arFallback;
@@ -74,6 +94,116 @@ function getFormatters() {
 function getMonthLabel(date) {
   const locale = getActiveLocale();
   return new Intl.DateTimeFormat(locale, { month: 'short' }).format(date);
+}
+
+function mapCustomerFromApi(raw = {}) {
+  return {
+    id: raw?.id != null ? String(raw.id) : '',
+    customerName: raw?.full_name ?? raw?.customerName ?? raw?.name ?? '',
+    companyName: raw?.company ?? raw?.company_name ?? raw?.companyName ?? '',
+    phone: raw?.phone ?? '',
+  };
+}
+
+function mapEquipmentFromApi(raw = {}) {
+  const barcode = normalizeNumbers(String(raw?.barcode ?? '')).trim();
+  const description = raw?.description ?? raw?.name ?? '';
+  return {
+    id: raw?.id != null ? String(raw.id) : '',
+    barcode,
+    desc: description,
+    description,
+    name: raw?.name ?? description,
+    category: raw?.category ?? '',
+    subcategory: raw?.subcategory ?? '',
+    status: raw?.status ?? '',
+    price: Number.parseFloat(raw?.unit_price ?? raw?.price ?? 0) || 0,
+  };
+}
+
+async function loadReportsData({ silent = false } = {}) {
+  if (reportsLoading) return;
+  reportsLoading = true;
+  reportsErrorMessage = '';
+
+  if (!silent) {
+    renderReports();
+  }
+
+  try {
+    const [reservationsRes, customersRes, equipmentRes, techniciansRes] = await Promise.all([
+      apiRequest('/reservations/?limit=500'),
+      apiRequest('/customers/?limit=500'),
+      apiRequest('/equipment/?limit=500'),
+      apiRequest('/technicians/?limit=500'),
+    ]);
+
+    reportsData.reservations = Array.isArray(reservationsRes?.data)
+      ? reservationsRes.data.map((item) => mapReservationFromApi(item))
+      : [];
+    reportsData.customers = Array.isArray(customersRes?.data)
+      ? customersRes.data.map(mapCustomerFromApi)
+      : [];
+    reportsData.equipment = Array.isArray(equipmentRes?.data)
+      ? equipmentRes.data.map(mapEquipmentFromApi)
+      : [];
+    reportsData.technicians = Array.isArray(techniciansRes?.data)
+      ? techniciansRes.data.map(mapTechnicianFromApi)
+      : [];
+  } catch (error) {
+    console.error('❌ [reports] Failed to load reports data', error);
+    reportsErrorMessage = error instanceof ApiError
+      ? error.message
+      : t('reservations.reports.error.fetchFailed', 'تعذر تحميل بيانات التقارير، حاول لاحقاً');
+    reportsData.reservations = [];
+    reportsData.customers = [];
+    reportsData.equipment = [];
+    reportsData.technicians = [];
+  } finally {
+    reportsLoading = false;
+    renderReports();
+  }
+}
+
+function handleReportsDataMutation() {
+  loadReportsData({ silent: true }).catch((error) => {
+    console.error('❌ [reports] Background refresh failed', error);
+  });
+}
+
+function setReportsEmptyState({ active, icon, title, subtitle }) {
+  const emptyState = document.getElementById('reports-empty-state');
+  if (!emptyState) return;
+
+  const iconEl = emptyState.querySelector('.reports-empty-icon');
+  const titleEl = emptyState.querySelector('h4');
+  const subtitleEl = emptyState.querySelector('p');
+
+  if (reportsEmptyDefaults.icon === null && iconEl) {
+    reportsEmptyDefaults.icon = iconEl.textContent;
+  }
+  if (reportsEmptyDefaults.title === null && titleEl) {
+    reportsEmptyDefaults.title = titleEl.textContent;
+  }
+  if (reportsEmptyDefaults.subtitle === null && subtitleEl) {
+    reportsEmptyDefaults.subtitle = subtitleEl.textContent;
+  }
+
+  emptyState.classList.toggle('active', Boolean(active));
+
+  if (!iconEl || !titleEl || !subtitleEl) {
+    return;
+  }
+
+  if (active) {
+    iconEl.textContent = icon !== undefined ? icon : (reportsEmptyDefaults.icon ?? iconEl.textContent);
+    titleEl.textContent = title !== undefined ? title : (reportsEmptyDefaults.title ?? titleEl.textContent);
+    subtitleEl.textContent = subtitle !== undefined ? subtitle : (reportsEmptyDefaults.subtitle ?? subtitleEl.textContent);
+  } else {
+    iconEl.textContent = reportsEmptyDefaults.icon ?? iconEl.textContent;
+    titleEl.textContent = reportsEmptyDefaults.title ?? titleEl.textContent;
+    subtitleEl.textContent = reportsEmptyDefaults.subtitle ?? subtitleEl.textContent;
+  }
 }
 
 export function initReports() {
@@ -144,18 +274,46 @@ export function initReports() {
 
   setupCustomRangePickers(startInput, endInput);
   toggleCustomRange(customRangeWrapper, false);
-  renderReports();
 
   if (!languageListenerAttached) {
     document.addEventListener('language:changed', handleLanguageChange);
     document.addEventListener('language:translationsReady', handleLanguageChange);
     languageListenerAttached = true;
   }
+
+  if (!reportsDataListenersAttached) {
+    document.addEventListener('reservations:changed', handleReportsDataMutation);
+    document.addEventListener('customers:changed', handleReportsDataMutation);
+    document.addEventListener('equipment:changed', handleReportsDataMutation);
+    document.addEventListener('technicians:updated', handleReportsDataMutation);
+    reportsDataListenersAttached = true;
+  }
+
+  loadReportsData();
 }
 
 export function renderReports() {
-  const { reservations = [], customers = [], equipment = [], technicians = [] } = loadData();
+  if (reportsLoading) {
+    setReportsEmptyState({
+      active: true,
+      icon: '⏳',
+      title: t('reservations.reports.status.loading', 'جارٍ تحميل التقارير...'),
+      subtitle: t('reservations.reports.status.loadingHint', 'قد يستغرق هذا بضع ثوانٍ.'),
+    });
+    return;
+  }
 
+  if (reportsErrorMessage) {
+    setReportsEmptyState({
+      active: true,
+      icon: '⚠️',
+      title: reportsErrorMessage,
+      subtitle: t('reservations.reports.status.retry', 'جرّب إعادة المحاولة أو تحديث الصفحة.'),
+    });
+    return;
+  }
+
+  const { reservations, customers, equipment, technicians } = reportsData;
   const filtered = filterReservations(reservations, state, customers, equipment, technicians);
   const metrics = calculateMetrics(filtered);
   const trend = calculateMonthlyTrend(filtered);
@@ -890,9 +1048,7 @@ function updateKpiCards(metrics) {
 }
 
 function toggleEmptyState(isEmpty) {
-  const emptyState = document.getElementById('reports-empty-state');
-  if (!emptyState) return;
-  emptyState.classList.toggle('active', Boolean(isEmpty));
+  setReportsEmptyState({ active: Boolean(isEmpty) });
 }
 
 function escapeHtml(value = '') {

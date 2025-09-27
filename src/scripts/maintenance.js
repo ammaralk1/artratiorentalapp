@@ -1,12 +1,49 @@
-import { loadData, saveData } from './storage.js';
+import { loadData } from './storage.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
 import { syncEquipmentStatuses, renderEquipment } from './equipment.js';
 import { t } from './language.js';
+import {
+  getMaintenanceState,
+  refreshMaintenanceFromApi,
+  createMaintenanceRequest,
+  updateMaintenanceRequest,
+  deleteMaintenanceRequest,
+  buildMaintenancePayload,
+  isApiError as isMaintenanceApiError,
+} from './maintenanceService.js';
 
-let maintenanceTickets = [];
+let maintenanceTickets = getMaintenanceState();
 let maintenanceInitialized = false;
 let equipmentOptions = [];
 let currentSelection = null;
+let maintenanceLoading = false;
+let maintenanceErrorMessage = '';
+let maintenanceHasLoaded = maintenanceTickets.length > 0;
+
+async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
+  if (maintenanceLoading) return;
+
+  maintenanceLoading = true;
+  maintenanceErrorMessage = '';
+  renderMaintenance();
+
+  try {
+    await refreshMaintenanceFromApi();
+    maintenanceHasLoaded = true;
+  } catch (error) {
+    console.error('❌ [maintenance] Failed to load maintenance tickets', error);
+    maintenanceErrorMessage = isMaintenanceApiError(error)
+      ? error.message
+      : t('maintenance.toast.fetchFailed', 'تعذر تحميل بيانات الصيانة. حاول تحديث الصفحة.');
+    if (showToastOnError) {
+      showToast(maintenanceErrorMessage, 'error');
+    }
+  } finally {
+    maintenanceLoading = false;
+    maintenanceTickets = getMaintenanceState();
+    renderMaintenance();
+  }
+}
 
 function getDefaultSelectionText() {
   return t('maintenance.form.selectedInfo', 'لم يتم اختيار معدة بعد.');
@@ -21,19 +58,8 @@ function normalizeText(value = '') {
 }
 
 function loadTickets() {
-  const { maintenance = [] } = loadData();
-  maintenanceTickets = Array.isArray(maintenance) ? maintenance : [];
+  maintenanceTickets = getMaintenanceState();
   return maintenanceTickets;
-}
-
-function saveTickets(tickets) {
-  maintenanceTickets = tickets;
-  try {
-    localStorage.setItem('maintenanceList', JSON.stringify(tickets));
-  } catch (error) {
-    console.warn('⚠️ [maintenance] Failed to persist maintenance tickets', error);
-    showToast(t('maintenance.toast.storageError', '⚠️ تعذر حفظ بيانات الصيانة. يرجى المحاولة مجدداً.'));
-  }
 }
 
 function getEquipmentOptions() {
@@ -220,17 +246,8 @@ function populateEquipmentInputs() {
   }
 }
 
-function updateEquipmentStatus(barcode, status) {
-  const normalized = normalizeBarcodeValue(barcode);
-  const { equipment = [] } = loadData();
-  const updatedEquipment = (equipment || []).map((item) => {
-    const itemCode = normalizeBarcodeValue(item?.barcode);
-    if (itemCode === normalized) {
-      return { ...item, status };
-    }
-    return item;
-  });
-  saveData({ equipment: updatedEquipment });
+function refreshEquipmentData() {
+  document.dispatchEvent(new CustomEvent('equipment:refreshRequested'));
   syncEquipmentStatuses();
   renderEquipment();
   populateEquipmentInputs();
@@ -240,8 +257,8 @@ function renderStats(tickets) {
   const container = document.getElementById('maintenance-stats');
   if (!container) return;
 
-  const total = maintenanceTickets.length;
-  const open = maintenanceTickets.filter((ticket) => ticket.status === 'open').length;
+  const total = tickets.length;
+  const open = tickets.filter((ticket) => ticket.status === 'open').length;
   const closed = total - open;
   const formatCount = (value) => normalizeNumbers(String(value));
   const openHtml = t('maintenance.stats.open', '{count} قيد الصيانة').replace('{count}', `<strong>${formatCount(open)}</strong>`);
@@ -339,32 +356,45 @@ function handleTableActions(event) {
   if (!id) return;
 
   if (action === 'close') {
-    closeTicket(id);
+    closeTicket(id).catch((error) => {
+      console.error('❌ [maintenance] closeTicket failed', error);
+    });
   } else if (action === 'view') {
     viewTicketReport(id);
   } else if (action === 'delete') {
-    deleteTicket(id);
+    deleteTicket(id).catch((error) => {
+      console.error('❌ [maintenance] deleteTicket failed', error);
+    });
   }
 }
 
-function closeTicket(id) {
+async function closeTicket(id) {
   const tickets = loadTickets();
-  const index = tickets.findIndex((ticket) => Number(ticket.id) === Number(id));
-  if (index === -1) return;
+  const ticket = tickets.find((item) => Number(item.id) === Number(id));
+  if (!ticket) {
+    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة')); 
+    return;
+  }
 
   const report = prompt(t('maintenance.prompt.closeReport', 'أدخل تقرير الإصلاح / الإجراءات المتخذة:'));
   if (report === null) return;
 
-  const ticket = { ...tickets[index] };
-  ticket.status = 'closed';
-  ticket.resolutionReport = report.trim();
-  ticket.resolvedAt = new Date().toISOString();
-  tickets[index] = ticket;
-
-  saveTickets(tickets);
-  updateEquipmentStatus(ticket.equipmentBarcode, 'متاح');
-  showToast(t('maintenance.toast.ticketClosed', '✅ تم إغلاق تذكرة الصيانة وإعادة المعدة إلى الحالة المتاحة'));
-  renderMaintenance();
+  try {
+    await updateMaintenanceRequest(id, {
+      status: 'completed',
+      resolution_report: report.trim(),
+      resolved_at: new Date().toISOString(),
+    });
+    await loadMaintenanceFromApi({ showToastOnError: false });
+    refreshEquipmentData();
+    showToast(t('maintenance.toast.ticketClosed', '✅ تم إغلاق تذكرة الصيانة وإعادة المعدة إلى الحالة المتاحة'));
+  } catch (error) {
+    console.error('❌ [maintenance] closeTicket failed', error);
+    const message = isMaintenanceApiError(error)
+      ? error.message
+      : t('maintenance.toast.updateError', '⚠️ تعذر إغلاق تذكرة الصيانة. حاول مرة أخرى');
+    showToast(message, 'error');
+  }
 }
 
 function viewTicketReport(id) {
@@ -393,26 +423,31 @@ function viewTicketReport(id) {
   alert(details);
 }
 
-function deleteTicket(id) {
+async function deleteTicket(id) {
   const tickets = loadTickets();
-  const index = tickets.findIndex((ticket) => Number(ticket.id) === Number(id));
-  if (index === -1) return;
-
-  const ticket = tickets[index];
-  if (!confirm(t('maintenance.toast.ticketDeleteConfirm', '⚠️ هل أنت متأكد من حذف تذكرة الصيانة؟'))) return;
-
-  tickets.splice(index, 1);
-  saveTickets(tickets);
-
-  if (ticket.status === 'open') {
-    updateEquipmentStatus(ticket.equipmentBarcode, 'متاح');
+  const ticket = tickets.find((item) => Number(item.id) === Number(id));
+  if (!ticket) {
+    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
+    return;
   }
 
-  showToast(t('maintenance.toast.ticketDeleted', '🗑️ تم حذف تذكرة الصيانة'));
-  renderMaintenance();
+  if (!confirm(t('maintenance.toast.ticketDeleteConfirm', '⚠️ هل أنت متأكد من حذف تذكرة الصيانة؟'))) return;
+
+  try {
+    await deleteMaintenanceRequest(id);
+    await loadMaintenanceFromApi({ showToastOnError: false });
+    refreshEquipmentData();
+    showToast(t('maintenance.toast.ticketDeleted', '🗑️ تم حذف تذكرة الصيانة'));
+  } catch (error) {
+    console.error('❌ [maintenance] deleteTicket failed', error);
+    const message = isMaintenanceApiError(error)
+      ? error.message
+      : t('maintenance.toast.deleteError', '⚠️ تعذر حذف تذكرة الصيانة. حاول مرة أخرى');
+    showToast(message, 'error');
+  }
 }
 
-function handleFormSubmit(event) {
+async function handleFormSubmit(event) {
   event.preventDefault();
 
   try {
@@ -453,6 +488,7 @@ function handleFormSubmit(event) {
 
     if (!equipmentItem && selectedOption) {
       equipmentItem = {
+        id: selectedOption.id,
         barcode: selectedOption.barcode,
         desc: selectedOption.desc,
         name: selectedOption.desc,
@@ -460,7 +496,7 @@ function handleFormSubmit(event) {
       };
     }
 
-    if (!equipmentItem) {
+    if (!equipmentItem || equipmentItem.id == null) {
       showToast(t('maintenance.toast.selectedNotFound', '❌ لم يتم العثور على المعدة المختارة'));
       clearSelectedEquipment();
       return;
@@ -478,23 +514,19 @@ function handleFormSubmit(event) {
       return;
     }
 
-    const fallbackName = t('maintenance.table.noName', 'بدون اسم');
-    const ticket = {
-      id: Date.now(),
-      equipmentBarcode: equipmentCode,
-      equipmentDesc: equipmentItem.desc || equipmentItem.description || equipmentItem.name || fallbackName,
+    const payload = buildMaintenancePayload({
+      equipmentId: equipmentItem.id,
+      technicianId: null,
       issue: issueInput?.value.trim() || '',
       priority: prioritySelect?.value || 'medium',
       status: 'open',
-      createdAt: new Date().toISOString(),
-      resolutionReport: '',
-      resolvedAt: null
-    };
+      scheduledAt: null,
+      resolutionReport: null,
+    });
 
-    const tickets = loadTickets();
-    const nextTickets = [ticket, ...tickets];
-    saveTickets(nextTickets);
-    updateEquipmentStatus(equipmentCode, 'صيانة');
+    await createMaintenanceRequest(payload);
+    await loadMaintenanceFromApi({ showToastOnError: false });
+    refreshEquipmentData();
     showToast(t('maintenance.toast.ticketCreated', '🛠️ تم إنشاء تذكرة الصيانة وإيقاف المعدة'));
 
     clearSelectedEquipment();
@@ -503,11 +535,12 @@ function handleFormSubmit(event) {
 
     const statusFilterEl = document.getElementById('maintenance-status-filter');
     if (statusFilterEl) statusFilterEl.value = 'all';
-
-    renderMaintenance();
   } catch (error) {
     console.error('❌ [maintenance] Failed to create ticket', error);
-    showToast(t('maintenance.toast.submitError', '⚠️ تعذر إنشاء تذكرة الصيانة. يرجى المحاولة مجدداً.'));
+    const message = isMaintenanceApiError(error)
+      ? error.message
+      : t('maintenance.toast.submitError', '⚠️ تعذر إنشاء تذكرة الصيانة. يرجى المحاولة مجدداً.');
+    showToast(message, 'error');
   }
 }
 
@@ -518,17 +551,35 @@ function filterTicketsByStatus(status) {
 }
 
 export function renderMaintenance() {
-  loadTickets();
+  const allTickets = loadTickets();
   populateEquipmentInputs();
+
+  renderStats(allTickets);
 
   const statusFilter = document.getElementById('maintenance-status-filter');
   if (statusFilter && !statusFilter.value) {
     statusFilter.value = 'all';
   }
   const status = statusFilter?.value || 'all';
-  const tickets = filterTicketsByStatus(status);
 
-  renderStats(tickets);
+  const tbody = document.getElementById('maintenance-table-body');
+  const emptyState = document.getElementById('maintenance-empty-state');
+  if (!tbody) return;
+
+  if (maintenanceLoading && !maintenanceHasLoaded) {
+    const loadingMessage = t('maintenance.table.loading', 'جاري التحميل...');
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${loadingMessage}</td></tr>`;
+    if (emptyState) emptyState.classList.remove('active');
+    return;
+  }
+
+  if (maintenanceErrorMessage && !maintenanceHasLoaded) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${maintenanceErrorMessage}</td></tr>`;
+    if (emptyState) emptyState.classList.remove('active');
+    return;
+  }
+
+  const tickets = filterTicketsByStatus(status);
   renderTable(tickets);
 }
 
@@ -536,12 +587,17 @@ export function initMaintenance() {
   loadTickets();
   populateEquipmentInputs();
   renderMaintenance();
+  loadMaintenanceFromApi({ showToastOnError: false });
 
   maintenanceInitialized = true;
 
   const form = document.getElementById('maintenance-form');
   if (form && !form.dataset.listenerAttached) {
-    form.addEventListener('submit', handleFormSubmit);
+    form.addEventListener('submit', (event) => {
+      handleFormSubmit(event).catch((error) => {
+        console.error('❌ [maintenance] submit handler failed', error);
+      });
+    });
     form.dataset.listenerAttached = 'true';
   }
 
@@ -578,27 +634,7 @@ document.addEventListener('language:changed', () => {
   renderMaintenance();
 });
 
-document.addEventListener('submit', (event) => {
-  const form = event.target;
-  if (form?.id === 'maintenance-form' && !form.dataset.listenerAttached) {
-    handleFormSubmit(event);
-  }
-});
-
-document.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-  if (!button.closest('.maintenance-table')) return;
-
-  const action = button.dataset.action;
-  const id = Number(button.dataset.id);
-  if (!id) return;
-
-  if (action === 'close') {
-    closeTicket(id);
-  } else if (action === 'view') {
-    viewTicketReport(id);
-  } else if (action === 'delete') {
-    deleteTicket(id);
-  }
+window.addEventListener('maintenance:updated', () => {
+  maintenanceTickets = getMaintenanceState();
+  renderMaintenance();
 });

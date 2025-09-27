@@ -1,4 +1,49 @@
 /* التقويم */
+.calendar-panel {
+  position: relative;
+}
+
+.calendar-panel .calendar-status {
+  position: absolute;
+  inset: 12px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px dashed rgba(76, 110, 245, 0.35);
+  color: var(--clr-text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  z-index: 5;
+}
+
+.calendar-panel.is-loading .calendar-status,
+.calendar-panel.has-error .calendar-status,
+.calendar-panel.is-empty .calendar-status {
+  display: flex;
+}
+
+.calendar-panel.is-loading #calendar,
+.calendar-panel.has-error #calendar,
+.calendar-panel.is-empty #calendar {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+html[dir="rtl"] .calendar-status,
+body[dir="rtl"] .calendar-status {
+  direction: rtl;
+}
+
+:is(html.dark-mode, body.dark-mode) .calendar-panel .calendar-status {
+  background: rgba(15, 23, 42, 0.94);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: rgba(226, 232, 240, 0.95);
+}
+
 #calendar {
   background: var(--clr-card);
   padding: 16px;

@@ -23,6 +23,9 @@ import {
 } from './formUtils.js';
 import { updateEditReservationSummary } from './editForm.js';
 import { loadData } from '../storage.js';
+import { ensureReservationsLoaded } from '../reservationsActions.js';
+
+let reservationEventsInitialized = false;
 
 function enhanceTimeInputs() {
   const timeInputs = document.querySelectorAll('input[type="time"]');
@@ -129,6 +132,7 @@ export function setupReservationEvents() {
 
   loadReservationForm();
   setupEquipmentDescriptionInputs();
+  reservationEventsInitialized = true;
 }
 
 function setupTechniciansUpdatedListener() {
@@ -144,18 +148,28 @@ function setupTechniciansUpdatedListener() {
   body.dataset.reservationsTechListener = 'true';
 }
 
-export function initializeReservationUI() {
+export async function initializeReservationUI() {
+  await ensureReservationsLoaded();
+  renderReservations();
   registerReservationGlobals();
   initCreateReservationForm({ onAfterSubmit: handleReservationsMutation });
-  setupReservationEvents();
+  if (!reservationEventsInitialized) {
+    setupReservationEvents();
+  }
   initializeReservationPickers();
   setupTechniciansUpdatedListener();
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeReservationUI, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeReservationUI().catch((error) => {
+      console.error('❌ [reservations/events] Failed to initialize reservations UI', error);
+    });
+  }, { once: true });
 } else {
-  initializeReservationUI();
+  initializeReservationUI().catch((error) => {
+    console.error('❌ [reservations/events] Failed to initialize reservations UI', error);
+  });
 }
 
 export { initializeReservationPickers };

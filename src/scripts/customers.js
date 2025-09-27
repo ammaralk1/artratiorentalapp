@@ -1,19 +1,54 @@
 import { saveData, loadData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
+import { apiRequest, ApiError } from "./apiClient.js";
 
 let editingCustomerId = null;
+let isCustomersLoading = false;
+let customersErrorMessage = "";
+let customersState = (loadData().customers || []).map(mapToInternalCustomer);
+
+function mapToInternalCustomer(rawCustomer = {}) {
+  if (!rawCustomer || typeof rawCustomer !== "object") {
+    return {
+      id: "",
+      full_name: "",
+      phone: "",
+      email: "",
+      address: "",
+      company: "",
+      notes: "",
+      created_at: null,
+      updated_at: null,
+    };
+  }
+
+  const idValue = rawCustomer.id ?? rawCustomer.customerId ?? rawCustomer.reservationId ?? rawCustomer.customerID;
+
+  return {
+    id: idValue !== undefined && idValue !== null ? String(idValue) : "",
+    full_name: rawCustomer.full_name ?? rawCustomer.customerName ?? rawCustomer.name ?? "",
+    phone: rawCustomer.phone ?? rawCustomer.phoneNumber ?? "",
+    email: rawCustomer.email ?? "",
+    address: rawCustomer.address ?? "",
+    company: rawCustomer.company ?? rawCustomer.companyName ?? "",
+    notes: rawCustomer.notes ?? "",
+    created_at: rawCustomer.created_at ?? null,
+    updated_at: rawCustomer.updated_at ?? null,
+  };
+}
 
 function emitCustomersChanged() {
   document.dispatchEvent(new CustomEvent('customers:changed'));
 }
 
 function getCustomers() {
-  return loadData().customers || [];
+  return customersState;
 }
 
 function setCustomers(customers) {
-  saveData({ customers });
+  customersState = Array.isArray(customers) ? customers.map(mapToInternalCustomer) : [];
+  saveData({ customers: customersState });
 }
 
 function getFormElements() {
@@ -82,11 +117,11 @@ function populateCustomerForm(customer) {
   if (!customer || !nameInput || !phoneInput) return;
 
   if (idInput) idInput.value = customer.id;
-  nameInput.value = customer.customerName || "";
+  nameInput.value = customer.full_name || "";
   phoneInput.value = normalizeNumbers(customer.phone || "");
   if (emailInput) emailInput.value = customer.email || "";
   if (addressInput) addressInput.value = customer.address || "";
-  if (companyInput) companyInput.value = customer.companyName || "";
+  if (companyInput) companyInput.value = customer.company || "";
   if (notesInput) notesInput.value = customer.notes || "";
 
   editingCustomerId = customer.id;
@@ -115,41 +150,87 @@ function collectCustomerForm() {
     return null;
   }
 
-  return {
-    id: idInput?.value || editingCustomerId || Date.now().toString(),
-    customerName,
+  const payload = {
+    full_name: customerName,
     phone,
     email: emailInput?.value.trim() || "",
     address: addressInput?.value.trim() || "",
-    companyName: companyInput?.value.trim() || "",
+    company: companyInput?.value.trim() || "",
     notes: notesInput?.value.trim() || "",
+  };
+
+  return {
+    payload,
+    id: idInput?.value || editingCustomerId || "",
   };
 }
 
-function handleCustomerSubmit(event) {
-  event.preventDefault();
-  const customerData = collectCustomerForm();
-  if (!customerData) return;
-
-  const customers = getCustomers();
-  const existingIndex = customers.findIndex((c) => String(c.id) === String(customerData.id));
-
-  if (existingIndex >= 0) {
-    customers[existingIndex] = { ...customers[existingIndex], ...customerData };
-    setCustomers(customers);
-    showToast(t("customers.toast.updateSuccess", "تم تحديث بيانات العميل بنجاح"));
-  } else {
-    customers.push(customerData);
-    setCustomers(customers);
-    showToast(t("customers.toast.createSuccess", "تمت إضافة العميل بنجاح"));
-  }
-
+async function refreshCustomersFromApi({ showToastOnError = true } = {}) {
+  isCustomersLoading = true;
+  customersErrorMessage = "";
   renderCustomers();
-  resetCustomerForm();
-  emitCustomersChanged();
+
+  try {
+    const response = await apiRequest('/customers/');
+    const records = Array.isArray(response?.data) ? response.data.map(mapToInternalCustomer) : [];
+    setCustomers(records);
+  } catch (error) {
+    customersErrorMessage = error instanceof ApiError
+      ? error.message
+      : t('customers.toast.fetchFailed', 'تعذر تحميل قائمة العملاء');
+    if (showToastOnError) {
+      showToast(customersErrorMessage, 'error');
+    }
+  } finally {
+    isCustomersLoading = false;
+    renderCustomers();
+  }
 }
 
-function handleCustomerTableClick(event) {
+async function handleCustomerSubmit(event) {
+  event.preventDefault();
+  const submission = collectCustomerForm();
+  if (!submission) return;
+
+  const { payload } = submission;
+  const isUpdate = Boolean(editingCustomerId);
+
+  try {
+    if (isUpdate) {
+      const id = editingCustomerId;
+      const response = await apiRequest(`/customers/?id=${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: payload,
+      });
+      const updatedCustomer = mapToInternalCustomer(response?.data);
+      const updatedList = getCustomers().map((customer) =>
+        String(customer.id) === String(id) ? updatedCustomer : customer
+      );
+      setCustomers(updatedList);
+      showToast(t('customers.toast.updateSuccess', 'تم تحديث بيانات العميل بنجاح'));
+    } else {
+      const response = await apiRequest('/customers/', {
+        method: 'POST',
+        body: payload,
+      });
+      const createdCustomer = mapToInternalCustomer(response?.data);
+      const updatedList = [...getCustomers(), createdCustomer];
+      setCustomers(updatedList);
+      showToast(t('customers.toast.createSuccess', 'تمت إضافة العميل بنجاح'));
+    }
+
+    renderCustomers();
+    resetCustomerForm();
+    emitCustomersChanged();
+  } catch (error) {
+    const message = error instanceof ApiError
+      ? error.message
+      : t('customers.toast.submitFailed', 'حدث خطأ أثناء حفظ بيانات العميل');
+    showToast(message, 'error');
+  }
+}
+
+async function handleCustomerTableClick(event) {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
 
@@ -158,14 +239,22 @@ function handleCustomerTableClick(event) {
     if (!confirm(t("customers.toast.deleteConfirm", "⚠️ هل أنت متأكد من حذف هذا العميل؟"))) {
       return;
     }
-    const customers = getCustomers().filter((c) => String(c.id) !== String(id));
-    setCustomers(customers);
-    renderCustomers();
-    if (editingCustomerId === id) {
-      resetCustomerForm();
+    try {
+      await apiRequest(`/customers/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const customers = getCustomers().filter((c) => String(c.id) !== String(id));
+      setCustomers(customers);
+      renderCustomers();
+      if (String(editingCustomerId) === String(id)) {
+        resetCustomerForm();
+      }
+      showToast(t("customers.toast.deleteSuccess", "تم حذف العميل"));
+      emitCustomersChanged();
+    } catch (error) {
+      const message = error instanceof ApiError
+        ? error.message
+        : t('customers.toast.deleteFailed', 'تعذر حذف العميل، يرجى المحاولة مجدداً');
+      showToast(message, 'error');
     }
-    showToast(t("customers.toast.deleteSuccess", "تم حذف العميل"));
-    emitCustomersChanged();
     return;
   }
 
@@ -181,9 +270,9 @@ function handleCustomerSearch(event) {
   const searchValue = event.target.value.trim().toLowerCase();
   const customers = getCustomers();
   const filtered = customers.filter((c) => {
-    const name = c.customerName?.toLowerCase() || "";
+    const name = c.full_name?.toLowerCase() || "";
     const phone = c.phone?.toLowerCase() || "";
-    const company = c.companyName?.toLowerCase() || "";
+    const company = c.company?.toLowerCase() || "";
     return (
       name.includes(searchValue) ||
       phone.includes(searchValue) ||
@@ -222,6 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireUpCustomersUI();
   renderCustomers();
   refreshCustomerLanguageStrings();
+  refreshCustomersFromApi();
 });
 
 document.addEventListener("language:changed", () => {
@@ -230,20 +320,33 @@ document.addEventListener("language:changed", () => {
 });
 
 document.addEventListener('customers:refreshRequested', () => {
-  renderCustomers();
+  refreshCustomersFromApi({ showToastOnError: false });
   refreshCustomerLanguageStrings();
 });
 
 export function renderCustomers(customersOverride, options = {}) {
-  const customers = Array.isArray(customersOverride) ? customersOverride : getCustomers();
+  const usingOverride = Array.isArray(customersOverride);
+  const customers = usingOverride ? customersOverride : getCustomers();
   const tableBody = document.getElementById("customers-table");
   if (!tableBody) return;
 
   tableBody.innerHTML = "";
 
+  if (!usingOverride) {
+    if (isCustomersLoading) {
+      tableBody.innerHTML = `<tr><td colspan='5'>${t("customers.table.loading", "جاري التحميل...")}</td></tr>`;
+      return;
+    }
+
+    if (customersErrorMessage) {
+      tableBody.innerHTML = `<tr><td colspan='5' class='text-danger'>${customersErrorMessage}</td></tr>`;
+      return;
+    }
+  }
+
   if (customers.length === 0) {
     const message = options.emptyMessage || t("customers.table.empty", "لا يوجد عملاء");
-    tableBody.innerHTML = `<tr><td colspan='6'>${message}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='5'>${message}</td></tr>`;
     return;
   }
 
@@ -257,9 +360,9 @@ export function renderCustomers(customersOverride, options = {}) {
       row.classList.add("table-info");
     }
     row.innerHTML = `
-      <td><a href="customer.html?id=${customer.id}" class="text-decoration-none">${customer.customerName}</a></td>
+      <td><a href="customer.html?id=${customer.id}" class="text-decoration-none">${customer.full_name}</a></td>
       <td>${normalizeNumbers(customer.phone)}</td>
-      <td>${customer.companyName || ""}</td>
+      <td>${customer.company || ""}</td>
       <td class="table-notes-cell">${customer.notes || "—"}</td>
       <td class="table-actions-cell">
         <div class="table-action-buttons">
@@ -273,8 +376,7 @@ export function renderCustomers(customersOverride, options = {}) {
 }
 
 export function getCustomerById(id) {
-  const { customers = [] } = loadData();
-  return customers.find(c => String(c.id) === String(id));
+  return getCustomers().find(c => String(c.id) === String(id));
 }
 
 export function initCustomers() {

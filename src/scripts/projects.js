@@ -1,11 +1,28 @@
 import { applyStoredTheme, initThemeToggle } from './theme.js';
-import { migrateOldData, loadData, saveData } from './storage.js';
+import { migrateOldData, loadData } from './storage.js';
 import { checkAuth, logout } from './auth.js';
 import { showToast, normalizeNumbers, generateProjectCode } from './utils.js';
 import { t, getCurrentLanguage } from './language.js';
 import { isReservationCompleted, normalizeText } from './reservationsShared.js';
 import { registerReservationGlobals } from './reservations/controller.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
+import {
+  ensureProjectsLoaded,
+  getProjectsState,
+  refreshProjectsFromApi,
+  createProjectApi,
+  updateProjectApi,
+  deleteProjectApi,
+  buildProjectPayload,
+  isApiError as isProjectApiError,
+} from './projectsService.js';
+import { ensureReservationsLoaded } from './reservationsActions.js';
+import {
+  getReservationsState,
+  refreshReservationsFromApi,
+  updateReservationApi,
+  isApiError as isReservationApiError,
+} from './reservationsService.js';
 
 applyStoredTheme();
 migrateOldData();
@@ -135,7 +152,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabNavigation();
   initProjectSubTabs();
   bindLogout();
-  loadAllData();
   bindFormEvents();
   bindExpenseEvents();
   bindSelectionEvents();
@@ -143,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindTableEvents();
   bindFocusCards();
   openPendingProjectDetail();
+  initializeProjectsData();
 });
 
 document.addEventListener('language:changed', () => {
@@ -166,6 +183,22 @@ document.addEventListener('language:translationsReady', () => {
 document.addEventListener('customers:changed', handleCustomersChanged);
 document.addEventListener('technicians:updated', handleTechniciansUpdated);
 document.addEventListener('reservations:changed', handleReservationsChanged);
+
+async function initializeProjectsData() {
+  try {
+    await ensureReservationsLoaded({ suppressError: true });
+    await refreshProjectsFromApi();
+  } catch (error) {
+    console.error('❌ [projects] Failed to initialise projects data', error);
+    if (isProjectApiError(error)) {
+      showToast(error.message, 'error');
+    } else {
+      showToast(t('projects.toast.fetchFailed', 'تعذر تحميل بيانات المشاريع، حاول لاحقًا'), 'error');
+    }
+  } finally {
+    loadAllData();
+  }
+}
 
 function cacheDom() {
   dom.form = document.getElementById('project-form');
@@ -317,7 +350,6 @@ function ensureProjectCodes() {
   if (!mutated) return;
 
   state.projects = projectsWithCodes;
-  saveData({ projects: state.projects });
 }
 
 function initTabNavigation() {
@@ -468,20 +500,12 @@ function bindLogout() {
 }
 
 function loadAllData() {
-  const { customers, technicians, equipment, reservations, projects } = loadData();
+  const { customers, technicians, equipment } = loadData();
   state.customers = Array.isArray(customers) ? customers : [];
   state.technicians = Array.isArray(technicians) ? technicians : [];
   state.equipment = Array.isArray(equipment) ? equipment : [];
-  state.reservations = Array.isArray(reservations) ? reservations : [];
-  state.projects = Array.isArray(projects)
-    ? projects.map((project) => ({
-        ...project,
-        type: project.type || project.projectType || '',
-        clientCompany: project.clientCompany || project.company || '',
-        paymentStatus: project.paymentStatus === 'paid' ? 'paid' : 'unpaid',
-        confirmed: project.confirmed === true || project.confirmed === 'true'
-      }))
-    : [];
+  state.reservations = getReservationsState();
+  state.projects = getProjectsState();
 
   ensureProjectCodes();
 
@@ -995,8 +1019,12 @@ function renderChipList(container, items, templateFn) {
   container.innerHTML = items.map((item) => templateFn(item)).join('');
 }
 
-function handleSubmitProject(event) {
+let isProjectSubmitInProgress = false;
+
+async function handleSubmitProject(event) {
   event.preventDefault();
+  if (isProjectSubmitInProgress) return;
+
   const title = dom.title?.value.trim();
   const projectType = dom.type?.value || '';
   const clientInput = dom.client?.value?.trim() || '';
@@ -1049,100 +1077,92 @@ function handleSubmitProject(event) {
   const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
   const totalWithTax = Number((subtotal + taxAmount).toFixed(2));
 
+  const { items: equipmentForApi, missing } = resolveSelectedEquipmentForApi();
+  if (missing.length) {
+    showToast(t('projects.toast.equipmentMissing', '⚠️ بعض المعدات المحددة غير موجودة في النظام، يرجى تحديث قائمة المعدات'), 'error');
+    return;
+  }
+
   const isEditing = Boolean(state.editingProjectId);
-  const projectId = isEditing ? state.editingProjectId : Date.now();
+  const existingProject = isEditing
+    ? state.projects.find((proj) => String(proj.id) === String(state.editingProjectId))
+    : null;
+
+  if (isEditing && !existingProject) {
+    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
+    return;
+  }
+
   const companyValue = customer.companyName || customer.company || '';
   const descriptionValue = dom.description?.value.trim() || '';
 
-  if (isEditing) {
-    const index = state.projects.findIndex((proj) => String(proj.id) === String(projectId));
-    if (index === -1) {
-      showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
-      return;
+  const payload = buildProjectPayload({
+    projectCode: existingProject?.projectCode || (!isEditing ? generateProjectCode() : null),
+    title,
+    type: projectType,
+    clientId,
+    clientCompany: companyValue,
+    description: descriptionValue,
+    start: startIso,
+    end: endIso || null,
+    applyTax,
+    paymentStatus,
+    equipmentEstimate,
+    expenses: state.expenses.map((expense) => ({
+      id: expense.id,
+      label: expense.label,
+      amount: expense.amount,
+    })),
+    taxAmount,
+    totalWithTax,
+    confirmed: existingProject?.confirmed ?? false,
+    technicians: state.selectedTechnicians,
+    equipment: equipmentForApi,
+  });
+
+  isProjectSubmitInProgress = true;
+
+  try {
+    let projectIdentifier = existingProject?.projectId ?? existingProject?.id ?? null;
+
+    if (isEditing) {
+      const updated = await updateProjectApi(projectIdentifier ?? state.editingProjectId, payload);
+      projectIdentifier = updated?.projectId ?? updated?.id ?? projectIdentifier;
+      await handleProjectReservationSync(projectIdentifier, paymentStatus);
+      showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
+    } else {
+      const created = await createProjectApi(payload);
+      projectIdentifier = created?.projectId ?? created?.id ?? null;
+      await handleProjectReservationSync(projectIdentifier, paymentStatus);
+      showToast(t('projects.toast.saved', '✅ تم حفظ المشروع بنجاح'));
     }
 
-    const existing = state.projects[index];
-    const updatedProject = {
-      ...existing,
-      title,
-      type: projectType,
-      clientId,
-      clientCompany: companyValue,
-      description: descriptionValue,
-      start: startIso,
-      end: endIso || null,
-      technicians: [...state.selectedTechnicians],
-      equipment: state.selectedEquipment.map((item) => ({ ...item })),
-      expenses: state.expenses.map((exp) => ({ ...exp })),
-      expensesTotal,
-      equipmentEstimate,
-      applyTax,
-      taxAmount,
-      totalWithTax,
-      paymentStatus,
-      updatedAt: new Date().toISOString()
-    };
-    state.projects[index] = updatedProject;
-    const reservationsUpdated = updateLinkedReservationsPaymentStatus(projectId, paymentStatus);
-    const savePayload = reservationsUpdated
-      ? { projects: state.projects, reservations: state.reservations }
-      : { projects: state.projects };
-    saveData(savePayload);
-    if (reservationsUpdated) {
-      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    state.editingProjectId = null;
+    dom.form.reset();
+    resetProjectFormState();
+    clearProjectDateInputs();
+    clearProjectCustomerSuggestions();
+    if (dom.client) {
+      dom.client.dataset.customerId = '';
     }
-    showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
-  } else {
-    const projectCode = generateProjectCode();
-    const project = {
-      id: projectId,
-      projectCode,
-      title,
-      type: projectType,
-      clientId,
-      clientCompany: companyValue,
-      description: descriptionValue,
-      start: startIso,
-      end: endIso || null,
-      technicians: [...state.selectedTechnicians],
-      equipment: state.selectedEquipment.map((item) => ({ ...item })),
-      expenses: state.expenses.map((exp) => ({ ...exp })),
-      expensesTotal,
-      equipmentEstimate,
-      applyTax,
-      taxAmount,
-      totalWithTax,
-      paymentStatus,
-      createdAt: new Date().toISOString(),
-      confirmed: false
-    };
-
-    state.projects.push(project);
-    const reservationsUpdated = updateLinkedReservationsPaymentStatus(projectId, paymentStatus);
-    const savePayload = reservationsUpdated
-      ? { projects: state.projects, reservations: state.reservations }
-      : { projects: state.projects };
-    saveData(savePayload);
-    if (reservationsUpdated) {
-      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    if (dom.type) {
+      dom.type.value = '';
     }
-    showToast(t('projects.toast.saved', '✅ تم حفظ المشروع بنجاح'));
-  }
 
-  state.editingProjectId = null;
-  dom.form.reset();
-  resetProjectFormState();
-  clearProjectDateInputs();
-  clearProjectCustomerSuggestions();
-  if (dom.client) {
-    dom.client.dataset.customerId = '';
+    state.projects = getProjectsState();
+    state.reservations = getReservationsState();
+    renderProjects();
+    updateSummary();
+    document.dispatchEvent(new CustomEvent('projects:changed'));
+  } catch (error) {
+    console.error('❌ [projects] handleSubmitProject failed', error);
+    const message = isProjectApiError(error)
+      ? error.message
+      : t('projects.toast.saveFailed', 'تعذر حفظ المشروع، حاول مرة أخرى');
+    showToast(message, 'error');
+  } finally {
+    isProjectSubmitInProgress = false;
   }
-  if (dom.type) {
-    dom.type.value = '';
-  }
-  renderProjects();
-  updateSummary();
-  document.dispatchEvent(new CustomEvent('projects:changed'));
 }
 
 function renderProjects() {
@@ -1847,8 +1867,9 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     });
   }
 
-  form.addEventListener('submit', (event) => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (form.dataset.submitting === 'true') return;
 
     const titleInput = form.querySelector('[name="project-title"]');
     const typeSelect = form.querySelector('[name="project-type"]');
@@ -1890,46 +1911,53 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       return;
     }
 
-    const existing = state.projects[index];
-    const equipmentEstimate = Number(existing.equipmentEstimate) || 0;
+    const equipmentEstimate = Number(project.equipmentEstimate) || 0;
     const expensesTotal = editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
     const subtotal = equipmentEstimate + expensesTotal;
     const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
     const totalWithTax = applyTax ? Number((subtotal + taxAmount).toFixed(2)) : subtotal;
 
-    const updatedProject = {
-      ...existing,
+    const payload = buildProjectPayload({
+      projectCode: project.projectCode,
       title,
       type: projectType,
+      clientId: project.clientId,
+      clientCompany: project.clientCompany,
+      description: descriptionValue,
       start: startIso,
       end: endIso || null,
-      description: descriptionValue,
       applyTax,
+      paymentStatus: paymentStatusValue,
+      equipmentEstimate,
+      expenses: editState.expenses,
       taxAmount,
       totalWithTax,
-      paymentStatus: paymentStatusValue,
-      expenses: editState.expenses.map((expense) => ({
-        ...expense,
-        amount: Number(expense.amount) || 0
-      })),
-      expensesTotal,
-      updatedAt: new Date().toISOString()
-    };
+      confirmed: project.confirmed,
+      technicians: Array.isArray(project.technicians) ? project.technicians : [],
+      equipment: mapProjectEquipmentToApi(project),
+    });
 
-    state.projects[index] = updatedProject;
-    const reservationsUpdated = updateLinkedReservationsPaymentStatus(project.id, paymentStatusValue);
-    const savePayload = reservationsUpdated
-      ? { projects: state.projects, reservations: state.reservations }
-      : { projects: state.projects };
-    saveData(savePayload);
-    if (reservationsUpdated) {
-      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    form.dataset.submitting = 'true';
+
+    try {
+      const updated = await updateProjectApi(project.projectId ?? project.id, payload);
+      const identifier = updated?.projectId ?? updated?.id ?? project.id;
+      await handleProjectReservationSync(identifier, paymentStatusValue);
+      state.projects = getProjectsState();
+      state.reservations = getReservationsState();
+      showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
+      renderProjects();
+      updateSummary();
+      openProjectDetails(project.id);
+    } catch (error) {
+      console.error('❌ [projects] Failed to update project from details view', error);
+      const message = isProjectApiError(error)
+        ? error.message
+        : t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
+      showToast(message, 'error');
+    } finally {
+      delete form.dataset.submitting;
     }
-    showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
-
-    renderProjects();
-    updateSummary();
-    openProjectDetails(project.id);
   });
 }
 
@@ -2019,93 +2047,126 @@ function focusProjectRow(projectId) {
   }, 2200);
 }
 
-function confirmProject(projectId) {
+async function confirmProject(projectId) {
   if (!projectId) return;
-  const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
-  if (index === -1) {
+  const project = state.projects.find((entry) => String(entry.id) === String(projectId));
+  if (!project) {
     showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
     return;
   }
 
-  const project = state.projects[index];
   if (project.confirmed === true || project.confirmed === 'true') {
     showToast(t('projects.toast.alreadyConfirmed', 'ℹ️ المشروع مؤكّد مسبقًا'));
     return;
   }
 
-  const updatedProject = {
-    ...project,
-    confirmed: true,
-    updatedAt: new Date().toISOString()
-  };
+  try {
+    await updateProjectApi(project.projectId ?? project.id, { confirmed: true });
+    const reservationsConfirmed = await updateLinkedReservationsConfirmation(projectId);
 
-  state.projects[index] = updatedProject;
-  const reservationsConfirmed = updateLinkedReservationsConfirmation(projectId);
-  const savePayload = reservationsConfirmed
-    ? { projects: state.projects, reservations: state.reservations }
-    : { projects: state.projects };
-  saveData(savePayload);
-  renderProjects();
-  renderFocusCards();
-  updateSummary();
+    state.projects = getProjectsState();
+    state.reservations = getReservationsState();
 
-  const isModalOpen = dom.detailsModalEl && dom.detailsModalEl.classList.contains('show');
-  if (isModalOpen && dom.detailsBody?.dataset.projectId === String(projectId)) {
-    openProjectDetails(projectId);
-  }
+    renderProjects();
+    renderFocusCards();
+    updateSummary();
 
-  document.dispatchEvent(new CustomEvent('projects:changed'));
-  if (reservationsConfirmed) {
-    document.dispatchEvent(new CustomEvent('reservations:changed'));
-  }
-  showToast(t('projects.toast.confirmed', '✅ تم تأكيد المشروع'));
-}
-
-function updateLinkedReservationsPaymentStatus(projectId, paymentStatus) {
-  if (!projectId) return false;
-  const shouldBePaid = paymentStatus === 'paid';
-  let changed = false;
-
-  state.reservations = state.reservations.map((reservation) => {
-    if (String(reservation.projectId) !== String(projectId)) return reservation;
-
-    const desiredPaidValue = shouldBePaid;
-    const desiredStatusValue = shouldBePaid ? 'paid' : 'unpaid';
-    const currentPaidNormalized = reservation.paid === true || reservation.paid === 'paid';
-    const currentStatusValue = reservation.paymentStatus || (currentPaidNormalized ? 'paid' : 'unpaid');
-
-    if (currentPaidNormalized === shouldBePaid && currentStatusValue === desiredStatusValue) {
-      return reservation;
+    const isModalOpen = dom.detailsModalEl && dom.detailsModalEl.classList.contains('show');
+    if (isModalOpen && dom.detailsBody?.dataset.projectId === String(projectId)) {
+      openProjectDetails(projectId);
     }
 
+    document.dispatchEvent(new CustomEvent('projects:changed'));
+    if (reservationsConfirmed) {
+      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    }
+
+    showToast(t('projects.toast.confirmed', '✅ تم تأكيد المشروع'));
+  } catch (error) {
+    console.error('❌ [projects] confirmProject failed', error);
+    const message = isProjectApiError(error)
+      ? error.message
+      : t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
+    showToast(message, 'error');
+  }
+}
+
+async function updateLinkedReservationsPaymentStatus(projectId, paymentStatus) {
+  if (!projectId) return false;
+
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+
+  if (!targets.length) {
+    return false;
+  }
+
+  const shouldBePaid = paymentStatus === 'paid';
+  const desiredStatusValue = shouldBePaid ? 'paid' : 'unpaid';
+  let changed = false;
+
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+
+    const currentPaidNormalized = reservation.paid === true || reservation.paid === 'paid';
+    const currentStatusValue = reservation.paidStatus || reservation.paymentStatus || (currentPaidNormalized ? 'paid' : 'unpaid');
+
+    if (currentPaidNormalized === shouldBePaid && currentStatusValue === desiredStatusValue) {
+      continue;
+    }
+
+    await updateReservationApi(reservationId, {
+      paid_status: desiredStatusValue,
+      paid: shouldBePaid,
+    });
     changed = true;
-    return {
-      ...reservation,
-      paid: desiredPaidValue,
-      paymentStatus: desiredStatusValue
-    };
-  });
+  }
+
+  if (changed) {
+    state.reservations = getReservationsState();
+  }
 
   return changed;
 }
 
-function updateLinkedReservationsConfirmation(projectId) {
+async function updateLinkedReservationsConfirmation(projectId) {
   if (!projectId) return false;
+
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+
+  if (!targets.length) {
+    return false;
+  }
+
   let changed = false;
 
-  state.reservations = state.reservations.map((reservation) => {
-    if (String(reservation.projectId) !== String(projectId)) return reservation;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
     const alreadyConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
-    if (alreadyConfirmed) return reservation;
-
+    if (alreadyConfirmed) {
+      continue;
+    }
+    await updateReservationApi(reservationId, { confirmed: true });
     changed = true;
-    return {
-      ...reservation,
-      confirmed: true
-    };
-  });
+  }
+
+  if (changed) {
+    state.reservations = getReservationsState();
+  }
 
   return changed;
+}
+
+async function handleProjectReservationSync(projectId, paymentStatus) {
+  if (!projectId) return false;
+  const reservationsUpdated = await updateLinkedReservationsPaymentStatus(projectId, paymentStatus);
+  if (reservationsUpdated) {
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return reservationsUpdated;
 }
 
 function isProjectToday(project) {
@@ -2233,6 +2294,59 @@ function updateSummary() {
 
 function calculateExpensesTotal() {
   return state.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+}
+
+function normalizeEquipmentKey(value) {
+  return normalizeNumbers(String(value || '')).trim().toLowerCase();
+}
+
+function resolveSelectedEquipmentForApi() {
+  if (!Array.isArray(state.selectedEquipment) || state.selectedEquipment.length === 0) {
+    return { items: [], missing: [] };
+  }
+
+  const equipmentIndex = new Map(
+    (state.equipment || []).map((item) => [normalizeEquipmentKey(item?.barcode), item])
+  );
+
+  const missing = [];
+  const items = [];
+
+  state.selectedEquipment.forEach((selection) => {
+    const key = normalizeEquipmentKey(selection?.barcode);
+    if (!key) {
+      missing.push(selection?.barcode || '');
+      return;
+    }
+    const equipmentItem = equipmentIndex.get(key);
+    if (!equipmentItem || equipmentItem.id == null) {
+      missing.push(selection?.barcode || key);
+      return;
+    }
+
+    const quantity = Number.parseInt(String(selection?.qty ?? 0), 10);
+    items.push({
+      equipmentId: equipmentItem.id,
+      qty: Number.isInteger(quantity) && quantity > 0 ? quantity : 1,
+    });
+  });
+
+  return { items, missing };
+}
+
+function mapProjectEquipmentToApi(project) {
+  if (!project || !Array.isArray(project.equipment)) return [];
+  return project.equipment
+    .map((item) => {
+      const equipmentId = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
+      const qty = Number.parseInt(String(item?.qty ?? item?.quantity ?? 0), 10);
+      if (!equipmentId) return null;
+      return {
+        equipmentId,
+        qty: Number.isInteger(qty) && qty > 0 ? qty : 1,
+      };
+    })
+    .filter(Boolean);
 }
 
 function calculateEquipmentEstimate() {
@@ -2454,30 +2568,31 @@ function refreshProjectSubmitButton() {
   dom.submitBtn.textContent = t(labelKey, fallback);
 }
 
-function removeProject(projectId) {
+async function removeProject(projectId) {
   const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
   if (index === -1) return;
   if (!window.confirm(t('projects.confirm.delete', 'هل أنت متأكد من حذف هذا المشروع؟'))) return;
-  state.projects.splice(index, 1);
-  let reservationsChanged = false;
-  const updatedReservations = state.reservations.map((reservation) => {
-    if (String(reservation.projectId) === String(projectId)) {
-      reservationsChanged = true;
-      const updated = { ...reservation };
-      delete updated.projectId;
-      return updated;
-    }
-    return reservation;
-  });
-  state.reservations = updatedReservations;
 
-  saveData({ projects: state.projects, reservations: updatedReservations });
-  renderProjects();
-  updateSummary();
-  showToast(t('projects.toast.deleted', '🗑️ تم حذف المشروع'));
-  document.dispatchEvent(new CustomEvent('projects:changed'));
-  if (reservationsChanged) {
+  try {
+    await deleteProjectApi(projectId);
+    await refreshProjectsFromApi();
+    await refreshReservationsFromApi();
+
+    state.projects = getProjectsState();
+    state.reservations = getReservationsState();
+
+    renderProjects();
+    updateSummary();
+    showToast(t('projects.toast.deleted', '🗑️ تم حذف المشروع'));
+
+    document.dispatchEvent(new CustomEvent('projects:changed'));
     document.dispatchEvent(new CustomEvent('reservations:changed'));
+  } catch (error) {
+    console.error('❌ [projects] removeProject failed', error);
+    const message = isProjectApiError(error)
+      ? error.message
+      : t('projects.toast.deleteFailed', 'تعذر حذف المشروع، حاول مرة أخرى');
+    showToast(message, 'error');
   }
 }
 
