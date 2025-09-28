@@ -7,7 +7,6 @@ try {
     $statement->fetch();
 
     respond([
-        'ok' => true,
         'status' => 'healthy',
         'timestamp' => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
     ]);

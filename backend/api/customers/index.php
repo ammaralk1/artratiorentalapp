@@ -51,10 +51,7 @@ function handleGetCustomers(PDO $pdo): void
             return;
         }
 
-        respond([
-            'ok' => true,
-            'data' => $customer,
-        ]);
+        respond($customer);
         return;
     }
 
@@ -94,15 +91,15 @@ function handleGetCustomers(PDO $pdo): void
     $statement->execute();
     $customers = $statement->fetchAll();
 
-    respond([
-        'ok' => true,
-        'data' => $customers,
-        'meta' => [
+    respond(
+        $customers,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($customers),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleCreateCustomer(PDO $pdo): void
@@ -125,10 +122,12 @@ function handleCreateCustomer(PDO $pdo): void
     $statement->execute(['id' => $newId]);
     $customer = $statement->fetch();
 
-    respond([
-        'ok' => true,
-        'data' => $customer,
-    ], 201);
+    logActivity($pdo, 'CUSTOMER_CREATE', [
+        'customer_id' => $newId,
+        'payload' => $data,
+    ]);
+
+    respond($customer, 201);
 }
 
 function handleUpdateCustomer(PDO $pdo): void
@@ -177,10 +176,14 @@ function handleUpdateCustomer(PDO $pdo): void
     $statement->execute(['id' => $id]);
     $customer = $statement->fetch();
 
-    respond([
-        'ok' => true,
-        'data' => $customer,
+    $changedColumns = array_values(array_filter(array_keys($data), static fn($column) => $column !== 'id'));
+
+    logActivity($pdo, 'CUSTOMER_UPDATE', [
+        'customer_id' => $id,
+        'changes' => $changedColumns,
     ]);
+
+    respond($customer);
 }
 
 function handleDeleteCustomer(PDO $pdo): void
@@ -200,9 +203,11 @@ function handleDeleteCustomer(PDO $pdo): void
         return;
     }
 
-    respond([
-        'ok' => true,
+    logActivity($pdo, 'CUSTOMER_DELETE', [
+        'customer_id' => $id,
     ]);
+
+    respond(null);
 }
 
 function readJsonPayload(): array

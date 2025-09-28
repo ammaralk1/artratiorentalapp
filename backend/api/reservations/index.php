@@ -48,7 +48,7 @@ function handleReservationsGet(PDO $pdo): void
             return;
         }
 
-        respond(['ok' => true, 'data' => $reservation]);
+        respond($reservation);
         return;
     }
 
@@ -143,15 +143,15 @@ function handleReservationsGet(PDO $pdo): void
         $items[] = decorateReservation($pdo, $row);
     }
 
-    respond([
-        'ok' => true,
-        'data' => $items,
-        'meta' => [
+    respond(
+        $items,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($items),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleReservationsCreate(PDO $pdo): void
@@ -173,7 +173,14 @@ function handleReservationsCreate(PDO $pdo): void
         $pdo->commit();
 
         $reservation = fetchReservationById($pdo, $reservationId);
-        respond(['ok' => true, 'data' => $reservation], 201);
+
+        logActivity($pdo, 'RESERVATION_CREATE', [
+            'reservation_id' => $reservationId,
+            'customer_id' => $data['customer_id'] ?? null,
+            'items' => isset($data['items']) ? count((array) $data['items']) : 0,
+        ]);
+
+        respond($reservation, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -212,7 +219,13 @@ function handleReservationsUpdate(PDO $pdo): void
         $pdo->commit();
 
         $reservation = fetchReservationById($pdo, $id);
-        respond(['ok' => true, 'data' => $reservation]);
+
+        logActivity($pdo, 'RESERVATION_UPDATE', [
+            'reservation_id' => $id,
+            'changes' => array_keys($data),
+        ]);
+
+        respond($reservation);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -248,7 +261,11 @@ function handleReservationsDelete(PDO $pdo): void
 
         $pdo->commit();
 
-        respond(['ok' => true]);
+        logActivity($pdo, 'RESERVATION_DELETE', [
+            'reservation_id' => $id,
+        ]);
+
+        respond(null);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;

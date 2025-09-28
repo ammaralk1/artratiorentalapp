@@ -17,10 +17,7 @@ try {
     $pdo = getDatabaseConnection();
     requireAuthenticated();
     $data = buildSummaryResponse($pdo);
-    respond([
-        'ok' => true,
-        'data' => $data,
-    ]);
+    respond($data);
 } catch (Throwable $exception) {
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),

@@ -33,10 +33,7 @@ try {
 
 function handlePreferencesGet(): void
 {
-    respond([
-        'ok' => true,
-        'data' => getUserPreferences(),
-    ]);
+    respond(getUserPreferences());
 }
 
 function handlePreferencesUpdate(): void
@@ -60,10 +57,11 @@ function handlePreferencesUpdate(): void
 
     $preferences = updateUserPreferences($changes);
 
-    respond([
-        'ok' => true,
-        'data' => $preferences,
+    logActivity(getDatabaseConnection(), 'PREFERENCES_UPDATE', [
+        'changes' => array_keys($changes),
     ]);
+
+    respond($preferences);
 }
 
 function readJsonPayload(): array

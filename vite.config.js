@@ -21,7 +21,8 @@ export default defineConfig({
         technician: resolve(__dirname, 'src/pages/technician.html'),
         projects: resolve(__dirname, 'src/pages/projects.html'),
         projectsReports: resolve(__dirname, 'src/pages/projects-reports.html'),
-        projectsExpenses: resolve(__dirname, 'src/pages/projects-expenses.html')
+        projectsExpenses: resolve(__dirname, 'src/pages/projects-expenses.html'),
+        users: resolve(__dirname, 'src/pages/users.html')
       }
     }
   }

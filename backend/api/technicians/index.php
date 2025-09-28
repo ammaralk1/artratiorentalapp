@@ -48,7 +48,7 @@ function handleTechniciansGet(PDO $pdo): void
             return;
         }
 
-        respond(['ok' => true, 'data' => $technician]);
+        respond($technician);
         return;
     }
 
@@ -114,15 +114,15 @@ function handleTechniciansGet(PDO $pdo): void
         $items[] = mapTechnicianRow($row);
     }
 
-    respond([
-        'ok' => true,
-        'data' => $items,
-        'meta' => [
+    respond(
+        $items,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($items),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleTechniciansCreate(PDO $pdo): void
@@ -172,7 +172,12 @@ function handleTechniciansCreate(PDO $pdo): void
     $id = (int) $pdo->lastInsertId();
     $technician = fetchTechnicianById($pdo, $id);
 
-    respond(['ok' => true, 'data' => $technician], 201);
+    logActivity($pdo, 'TECHNICIAN_CREATE', [
+        'technician_id' => $id,
+        'payload' => $data,
+    ]);
+
+    respond($technician, 201);
 }
 
 function handleTechniciansUpdate(PDO $pdo): void
@@ -216,7 +221,13 @@ function handleTechniciansUpdate(PDO $pdo): void
     }
 
     $technician = fetchTechnicianById($pdo, $id);
-    respond(['ok' => true, 'data' => $technician]);
+
+    logActivity($pdo, 'TECHNICIAN_UPDATE', [
+        'technician_id' => $id,
+        'changes' => array_keys($data),
+    ]);
+
+    respond($technician);
 }
 
 function handleTechniciansDelete(PDO $pdo): void
@@ -236,7 +247,11 @@ function handleTechniciansDelete(PDO $pdo): void
         return;
     }
 
-    respond(['ok' => true]);
+    logActivity($pdo, 'TECHNICIAN_DELETE', [
+        'technician_id' => $id,
+    ]);
+
+    respond(null);
 }
 
 function validateTechnicianPayload(array $payload, bool $isUpdate): array

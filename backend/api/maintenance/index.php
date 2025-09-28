@@ -50,7 +50,7 @@ function handleMaintenanceGet(PDO $pdo): void
             return;
         }
 
-        respond(['ok' => true, 'data' => $ticket]);
+        respond($ticket);
         return;
     }
 
@@ -117,15 +117,15 @@ function handleMaintenanceGet(PDO $pdo): void
         $tickets[] = mapMaintenanceRow($row);
     }
 
-    respond([
-        'ok' => true,
-        'data' => $tickets,
-        'meta' => [
+    respond(
+        $tickets,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($tickets),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleMaintenanceCreate(PDO $pdo): void
@@ -184,7 +184,14 @@ function handleMaintenanceCreate(PDO $pdo): void
         $pdo->commit();
 
         $ticket = fetchMaintenanceTicket($pdo, $id);
-        respond(['ok' => true, 'data' => $ticket], 201);
+
+        logActivity($pdo, 'MAINTENANCE_CREATE', [
+            'maintenance_id' => $id,
+            'equipment_id' => $data['equipment_id'],
+            'technician_id' => $data['technician_id'],
+        ]);
+
+        respond($ticket, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -264,7 +271,13 @@ function handleMaintenanceUpdate(PDO $pdo): void
 
         $pdo->commit();
 
-        respond(['ok' => true, 'data' => $ticket]);
+        logActivity($pdo, 'MAINTENANCE_UPDATE', [
+            'maintenance_id' => $id,
+            'status' => $ticket['status_raw'],
+            'changes' => array_keys($data),
+        ]);
+
+        respond($ticket);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -298,7 +311,12 @@ function handleMaintenanceDelete(PDO $pdo): void
 
         $pdo->commit();
 
-        respond(['ok' => true]);
+        logActivity($pdo, 'MAINTENANCE_DELETE', [
+            'maintenance_id' => $id,
+            'equipment_id' => $existing['equipment_id'],
+        ]);
+
+        respond(null);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;

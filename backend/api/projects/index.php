@@ -50,7 +50,7 @@ function handleProjectsGet(PDO $pdo): void
             return;
         }
 
-        respond(['ok' => true, 'data' => $project]);
+        respond($project);
         return;
     }
 
@@ -140,15 +140,15 @@ function handleProjectsGet(PDO $pdo): void
         $items[] = mapProjectRow($pdo, $row);
     }
 
-    respond([
-        'ok' => true,
-        'data' => $items,
-        'meta' => [
+    respond(
+        $items,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($items),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleProjectsCreate(PDO $pdo): void
@@ -190,7 +190,13 @@ function handleProjectsCreate(PDO $pdo): void
             throw new RuntimeException('Failed to load created project');
         }
 
-        respond(['ok' => true, 'data' => $project], 201);
+        logActivity($pdo, 'PROJECT_CREATE', [
+            'project_id' => $projectId,
+            'client_id' => $payload['client_id'] ?? null,
+            'technicians' => $result['technicians'] ?? [],
+        ]);
+
+        respond($project, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -250,7 +256,23 @@ function handleProjectsUpdate(PDO $pdo): void
             throw new RuntimeException('Failed to load updated project');
         }
 
-        respond(['ok' => true, 'data' => $project]);
+        $changedFields = array_keys($payload);
+        if ($result['technicians'] !== null) {
+            $changedFields[] = 'technicians';
+        }
+        if ($result['equipment'] !== null) {
+            $changedFields[] = 'equipment';
+        }
+        if ($result['expenses'] !== null) {
+            $changedFields[] = 'expenses';
+        }
+
+        logActivity($pdo, 'PROJECT_UPDATE', [
+            'project_id' => $id,
+            'changes' => array_values(array_unique($changedFields)),
+        ]);
+
+        respond($project);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;
@@ -291,7 +313,11 @@ function handleProjectsDelete(PDO $pdo): void
 
         $pdo->commit();
 
-        respond(['ok' => true]);
+        logActivity($pdo, 'PROJECT_DELETE', [
+            'project_id' => $id,
+        ]);
+
+        respond(null);
     } catch (Throwable $exception) {
         $pdo->rollBack();
         throw $exception;

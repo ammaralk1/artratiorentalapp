@@ -42,34 +42,41 @@
       <p class="text-muted home-subtitle" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
     </div>
 
-    <section class="home-summary mb-5">
+    <div class="row g-4 justify-content-center mb-5">
+      <div class="col-md-5">
+        <a href="dashboard.html" class="card shadow-sm h-100 text-center text-decoration-none text-reset home-nav-card">
+          <div class="card-body d-flex flex-column align-items-center gap-2">
+            <div class="display-6 mb-2">📅</div>
+            <h4 class="card-title" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</h4>
+            <p class="card-text text-muted" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-5">
+        <a href="projects.html" class="card shadow-sm h-100 text-center text-decoration-none text-reset home-nav-card">
+          <div class="card-body d-flex flex-column align-items-center gap-2">
+            <div class="display-6 mb-2">🏗️</div>
+            <h4 class="card-title" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</h4>
+            <p class="card-text text-muted" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-5 d-none" data-admin-card>
+        <a href="users.html" class="card shadow-sm h-100 border-danger text-center text-decoration-none text-reset home-nav-card">
+          <div class="card-body d-flex flex-column align-items-center gap-2">
+            <div class="display-6 mb-2">🛡️</div>
+            <h4 class="card-title" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</h4>
+            <p class="card-text text-muted" data-i18n data-i18n-key="home.users.description">إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.</p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <section class="home-summary">
       <div class="row g-3" data-home-summary>
         <div class="col-12 text-center text-muted" data-i18n data-i18n-key="home.summary.loading">⏳ جارٍ جلب بيانات النظام...</div>
       </div>
     </section>
-
-    <div class="row g-4 justify-content-center">
-      <div class="col-md-5">
-        <div class="card shadow-sm h-100">
-          <div class="card-body d-flex flex-column text-center">
-            <div class="display-6 mb-3">📅</div>
-            <h4 class="card-title" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</h4>
-            <p class="card-text text-muted" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
-            <a href="dashboard.html" class="btn btn-primary mt-auto" data-i18n data-i18n-key="home.bookings.button">انتقال إلى لوحة التحكم</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-5">
-        <div class="card shadow-sm h-100">
-          <div class="card-body d-flex flex-column text-center">
-            <div class="display-6 mb-3">🏗️</div>
-            <h4 class="card-title" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</h4>
-            <p class="card-text text-muted" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
-            <a href="projects.html" class="btn btn-primary mt-auto" data-i18n data-i18n-key="home.projects.button">فتح لوحة المشاريع</a>
-          </div>
-        </div>
-      </div>
-    </div>
   </main>
   <script type="module" src="/src/scripts/language.js"></script>
   <script type="module" src="/src/scripts/translations/common.js"></script>

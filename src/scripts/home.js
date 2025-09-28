@@ -10,6 +10,7 @@ migrateOldData();
 checkAuth();
 
 let cachedUsername = '';
+let cachedRole = '';
 let summaryState = null;
 let summaryLoading = false;
 let summaryErrorMessage = '';
@@ -25,6 +26,17 @@ function updateGreetingMessage() {
   }
 
   greeting.textContent = t('home.hero.title', 'مرحباً بك');
+}
+
+function updateAdminCardVisibility() {
+  const isAdmin = cachedRole === 'admin';
+  document.querySelectorAll('[data-admin-card]').forEach((element) => {
+    if (isAdmin) {
+      element.classList.remove('d-none');
+    } else {
+      element.classList.add('d-none');
+    }
+  });
 }
 
 function normalizeSummaryResponse(raw) {
@@ -222,14 +234,19 @@ function bootstrapHome() {
   getCurrentUser({ refresh: true })
     .then((user) => {
       cachedUsername = user?.username || '';
+      cachedRole = (user?.role || '').toLowerCase();
       updateGreetingMessage();
+      updateAdminCardVisibility();
     })
     .catch(() => {
       cachedUsername = '';
+      cachedRole = '';
       updateGreetingMessage();
+      updateAdminCardVisibility();
     });
 
   updateGreetingMessage();
+  updateAdminCardVisibility();
   renderHomeSummary();
   loadHomeSummary();
 

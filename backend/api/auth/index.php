@@ -41,17 +41,16 @@ function handleAuthLogin(): void
         return;
     }
 
-    if (!verifyCredentials($username, $password)) {
+    $user = verifyCredentials($username, $password);
+
+    if (!$user) {
         respondError('Invalid username or password', 401);
         return;
     }
 
-    loginUser($username);
+    loginUser($user);
 
-    respond([
-        'ok' => true,
-        'data' => getAuthenticatedUser(),
-    ]);
+    respond(getAuthenticatedUser());
 }
 
 function handleAuthStatus(): void
@@ -61,16 +60,13 @@ function handleAuthStatus(): void
         return;
     }
 
-    respond([
-        'ok' => true,
-        'data' => getAuthenticatedUser(),
-    ]);
+    respond(getAuthenticatedUser());
 }
 
 function handleAuthLogout(): void
 {
     logoutUser();
-    respond(['ok' => true]);
+    respond(null);
 }
 
 function readJsonPayload(): array

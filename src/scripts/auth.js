@@ -6,9 +6,12 @@ let currentUser = null;
 
 function setCurrentUser(user) {
   if (user && typeof user === 'object') {
+    const role = typeof user.role === 'string' ? user.role.trim().toLowerCase() : null;
     currentUser = {
+      id: Number.isFinite(user.id) ? Number(user.id) : null,
       username: String(user.username || ''),
       loginAt: user.loginAt ?? null,
+      role,
     };
   } else {
     currentUser = null;

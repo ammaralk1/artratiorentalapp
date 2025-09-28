@@ -25,7 +25,10 @@ registerTranslations({
     'home.bookings.button': 'انتقال إلى لوحة التحكم',
     'home.projects.title': 'إدارة المشاريع',
     'home.projects.description': 'إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.',
-    'home.projects.button': 'فتح لوحة المشاريع'
+    'home.projects.button': 'فتح لوحة المشاريع',
+    'home.users.title': 'إدارة المستخدمين',
+    'home.users.description': 'إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.',
+    'home.users.button': 'إدارة المستخدمين'
   },
   en: {
     'actions.logout': '🚪 Log Out',
@@ -51,6 +54,9 @@ registerTranslations({
     'home.bookings.button': 'Open Dashboard',
     'home.projects.title': 'Projects Management',
     'home.projects.description': 'Create and follow up on projects, assign crew and equipment, and track expenses.',
-    'home.projects.button': 'Open Projects Hub'
+    'home.projects.button': 'Open Projects Hub',
+    'home.users.title': 'User Management',
+    'home.users.description': 'Create accounts, adjust roles, and review session and activity logs.',
+    'home.users.button': 'Manage Users'
   }
 });

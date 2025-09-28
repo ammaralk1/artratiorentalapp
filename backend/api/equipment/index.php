@@ -51,10 +51,7 @@ function handleEquipmentGet(PDO $pdo): void
             return;
         }
 
-        respond([
-            'ok' => true,
-            'data' => $equipment,
-        ]);
+        respond($equipment);
         return;
     }
 
@@ -109,15 +106,15 @@ function handleEquipmentGet(PDO $pdo): void
     $statement->execute();
     $items = $statement->fetchAll();
 
-    respond([
-        'ok' => true,
-        'data' => $items,
-        'meta' => [
+    respond(
+        $items,
+        200,
+        [
             'limit' => $limit,
             'offset' => $offset,
             'count' => count($items),
-        ],
-    ]);
+        ]
+    );
 }
 
 function handleEquipmentCreate(PDO $pdo): void
@@ -140,10 +137,12 @@ function handleEquipmentCreate(PDO $pdo): void
     $statement->execute(['id' => $id]);
     $created = $statement->fetch();
 
-    respond([
-        'ok' => true,
-        'data' => $created,
-    ], 201);
+    logActivity($pdo, 'EQUIPMENT_CREATE', [
+        'equipment_id' => $id,
+        'payload' => $data,
+    ]);
+
+    respond($created, 201);
 }
 
 function handleEquipmentUpdate(PDO $pdo): void
@@ -190,10 +189,14 @@ function handleEquipmentUpdate(PDO $pdo): void
     $statement->execute(['id' => $id]);
     $updated = $statement->fetch();
 
-    respond([
-        'ok' => true,
-        'data' => $updated,
+    $changedColumns = array_values(array_filter(array_keys($data), static fn($column) => $column !== 'id'));
+
+    logActivity($pdo, 'EQUIPMENT_UPDATE', [
+        'equipment_id' => $id,
+        'changes' => $changedColumns,
     ]);
+
+    respond($updated);
 }
 
 function handleEquipmentDelete(PDO $pdo): void
@@ -213,7 +216,11 @@ function handleEquipmentDelete(PDO $pdo): void
         return;
     }
 
-    respond(['ok' => true]);
+    logActivity($pdo, 'EQUIPMENT_DELETE', [
+        'equipment_id' => $id,
+    ]);
+
+    respond(null);
 }
 
 function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $currentId = null): array
