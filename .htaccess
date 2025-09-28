@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Remove www and always redirect to HTTPS
+RewriteCond %{HTTP_HOST} ^www\.art-ratio\.com$ [NC]
+RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]
+
+# Force HTTPS for the bare domain
+RewriteCond %{HTTP_HOST} ^art-ratio\.com$ [NC]
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]

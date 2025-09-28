@@ -21,7 +21,7 @@ if (!is_file($configFile)) {
 
 $config = require $configFile;
 
-$allowedOrigins = array_map('strtolower', $config['security']['allowed_origins'] ?? []);
+$allowedOrigins = array_map(static fn($origin) => trim(strtolower((string) $origin)), $config['security']['allowed_origins'] ?? []);
 $enforceHttps = !empty($config['security']['enforce_https']);
 $sessionName = $config['security']['session_name'] ?? 'art_ratio_session';
 
