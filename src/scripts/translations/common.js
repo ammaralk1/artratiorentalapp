@@ -28,7 +28,17 @@ registerTranslations({
     'home.projects.button': 'فتح لوحة المشاريع',
     'home.users.title': 'إدارة المستخدمين',
     'home.users.description': 'إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.',
-    'home.users.button': 'إدارة المستخدمين'
+    'home.users.button': 'إدارة المستخدمين',
+    'home.summary.loading': '⏳ جارٍ جلب بيانات النظام...',
+    'home.summary.error': 'تعذر تحميل بيانات النظام، حاول لاحقاً',
+    'home.summary.empty': 'لا تتوفر بيانات بعد. ابدأ بإضافة سجلات.',
+    'home.summary.customers': 'إجمالي العملاء',
+    'home.summary.reservationsToday': 'حجوزات اليوم',
+    'home.summary.reservationsUpcoming': 'حجوزات قادمة',
+    'home.summary.projectsActive': 'مشاريع نشطة',
+    'home.summary.equipmentMaintenance': 'معدات قيد الصيانة',
+    'home.summary.maintenanceHigh': 'بلاغات صيانة عاجلة',
+    'home.summary.techniciansBusy': 'أعضاء طاقم مشغولون'
   },
   en: {
     'actions.logout': '🚪 Log Out',
@@ -57,6 +67,16 @@ registerTranslations({
     'home.projects.button': 'Open Projects Hub',
     'home.users.title': 'User Management',
     'home.users.description': 'Create accounts, adjust roles, and review session and activity logs.',
-    'home.users.button': 'Manage Users'
+    'home.users.button': 'Manage Users',
+    'home.summary.loading': '⏳ Fetching system metrics...',
+    'home.summary.error': 'Unable to load system metrics. Please try again later.',
+    'home.summary.empty': 'No data yet. Start by adding your first records.',
+    'home.summary.customers': 'Total Customers',
+    'home.summary.reservationsToday': 'Reservations Today',
+    'home.summary.reservationsUpcoming': 'Upcoming Reservations',
+    'home.summary.projectsActive': 'Active Projects',
+    'home.summary.equipmentMaintenance': 'Equipment in Maintenance',
+    'home.summary.maintenanceHigh': 'Urgent Maintenance Tickets',
+    'home.summary.techniciansBusy': 'Crew Members Busy'
   }
 });

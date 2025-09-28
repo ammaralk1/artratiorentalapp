@@ -1,5 +1,7 @@
 import { showToast } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
+import { updatePreferences } from './preferencesService.js';
+import { getCurrentTheme } from './theme.js';
 
 const ERROR_MESSAGE = '❌ بيانات الدخول غير صحيحة';
 let currentUser = null;
@@ -45,6 +47,13 @@ export async function login(username, password) {
     });
 
     setCurrentUser(response?.data ?? null);
+
+    try {
+      await updatePreferences({ theme: getCurrentTheme() });
+    } catch (prefsError) {
+      console.warn('⚠️ تعذر حفظ تفضيل السمة بعد تسجيل الدخول', prefsError);
+    }
+
     window.location.href = 'home.html';
   } catch (error) {
     console.error('❌ فشل تسجيل الدخول', error);

@@ -7,6 +7,7 @@
 
   <script>
     (function () {
+      document.documentElement.classList.add('language-loading');
       document.documentElement.classList.add('theme-loading');
       try {
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {

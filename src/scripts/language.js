@@ -2,6 +2,8 @@ import { getPreferences, updatePreferences, subscribePreferences, getCachedPrefe
 
 const DEFAULT_LANGUAGE = 'ar';
 const RTL_LANGUAGE = 'ar';
+const LANGUAGE_LOADING_CLASS = 'language-loading';
+const LANGUAGE_READY_CLASS = 'language-ready';
 
 const ATTRIBUTE_SUFFIXES = ['Placeholder', 'Title', 'AriaLabel', 'AriaDescription', 'Value'];
 
@@ -144,6 +146,16 @@ function updateDocumentDirection(language) {
   }
 }
 
+function markLanguageReady() {
+  const htmlEl = document.documentElement;
+  if (!htmlEl) return;
+  if (htmlEl.classList.contains(LANGUAGE_READY_CLASS)) {
+    return;
+  }
+  htmlEl.classList.remove(LANGUAGE_LOADING_CLASS);
+  htmlEl.classList.add(LANGUAGE_READY_CLASS);
+}
+
 function updateLanguageButtons(language) {
   document.querySelectorAll('.language-toggle-btn').forEach((btn) => {
     const labelAr = btn.dataset.labelAr || '🇸🇦 العربية';
@@ -163,6 +175,7 @@ function setLanguageInternal(language, { persist = false, dispatch = true } = {}
   updateDocumentDirection(normalized);
   applyTranslations(normalized);
   updateLanguageButtons(normalized);
+  markLanguageReady();
   if (dispatch) {
     document.dispatchEvent(new CustomEvent('language:changed', { detail: { language: normalized } }));
   }

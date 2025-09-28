@@ -59,6 +59,14 @@ body {
   padding: 24px;
 }
 
+html.language-loading body {
+  visibility: hidden;
+}
+
+html.language-ready body {
+  visibility: visible;
+}
+
 body[dir="rtl"] {
   direction: rtl;
   text-align: right;

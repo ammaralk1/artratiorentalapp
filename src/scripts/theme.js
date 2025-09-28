@@ -87,7 +87,11 @@ export function initThemeToggle() {
 
 export function applyStoredTheme() {
   const cached = getCachedPreferences();
-  const initialTheme = cached?.theme === 'dark' ? 'dark' : cached?.theme === 'light' ? 'light' : getSystemPreferredTheme();
+  const initialTheme = cached?.theme === 'dark'
+    ? 'dark'
+    : cached?.theme === 'light'
+      ? 'light'
+      : getSystemPreferredTheme();
   applyThemeInternal(initialTheme, { persist: false });
   loadThemePreference();
 }

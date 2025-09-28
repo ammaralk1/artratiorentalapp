@@ -137,8 +137,8 @@ function renderSummaryCard(metric) {
       <div class="card h-100 shadow-sm home-summary-card">
         <div class="card-body d-flex flex-column gap-2">
           <div class="home-summary-icon ${metric.accent ?? ''}">${metric.icon}</div>
-          <span class="text-muted small">${metric.label}</span>
-          <span class="fs-4 fw-bold">${normalizeNumbers(String(metric.value ?? 0))}</span>
+          <span class="home-summary-label text-muted small">${metric.label}</span>
+          <span class="home-summary-value fs-4 fw-bold">${normalizeNumbers(String(metric.value ?? 0))}</span>
         </div>
       </div>
     </div>
