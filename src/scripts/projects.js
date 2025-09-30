@@ -2494,9 +2494,22 @@ function splitDateTimeParts(value) {
   if (!value || typeof value !== 'string') {
     return { date: '', time: '' };
   }
-  const [datePart = '', timePart = ''] = value.split('T');
-  const time = timePart ? timePart.slice(0, 5) : '';
-  return { date: datePart, time };
+  let normalized = value.trim();
+  if (!normalized) {
+    return { date: '', time: '' };
+  }
+
+  if (normalized.includes(' ') && !normalized.includes('T')) {
+    normalized = normalized.replace(' ', 'T');
+  }
+
+  const [datePart = '', timePart = ''] = normalized.split('T');
+  const timeMatch = timePart.match(/(\d{1,2}:\d{2})/);
+  const time = timeMatch ? timeMatch[0] : '';
+  return {
+    date: datePart ? datePart.slice(0, 10) : '',
+    time
+  };
 }
 
 function setDateInputValue(input, value) {

@@ -58,15 +58,25 @@ function handleEquipmentGet(PDO $pdo): void
     $search = trim($_GET['search'] ?? '');
     $status = trim($_GET['status'] ?? '');
     $category = trim($_GET['category'] ?? '');
+    $all = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
     $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 100;
     $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
 
-    if ($limit < 1 || $limit > 200) {
-        $limit = 100;
-    }
-
-    if ($offset < 0) {
+    if ($all) {
+        $limitClause = '';
         $offset = 0;
+    } else {
+        if ($limit < 1) {
+            $limit = 100;
+        } elseif ($limit > 1000) {
+            $limit = 1000;
+        }
+
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $limitClause = sprintf(' LIMIT %d OFFSET %d', $limit, $offset);
     }
 
     $where = [];
@@ -92,12 +102,7 @@ function handleEquipmentGet(PDO $pdo): void
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    $query = sprintf(
-        'SELECT * FROM equipment %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
-        $whereClause,
-        $limit,
-        $offset
-    );
+    $query = 'SELECT * FROM equipment ' . $whereClause . ' ORDER BY created_at DESC' . $limitClause;
 
     $statement = $pdo->prepare($query);
     foreach ($params as $key => $value) {
@@ -106,20 +111,41 @@ function handleEquipmentGet(PDO $pdo): void
     $statement->execute();
     $items = $statement->fetchAll();
 
-    respond(
-        $items,
-        200,
-        [
-            'limit' => $limit,
-            'offset' => $offset,
-            'count' => count($items),
-        ]
-    );
+    $meta = [
+        'count' => count($items),
+    ];
+
+    if (!$all) {
+        $meta['limit'] = $limit;
+        $meta['offset'] = $offset;
+    } else {
+        $totalStatement = $pdo->query('SELECT COUNT(*) FROM equipment');
+        $meta['total'] = (int) $totalStatement->fetchColumn();
+    }
+
+    respond($items, 200, $meta);
 }
 
 function handleEquipmentCreate(PDO $pdo): void
 {
-    [$data, $errors] = validateEquipmentPayload(readJsonPayload(), false, $pdo);
+    $payload = readJsonPayload();
+
+    if (isset($_GET['bulk']) || (is_array($payload) && array_is_list($payload)) || (is_array($payload) && isset($payload['items']) && array_is_list($payload['items']))) {
+        $items = $payload;
+        if (is_array($payload) && isset($payload['items']) && array_is_list($payload['items'])) {
+            $items = $payload['items'];
+        }
+
+        if (!is_array($items)) {
+            respondError('Invalid bulk payload', 422);
+            return;
+        }
+
+        handleEquipmentBulkCreate($pdo, $items);
+        return;
+    }
+
+    [$data, $errors] = validateEquipmentPayload($payload, false, $pdo);
 
     if ($errors) {
         respondError('Validation failed', 422, ['errors' => $errors]);
@@ -143,6 +169,110 @@ function handleEquipmentCreate(PDO $pdo): void
     ]);
 
     respond($created, 201);
+}
+
+function handleEquipmentBulkCreate(PDO $pdo, array $items): void
+{
+    if (!array_is_list($items)) {
+        respondError('Invalid bulk payload', 422);
+        return;
+    }
+
+    if (count($items) === 0) {
+        respondError('No equipment payload provided', 422);
+        return;
+    }
+
+    $prepared = [];
+    $errors = [];
+    $seenBarcodes = [];
+
+    foreach ($items as $index => $item) {
+        if (!is_array($item)) {
+            $errors[] = [
+                'index' => $index,
+                'errors' => [
+                    'payload' => 'Each item must be an object',
+                ],
+            ];
+            continue;
+        }
+
+        [$data, $itemErrors] = validateEquipmentPayload($item, false, $pdo);
+
+        if ($itemErrors) {
+            $errors[] = [
+                'index' => $index,
+                'errors' => $itemErrors,
+            ];
+            continue;
+        }
+
+        $barcode = $data['barcode'] ?? null;
+        if ($barcode && isset($seenBarcodes[$barcode])) {
+            $errors[] = [
+                'index' => $index,
+                'errors' => [
+                    'barcode' => 'Barcode duplicated within upload batch',
+                ],
+            ];
+            continue;
+        }
+
+        if ($barcode) {
+            $seenBarcodes[$barcode] = true;
+        }
+
+        $prepared[] = $data;
+    }
+
+    if ($errors) {
+        respondError('Validation failed', 422, ['errors' => $errors]);
+        return;
+    }
+
+    if (!$prepared) {
+        respondError('No equipment payload provided', 422);
+        return;
+    }
+
+    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url) 
+        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url)';
+
+    $insertedIds = [];
+
+    try {
+        $pdo->beginTransaction();
+        $statement = $pdo->prepare($sql);
+        foreach ($prepared as $data) {
+            $statement->execute($data);
+            $insertedIds[] = (int) $pdo->lastInsertId();
+        }
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        respondError('Failed to import equipment', 500, ['details' => $exception->getMessage()]);
+        return;
+    }
+
+    if (!$insertedIds) {
+        respond([], 201, ['count' => 0]);
+        return;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($insertedIds), '?'));
+    $statement = $pdo->prepare('SELECT * FROM equipment WHERE id IN (' . $placeholders . ') ORDER BY id ASC');
+    $statement->execute($insertedIds);
+    $created = $statement->fetchAll();
+
+    logActivity($pdo, 'EQUIPMENT_BULK_CREATE', [
+        'count' => count($insertedIds),
+        'ids' => $insertedIds,
+    ]);
+
+    respond($created, 201, ['count' => count($created)]);
 }
 
 function handleEquipmentUpdate(PDO $pdo): void
@@ -201,6 +331,30 @@ function handleEquipmentUpdate(PDO $pdo): void
 
 function handleEquipmentDelete(PDO $pdo): void
 {
+    $deleteAll = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
+
+    if ($deleteAll) {
+        try {
+            $pdo->beginTransaction();
+            $countStatement = $pdo->query('SELECT COUNT(*) FROM equipment');
+            $total = (int) $countStatement->fetchColumn();
+            $pdo->exec('DELETE FROM equipment');
+            $pdo->commit();
+
+            logActivity($pdo, 'EQUIPMENT_CLEAR_ALL', [
+                'count' => $total,
+            ]);
+
+            respond(null, 200, ['deleted' => $total]);
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            respondError('Failed to clear equipment list', 500, ['details' => $exception->getMessage()]);
+        }
+        return;
+    }
+
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
     if ($id <= 0) {

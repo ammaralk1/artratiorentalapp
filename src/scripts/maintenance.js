@@ -1,6 +1,6 @@
 import { loadData } from './storage.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
-import { syncEquipmentStatuses, renderEquipment } from './equipment.js';
+import { refreshEquipmentFromApi, renderEquipment } from './equipment.js';
 import { t } from './language.js';
 import {
   getMaintenanceState,
@@ -19,6 +19,15 @@ let currentSelection = null;
 let maintenanceLoading = false;
 let maintenanceErrorMessage = '';
 let maintenanceHasLoaded = maintenanceTickets.length > 0;
+let closeTicketState = {
+  id: null,
+  equipmentDesc: '',
+  equipmentBarcode: ''
+};
+let closeTicketModal = null;
+let closeTicketReportInput = null;
+let closeTicketSubmitButton = null;
+let closeTicketDetailsContainer = null;
 
 async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
   if (maintenanceLoading) return;
@@ -31,6 +40,7 @@ async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
     await refreshMaintenanceFromApi();
     maintenanceHasLoaded = true;
   } catch (error) {
+    maintenanceHasLoaded = maintenanceTickets.length > 0;
     console.error('❌ [maintenance] Failed to load maintenance tickets', error);
     maintenanceErrorMessage = isMaintenanceApiError(error)
       ? error.message
@@ -57,9 +67,21 @@ function normalizeText(value = '') {
   return normalizeNumbers(String(value)).trim().toLowerCase();
 }
 
+function toSqlDatetime(dateInput = new Date()) {
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (Number.isNaN(date.getTime())) return null;
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function loadTickets() {
   maintenanceTickets = getMaintenanceState();
   return maintenanceTickets;
+}
+
+function getTicketById(id) {
+  const tickets = loadTickets();
+  return tickets.find((item) => Number(item.id) === Number(id)) || null;
 }
 
 function getEquipmentOptions() {
@@ -246,11 +268,163 @@ function populateEquipmentInputs() {
   }
 }
 
-function refreshEquipmentData() {
-  document.dispatchEvent(new CustomEvent('equipment:refreshRequested'));
-  syncEquipmentStatuses();
-  renderEquipment();
-  populateEquipmentInputs();
+async function refreshEquipmentData() {
+  try {
+    await refreshEquipmentFromApi({ showToastOnError: false });
+  } catch (error) {
+    console.error('❌ [maintenance] refreshEquipmentData failed', error);
+  } finally {
+    renderEquipment();
+    populateEquipmentInputs();
+  }
+}
+
+function ensureCloseTicketModalElements() {
+  const modalEl = document.getElementById('closeMaintenanceModal');
+  if (!modalEl) return false;
+  if (typeof bootstrap === 'undefined' || !bootstrap?.Modal) {
+    return false;
+  }
+
+  closeTicketModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  if (!closeTicketReportInput) {
+    closeTicketReportInput = modalEl.querySelector('#maintenance-close-report');
+  }
+  if (!closeTicketSubmitButton) {
+    closeTicketSubmitButton = modalEl.querySelector('#maintenance-close-submit');
+  }
+  if (!closeTicketDetailsContainer) {
+    closeTicketDetailsContainer = modalEl.querySelector('#maintenance-close-modal-details');
+  }
+
+  const form = modalEl.querySelector('#maintenance-close-form');
+  if (form && !form.dataset.listenerAttached) {
+    form.addEventListener('submit', handleCloseTicketFormSubmit);
+    form.dataset.listenerAttached = 'true';
+  }
+
+  if (!modalEl.dataset.listenerAttached) {
+    modalEl.addEventListener('hidden.bs.modal', resetCloseTicketModal);
+    modalEl.dataset.listenerAttached = 'true';
+  }
+
+  return true;
+}
+
+function resetCloseTicketModal() {
+  closeTicketState = {
+    id: null,
+    equipmentDesc: '',
+    equipmentBarcode: ''
+  };
+
+  if (closeTicketReportInput) {
+    closeTicketReportInput.value = '';
+  }
+
+  if (closeTicketDetailsContainer) {
+    closeTicketDetailsContainer.innerHTML = '';
+  }
+
+  setCloseModalLoading(false);
+}
+
+function setCloseModalLoading(isLoading) {
+  if (!closeTicketSubmitButton) return;
+  const savingLabel = t('maintenance.closeModal.saving', '⏳ جاري الإغلاق...');
+  const confirmLabel = t('maintenance.closeModal.confirm', '✅ إغلاق التذكرة');
+
+  if (isLoading) {
+    closeTicketSubmitButton.disabled = true;
+    closeTicketSubmitButton.dataset.loading = 'true';
+    closeTicketSubmitButton.textContent = savingLabel;
+  } else {
+    closeTicketSubmitButton.disabled = false;
+    closeTicketSubmitButton.removeAttribute('data-loading');
+    closeTicketSubmitButton.textContent = confirmLabel;
+  }
+}
+
+function openCloseTicketModal(id) {
+  const ticket = getTicketById(id);
+  if (!ticket) {
+    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
+    return;
+  }
+
+  if (!ensureCloseTicketModalElements()) {
+    const report = prompt(t('maintenance.prompt.closeReport', 'أدخل تقرير الإصلاح / الإجراءات المتخذة:'));
+    if (report === null) return;
+    const trimmed = report.trim();
+    if (!trimmed) {
+      showToast(t('maintenance.toast.reportRequired', '⚠️ يرجى كتابة تقرير الإصلاح قبل الإغلاق'), 'error');
+      return;
+    }
+    void performTicketClosure(id, trimmed);
+    return;
+  }
+
+  closeTicketState = {
+    id: ticket.id,
+    equipmentDesc: ticket.equipmentDesc || '',
+    equipmentBarcode: ticket.equipmentBarcode || ''
+  };
+
+  if (closeTicketReportInput) {
+    closeTicketReportInput.value = ticket.resolutionReport || '';
+  }
+
+  if (closeTicketDetailsContainer) {
+    const equipmentLabel = t('maintenance.report.equipment', 'المعدة');
+    const barcodeLabel = t('maintenance.report.barcode', 'الباركود');
+    const notAvailable = t('maintenance.report.notAvailable', 'غير متوفر');
+    const equipmentText = closeTicketState.equipmentDesc || notAvailable;
+    const barcodeText = closeTicketState.equipmentBarcode
+      ? normalizeNumbers(closeTicketState.equipmentBarcode)
+      : notAvailable;
+    closeTicketDetailsContainer.innerHTML = `
+      <div class="fw-semibold">${equipmentText}</div>
+      <div class="text-muted small">${barcodeLabel}: ${barcodeText}</div>
+    `;
+  }
+
+  setCloseModalLoading(false);
+  closeTicketModal?.show();
+
+  setTimeout(() => {
+    closeTicketReportInput?.focus();
+    closeTicketReportInput?.setSelectionRange(closeTicketReportInput.value.length, closeTicketReportInput.value.length);
+  }, 150);
+}
+
+async function handleCloseTicketFormSubmit(event) {
+  event?.preventDefault();
+
+  if (!closeTicketState.id) {
+    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
+    return;
+  }
+
+  if (!closeTicketReportInput) {
+    return;
+  }
+
+  const report = closeTicketReportInput.value.trim();
+  if (!report) {
+    showToast(t('maintenance.toast.reportRequired', '⚠️ يرجى كتابة تقرير الإصلاح قبل الإغلاق'), 'error');
+    closeTicketReportInput.focus();
+    return;
+  }
+
+  setCloseModalLoading(true);
+
+  const result = await performTicketClosure(closeTicketState.id, report);
+  if (result.success) {
+    closeTicketModal?.hide();
+  } else {
+    setCloseModalLoading(false);
+  }
 }
 
 function renderStats(tickets) {
@@ -348,6 +522,11 @@ function renderTable(tickets) {
 }
 
 function handleTableActions(event) {
+  if (!maintenanceHasLoaded || maintenanceLoading) {
+    showToast(t('maintenance.toast.loading', '⏳ يتم تحديث بيانات الصيانة، يرجى الانتظار لحظة...'));
+    return;
+  }
+
   const button = event.target.closest('button[data-action]');
   if (!button) return;
 
@@ -356,9 +535,7 @@ function handleTableActions(event) {
   if (!id) return;
 
   if (action === 'close') {
-    closeTicket(id).catch((error) => {
-      console.error('❌ [maintenance] closeTicket failed', error);
-    });
+    openCloseTicketModal(id);
   } else if (action === 'view') {
     viewTicketReport(id);
   } else if (action === 'delete') {
@@ -368,32 +545,56 @@ function handleTableActions(event) {
   }
 }
 
-async function closeTicket(id) {
-  const tickets = loadTickets();
-  const ticket = tickets.find((item) => Number(item.id) === Number(id));
+async function performTicketClosure(id, report) {
+  const ticket = getTicketById(id);
   if (!ticket) {
-    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة')); 
-    return;
+    showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
+    return { success: false };
   }
 
-  const report = prompt(t('maintenance.prompt.closeReport', 'أدخل تقرير الإصلاح / الإجراءات المتخذة:'));
-  if (report === null) return;
+  const trimmedReport = (report ?? '').trim();
+  if (!trimmedReport) {
+    showToast(t('maintenance.toast.reportRequired', '⚠️ يرجى كتابة تقرير الإصلاح قبل الإغلاق'), 'error');
+    return { success: false };
+  }
+
+  const resolvedAt = toSqlDatetime(new Date()) || new Date().toISOString();
 
   try {
     await updateMaintenanceRequest(id, {
+      equipment_id: ticket.equipmentId,
+      technician_id: ticket.technicianId ?? null,
+      priority: ticket.priority ?? 'medium',
       status: 'completed',
-      resolution_report: report.trim(),
-      resolved_at: new Date().toISOString(),
+      notes: ticket.issue ?? '',
+      reported_at: ticket.reportedAt ?? null,
+      scheduled_at: ticket.scheduledAt ?? null,
+      resolution_report: trimmedReport,
+      resolved_at: resolvedAt,
     });
     await loadMaintenanceFromApi({ showToastOnError: false });
-    refreshEquipmentData();
+    const statusFilterEl = document.getElementById('maintenance-status-filter');
+    if (statusFilterEl && statusFilterEl.value === 'open') {
+      statusFilterEl.value = 'all';
+    }
+    await refreshEquipmentData();
+    renderMaintenance();
     showToast(t('maintenance.toast.ticketClosed', '✅ تم إغلاق تذكرة الصيانة وإعادة المعدة إلى الحالة المتاحة'));
+    return { success: true };
   } catch (error) {
     console.error('❌ [maintenance] closeTicket failed', error);
+    if (isMaintenanceApiError(error) && error.status === 404) {
+      await loadMaintenanceFromApi({ showToastOnError: false });
+      await refreshEquipmentData();
+      renderMaintenance();
+      showToast(t('maintenance.toast.ticketAlreadyClosed', '✅ تم تحديث التذاكر، ويبدو أن هذه التذكرة مغلقة مسبقاً'), 'info');
+      return { success: true };
+    }
     const message = isMaintenanceApiError(error)
       ? error.message
       : t('maintenance.toast.updateError', '⚠️ تعذر إغلاق تذكرة الصيانة. حاول مرة أخرى');
     showToast(message, 'error');
+    return { success: false, error };
   }
 }
 
@@ -436,7 +637,7 @@ async function deleteTicket(id) {
   try {
     await deleteMaintenanceRequest(id);
     await loadMaintenanceFromApi({ showToastOnError: false });
-    refreshEquipmentData();
+    await refreshEquipmentData();
     showToast(t('maintenance.toast.ticketDeleted', '🗑️ تم حذف تذكرة الصيانة'));
   } catch (error) {
     console.error('❌ [maintenance] deleteTicket failed', error);
@@ -526,7 +727,7 @@ async function handleFormSubmit(event) {
 
     await createMaintenanceRequest(payload);
     await loadMaintenanceFromApi({ showToastOnError: false });
-    refreshEquipmentData();
+    await refreshEquipmentData();
     showToast(t('maintenance.toast.ticketCreated', '🛠️ تم إنشاء تذكرة الصيانة وإيقاف المعدة'));
 
     clearSelectedEquipment();
@@ -586,8 +787,14 @@ export function renderMaintenance() {
 export function initMaintenance() {
   loadTickets();
   populateEquipmentInputs();
+  maintenanceHasLoaded = maintenanceTickets.length > 0;
+  maintenanceLoading = false;
   renderMaintenance();
   loadMaintenanceFromApi({ showToastOnError: false });
+
+  if (ensureCloseTicketModalElements()) {
+    resetCloseTicketModal();
+  }
 
   maintenanceInitialized = true;
 
@@ -632,6 +839,7 @@ document.addEventListener('language:changed', () => {
     info.textContent = getDefaultSelectionText();
   }
   renderMaintenance();
+  setCloseModalLoading(false);
 });
 
 window.addEventListener('maintenance:updated', () => {

@@ -37,11 +37,16 @@ import {
   populateEquipmentDescriptionLists
 } from './formUtils.js';
 import { updatePreferences } from '../preferencesService.js';
+import { ensureProjectsLoaded } from '../projectsService.js';
 
 export function loadReservationForm() {
-  const { technicians } = loadData();
-  reconcileTechnicianSelections(technicians || []);
-  refreshCreateReservationForm();
+  ensureProjectsLoaded().catch((error) => {
+    console.warn('⚠️ [reservations/controller] Failed to refresh projects before loading form', error);
+  }).finally(() => {
+    const { technicians } = loadData();
+    reconcileTechnicianSelections(technicians || []);
+    refreshCreateReservationForm();
+  });
 }
 
 export function handleReservationsMutation(detail = null) {

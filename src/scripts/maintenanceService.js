@@ -151,6 +151,8 @@ function matchStatus(status) {
     case 'completed':
     case 'مكتمل':
     case 'تم الإصلاح':
+    case 'closed':
+    case 'مغلق':
       return 'completed';
     case 'cancelled':
     case 'ملغي':

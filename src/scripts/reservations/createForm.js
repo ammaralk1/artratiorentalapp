@@ -44,6 +44,150 @@ function findProjectById(projectId) {
   return getCachedProjects().find((project) => String(project.id) === String(projectId)) || null;
 }
 
+function getProjectDisplayName(project) {
+  if (!project) return '';
+  const title = typeof project.title === 'string' ? project.title.trim() : '';
+  if (title) return title;
+  return t('projects.fallback.untitled', 'مشروع بدون اسم');
+}
+
+function getProjectSearchElements() {
+  const input = document.getElementById('res-project-search');
+  const suggestionsBox = document.getElementById('project-suggestions');
+  const select = document.getElementById('res-project');
+  return { input, suggestionsBox, select };
+}
+
+function isProjectConfirmed(project) {
+  if (!project) return false;
+  if (project.confirmed === true) return true;
+  const status = typeof project.status === 'string' ? project.status.toLowerCase() : '';
+  return ['confirmed', 'in_progress', 'completed'].includes(status);
+}
+
+function resolveProjectDateTime(project, key) {
+  if (!project) return '';
+  if (project[key]) return project[key];
+  if (project[`${key}Datetime`]) return project[`${key}Datetime`];
+  if (project[`${key}datetime`]) return project[`${key}datetime`];
+  if (project[`${key}_datetime`]) return project[`${key}_datetime`];
+
+  const datePart = project[`${key}Date`] ?? project[`${key}_date`];
+  const timePart = project[`${key}Time`] ?? project[`${key}_time`];
+  if (datePart) {
+    const normalizedTime = typeof timePart === 'string' && timePart.trim()
+      ? timePart.trim()
+      : '00:00';
+    return `${datePart}T${normalizedTime}`;
+  }
+
+  return '';
+}
+
+function syncProjectSearchInput(projectId) {
+  const { input } = getProjectSearchElements();
+  if (!input) return;
+  if (projectId) {
+    const project = findProjectById(projectId);
+    if (project) {
+      input.value = getProjectDisplayName(project);
+      input.dataset.selectedId = String(project.id);
+      return;
+    }
+  }
+  input.value = '';
+  delete input.dataset.selectedId;
+}
+
+function renderProjectSuggestions(projects) {
+  const { input, suggestionsBox } = getProjectSearchElements();
+  if (!suggestionsBox || !input) return;
+
+  if (!projects || projects.length === 0) {
+    suggestionsBox.style.display = 'none';
+    suggestionsBox.innerHTML = '';
+    return;
+  }
+
+  const customerMap = new Map((getCachedCustomers() || []).map((customer) => [String(customer.id), customer]));
+
+  suggestionsBox.innerHTML = projects
+    .map((project) => {
+      const title = getProjectDisplayName(project);
+      const projectId = project?.id != null ? String(project.id) : '';
+      const code = project?.projectCode ? `#${project.projectCode}` : '';
+      const client = project?.clientId
+        ? getCustomerDisplayName(customerMap.get(String(project.clientId)))
+        : '';
+      const metaParts = [code, client].filter(Boolean);
+      const metaHtml = metaParts.length
+        ? `<span class="suggestion-item__meta">${escapeHtml(metaParts.join(' | '))}</span>`
+        : '';
+      return `
+        <div class="suggestion-item" data-id="${escapeHtml(projectId)}" data-name="${escapeHtml(title)}">
+          <span class="suggestion-item__primary">${escapeHtml(title)}</span>
+          ${metaHtml}
+        </div>
+      `;
+    })
+    .join('');
+
+  suggestionsBox.style.display = 'block';
+
+  suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
+    item.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      const selectedId = event.currentTarget.getAttribute('data-id') || '';
+      const selectedName = event.currentTarget.getAttribute('data-name') || '';
+      input.value = selectedName;
+      if (selectedId) {
+        input.dataset.selectedId = selectedId;
+      } else {
+        delete input.dataset.selectedId;
+      }
+      const { select } = getProjectSearchElements();
+      if (select) {
+        select.value = selectedId;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      suggestionsBox.style.display = 'none';
+    });
+  });
+}
+
+function updateProjectSuggestions() {
+  const { input } = getProjectSearchElements();
+  if (!input) return;
+  const projects = getCachedProjects() || [];
+  const value = normalizeText(input.value);
+  const isFocused = document.activeElement === input;
+  if (!isFocused && !value) {
+    const { suggestionsBox } = getProjectSearchElements();
+    if (suggestionsBox) {
+      suggestionsBox.style.display = 'none';
+      suggestionsBox.innerHTML = '';
+    }
+    return;
+  }
+  const matches = !value
+    ? projects.slice(0, 10)
+    : projects.filter((project) => normalizeText(getProjectDisplayName(project)).includes(value)).slice(0, 10);
+  renderProjectSuggestions(matches);
+}
+
+function getCustomerDisplayName(customer) {
+  if (!customer) return '';
+
+  const name = customer.customerName
+    ?? customer.full_name
+    ?? customer.fullName
+    ?? customer.name
+    ?? customer.customer_name
+    ?? '';
+
+  return typeof name === 'string' ? name.trim() : String(name || '').trim();
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -54,38 +198,72 @@ function escapeHtml(value = '') {
 }
 
 function setDateTimeInputs(dateInputId, timeInputId, isoString) {
-  if (!isoString) return;
   const { date, time } = splitDateTime(isoString);
   const dateInput = document.getElementById(dateInputId);
   const timeInput = document.getElementById(timeInputId);
-  if (dateInput && date) {
-    dateInput.value = date;
-    dateInput.dispatchEvent(new Event('input'));
-    dateInput.dispatchEvent(new Event('change'));
+
+  if (dateInput) {
+    if (date) {
+      if (dateInput._flatpickr) {
+        const format = dateInput._flatpickr.config?.dateFormat || 'Y-m-d';
+        dateInput._flatpickr.setDate(date, false, format);
+      } else {
+        dateInput.value = date;
+      }
+    } else if (dateInput._flatpickr) {
+      dateInput._flatpickr.clear();
+    } else {
+      dateInput.value = '';
+    }
+    dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dateInput.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  if (timeInput && time) {
-    timeInput.value = time;
-    timeInput.dispatchEvent(new Event('input'));
-    timeInput.dispatchEvent(new Event('change'));
+
+  if (timeInput) {
+    if (time) {
+      if (timeInput._flatpickr) {
+        const format = timeInput._flatpickr.config?.dateFormat || 'H:i';
+        timeInput._flatpickr.setDate(time, false, format);
+      } else {
+        timeInput.value = time;
+      }
+    } else if (timeInput._flatpickr) {
+      timeInput._flatpickr.clear();
+    } else {
+      timeInput.value = '';
+    }
+    timeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    timeInput.dispatchEvent(new Event('change', { bubbles: true }));
   }
 }
 
 function applyProjectContextToForm(project, { forceNotes = false } = {}) {
   if (!project) return;
 
+  syncProjectSearchInput(project.id);
+  const { suggestionsBox } = getProjectSearchElements();
+  if (suggestionsBox) {
+    suggestionsBox.style.display = 'none';
+    suggestionsBox.innerHTML = '';
+  }
+
   const customers = getCachedCustomers() || [];
   const projectCustomer = customers.find((c) => String(c.id) === String(project.clientId));
   const customerInput = document.getElementById('res-customer');
-  if (customerInput && projectCustomer?.customerName) {
-    customerInput.value = projectCustomer.customerName;
+  const projectCustomerName = getCustomerDisplayName(projectCustomer);
+  if (customerInput && projectCustomerName) {
+    customerInput.value = projectCustomerName;
   }
 
-  if (project.start) {
-    setDateTimeInputs('res-start', 'res-start-time', project.start);
+  const startIso = resolveProjectDateTime(project, 'start');
+  const endIso = resolveProjectDateTime(project, 'end');
+
+  if (startIso) {
+    setDateTimeInputs('res-start', 'res-start-time', startIso);
   }
 
-  if (project.end) {
-    setDateTimeInputs('res-end', 'res-end-time', project.end);
+  if (endIso) {
+    setDateTimeInputs('res-end', 'res-end-time', endIso);
   }
 
   const notesInput = document.getElementById('res-notes');
@@ -113,7 +291,7 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
   const optionsHtml = [`<option value="">${escapeHtml(placeholderLabel)}</option>`]
     .concat(
       sortedProjects
-        .map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(project.title || placeholderLabel)}</option>`)
+        .map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(getProjectDisplayName(project))}</option>`)
     )
     .join('');
 
@@ -127,6 +305,14 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
   }
 
   updateCreateProjectTaxState();
+  syncProjectSearchInput(select.value);
+  const { input, suggestionsBox } = getProjectSearchElements();
+  if (input && document.activeElement === input) {
+    updateProjectSuggestions();
+  } else if (suggestionsBox) {
+    suggestionsBox.style.display = 'none';
+    suggestionsBox.innerHTML = '';
+  }
 }
 
 function updateCreateProjectTaxState() {
@@ -152,8 +338,22 @@ function updateCreateProjectTaxState() {
 function setupProjectSelection() {
   const select = document.getElementById('res-project');
   if (!select || select.dataset.listenerAttached) return;
+  const { input, suggestionsBox } = getProjectSearchElements();
   select.addEventListener('change', () => {
     const project = findProjectById(select.value);
+    if (input) {
+      if (project) {
+        input.value = getProjectDisplayName(project);
+        input.dataset.selectedId = String(project.id);
+      } else {
+        input.value = '';
+        delete input.dataset.selectedId;
+      }
+    }
+    if (suggestionsBox) {
+      suggestionsBox.style.display = 'none';
+      suggestionsBox.innerHTML = '';
+    }
     if (project) {
       applyProjectContextToForm(project);
     } else {
@@ -191,6 +391,12 @@ function applyPendingProjectContext() {
   if (select) {
     select.value = String(context.projectId);
     updateCreateProjectTaxState();
+    syncProjectSearchInput(select.value);
+    const { suggestionsBox } = getProjectSearchElements();
+    if (suggestionsBox) {
+      suggestionsBox.style.display = 'none';
+      suggestionsBox.innerHTML = '';
+    }
   }
   const project = findProjectById(context.projectId);
   if (project) {
@@ -207,9 +413,10 @@ function applyPendingProjectContext() {
   if (context.customerId) {
     const customers = getCachedCustomers() || [];
     const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
-    if (projectCustomer?.customerName) {
+    const projectCustomerName = getCustomerDisplayName(projectCustomer);
+    if (projectCustomerName) {
       const customerInput = document.getElementById('res-customer');
-      if (customerInput) customerInput.value = projectCustomer.customerName;
+      if (customerInput) customerInput.value = projectCustomerName;
     }
   }
 }
@@ -476,15 +683,15 @@ function setupReservationTimeSync() {
 }
 
 async function handleReservationSubmit() {
-  const inputValue = document.getElementById('res-customer').value.trim().toLowerCase();
+  const inputValue = normalizeText(document.getElementById('res-customer').value.trim());
   const projectSelect = document.getElementById('res-project');
   const projectIdValue = projectSelect?.value ? String(projectSelect.value) : '';
   const { customers } = loadData();
 
-  let customer = customers.find((c) => c.customerName?.trim().toLowerCase() === inputValue);
+  let customer = customers.find((c) => normalizeText(getCustomerDisplayName(c)) === inputValue);
 
   if (!customer) {
-    customer = customers.find((c) => c.customerName?.toLowerCase().includes(inputValue));
+    customer = customers.find((c) => normalizeText(getCustomerDisplayName(c)).includes(inputValue));
   }
 
   if (!customer) {
@@ -531,6 +738,7 @@ async function handleReservationSubmit() {
   const technicianIds = getSelectedTechnicians();
 
   const selectedProject = projectIdValue ? findProjectById(projectIdValue) : null;
+  const projectConfirmed = isProjectConfirmed(selectedProject);
   if (projectIdValue && !selectedProject) {
     showToast(t('reservations.toast.projectNotFound', '⚠️ لم يتم العثور على المشروع المحدد. حاول تحديث الصفحة.'));
     return;
@@ -582,7 +790,7 @@ async function handleReservationSubmit() {
     customerId: customerId,
     start,
     end,
-    status: 'pending',
+    status: projectConfirmed ? 'confirmed' : 'pending',
     title: null,
     location: null,
     notes,
@@ -592,7 +800,7 @@ async function handleReservationSubmit() {
     discountType,
     applyTax,
     paidStatus,
-    confirmed: false,
+    confirmed: projectConfirmed,
     items: draftItems.map((item) => ({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
@@ -635,6 +843,12 @@ function resetForm() {
   }
   const projectSelect = document.getElementById('res-project');
   if (projectSelect) projectSelect.value = '';
+  syncProjectSearchInput('');
+  const { suggestionsBox: projectSuggestions } = getProjectSearchElements();
+  if (projectSuggestions) {
+    projectSuggestions.style.display = 'none';
+    projectSuggestions.innerHTML = '';
+  }
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
   const paymentSelect = document.getElementById('res-payment-status');
@@ -770,7 +984,7 @@ function setupCustomerAutocomplete() {
 
   const getUniqueNames = () => {
     const customers = getCachedCustomers() || [];
-    return [...new Set(customers.map((c) => c.customerName).filter(Boolean))];
+    return [...new Set(customers.map((c) => getCustomerDisplayName(c)).filter(Boolean))];
   };
 
   const updateSuggestions = () => {
@@ -797,6 +1011,41 @@ function setupCustomerAutocomplete() {
   });
 }
 
+function setupProjectAutocomplete() {
+  const { input, suggestionsBox, select } = getProjectSearchElements();
+  if (!input || !suggestionsBox || !select || input.dataset.listenerAttached) return;
+
+  input.addEventListener('input', () => {
+    if (!input.value.trim()) {
+      select.value = '';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    updateProjectSuggestions();
+  });
+
+  input.addEventListener('focus', () => {
+    updateProjectSuggestions();
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => {
+      suggestionsBox.style.display = 'none';
+    }, 150);
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      const firstSuggestion = suggestionsBox.querySelector('.suggestion-item');
+      if (firstSuggestion) {
+        event.preventDefault();
+        firstSuggestion.dispatchEvent(new MouseEvent('mousedown'));
+      }
+    }
+  });
+
+  input.dataset.listenerAttached = 'true';
+}
+
 export function initCreateReservationForm({ onAfterSubmit } = {}) {
   afterSubmitCallback = typeof onAfterSubmit === 'function' ? onAfterSubmit : null;
 
@@ -805,6 +1054,7 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   setCachedProjects(projects || []);
   populateProjectSelect({ projectsList: projects });
   setupProjectSelection();
+  setupProjectAutocomplete();
 
   populateEquipmentDescriptionLists();
   setupEquipmentDescriptionInputs();

@@ -139,51 +139,86 @@ export async function uploadEquipmentFromExcel(file) {
       const data = new Uint8Array(event.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet);
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
       if (!Array.isArray(rows) || rows.length === 0) {
         showToast(t("equipment.toast.uploadEmpty", "⚠️ لم يتم العثور على بيانات في الملف"));
         return;
       }
 
-      const created = [];
-      let failed = 0;
+      const payloads = [];
+      let skippedRows = 0;
 
-      for (const row of rows) {
-        const payload = buildEquipmentPayload({
-          category: row["القسم"] || row.category,
-          subcategory: row["القسم الثانوي"] || row.subcategory,
-          description: row["الوصف"] || row.description,
-          quantity: row["الكمية"] ?? row.quantity,
-          unit_price: row["السعر"] ?? row.price,
-          barcode: row["الباركود"] ?? row.barcode,
-          status: row["الحالة"] ?? row.status ?? "متاح",
-          image_url: row["الصورة"] ?? row.image_url ?? row.image,
-        });
+      rows.forEach((row) => {
+        const category = row["القسم"] ?? row.category ?? "";
+        const subcategory = row["القسم الثانوي"] ?? row.subcategory ?? "";
+        const description = row["الوصف"] ?? row.description ?? row.name ?? "";
+        const quantity = row["الكمية"] ?? row.quantity ?? 0;
+        const unitPrice = row["السعر"] ?? row.price ?? 0;
+        const barcodeRaw = row["الباركود"] ?? row.barcode ?? "";
+        const status = row["الحالة"] ?? row.status ?? "متاح";
+        const imageUrl = row["الصورة"] ?? row.image_url ?? row.image ?? "";
 
-        try {
-          const response = await apiRequest("/equipment/", {
-            method: "POST",
-            body: payload,
-          });
-          created.push(mapApiEquipment(response?.data));
-        } catch (error) {
-          failed += 1;
-          console.error("❌ [equipment.js] Failed to import row", error);
+        const cleanedBarcode = normalizeNumbers(String(barcodeRaw || "")).trim();
+
+        if (!description || !cleanedBarcode) {
+          skippedRows += 1;
+          return;
         }
+
+        payloads.push(
+          buildEquipmentPayload({
+            category,
+            subcategory,
+            description,
+            quantity,
+            unit_price: unitPrice,
+            barcode: cleanedBarcode,
+            status,
+            image_url: imageUrl,
+          })
+        );
+      });
+
+      if (!payloads.length) {
+        showToast(t("equipment.toast.uploadEmpty", "⚠️ لم يتم العثور على بيانات في الملف"));
+        return;
       }
 
-      if (created.length) {
-        const updated = [...getAllEquipment(), ...created];
-        setEquipment(updated);
+      try {
+        const response = await apiRequest('/equipment/?bulk=1', {
+          method: "POST",
+          body: payloads,
+        });
+
+        const created = Array.isArray(response?.data)
+          ? response.data.map(mapApiEquipment)
+          : [];
+
+        if (created.length) {
+          const updated = [...getAllEquipment(), ...created];
+          setEquipment(updated);
+        }
+
         await refreshEquipmentFromApi({ showToastOnError: false });
         renderEquipment();
+
+        const metaCount = response?.meta?.count ?? created.length;
+        const parts = [];
+        if (metaCount) parts.push(`${metaCount} ✔️`);
+        if (skippedRows) parts.push(`${skippedRows} ⚠️`);
+
         showToast(
           t("equipment.toast.uploadSuccess", "✅ تم رفع المعدات بنجاح") +
-            (failed ? ` (${created.length} ✔️ / ${failed} ❌)` : "")
+            (parts.length ? ` (${parts.join(" / ")})` : "")
         );
-      } else if (failed) {
-        showToast(t("equipment.toast.uploadFailed", "❌ حدث خطأ أثناء قراءة ملف الإكسل"), "error");
+      } catch (error) {
+        const message = resolveApiErrorMessage(
+          error,
+          "equipment.toast.uploadFailed",
+          "❌ حدث خطأ أثناء قراءة ملف الإكسل"
+        );
+        showToast(message, "error");
       }
     } catch (error) {
       console.error("❌ [equipment.js] Failed to process Excel file", error);
@@ -282,35 +317,21 @@ function buildEquipmentPayload({
 export async function clearEquipment() {
   if (!confirm(t("equipment.toast.clearConfirm", "⚠️ هل أنت متأكد من حذف كل المعدات؟"))) return;
 
-  const current = [...getAllEquipment()];
-  if (!current.length) {
-    showToast(t("equipment.toast.clearSuccess", "🗑️ تم مسح جميع المعدات"));
-    return;
-  }
-
-  let failures = 0;
-
-  for (const item of current) {
-    if (!item?.id) {
-      continue;
-    }
-
-    try {
-      await apiRequest(`/equipment/?id=${encodeURIComponent(item.id)}`, { method: "DELETE" });
-    } catch (error) {
-      failures += 1;
-      console.error("❌ [equipment.js] Failed to delete item", item.id, error);
-    }
-  }
-
-  setEquipment([]);
-  renderEquipment();
-  await refreshEquipmentFromApi({ showToastOnError: false });
-
-  if (failures) {
-    showToast(t("equipment.toast.clearFailed", "⚠️ تعذر حذف بعض المعدات"), "error");
-  } else {
-    showToast(t("equipment.toast.clearSuccess", "🗑️ تم مسح جميع المعدات"));
+  try {
+    const response = await apiRequest('/equipment/?all=1', { method: "DELETE" });
+    const deletedCount = response?.meta?.deleted ?? 0;
+    await refreshEquipmentFromApi({ showToastOnError: false });
+    showToast(
+      t("equipment.toast.clearSuccess", "🗑️ تم مسح جميع المعدات") +
+        (deletedCount ? ` (${deletedCount})` : "")
+    );
+  } catch (error) {
+    const message = resolveApiErrorMessage(
+      error,
+      "equipment.toast.clearFailed",
+      "⚠️ تعذر حذف بعض المعدات"
+    );
+    showToast(message, "error");
   }
 }
 
@@ -558,13 +579,13 @@ export function renderEquipment() {
   populateFilters(data);
 }
 
-async function refreshEquipmentFromApi({ showToastOnError = true } = {}) {
+export async function refreshEquipmentFromApi({ showToastOnError = true } = {}) {
   isEquipmentLoading = true;
   equipmentErrorMessage = "";
   renderEquipment();
 
   try {
-    const response = await apiRequest("/equipment/");
+    const response = await apiRequest('/equipment/?all=1');
     const records = Array.isArray(response?.data) ? response.data.map(mapApiEquipment) : [];
     setEquipment(records);
   } catch (error) {

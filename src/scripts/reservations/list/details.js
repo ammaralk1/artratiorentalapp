@@ -17,7 +17,11 @@ function escapeHtml(value = '') {
 }
 
 export function buildReservationDetailsHtml(reservation, customer, techniciansList = [], index, project = null) {
-  const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
+  const reservationConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
+  const projectLinked = Boolean(reservation.projectId);
+  const projectStatus = String(project?.status ?? '').toLowerCase();
+  const projectConfirmed = projectLinked && (project?.confirmed === true || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
+  const confirmed = reservationConfirmed || projectConfirmed;
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
@@ -74,7 +78,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ? discountValue
     : discountBase * (discountValue / 100);
   const taxableAmount = Math.max(0, discountBase - discountAmount);
-  const projectLinked = Boolean(reservation.projectId);
   const applyTaxFlag = projectLinked ? false : reservation.applyTax;
   const taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
   const storedCost = Number(reservation.cost);

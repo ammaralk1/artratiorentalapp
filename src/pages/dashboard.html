@@ -429,6 +429,32 @@
         </div>
       </div> <!-- نهاية تبويب الصيانة -->
 
+      <!-- Modal: Close Maintenance Ticket -->
+      <div class="modal fade" id="closeMaintenanceModal" tabindex="-1" aria-labelledby="maintenance-close-modal-title" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form id="maintenance-close-form">
+              <div class="modal-header">
+                <h5 class="modal-title" id="maintenance-close-modal-title" data-i18n data-i18n-key="maintenance.closeModal.title">🔧 إغلاق تذكرة الصيانة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3" data-i18n data-i18n-key="maintenance.closeModal.subtitle">يرجى كتابة تقرير الإصلاح قبل إغلاق هذه التذكرة.</p>
+                <div id="maintenance-close-modal-details" class="mb-3 small text-muted"></div>
+                <div class="mb-3">
+                  <label for="maintenance-close-report" class="form-label" data-i18n data-i18n-key="maintenance.closeModal.reportLabel">📝 تقرير الإصلاح</label>
+                  <textarea class="form-control" id="maintenance-close-report" rows="4" placeholder="اكتب تفاصيل الإصلاح والإجراءات المتخذة..." data-i18n data-i18n-placeholder-key="maintenance.closeModal.reportPlaceholder"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
+                <button type="submit" class="btn btn-success" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">✅ إغلاق التذكرة</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- ✅ تبويب: الحجوزات -->
       <div class="tab" id="reservations-tab">
         <h2 data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
@@ -470,9 +496,11 @@
                 <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
                 <div id="customer-suggestions" class="suggestions-list"></div>
               </div>
-              <div class="col-md-6">
-                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <select id="res-project" class="form-select" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+              <div class="col-md-6 position-relative">
+                <label for="res-project-search" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <input class="form-control" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+                <div id="project-suggestions" class="suggestions-list"></div>
+                <select id="res-project" class="form-select d-none" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
                   <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
                 </select>
               </div>

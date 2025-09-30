@@ -52,11 +52,15 @@
     </div>
   </div>
 
+  <script>
+    window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
+  </script>
+
   <script type="module">
     import { login } from '/src/scripts/auth.js';
     import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
 
-    applyStoredTheme();
+    applyStoredTheme({ skipRemote: true });
     initThemeToggle();
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {

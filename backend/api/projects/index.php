@@ -881,11 +881,23 @@ function equipmentExists(PDO $pdo, int $id): bool
 
 function generateProjectCode(PDO $pdo): string
 {
-    do {
-        $code = 'PRJ-' . strtoupper(bin2hex(random_bytes(3)));
-    } while (projectCodeExists($pdo, $code));
+    $statement = $pdo->query(
+        "SELECT project_code FROM projects WHERE project_code REGEXP '^PRJ-[0-9]+$' ORDER BY CAST(SUBSTRING(project_code, 5) AS UNSIGNED) DESC LIMIT 1"
+    );
 
-    return $code;
+    $lastCode = $statement ? $statement->fetchColumn() : null;
+    $sequence = 1;
+
+    if ($lastCode && preg_match('/^PRJ-(\d+)$/', $lastCode, $matches)) {
+        $sequence = ((int) $matches[1]) + 1;
+    }
+
+    do {
+        $candidate = sprintf('PRJ-%04d', $sequence);
+        $sequence++;
+    } while (projectCodeExists($pdo, $candidate));
+
+    return $candidate;
 }
 
 function isValidDateTime(string $dateTime): bool

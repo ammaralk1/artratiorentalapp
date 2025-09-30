@@ -1,6 +1,6 @@
 import { showToast } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
-import { updatePreferences } from './preferencesService.js';
+import { updatePreferences, clearSkipRemotePreferencesFlag } from './preferencesService.js';
 import { getCurrentTheme } from './theme.js';
 
 const ERROR_MESSAGE = '❌ بيانات الدخول غير صحيحة';
@@ -53,6 +53,8 @@ export async function login(username, password) {
     } catch (prefsError) {
       console.warn('⚠️ تعذر حفظ تفضيل السمة بعد تسجيل الدخول', prefsError);
     }
+
+    clearSkipRemotePreferencesFlag();
 
     window.location.href = 'home.html';
   } catch (error) {

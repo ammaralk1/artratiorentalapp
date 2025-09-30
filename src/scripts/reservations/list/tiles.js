@@ -33,7 +33,13 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const completed = isReservationCompleted(reservation);
     const paid = reservation.paid === true || reservation.paid === 'paid';
 
-    let statusBadge = confirmed
+    const projectLinked = Boolean(reservation.projectId);
+    const projectStatus = String(project?.status ?? '').toLowerCase();
+    const projectConfirmed = projectLinked && (project?.confirmed === true || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
+
+    const effectiveConfirmed = confirmed || projectConfirmed;
+
+    let statusBadge = effectiveConfirmed
       ? `<span class="badge bg-success reservation-chip">${statusConfirmedText}</span>`
       : `<span class="badge bg-warning text-dark reservation-chip">${statusPendingText}</span>`;
 
@@ -54,7 +60,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
     }
 
-    const confirmButtonHtml = confirmed
+    const confirmButtonHtml = effectiveConfirmed
       ? ''
       : `<button class="btn btn-sm btn-success tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`;
 

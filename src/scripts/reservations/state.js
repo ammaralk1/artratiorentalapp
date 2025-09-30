@@ -46,9 +46,24 @@ export function resetCachedData() {
 
 export function splitDateTime(value) {
   if (!value) return { date: '', time: '' };
-  const [date = '', time = ''] = value.split('T');
-  const trimmedTime = time ? time.slice(0, 5) : '';
-  return { date, time: trimmedTime };
+  const raw = String(value).trim();
+  if (!raw) return { date: '', time: '' };
+
+  let normalized = raw;
+  if (normalized.includes(' ') && !normalized.includes('T')) {
+    normalized = normalized.replace(' ', 'T');
+  }
+
+  const [rawDate = '', rawTime = ''] = normalized.split('T');
+  const date = rawDate ? rawDate.slice(0, 10) : '';
+  const timeMatch = rawTime.match(/(\d{1,2}:\d{2})/);
+  let time = '';
+  if (timeMatch) {
+    const [hours = '00', minutes = '00'] = timeMatch[0].split(':');
+    time = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+  }
+
+  return { date, time };
 }
 
 export function combineDateTime(date, time) {

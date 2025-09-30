@@ -11,22 +11,56 @@ import {
 } from './reservationsService.js';
 
 function runSharedRefresh() {
-  syncEquipmentStatuses();
-  syncTechniciansStatuses();
+  const run = () => {
+    syncEquipmentStatuses();
+    syncTechniciansStatuses();
+  };
+
+  if (typeof window !== 'undefined') {
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(run, { timeout: 200 });
+      return;
+    }
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+      return;
+    }
+  }
+
+  run();
 }
 
 let hasFetchedReservations = false;
+let lastReservationsFetchSignature = null;
+
+function normalizeFetchParams(params) {
+  if (!params || typeof params !== 'object') {
+    return '';
+  }
+
+  const entries = Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null)
+    .map(([key, value]) => [key, String(value)]);
+
+  if (entries.length === 0) {
+    return '';
+  }
+
+  return JSON.stringify(entries.sort(([a], [b]) => a.localeCompare(b)));
+}
 
 export async function ensureReservationsLoaded(options = {}) {
-  const { suppressError = true, params = null } = options ?? {};
+  const { suppressError = true, params = null, force = false } = options ?? {};
+  const signature = normalizeFetchParams(params);
 
-  if (hasFetchedReservations && getReservationsState().length > 0) {
+  if (!force && hasFetchedReservations && getReservationsState().length > 0 && signature === lastReservationsFetchSignature) {
     return getReservationsState();
   }
 
   try {
     const data = await refreshReservationsFromApi(params || {});
     hasFetchedReservations = true;
+    lastReservationsFetchSignature = signature;
     return data;
   } catch (error) {
     console.error('❌ [reservationsActions] Failed to load reservations from API', error);
@@ -35,6 +69,11 @@ export async function ensureReservationsLoaded(options = {}) {
     }
     return getReservationsState();
   }
+}
+
+export function resetReservationsFetchState() {
+  hasFetchedReservations = false;
+  lastReservationsFetchSignature = null;
 }
 
 export async function deleteReservation(index, { onAfterChange } = {}) {

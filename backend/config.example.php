@@ -1,5 +1,8 @@
 <?php
 return [
+    'app' => [
+        'timezone' => 'Asia/Riyadh',
+    ],
     'db' => [
         'host' => 'localhost',
         'name' => 'YOUR_DATABASE_NAME',

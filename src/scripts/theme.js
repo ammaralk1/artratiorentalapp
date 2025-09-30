@@ -109,7 +109,7 @@ export function initThemeToggle() {
   });
 }
 
-export function applyStoredTheme() {
+export function applyStoredTheme({ skipRemote = false } = {}) {
   const cached = getCachedPreferences();
   const cachedTheme = cached?.theme === 'dark'
     ? 'dark'
@@ -120,7 +120,7 @@ export function applyStoredTheme() {
   const initialTheme = sessionTheme || getSystemPreferredTheme();
 
   applyThemeInternal(initialTheme, { persist: false });
-  loadThemePreference();
+  loadThemePreference({ skipRemote });
 }
 
 function getSystemPreferredTheme() {
@@ -134,11 +134,15 @@ function getSystemPreferredTheme() {
   return 'light';
 }
 
-function loadThemePreference() {
+function loadThemePreference({ skipRemote = false } = {}) {
   if (themeInitialized) {
     return;
   }
   themeInitialized = true;
+
+  if (skipRemote) {
+    return;
+  }
 
   getPreferences()
     .then((prefs) => {

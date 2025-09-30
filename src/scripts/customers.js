@@ -13,6 +13,8 @@ function mapToInternalCustomer(rawCustomer = {}) {
     return {
       id: "",
       full_name: "",
+      customerName: "",
+      name: "",
       phone: "",
       email: "",
       address: "",
@@ -24,10 +26,14 @@ function mapToInternalCustomer(rawCustomer = {}) {
   }
 
   const idValue = rawCustomer.id ?? rawCustomer.customerId ?? rawCustomer.reservationId ?? rawCustomer.customerID;
+  const rawFullName = rawCustomer.full_name ?? rawCustomer.customerName ?? rawCustomer.name ?? "";
+  const fullName = typeof rawFullName === "string" ? rawFullName.trim() : String(rawFullName || "").trim();
 
   return {
     id: idValue !== undefined && idValue !== null ? String(idValue) : "",
-    full_name: rawCustomer.full_name ?? rawCustomer.customerName ?? rawCustomer.name ?? "",
+    full_name: fullName,
+    customerName: fullName,
+    name: fullName,
     phone: rawCustomer.phone ?? rawCustomer.phoneNumber ?? "",
     email: rawCustomer.email ?? "",
     address: rawCustomer.address ?? "",

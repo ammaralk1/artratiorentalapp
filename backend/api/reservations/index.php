@@ -156,6 +156,8 @@ function handleReservationsGet(PDO $pdo): void
 
 function handleReservationsCreate(PDO $pdo): void
 {
+    ensureReservationProjectColumn($pdo);
+
     [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
 
     if ($errors) {
@@ -183,7 +185,11 @@ function handleReservationsCreate(PDO $pdo): void
         respond($reservation, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();
-        throw $exception;
+        error_log(sprintf('Reservation create failed: %s', $exception->getMessage()));
+        respondError('reservations.errors.createFailed', 500, [
+            'details' => $exception->getMessage(),
+        ]);
+        return;
     }
 }
 
@@ -195,6 +201,8 @@ function handleReservationsUpdate(PDO $pdo): void
         respondError('Missing or invalid reservation id', 400);
         return;
     }
+
+    ensureReservationProjectColumn($pdo);
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), true, $pdo, $id);
 
@@ -228,7 +236,11 @@ function handleReservationsUpdate(PDO $pdo): void
         respond($reservation);
     } catch (Throwable $exception) {
         $pdo->rollBack();
-        throw $exception;
+        error_log(sprintf('Reservation update failed (id=%d): %s', $id, $exception->getMessage()));
+        respondError('reservations.errors.updateFailed', 500, [
+            'details' => $exception->getMessage(),
+        ]);
+        return;
     }
 }
 
@@ -283,14 +295,42 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
     $title = isset($payload['title']) ? trim((string) $payload['title']) : null;
     $location = isset($payload['location']) ? trim((string) $payload['location']) : null;
     $notes = isset($payload['notes']) ? trim((string) $payload['notes']) : null;
-    $projectId = isset($payload['project_id']) ? (int) $payload['project_id'] : null;
     $totalAmount = isset($payload['total_amount']) ? (float) $payload['total_amount'] : 0;
-    $reservationCode = isset($payload['reservation_code']) ? trim((string) $payload['reservation_code']) : null;
+    $hasReservationCodeField = array_key_exists('reservation_code', $payload);
+    $reservationCode = null;
+    if ($hasReservationCodeField) {
+        $rawReservationCode = trim((string) $payload['reservation_code']);
+
+        if ($rawReservationCode !== '') {
+            if (mb_strlen($rawReservationCode) > 50) {
+                $errors['reservation_code'] = 'Reservation code is too long (max 50 characters)';
+            } else {
+                $normalizedCode = normalizeReservationCode($rawReservationCode);
+                if ($normalizedCode === null) {
+                    $errors['reservation_code'] = 'Reservation code is invalid';
+                } else {
+                    if ($reservationId !== null && reservationCodeExists($pdo, $normalizedCode, $reservationId)) {
+                        $errors['reservation_code'] = 'Reservation code already exists';
+                    }
+                    $reservationCode = $normalizedCode;
+                }
+            }
+        }
+    }
     $discount = isset($payload['discount']) ? (float) $payload['discount'] : 0;
     $discountType = isset($payload['discount_type']) ? trim((string) $payload['discount_type']) : null;
     $applyTax = isset($payload['apply_tax']) ? (bool) $payload['apply_tax'] : false;
     $paidStatus = isset($payload['paid_status']) ? trim((string) $payload['paid_status']) : null;
     $confirmed = isset($payload['confirmed']) ? (bool) $payload['confirmed'] : null;
+    $rawProjectId = $payload['project_id'] ?? null;
+    $projectId = null;
+
+    if ($rawProjectId !== null && $rawProjectId !== '') {
+        $projectId = (int) $rawProjectId;
+        if ($projectId <= 0) {
+            $projectId = null;
+        }
+    }
 
     if (!$isUpdate || array_key_exists('customer_id', $payload)) {
         if (!$customerId) {
@@ -337,10 +377,6 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $errors['title'] = 'Title is too long (max 200 characters)';
     }
 
-    if ($reservationCode !== null && mb_strlen($reservationCode) > 50) {
-        $errors['reservation_code'] = 'Reservation code is too long (max 50 characters)';
-    }
-
     if ($discount < 0) {
         $errors['discount'] = 'Discount must be zero or greater';
     }
@@ -354,6 +390,10 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         if ($normalizedPaid === null) {
             $errors['paid_status'] = 'Paid status is invalid';
         }
+    }
+
+    if ($projectId !== null && !projectExists($pdo, $projectId)) {
+        $errors['project_id'] = 'Project not found';
     }
 
     $items = array_key_exists('items', $payload) ? $payload['items'] : null;
@@ -376,8 +416,15 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
                     continue;
                 }
 
-                if (!equipmentExists($pdo, $equipmentId)) {
+                $equipmentRecord = fetchEquipmentBasicInfo($pdo, $equipmentId);
+                if (!$equipmentRecord) {
                     $errors["items.$index.equipment_id"] = 'Equipment not found';
+                    continue;
+                }
+
+                if (isEquipmentMarkedMaintenance($equipmentRecord)) {
+                    $errors["items.$index.equipment_id"] = 'Equipment is in maintenance and cannot be reserved';
+                    continue;
                 }
 
                 if ($quantity < 1) {
@@ -443,15 +490,15 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $data['notes'] = $notes;
     }
 
-    if (!$isUpdate || array_key_exists('project_id', $payload)) {
-        $data['project_id'] = $projectId ?: null;
-    }
-
     if (!$isUpdate || array_key_exists('total_amount', $payload)) {
         $data['total_amount'] = $totalAmount;
     }
 
-    if (!$isUpdate || array_key_exists('reservation_code', $payload)) {
+    if (!$isUpdate || array_key_exists('project_id', $payload)) {
+        $data['project_id'] = $projectId;
+    }
+
+    if (!$isUpdate || $hasReservationCodeField) {
         $data['reservation_code'] = $reservationCode;
     }
 
@@ -509,8 +556,72 @@ function readJsonPayload(): array
     return $data;
 }
 
+function normalizeReservationCode(?string $code): ?string
+{
+    if (!$code) {
+        return null;
+    }
+
+    if (!preg_match('/^RSV-(\d+)$/i', $code, $matches)) {
+        return null;
+    }
+
+    $sequence = (int) $matches[1];
+    if ($sequence <= 0) {
+        return null;
+    }
+
+    return sprintf('RSV-%04d', $sequence);
+}
+
+function reservationCodeExists(PDO $pdo, string $code, ?int $ignoreId = null): bool
+{
+    $sql = 'SELECT 1 FROM reservations WHERE reservation_code = :code';
+    $params = ['code' => $code];
+
+    if ($ignoreId !== null) {
+        $sql .= ' AND id <> :ignore_id';
+        $params['ignore_id'] = $ignoreId;
+    }
+
+    $sql .= ' LIMIT 1';
+
+    $statement = $pdo->prepare($sql);
+    $statement->execute($params);
+    return (bool) $statement->fetchColumn();
+}
+
+function generateReservationCode(PDO $pdo): string
+{
+    $statement = $pdo->query(
+        "SELECT reservation_code FROM reservations WHERE reservation_code REGEXP '^RSV-[0-9]+$' ORDER BY CAST(SUBSTRING(reservation_code, 5) AS UNSIGNED) DESC LIMIT 1"
+    );
+
+    $lastCode = $statement ? $statement->fetchColumn() : null;
+    $nextSequence = 1;
+
+    if ($lastCode && preg_match('/^RSV-(\d+)$/', $lastCode, $matches)) {
+        $nextSequence = ((int) $matches[1]) + 1;
+    }
+
+    // Ensure uniqueness in case of concurrent inserts
+    do {
+        $candidate = sprintf('RSV-%04d', $nextSequence);
+        $nextSequence++;
+    } while (reservationCodeExists($pdo, $candidate));
+
+    return $candidate;
+}
+
 function insertReservation(PDO $pdo, array $data): int
 {
+    $reservationCode = normalizeReservationCode($data['reservation_code'] ?? null);
+    if (!$reservationCode) {
+        $reservationCode = generateReservationCode($pdo);
+    } elseif (reservationCodeExists($pdo, $reservationCode)) {
+        $reservationCode = generateReservationCode($pdo);
+    }
+
     $sql = 'INSERT INTO reservations (
         reservation_code,
         customer_id,
@@ -547,7 +658,7 @@ function insertReservation(PDO $pdo, array $data): int
 
     $statement = $pdo->prepare($sql);
     $statement->execute([
-        'reservation_code' => $data['reservation_code'] ?? null,
+        'reservation_code' => $reservationCode,
         'customer_id' => $data['customer_id'],
         'title' => $data['title'] ?? null,
         'start_datetime' => $data['start_datetime'],
@@ -715,7 +826,7 @@ function decorateReservation(PDO $pdo, array $reservation): array
 function fetchReservationItems(PDO $pdo, int $reservationId): array
 {
     $statement = $pdo->prepare(
-        'SELECT re.*, e.description, e.name, e.barcode
+        'SELECT re.*, e.description, e.name, e.barcode, e.image_url
          FROM reservation_equipment re
          INNER JOIN equipment e ON e.id = re.equipment_id
          WHERE re.reservation_id = :id'
@@ -731,6 +842,7 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
             'notes' => $row['notes'],
             'description' => $row['description'] ?? $row['name'] ?? '',
             'barcode' => $row['barcode'] ?? '',
+            'image_url' => $row['image_url'] ?? null,
         ];
     }
     return $items;
@@ -764,11 +876,39 @@ function customerExists(PDO $pdo, int $id): bool
     return (bool) $statement->fetchColumn();
 }
 
+function fetchEquipmentBasicInfo(PDO $pdo, int $id): array|false
+{
+    $statement = $pdo->prepare('SELECT id, status FROM equipment WHERE id = :id LIMIT 1');
+    $statement->execute(['id' => $id]);
+    return $statement->fetch();
+}
+
+function normaliseEquipmentStatus(?string $status): ?string
+{
+    if ($status === null) {
+        return null;
+    }
+
+    $normalized = strtolower(trim($status));
+
+    return match ($normalized) {
+        'maintenance', 'صيانة' => 'maintenance',
+        'available', 'متاح', 'متوفر' => 'available',
+        'reserved', 'محجوز' => 'reserved',
+        'retired', 'متوقف', 'خارج الخدمة' => 'retired',
+        default => $normalized ?: null,
+    };
+}
+
+function isEquipmentMarkedMaintenance(array $equipment): bool
+{
+    $status = normaliseEquipmentStatus($equipment['status'] ?? null);
+    return $status === 'maintenance';
+}
+
 function equipmentExists(PDO $pdo, int $id): bool
 {
-    $statement = $pdo->prepare('SELECT id FROM equipment WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
-    return (bool) $statement->fetchColumn();
+    return (bool) fetchEquipmentBasicInfo($pdo, $id);
 }
 
 function technicianExists(PDO $pdo, int $id): bool
@@ -778,10 +918,44 @@ function technicianExists(PDO $pdo, int $id): bool
     return (bool) $statement->fetchColumn();
 }
 
+function projectExists(PDO $pdo, int $id): bool
+{
+    $statement = $pdo->prepare('SELECT id FROM projects WHERE id = :id LIMIT 1');
+    $statement->execute(['id' => $id]);
+    return (bool) $statement->fetchColumn();
+}
+
 function isValidDateTime(string $dateTime): bool
 {
     $timestamp = strtotime($dateTime);
     return $timestamp !== false;
+}
+
+function ensureReservationProjectColumn(PDO $pdo): void
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    try {
+        $statement = $pdo->query("SHOW COLUMNS FROM reservations LIKE 'project_id'");
+        $columnExists = $statement && $statement->fetch();
+
+        if ($columnExists) {
+            $checked = true;
+            return;
+        }
+
+        $pdo->exec('ALTER TABLE reservations ADD COLUMN project_id BIGINT UNSIGNED NULL DEFAULT NULL AFTER total_amount');
+        $pdo->exec('ALTER TABLE reservations ADD INDEX idx_reservations_project_id (project_id)');
+        $checked = true;
+        error_log('Added project_id column to reservations table automatically.');
+    } catch (Throwable $error) {
+        $checked = true;
+        error_log('Failed to ensure project_id column on reservations table: ' . $error->getMessage());
+    }
 }
 
 function normaliseStatus(?string $status): string

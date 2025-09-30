@@ -107,6 +107,7 @@
 
   <script type="module">
     import { getTechnicianById, syncTechniciansStatuses } from '/src/scripts/technicians.js';
+    import { refreshTechniciansFromApi } from '/src/scripts/techniciansService.js';
     import { renderTechnicianReservations, renderTechnicianProjects } from '/src/scripts/technicianDetails.js';
     import { showReservationDetails } from '/src/scripts/reservationsUI.js';
     import { normalizeNumbers } from '/src/scripts/utils.js';
@@ -207,20 +208,36 @@
       `;
     }
 
-    function loadTechnicianDetails() {
+    async function loadTechnicianDetails() {
       if (!technicianId) {
         container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.missingId">${t('technicianDetails.errors.missingId', '⚠️ لا يوجد معرف عضو طاقم في الرابط.')}</p>`;
         return;
       }
 
+      container.innerHTML = `<p class="text-muted" data-i18n data-i18n-key="technicianDetails.status.loading">${t('technicianDetails.status.loading', '⏳ جارٍ تحميل بيانات عضو الطاقم...')}</p>`;
+
+      let technician = getTechnicianById(technicianId);
+
+      if (!technician) {
+        try {
+          await refreshTechniciansFromApi();
+        } catch (error) {
+          console.error('❌ [technician-details] Failed to load technician from API', error);
+          container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.loadFailed">${t('technicianDetails.errors.loadFailed', '❌ تعذر تحميل بيانات عضو الطاقم. حاول مرة أخرى لاحقًا.')}</p>`;
+          return;
+        }
+
+        technician = getTechnicianById(technicianId);
+      }
+
       syncTechniciansStatuses();
-      const technician = getTechnicianById(technicianId);
+      technician = getTechnicianById(technicianId);
 
       if (!technician) {
         container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.notFound">${t('technicianDetails.errors.notFound', '⚠️ لم يتم العثور على هذا العضو.')}</p>`;
       } else {
         renderTechnicianDetails(technician);
-        renderTechnicianReservations(technicianId);
+        await renderTechnicianReservations(technicianId);
         renderTechnicianProjects(technicianId);
         const inlineBtn = document.getElementById('edit-technician-btn');
         if (inlineBtn) {
@@ -256,7 +273,10 @@
       }
     });
 
-    loadTechnicianDetails();
+    loadTechnicianDetails().catch((error) => {
+      console.error('❌ [technician-details] Unexpected failure', error);
+      container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.loadFailed">${t('technicianDetails.errors.loadFailed', '❌ تعذر تحميل بيانات عضو الطاقم. حاول مرة أخرى لاحقًا.')}</p>`;
+    });
   </script>
 
   <!-- ✅ مودال تفاصيل الحجز -->

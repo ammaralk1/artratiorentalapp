@@ -14,6 +14,28 @@ const state = {
   editingId: null,
 };
 
+const ACTION_LABELS = {
+  LOGIN_SUCCESS: { key: 'users.logs.actions.loginSuccess', fallback: 'Successful login' },
+  LOGOUT: { key: 'users.logs.actions.logout', fallback: 'User signed out' },
+  PREFERENCES_UPDATE: { key: 'users.logs.actions.preferencesUpdate', fallback: 'Preferences updated' },
+  AUTHORIZATION_DENIED: { key: 'users.logs.actions.authorizationDenied', fallback: 'Authorisation denied' },
+  RESERVATION_CREATE: { key: 'users.logs.actions.reservationCreate', fallback: 'Reservation created' },
+  RESERVATION_UPDATE: { key: 'users.logs.actions.reservationUpdate', fallback: 'Reservation updated' },
+  RESERVATION_DELETE: { key: 'users.logs.actions.reservationDelete', fallback: 'Reservation deleted' },
+  RESERVATION_CONFIRM: { key: 'users.logs.actions.reservationConfirm', fallback: 'Reservation confirmed' },
+  MAINTENANCE_CREATE: { key: 'users.logs.actions.maintenanceCreate', fallback: 'Maintenance ticket created' },
+  MAINTENANCE_UPDATE: { key: 'users.logs.actions.maintenanceUpdate', fallback: 'Maintenance ticket updated' },
+  MAINTENANCE_CLOSE: { key: 'users.logs.actions.maintenanceClose', fallback: 'Maintenance ticket closed' },
+  PROJECT_CREATE: { key: 'users.logs.actions.projectCreate', fallback: 'Project created' },
+  PROJECT_UPDATE: { key: 'users.logs.actions.projectUpdate', fallback: 'Project updated' },
+  PROJECT_DELETE: { key: 'users.logs.actions.projectDelete', fallback: 'Project deleted' },
+};
+
+const BOOLEAN_LABELS = {
+  true: { key: 'common.boolean.yes', fallback: 'Yes' },
+  false: { key: 'common.boolean.no', fallback: 'No' },
+};
+
 const selectors = {
   errorAlert: '#users-error',
   refreshBtn: '#refresh-users-btn',
@@ -50,6 +72,121 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function toTitleCase(value) {
+  return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+}
+
+function humanizeKey(key) {
+  if (!key) return '';
+  const withSpaces = key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return toTitleCase(withSpaces || key);
+}
+
+function formatActivityAction(action) {
+  const normalized = String(action || '').trim().toUpperCase();
+  if (!normalized) {
+    return t('users.logs.actions.unknown', 'General activity');
+  }
+
+  const labelConfig = ACTION_LABELS[normalized];
+  if (labelConfig) {
+    return t(labelConfig.key, labelConfig.fallback);
+  }
+
+  return humanizeKey(normalized);
+}
+
+function formatBoolean(value) {
+  const labelConfig = BOOLEAN_LABELS[String(Boolean(value))];
+  if (!labelConfig) {
+    return value ? 'Yes' : 'No';
+  }
+  return t(labelConfig.key, labelConfig.fallback);
+}
+
+function formatArrayValue(list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return `<span class="text-muted">${escapeHtml(t('users.logs.details.empty', 'No data'))}</span>`;
+  }
+
+  const simpleItems = list.every((item) => (
+    item === null
+    || item === undefined
+    || ['string', 'number', 'boolean'].includes(typeof item)
+  ));
+
+  if (simpleItems) {
+    const joined = list
+      .map((item) => {
+        if (item === null || item === undefined) return t('users.logs.details.empty', 'No data');
+        if (typeof item === 'boolean') return formatBoolean(item);
+        if (typeof item === 'number') return normalizeNumbers(String(item));
+        return String(item);
+      })
+      .join('، ');
+    return `<span class="users-logs-detail-text">${escapeHtml(joined)}</span>`;
+  }
+
+  try {
+    return `<pre class="users-logs-detail-code">${escapeHtml(JSON.stringify(list, null, 2))}</pre>`;
+  } catch (error) {
+    return `<span class="users-logs-detail-text">${escapeHtml(String(list))}</span>`;
+  }
+}
+
+function formatDetailValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return `<span class="text-muted">${escapeHtml(t('users.logs.details.empty', 'No data'))}</span>`;
+  }
+
+  if (typeof value === 'boolean') {
+    const label = formatBoolean(value);
+    const statusClass = value ? 'users-logs-status users-logs-status--yes' : 'users-logs-status users-logs-status--no';
+    return `<span class="${statusClass}">${escapeHtml(label)}</span>`;
+  }
+
+  if (typeof value === 'number') {
+    return `<span class="users-logs-detail-text">${escapeHtml(normalizeNumbers(String(value)))}</span>`;
+  }
+
+  if (typeof value === 'string') {
+    return `<span class="users-logs-detail-text">${escapeHtml(value)}</span>`;
+  }
+
+  if (Array.isArray(value)) {
+    return formatArrayValue(value);
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      return `<span class="text-muted">${escapeHtml(t('users.logs.details.empty', 'No data'))}</span>`;
+    }
+
+    const rows = entries.map(([key, innerValue]) => {
+      const label = humanizeKey(key);
+      return `
+        <div class="users-logs-detail-row users-logs-detail-row--nested">
+          <span class="users-logs-detail-key">${escapeHtml(label)}</span>
+          <span class="users-logs-detail-value">${formatDetailValue(innerValue)}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `<div class="users-logs-details users-logs-details--nested">${rows}</div>`;
+  }
+
+  try {
+    return `<span class="users-logs-detail-text">${escapeHtml(String(value))}</span>`;
+  } catch (error) {
+    return `<span class="text-muted">${escapeHtml(t('users.logs.details.empty', 'No data'))}</span>`;
+  }
 }
 
 function setError(message) {
@@ -365,20 +502,26 @@ function renderSessions(sessions) {
 }
 
 function formatActivityDetails(details) {
-  if (details === null || details === undefined || details === '') {
-    return `<span class="text-muted">—</span>`;
+  if (details && typeof details === 'object' && !Array.isArray(details)) {
+    const entries = Object.entries(details);
+    if (!entries.length) {
+      return `<span class="text-muted">${escapeHtml(t('users.logs.details.empty', 'No data'))}</span>`;
+    }
+
+    const rows = entries.map(([key, value]) => {
+      const label = humanizeKey(key);
+      return `
+        <div class="users-logs-detail-row">
+          <span class="users-logs-detail-key">${escapeHtml(label)}</span>
+          <span class="users-logs-detail-value">${formatDetailValue(value)}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `<div class="users-logs-details">${rows}</div>`;
   }
 
-  if (typeof details === 'string') {
-    return `<span class="text-muted">${escapeHtml(details)}</span>`;
-  }
-
-  try {
-    const serialized = JSON.stringify(details, null, 2);
-    return `<pre class="mb-0 small text-muted">${escapeHtml(serialized)}</pre>`;
-  } catch (error) {
-    return `<span class="text-muted">${escapeHtml(String(details))}</span>`;
-  }
+  return formatDetailValue(details);
 }
 
 function renderActivity(activity) {
@@ -396,7 +539,7 @@ function renderActivity(activity) {
   elements.activityBody.innerHTML = activity.map((entry) => `
     <tr>
       <td>${escapeHtml(formatDateOrDash(entry.timestamp))}</td>
-      <td>${escapeHtml(entry.action || '')}</td>
+      <td>${escapeHtml(formatActivityAction(entry.action))}</td>
       <td>${formatActivityDetails(entry.details)}</td>
     </tr>
   `).join('');

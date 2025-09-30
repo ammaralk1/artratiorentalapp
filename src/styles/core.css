@@ -1679,14 +1679,21 @@ textarea {
 .flatpickr-time .flatpickr-am-pm,
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  font-size: 20px;
-  width: 30px;
-  height: 30px;
-  line-height: 30px;
+  font-size: 16px;
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
 }
 
 .flatpickr-time .numInputWrapper {
-  font-size: 18px;
+  font-size: 16px;
+  width: 56px;
+}
+
+.flatpickr-time .numInputWrapper input {
+  font-size: 16px;
+  height: 34px;
+  line-height: 32px;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar {

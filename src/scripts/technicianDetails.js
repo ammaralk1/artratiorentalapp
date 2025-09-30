@@ -3,12 +3,15 @@ import { resolveQuickDateRange } from "./reservationsFilters.js";
 import { normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
 import { t, getCurrentLanguage } from "./language.js";
+import { ensureReservationsLoaded } from "./reservationsActions.js";
+import { buildProjectCard } from "./projectsCommon.js";
 
 let lastTechnicianFilters = {};
 let technicianProjectsContext = {
   initialized: false,
   currentId: null
 };
+let technicianReservationsHydrated = false;
 
 function normalizeSearchText(value = "") {
   return normalizeNumbers(String(value)).trim().toLowerCase();
@@ -39,9 +42,21 @@ function applyQuickRangeToInputs(range, startInput, endInput) {
   }
 }
 
-export function renderTechnicianReservations(technicianId) {
+export async function renderTechnicianReservations(technicianId) {
   const container = document.getElementById("technician-reservations");
   if (!container) return;
+
+  if (!technicianReservationsHydrated) {
+    try {
+      await ensureReservationsLoaded({ suppressError: false, force: true });
+    } catch (error) {
+      console.error('❌ [technician-details] Failed to hydrate reservations list', error);
+      container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.reservationsLoadFailed">${t('technicianDetails.errors.reservationsLoadFailed', '❌ تعذر تحميل حجوزات هذا العضو حالياً.')}</p>`;
+      return;
+    }
+
+    technicianReservationsHydrated = true;
+  }
 
   const searchInput = document.getElementById("technician-search-reservation");
   const startInput = document.getElementById("technician-filter-start-date");
@@ -242,12 +257,60 @@ function updateTechnicianProjects() {
   const searchTerm = normalizeSearchText(searchInput?.value || '');
   const statusFilter = statusSelect?.value || '';
 
-  const { projects = [], customers = [], technicians = [] } = loadData();
+  const { projects = [], customers = [], technicians = [], reservations = [] } = loadData();
   const customerMap = new Map(customers.map((customer) => [String(customer.id), customer]));
   const techniciansMap = new Map(technicians.map((tech) => [String(tech.id), tech]));
+  const projectsMap = new Map(projects.map((project) => [String(project.id), project]));
 
   const normalizedId = String(technicianProjectsContext.currentId);
-  const relevant = projects.filter((project) => Array.isArray(project.technicians) && project.technicians.some((id) => String(id) === normalizedId));
+  const aggregatedProjects = new Map();
+
+  const addProject = (project) => {
+    if (!project) return;
+    const key = project.id != null ? String(project.id) : (project.projectId != null ? String(project.projectId) : null);
+    if (!key) return;
+    if (!aggregatedProjects.has(key)) {
+      aggregatedProjects.set(key, project);
+    }
+  };
+
+  projects.forEach((project) => {
+    if (!Array.isArray(project?.technicians)) return;
+    if (project.technicians.some((id) => String(id) === normalizedId)) {
+      addProject(project);
+    }
+  });
+
+  reservations.forEach((reservation) => {
+    if (!reservation?.projectId) return;
+    if (!Array.isArray(reservation.technicians)) return;
+    if (!reservation.technicians.some((id) => String(id) === normalizedId)) return;
+
+    const projectId = String(reservation.projectId);
+    if (aggregatedProjects.has(projectId)) return;
+
+    const existing = projectsMap.get(projectId);
+    if (existing) {
+      addProject(existing);
+      return;
+    }
+
+    addProject({
+      id: projectId,
+      title: reservation.projectTitle || reservation.title || reservation.project_title || `#${projectId}`,
+      description: reservation.notes || '',
+      start: reservation.projectStart || reservation.start || null,
+      end: reservation.projectEnd || reservation.end || null,
+      technicians: Array.isArray(reservation.technicians) ? [...reservation.technicians] : [],
+      clientId: reservation.projectClientId ?? reservation.customerId ?? null,
+      confirmed: reservation.confirmed === true,
+      status: reservation.status ?? null,
+      equipmentEstimate: reservation.totalAmount ?? reservation.total_amount ?? 0,
+      createdAt: reservation.start ?? reservation.created_at ?? null,
+    });
+  });
+
+  const relevant = Array.from(aggregatedProjects.values());
 
   const filtered = relevant.filter((project) => {
     if (searchTerm) {
@@ -278,7 +341,16 @@ function updateTechnicianProjects() {
     return;
   }
 
-  container.innerHTML = filtered.map((project) => buildTechnicianProjectCard(project, customerMap, techniciansMap)).join('');
+  container.innerHTML = filtered
+    .map((project) => {
+      const clientName = customerMap.get(String(project.clientId))?.customerName || null;
+      return buildProjectCard(project, {
+        techniciansMap,
+        clientName,
+        includeClientLine: Boolean(clientName)
+      });
+    })
+    .join('');
 }
 
 function buildTechnicianProjectCard(project, customerMap, techniciansMap) {

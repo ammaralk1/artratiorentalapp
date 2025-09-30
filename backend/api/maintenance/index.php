@@ -261,7 +261,8 @@ function handleMaintenanceUpdate(PDO $pdo): void
             throw new RuntimeException('Failed to fetch updated maintenance ticket');
         }
 
-        $ticket = mapMaintenanceRow($ticketRow + fetchEquipmentData($pdo, (int) $ticketRow['equipment_id']));
+        $equipmentData = fetchEquipmentData($pdo, (int) $ticketRow['equipment_id']);
+        $ticket = mapMaintenanceRow(array_merge($equipmentData, $ticketRow));
 
         if ($ticket['status_raw'] === 'completed' || $ticket['status_raw'] === 'cancelled') {
             updateEquipmentStatus($pdo, (int) $ticket['equipment_id'], 'available');

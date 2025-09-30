@@ -24,6 +24,7 @@ import {
 import { updateEditReservationSummary } from './editForm.js';
 import { loadData } from '../storage.js';
 import { ensureReservationsLoaded } from '../reservationsActions.js';
+import { ensureProjectsLoaded } from '../projectsService.js';
 
 let reservationEventsInitialized = false;
 
@@ -150,6 +151,11 @@ function setupTechniciansUpdatedListener() {
 
 export async function initializeReservationUI() {
   await ensureReservationsLoaded();
+  try {
+    await ensureProjectsLoaded({ force: true });
+  } catch (error) {
+    console.warn('⚠️ [reservations/events] Failed to pre-load projects for reservation form', error);
+  }
   renderReservations();
   registerReservationGlobals();
   initCreateReservationForm({ onAfterSubmit: handleReservationsMutation });
