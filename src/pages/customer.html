@@ -293,6 +293,18 @@
     </div>
   </div>
 
+  <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="projects.modal.title">تفاصيل المشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="project-details-body"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
   <script type="module" src="/src/scripts/language.js"></script>
@@ -304,15 +316,20 @@
   <script type="module">
     import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
     import { checkAuth, logout } from '/src/scripts/auth.js';
-    import { loadData, saveData } from '/src/scripts/storage.js';
+    import { loadData, saveData, migrateOldData } from '/src/scripts/storage.js';
     import { renderCustomerReservations, renderCustomerProjects } from '/src/scripts/customerDetails.js';
     import { showReservationDetails } from '/src/scripts/reservationsUI.js';
     import { showToast, normalizeNumbers } from '/src/scripts/utils.js';
     import { t } from '/src/scripts/language.js';
+    import { apiRequest, ApiError } from '/src/scripts/apiClient.js';
+    import { mapReservationFromApi } from '/src/scripts/reservationsService.js';
+    import { mapProjectFromApi } from '/src/scripts/projectsService.js';
+    import { mapTechnicianFromApi } from '/src/scripts/techniciansService.js';
 
     applyStoredTheme();
     checkAuth();
     initThemeToggle();
+    migrateOldData();
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
@@ -327,6 +344,8 @@
     const container = document.getElementById('customer-details');
 
     let currentCustomer = null;
+    let isCustomerLoading = false;
+    let customerLoadError = '';
 
     function findCustomerById(id) {
       const { customers } = loadData();
@@ -334,9 +353,158 @@
       return customers.find((customer) => String(customer.id) === String(id));
     }
 
+    function mapCustomerFromApi(raw = {}) {
+      if (!raw || typeof raw !== 'object') return null;
+      const idValue = raw.id ?? raw.customerId ?? raw.customer_id ?? null;
+      const customerName = raw.full_name ?? raw.customerName ?? raw.name ?? '';
+      if (idValue == null) {
+        return null;
+      }
+      return {
+        id: String(idValue),
+        customerName,
+        full_name: customerName,
+        phone: raw.phone ?? '',
+        companyName: raw.company ?? raw.company_name ?? raw.companyName ?? '',
+        company: raw.company ?? raw.company_name ?? raw.companyName ?? '',
+        email: raw.email ?? '',
+        address: raw.address ?? '',
+        notes: raw.notes ?? '',
+        created_at: raw.created_at ?? raw.createdAt ?? null,
+        updated_at: raw.updated_at ?? raw.updatedAt ?? null,
+      };
+    }
+
+    function upsertCustomerInStore(customer) {
+      if (!customer) return;
+      const snapshot = loadData();
+      const customers = Array.isArray(snapshot.customers) ? [...snapshot.customers] : [];
+      const index = customers.findIndex((item) => String(item.id) === String(customer.id));
+      if (index >= 0) {
+        customers[index] = { ...customers[index], ...customer };
+      } else {
+        customers.push(customer);
+      }
+      saveData({ customers });
+    }
+
+    async function ensureTechniciansLoaded() {
+      const { technicians } = loadData();
+      if (Array.isArray(technicians) && technicians.length > 0) {
+        return;
+      }
+
+      try {
+        const response = await apiRequest('/technicians/');
+        const records = Array.isArray(response?.data)
+          ? response.data.map(mapTechnicianFromApi)
+          : [];
+        if (records.length > 0) {
+          saveData({ technicians: records });
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to load technicians list', error);
+      }
+    }
+
+    async function fetchCustomerReservationsData(id) {
+      if (!id) return;
+      try {
+        const params = new URLSearchParams({ customer_id: String(id), limit: '200' });
+        const response = await apiRequest(`/reservations/?${params.toString()}`);
+        const records = Array.isArray(response?.data)
+          ? response.data.map(mapReservationFromApi)
+          : [];
+        saveData({ reservations: records });
+      } catch (error) {
+        console.warn('⚠️ Failed to load customer reservations', error);
+      }
+    }
+
+    async function fetchCustomerProjectsData(id) {
+      if (!id) return;
+      try {
+        const params = new URLSearchParams({ client_id: String(id), limit: '200' });
+        const response = await apiRequest(`/projects/?${params.toString()}`);
+        const records = Array.isArray(response?.data)
+          ? response.data.map(mapProjectFromApi)
+          : [];
+        saveData({ projects: records });
+      } catch (error) {
+        console.warn('⚠️ Failed to load customer projects', error);
+      }
+    }
+
+    async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
+      if (!id) return;
+
+      if (showSpinner) {
+        isCustomerLoading = true;
+        customerLoadError = '';
+        renderDetails();
+      } else {
+        isCustomerLoading = true;
+        customerLoadError = '';
+      }
+
+      try {
+        const response = await apiRequest(`/customers/?id=${encodeURIComponent(id)}`);
+        const rawCustomer = response?.data ?? response;
+        const mappedCustomer = mapCustomerFromApi(rawCustomer);
+        if (!mappedCustomer) {
+          throw new Error('Invalid customer payload received from server');
+        }
+
+        currentCustomer = mappedCustomer;
+        upsertCustomerInStore(mappedCustomer);
+        isCustomerLoading = false;
+        customerLoadError = '';
+        renderDetails();
+
+        await ensureTechniciansLoaded();
+        await Promise.all([
+          fetchCustomerReservationsData(mappedCustomer.id),
+          fetchCustomerProjectsData(mappedCustomer.id),
+        ]);
+
+        renderCustomerReservations(mappedCustomer.id);
+        renderCustomerProjects(mappedCustomer.id);
+      } catch (error) {
+        isCustomerLoading = false;
+        if (error instanceof ApiError && error.status === 404) {
+          currentCustomer = null;
+          customerLoadError = '';
+          renderDetails();
+          return;
+        }
+
+        console.error('⚠️ Failed to load customer details', error);
+        const message = t('customerDetails.errors.loadFailed', '⚠️ تعذر تحميل بيانات العميل.');
+        if (currentCustomer) {
+          customerLoadError = '';
+          showToast(message);
+          renderDetails();
+        } else {
+          customerLoadError = `${message}${error?.message ? ` (${error.message})` : ''}`;
+          renderDetails();
+        }
+      }
+    }
+
     function renderDetails() {
       if (!container) return;
+
       if (!currentCustomer) {
+        if (isCustomerLoading) {
+          container.innerHTML = `<p class="text-muted" data-i18n data-i18n-key="customerDetails.status.loading">${t('customerDetails.status.loading', '⏳ جارٍ تحميل بيانات العميل...')}</p>`;
+          return;
+        }
+
+        if (customerLoadError) {
+          container.innerHTML = `<p class="text-danger">${customerLoadError}</p>`;
+          return;
+        }
+
         container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.notFound">${t('customerDetails.errors.notFound', '⚠️ لم يتم العثور على هذا العميل.')}</p>`;
         return;
       }
@@ -435,18 +603,25 @@
       saveEditBtn.dataset.listenerAttached = 'true';
     }
 
-    if (!customerId) {
-      if (container) {
-        container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.missingId">${t('customerDetails.errors.missingId', '⚠️ لا يوجد معرف عميل في الرابط.')}</p>`;
+    async function initializeCustomerPage() {
+      if (!customerId) {
+        if (container) {
+          container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.missingId">${t('customerDetails.errors.missingId', '⚠️ لا يوجد معرف عميل في الرابط.')}</p>`;
+        }
+        return;
       }
-    } else {
+
       currentCustomer = findCustomerById(customerId);
-      renderDetails();
       if (currentCustomer) {
+        renderDetails();
         renderCustomerReservations(customerId);
         renderCustomerProjects(customerId);
       }
+
+      await loadCustomerFromApi(customerId, { showSpinner: !currentCustomer });
     }
+
+    initializeCustomerPage();
 
     document.addEventListener('language:changed', () => {
       renderDetails();

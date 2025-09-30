@@ -4,7 +4,29 @@ import { getPreferences, updatePreferences, subscribePreferences, getCachedPrefe
 const DARK_CLASS = 'dark-mode';
 const boundButtons = new WeakSet();
 const THEME_LOADING_CLASS = 'theme-loading';
+const THEME_SESSION_KEY = 'art-ratio:session-theme';
 let themeInitialized = false;
+
+function normaliseTheme(theme) {
+  return theme === 'dark' ? 'dark' : 'light';
+}
+
+function storeSessionTheme(theme) {
+  try {
+    window.sessionStorage?.setItem(THEME_SESSION_KEY, normaliseTheme(theme));
+  } catch (error) {
+    // ignore storage issues (private mode, disabled storage, etc.)
+  }
+}
+
+function readSessionTheme() {
+  try {
+    const stored = window.sessionStorage?.getItem(THEME_SESSION_KEY);
+    return stored === 'dark' ? 'dark' : stored === 'light' ? 'light' : null;
+  } catch (error) {
+    return null;
+  }
+}
 
 function markThemeReady() {
   document.documentElement.classList.remove(THEME_LOADING_CLASS);
@@ -17,19 +39,21 @@ export function applyTheme(theme) {
 }
 
 function applyThemeInternal(theme, { persist = true } = {}) {
+  const normalizedTheme = normaliseTheme(theme);
   const root = document.documentElement;
   const body = document.body;
-  if (theme === 'dark') {
+  if (normalizedTheme === 'dark') {
     root.classList.add(DARK_CLASS);
     if (body) body.classList.add(DARK_CLASS);
   } else {
     root.classList.remove(DARK_CLASS);
     if (body) body.classList.remove(DARK_CLASS);
   }
-  updateAllToggleButtons(theme);
+  storeSessionTheme(normalizedTheme);
+  updateAllToggleButtons(normalizedTheme);
 
   if (persist) {
-    updatePreferences({ theme }).catch((error) => {
+    updatePreferences({ theme: normalizedTheme }).catch((error) => {
       console.warn('⚠️ تعذر حفظ تفضيل السمة في الخادم', error);
     });
   }
@@ -87,11 +111,14 @@ export function initThemeToggle() {
 
 export function applyStoredTheme() {
   const cached = getCachedPreferences();
-  const initialTheme = cached?.theme === 'dark'
+  const cachedTheme = cached?.theme === 'dark'
     ? 'dark'
     : cached?.theme === 'light'
       ? 'light'
-      : getSystemPreferredTheme();
+      : null;
+  const sessionTheme = cachedTheme || readSessionTheme();
+  const initialTheme = sessionTheme || getSystemPreferredTheme();
+
   applyThemeInternal(initialTheme, { persist: false });
   loadThemePreference();
 }

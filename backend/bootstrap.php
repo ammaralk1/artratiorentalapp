@@ -16,6 +16,23 @@ if (!is_file($configFile)) {
 
 $config = require $configFile;
 
+$appTimezone = 'Asia/Riyadh';
+if (isset($config['app']['timezone'])) {
+    $candidateTimezone = (string) $config['app']['timezone'];
+} else {
+    $candidateTimezone = $appTimezone;
+}
+
+try {
+    $timezoneObject = new DateTimeZone($candidateTimezone);
+    $appTimezone = $timezoneObject->getName();
+} catch (Throwable $timezoneError) {
+    error_log(sprintf('Invalid timezone "%s" supplied. Falling back to UTC. Error: %s', $candidateTimezone, $timezoneError->getMessage()));
+    $appTimezone = 'UTC';
+}
+
+date_default_timezone_set($appTimezone);
+
 $allowedOrigins = array_map(static fn($origin) => trim(strtolower((string) $origin)), $config['security']['allowed_origins'] ?? []);
 $enforceHttps = !empty($config['security']['enforce_https']);
 $sessionName = $config['security']['session_name'] ?? 'art_ratio_session';
@@ -376,6 +393,23 @@ function getDatabaseConnection(): PDO
 
     $connection = create_pdo($config['db'] ?? []);
 
+    global $appTimezone;
+
+    if ($appTimezone) {
+        try {
+            $quotedTimezone = $connection->quote($appTimezone);
+            $connection->exec("SET time_zone = $quotedTimezone");
+        } catch (Throwable $timezoneError) {
+            try {
+                $offset = (new DateTimeImmutable('now', new DateTimeZone($appTimezone)))->format('P');
+                $quotedOffset = $connection->quote($offset);
+                $connection->exec("SET time_zone = $quotedOffset");
+            } catch (Throwable $offsetError) {
+                error_log(sprintf('Failed to apply database timezone "%s": %s', $appTimezone, $offsetError->getMessage()));
+            }
+        }
+    }
+
     return $connection;
 }
 
@@ -403,20 +437,43 @@ function verifyCredentials(string $username, string $password): ?array
         return null;
     }
 
-    if (!password_verify($password, (string) $user['password_hash'])) {
+    $storedHash = (string) ($user['password_hash'] ?? '');
+    $passwordValid = false;
+    $needsUpgrade = false;
+
+    if ($storedHash !== '' && password_verify($password, $storedHash)) {
+        $passwordValid = true;
+    }
+
+    if (!$passwordValid) {
+        $plainMatch = $storedHash !== '' && hash_equals($storedHash, $password);
+        $legacyMd5Match = $storedHash !== ''
+            && preg_match('/^[a-f0-9]{32}$/i', $storedHash)
+            && hash_equals(strtolower($storedHash), md5($password));
+
+        if ($plainMatch || $legacyMd5Match) {
+            $passwordValid = true;
+            $needsUpgrade = true;
+        }
+    }
+
+    if (!$passwordValid) {
         return null;
     }
 
-    if (password_needs_rehash((string) $user['password_hash'], PASSWORD_DEFAULT)) {
+    if ($needsUpgrade || password_needs_rehash($storedHash, PASSWORD_DEFAULT)) {
         $newHash = password_hash($password, PASSWORD_DEFAULT);
 
-        $update = $pdo->prepare('UPDATE users SET password_hash = :hash WHERE id = :id');
-        $update->execute([
-            'hash' => $newHash,
-            'id' => $user['id'],
-        ]);
-
-        $user['password_hash'] = $newHash;
+        try {
+            $update = $pdo->prepare('UPDATE users SET password_hash = :hash WHERE id = :id');
+            $update->execute([
+                'hash' => $newHash,
+                'id' => $user['id'],
+            ]);
+            $user['password_hash'] = $newHash;
+        } catch (Throwable $error) {
+            error_log(sprintf('Failed to upgrade password hash for user %s: %s', (string) $user['username'], $error->getMessage()));
+        }
     }
 
     return $user;
@@ -459,6 +516,8 @@ function loginUser(array $user): void
         'session_id' => $sessionId,
         'session_log_id' => $sessionLogId,
     ];
+
+    $_SESSION['preferences'] = fetchPersistedUserPreferences($pdo, (int) $user['id']);
 
     logActivity($pdo, 'LOGIN_SUCCESS', [
         'ip' => $ipAddress,
@@ -641,9 +700,146 @@ function normaliseDashboardTarget(string $value): ?string
     return $trimmed;
 }
 
+function safeNormaliseDashboardTarget(?string $value): ?string
+{
+    if ($value === null) {
+        return null;
+    }
+
+    $trimmed = trim($value);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    try {
+        return normaliseDashboardTarget($trimmed);
+    } catch (InvalidArgumentException $exception) {
+        return null;
+    }
+}
+
+function ensureUserPreferencesTable(PDO $pdo): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    try {
+        $statement = $pdo->query("SHOW TABLES LIKE 'user_preferences'");
+        $tableExists = $statement && $statement->fetch();
+
+        if ($tableExists) {
+            $ensured = true;
+            return;
+        }
+
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+                language ENUM(\'ar\', \'en\') NOT NULL DEFAULT \'ar\',
+                theme ENUM(\'light\', \'dark\') NOT NULL DEFAULT \'light\',
+                dashboard_tab VARCHAR(64) DEFAULT NULL,
+                dashboard_sub_tab VARCHAR(64) DEFAULT NULL,
+                projects_tab VARCHAR(64) DEFAULT NULL,
+                projects_sub_tab VARCHAR(64) DEFAULT NULL,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT fk_user_preferences_user FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+
+        $ensured = true;
+    } catch (Throwable $exception) {
+        $ensured = true;
+        error_log('Failed to ensure user_preferences table: ' . $exception->getMessage());
+    }
+}
+
+function fetchPersistedUserPreferences(PDO $pdo, int $userId): array
+{
+    $defaults = getDefaultPreferences();
+
+    try {
+        ensureUserPreferencesTable($pdo);
+
+        $statement = $pdo->prepare('SELECT language, theme, dashboard_tab, dashboard_sub_tab, projects_tab, projects_sub_tab
+            FROM user_preferences WHERE user_id = :user_id LIMIT 1');
+        $statement->execute(['user_id' => $userId]);
+        $row = $statement->fetch();
+
+        if (!$row) {
+            return $defaults;
+        }
+
+        $sanitised = [
+            'language' => normalisePreferenceLanguage((string) ($row['language'] ?? $defaults['language'])),
+            'theme' => normalisePreferenceTheme((string) ($row['theme'] ?? $defaults['theme'])),
+            'dashboardTab' => safeNormaliseDashboardTarget($row['dashboard_tab'] ?? null),
+            'dashboardSubTab' => safeNormaliseDashboardTarget($row['dashboard_sub_tab'] ?? null),
+            'projectsTab' => safeNormaliseDashboardTarget($row['projects_tab'] ?? null),
+            'projectsSubTab' => safeNormaliseDashboardTarget($row['projects_sub_tab'] ?? null),
+        ];
+
+        return array_merge($defaults, array_intersect_key($sanitised, $defaults));
+    } catch (Throwable $error) {
+        error_log(sprintf('Failed to load user preferences for user %d: %s', $userId, $error->getMessage()));
+        return $defaults;
+    }
+}
+
+function persistUserPreferencesToDatabase(PDO $pdo, int $userId, array $preferences): void
+{
+    $defaults = getDefaultPreferences();
+    $merged = array_merge($defaults, array_intersect_key($preferences, $defaults));
+
+    $payload = [
+        'user_id' => $userId,
+        'language' => normalisePreferenceLanguage((string) $merged['language']),
+        'theme' => normalisePreferenceTheme((string) $merged['theme']),
+        'dashboard_tab' => $merged['dashboardTab'] === null ? null : normaliseDashboardTarget((string) $merged['dashboardTab']),
+        'dashboard_sub_tab' => $merged['dashboardSubTab'] === null ? null : normaliseDashboardTarget((string) $merged['dashboardSubTab']),
+        'projects_tab' => $merged['projectsTab'] === null ? null : normaliseDashboardTarget((string) $merged['projectsTab']),
+        'projects_sub_tab' => $merged['projectsSubTab'] === null ? null : normaliseDashboardTarget((string) $merged['projectsSubTab']),
+    ];
+
+    try {
+        ensureUserPreferencesTable($pdo);
+
+        $statement = $pdo->prepare('INSERT INTO user_preferences (user_id, language, theme, dashboard_tab, dashboard_sub_tab, projects_tab, projects_sub_tab)
+            VALUES (:user_id, :language, :theme, :dashboard_tab, :dashboard_sub_tab, :projects_tab, :projects_sub_tab)
+            ON DUPLICATE KEY UPDATE language = VALUES(language), theme = VALUES(theme),
+                dashboard_tab = VALUES(dashboard_tab), dashboard_sub_tab = VALUES(dashboard_sub_tab),
+                projects_tab = VALUES(projects_tab), projects_sub_tab = VALUES(projects_sub_tab)');
+        $statement->execute($payload);
+    } catch (Throwable $error) {
+        error_log(sprintf('Failed to persist user preferences for user %d: %s', $userId, $error->getMessage()));
+    }
+}
+
+function ensureUserPreferencesLoaded(): void
+{
+    if (!isAuthenticated()) {
+        return;
+    }
+
+    if (isset($_SESSION['preferences']) && is_array($_SESSION['preferences'])) {
+        return;
+    }
+
+    $pdo = getDatabaseConnection();
+    $_SESSION['preferences'] = fetchPersistedUserPreferences($pdo, (int) $_SESSION['user']['id']);
+}
+
 function getUserPreferences(): array
 {
     $defaults = getDefaultPreferences();
+
+    if (isAuthenticated()) {
+        ensureUserPreferencesLoaded();
+    }
+
     $stored = $_SESSION['preferences'] ?? [];
 
     if (!is_array($stored)) {
@@ -658,6 +854,11 @@ function getUserPreferences(): array
 function updateUserPreferences(array $changes): array
 {
     $defaults = getDefaultPreferences();
+
+    if (isAuthenticated()) {
+        ensureUserPreferencesLoaded();
+    }
+
     $current = $_SESSION['preferences'] ?? [];
 
     if (!is_array($current)) {
@@ -690,6 +891,11 @@ function updateUserPreferences(array $changes): array
     }
 
     $_SESSION['preferences'] = $current;
+
+    if (isAuthenticated()) {
+        $pdo = getDatabaseConnection();
+        persistUserPreferencesToDatabase($pdo, (int) $_SESSION['user']['id'], $current);
+    }
 
     $filtered = array_intersect_key($current, $defaults);
 
