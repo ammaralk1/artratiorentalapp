@@ -310,3 +310,110 @@ body[dir="rtl"] .calendar-reservation-summary {
   border: 1px solid rgba(93, 133, 255, 0.2);
   color: var(--clr-text);
 }
+
+@media (max-width: 768px) {
+  #calendar {
+    padding: 10px;
+  }
+
+  .calendar-panel .calendar-status {
+    inset: 6px;
+    padding: 14px;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  .fc .fc-button {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .fc .fc-button-group {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .fc-listWeek-view .fc-event {
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .fc-listWeek-view .fc-list-day-cushion {
+    padding: 8px 12px;
+  }
+
+  .calendar-reservation-info {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  #calendar {
+    padding: 8px;
+  }
+
+  .fc .fc-toolbar {
+    align-items: center;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1rem;
+  }
+
+  .fc .fc-button {
+    flex: 1 0 calc(50% - 6px);
+    min-width: calc(50% - 6px);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .fc .fc-button-group {
+    flex-wrap: wrap;
+  }
+
+  .fc .fc-daygrid-day-frame {
+    padding: 6px 4px;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 0.85rem;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.8rem;
+    padding: 6px 0;
+  }
+
+  .fc .fc-daygrid-event {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    padding: 4px 6px;
+  }
+
+  .calendar-reservation-info {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .calendar-info-row {
+    gap: 8px;
+  }
+}

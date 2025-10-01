@@ -6,7 +6,7 @@ import { renderCalendar } from "./calendar.js";
 import { renderTechnicians } from "./technicians.js";
 import { renderReports } from "./reports.js";
 import { renderMaintenance } from "./maintenance.js";
-import { getPreferences, updatePreferences, subscribePreferences } from "./preferencesService.js";
+import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
 let currentMainTab = null;
 let currentSubTab = null;
@@ -14,6 +14,7 @@ let tabsInitialised = false;
 let pendingSubTabPreference = null;
 let unsubscribePreferences = null;
 let activateSubTabRef = null;
+let restorePendingTimeout = null;
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
@@ -246,4 +247,99 @@ function activateStoredSubTab(subTarget) {
     pendingSubTabPreference = subTarget;
   }
 }
+
+function resolveCachedPreferences() {
+  try {
+    if (typeof getCachedPreferences === 'function') {
+      return getCachedPreferences() || {};
+    }
+  } catch (error) {
+    console.warn('⚠️ [tabs.js] Failed to read cached preferences', error);
+  }
+  return {};
+}
+
+function restoreActiveTabsView() {
+  if (!tabsInitialised) {
+    return;
+  }
+
+  const cachedPrefs = resolveCachedPreferences();
+  const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
+  const tabContents = Array.from(document.querySelectorAll('.tab'));
+
+  if (!tabButtons.length || !tabContents.length) {
+    return;
+  }
+
+  const activeContent = tabContents.find((tab) => tab.classList.contains('active'));
+  const activeButton = tabButtons.find((btn) => btn.classList.contains('active'));
+
+  let target = activeContent?.id
+    ?? activeButton?.dataset.tab
+    ?? (cachedPrefs.dashboardTab && document.getElementById(cachedPrefs.dashboardTab) ? cachedPrefs.dashboardTab : null)
+    ?? tabButtons[0]?.dataset.tab;
+
+  if (!target) {
+    return;
+  }
+
+  tabButtons.forEach((btn) => {
+    const isActive = btn.dataset.tab === target;
+    btn.classList.toggle('active', isActive);
+  });
+
+  tabContents.forEach((content) => {
+    const isActive = content.id === target;
+    content.style.display = isActive ? 'block' : 'none';
+    content.classList.toggle('active', isActive);
+  });
+
+  currentMainTab = target;
+
+  if (target === 'reservations-tab') {
+    const subButtons = Array.from(document.querySelectorAll('.sub-tab-button'));
+    const subContents = Array.from(document.querySelectorAll('.sub-tab'));
+
+    if (subButtons.length && subContents.length) {
+      const activeSubContent = subContents.find((sub) => sub.classList.contains('active'));
+      const activeSubButton = subButtons.find((btn) => btn.classList.contains('active'));
+
+      let subTarget = activeSubContent?.id
+        ?? activeSubButton?.dataset.subTab
+        ?? (cachedPrefs.dashboardSubTab && document.getElementById(cachedPrefs.dashboardSubTab) ? cachedPrefs.dashboardSubTab : null)
+        ?? subButtons[0]?.dataset.subTab;
+
+      if (subTarget) {
+        subButtons.forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.subTab === subTarget);
+        });
+
+        subContents.forEach((sub) => {
+          sub.classList.toggle('active', sub.id === subTarget);
+        });
+
+        currentSubTab = subTarget;
+      }
+    }
+  }
+}
+
+function scheduleRestoreActiveTabs() {
+  if (!tabsInitialised) {
+    return;
+  }
+
+  if (restorePendingTimeout) {
+    clearTimeout(restorePendingTimeout);
+  }
+
+  restorePendingTimeout = setTimeout(() => {
+    restoreActiveTabsView();
+  }, 0);
+}
+
+document.addEventListener('language:translationsReady', scheduleRestoreActiveTabs);
+document.addEventListener('language:changed', scheduleRestoreActiveTabs);
+document.addEventListener('theme:changed', scheduleRestoreActiveTabs);
 // تم استبدال زر توليد التقارير بلوحة تفاعلية في تبويب التقارير

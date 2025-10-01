@@ -2,6 +2,7 @@ import { loadData, saveData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
 import { apiRequest, ApiError } from "./apiClient.js";
+import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 
 let equipmentState = (loadData().equipment || []).map(mapLegacyEquipment);
 let isEquipmentLoading = false;
@@ -122,6 +123,10 @@ function setEquipment(list) {
 }
 
 export async function uploadEquipmentFromExcel(file) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   if (!file) return;
 
   try {
@@ -315,6 +320,10 @@ function buildEquipmentPayload({
 }
 
 export async function clearEquipment() {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   if (!confirm(t("equipment.toast.clearConfirm", "⚠️ هل أنت متأكد من حذف كل المعدات؟"))) return;
 
   try {
@@ -362,6 +371,15 @@ function renderEquipmentItem({ item, index }) {
   const deleteLabel = t("equipment.item.actions.delete", "🗑️ حذف");
   const imageAlt = t("equipment.item.imageAlt", "صورة");
   const currencyLabel = t("equipment.item.currency", "ريال");
+  const canDelete = userCanManageDestructiveActions();
+
+  const actionButtons = [
+    `<button class="btn btn-sm btn-warning" onclick="editEquipmentModal(${index})">${editLabel}</button>`
+  ];
+
+  if (canDelete) {
+    actionButtons.push(`<button class="btn btn-sm btn-danger" onclick="deleteEquipment(${index})">${deleteLabel}</button>`);
+  }
 
   return `
     <div class="border-bottom py-3 d-flex align-items-center">
@@ -385,8 +403,7 @@ function renderEquipmentItem({ item, index }) {
       </div>
 
       <div class="ms-3 d-flex flex-column gap-2">
-        <button class="btn btn-sm btn-warning" onclick="editEquipmentModal(${index})">${editLabel}</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEquipment(${index})">${deleteLabel}</button>
+        ${actionButtons.join('')}
       </div>
     </div>
   `;
@@ -676,6 +693,10 @@ async function handleAddEquipmentSubmit(event) {
 }
 
 async function deleteEquipment(index) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   const items = getAllEquipment();
   const item = items[index];
   if (!item) return;
@@ -826,4 +847,8 @@ document.addEventListener("language:changed", () => {
 
 document.addEventListener("equipment:refreshRequested", () => {
   refreshEquipmentFromApi({ showToastOnError: false });
+});
+
+document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
+  renderEquipment();
 });

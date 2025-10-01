@@ -6,6 +6,12 @@
 @import './calendar.css';
 @import './forms.css';
 
+.theme-toggle-fixed + .container .box {
+  width: min(90vw, 360px) !important;
+  max-width: 360px !important;
+  min-width: 280px;
+}
+
 .home-summary-card {
   border-radius: var(--radius-md, 12px);
   background-color: var(--clr-card);

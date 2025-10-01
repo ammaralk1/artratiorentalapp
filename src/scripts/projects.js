@@ -1,6 +1,6 @@
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { migrateOldData, loadData } from './storage.js';
-import { checkAuth, logout } from './auth.js';
+import { checkAuth, logout, userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from './auth.js';
 import { showToast, normalizeNumbers, generateProjectCode } from './utils.js';
 import { t, getCurrentLanguage } from './language.js';
 import { isReservationCompleted, normalizeText, resolveReservationProjectState } from './reservationsShared.js';
@@ -322,6 +322,9 @@ document.addEventListener('language:translationsReady', () => {
 document.addEventListener('customers:changed', handleCustomersChanged);
 document.addEventListener('technicians:updated', handleTechniciansUpdated);
 document.addEventListener('reservations:changed', handleReservationsChanged);
+document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
+  renderProjects();
+});
 
 async function initializeProjectsData() {
   try {
@@ -996,6 +999,10 @@ function bindTableEvents() {
     }
 
     if (target.matches('[data-action="delete-project"]')) {
+      if (!userCanManageDestructiveActions()) {
+        notifyPermissionDenied();
+        return;
+      }
       const projectId = target.dataset.id;
       removeProject(projectId);
     }
@@ -1405,6 +1412,10 @@ function renderProjectRow(project) {
   const typeBadge = `<span class="badge project-type-badge">${typeLabel}</span>`;
   const projectCodeDisplay = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeBadge = `<span class="project-code-badge">#${escapeHtml(projectCodeDisplay)}</span>`;
+  const canDelete = userCanManageDestructiveActions();
+  const deleteButton = canDelete
+    ? `<button class="btn btn-sm btn-outline-danger" data-action="delete-project" data-id="${project.id}">${escapeHtml(t('actions.delete', 'حذف'))}</button>`
+    : '';
 
   return `
     <tr data-project-id="${project.id}">
@@ -1430,7 +1441,7 @@ function renderProjectRow(project) {
       <td>${formatCurrency(expensesTotal)}</td>
       <td class="text-end">
         <button class="btn btn-sm btn-outline-primary" data-action="view-details" data-id="${project.id}">${escapeHtml(t('actions.view', 'عرض'))}</button>
-        <button class="btn btn-sm btn-outline-danger" data-action="delete-project" data-id="${project.id}">${escapeHtml(t('actions.delete', 'حذف'))}</button>
+        ${deleteButton}
       </td>
     </tr>
   `;
@@ -2762,6 +2773,10 @@ function refreshProjectSubmitButton() {
 }
 
 async function removeProject(projectId) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
   if (index === -1) return;
   if (!window.confirm(t('projects.confirm.delete', 'هل أنت متأكد من حذف هذا المشروع؟'))) return;

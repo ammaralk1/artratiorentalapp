@@ -203,6 +203,85 @@ function translateErrorMessages(array $errors): array
     return $translated;
 }
 
+function getClientIpAddress(): string
+{
+    $fallback = '0.0.0.0';
+
+    $candidates = [];
+
+    if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $forwardedFor = explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']);
+        foreach ($forwardedFor as $part) {
+            $trimmed = trim($part);
+            if ($trimmed !== '') {
+                $candidates[] = $trimmed;
+            }
+        }
+    }
+
+    if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+        $candidates[] = (string) $_SERVER['HTTP_X_REAL_IP'];
+    }
+
+    if (!empty($_SERVER['REMOTE_ADDR'])) {
+        $candidates[] = (string) $_SERVER['REMOTE_ADDR'];
+    }
+
+    foreach ($candidates as $candidate) {
+        if (filter_var($candidate, FILTER_VALIDATE_IP)) {
+            return $candidate;
+        }
+    }
+
+    return $fallback;
+}
+
+function validateLoginUsername(string $username): ?string
+{
+    if ($username === '') {
+        return 'Username is required';
+    }
+
+    $length = strlen($username);
+
+    if ($length < 3) {
+        return 'Username must be at least 3 characters';
+    }
+
+    if ($length > 100) {
+        return 'Username must be 100 characters or fewer';
+    }
+
+    if (!preg_match('/^[A-Za-z0-9._@-]+$/', $username)) {
+        return 'Username contains invalid characters';
+    }
+
+    return null;
+}
+
+function validateLoginPassword(string $password): ?string
+{
+    if ($password === '') {
+        return 'Password is required';
+    }
+
+    $length = strlen($password);
+
+    if ($length < 8) {
+        return 'Password must be at least 8 characters';
+    }
+
+    if ($length > 255) {
+        return 'Password must be 255 characters or fewer';
+    }
+
+    if (preg_match('/[\x00-\x1F\x7F]/', $password)) {
+        return 'Password contains invalid characters';
+    }
+
+    return null;
+}
+
 function getRequestLanguage(): string
 {
     static $cached = null;
@@ -254,17 +333,24 @@ function getTranslationCatalog(): array
     }
 
     $catalog = [
-        'en' => [],
+        'en' => [
+            'Username must be at least 3 characters' => 'Username must be at least 3 characters',
+            'Username contains invalid characters' => 'Username contains invalid characters',
+            'Password contains invalid characters' => 'Password contains invalid characters',
+        ],
         'ar' => [
             'Method not allowed' => 'الطريقة غير مسموحة',
             'Unexpected server error' => 'خطأ غير متوقع في الخادم',
             'Invalid username or password' => 'اسم المستخدم أو كلمة المرور غير صحيحين',
             'Username and password are required' => 'اسم المستخدم وكلمة المرور مطلوبان',
             'Username is required' => 'اسم المستخدم مطلوب',
+            'Username must be at least 3 characters' => 'اسم المستخدم يجب ألا يقل عن 3 أحرف',
             'Username must be 100 characters or fewer' => 'يجب ألا يتجاوز اسم المستخدم 100 حرف',
+            'Username contains invalid characters' => 'اسم المستخدم يحتوي على أحرف غير مسموحة',
             'Password is required' => 'كلمة المرور مطلوبة',
             'Password must be at least 8 characters' => 'يجب ألا تقل كلمة المرور عن 8 أحرف',
             'Password must be 255 characters or fewer' => 'يجب ألا تتجاوز كلمة المرور 255 حرفاً',
+            'Password contains invalid characters' => 'كلمة المرور تحتوي على أحرف غير مسموحة',
             'Unauthorized' => 'غير مصرح لك بالوصول',
             'Customer not found' => 'العميل غير موجود',
             'Missing or invalid customer id' => 'معرّف العميل مفقود أو غير صالح',
@@ -289,6 +375,7 @@ function getTranslationCatalog(): array
             'Missing configuration file. Copy backend/config.example.php to backend/config.php and fill in your credentials.' => 'ملف الإعدادات مفقود. انسخ backend/config.example.php إلى backend/config.php واملأ بيانات الاتصال.',
             'Invalid JSON payload' => 'بيانات JSON غير صالحة',
             'Unable to read request body' => 'تعذر قراءة محتوى الطلب',
+            'Too many login attempts. Try again later.' => 'عدد كبير من محاولات تسجيل الدخول. حاول لاحقاً.',
             'Unknown preference key supplied' => 'تم تمرير إعداد غير معروف',
             'Invalid dashboard tab value' => 'قيمة علامة لوحة التحكم غير صالحة',
             'Invalid role' => 'الدور غير صالح',
@@ -422,7 +509,7 @@ function findUserByUsername(PDO $pdo, string $username): ?array
     return $user ?: null;
 }
 
-function verifyCredentials(string $username, string $password): ?array
+function verifyCredentials(string $username, string $password, ?PDO $pdo = null): ?array
 {
     $normalizedUsername = trim($username);
 
@@ -430,7 +517,7 @@ function verifyCredentials(string $username, string $password): ?array
         return null;
     }
 
-    $pdo = getDatabaseConnection();
+    $pdo ??= getDatabaseConnection();
     $user = findUserByUsername($pdo, $normalizedUsername);
 
     if (!$user) {
@@ -477,6 +564,125 @@ function verifyCredentials(string $username, string $password): ?array
     }
 
     return $user;
+}
+
+function ensureLoginAttemptsTable(PDO $pdo): void
+{
+    static $ensured = false;
+
+    if ($ensured) {
+        return;
+    }
+
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS login_attempts (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                ip_address VARCHAR(45) NOT NULL,
+                attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                success TINYINT(1) NOT NULL DEFAULT 0,
+                INDEX idx_login_attempts_username (username),
+                INDEX idx_login_attempts_ip (ip_address),
+                INDEX idx_login_attempts_attempted_at (attempted_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (Throwable $error) {
+        error_log('Failed to ensure login_attempts table: ' . $error->getMessage());
+    }
+
+    $ensured = true;
+}
+
+function purgeLoginAttempts(PDO $pdo, ?DateTimeImmutable $threshold = null): void
+{
+    static $purged = false;
+
+    if ($purged) {
+        return;
+    }
+
+    $threshold ??= new DateTimeImmutable('-1 day');
+
+    try {
+        $statement = $pdo->prepare('DELETE FROM login_attempts WHERE attempted_at < :threshold');
+        $statement->execute([
+            'threshold' => $threshold->format('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $error) {
+        error_log('Failed to purge login attempts: ' . $error->getMessage());
+    }
+
+    $purged = true;
+}
+
+function recordLoginAttempt(PDO $pdo, string $username, string $ipAddress, bool $success): void
+{
+    $normalizedUsername = trim($username);
+    $ip = $ipAddress !== '' ? $ipAddress : '0.0.0.0';
+
+    try {
+        ensureLoginAttemptsTable($pdo);
+        purgeLoginAttempts($pdo);
+
+        $statement = $pdo->prepare('INSERT INTO login_attempts (username, ip_address, attempted_at, success)
+            VALUES (:username, :ip_address, :attempted_at, :success)');
+        $statement->execute([
+            'username' => substr($normalizedUsername, 0, 100),
+            'ip_address' => substr($ip, 0, 45),
+            'attempted_at' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'success' => $success ? 1 : 0,
+        ]);
+
+        if ($success) {
+            $cleanup = $pdo->prepare('DELETE FROM login_attempts WHERE (username = :username OR ip_address = :ip_address) AND success = 0');
+            $cleanup->execute([
+                'username' => substr($normalizedUsername, 0, 100),
+                'ip_address' => substr($ip, 0, 45),
+            ]);
+        }
+    } catch (Throwable $error) {
+        error_log('Failed to record login attempt: ' . $error->getMessage());
+    }
+}
+
+function isLoginRateLimited(PDO $pdo, string $username, string $ipAddress, int $maxAttempts = 5, int $decaySeconds = 900): bool
+{
+    $normalizedUsername = trim($username);
+    $ip = $ipAddress !== '' ? $ipAddress : '0.0.0.0';
+
+    try {
+        ensureLoginAttemptsTable($pdo);
+        purgeLoginAttempts($pdo);
+
+        $since = (new DateTimeImmutable(sprintf('-%d seconds', max(1, $decaySeconds))))->format('Y-m-d H:i:s');
+
+        $conditions = ['ip_address = :ip_address'];
+        $params = [
+            'ip_address' => substr($ip, 0, 45),
+            'since' => $since,
+        ];
+
+        if ($normalizedUsername !== '') {
+            $conditions[] = 'username = :username';
+            $params['username'] = substr($normalizedUsername, 0, 100);
+        }
+
+        $query = 'SELECT COUNT(*) AS failures FROM login_attempts WHERE success = 0 AND attempted_at >= :since AND (' . implode(' OR ', $conditions) . ')';
+        $statement = $pdo->prepare($query);
+        $statement->execute($params);
+
+        $failures = (int) $statement->fetchColumn();
+
+        if ($failures >= $maxAttempts) {
+            error_log(sprintf('Login rate limit triggered for username "%s" from IP %s', $normalizedUsername ?: 'unknown', $ip));
+            return true;
+        }
+    } catch (Throwable $error) {
+        error_log('Failed to evaluate login rate limit: ' . $error->getMessage());
+    }
+
+    return false;
 }
 
 function loginUser(array $user): void

@@ -4,20 +4,9 @@
   <meta charset="UTF-8">
   <title>تسجيل الدخول</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com 'sha256-EGdlXNgllo35GXXUiHmmPFdrtgxIQOCUxBHCpdYQng0='; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:;">
 
-  <script>
-    (function () {
-      document.documentElement.classList.add('language-loading');
-      document.documentElement.classList.add('theme-loading');
-      try {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('dark-mode');
-        }
-      } catch (error) {
-        // ignore
-      }
-    })();
-  </script>
+  <script src="/js/page-boot.js"></script>
 
   <!-- Bootstrap RTL -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -41,34 +30,17 @@
       <form id="login-form">
         <div class="mb-3">
           <label for="username" class="form-label">اسم المستخدم</label>
-          <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
         </div>
         <div class="mb-3">
           <label for="password" class="form-label">كلمة المرور</label>
-          <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
         </div>
         <button type="submit" class="btn btn-primary w-100">دخول</button>
       </form>
     </div>
   </div>
 
-  <script>
-    window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
-  </script>
-
-  <script type="module">
-    import { login } from '/src/scripts/auth.js';
-    import { applyStoredTheme, initThemeToggle } from '/src/scripts/theme.js';
-
-    applyStoredTheme({ skipRemote: true });
-    initThemeToggle();
-
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      await login(username, password);
-    });
-  </script>
+  <script type="module" src="/src/scripts/loginPage.js"></script>
 </body>
 </html>

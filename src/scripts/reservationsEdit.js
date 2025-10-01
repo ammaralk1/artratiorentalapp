@@ -256,8 +256,8 @@ export async function saveReservationChanges({
     return;
   }
 
-  if (!Array.isArray(editingItems) || editingItems.length === 0) {
-    showToast(t('reservations.toast.updateNoItems', '⚠️ لا يمكن حفظ التعديلات لعدم وجود معدات'));
+  if (!Array.isArray(editingItems) || (editingItems.length === 0 && technicianIds.length === 0)) {
+    showToast(t('reservations.toast.updateNoItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل للحجز'));
     return;
   }
 

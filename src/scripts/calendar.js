@@ -12,6 +12,10 @@ const CALENDAR_FETCH_PARAMS = { limit: 200 };
 let calendarInstance = null;
 let calendarLanguageListenerAttached = false;
 let calendarReservationsListenerAttached = false;
+let calendarResponsiveListenerAttached = false;
+let calendarThemeObserverAttached = false;
+let calendarThemeObserver = null;
+let calendarThemeDebounce = null;
 let isCalendarLoading = false;
 let calendarErrorMessage = '';
 
@@ -208,6 +212,7 @@ function refreshCalendarFromState() {
 
   calendarInstance.setOption('locale', getCurrentLanguage());
   updateCalendarEvents(events);
+  applyResponsiveCalendarView();
   setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
   dispatchCalendarUpdated(events);
 }
@@ -231,39 +236,73 @@ function ensureCalendarListeners() {
   }
 }
 
-function getEventPalette(reservation) {
-  const paid = reservation.paid === true || reservation.paid === 'paid';
-  const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
-  const completed = reservation.completed;
+function getResponsiveCalendarView() {
+  if (typeof window === 'undefined') {
+    return 'dayGridMonth';
+  }
+  return window.innerWidth <= 768 ? 'listWeek' : 'dayGridMonth';
+}
 
-  if (completed) {
-    return {
-      background: '#6c757d',
-      border: '#565e64',
-      text: '#fff'
-    };
+function applyResponsiveCalendarView() {
+  if (!calendarInstance) return;
+  const desiredView = getResponsiveCalendarView();
+  if (calendarInstance.view?.type !== desiredView) {
+    calendarInstance.changeView(desiredView);
+  }
+  calendarInstance.updateSize();
+}
+
+function ensureResponsiveListener() {
+  if (calendarResponsiveListenerAttached) return;
+  if (typeof window === 'undefined') return;
+  window.addEventListener('resize', () => {
+    applyResponsiveCalendarView();
+  });
+  calendarResponsiveListenerAttached = true;
+}
+
+function ensureThemeListener() {
+  if (calendarThemeObserverAttached) return;
+  if (typeof MutationObserver === 'undefined' || typeof document === 'undefined') return;
+
+  const handler = () => {
+    if (calendarThemeDebounce) {
+      clearTimeout(calendarThemeDebounce);
+    }
+    calendarThemeDebounce = setTimeout(() => {
+      if (!calendarInstance) return;
+      refreshCalendarFromState();
+    }, 80);
+  };
+
+  calendarThemeObserver = new MutationObserver(handler);
+  calendarThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  if (document.body) {
+    calendarThemeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
   }
 
-  if (!paid) {
-    return {
-      background: '#dc3545',
-      border: '#b02a37',
-      text: '#fff'
-    };
-  }
+  calendarThemeObserverAttached = true;
+}
 
-  if (!confirmed) {
+function isDarkModeActive() {
+  if (typeof document === 'undefined') return false;
+  const htmlEl = document.documentElement;
+  return htmlEl?.classList.contains('dark-mode') || document.body?.classList.contains('dark-mode');
+}
+
+function getEventPalette() {
+  if (isDarkModeActive()) {
     return {
-      background: '#ffc107',
-      border: '#cc9a06',
-      text: '#212529'
+      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(30, 58, 138, 0.7))',
+      border: 'rgba(59, 130, 246, 0.5)',
+      text: '#e2e8f0'
     };
   }
 
   return {
-    background: '#198754',
-    border: '#146c43',
-    text: '#fff'
+    background: 'linear-gradient(135deg, #4361ee, #3a0ca3)',
+    border: '#240c62',
+    text: '#ffffff'
   };
 }
 
@@ -465,6 +504,8 @@ function showReservationModal(reservation) {
 
 export function renderCalendar() {
   ensureCalendarListeners();
+  ensureResponsiveListener();
+  ensureThemeListener();
 
   const { calendarEl } = getCalendarElements();
   if (!calendarEl) return;
@@ -493,7 +534,7 @@ export function renderCalendar() {
 
     if (!calendarInstance) {
       calendarInstance = new FullCalendarLib.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
+        initialView: getResponsiveCalendarView(),
         locale: getCurrentLanguage(),
         timeZone: 'local',
         headerToolbar: {
@@ -507,6 +548,7 @@ export function renderCalendar() {
         eventClick(info) {
           showReservationModal(info.event.extendedProps);
         },
+        windowResize: applyResponsiveCalendarView,
       });
       calendarInstance.render();
     } else {
@@ -515,8 +557,12 @@ export function renderCalendar() {
       updateCalendarEvents(events);
     }
 
+    applyResponsiveCalendarView();
     dispatchCalendarUpdated(events);
     setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
+    setTimeout(() => {
+      applyResponsiveCalendarView();
+    }, 120);
   })().catch((error) => {
     console.error('❌ [calendar] renderCalendar failed', error);
     calendarErrorMessage = (error instanceof Error && error.message) || calendarErrorMessage || '';

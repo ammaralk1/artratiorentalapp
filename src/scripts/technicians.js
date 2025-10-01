@@ -1,6 +1,7 @@
 import { loadData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
+import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 import {
   getTechniciansState,
   setTechniciansState,
@@ -460,6 +461,14 @@ function renderTechniciansTable() {
     const wageSuffix = t("technicians.table.wageSuffix", "ريال");
     const editLabel = t("technicians.actions.edit", "✏️ تعديل");
     const deleteLabel = t("technicians.actions.delete", "🗑️ حذف");
+    const canDelete = userCanManageDestructiveActions();
+    const actionButtons = [
+      `<button class="btn btn-sm btn-warning technician-edit-btn" data-id="${tech.id}">${editLabel}</button>`
+    ];
+
+    if (canDelete) {
+      actionButtons.push(`<button class="btn btn-sm btn-danger technician-delete-btn" data-id="${tech.id}">${deleteLabel}</button>`);
+    }
 
     return `
       <tr${isEditing ? ' class="table-info"' : ''}>
@@ -472,8 +481,7 @@ function renderTechniciansTable() {
         <td class="table-notes-cell">${tech.notes || "—"}</td>
         <td class="table-actions-cell">
           <div class="table-action-buttons">
-            <button class="btn btn-sm btn-warning technician-edit-btn" data-id="${tech.id}">${editLabel}</button>
-            <button class="btn btn-sm btn-danger technician-delete-btn" data-id="${tech.id}">${deleteLabel}</button>
+            ${actionButtons.join('')}
           </div>
         </td>
       </tr>
@@ -493,6 +501,10 @@ function handleEditClick(id) {
 }
 
 async function handleDeleteClick(id) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   if (!confirm(t("technicians.toast.deleteConfirm", "⚠️ هل أنت متأكد من حذف هذا العضو؟"))) return;
 
   try {
@@ -686,4 +698,8 @@ document.addEventListener('technicians:refreshRequested', () => {
 
 document.addEventListener("language:changed", () => {
   refreshTechnicianLanguageStrings();
+});
+
+document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
+  renderTechniciansTable();
 });

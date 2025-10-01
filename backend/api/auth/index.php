@@ -36,14 +36,33 @@ function handleAuthLogin(): void
     $username = trim((string) ($payload['username'] ?? ''));
     $password = (string) ($payload['password'] ?? '');
 
-    if ($username === '' || $password === '') {
-        respondError('Username and password are required', 422);
+    $usernameError = validateLoginUsername($username);
+    if ($usernameError !== null) {
+        respondError($usernameError, 422);
         return;
     }
 
-    $user = verifyCredentials($username, $password);
+    $passwordError = validateLoginPassword($password);
+    if ($passwordError !== null) {
+        respondError($passwordError, 422);
+        return;
+    }
 
-    if (!$user) {
+    $pdo = getDatabaseConnection();
+    $ipAddress = getClientIpAddress();
+    $normalizedUsername = trim($username);
+
+    if (isLoginRateLimited($pdo, $normalizedUsername, $ipAddress)) {
+        respondError('Too many login attempts. Try again later.', 429);
+        return;
+    }
+
+    $user = verifyCredentials($username, $password, $pdo);
+
+    $loginSuccessful = $user !== null;
+    recordLoginAttempt($pdo, $normalizedUsername, $ipAddress, $loginSuccessful);
+
+    if (!$loginSuccessful) {
         respondError('Invalid username or password', 401);
         return;
     }

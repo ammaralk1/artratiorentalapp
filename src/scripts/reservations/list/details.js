@@ -4,6 +4,7 @@ import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { calculateReservationDays } from '../../reservationsSummary.js';
+import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
 
@@ -38,6 +39,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const assignedTechnicians = (reservation.technicians || [])
     .map((id) => techniciansMap.get(String(id)))
     .filter(Boolean);
+  const canDelete = userCanManageDestructiveActions();
 
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
 
@@ -350,7 +352,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
       <div class="reservation-modal-actions">
         <button type="button" class="btn btn-warning" id="reservation-details-edit-btn" data-index="${index}">${editActionLabel}</button>
-        <button type="button" class="btn btn-danger" id="reservation-details-delete-btn" data-index="${index}">${deleteActionLabel}</button>
+        ${canDelete ? `<button type="button" class="btn btn-danger" id="reservation-details-delete-btn" data-index="${index}">${deleteActionLabel}</button>` : ''}
       </div>
     </div>
   `;

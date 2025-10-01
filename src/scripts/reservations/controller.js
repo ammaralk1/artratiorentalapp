@@ -1,5 +1,6 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
+import { userCanManageDestructiveActions, notifyPermissionDenied } from '../auth.js';
 import {
   initCreateReservationForm,
   refreshCreateReservationForm,
@@ -117,6 +118,10 @@ export function showReservationDetails(index) {
 }
 
 export function deleteReservation(index) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return false;
+  }
   const confirmed = window.confirm(
     t('reservations.toast.deleteConfirm', '⚠️ هل أنت متأكد من حذف هذا الحجز؟')
   );

@@ -110,6 +110,53 @@
   margin-top: 8px;
 }
 
+@media (max-width: 768px) {
+  .add-technicians-box,
+  .customer-form-box,
+  .management-form-box {
+    padding: 16px;
+    border-radius: 16px;
+    gap: 16px;
+  }
+
+  .management-form-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .management-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .management-form-grid .form-field {
+    min-width: 0;
+  }
+
+  .management-form .btn-primary {
+    width: 100%;
+  }
+
+  .management-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .management-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .management-search-bar .form-control {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .suggestions-list {
+    max-height: 200px;
+  }
+}
+
 .suggestions-list {
   position: absolute;
   inset-inline-start: 0;
@@ -206,11 +253,6 @@
 }
 
 @media (max-width: 576px) {
-  .management-form-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .management-form-icon {
     width: 48px;
     height: 48px;
@@ -218,7 +260,6 @@
   }
 
   .management-form-actions {
-    flex-direction: column;
-    align-items: stretch;
+    gap: 12px;
   }
 }

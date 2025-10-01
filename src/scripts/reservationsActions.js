@@ -2,6 +2,7 @@ import { showToast } from './utils.js';
 import { syncEquipmentStatuses } from './equipment.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { t } from './language.js';
+import { userCanManageDestructiveActions, notifyPermissionDenied } from './auth.js';
 import {
   getReservationsState,
   deleteReservationApi,
@@ -78,6 +79,10 @@ export function resetReservationsFetchState() {
 }
 
 export async function deleteReservation(index, { onAfterChange } = {}) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return false;
+  }
   const reservations = getReservationsState();
   const target = reservations[index];
 

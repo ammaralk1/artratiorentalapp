@@ -724,9 +724,10 @@ async function handleReservationSubmit() {
     return;
   }
 
+  const technicianIds = getSelectedTechnicians();
   const draftItems = getSelectedItems();
-  if (draftItems.length === 0) {
-    showToast(t('reservations.toast.noItems', '⚠️ لا يمكنك إنشاء حجز بدون معدات'));
+  if (draftItems.length === 0 && technicianIds.length === 0) {
+    showToast(t('reservations.toast.noItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل'));
     return;
   }
 
@@ -734,8 +735,6 @@ async function handleReservationSubmit() {
   const discount = parseFloat(normalizeNumbers(document.getElementById('res-discount')?.value)) || 0;
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
   const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
-
-  const technicianIds = getSelectedTechnicians();
 
   const selectedProject = projectIdValue ? findProjectById(projectIdValue) : null;
   const projectConfirmed = isProjectConfirmed(selectedProject);

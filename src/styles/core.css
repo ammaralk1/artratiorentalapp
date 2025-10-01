@@ -59,6 +59,30 @@ body {
   padding: 24px;
 }
 
+@media (max-width: 768px) {
+  body {
+    padding: 16px;
+  }
+
+  .container {
+    padding: 0 8px 48px;
+  }
+
+  .box {
+    padding: 22px;
+  }
+}
+
+@media (max-width: 576px) {
+  body {
+    padding: 12px;
+  }
+
+  .box {
+    padding: 18px;
+  }
+}
+
 html.language-loading body {
   visibility: hidden;
 }
@@ -223,6 +247,62 @@ html.dark-mode .projects-hero-text {
 
 .project-focus-wrapper {
   padding: 24px;
+}
+
+@media (max-width: 768px) {
+  .project-focus-wrapper {
+    padding: 18px 14px;
+  }
+
+  #project-focus-cards {
+    --bs-gutter-x: 1rem;
+    --bs-gutter-y: 1rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-inline: 0.5rem;
+    padding-bottom: 12px;
+    margin-inline: -0.5rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  #project-focus-cards::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  #project-focus-cards::-webkit-scrollbar-thumb {
+    background: rgba(76, 110, 245, 0.25);
+    border-radius: 999px;
+  }
+
+  #project-focus-cards > [class*="col-"] {
+    flex: 0 0 clamp(250px, 82vw, 320px);
+    width: clamp(250px, 82vw, 320px);
+    max-width: clamp(250px, 82vw, 320px);
+    scroll-snap-align: start;
+  }
+
+  .project-focus-card {
+    padding: 14px;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .project-focus-card__title {
+    font-size: 1rem;
+  }
+
+  .project-focus-card__description {
+    font-size: 0.82rem;
+  }
+
+  .project-focus-card__section-box {
+    padding: 8px 10px;
+  }
+
+  .project-focus-card__row {
+    align-items: flex-start;
+  }
 }
 
 .project-focus-card {
@@ -806,6 +886,30 @@ html.dark-mode .projects-table-empty-row td {
   margin-top: 12px;
 }
 
+@media (max-width: 768px) {
+  .project-reservations-list {
+    grid-auto-flow: column;
+    grid-auto-columns: clamp(240px, 78vw, 320px);
+    overflow-x: auto;
+    padding-bottom: 12px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .project-reservations-list > * {
+    scroll-snap-align: start;
+  }
+
+  .project-reservations-list::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .project-reservations-list::-webkit-scrollbar-thumb {
+    background: rgba(76, 110, 245, 0.25);
+    border-radius: 999px;
+  }
+}
+
 @media (min-width: 768px) {
   .project-reservations-list {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1154,6 +1258,31 @@ body[dir="rtl"] .project-details-list li {
 
 .project-reservation-card__footer .btn {
   font-size: 0.8rem;
+}
+
+@media (max-width: 768px) {
+  .project-reservation-card {
+    padding: 14px;
+    gap: 8px;
+  }
+
+  .project-reservation-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .project-reservation-card__footer {
+    justify-content: flex-start;
+  }
+
+  .project-reservation-card__footer .btn {
+    width: 100%;
+  }
+
+  .project-reservation-card__meta {
+    flex-direction: column;
+  }
 }
 
 .res-info-row .value .btn {
@@ -1821,4 +1950,9 @@ textarea {
 .project-payment-select select,
 .project-edit-payment-select select {
   min-width: 160px;
+}
+
+html[data-user-role="manager"] .requires-admin,
+html[data-user-role="technician"] .requires-admin {
+  display: none !important;
 }

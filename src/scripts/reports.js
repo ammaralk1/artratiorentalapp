@@ -1,16 +1,17 @@
-import { isReservationCompleted } from './reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
-import { mapReservationFromApi } from './reservationsService.js';
+import { mapReservationFromApi, mapLegacyReservation } from './reservationsService.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
+import { loadData } from './storage.js';
 
 let cachedLocale = null;
 let numberFormatter = null;
 let currencyFormatter = null;
 
 const state = {
-  range: 'last30',
+  range: 'all',
   status: 'all',
   payment: 'all',
   search: '',
@@ -27,6 +28,8 @@ const reportsData = {
   customers: [],
   equipment: [],
   technicians: [],
+  projects: [],
+  projectsMap: new Map(),
 };
 
 let reportsLoading = false;
@@ -121,6 +124,118 @@ function mapEquipmentFromApi(raw = {}) {
   };
 }
 
+function mapProjectFromApi(raw = {}) {
+  const title = raw?.title ?? raw?.name ?? '';
+  const code = raw?.project_code ?? raw?.projectCode ?? '';
+  const status = raw?.status ?? '';
+  const confirmed = raw?.confirmed === true || normalizeStatusValue(status) === 'confirmed' || normalizeStatusValue(status) === 'completed';
+
+  return {
+    id: raw?.id != null ? String(raw.id) : '',
+    title,
+    code,
+    status,
+    confirmed,
+  };
+}
+
+function hydrateReportsFromCache() {
+  if (typeof loadData !== 'function') {
+    return false;
+  }
+
+  let cached;
+  try {
+    cached = loadData();
+  } catch (error) {
+    console.warn('⚠️ [reports] Failed to access cached data', error);
+    return false;
+  }
+
+  if (!cached || typeof cached !== 'object') {
+    return false;
+  }
+
+  const {
+    reservations = [],
+    customers = [],
+    equipment = [],
+    technicians = [],
+    projects = [],
+  } = cached;
+
+  const hasData = reservations.length || customers.length || equipment.length || technicians.length || projects.length;
+  if (!hasData) {
+    return false;
+  }
+
+  reportsData.reservations = Array.isArray(reservations)
+    ? reservations.map(mapLegacyReservation)
+    : [];
+  reportsData.customers = Array.isArray(customers)
+    ? customers.map(mapCustomerFromApi)
+    : [];
+  reportsData.equipment = Array.isArray(equipment)
+    ? equipment.map(mapEquipmentFromApi)
+    : [];
+  reportsData.technicians = Array.isArray(technicians)
+    ? technicians.map(mapTechnicianFromApi)
+    : [];
+  reportsData.projects = Array.isArray(projects)
+    ? projects.map(mapProjectFromApi)
+    : [];
+  reportsData.projectsMap = new Map(reportsData.projects.map((project) => [project.id, project]));
+
+  return true;
+}
+
+function getProjectForReservation(reservation) {
+  if (!reservation?.projectId) return null;
+  return reportsData.projectsMap.get(String(reservation.projectId)) || null;
+}
+
+function computeReportStatus(reservation) {
+  const project = getProjectForReservation(reservation);
+  const projectState = resolveReservationProjectState(reservation, project);
+  const projectStatus = normalizeStatusValue(projectState.projectStatus);
+
+  let statusValue = normalizeStatusValue(
+    reservation?.status
+      ?? reservation?.reservationStatus
+      ?? reservation?.reservation_status
+      ?? reservation?.state
+      ?? ''
+  );
+
+  if (projectState.projectLinked && projectStatus) {
+    statusValue = projectStatus;
+  }
+
+  if (!statusValue || statusValue === 'cancelled') {
+    statusValue = projectState.effectiveConfirmed ? 'confirmed' : 'pending';
+  }
+
+  if (isReservationCompleted(reservation) || projectStatus === 'completed') {
+    statusValue = 'completed';
+  }
+
+  const confirmed = projectState.effectiveConfirmed
+    || statusValue === 'confirmed'
+    || statusValue === 'completed';
+
+  if (confirmed && statusValue !== 'completed') {
+    statusValue = 'confirmed';
+  }
+
+  const paid = isReservationPaid(reservation);
+
+  return {
+    statusValue,
+    confirmed,
+    paid,
+  };
+}
+
 async function loadReportsData({ silent = false } = {}) {
   if (reportsLoading) return;
   reportsLoading = true;
@@ -131,11 +246,12 @@ async function loadReportsData({ silent = false } = {}) {
   }
 
   try {
-    const [reservationsRes, customersRes, equipmentRes, techniciansRes] = await Promise.all([
+    const [reservationsRes, customersRes, equipmentRes, techniciansRes, projectsRes] = await Promise.all([
       apiRequest('/reservations/?limit=500'),
       apiRequest('/customers/?limit=500'),
       apiRequest('/equipment/?limit=500'),
       apiRequest('/technicians/?limit=500'),
+      apiRequest('/projects/?limit=500'),
     ]);
 
     reportsData.reservations = Array.isArray(reservationsRes?.data)
@@ -150,6 +266,10 @@ async function loadReportsData({ silent = false } = {}) {
     reportsData.technicians = Array.isArray(techniciansRes?.data)
       ? techniciansRes.data.map(mapTechnicianFromApi)
       : [];
+    reportsData.projects = Array.isArray(projectsRes?.data)
+      ? projectsRes.data.map(mapProjectFromApi)
+      : [];
+    reportsData.projectsMap = new Map(reportsData.projects.map((project) => [project.id, project]));
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
     reportsErrorMessage = error instanceof ApiError
@@ -159,6 +279,8 @@ async function loadReportsData({ silent = false } = {}) {
     reportsData.customers = [];
     reportsData.equipment = [];
     reportsData.technicians = [];
+    reportsData.projects = [];
+    reportsData.projectsMap = new Map();
   } finally {
     reportsLoading = false;
     renderReports();
@@ -221,6 +343,13 @@ export function initReports() {
 
   if (!rangeSelect) {
     return;
+  }
+
+  rangeSelect.value = state.range;
+
+  const hydratedFromCache = hydrateReportsFromCache();
+  if (hydratedFromCache) {
+    renderReports();
   }
 
   rangeSelect.addEventListener('change', () => {
@@ -335,16 +464,25 @@ export function renderReports() {
 function setupCustomRangePickers(startInput, endInput) {
   if (!window.flatpickr) return;
 
-  const locale = window.flatpickr?.l10ns?.ar ? window.flatpickr.l10ns.ar : undefined;
+  const locale = window.flatpickr?.l10ns?.ar ? window.flatpickr.l10ns.ar : null;
+  const baseOptions = (handlers) => {
+    const options = {
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      disableMobile: true,
+      ...handlers
+    };
+    if (locale) {
+      options.locale = locale;
+    }
+    return options;
+  };
+
   let startPickerInstance = null;
   let endPickerInstance = null;
 
   if (startInput) {
-    startPickerInstance = window.flatpickr(startInput, {
-      dateFormat: 'Y-m-d',
-      allowInput: true,
-      disableMobile: true,
-      locale,
+    startPickerInstance = window.flatpickr(startInput, baseOptions({
       onChange(selectedDates, dateStr) {
         state.start = dateStr || null;
         if (!endPickerInstance) return;
@@ -359,15 +497,11 @@ function setupCustomRangePickers(startInput, endInput) {
         state.start = dateStr || null;
         renderIfCustomRange();
       }
-    });
+    }));
   }
 
   if (endInput) {
-    endPickerInstance = window.flatpickr(endInput, {
-      dateFormat: 'Y-m-d',
-      allowInput: true,
-      disableMobile: true,
-      locale,
+    endPickerInstance = window.flatpickr(endInput, baseOptions({
       onChange(selectedDates, dateStr) {
         state.end = dateStr || null;
         if (!startPickerInstance) return;
@@ -382,7 +516,7 @@ function setupCustomRangePickers(startInput, endInput) {
         state.end = dateStr || null;
         renderIfCustomRange();
       }
-    });
+    }));
   }
 
   if (startPickerInstance && endInput?.value) {
@@ -421,12 +555,12 @@ function filterReservations(reservations, filters, customers, equipment, technic
     if (startDate && start < startDate) return false;
     if (endDate && start > endDate) return false;
 
-    const statusValue = getReservationStatusValue(reservation);
-    if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed')) return false;
+    const { statusValue, confirmed, paid } = computeReportStatus(reservation);
+
+    if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed' || confirmed)) return false;
     if (filters.status === 'pending' && statusValue !== 'pending') return false;
     if (filters.status === 'completed' && statusValue !== 'completed') return false;
 
-    const paid = isReservationPaid(reservation);
     if (filters.payment === 'paid' && !paid) return false;
     if (filters.payment === 'unpaid' && paid) return false;
 
@@ -446,7 +580,7 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
 
   if (reservation?.notes) parts.push(reservation.notes);
 
-  const statusValue = getReservationStatusValue(reservation);
+  const { statusValue } = computeReportStatus(reservation);
   if (statusValue) parts.push(statusValue);
 
   const paymentStatus = reservation?.paymentStatus || reservation?.payment_status;
@@ -458,6 +592,11 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
   const customer = customerMap.get(String(reservation?.customerId));
   if (customer) {
     parts.push(customer.customerName, customer.company_name || customer.companyName, customer.contact_person || '');
+  }
+
+  const project = getProjectForReservation(reservation);
+  if (project) {
+    parts.push(project.title, project.code, project.status);
   }
 
   parts.push(paymentLabelText(reservation));
@@ -492,7 +631,7 @@ function resolveRange({ range, start, end }) {
     return { startDate: isValidDate(startDate) ? startDate : null, endDate: isValidDate(endDate) ? endDate : null };
   }
 
-  const endDate = new Date(now);
+  let endDate = new Date(now);
   let startDate = null;
 
   switch (range) {
@@ -552,11 +691,7 @@ function isValidDate(date) {
 }
 
 function isReservationConfirmed(reservation) {
-  const statusValue = getReservationStatusValue(reservation);
-  if (statusValue === 'confirmed' || statusValue === 'completed') {
-    return true;
-  }
-  return reservation?.confirmed === true || reservation?.confirmed === 'true';
+  return computeReportStatus(reservation).confirmed;
 }
 
 const STATUS_MAP = new Map([
@@ -618,37 +753,30 @@ function isReservationPaid(reservation) {
 }
 
 function getReservationStatusValue(reservation) {
-  const statusFields = [
-    reservation?.status,
-    reservation?.reservationStatus,
-    reservation?.reservation_status,
-    reservation?.state
-  ];
-
-  for (const field of statusFields) {
-    const value = normalizeStatusValue(field);
-    if (value) {
-      if (value === 'cancelled') return 'pending';
-      return value;
-    }
-  }
-
-  if (isReservationCompleted(reservation)) {
-    return 'completed';
-  }
-  if (reservation?.confirmed === true || reservation?.confirmed === 'true') {
-    return 'confirmed';
-  }
-  return 'pending';
+  return computeReportStatus(reservation).statusValue;
 }
 
 function calculateMetrics(reservations) {
   const total = reservations.length;
-  const confirmed = reservations.filter(isReservationConfirmed).length;
-  const completed = reservations.filter(isReservationCompleted).length;
-  const paidCount = reservations.filter(isReservationPaid).length;
+  let confirmed = 0;
+  let completed = 0;
+  let paidCount = 0;
+  let revenue = 0;
 
-  const revenue = reservations.reduce((sum, res) => sum + (Number(res?.cost) || 0), 0);
+  reservations.forEach((reservation) => {
+    const { statusValue, confirmed: isConfirmed, paid } = computeReportStatus(reservation);
+    if (statusValue === 'completed') {
+      completed += 1;
+    }
+    if (isConfirmed) {
+      confirmed += 1;
+    }
+    if (paid) {
+      paidCount += 1;
+    }
+    revenue += Number(reservation?.cost) || 0;
+  });
+
   const average = total ? revenue / total : 0;
 
   return {
@@ -694,10 +822,10 @@ function calculateStatusBreakdown(reservations) {
   };
 
   (reservations || []).forEach((reservation) => {
-    const status = getReservationStatusValue(reservation);
-    if (status === 'completed') {
+    const { statusValue, confirmed } = computeReportStatus(reservation);
+    if (statusValue === 'completed') {
       counts.completed += 1;
-    } else if (status === 'confirmed') {
+    } else if (statusValue === 'confirmed' || confirmed) {
       counts.confirmed += 1;
     } else {
       counts.pending += 1;
@@ -705,16 +833,16 @@ function calculateStatusBreakdown(reservations) {
   });
 
   const total = Math.max(1, (reservations || []).length);
-  const confirmed = counts.confirmed;
+  const confirmedCount = counts.confirmed;
   const pending = counts.pending;
   const completed = counts.completed;
 
   return [
     {
       label: translate('reservations.reports.status.confirmedLabel', 'مؤكدة', 'Confirmed'),
-      value: confirmed,
-      percent: Math.round((confirmed / total) * 100) || 0,
-      rawCount: confirmed,
+      value: confirmedCount,
+      percent: Math.round((confirmedCount / total) * 100) || 0,
+      rawCount: confirmedCount,
       className: 'status-confirmed'
     },
     {
@@ -736,7 +864,7 @@ function calculateStatusBreakdown(reservations) {
 
 function calculatePaymentBreakdown(reservations) {
   const total = reservations.length || 1;
-  const paid = reservations.filter(isReservationPaid).length;
+  const paid = reservations.filter((reservation) => computeReportStatus(reservation).paid).length;
   const unpaid = reservations.length - paid;
 
   return [
@@ -966,13 +1094,14 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
 }
 
 function paymentLabelText(reservation) {
-  return isReservationPaid(reservation)
+  const { paid } = computeReportStatus(reservation);
+  return paid
     ? translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid')
     : translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid');
 }
 
 function formatReservationStatus(reservation) {
-  const statusValue = getReservationStatusValue(reservation);
+  const { statusValue } = computeReportStatus(reservation);
   if (statusValue === 'completed') {
     return translate('reservations.list.status.completed', '📁 منتهي', 'Completed');
   }

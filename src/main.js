@@ -14,6 +14,7 @@ import {
 import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
+import { initReports } from './scripts/reports.js';
 
 applyStoredTheme();
 
@@ -31,6 +32,7 @@ async function initApp() {
   renderCalendar();
 
   initMaintenance();
+  initReports();
 
   loadReservationForm();
   setupReservationEvents();

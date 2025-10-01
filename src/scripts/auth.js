@@ -2,9 +2,35 @@ import { showToast } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { updatePreferences, clearSkipRemotePreferencesFlag } from './preferencesService.js';
 import { getCurrentTheme } from './theme.js';
+import { t } from './language.js';
 
 const ERROR_MESSAGE = '❌ بيانات الدخول غير صحيحة';
 let currentUser = null;
+
+export const AUTH_EVENTS = {
+  USER_UPDATED: 'auth:user-updated',
+};
+
+function applyRoleToDocument(role) {
+  if (typeof document === 'undefined') return;
+
+  const root = document.documentElement;
+  if (!root) return;
+
+  if (role) {
+    root.dataset.userRole = role;
+  } else {
+    delete root.dataset.userRole;
+  }
+}
+
+function emitUserUpdated() {
+  if (typeof document === 'undefined') return;
+
+  document.dispatchEvent(new CustomEvent(AUTH_EVENTS.USER_UPDATED, {
+    detail: currentUser ? { ...currentUser } : null,
+  }));
+}
 
 function setCurrentUser(user) {
   if (user && typeof user === 'object') {
@@ -18,6 +44,9 @@ function setCurrentUser(user) {
   } else {
     currentUser = null;
   }
+
+  applyRoleToDocument(currentUser?.role || '');
+  emitUserUpdated();
 }
 
 function renderLoginError(message = ERROR_MESSAGE) {
@@ -119,4 +148,16 @@ export function checkAuth({ redirect = true } = {}) {
       }
       return null;
     });
+}
+
+export function getCurrentUserRole() {
+  return currentUser?.role || null;
+}
+
+export function userCanManageDestructiveActions() {
+  return getCurrentUserRole() === 'admin';
+}
+
+export function notifyPermissionDenied() {
+  showToast(t('auth.permissions.denied', '⚠️ ليس لديك صلاحية لتنفيذ هذا الإجراء'), 'error');
 }

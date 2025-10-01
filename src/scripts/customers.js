@@ -2,6 +2,7 @@ import { saveData, loadData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
 import { apiRequest, ApiError } from "./apiClient.js";
+import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 
 let editingCustomerId = null;
 let isCustomersLoading = false;
@@ -241,6 +242,10 @@ async function handleCustomerTableClick(event) {
   if (!(target instanceof HTMLElement)) return;
 
   if (target.classList.contains("customer-delete-btn")) {
+    if (!userCanManageDestructiveActions()) {
+      notifyPermissionDenied();
+      return;
+    }
     const id = target.dataset.id;
     if (!confirm(t("customers.toast.deleteConfirm", "⚠️ هل أنت متأكد من حذف هذا العميل؟"))) {
       return;
@@ -330,6 +335,10 @@ document.addEventListener('customers:refreshRequested', () => {
   refreshCustomerLanguageStrings();
 });
 
+document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
+  renderCustomers();
+});
+
 export function renderCustomers(customersOverride, options = {}) {
   const usingOverride = Array.isArray(customersOverride);
   const customers = usingOverride ? customersOverride : getCustomers();
@@ -358,12 +367,20 @@ export function renderCustomers(customersOverride, options = {}) {
 
   const editLabel = t("customers.actions.edit", "✏️ تعديل");
   const deleteLabel = t("customers.actions.delete", "🗑️ حذف");
+  const canDelete = userCanManageDestructiveActions();
 
   customers.forEach((customer) => {
     const isEditing = editingCustomerId && String(editingCustomerId) === String(customer.id);
     const row = document.createElement("tr");
     if (isEditing) {
       row.classList.add("table-info");
+    }
+    const actionButtons = [
+      `<button class="btn btn-sm btn-warning customer-edit-btn" data-id="${customer.id}">${editLabel}</button>`
+    ];
+
+    if (canDelete) {
+      actionButtons.push(`<button class="btn btn-sm btn-danger customer-delete-btn" data-id="${customer.id}">${deleteLabel}</button>`);
     }
     row.innerHTML = `
       <td><a href="customer.html?id=${customer.id}" class="text-decoration-none">${customer.full_name}</a></td>
@@ -372,8 +389,7 @@ export function renderCustomers(customersOverride, options = {}) {
       <td class="table-notes-cell">${customer.notes || "—"}</td>
       <td class="table-actions-cell">
         <div class="table-action-buttons">
-          <button class="btn btn-sm btn-warning customer-edit-btn" data-id="${customer.id}">${editLabel}</button>
-          <button class="btn btn-sm btn-danger customer-delete-btn" data-id="${customer.id}">${deleteLabel}</button>
+          ${actionButtons.join('')}
         </div>
       </td>
     `;

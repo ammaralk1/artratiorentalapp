@@ -2,6 +2,7 @@ import { loadData } from './storage.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
 import { refreshEquipmentFromApi, renderEquipment } from './equipment.js';
 import { t } from './language.js';
+import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from './auth.js';
 import {
   getMaintenanceState,
   refreshMaintenanceFromApi,
@@ -491,7 +492,9 @@ function renderTable(tickets) {
       } else {
         actionButtons.push(`<button class="btn btn-sm btn-warning" data-action="view" data-id="${ticket.id}">${viewLabel}</button>`);
       }
-      actionButtons.push(`<button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
+      if (userCanManageDestructiveActions()) {
+        actionButtons.push(`<button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
+      }
 
       const actions = actionButtons.join('');
       const noBarcode = t('maintenance.table.noBarcode', 'بدون باركود');
@@ -539,6 +542,10 @@ function handleTableActions(event) {
   } else if (action === 'view') {
     viewTicketReport(id);
   } else if (action === 'delete') {
+    if (!userCanManageDestructiveActions()) {
+      notifyPermissionDenied();
+      return;
+    }
     deleteTicket(id).catch((error) => {
       console.error('❌ [maintenance] deleteTicket failed', error);
     });
@@ -625,6 +632,10 @@ function viewTicketReport(id) {
 }
 
 async function deleteTicket(id) {
+  if (!userCanManageDestructiveActions()) {
+    notifyPermissionDenied();
+    return;
+  }
   const tickets = loadTickets();
   const ticket = tickets.find((item) => Number(item.id) === Number(id));
   if (!ticket) {
@@ -840,6 +851,10 @@ document.addEventListener('language:changed', () => {
   }
   renderMaintenance();
   setCloseModalLoading(false);
+});
+
+document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
+  renderMaintenance();
 });
 
 window.addEventListener('maintenance:updated', () => {

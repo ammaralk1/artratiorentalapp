@@ -143,6 +143,58 @@ body.tabs-loading .tab {
   color: #f8fafc;
 }
 
+@media (max-width: 768px) {
+  .tab-buttons,
+  .sub-tab-buttons {
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+    padding: 0 8px 10px;
+    margin: 0 -8px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .tab-buttons::-webkit-scrollbar,
+  .sub-tab-buttons::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .tab-buttons::-webkit-scrollbar-thumb,
+  .sub-tab-buttons::-webkit-scrollbar-thumb {
+    background: rgba(76, 110, 245, 0.25);
+    border-radius: 999px;
+  }
+
+  .tab-button,
+  .sub-tab-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: center;
+  }
+
+  .tab-button {
+    padding-inline: 18px;
+  }
+
+  .sub-tab-button {
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .tab-button,
+  .sub-tab-button {
+    font-size: 0.95rem;
+    padding: 8px 16px;
+  }
+
+  .tab-buttons,
+  .sub-tab-buttons {
+    gap: 10px;
+  }
+}
+
 #reservations-tab {
   display: flex;
   flex-direction: column;

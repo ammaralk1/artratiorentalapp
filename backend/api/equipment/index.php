@@ -173,6 +173,7 @@ function handleEquipmentCreate(PDO $pdo): void
 
 function handleEquipmentBulkCreate(PDO $pdo, array $items): void
 {
+    requireRole('admin');
     if (!array_is_list($items)) {
         respondError('Invalid bulk payload', 422);
         return;
@@ -331,6 +332,7 @@ function handleEquipmentUpdate(PDO $pdo): void
 
 function handleEquipmentDelete(PDO $pdo): void
 {
+    requireRole('admin');
     $deleteAll = isset($_GET['all']) ? filter_var($_GET['all'], FILTER_VALIDATE_BOOLEAN) : false;
 
     if ($deleteAll) {

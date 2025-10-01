@@ -8,3 +8,15 @@ RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]
 RewriteCond %{HTTP_HOST} ^art-ratio\.com$ [NC]
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]
+
+# Catch-all HTTPS redirect (covers any other host variations)
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "SAMEORIGIN"
+
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com 'sha256-EGdlXNgllo35GXXUiHmmPFdrtgxIQOCUxBHCpdYQng0='; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; frame-src 'self'; form-action 'self'; worker-src 'self' blob:;"
+</IfModule>

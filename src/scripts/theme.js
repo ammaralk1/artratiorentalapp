@@ -52,6 +52,14 @@ function applyThemeInternal(theme, { persist = true } = {}) {
   storeSessionTheme(normalizedTheme);
   updateAllToggleButtons(normalizedTheme);
 
+  try {
+    document.dispatchEvent(new CustomEvent('theme:changed', {
+      detail: { theme: normalizedTheme }
+    }));
+  } catch (error) {
+    console.warn('⚠️ [theme.js] Failed to dispatch theme change event', error);
+  }
+
   if (persist) {
     updatePreferences({ theme: normalizedTheme }).catch((error) => {
       console.warn('⚠️ تعذر حفظ تفضيل السمة في الخادم', error);
