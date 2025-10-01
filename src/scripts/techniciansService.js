@@ -2,7 +2,8 @@ import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 
-let techniciansState = (loadData().technicians || []).map(mapLegacyTechnician);
+const initialTechniciansData = loadData() || {};
+let techniciansState = (initialTechniciansData.technicians || []).map(mapLegacyTechnician);
 
 export function getTechniciansState() {
   return techniciansState;

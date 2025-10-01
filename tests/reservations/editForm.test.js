@@ -119,8 +119,8 @@ describe('reservations/editForm module', () => {
 
   it('renderEditReservationItems renders rows and empty state', async () => {
     const container = document.createElement('tbody');
-    container.id = 'edit-res-items';
-    document.body.appendChild(container);
+   container.id = 'edit-res-items';
+   document.body.appendChild(container);
     const module = await import('../../src/scripts/reservations/editForm.js');
 
     module.renderEditReservationItems([]);
@@ -131,6 +131,26 @@ describe('reservations/editForm module', () => {
     ]);
     expect(container.innerHTML).toContain('Camera');
     expect(container.innerHTML).toContain('🗑️');
+  });
+
+  it('renderEditReservationItems binds remove buttons to handler', async () => {
+    const container = document.createElement('tbody');
+    container.id = 'edit-res-items';
+    document.body.appendChild(container);
+    const module = await import('../../src/scripts/reservations/editForm.js');
+
+    getEditingStateMock.mockReturnValue({ index: 1, items: [{ barcode: 'B1', desc: 'Camera' }, { barcode: 'B2', desc: 'Light' }] });
+    setEditingStateMock.mockClear();
+
+    module.renderEditReservationItems([{ barcode: 'B1', desc: 'Camera', price: 120, qty: 2 }]);
+
+    const button = container.querySelector('[data-action="remove-edit-item"]');
+    expect(button).toBeTruthy();
+
+    button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    expect(setEditingStateMock).toHaveBeenCalled();
+    expect(setEditingStateMock.mock.calls[0][0]).toBe(1);
   });
 
   it('updateEditReservationSummary normalizes discount and renders summary', async () => {

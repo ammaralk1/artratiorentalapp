@@ -7,7 +7,8 @@ import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } 
 let editingCustomerId = null;
 let isCustomersLoading = false;
 let customersErrorMessage = "";
-let customersState = (loadData().customers || []).map(mapToInternalCustomer);
+const initialCustomersData = loadData() || {};
+let customersState = (initialCustomersData.customers || []).map(mapToInternalCustomer);
 
 function mapToInternalCustomer(rawCustomer = {}) {
   if (!rawCustomer || typeof rawCustomer !== "object") {

@@ -1,7 +1,8 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 
-let projectsState = (loadData().projects || []).map(mapLegacyProject);
+const initialProjectsData = loadData() || {};
+let projectsState = (initialProjectsData.projects || []).map(mapLegacyProject);
 let hasFetchedProjects = false;
 
 export function getProjectsState() {
@@ -241,4 +242,3 @@ function toInternalProject(raw = {}) {
 export function isApiError(error) {
   return error instanceof ApiError;
 }
-

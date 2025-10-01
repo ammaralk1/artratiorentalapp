@@ -2,7 +2,8 @@ import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 
-let maintenanceState = (loadData().maintenance || []).map(mapLegacyMaintenanceTicket);
+const initialMaintenanceData = loadData() || {};
+let maintenanceState = (initialMaintenanceData.maintenance || []).map(mapLegacyMaintenanceTicket);
 
 export function getMaintenanceState() {
   return maintenanceState;

@@ -4,9 +4,17 @@ import { t } from "./language.js";
 import { apiRequest, ApiError } from "./apiClient.js";
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 
-let equipmentState = (loadData().equipment || []).map(mapLegacyEquipment);
+const initialEquipmentData = loadData() || {};
+let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
 let isEquipmentLoading = false;
 let equipmentErrorMessage = "";
+
+function getBootstrapModal(element) {
+  if (!element) return null;
+  const bootstrapModal = window?.bootstrap?.Modal ?? (typeof bootstrap !== 'undefined' ? bootstrap.Modal : null);
+  if (!bootstrapModal) return null;
+  return bootstrapModal.getOrCreateInstance(element);
+}
 
 function emitEquipmentChanged() {
   document.dispatchEvent(new CustomEvent("equipment:changed"));
@@ -374,20 +382,22 @@ function renderEquipmentItem({ item, index }) {
   const canDelete = userCanManageDestructiveActions();
 
   const actionButtons = [
-    `<button class="btn btn-sm btn-warning" onclick="editEquipmentModal(${index})">${editLabel}</button>`
+    `<button type="button" class="btn btn-sm btn-warning" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
 
   if (canDelete) {
-    actionButtons.push(`<button class="btn btn-sm btn-danger" onclick="deleteEquipment(${index})">${deleteLabel}</button>`);
+    actionButtons.push(
+      `<button type="button" class="btn btn-sm btn-danger" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
+    );
   }
 
   return `
-    <div class="border-bottom py-3 d-flex align-items-center">
-      <div class="equipment-image me-3" style="width:120px;height:120px;">
+    <div class="border-bottom py-3 d-flex align-items-center" data-equipment-index="${index}">
+      <div class="equipment-image me-3">
         ${
           imageUrl
-            ? `<img src="${imageUrl}" alt="${imageAlt}" class="img-fluid rounded" style="width:100%;height:100%;object-fit:cover;">`
-            : `<div class="no-image d-flex align-items-center justify-content-center bg-light rounded" style="width:100%;height:100%;font-size:36px;">📦</div>`
+            ? `<img src="${imageUrl}" alt="${imageAlt}" class="img-fluid rounded">`
+            : `<div class="no-image d-flex align-items-center justify-content-center bg-light rounded">📦</div>`
         }
       </div>
 
@@ -774,23 +784,7 @@ function handleEquipmentSearch() {
   renderEquipment();
 }
 
-function wireUpEquipmentUI() {
-  document.getElementById("search-equipment")?.addEventListener("input", handleEquipmentSearch);
-  document.getElementById("filter-category")?.addEventListener("change", handleEquipmentSearch);
-  document.getElementById("filter-sub")?.addEventListener("change", handleEquipmentSearch);
-  document.getElementById("filter-status")?.addEventListener("change", handleEquipmentSearch);
-  document.getElementById("add-equipment-form")?.addEventListener("submit", handleAddEquipmentSubmit);
-}
-
-window.deleteEquipment = (index) => {
-  deleteEquipment(index).catch((error) => console.error("❌ [equipment.js] deleteEquipment", error));
-};
-
-window.clearEquipment = () => {
-  clearEquipment().catch((error) => console.error("❌ [equipment.js] clearEquipment", error));
-};
-
-window.editEquipmentModal = function (index) {
+function openEditEquipmentModal(index) {
   const item = getAllEquipment()[index];
   if (!item) return;
 
@@ -804,9 +798,56 @@ window.editEquipmentModal = function (index) {
   document.getElementById("edit-equipment-status").value = statusToFormValue(item.status);
   document.getElementById("edit-equipment-image").value = getEquipmentImage(item) || "";
 
-  const modal = new bootstrap.Modal(document.getElementById("editEquipmentModal"));
-  modal.show();
-};
+  getBootstrapModal(document.getElementById("editEquipmentModal"))?.show();
+}
+
+function handleEquipmentListClick(event) {
+  const actionButton = event.target.closest('[data-equipment-action]');
+  if (!actionButton) return;
+
+  event.preventDefault();
+  const action = actionButton.dataset.equipmentAction;
+  const index = Number(actionButton.dataset.equipmentIndex);
+  if (Number.isNaN(index)) {
+    return;
+  }
+
+  if (action === 'edit') {
+    openEditEquipmentModal(index);
+    return;
+  }
+
+  if (action === 'delete') {
+    deleteEquipment(index).catch((error) => {
+      console.error('❌ [equipment.js] deleteEquipment', error);
+    });
+  }
+}
+
+function wireUpEquipmentUI() {
+  document.getElementById("search-equipment")?.addEventListener("input", handleEquipmentSearch);
+  document.getElementById("filter-category")?.addEventListener("change", handleEquipmentSearch);
+  document.getElementById("filter-sub")?.addEventListener("change", handleEquipmentSearch);
+  document.getElementById("filter-status")?.addEventListener("change", handleEquipmentSearch);
+  document.getElementById("add-equipment-form")?.addEventListener("submit", handleAddEquipmentSubmit);
+
+  const clearButton = document.getElementById('equipment-clear-btn');
+  if (clearButton && !clearButton.dataset.listenerAttached) {
+    clearButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      clearEquipment().catch((error) => {
+        console.error('❌ [equipment.js] clearEquipment', error);
+      });
+    });
+    clearButton.dataset.listenerAttached = 'true';
+  }
+
+  const equipmentList = document.getElementById('equipment-list');
+  if (equipmentList && !equipmentList.dataset.listenerAttached) {
+    equipmentList.addEventListener('click', handleEquipmentListClick);
+    equipmentList.dataset.listenerAttached = 'true';
+  }
+}
 
 document.getElementById("save-equipment-changes")?.addEventListener("click", async () => {
   const indexValue = document.getElementById("edit-equipment-index").value;
@@ -829,7 +870,7 @@ document.getElementById("save-equipment-changes")?.addEventListener("click", asy
 
   try {
     await editEquipment(index, updatedData);
-    bootstrap.Modal.getInstance(document.getElementById("editEquipmentModal")).hide();
+    getBootstrapModal(document.getElementById("editEquipmentModal"))?.hide();
   } catch (error) {
     console.error("❌ [equipment.js] editEquipment", error);
   }

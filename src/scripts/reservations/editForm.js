@@ -42,6 +42,7 @@ export function renderEditReservationItems(items = []) {
 
   if (!items || items.length === 0) {
     container.innerHTML = `<tr><td colspan="6" class="text-center">${noItemsMessage}</td></tr>`;
+    ensureRemoveHandler(container);
     return;
   }
 
@@ -60,11 +61,34 @@ export function renderEditReservationItems(items = []) {
           <td>${priceDisplay}</td>
           <td>${qtyDisplay}</td>
           <td>${imageCell}</td>
-          <td><button type="button" class="btn btn-sm btn-danger" onclick="removeEditReservationItem(${index})">🗑️</button></td>
+          <td><button type="button" class="btn btn-sm btn-danger" data-action="remove-edit-item" data-item-index="${index}">🗑️</button></td>
         </tr>
       `;
     })
     .join('');
+
+  ensureRemoveHandler(container);
+}
+
+function ensureRemoveHandler(container) {
+  if (!container || container.dataset.removeListenerAttached) {
+    return;
+  }
+
+  container.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-action="remove-edit-item"]');
+    if (!trigger) {
+      return;
+    }
+
+    event.preventDefault();
+    const index = Number(trigger.dataset.itemIndex);
+    if (!Number.isNaN(index)) {
+      removeEditReservationItem(index);
+    }
+  });
+
+  container.dataset.removeListenerAttached = 'true';
 }
 
 export function updateEditReservationSummary() {

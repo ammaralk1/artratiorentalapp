@@ -22,6 +22,7 @@ const combineDateTimeMock = vi.fn();
 const addEquipmentByDescriptionMock = vi.fn();
 const setFlatpickrValueMock = vi.fn();
 const populateEquipmentDescriptionListsMock = vi.fn();
+const ensureProjectsLoadedMock = vi.fn(() => Promise.resolve([]));
 
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
@@ -52,6 +53,13 @@ vi.mock('../../src/scripts/reservations/editForm.js', () => ({
   removeEditReservationItem: removeEditReservationItemMock,
   updateEditReservationSummary: updateEditReservationSummaryMock
 }));
+vi.mock('../../src/scripts/auth.js', () => ({
+  userCanManageDestructiveActions: vi.fn(() => true),
+  notifyPermissionDenied: vi.fn(),
+  AUTH_EVENTS: {
+    USER_UPDATED: 'auth:user-updated'
+  }
+}));
 vi.mock('../../src/scripts/reservationsActions.js', () => ({
   confirmReservation: confirmReservationActionMock,
   deleteReservation: deleteReservationActionMock
@@ -63,6 +71,9 @@ vi.mock('../../src/scripts/reservationsEdit.js', () => ({
 vi.mock('../../src/scripts/reservationsTechnicians.js', () => ({
   reconcileTechnicianSelections: reconcileTechnicianSelectionsMock
 }));
+vi.mock('../../src/scripts/projectsService.js', () => ({
+  ensureProjectsLoaded: ensureProjectsLoadedMock
+}));
 
 const resetEnvironment = () => {
   vi.resetModules();
@@ -72,6 +83,14 @@ const resetEnvironment = () => {
   document.documentElement.className = '';
 
   loadDataMock.mockReset();
+  loadDataMock.mockReturnValue({
+    reservations: [],
+    customers: [],
+    technicians: [],
+    projects: [],
+    equipment: [],
+    maintenance: [],
+  });
   tMock.mockReset();
   refreshCreateReservationFormMock.mockReset();
   reconcileTechnicianSelectionsMock.mockReset();
@@ -132,10 +151,17 @@ describe('reservations/controller module', () => {
   });
 
   it('loadReservationForm loads technicians and refreshes form', async () => {
-    loadDataMock.mockReturnValue({ technicians: [{ id: 1 }] });
+    loadDataMock.mockReturnValue({
+      reservations: [],
+      customers: [],
+      technicians: [{ id: 1 }],
+      projects: [],
+      equipment: [],
+      maintenance: [],
+    });
     const module = await import('../../src/scripts/reservations/controller.js');
 
-    module.loadReservationForm();
+    await module.loadReservationForm();
 
     expect(loadDataMock).toHaveBeenCalled();
     expect(reconcileTechnicianSelectionsMock).toHaveBeenCalledWith([{ id: 1 }]);
@@ -211,7 +237,7 @@ describe('reservations/controller module', () => {
     const restoreLocation = setMockLocation();
     config.onEdit(9, { reservation: { reservationId: 'EDIT-42' } });
     expect(localStorage.getItem('pendingReservationEditId')).toBe('EDIT-42');
-    expect(window.location.href).toBe('dashboard.html#reservations');
+    expect(window.location.href).toBe('dashboard.html?reservationEditId=EDIT-42#reservations');
     restoreLocation();
   });
 
@@ -275,7 +301,7 @@ describe('reservations/controller module', () => {
     module.openReservationEditor(8, { reservationId: 'RSV-9999' });
 
     expect(localStorage.getItem('pendingReservationEditId')).toBe('RSV-9999');
-    expect(window.location.href).toBe('dashboard.html#reservations');
+    expect(window.location.href).toBe('dashboard.html?reservationEditId=RSV-9999#reservations');
     restoreLocation();
   });
 
@@ -288,6 +314,5 @@ describe('reservations/controller module', () => {
     expect(window.deleteReservation).toBe(module.deleteReservation);
     expect(window.confirmReservation).toBe(module.confirmReservation);
     expect(window.editReservation).toBe(module.openReservationEditor);
-    expect(window.removeEditReservationItem).toBe(removeEditReservationItemMock);
   });
 });

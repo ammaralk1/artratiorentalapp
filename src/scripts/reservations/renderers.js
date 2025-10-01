@@ -22,6 +22,7 @@ export function renderReservationsList({
 
   const container = document.getElementById(containerId);
   if (!container) {
+    console.warn('⚠️ [reservations/renderers] container not found', containerId);
     return;
   }
 

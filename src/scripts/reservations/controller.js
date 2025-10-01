@@ -23,7 +23,6 @@ import {
   renderEditReservationItems,
   addEquipmentToEditingReservation,
   addEquipmentToEditingByDescription,
-  removeEditReservationItem,
   updateEditReservationSummary
 } from './editForm.js';
 import {
@@ -41,10 +40,10 @@ import { updatePreferences } from '../preferencesService.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
 
 export function loadReservationForm() {
-  ensureProjectsLoaded().catch((error) => {
+  return ensureProjectsLoaded().catch((error) => {
     console.warn('⚠️ [reservations/controller] Failed to refresh projects before loading form', error);
   }).finally(() => {
-    const { technicians } = loadData();
+    const { technicians } = loadData() || {};
     reconcileTechnicianSelections(technicians || []);
     refreshCreateReservationForm();
   });
@@ -136,11 +135,23 @@ export function confirmReservation(index) {
 
 export function openReservationEditor(index, reservation = null) {
   if (document.getElementById('reservation-form')) {
+    try {
+      localStorage.removeItem('pendingReservationEditId');
+      localStorage.removeItem('pendingReservationEditIndex');
+    } catch (storageError) {
+      console.warn('⚠️ [reservations/controller] Unable to clear pending edit id (inline form)', storageError);
+    }
     editReservation(index, getReservationsEditContext());
     return;
   }
 
   if (document.getElementById('editReservationModal')) {
+    try {
+      localStorage.removeItem('pendingReservationEditId');
+      localStorage.removeItem('pendingReservationEditIndex');
+    } catch (storageError) {
+      console.warn('⚠️ [reservations/controller] Unable to clear pending edit id (modal)', storageError);
+    }
     editReservation(index, getReservationsEditContext());
     return;
   }
@@ -150,8 +161,20 @@ export function openReservationEditor(index, reservation = null) {
   if (reservation?.id || reservation?.reservationId) {
     const fallbackId = reservation.id ?? reservation.reservationId;
     params.set('reservationEditId', String(fallbackId));
+    try {
+      localStorage.setItem('pendingReservationEditId', String(fallbackId));
+      localStorage.removeItem('pendingReservationEditIndex');
+    } catch (storageError) {
+      console.warn('⚠️ [reservations/controller] Unable to persist pending edit id', storageError);
+    }
   } else {
     params.set('reservationEditIndex', String(index));
+    try {
+      localStorage.setItem('pendingReservationEditIndex', String(index));
+      localStorage.removeItem('pendingReservationEditId');
+    } catch (storageError) {
+      console.warn('⚠️ [reservations/controller] Unable to persist pending edit index', storageError);
+    }
   }
 
   updatePreferences({
@@ -173,7 +196,6 @@ export function registerReservationGlobals() {
   window.deleteReservation = deleteReservation;
   window.confirmReservation = confirmReservation;
   window.editReservation = openReservationEditor;
-  window.removeEditReservationItem = removeEditReservationItem;
 }
 
 export {

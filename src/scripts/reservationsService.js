@@ -2,7 +2,8 @@ import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 
-let reservationsState = (loadData().reservations || []).map(mapLegacyReservation);
+const initialReservationsData = loadData() || {};
+let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
 
 export function getReservationsState() {
   return reservationsState;
@@ -289,4 +290,3 @@ function normalisePaidStatus(status) {
 export function isApiError(error) {
   return error instanceof ApiError;
 }
-

@@ -9,10 +9,14 @@ const loadDataMock = vi.fn();
 const resolveItemImageMock = vi.fn();
 const calculateReservationDaysMock = vi.fn();
 
-vi.mock('../../../src/scripts/reservationsShared.js', () => ({
-  normalizeText: normalizeTextMock,
-  isReservationCompleted: isReservationCompletedMock
-}));
+vi.mock('../../../src/scripts/reservationsShared.js', async () => {
+  const actual = await vi.importActual('../../../src/scripts/reservationsShared.js');
+  return {
+    ...actual,
+    normalizeText: normalizeTextMock,
+    isReservationCompleted: isReservationCompletedMock
+  };
+});
 
 vi.mock('../../../src/scripts/language.js', () => ({
   t: tMock
@@ -69,8 +73,8 @@ describe('reservations/list helpers', () => {
     ]);
 
     const projectsMap = new Map([
-      ['1', { id: 1, title: 'Project Alpha' }],
-      ['3', { id: 3, title: 'Project Gamma' }]
+      ['1', { id: 1, title: 'Project Alpha', status: 'pending' }],
+      ['3', { id: 3, title: 'Project Gamma', status: 'confirmed' }]
     ]);
 
     const filters = {
