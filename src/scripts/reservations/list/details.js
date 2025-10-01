@@ -1,7 +1,7 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { calculateReservationDays } from '../../reservationsSummary.js';
 
@@ -17,11 +17,7 @@ function escapeHtml(value = '') {
 }
 
 export function buildReservationDetailsHtml(reservation, customer, techniciansList = [], index, project = null) {
-  const reservationConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
-  const projectLinked = Boolean(reservation.projectId);
-  const projectStatus = String(project?.status ?? '').toLowerCase();
-  const projectConfirmed = projectLinked && (project?.confirmed === true || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
-  const confirmed = reservationConfirmed || projectConfirmed;
+  const { projectLinked, effectiveConfirmed: confirmed } = resolveReservationProjectState(reservation, project);
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];

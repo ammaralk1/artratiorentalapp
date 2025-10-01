@@ -1,15 +1,34 @@
 import { renderReservations } from "./reservationsUI.js";
 import { resolveQuickDateRange } from "./reservationsFilters.js";
-import { normalizeNumbers } from "./utils.js";
+import { showToast, normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
-import { t, getCurrentLanguage } from "./language.js";
+import { t } from "./language.js";
 import { ensureReservationsLoaded } from "./reservationsActions.js";
-import { buildProjectCard } from "./projectsCommon.js";
+import { getReservationsState } from "./reservationsService.js";
+import {
+  buildProjectFocusCard,
+  buildProjectDetailsMarkup,
+  buildProjectEditMarkup,
+  buildProjectEditExpensesMarkup,
+  syncProjectReservationsPayment,
+  getProjectIdentifier,
+  combineDateAndTime,
+  extractReservationProjectId,
+  PROJECT_TAX_RATE
+} from "./projectFocusTemplates.js";
+import { calculateProjectExpenses } from "./projectsCommon.js";
+import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
+import { resolveReservationProjectState } from "./reservationsShared.js";
 
 let lastTechnicianFilters = {};
 let technicianProjectsContext = {
   initialized: false,
-  currentId: null
+  currentId: null,
+  modal: {
+    el: null,
+    body: null
+  },
+  projectsMap: new Map()
 };
 let technicianReservationsHydrated = false;
 
@@ -40,6 +59,29 @@ function applyQuickRangeToInputs(range, startInput, endInput) {
   } else {
     endInput.value = endDate || "";
   }
+}
+
+function normalizeTechnicianAssignments(technicians) {
+  if (!Array.isArray(technicians)) return [];
+  const seen = new Set();
+  return technicians
+    .map((entry) => {
+      if (entry == null) return null;
+      if (typeof entry === 'object') {
+        const id = entry.id ?? entry.technicianId ?? entry.technician_id ?? entry.technician?.id ?? null;
+        return id != null ? String(id) : null;
+      }
+      if (typeof entry === 'string' || typeof entry === 'number') {
+        return String(entry);
+      }
+      return null;
+    })
+    .filter((id) => {
+      if (!id) return false;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
 }
 
 export async function renderTechnicianReservations(technicianId) {
@@ -186,6 +228,8 @@ export function renderTechnicianProjects(technicianId) {
 
   if (!technicianProjectsContext.initialized) {
     setupTechnicianProjectsUI();
+    attachTechnicianProjectCardEvents();
+    setupTechnicianProjectModal();
     document.addEventListener('projects:changed', () => {
       if (technicianProjectsContext.currentId) {
         updateTechnicianProjects();
@@ -250,6 +294,64 @@ function setupTechnicianProjectsUI() {
   }
 }
 
+function attachTechnicianProjectCardEvents() {
+  const { container } = getTechnicianProjectsElements();
+  if (!container || container.dataset.projectModalListenerAttached === 'true') return;
+  container.addEventListener('click', handleTechnicianProjectCardClick);
+  container.dataset.projectModalListenerAttached = 'true';
+}
+
+function bindTechnicianProjectCards() {
+  const { container } = getTechnicianProjectsElements();
+  if (!container) return;
+
+  container.querySelectorAll('.project-focus-card').forEach((card) => {
+    if (card.dataset.technicianModalListenerAttached === 'true') return;
+
+    card.addEventListener('click', (event) => {
+      const ignored = event.target.closest('[data-ignore-project-modal]');
+      if (ignored) return;
+      const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
+      if (!projectId) return;
+      openTechnicianProjectDetails(projectId);
+    });
+
+    card.dataset.technicianModalListenerAttached = 'true';
+  });
+}
+
+function handleTechnicianProjectCardClick(event) {
+  const card = event.target.closest('.project-focus-card');
+  if (!card) return;
+  console.debug('[technician] card click', card.dataset.projectId);
+  if (!card) return;
+  const ignored = event.target.closest('[data-ignore-project-modal]');
+  if (ignored) return;
+  const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
+  if (!projectId) return;
+  openTechnicianProjectDetails(projectId);
+}
+
+function setupTechnicianProjectModal() {
+  ensureTechnicianProjectModal();
+}
+
+function ensureTechnicianProjectModal() {
+  if (technicianProjectsContext.modal?.el && technicianProjectsContext.modal?.body) {
+    return true;
+  }
+  const modalEl = document.getElementById('projectDetailsModal');
+  const modalBody = document.getElementById('project-details-body');
+  if (!modalEl || !modalBody) {
+    return false;
+  }
+  technicianProjectsContext.modal = {
+    el: modalEl,
+    body: modalBody
+  };
+  return true;
+}
+
 function updateTechnicianProjects() {
   const { container, searchInput, statusSelect } = getTechnicianProjectsElements();
   if (!container || !technicianProjectsContext.currentId) return;
@@ -261,37 +363,62 @@ function updateTechnicianProjects() {
   const customerMap = new Map(customers.map((customer) => [String(customer.id), customer]));
   const techniciansMap = new Map(technicians.map((tech) => [String(tech.id), tech]));
   const projectsMap = new Map(projects.map((project) => [String(project.id), project]));
+  const reservationsByProject = groupReservationsByProject(reservations);
 
   const normalizedId = String(technicianProjectsContext.currentId);
   const aggregatedProjects = new Map();
 
-  const addProject = (project) => {
+  const addProject = (project, normalizedTechnicians = null) => {
     if (!project) return;
     const key = project.id != null ? String(project.id) : (project.projectId != null ? String(project.projectId) : null);
     if (!key) return;
     if (!aggregatedProjects.has(key)) {
-      aggregatedProjects.set(key, project);
+      const techniciansList = normalizedTechnicians ?? normalizeTechnicianAssignments(project?.technicians);
+      aggregatedProjects.set(key, {
+        ...project,
+        technicians: techniciansList
+      });
     }
   };
 
   projects.forEach((project) => {
-    if (!Array.isArray(project?.technicians)) return;
-    if (project.technicians.some((id) => String(id) === normalizedId)) {
-      addProject(project);
-    }
+    const technicianIds = normalizeTechnicianAssignments(project?.technicians);
+    if (!technicianIds.length) return;
+    if (!technicianIds.includes(normalizedId)) return;
+    addProject({
+      ...project,
+      technicians: technicianIds
+    }, technicianIds);
   });
 
   reservations.forEach((reservation) => {
     if (!reservation?.projectId) return;
-    if (!Array.isArray(reservation.technicians)) return;
-    if (!reservation.technicians.some((id) => String(id) === normalizedId)) return;
+    const technicianIds = normalizeTechnicianAssignments(reservation.technicians);
+    if (!technicianIds.includes(normalizedId)) return;
 
     const projectId = String(reservation.projectId);
-    if (aggregatedProjects.has(projectId)) return;
-
+    const existingAggregated = aggregatedProjects.get(projectId);
     const existing = projectsMap.get(projectId);
+    const { effectiveConfirmed } = resolveReservationProjectState(reservation, existing ?? existingAggregated ?? null);
+    if (existingAggregated) {
+      const existingTechnicians = normalizeTechnicianAssignments(existingAggregated.technicians);
+      const mergedTechnicians = Array.from(new Set([...existingTechnicians, ...technicianIds]));
+      aggregatedProjects.set(projectId, {
+        ...existingAggregated,
+        technicians: mergedTechnicians,
+        confirmed: existingAggregated.confirmed || effectiveConfirmed
+      });
+      return;
+    }
+
     if (existing) {
-      addProject(existing);
+      const existingTechnicians = normalizeTechnicianAssignments(existing?.technicians);
+      const mergedTechnicians = Array.from(new Set([...existingTechnicians, ...technicianIds]));
+      addProject({
+        ...existing,
+        technicians: mergedTechnicians,
+        confirmed: resolveReservationProjectState(reservation, existing).effectiveConfirmed
+      }, mergedTechnicians);
       return;
     }
 
@@ -301,16 +428,27 @@ function updateTechnicianProjects() {
       description: reservation.notes || '',
       start: reservation.projectStart || reservation.start || null,
       end: reservation.projectEnd || reservation.end || null,
-      technicians: Array.isArray(reservation.technicians) ? [...reservation.technicians] : [],
+      technicians: technicianIds,
       clientId: reservation.projectClientId ?? reservation.customerId ?? null,
-      confirmed: reservation.confirmed === true,
+      confirmed: effectiveConfirmed,
       status: reservation.status ?? null,
       equipmentEstimate: reservation.totalAmount ?? reservation.total_amount ?? 0,
       createdAt: reservation.start ?? reservation.created_at ?? null,
-    });
+    }, technicianIds);
   });
 
   const relevant = Array.from(aggregatedProjects.values());
+
+  technicianProjectsContext.projectsMap = aggregatedProjects;
+  if (typeof window === 'object') {
+    window.__ART_RATIO_APP_DEBUG = {
+      ...(window.__ART_RATIO_APP_DEBUG || {}),
+      technicianProjects: {
+        projectsMap: aggregatedProjects,
+        keys: () => Array.from(aggregatedProjects.keys())
+      }
+    };
+  }
 
   const filtered = relevant.filter((project) => {
     if (searchTerm) {
@@ -343,86 +481,373 @@ function updateTechnicianProjects() {
 
   container.innerHTML = filtered
     .map((project) => {
-      const clientName = customerMap.get(String(project.clientId))?.customerName || null;
-      return buildProjectCard(project, {
+      const projectKey = getProjectIdentifier(project);
+      const linkedReservations = projectKey ? reservationsByProject.get(projectKey) || [] : [];
+      const customer = customerMap.get(String(project.clientId)) || null;
+      return buildProjectFocusCard(project, {
+        customer,
         techniciansMap,
-        clientName,
-        includeClientLine: Boolean(clientName)
+        reservations: linkedReservations
       });
     })
     .join('');
+
+  bindTechnicianProjectCards();
 }
 
-function buildTechnicianProjectCard(project, customerMap, techniciansMap) {
-  const status = determineProjectStatus(project);
-  const statusLabel = t(`projects.status.${status}`, statusLabelsFallback[status]);
-  const statusClass = statusBadgeClass[status] || 'bg-secondary';
+function groupReservationsByProject(reservations = []) {
+  const map = new Map();
+  reservations.forEach((reservation) => {
+    const key = reservation?.projectId ?? reservation?.project_id ?? reservation?.projectID;
+    if (key == null) return;
+    const mapKey = String(key);
+    if (!map.has(mapKey)) {
+      map.set(mapKey, []);
+    }
+    map.get(mapKey).push(reservation);
+  });
+  return map;
+}
 
-  const description = (project.description || '').trim();
-  const descriptionText = description ? escapeHtml(truncateText(description, 140)) : escapeHtml(t('projects.fallback.noDescription', 'No description'));
-  const projectTitle = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
+function openTechnicianProjectDetails(projectId) {
+  const normalizedId = String(projectId || '').trim();
+  console.debug('[technician] open details', normalizedId);
+  if (!normalizedId) return;
+  if (!ensureTechnicianProjectModal()) return;
 
-  const crewIds = Array.isArray(project.technicians) ? project.technicians : [];
-  const crewCount = crewIds.length;
-  const crewLabel = t('projectCards.stats.crew', '👥 Crew members: {count}').replace('{count}', normalizeNumbers(String(crewCount)));
+  const modal = technicianProjectsContext.modal;
+  if (!modal?.body) return;
 
-  const crewNames = crewIds
-    .map((id) => techniciansMap.get(String(id))?.name)
-    .filter(Boolean);
-  let crewPreview = '';
-  if (crewNames.length) {
-    const maxPreview = 2;
-    const previewNames = crewNames.slice(0, maxPreview);
-    const extraCount = crewNames.length - previewNames.length;
-    const separator = getCurrentLanguage() === 'ar' ? '، ' : ', ';
-    const namesText = previewNames.join(separator);
-    crewPreview = `${escapeHtml(namesText)}${extraCount > 0 ? escapeHtml(` +${normalizeNumbers(String(extraCount))}`) : ''}`;
+  const { projects = [], reservations = [], customers = [] } = loadData();
+  const aggregatedProject = technicianProjectsContext.projectsMap?.get(normalizedId) || null;
+  let project = aggregatedProject ?? findProjectByIdentifier(projects, normalizedId);
+  if (!project) {
+    project = findProjectByIdentifier(projects, normalizedId);
+  }
+  if (!project) return;
+
+  const activeTechnicianId = String(technicianProjectsContext.currentId || '');
+  let normalizedTechnicians = normalizeTechnicianAssignments(project.technicians);
+  if (!normalizedTechnicians.length && aggregatedProject) {
+    normalizedTechnicians = normalizeTechnicianAssignments(aggregatedProject.technicians);
+    project = {
+      ...aggregatedProject,
+      ...project
+    };
   }
 
-  const clientName = customerMap.get(String(project.clientId))?.customerName || t('projects.fallback.unknownClient', 'Unknown client');
-  const clientLabel = t('projectCards.stats.client', '👤 Client: {name}').replace('{name}', clientName);
+  if (typeof window === 'object') {
+    window.__ART_RATIO_APP_DEBUG = {
+      ...(window.__ART_RATIO_APP_DEBUG || {}),
+      technicianProjects: {
+        ...(window.__ART_RATIO_APP_DEBUG?.technicianProjects || {}),
+        lastOpen: {
+          id: normalizedId,
+          activeTechnicianId,
+          normalizedTechnicians
+        }
+      }
+    };
+  }
 
-  const expensesTotal = calculateProjectExpenses(project);
-  const budgetTotal = (Number(project.equipmentEstimate) || 0) + expensesTotal;
-  const budgetLabel = t('projectCards.stats.budget', '💰 Estimated budget: {amount}').replace('{amount}', formatCurrencyLocalized(budgetTotal));
-  const expensesLabel = expensesTotal > 0
-    ? t('projectCards.stats.expenses', '💸 Expenses: {amount}').replace('{amount}', formatCurrencyLocalized(expensesTotal))
-    : '';
+  if (activeTechnicianId && !normalizedTechnicians.includes(activeTechnicianId)) {
+    console.debug('[technician] open details skipped (technician not in project)', { normalizedId, activeTechnicianId, normalizedTechnicians });
+    return;
+  }
 
-  return `
-    <div class="col-12 col-md-6 col-xl-4">
-      <div class="box h-100 project-card">
-        <div class="d-flex justify-content-between align-items-start mb-2">
-          <div>
-            <h5 class="mb-1">${escapeHtml(projectTitle)}</h5>
-            <span class="text-muted small">${escapeHtml(formatProjectDateRange(project.start, project.end))}</span>
-          </div>
-          <span class="badge ${statusClass} text-white">${escapeHtml(statusLabel)}</span>
-        </div>
-        <p class="text-muted small mb-3">${descriptionText}</p>
-        <div class="d-flex flex-column gap-1 small text-muted">
-          <span>${escapeHtml(clientLabel)}</span>
-          <span>${escapeHtml(crewLabel)}</span>
-          ${crewPreview ? `<span>👥 ${crewPreview}</span>` : ''}
-          <span>${escapeHtml(budgetLabel)}</span>
-          ${expensesLabel ? `<span>${escapeHtml(expensesLabel)}</span>` : ''}
-        </div>
-      </div>
-    </div>
-  `;
+  project = {
+    ...project,
+    technicians: normalizedTechnicians
+  };
+
+  const customer = customers.find((entry) => String(entry.id) === String(project.clientId)) || null;
+  const linkedReservations = reservations.filter((reservation) => {
+    const reservationProjectId = extractReservationProjectId(reservation);
+    return reservationProjectId && reservationProjectId === normalizedId;
+  });
+
+  modal.body.dataset.mode = 'view';
+  modal.body.innerHTML = buildProjectDetailsMarkup(project, {
+    customer,
+    reservations: linkedReservations
+  });
+  attachTechnicianProjectDetailsActions(project);
+  attachTechnicianReservationViewHandlers(modal.body);
+
+  if (window.bootstrap?.Modal) {
+    window.bootstrap.Modal.getOrCreateInstance(modal.el).show();
+  } else {
+    modal.el.classList.add('show');
+    modal.el.style.display = 'block';
+  }
 }
 
-const statusLabelsFallback = {
-  upcoming: 'Upcoming',
-  ongoing: 'In Progress',
-  completed: 'Completed'
-};
+function attachTechnicianProjectDetailsActions(project) {
+  if (!project || !technicianProjectsContext.modal?.body) return;
 
-const statusBadgeClass = {
-  upcoming: 'bg-info',
-  ongoing: 'bg-warning',
-  completed: 'bg-success'
-};
+  const editBtn = technicianProjectsContext.modal.body.querySelector('[data-action="edit-project"]');
+  if (!editBtn) return;
+
+  editBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    openTechnicianProjectEdit(project);
+  });
+}
+
+function attachTechnicianReservationViewHandlers(modalBody) {
+  if (!modalBody) return;
+  const buttons = modalBody.querySelectorAll('[data-action="view-reservation"]');
+  if (!buttons.length) return;
+
+  buttons.forEach((button) => {
+    if (button.dataset.listenerAttached === 'true') return;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const reservationsState = getReservationsState();
+      let index = Number.parseInt(button.dataset.index || '', 10);
+      if (!Number.isInteger(index) || index < 0) {
+        const reservationId = button.dataset.reservationId;
+        if (reservationId) {
+          const matchedIndex = reservationsState.findIndex((entry) => {
+            const candidates = [entry?.id, entry?.reservationId, entry?.reservation_id];
+            return candidates.some((value) => value != null && String(value) === reservationId);
+          });
+          index = matchedIndex;
+        }
+      }
+
+      if (Number.isInteger(index) && index >= 0 && typeof window.showReservationDetails === 'function') {
+        window.showReservationDetails(index);
+      } else {
+        showToast(t('projects.details.reservations.viewUnavailable', 'تعذر فتح تفاصيل الحجز الآن'));
+      }
+    });
+    button.dataset.listenerAttached = 'true';
+  });
+}
+
+function openTechnicianProjectEdit(project) {
+  if (!project || !ensureTechnicianProjectModal()) return;
+
+  const modal = technicianProjectsContext.modal;
+  if (!modal?.body) return;
+
+  const { customers = [] } = loadData();
+  const customer = customers.find((entry) => String(entry.id) === String(project.clientId)) || null;
+  const clientName = customer?.customerName || project.clientName || project.customerName || '';
+  const clientCompany = project.clientCompany || customer?.companyName || customer?.company || '';
+  const normalizedExpenses = Array.isArray(project?.expenses)
+    ? project.expenses.map((expense, index) => ({
+        id: expense?.id || `expense-${project.id}-${index}-${Date.now()}`,
+        label: expense?.label || '',
+        amount: Number(expense?.amount) || 0
+      }))
+    : [];
+
+  modal.body.dataset.mode = 'edit';
+  modal.body.innerHTML = buildProjectEditMarkup(project, {
+    clientName,
+    clientCompany
+  });
+  bindTechnicianProjectEditForm(project, {
+    clientName,
+    clientCompany,
+    expenses: normalizedExpenses
+  });
+}
+
+function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany = '', expenses = [] } = {}) {
+  const editState = {
+    clientName,
+    clientCompany,
+    expenses: Array.isArray(expenses) ? [...expenses] : []
+  };
+  const form = technicianProjectsContext.modal?.body?.querySelector('#project-details-edit-form');
+  if (!form) return;
+
+  const cancelBtn = form.querySelector('[data-action="cancel-edit"]');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      openTechnicianProjectDetails(project.id);
+    });
+  }
+
+  const expenseLabelInput = form.querySelector('#project-edit-expense-label');
+  const expenseAmountInput = form.querySelector('#project-edit-expense-amount');
+  const addExpenseBtn = form.querySelector('[data-action="add-expense"]');
+  const expensesContainer = form.querySelector('#project-edit-expense-list');
+  const startDateInput = form.querySelector('[name="project-start-date"]');
+  const startTimeInput = form.querySelector('[name="project-start-time"]');
+  const endDateInput = form.querySelector('[name="project-end-date"]');
+  const endTimeInput = form.querySelector('[name="project-end-time"]');
+
+  function renderExpenses() {
+    if (!expensesContainer) return;
+    expensesContainer.innerHTML = buildProjectEditExpensesMarkup(editState.expenses);
+  }
+
+  renderExpenses();
+
+  if (addExpenseBtn) {
+    addExpenseBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      const label = expenseLabelInput?.value.trim() || '';
+      const normalizedAmount = normalizeNumbers(expenseAmountInput?.value || '0');
+      const amount = Number(normalizedAmount);
+
+      if (!label) {
+        showToast(t('projects.toast.missingExpenseLabel', '⚠️ يرجى إدخال وصف المصروف'));
+        expenseLabelInput?.focus();
+        return;
+      }
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        showToast(t('projects.toast.invalidExpenseAmount', '⚠️ يرجى إدخال مبلغ صحيح'));
+        expenseAmountInput?.focus();
+        return;
+      }
+
+      editState.expenses.push({
+        id: `expense-${project.id}-${Date.now()}`,
+        label,
+        amount
+      });
+
+      if (expenseLabelInput) expenseLabelInput.value = '';
+      if (expenseAmountInput) expenseAmountInput.value = '';
+      renderExpenses();
+    });
+  }
+
+  if (expensesContainer) {
+    expensesContainer.addEventListener('click', (event) => {
+      const removeBtn = event.target.closest('[data-action="remove-expense"]');
+      if (!removeBtn) return;
+      const { id } = removeBtn.dataset;
+      editState.expenses = editState.expenses.filter((expense) => String(expense.id) !== String(id));
+      renderExpenses();
+    });
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (form.dataset.submitting === 'true') return;
+
+    const titleInput = form.querySelector('[name="project-title"]');
+    const typeSelect = form.querySelector('[name="project-type"]');
+    const descriptionInput = form.querySelector('[name="project-description"]');
+    const paymentStatusSelect = form.querySelector('[name="project-payment-status"]');
+    const taxCheckbox = form.querySelector('[name="project-apply-tax"]');
+
+    const title = titleInput?.value.trim() || '';
+    const projectType = typeSelect?.value || '';
+    const startDateValue = startDateInput?.value.trim() || '';
+    const startTimeValue = startTimeInput?.value.trim() || '';
+    const descriptionValue = descriptionInput?.value.trim() || '';
+    const paymentStatusValue = paymentStatusSelect?.value === 'paid' ? 'paid' : 'unpaid';
+    const applyTax = taxCheckbox?.checked === true;
+
+    if (!title || !projectType || !startDateValue) {
+      showToast(t('projects.toast.missingRequiredFields', '⚠️ يرجى تعبئة البيانات المطلوبة'));
+      titleInput?.focus();
+      return;
+    }
+
+    const endDateValue = endDateInput?.value.trim() || '';
+    const endTimeValue = endTimeInput?.value.trim() || '';
+
+    const startIso = combineDateAndTime(startDateValue, startTimeValue);
+    const endIso = endDateValue ? combineDateAndTime(endDateValue, endTimeValue) : '';
+
+    if (endIso) {
+      const startDate = new Date(startIso);
+      const endDate = new Date(endIso);
+      if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && startDate > endDate) {
+        showToast(t('projects.toast.invalidDateRange', '⚠️ تاريخ النهاية يجب أن يكون بعد تاريخ البداية'));
+        endDateInput?.focus();
+        return;
+      }
+    }
+
+    const identifier = getProjectIdentifier(project);
+    if (!identifier) {
+      showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
+      return;
+    }
+
+    const equipmentEstimate = Number(project?.equipmentEstimate ?? project?.equipment_estimate ?? 0) || 0;
+    const expensesTotal = calculateProjectExpenses({ ...project, expenses: editState.expenses });
+    const subtotal = Number((equipmentEstimate + expensesTotal).toFixed(2));
+    const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    const totalWithTax = applyTax ? Number((subtotal + taxAmount).toFixed(2)) : subtotal;
+
+    const payload = buildProjectPayload({
+      projectCode: project.projectCode,
+      title,
+      type: projectType,
+      clientId: project.clientId,
+      clientCompany: editState.clientCompany,
+      description: descriptionValue,
+      start: startIso,
+      end: endIso || null,
+      applyTax,
+      paymentStatus: paymentStatusValue,
+      equipmentEstimate,
+      expenses: editState.expenses,
+      taxAmount,
+      totalWithTax,
+      confirmed: project.confirmed,
+      technicians: Array.isArray(project?.technicians) ? project.technicians : [],
+      equipment: Array.isArray(project?.equipment) ? project.equipment : [],
+    });
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.dataset.originalText = submitBtn.textContent || '';
+      submitBtn.textContent = t('projects.details.edit.saving', 'جاري الحفظ...');
+    }
+
+    form.dataset.submitting = 'true';
+
+    try {
+      const updated = await updateProjectApi(identifier, payload);
+      await syncProjectReservationsPayment(identifier, paymentStatusValue);
+      document.dispatchEvent(new CustomEvent('projects:changed'));
+      showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
+      updateTechnicianProjects();
+      const nextIdentifier = getProjectIdentifier(updated) || identifier;
+      if (nextIdentifier) {
+        openTechnicianProjectDetails(nextIdentifier);
+      }
+    } catch (error) {
+      console.error('❌ [technicianDetails] Failed to update project from modal', error);
+      const message = typeof error?.message === 'string'
+        ? error.message
+        : t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
+      showToast(message);
+    } finally {
+      delete form.dataset.submitting;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        if (submitBtn.dataset.originalText) {
+          submitBtn.textContent = submitBtn.dataset.originalText;
+          delete submitBtn.dataset.originalText;
+        }
+      }
+    }
+  });
+}
+
+function findProjectByIdentifier(projects = [], identifier) {
+  const normalized = String(identifier);
+  return projects.find((project) => {
+    const keys = [project?.id, project?.projectId, project?.project_id];
+    return keys.some((value) => value != null && String(value) === normalized);
+  }) || null;
+}
 
 function determineProjectStatus(project) {
   const now = new Date();
@@ -438,64 +863,4 @@ function determineProjectStatus(project) {
   }
 
   return 'ongoing';
-}
-
-function formatProjectDateRange(start, end) {
-  if (!start) return '—';
-  const startText = formatDateTimeLocalized(start);
-  if (!end) return startText;
-  return `${startText} - ${formatDateTimeLocalized(end)}`;
-}
-
-function formatDateTimeLocalized(value) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-GB';
-  const formatter = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  return normalizeNumbers(formatter.format(date));
-}
-
-function formatCurrencyLocalized(value) {
-  const number = Number(value) || 0;
-  const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(Math.round(number));
-  const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
-  return `${normalizeNumbers(formatted)} ${currencyLabel}`;
-}
-
-function calculateProjectExpenses(project) {
-  if (typeof project.expensesTotal === 'number') {
-    return project.expensesTotal;
-  }
-  if (Array.isArray(project.expenses)) {
-    return project.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  }
-  return 0;
-}
-
-function truncateText(value, maxLength) {
-  if (!value) return '';
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength).trim()}…`;
-}
-
-function escapeHtml(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }

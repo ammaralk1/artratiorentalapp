@@ -1,6 +1,7 @@
 import { t } from './language.js';
 import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
+import { resolveReservationProjectState } from './reservationsShared.js';
 import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { normalizeBarcodeValue, isEquipmentInMaintenance } from './reservationsEquipment.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
@@ -124,8 +125,22 @@ export function editReservation(index, {
     return;
   }
 
+  modalEventsContext = {
+    ...modalEventsContext,
+    reservation,
+    projects: projects || []
+  };
+
   populateEquipmentDescriptionLists?.();
   populateEditProjectSelect(projects || [], reservation);
+
+  const project = reservation.projectId
+    ? projects?.find?.((p) => String(p.id) === String(reservation.projectId)) || null
+    : null;
+  const {
+    effectiveConfirmed: initialConfirmed,
+    projectLinked
+  } = resolveReservationProjectState(reservation, project);
 
   const normalizedItems = reservation.items
     ? reservation.items.map(item => ({
@@ -169,7 +184,12 @@ export function editReservation(index, {
   if (taxCheckbox) taxCheckbox.checked = reservation.projectId ? false : !!reservation.applyTax;
 
   const confirmedCheckbox = document.getElementById('edit-res-confirmed');
-  if (confirmedCheckbox) confirmedCheckbox.checked = reservation.confirmed === true || reservation.confirmed === 'true';
+  if (confirmedCheckbox) {
+    confirmedCheckbox.checked = initialConfirmed;
+    confirmedCheckbox.disabled = projectLinked;
+    confirmedCheckbox.classList.toggle('disabled', projectLinked);
+    confirmedCheckbox.closest('.form-check')?.classList.toggle('disabled', projectLinked);
+  }
 
   const paidSelect = document.getElementById('edit-res-paid');
   if (paidSelect) paidSelect.value = reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid';
@@ -272,8 +292,26 @@ export async function saveReservationChanges({
   }
 
   const taxCheckbox = document.getElementById('edit-res-tax');
-  const projectLinked = Boolean(projectIdValue);
-  const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
+
+  const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length
+    ? modalEventsContext.projects
+    : (loadData().projects || []);
+  const selectedProject = projectIdValue
+    ? projectsList.find((project) => String(project.id) === String(projectIdValue)) || null
+    : null;
+
+  const reservationStateForHelper = {
+    ...reservation,
+    projectId: projectIdValue ? String(projectIdValue) : null,
+    confirmed,
+  };
+  const {
+    effectiveConfirmed,
+    projectLinked: helperProjectLinked,
+    projectStatus
+  } = resolveReservationProjectState(reservationStateForHelper, selectedProject);
+
+  const applyTax = helperProjectLinked ? false : (taxCheckbox?.checked || false);
 
   const totalAmount = calculateReservationTotal(
     editingItems,
@@ -284,12 +322,19 @@ export async function saveReservationChanges({
     { start, end }
   );
 
+  let statusForPayload = reservation.status ?? 'pending';
+  if (helperProjectLinked) {
+    statusForPayload = selectedProject?.status ?? projectStatus ?? statusForPayload;
+  } else if (!['completed', 'cancelled'].includes(String(statusForPayload).toLowerCase())) {
+    statusForPayload = confirmed ? 'confirmed' : 'pending';
+  }
+
   const payload = buildReservationPayload({
     reservationCode: reservation.reservationCode ?? reservation.reservationId ?? null,
     customerId: reservation.customerId,
     start,
     end,
-    status: reservation.status ?? (confirmed ? 'confirmed' : 'pending'),
+    status: statusForPayload,
     title: reservation.title ?? null,
     location: reservation.location ?? null,
     notes,
@@ -299,7 +344,7 @@ export async function saveReservationChanges({
     discountType,
     applyTax,
     paidStatus,
-    confirmed,
+    confirmed: effectiveConfirmed,
     items: editingItems.map((item) => ({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
@@ -358,6 +403,26 @@ export function setupEditReservationModalEvents(context = {}) {
   if (projectSelect && !projectSelect.dataset.listenerAttached) {
     projectSelect.addEventListener('change', () => {
       updateEditProjectTaxState();
+      const confirmedCheckbox = document.getElementById('edit-res-confirmed');
+      if (confirmedCheckbox) {
+        const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length
+          ? modalEventsContext.projects
+          : (loadData().projects || []);
+        const selectedProject = projectSelect.value
+          ? projectsList.find((project) => String(project.id) === String(projectSelect.value)) || null
+          : null;
+        const baseReservation = modalEventsContext?.reservation ?? {};
+        const reservationState = {
+          ...baseReservation,
+          projectId: projectSelect.value || null,
+          confirmed: confirmedCheckbox.checked,
+        };
+        const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservationState, selectedProject);
+        confirmedCheckbox.checked = effectiveConfirmed;
+        confirmedCheckbox.disabled = projectLinked;
+        confirmedCheckbox.classList.toggle('disabled', projectLinked);
+        confirmedCheckbox.closest('.form-check')?.classList.toggle('disabled', projectLinked);
+      }
       updateEditReservationSummary?.();
     });
     projectSelect.dataset.listenerAttached = 'true';

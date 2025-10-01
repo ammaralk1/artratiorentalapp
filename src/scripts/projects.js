@@ -3,7 +3,7 @@ import { migrateOldData, loadData } from './storage.js';
 import { checkAuth, logout } from './auth.js';
 import { showToast, normalizeNumbers, generateProjectCode } from './utils.js';
 import { t, getCurrentLanguage } from './language.js';
-import { isReservationCompleted, normalizeText } from './reservationsShared.js';
+import { isReservationCompleted, normalizeText, resolveReservationProjectState } from './reservationsShared.js';
 import { registerReservationGlobals } from './reservations/controller.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
 import { updatePreferences, getPreferences, getCachedPreferences, subscribePreferences } from './preferencesService.js';
@@ -44,11 +44,13 @@ const state = {
   },
   visibleProjects: [],
   editingProjectId: null,
-  pendingProjectDetailId: null
+  pendingProjectDetailId: null,
+  pendingProjectEditId: null
 };
 
 const dom = {};
 const PENDING_PROJECT_QUERY_PARAM = 'project';
+const PENDING_PROJECT_EDIT_PARAM = 'editProject';
 const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 const PROJECT_TAX_RATE = 0.15;
 const MAX_FOCUS_CARDS = 6;
@@ -85,12 +87,12 @@ function combineProjectDateTime(dateValue, timeValue) {
   return `${dateValue}T${safeHours}:${safeMinutes}`;
 }
 
-function readPendingProjectIdFromUrl() {
+function readPendingProjectParam(paramName) {
   if (typeof window === 'undefined') return null;
 
   try {
     const params = new URLSearchParams(window.location.search || '');
-    const searchValue = params.get(PENDING_PROJECT_QUERY_PARAM);
+    const searchValue = params.get(paramName);
     if (searchValue) {
       return searchValue;
     }
@@ -99,10 +101,10 @@ function readPendingProjectIdFromUrl() {
   }
 
   const rawHash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
-  if (rawHash && rawHash.includes(`${PENDING_PROJECT_QUERY_PARAM}=`)) {
+  if (rawHash && rawHash.includes(`${paramName}=`)) {
     try {
       const hashParams = new URLSearchParams(rawHash);
-      const hashValue = hashParams.get(PENDING_PROJECT_QUERY_PARAM);
+      const hashValue = hashParams.get(paramName);
       if (hashValue) {
         return hashValue;
       }
@@ -114,7 +116,15 @@ function readPendingProjectIdFromUrl() {
   return null;
 }
 
-function clearPendingProjectIdFromUrl() {
+function readPendingProjectIdFromUrl() {
+  return readPendingProjectParam(PENDING_PROJECT_QUERY_PARAM);
+}
+
+function readPendingProjectEditIdFromUrl() {
+  return readPendingProjectParam(PENDING_PROJECT_EDIT_PARAM);
+}
+
+function clearPendingProjectParamsFromUrl() {
   if (typeof window === 'undefined' || typeof window.history?.replaceState !== 'function') {
     return;
   }
@@ -123,18 +133,27 @@ function clearPendingProjectIdFromUrl() {
     const searchParams = new URLSearchParams(window.location.search || '');
     const rawHash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
 
-    const hadSearchValue = searchParams.has(PENDING_PROJECT_QUERY_PARAM);
-    if (hadSearchValue) {
-      searchParams.delete(PENDING_PROJECT_QUERY_PARAM);
-    }
+    let searchModified = false;
+    [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM].forEach((paramName) => {
+      if (searchParams.has(paramName)) {
+        searchParams.delete(paramName);
+        searchModified = true;
+      }
+    });
 
     let nextHash = rawHash;
     let hashModified = false;
-    if (rawHash && rawHash.includes(`${PENDING_PROJECT_QUERY_PARAM}=`)) {
+    if (rawHash) {
       try {
         const hashParams = new URLSearchParams(rawHash);
-        if (hashParams.has(PENDING_PROJECT_QUERY_PARAM)) {
-          hashParams.delete(PENDING_PROJECT_QUERY_PARAM);
+        let hashChanged = false;
+        [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM].forEach((paramName) => {
+          if (hashParams.has(paramName)) {
+            hashParams.delete(paramName);
+            hashChanged = true;
+          }
+        });
+        if (hashChanged) {
           nextHash = hashParams.toString();
           hashModified = true;
         }
@@ -143,7 +162,7 @@ function clearPendingProjectIdFromUrl() {
       }
     }
 
-    if (!hadSearchValue && !hashModified) {
+    if (!searchModified && !hashModified) {
       return;
     }
 
@@ -158,19 +177,47 @@ function clearPendingProjectIdFromUrl() {
 
 function capturePendingProjectRequest() {
   const pendingId = readPendingProjectIdFromUrl();
-  if (!pendingId) return;
-  state.pendingProjectDetailId = pendingId;
-  clearPendingProjectIdFromUrl();
+  const pendingEditId = readPendingProjectEditIdFromUrl();
+
+  if (pendingId) {
+    state.pendingProjectDetailId = pendingId;
+  }
+
+  if (pendingEditId) {
+    state.pendingProjectEditId = pendingEditId;
+    if (!state.pendingProjectDetailId) {
+      state.pendingProjectDetailId = pendingEditId;
+    }
+  }
+
+  if (pendingId || pendingEditId) {
+    clearPendingProjectParamsFromUrl();
+  }
 }
 
 function openPendingProjectDetailIfReady() {
   if (!state.pendingProjectDetailId) return;
   const pendingId = state.pendingProjectDetailId;
-  const targetProject = state.projects.find((project) => String(project?.id) === String(pendingId));
+  const normalizedPendingId = String(pendingId);
+  const targetProject = state.projects.find((project) => {
+    const candidates = [project?.id, project?.projectId, project?.project_id];
+    return candidates.some((value) => value != null && String(value) === normalizedPendingId);
+  });
   if (!targetProject) return;
 
   state.pendingProjectDetailId = null;
-  openProjectDetails(targetProject.id ?? pendingId);
+  const projectIdentifier = targetProject?.id ?? targetProject?.projectId ?? targetProject?.project_id ?? normalizedPendingId;
+  openProjectDetails(projectIdentifier);
+
+  if (state.pendingProjectEditId != null) {
+    const normalizedEditId = String(state.pendingProjectEditId);
+    const matchesEdit = [targetProject.id, targetProject.projectId, targetProject.project_id]
+      .some((value) => value != null && String(value) === normalizedEditId);
+    if (matchesEdit) {
+      state.pendingProjectEditId = null;
+      setTimeout(() => startProjectEdit(targetProject), 0);
+    }
+  }
 }
 
 function clearProjectDateInputs() {
@@ -1770,7 +1817,7 @@ function renderFocusCard(project, category) {
   `;
 }
 
-function buildProjectReservationCard(reservation, index) {
+function buildProjectReservationCard(reservation, index, project = null) {
   const reservationId = normalizeNumbers(String(reservation.reservationId || reservation.id || '-'));
   const rangeLabel = formatDateRange(reservation.start, reservation.end);
   const netTotal = resolveReservationNetTotal(reservation);
@@ -1780,7 +1827,7 @@ function buildProjectReservationCard(reservation, index) {
   const itemsLabel = t('projects.details.reservations.itemsCount', '{count} معدة').replace('{count}', itemsCount);
   const crewLabel = t('projects.details.reservations.crewCount', '{count} من الطاقم').replace('{count}', crewCount);
   const viewLabel = t('projects.details.reservations.view', 'عرض الحجز');
-  const statusConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
+  const { effectiveConfirmed: statusConfirmed } = resolveReservationProjectState(reservation, project);
   const statusLabel = statusConfirmed
     ? t('reservations.list.status.confirmed', '✅ مؤكد')
     : t('reservations.list.status.pending', '⏳ غير مؤكد');
@@ -1862,7 +1909,7 @@ function buildProjectReservationsSection(project) {
   const actionsMarkup = `<div class="d-flex flex-wrap gap-2">${createButton}${editButton}</div>`;
 
   const listMarkup = reservations.length
-    ? `<div class="project-reservations-list">${reservations.map(({ reservation, index }) => buildProjectReservationCard(reservation, index)).join('')}</div>`
+    ? `<div class="project-reservations-list">${reservations.map(({ reservation, index }) => buildProjectReservationCard(reservation, index, project)).join('')}</div>`
     : `<div class="alert alert-info project-reservations-empty mb-0">${escapeHtml(emptyText)}</div>`;
 
   return `
@@ -2260,6 +2307,9 @@ async function updateLinkedReservationsConfirmation(projectId) {
   if (!projectId) return false;
 
   const reservations = getReservationsState();
+  const project = state.projects.find((entry) => String(entry.id) === String(projectId))
+    || (loadData().projects || []).find?.((entry) => String(entry.id) === String(projectId))
+    || null;
   const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
 
   if (!targets.length) {
@@ -2271,11 +2321,15 @@ async function updateLinkedReservationsConfirmation(projectId) {
   for (const reservation of targets) {
     const reservationId = reservation.id ?? reservation.reservationId;
     if (!reservationId) continue;
-    const alreadyConfirmed = reservation.confirmed === true || reservation.confirmed === 'true';
-    if (alreadyConfirmed) {
+    const stateMeta = resolveReservationProjectState({ ...reservation, projectId }, project);
+    if (stateMeta.effectiveConfirmed) {
       continue;
     }
-    await updateReservationApi(reservationId, { confirmed: true });
+    const statusUpdate = project?.status ?? stateMeta.projectStatus ?? 'confirmed';
+    await updateReservationApi(reservationId, {
+      confirmed: true,
+      status: statusUpdate
+    });
     changed = true;
   }
 

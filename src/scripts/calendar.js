@@ -4,6 +4,8 @@ import { calculateReservationDays } from './reservationsSummary.js';
 import { t, getCurrentLanguage } from './language.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, isApiError as isReservationsApiError } from './reservationsService.js';
+import { loadData } from './storage.js';
+import { resolveReservationProjectState } from './reservationsShared.js';
 
 const CALENDAR_FETCH_PARAMS = { limit: 200 };
 
@@ -64,7 +66,7 @@ function destroyCalendarInstance() {
   calendarInstance = null;
 }
 
-function normalizeReservationForEvent(reservation) {
+function normalizeReservationForEvent(reservation, project = null) {
   if (!reservation || typeof reservation !== 'object') return null;
 
   const start = reservation.start ?? reservation.startDatetime ?? reservation.start_datetime ?? null;
@@ -76,9 +78,7 @@ function normalizeReservationForEvent(reservation) {
   const paid = reservation.paid != null
     ? reservation.paid
     : paidStatus === 'paid';
-  const confirmed = reservation.confirmed != null
-    ? Boolean(reservation.confirmed)
-    : ['confirmed', 'in_progress', 'completed'].includes(statusValue);
+  const { effectiveConfirmed: confirmed } = resolveReservationProjectState(reservation, project);
   const reservationIdentifier = reservation.reservationId
     ?? reservation.reservationCode
     ?? reservation.reservation_code
@@ -108,9 +108,16 @@ function normalizeReservationForEvent(reservation) {
 }
 
 function buildCalendarEvents(reservations = []) {
+  const { projects = [] } = loadData();
+  const projectsMap = new Map(projects.map((project) => [String(project.id), project]));
+
   return reservations
     .map((reservation) => {
-      const normalized = normalizeReservationForEvent(reservation);
+      const projectId = reservation?.projectId ?? reservation?.project_id ?? null;
+      const project = projectId != null && projectId !== ''
+        ? projectsMap.get(String(projectId)) || null
+        : null;
+      const normalized = normalizeReservationForEvent(reservation, project);
       if (!normalized) return null;
 
       const palette = getEventPalette({

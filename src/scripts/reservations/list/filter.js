@@ -1,4 +1,4 @@
-import { normalizeText, isReservationCompleted } from '../../reservationsShared.js';
+import { normalizeText, isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 
 export function filterReservationEntries({ reservations = [], filters = {}, customersMap, techniciansMap, projectsMap }) {
   const entries = reservations.map((reservation, index) => ({ reservation, index }));
@@ -19,8 +19,8 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
     const customer = customersMap.get(String(reservation.customerId));
     const project = projectsMap?.get?.(String(reservation.projectId));
     const reservationStart = reservation.start ? new Date(reservation.start) : null;
-    const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
     const completed = isReservationCompleted(reservation);
+    const { effectiveConfirmed } = resolveReservationProjectState(reservation, project);
 
     if (customerIdFilter != null && String(reservation.customerId) !== String(customerIdFilter)) {
       return false;
@@ -35,8 +35,8 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
       }
     }
 
-    if (statusFilter === 'confirmed' && !confirmed) return false;
-    if (statusFilter === 'pending' && confirmed) return false;
+    if (statusFilter === 'confirmed' && !effectiveConfirmed) return false;
+    if (statusFilter === 'pending' && effectiveConfirmed) return false;
     if (statusFilter === 'completed' && !completed) return false;
 
     if (startDateObj && reservationStart && reservationStart < startDateObj) return false;

@@ -1,6 +1,6 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
-import { isReservationCompleted } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 
 export function buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap }) {
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
@@ -29,15 +29,13 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   return entries.map(({ reservation, index }) => {
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
-    const confirmed = reservation.confirmed === true || reservation.confirmed === 'true';
     const completed = isReservationCompleted(reservation);
     const paid = reservation.paid === true || reservation.paid === 'paid';
 
-    const projectLinked = Boolean(reservation.projectId);
-    const projectStatus = String(project?.status ?? '').toLowerCase();
-    const projectConfirmed = projectLinked && (project?.confirmed === true || ['confirmed', 'in_progress', 'completed'].includes(projectStatus));
-
-    const effectiveConfirmed = confirmed || projectConfirmed;
+    const {
+      effectiveConfirmed,
+      projectLinked,
+    } = resolveReservationProjectState(reservation, project);
 
     let statusBadge = effectiveConfirmed
       ? `<span class="badge bg-success reservation-chip">${statusConfirmedText}</span>`
@@ -60,9 +58,9 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
     }
 
-    const confirmButtonHtml = effectiveConfirmed
-      ? ''
-      : `<button class="btn btn-sm btn-success tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`;
+    const confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
+      ? `<button class="btn btn-sm btn-success tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
+      : '';
 
     const itemsCount = reservation.items?.length || 0;
     const techniciansAssigned = (reservation.technicians || [])

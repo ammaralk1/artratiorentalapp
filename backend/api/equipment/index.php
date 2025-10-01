@@ -338,7 +338,20 @@ function handleEquipmentDelete(PDO $pdo): void
             $pdo->beginTransaction();
             $countStatement = $pdo->query('SELECT COUNT(*) FROM equipment');
             $total = (int) $countStatement->fetchColumn();
-            $pdo->exec('DELETE FROM equipment');
+            if ($total > 0) {
+                // Clean related records first to honour foreign key constraints.
+                $dependentTables = [
+                    'reservation_equipment',
+                    'project_equipment',
+                    'maintenance_requests',
+                ];
+
+                foreach ($dependentTables as $table) {
+                    $pdo->exec('DELETE FROM ' . $table);
+                }
+
+                $pdo->exec('DELETE FROM equipment');
+            }
             $pdo->commit();
 
             logActivity($pdo, 'EQUIPMENT_CLEAR_ALL', [
@@ -362,11 +375,44 @@ function handleEquipmentDelete(PDO $pdo): void
         return;
     }
 
-    $statement = $pdo->prepare('DELETE FROM equipment WHERE id = :id LIMIT 1');
-    $statement->execute(['id' => $id]);
+    try {
+        $pdo->beginTransaction();
 
-    if ($statement->rowCount() === 0) {
-        respondError('Equipment item not found', 404);
+        $check = $pdo->prepare('SELECT id FROM equipment WHERE id = :id LIMIT 1');
+        $check->execute(['id' => $id]);
+        if (!$check->fetchColumn()) {
+            $pdo->rollBack();
+            respondError('Equipment item not found', 404);
+            return;
+        }
+
+        // Clean related records first to honour foreign key constraints.
+        $dependentTables = [
+            'reservation_equipment',
+            'project_equipment',
+            'maintenance_requests',
+        ];
+
+        foreach ($dependentTables as $table) {
+            $cleanup = $pdo->prepare('DELETE FROM ' . $table . ' WHERE equipment_id = :id');
+            $cleanup->execute(['id' => $id]);
+        }
+
+        $statement = $pdo->prepare('DELETE FROM equipment WHERE id = :id LIMIT 1');
+        $statement->execute(['id' => $id]);
+
+        if ($statement->rowCount() === 0) {
+            $pdo->rollBack();
+            respondError('Equipment item not found', 404);
+            return;
+        }
+
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        respondError('Failed to delete equipment item', 500, ['details' => $exception->getMessage()]);
         return;
     }
 

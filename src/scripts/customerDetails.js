@@ -1,17 +1,25 @@
 import { renderReservations } from "./reservationsUI.js";
 import { resolveQuickDateRange } from "./reservationsFilters.js";
-import { normalizeNumbers } from "./utils.js";
+import { showToast, normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
 import { t, getCurrentLanguage } from "./language.js";
 import {
   determineProjectStatus,
-  calculateProjectExpenses,
-  truncateText,
-  escapeHtml,
-  formatCurrencyLocalized
+  calculateProjectExpenses
 } from "./projectsCommon.js";
-import { calculateReservationTotal } from "./reservationsSummary.js";
-import { isReservationCompleted } from "./reservationsShared.js";
+import {
+  buildProjectFocusCard,
+  buildProjectDetailsMarkup,
+  buildProjectEditMarkup,
+  buildProjectEditExpensesMarkup,
+  syncProjectReservationsPayment,
+  getProjectIdentifier,
+  PROJECT_TAX_RATE,
+  combineDateAndTime
+} from "./projectFocusTemplates.js";
+import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
+import { getReservationsState } from "./reservationsService.js";
+import { isReservationCompleted, resolveReservationProjectState } from "./reservationsShared.js";
 
 let lastCustomerFilters = {};
 let customerProjectsContext = {
@@ -330,7 +338,7 @@ function updateCustomerProjects() {
     .map((project) => {
       const projectKey = getProjectIdentifier(project);
       const linkedReservations = projectKey ? reservationsByProject.get(projectKey) || [] : [];
-      return buildCustomerProjectCard(project, {
+      return buildProjectFocusCard(project, {
         customer,
         techniciansMap,
         reservations: linkedReservations
@@ -357,7 +365,6 @@ const statusChipClassMap = {
   completed: 'status-completed'
 };
 
-const PROJECT_TAX_RATE = 0.15;
 const DEFAULT_CATEGORY_CLASS = 'bg-primary';
 const MAX_CREW_PREVIEW = 2;
 
@@ -375,250 +382,6 @@ function groupReservationsByProject(reservations = []) {
   return map;
 }
 
-function getProjectIdentifier(project) {
-  if (!project) return null;
-  if (project.id != null) return String(project.id);
-  if (project.projectId != null) return String(project.projectId);
-  if (project.project_id != null) return String(project.project_id);
-  return null;
-}
-
-function buildCustomerProjectCard(project, { customer, techniciansMap, reservations }) {
-  const projectId = getProjectIdentifier(project);
-  const projectIdAttr = projectId ? escapeHtml(projectId) : '';
-  const status = determineProjectStatus(project);
-  const statusLabel = t(`projects.status.${status}`, statusLabelsFallback[status]);
-  const statusClass = statusBadgeClass[status] || 'bg-secondary';
-
-  const paymentStatus = project?.paymentStatus === 'paid' ? 'paid' : 'unpaid';
-  const paymentStatusLabel = t(
-    `projects.paymentStatus.${paymentStatus}`,
-    paymentStatus === 'paid' ? 'Paid' : 'Unpaid'
-  );
-  const paymentChipClass = paymentStatus === 'paid' ? 'status-paid' : 'status-unpaid';
-  const cardStateClasses = [paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid'];
-
-  const confirmed = project?.confirmed === true || project?.confirmed === 'true';
-  if (confirmed) {
-    cardStateClasses.push('project-focus-card--confirmed');
-  }
-
-  const projectCodeValue = project?.projectCode || (projectId ? `PRJ-${normalizeNumbers(projectId)}` : '');
-  const projectCodeDisplay = projectCodeValue ? normalizeNumbers(String(projectCodeValue).replace(/^#/, '')) : '';
-  const projectCodeBadge = projectCodeDisplay
-    ? `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`
-    : '';
-
-  const typeLabel = getProjectTypeLabel(project?.type);
-  const categoryBadge = typeLabel
-    ? `<span class="badge project-focus-card__badge ${DEFAULT_CATEGORY_CLASS}">${escapeHtml(typeLabel)}</span>`
-    : '';
-  const statusChip = `<span class="project-focus-card__status-chip ${statusClass}">${escapeHtml(statusLabel)}</span>`;
-  const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
-
-  const title = (project?.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
-  const description = (project?.description || '').trim();
-  const descriptionText = description
-    ? escapeHtml(truncateText(description, 110))
-    : escapeHtml(t('projects.fallback.noDescription', 'No description'));
-
-  const crewIds = Array.isArray(project?.technicians) ? project.technicians : [];
-  const crewNames = crewIds
-    .map((id) => techniciansMap.get(String(id))?.name)
-    .filter(Boolean);
-  const crewPreview = crewNames.length ? buildCrewPreview(crewNames) : '';
-
-  const customerName = customer?.customerName || project?.clientName || '';
-  const companyName = (project?.clientCompany || customer?.companyName || '').trim();
-
-  const reservationsList = Array.isArray(reservations) ? reservations : [];
-  const totals = reservationsList.reduce((acc, reservation) => {
-    const net = resolveReservationNetTotal(reservation);
-    const items = Array.isArray(reservation?.items) ? reservation.items : [];
-    const equipmentCount = items.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0);
-    const crewCount = Array.isArray(reservation?.technicians) ? reservation.technicians.length : 0;
-    return {
-      total: acc.total + net,
-      equipment: acc.equipment + equipmentCount,
-      crew: acc.crew + crewCount
-    };
-  }, { total: 0, equipment: 0, crew: 0 });
-
-  const reservationsTotal = Number(totals.total.toFixed(2));
-  const equipmentCountTotal = totals.equipment;
-  const crewAssignmentsTotal = totals.crew || crewIds.length;
-
-  const projectTotals = resolveProjectTotals(project);
-  const combinedTaxAmount = projectTotals.applyTax
-    ? Number(((projectTotals.subtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
-    : 0;
-  const overallTotal = Number((projectTotals.subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
-
-  const metaRows = [
-    projectCodeDisplay
-      ? {
-          icon: '🆔',
-          label: t('projectCards.meta.code', 'رقم المشروع'),
-          value: `#${projectCodeDisplay}`
-        }
-      : null,
-    customerName
-      ? {
-          icon: '👤',
-          label: t('projectCards.meta.client', 'العميل'),
-          value: customerName
-        }
-      : null,
-    companyName
-      ? {
-          icon: '🏢',
-          label: t('projectCards.meta.company', 'شركة العميل'),
-          value: companyName
-        }
-      : null,
-    typeLabel
-      ? {
-          icon: '🏷️',
-          label: t('projectCards.meta.type', 'نوع المشروع'),
-          value: typeLabel
-        }
-      : null,
-    crewPreview
-      ? {
-          icon: '👥',
-          label: t('projectCards.stats.crewLabel', 'عدد الطاقم'),
-          value: crewPreview
-        }
-      : null,
-    {
-      icon: '📅',
-      label: t('projectCards.meta.startDate', 'تاريخ البداية'),
-      value: formatDateTimeLocalized(project?.start)
-    },
-    {
-      icon: '📅',
-      label: t('projectCards.meta.endDate', 'تاريخ النهاية'),
-      value: project?.end ? formatDateTimeLocalized(project.end) : '—'
-    }
-  ].filter(Boolean);
-
-  const reservationStats = [
-    {
-      icon: '📦',
-      label: t('projectCards.stats.equipmentCount', 'عدد المعدات'),
-      value: normalizeNumbers(String(equipmentCountTotal))
-    },
-    {
-      icon: '😎',
-      label: t('projectCards.stats.crewCount', 'عدد أفراد الطاقم'),
-      value: normalizeNumbers(String(crewAssignmentsTotal))
-    },
-    {
-      icon: '💵',
-      label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'),
-      value: formatCurrencyLocalized(reservationsTotal)
-    }
-  ];
-
-  const paymentStats = [
-    {
-      icon: '💳',
-      label: t('projectCards.stats.paymentStatus', 'حالة الدفع'),
-      value: paymentStatusLabel
-    },
-    {
-      icon: '💸',
-      label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'),
-      value: formatCurrencyLocalized(projectTotals.expensesTotal)
-    },
-    {
-      icon: '💰',
-      label: t('projectCards.stats.projectSubtotal', 'التكلفة التقديرية'),
-      value: formatCurrencyLocalized(projectTotals.subtotal)
-    },
-    {
-      icon: '🧾',
-      label: t('projectCards.stats.taxTotal', 'الضريبة'),
-      value: formatCurrencyLocalized(combinedTaxAmount)
-    },
-    {
-      icon: '💵',
-      label: t('projectCards.stats.overallTotal', 'المجموع الكلي'),
-      value: formatCurrencyLocalized(overallTotal)
-    }
-  ];
-
-  const sectionsHtml = [
-    buildCardSection('projectCards.groups.meta', 'بيانات المشروع', metaRows),
-    buildCardSection('projectCards.groups.reservations', 'موجز الحجز', reservationStats),
-    buildCardSection('projectCards.groups.payment', 'ملخص الدفع', paymentStats)
-  ].filter(Boolean).join('');
-
-  const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
-  const pendingLabel = t('projects.focus.pending', '⌛ بانتظار التأكيد');
-  const confirmChipClass = confirmed ? 'status-confirmed' : 'status-pending';
-  const confirmText = confirmed ? confirmedLabel : pendingLabel;
-  const actionsHtml = `<div class="project-focus-card__actions"><span class="reservation-chip ${confirmChipClass} project-focus-card__confirm-indicator">${escapeHtml(confirmText)}</span></div>`;
-
-  const topBadges = [projectCodeBadge, categoryBadge, statusChip, paymentChip]
-    .filter(Boolean)
-    .join('\n          ');
-  const cardClassNames = ['project-focus-card', ...cardStateClasses].join(' ');
-
-  return `
-    <div class="col-12 col-md-6 col-xl-4">
-      <article class="${cardClassNames}" data-project-id="${projectIdAttr}">
-        <div class="project-focus-card__accent"></div>
-        <div class="project-focus-card__top">
-          ${topBadges}
-        </div>
-        <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
-        <p class="project-focus-card__description">${descriptionText}</p>
-        <div class="project-focus-card__sections">
-          ${sectionsHtml}
-        </div>
-        ${actionsHtml}
-      </article>
-    </div>
-  `;
-}
-
-function buildCardSection(titleKey, fallback, rows = []) {
-  if (!rows.length) return '';
-  const rowsHtml = rows
-    .map(({ icon, label, value }) => {
-      const iconHtml = icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : '';
-      return `
-        <div class="project-focus-card__row">
-          <span class="project-focus-card__row-label">${iconHtml}${escapeHtml(label)}</span>
-          <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
-        </div>
-      `;
-    })
-    .join('');
-
-  return `
-    <div class="project-focus-card__section">
-      <span class="project-focus-card__section-title">${escapeHtml(t(titleKey, fallback))}</span>
-      <div class="project-focus-card__section-box">
-        ${rowsHtml}
-      </div>
-    </div>
-  `;
-}
-
-function buildCrewPreview(names = []) {
-  if (!names.length) return '';
-  const previewNames = names.slice(0, MAX_CREW_PREVIEW);
-  const extraCount = names.length - previewNames.length;
-  const separator = getCurrentLanguage() === 'ar' ? '، ' : ', ';
-  let text = previewNames.join(separator);
-  if (extraCount > 0) {
-    text += `${separator}+${normalizeNumbers(String(extraCount))}`;
-  }
-  return text;
-}
-
 function openCustomerProjectDetails(projectId) {
   const normalizedId = String(projectId || '').trim();
   if (!normalizedId) return;
@@ -627,6 +390,7 @@ function openCustomerProjectDetails(projectId) {
   const modal = customerProjectsContext.modal;
   if (!modal?.body) return;
 
+  modal.body.dataset.mode = 'view';
   const { projects = [], reservations = [], customers = [] } = loadData();
   const project = findProjectByIdentifier(projects, normalizedId);
   if (!project) return;
@@ -643,12 +407,14 @@ function openCustomerProjectDetails(projectId) {
     return reservationProjectId && reservationProjectId === normalizedId;
   });
 
-  const detailsHtml = buildCustomerProjectDetailsMarkup(project, {
+  const detailsHtml = buildProjectDetailsMarkup(project, {
     customer,
     reservations: linkedReservations
   });
 
   modal.body.innerHTML = detailsHtml;
+  attachCustomerProjectDetailsActions(project);
+  attachProjectReservationViewHandlers(modal.body);
 
   if (window.bootstrap?.Modal) {
     window.bootstrap.Modal.getOrCreateInstance(modal.el).show();
@@ -656,6 +422,193 @@ function openCustomerProjectDetails(projectId) {
     modal.el.classList.add('show');
     modal.el.style.display = 'block';
   }
+}
+
+function attachCustomerProjectDetailsActions(project) {
+  if (!project || !customerProjectsContext.modal?.body) return;
+
+  const editBtn = customerProjectsContext.modal.body.querySelector('[data-action="edit-project"]');
+  if (!editBtn) return;
+
+  editBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    openCustomerProjectEdit(project);
+  });
+}
+
+function attachProjectReservationViewHandlers(modalBody) {
+  if (!modalBody) return;
+  const buttons = modalBody.querySelectorAll('[data-action="view-reservation"]');
+  if (!buttons.length) return;
+
+  buttons.forEach((button) => {
+    if (button.dataset.listenerAttached === 'true') return;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const reservationsState = getReservationsState();
+      let index = Number.parseInt(button.dataset.index || '', 10);
+      if (!Number.isInteger(index) || index < 0) {
+        const reservationId = button.dataset.reservationId;
+        if (reservationId) {
+          const matchedIndex = reservationsState.findIndex((entry) => {
+            const candidates = [entry?.id, entry?.reservationId, entry?.reservation_id];
+            return candidates.some((value) => value != null && String(value) === reservationId);
+          });
+          index = matchedIndex;
+        }
+      }
+
+      if (Number.isInteger(index) && index >= 0 && typeof window.showReservationDetails === 'function') {
+        window.showReservationDetails(index);
+      } else {
+        showToast(t('projects.details.reservations.viewUnavailable', 'تعذر فتح تفاصيل الحجز الآن'));
+      }
+    });
+    button.dataset.listenerAttached = 'true';
+  });
+}
+
+function openCustomerProjectEdit(project) {
+  if (!project || !ensureProjectDetailsModal()) return;
+
+  const modal = customerProjectsContext.modal;
+  if (!modal?.body) return;
+
+  const { customers = [] } = loadData();
+  const customer = customers.find((entry) => String(entry.id) === String(project.clientId)) || null;
+  const clientName = customer?.customerName || project.clientName || project.customerName || '';
+  const clientCompany = project.clientCompany || customer?.companyName || customer?.company || '';
+
+  modal.body.dataset.mode = 'edit';
+  modal.body.innerHTML = buildProjectEditMarkup(project, {
+    clientName,
+    clientCompany
+  });
+  bindCustomerProjectEditForm(project, {
+    clientName,
+    clientCompany
+  });
+}
+
+function bindCustomerProjectEditForm(project, { clientName = '', clientCompany = '' } = {}) {
+  if (!project || !customerProjectsContext.modal?.body) return;
+
+  const form = customerProjectsContext.modal.body.querySelector('#customer-project-edit-form');
+  if (!form) return;
+
+  const cancelBtn = form.querySelector('[data-action="cancel-edit"]');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      const identifier = getProjectIdentifier(project);
+      if (identifier) {
+        openCustomerProjectDetails(identifier);
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (form.dataset.submitting === 'true') return;
+
+    const formData = new FormData(form);
+    const title = (formData.get('project-title') || '').toString().trim();
+    const projectType = (formData.get('project-type') || '').toString().trim();
+    const startDateValue = (formData.get('project-start-date') || '').toString().trim();
+    const startTimeValue = (formData.get('project-start-time') || '').toString().trim();
+    const endDateValue = (formData.get('project-end-date') || '').toString().trim();
+    const endTimeValue = (formData.get('project-end-time') || '').toString().trim();
+    const descriptionValue = (formData.get('project-description') || '').toString().trim();
+    const paymentStatusValue = (formData.get('project-payment-status') || '').toString() === 'paid' ? 'paid' : 'unpaid';
+    const applyTax = form.querySelector('[name="project-apply-tax"]')?.checked === true;
+
+    if (!title || !projectType || !startDateValue) {
+      showToast(t('projects.toast.missingRequiredFields', '⚠️ يرجى تعبئة البيانات المطلوبة'));
+      return;
+    }
+
+    const startIso = combineDateAndTime(startDateValue, startTimeValue);
+    const endIso = endDateValue ? combineDateAndTime(endDateValue, endTimeValue) : '';
+
+    if (endIso) {
+      const startDate = new Date(startIso);
+      const endDate = new Date(endIso);
+      if (!Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && startDate > endDate) {
+        showToast(t('projects.toast.invalidDateRange', '⚠️ تاريخ النهاية يجب أن يكون بعد تاريخ البداية'));
+        return;
+      }
+    }
+
+    const identifier = getProjectIdentifier(project);
+    if (!identifier) {
+      showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
+      return;
+    }
+
+    const equipmentEstimate = Number(project?.equipmentEstimate ?? project?.equipment_estimate ?? 0) || 0;
+    const expensesList = Array.isArray(project?.expenses) ? project.expenses : [];
+    const expensesTotal = calculateProjectExpenses(project);
+    const subtotal = Number((equipmentEstimate + expensesTotal).toFixed(2));
+    const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    const totalWithTax = applyTax ? Number((subtotal + taxAmount).toFixed(2)) : subtotal;
+
+    const payload = buildProjectPayload({
+      projectCode: project.projectCode,
+      title,
+      type: projectType,
+      clientId: project.clientId,
+      clientCompany,
+      description: descriptionValue,
+      start: startIso,
+      end: endIso || null,
+      applyTax,
+      paymentStatus: paymentStatusValue,
+      equipmentEstimate,
+      expenses: expensesList,
+      taxAmount,
+      totalWithTax,
+      confirmed: project.confirmed,
+      technicians: Array.isArray(project?.technicians) ? project.technicians : [],
+      equipment: Array.isArray(project?.equipment) ? project.equipment : [],
+    });
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.dataset.originalText = submitBtn.textContent || '';
+      submitBtn.textContent = t('projects.details.edit.saving', 'جاري الحفظ...');
+    }
+
+    form.dataset.submitting = 'true';
+
+    try {
+      const updated = await updateProjectApi(identifier, payload);
+      await syncProjectReservationsPayment(identifier, paymentStatusValue);
+      document.dispatchEvent(new CustomEvent('projects:changed'));
+      showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
+      updateCustomerProjects();
+      const nextIdentifier = getProjectIdentifier(updated) || identifier;
+      if (nextIdentifier) {
+        openCustomerProjectDetails(nextIdentifier);
+      }
+    } catch (error) {
+      console.error('❌ [customerDetails] Failed to update project from customer modal', error);
+      const message = typeof error?.message === 'string'
+        ? error.message
+        : t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
+      showToast(message);
+    } finally {
+      delete form.dataset.submitting;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        if (submitBtn.dataset.originalText) {
+          submitBtn.textContent = submitBtn.dataset.originalText;
+          delete submitBtn.dataset.originalText;
+        }
+      }
+    }
+  });
 }
 
 function findProjectByIdentifier(projects = [], identifier) {
@@ -759,7 +712,10 @@ function buildCustomerProjectDetailsMarkup(project, { customer, reservations }) 
     </div>
   `).join('');
 
-  const reservationsSection = buildCustomerProjectReservationsSection(reservations);
+  const reservationsSection = buildCustomerProjectReservationsSection({
+    project,
+    reservations
+  });
 
   return `
     <div class="project-details-header mb-4">
@@ -798,7 +754,7 @@ function buildCustomerProjectDetailsMarkup(project, { customer, reservations }) 
   `;
 }
 
-function buildCustomerProjectReservationsSection(reservations = []) {
+function buildCustomerProjectReservationsSection({ reservations = [], project = null } = {}) {
   const sorted = [...reservations].sort((a, b) => {
     const aStart = a?.start ? new Date(a.start).getTime() : 0;
     const bStart = b?.start ? new Date(b.start).getTime() : 0;
@@ -812,8 +768,17 @@ function buildCustomerProjectReservationsSection(reservations = []) {
     ? `<span class="badge project-reservations-count">${escapeHtml(countTemplate.replace('{count}', normalizeNumbers(String(sorted.length))))}</span>`
     : '';
 
+  const projectId = project ? getProjectIdentifier(project) : null;
+  const editLabel = t('projects.details.actions.edit', '✏️ تعديل المشروع');
+  const editButton = projectId
+    ? `<button type="button" class="btn btn-sm btn-warning" data-action="edit-project" data-project-id="${escapeHtml(String(projectId))}">${escapeHtml(editLabel)}</button>`
+    : '';
+  const actionsMarkup = editButton
+    ? `<div class="d-flex flex-wrap gap-2">${editButton}</div>`
+    : '';
+
   const listMarkup = sorted.length
-    ? `<div class="project-reservations-list">${sorted.map((reservation) => buildCustomerReservationCard(reservation)).join('')}</div>`
+    ? `<div class="project-reservations-list">${sorted.map((reservation) => buildCustomerReservationCard(reservation, project)).join('')}</div>`
     : `<div class="alert alert-info project-reservations-empty mb-0">${escapeHtml(emptyText)}</div>`;
 
   return `
@@ -823,13 +788,14 @@ function buildCustomerProjectReservationsSection(reservations = []) {
           <h6 class="mb-0">${escapeHtml(title)}</h6>
           ${countBadge}
         </div>
+        ${actionsMarkup}
       </div>
       ${listMarkup}
     </section>
   `;
 }
 
-function buildCustomerReservationCard(reservation) {
+function buildCustomerReservationCard(reservation, project = null) {
   const reservationIdentifier = reservation?.reservationId ?? reservation?.id ?? '-';
   const reservationId = normalizeNumbers(String(reservationIdentifier));
   const rangeLabel = formatDateRangeDetailed(reservation?.start, reservation?.end);
@@ -841,7 +807,7 @@ function buildCustomerReservationCard(reservation) {
   const itemsLabel = t('projects.details.reservations.itemsCount', '{count} معدة').replace('{count}', itemsCount);
   const crewLabel = t('projects.details.reservations.crewCount', '{count} من الطاقم').replace('{count}', crewCountValue);
 
-  const statusConfirmed = reservation?.confirmed === true || reservation?.confirmed === 'true';
+  const { effectiveConfirmed: statusConfirmed } = resolveReservationProjectState(reservation, project);
   const statusLabel = statusConfirmed
     ? t('reservations.list.status.confirmed', '✅ مؤكد')
     : t('reservations.list.status.pending', '⏳ غير مؤكد');

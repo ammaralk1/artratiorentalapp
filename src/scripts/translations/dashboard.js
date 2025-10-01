@@ -393,6 +393,7 @@ registerTranslations({
     'reservations.toast.updateCrewConflict': '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في جدول أحد أعضاء الطاقم',
     'reservations.toast.updated': '✅ تم حفظ التعديلات على الحجز',
     'reservations.toast.confirmed': '✅ تم تأكيد الحجز',
+    'reservations.toast.confirmBlockedByProject': '⚠️ حالة هذا الحجز تتحكم بها حالة المشروع المرتبط ولا يمكن تأكيده من هنا',
     'reservations.toast.deleteConfirm': '⚠️ هل أنت متأكد من حذف هذا الحجز؟',
 
     'maintenance.section.title': '🛠️ إدارة الصيانة',
@@ -922,6 +923,7 @@ registerTranslations({
     'reservations.toast.updateCrewConflict': '⚠️ Cannot save changes because a crew member conflicts with another booking',
     'reservations.toast.updated': '✅ Reservation updated',
     'reservations.toast.confirmed': '✅ Reservation confirmed',
+    'reservations.toast.confirmBlockedByProject': '⚠️ This reservation is controlled by its linked project and cannot be confirmed here',
     'reservations.toast.deleteConfirm': '⚠️ Are you sure you want to delete this reservation?',
 
     'maintenance.section.title': '🛠️ Maintenance Management',

@@ -9,6 +9,7 @@ import {
   refreshReservationsFromApi,
   isApiError,
 } from './reservationsService.js';
+import { resolveReservationProjectState } from './reservationsShared.js';
 
 function runSharedRefresh() {
   const run = () => {
@@ -118,6 +119,18 @@ export async function confirmReservation(index, { onAfterChange } = {}) {
   const reservationId = reservation.id || reservation.reservationId;
   if (!reservationId) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return false;
+  }
+
+  const { projectLinked } = resolveReservationProjectState(reservation);
+  if (projectLinked) {
+    showToast(
+      t(
+        'reservations.toast.confirmBlockedByProject',
+        '⚠️ حالة هذا الحجز تتحكم بها حالة المشروع المرتبط ولا يمكن تأكيده من هنا'
+      ),
+      'info'
+    );
     return false;
   }
 
