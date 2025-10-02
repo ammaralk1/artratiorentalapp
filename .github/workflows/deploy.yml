@@ -1,29 +1,54 @@
-- name: Sync project to FTP server
-  env:
-    FTP_SERVER: ${{ secrets.FTP_SERVER }}
-    FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-    FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-  run: |
-    rclone config create site ftp host "${FTP_SERVER}" user "${FTP_USERNAME}" pass "${FTP_PASSWORD}" port 21 tls false
-    rclone sync ./ site:/ \
-      --transfers 2 \
-      --checkers 2 \
-      --ftp-concurrency 2 \
-      --exclude ".git/**" \
-      --exclude ".github/**" \
-      --exclude "node_modules/**" \
-      --exclude "tests/**" \
-      --exclude "README.md" \
-      --exclude "package-lock.json" \
-      --exclude "package.json" \
-      --exclude "deploy-test*.txt" \
-      --exclude "vite.config.js" \
-      --exclude "vitest.config.js" \
-      --exclude ".gitignore" \
-      --exclude ".htaccess" \
-      --exclude "src/**" \
-      --exclude "ART RATIO APP.code-workspace" \
-      --exclude "eqouipment list for app.xlsx" \
-      --exclude "main" \
-      --exclude "public/**" \
-      --exclude "deploy-test-latest.txt"
+name: Build & Deploy (rclone)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
+
+      - name: Sync project to FTP server
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          rclone config create site ftp host "${FTP_SERVER}" user "${FTP_USERNAME}" pass "${FTP_PASSWORD}" port 21 tls false
+
+          rclone sync ./ site:/ \
+          --transfers 2 \
+          --checkers 2 \
+          --ftp-concurrency 2 \
+            --exclude ".git/**" \
+            --exclude ".github/**" \
+            --exclude "node_modules/**" \
+            --exclude "tests/**" \
+            --exclude "README.md" \
+            --exclude "package-lock.json" \
+            --exclude "package.json" \
+            --exclude "deploy-test*.txt" \
+            --exclude "vite.config.js" \
+            --exclude "vitest.config.js" \
+            --exclude ".gitignore" \
+            --exclude ".htaccess" \
+            --exclude "src/**" \
+            --exclude "ART RATIO APP.code-workspace" \
+            --exclude "eqouipment list for app.xlsx" \
+            --exclude "main" \
+            --exclude "public/**" \
+            --exclude "deploy-test-latest.txt" 
