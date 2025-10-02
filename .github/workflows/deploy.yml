@@ -7,7 +7,6 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,14 +23,44 @@ jobs:
       - name: Build Vite project
         run: npm run build
 
-      - name: Deploy via FTP
+      # 1) Upload backend/root files (skip dist)
+      - name: Deploy backend & root files
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
+          protocol: ftp
           port: 21
-          local-dir: dist/
-          server-dir: /
           security: loose
+          local-dir: .
+          server-dir: /
+          include: |
+            backend/**
+            *.php
+            *.html
+            *.htaccess
+          exclude: |
+            dist/**
+            node_modules/**
+            tests/**
+            .git/**
+            .github/**
+            README.md
+            package-lock.json
+            package.json
+            vite.config.js
+            vitest.config.js
+
+      # 2) Upload the dist folder without flattening it
+      - name: Deploy dist bundle
+        uses: SamKirkland/FTP-Deploy-Action@4.3.3
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          security: loose
+          local-dir: dist/
+          server-dir: /dist/
