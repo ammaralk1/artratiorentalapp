@@ -351,6 +351,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       </div>
 
       <div class="reservation-modal-actions">
+        <button type="button" class="btn btn-outline-primary" id="reservation-details-export-btn" data-index="${index}">
+          ${t('reservations.details.actions.exportPdf', '📄 تصدير PDF')}
+        </button>
         <button type="button" class="btn btn-warning" id="reservation-details-edit-btn" data-index="${index}">${editActionLabel}</button>
         ${canDelete ? `<button type="button" class="btn btn-danger" id="reservation-details-delete-btn" data-index="${index}">${deleteActionLabel}</button>` : ''}
       </div>

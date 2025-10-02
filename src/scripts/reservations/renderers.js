@@ -8,6 +8,7 @@ import {
   buildReservationTilesHtml,
   buildReservationDetailsHtml
 } from './list/index.js';
+import { exportReservationPdf } from './reservationPdf.js';
 
 export function renderReservationsList({
   containerId = 'reservations-list',
@@ -136,6 +137,18 @@ export function renderReservationDetails(index, {
       const target = projectId ? `projects.html?project=${encodeURIComponent(projectId)}` : 'projects.html';
       window.location.href = target;
     });
+  }
+
+  const exportBtn = document.getElementById('reservation-details-export-btn');
+  if (exportBtn) {
+    exportBtn.onclick = async () => {
+      try {
+        await exportReservationPdf({ reservation, customer, project });
+      } catch (error) {
+        console.error('❌ [reservations] export to PDF failed', error);
+        showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
+      }
+    };
   }
 
   if (modalEl && window.bootstrap?.Modal) {
