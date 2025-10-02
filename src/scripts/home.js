@@ -93,7 +93,7 @@ function buildSummaryMetrics(summary) {
       key: 'reservations.today',
       label: t('home.summary.reservationsToday', 'حجوزات اليوم'),
       value: summary.reservations.today,
-      icon: '🗓️',
+      icon: '🛎️',
       accent: 'bg-success-subtle',
       href: 'dashboard.html#reservations-tab',
       dashboardTab: 'reservations-tab',
