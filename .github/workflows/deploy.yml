@@ -32,5 +32,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: dist/
-          server-dir: public_html/art-ratio.com/angeluos/
+          server-dir: public_html/art-ratio.com/
           security: loose
