@@ -47,6 +47,14 @@ jobs:
             vite.config.js
             vitest.config.js
             deploy-test*.txt
+            .gitignore
+            .htaccess
+            ART RATIO APP.code-workspace
+            eqouipment list for app.xlsx
+            main
+            public/**
+            src/**
+            deploy-test-latest.txt
 
       - name: Deploy dist bundle
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
