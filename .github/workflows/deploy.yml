@@ -24,7 +24,7 @@ jobs:
       - name: Build Vite project
         run: npm run build
 
-      - name: Deploy backend & root files
+      - name: Deploy project
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -36,25 +36,17 @@ jobs:
           local-dir: ./
           server-dir: /
           exclude: |
-            dist/**
-            node_modules/**
-            tests/**
             .git/**
             .github/**
+            node_modules/**
+            tests/**
             README.md
             package-lock.json
             package.json
             vite.config.js
             vitest.config.js
+            dist/**
             deploy-test*.txt
-            .gitignore
-            .htaccess
-            ART RATIO APP.code-workspace
-            eqouipment list for app.xlsx
-            main
-            public/**
-            src/**
-            deploy-test-latest.txt
 
       - name: Deploy dist bundle
         uses: SamKirkland/FTP-Deploy-Action@4.3.3
@@ -66,4 +58,4 @@ jobs:
           port: 21
           security: loose
           local-dir: dist/
-          server-dir: /dist/
+          server-dir: /
