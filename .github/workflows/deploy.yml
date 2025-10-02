@@ -1,61 +1,51 @@
-name: Build & Deploy
+name: Build & Deploy (rclone)
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Use Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm install
+      - run: npm ci
+      - run: npm run build
 
-      - name: Build Vite project
-        run: npm run build
+      - name: Install rclone
+        run: curl https://rclone.org/install.sh | sudo bash
 
-      - name: Deploy project
-        uses: SamKirkland/FTP-Deploy-Action@4.3.3
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          security: loose
-          local-dir: ./
-          server-dir: /
-          exclude: |
-            .git/**
-            .github/**
-            node_modules/**
-            tests/**
-            README.md
-            package-lock.json
-            package.json
-            vite.config.js
-            vitest.config.js
-            dist/**
-            deploy-test*.txt
+      - name: Sync project to FTP server
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          rclone config create site ftp host "${FTP_SERVER}" user "${FTP_USERNAME}" pass "${FTP_PASSWORD}" port 21 tls false
 
-      - name: Deploy dist bundle
-        uses: SamKirkland/FTP-Deploy-Action@4.3.3
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp
-          port: 21
-          security: loose
-          local-dir: dist/
-          server-dir: /
+          rclone sync ./ site:/ \
+            --exclude ".git/**" \
+            --exclude ".github/**" \
+            --exclude "node_modules/**" \
+            --exclude "tests/**" \
+            --exclude "README.md" \
+            --exclude "package-lock.json" \
+            --exclude "package.json" \
+            --exclude "deploy-test*.txt" \
+            --exclude "vite.config.js" \
+            --exclude "vitest.config.js"
+            --exclude ".gitignore" \
+            --exclude ".htaccess" \
+            --exclude "src/**" \
+            --exclude "ART RATIO APP.code-workspace" \
+            --exclude "eqouipment list for app.xlsx" \
+            --exclude "main" \
+            --exclude "public/**" \
+            --exclude "deploy-test-latest.txt" \
