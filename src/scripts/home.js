@@ -4,6 +4,7 @@ import { migrateOldData } from './storage.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { updatePreferences } from './preferencesService.js';
 
 applyStoredTheme();
 migrateOldData();
@@ -85,20 +86,28 @@ function buildSummaryMetrics(summary) {
       value: summary.customers.total,
       icon: '👥',
       accent: 'bg-primary-subtle',
+      href: 'dashboard.html#customers-tab',
+      dashboardTab: 'customers-tab',
     },
     {
       key: 'reservations.today',
       label: t('home.summary.reservationsToday', 'حجوزات اليوم'),
       value: summary.reservations.today,
-      icon: '📆',
+      icon: '🗓️',
       accent: 'bg-success-subtle',
+      href: 'dashboard.html#reservations-tab',
+      dashboardTab: 'reservations-tab',
+      dashboardSubTab: 'my-reservations-tab',
     },
     {
       key: 'reservations.upcoming',
       label: t('home.summary.reservationsUpcoming', 'حجوزات قادمة'),
       value: summary.reservations.upcoming,
-      icon: '⏱️',
+      icon: '🔔',
       accent: 'bg-info-subtle',
+      href: 'dashboard.html#reservations-tab',
+      dashboardTab: 'reservations-tab',
+      dashboardSubTab: 'calendar-tab',
     },
     {
       key: 'projects.active',
@@ -106,6 +115,9 @@ function buildSummaryMetrics(summary) {
       value: summary.projects.active,
       icon: '🏗️',
       accent: 'bg-warning-subtle',
+      href: 'projects.html#projects-section',
+      projectsTab: 'projects-section',
+      projectsSubTab: 'projects-list-tab',
     },
     {
       key: 'equipment.maintenance',
@@ -113,6 +125,8 @@ function buildSummaryMetrics(summary) {
       value: summary.equipment.maintenance,
       icon: '🛠️',
       accent: 'bg-danger-subtle',
+      href: 'dashboard.html#maintenance-tab',
+      dashboardTab: 'maintenance-tab',
     },
     {
       key: 'maintenance.highPriority',
@@ -120,6 +134,8 @@ function buildSummaryMetrics(summary) {
       value: summary.maintenance.highPriority,
       icon: '⚡',
       accent: 'bg-danger-subtle',
+      href: 'dashboard.html#maintenance-tab',
+      dashboardTab: 'maintenance-tab',
     },
     {
       key: 'technicians.busy',
@@ -127,20 +143,102 @@ function buildSummaryMetrics(summary) {
       value: summary.technicians.busy,
       icon: '👷',
       accent: 'bg-secondary-subtle',
+      href: 'dashboard.html#technicians-tab',
+      dashboardTab: 'technicians-tab',
     },
   ];
 }
 
+function persistNavigationPreference(patch) {
+  if (typeof updatePreferences !== 'function') return;
+
+  const allowedKeys = ['dashboardTab', 'dashboardSubTab', 'projectsTab', 'projectsSubTab'];
+  const payload = {};
+  allowedKeys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      payload[key] = patch[key] ?? null;
+    }
+  });
+
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    const maybePromise = updatePreferences(payload);
+    if (maybePromise && typeof maybePromise.catch === 'function') {
+      maybePromise.catch((error) => {
+        console.warn('⚠️ [home] Failed to persist navigation preference', error);
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ [home] Failed to persist navigation preference', error);
+  }
+}
+
+function attachSummaryCardListeners(container) {
+  container.querySelectorAll('[data-summary-card]').forEach((card) => {
+    if (card.dataset.listenerAttached) return;
+
+    card.addEventListener('click', () => {
+      const patch = {};
+      if (card.dataset.dashboardTab !== undefined) {
+        patch.dashboardTab = card.dataset.dashboardTab || null;
+      }
+      if (card.dataset.dashboardSubtab !== undefined) {
+        patch.dashboardSubTab = card.dataset.dashboardSubtab || null;
+      }
+      if (card.dataset.projectsTab !== undefined) {
+        patch.projectsTab = card.dataset.projectsTab || null;
+      }
+      if (card.dataset.projectsSubtab !== undefined) {
+        patch.projectsSubTab = card.dataset.projectsSubtab || null;
+      }
+
+      if (Object.keys(patch).length > 0) {
+        persistNavigationPreference(patch);
+      }
+    });
+
+    card.dataset.listenerAttached = 'true';
+  });
+}
+
 function renderSummaryCard(metric) {
+  const classes = ['card', 'home-summary-card', 'shadow-sm', 'h-100', 'text-reset', 'text-decoration-none'];
+  const attrs = ['data-summary-card'];
+  const escapeAttr = (value) => String(value ?? '').replace(/"/g, '&quot;');
+
+  if (metric.href) {
+    attrs.push(`href="${escapeAttr(metric.href)}"`);
+  }
+
+  if (metric.dashboardTab !== undefined) {
+    attrs.push(`data-dashboard-tab="${escapeAttr(metric.dashboardTab ?? '')}"`);
+  }
+
+  if (metric.dashboardSubTab !== undefined) {
+    attrs.push(`data-dashboard-subtab="${escapeAttr(metric.dashboardSubTab ?? '')}"`);
+  }
+
+  if (metric.projectsTab !== undefined) {
+    attrs.push(`data-projects-tab="${escapeAttr(metric.projectsTab ?? '')}"`);
+  }
+
+  if (metric.projectsSubTab !== undefined) {
+    attrs.push(`data-projects-subtab="${escapeAttr(metric.projectsSubTab ?? '')}"`);
+  }
+
+  const value = normalizeNumbers(String(metric.value ?? 0));
+  const label = escapeAttr(metric.label);
+
   return `
-    <div class="col-sm-6 col-lg-3">
-      <div class="card h-100 shadow-sm home-summary-card">
-        <div class="card-body d-flex flex-column gap-2">
+    <div class="col-6 col-md-4 col-xl-3 col-xxl-2">
+      <a ${attrs.join(' ')} class="${classes.join(' ')}" aria-label="${label}">
+        <div class="card-body d-flex flex-column align-items-center text-center gap-1 gap-md-2">
           <div class="home-summary-icon ${metric.accent ?? ''}">${metric.icon}</div>
-          <span class="home-summary-label text-muted small">${metric.label}</span>
-          <span class="home-summary-value fs-4 fw-bold">${normalizeNumbers(String(metric.value ?? 0))}</span>
+          <span class="home-summary-label text-muted small mb-0">${metric.label}</span>
+          <span class="home-summary-value fw-semibold">${value}</span>
         </div>
-      </div>
+      </a>
     </div>
   `;
 }
@@ -180,6 +278,7 @@ function renderHomeSummary() {
 
   const metrics = buildSummaryMetrics(summaryState);
   container.innerHTML = metrics.map(renderSummaryCard).join('');
+  attachSummaryCardListeners(container);
 }
 
 async function loadHomeSummary({ silent = false } = {}) {
