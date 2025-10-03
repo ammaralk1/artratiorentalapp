@@ -52,14 +52,34 @@
   }
 
   .sidebar-shell {
-    @apply flex flex-col gap-4 bg-base-100 backdrop-blur border-l border-base-200 shadow-soft p-6 w-72 xl:w-80;
-    background-color: hsl(var(--b1) / 0.9);
+    @apply flex flex-col gap-4 backdrop-blur border-l border-base-200 shadow-soft p-6 w-72 xl:w-80;
+    background: linear-gradient(180deg, rgba(248, 250, 255, 0.96) 0%, rgba(238, 242, 255, 0.9) 100%);
+    max-height: calc(100vh - 1.5rem);
+    overflow-y: hidden;
+    scrollbar-width: thin;
   }
 
   :where(html.dark, body.dark) .sidebar-shell {
-    background: rgba(11, 17, 32, 0.94);
+    background: linear-gradient(180deg, rgba(9, 14, 28, 0.97) 0%, rgba(8, 18, 40, 0.92) 100%);
     border-color: rgba(63, 93, 245, 0.28);
     box-shadow: 0 32px 55px rgba(4, 9, 22, 0.65);
+  }
+
+  .sidebar-shell:hover {
+    overflow-y: auto;
+  }
+
+  .sidebar-shell::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-shell::-webkit-scrollbar-thumb {
+    background: rgba(148, 197, 255, 0.35);
+    border-radius: 999px;
+  }
+
+  :where(html.dark, body.dark) .sidebar-shell::-webkit-scrollbar-thumb {
+    background: rgba(63, 93, 245, 0.45);
   }
 
   .sidebar-panel {
