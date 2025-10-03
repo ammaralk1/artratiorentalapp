@@ -27,7 +27,19 @@
   }
 
   .page-grid {
-    @apply flex flex-col min-h-screen bg-gradient-to-br from-brand-50 via-base-200 to-transparent dark:from-base-200 dark:via-base-200 dark:to-transparent;
+    @apply flex flex-col min-h-screen;
+    background: linear-gradient(135deg, rgba(238, 242, 255, 0.95) 0%, rgba(248, 250, 252, 0.92) 55%, rgba(248, 250, 252, 0));
+  }
+
+  html.dark,
+  body.dark {
+    background: linear-gradient(180deg, #040914 0%, #0b1120 55%, #111a2e 100%);
+    color: #e2e8f0;
+  }
+
+  html.dark .page-grid,
+  body.dark .page-grid {
+    background: linear-gradient(135deg, rgba(11, 17, 32, 0.98) 0%, rgba(8, 14, 30, 0.92) 45%, rgba(16, 25, 46, 0.85) 100%);
   }
 
   .dashboard-header {
