@@ -552,6 +552,110 @@
     background-color: hsl(var(--p) / 0.12);
   }
 
+  :where(html.dark, body.dark) .glass-card,
+  :where(html.dark, body.dark) .box,
+  :where(html.dark, body.dark) .table-responsive,
+  :where(html.dark, body.dark) .card,
+  :where(html.dark, body.dark) .modal-content {
+    background: rgba(11, 17, 32, 0.94);
+    border: 1px solid rgba(63, 93, 245, 0.28);
+    box-shadow: 0 28px 55px rgba(4, 9, 22, 0.65);
+  }
+
+  :where(html.dark, body.dark) .management-form-header h4,
+  :where(html.dark, body.dark) .form-label,
+  :where(html.dark, body.dark) .modal-title,
+  :where(html.dark, body.dark) h2,
+  :where(html.dark, body.dark) h3,
+  :where(html.dark, body.dark) h4 {
+    color: #dbeafe;
+  }
+
+  :where(html.dark, body.dark) .management-form-hint,
+  :where(html.dark, body.dark) .text-muted,
+  :where(html.dark, body.dark) .stat-desc,
+  :where(html.dark, body.dark) .stat-title,
+  :where(html.dark, body.dark) p {
+    color: rgba(148, 163, 184, 0.78) !important;
+  }
+
+  :where(html.dark, body.dark) .management-form-icon {
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.35), rgba(59, 130, 246, 0.18));
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .form-control,
+  :where(html.dark, body.dark) .form-select,
+  :where(html.dark, body.dark) textarea {
+    background-color: rgba(13, 19, 35, 0.9);
+    border-color: rgba(63, 93, 245, 0.35);
+    color: #e2e8f0;
+  }
+
+  :where(html.dark, body.dark) .form-control:focus,
+  :where(html.dark, body.dark) .form-select:focus,
+  :where(html.dark, body.dark) textarea:focus {
+    border-color: rgba(99, 102, 241, 0.6);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
+  }
+
+  :where(html.dark, body.dark) .suggestions-list {
+    background: rgba(11, 17, 32, 0.96);
+    border-color: rgba(63, 93, 245, 0.28);
+    box-shadow: 0 24px 45px rgba(3, 7, 20, 0.55);
+    color: #dbeafe;
+  }
+
+  :where(html.dark, body.dark) .suggestion-item__meta {
+    color: rgba(148, 163, 184, 0.65);
+  }
+
+  :where(html.dark, body.dark) .suggestion-item:hover,
+  :where(html.dark, body.dark) .suggestion-item:focus {
+    background: rgba(63, 93, 245, 0.28);
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) table {
+    background: rgba(11, 17, 32, 0.94);
+    border-color: rgba(63, 93, 245, 0.24);
+    color: #dbeafe;
+  }
+
+  :where(html.dark, body.dark) table thead {
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.28), rgba(20, 32, 62, 0.92));
+    color: #f1f5f9;
+  }
+
+  :where(html.dark, body.dark) table tbody td,
+  :where(html.dark, body.dark) table tbody th {
+    border-color: rgba(32, 49, 78, 0.75);
+    color: #cfd8f6;
+  }
+
+  :where(html.dark, body.dark) .btn-outline-secondary {
+    border-color: rgba(148, 163, 184, 0.45);
+    color: #dbeafe;
+    background-color: rgba(17, 26, 46, 0.65);
+  }
+
+  :where(html.dark, body.dark) .btn-outline-secondary:hover {
+    background-color: rgba(63, 93, 245, 0.25);
+    border-color: rgba(99, 102, 241, 0.55);
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .modal-header,
+  :where(html.dark, body.dark) .modal-footer {
+    border-color: rgba(32, 49, 78, 0.6);
+  }
+
+  :where(html.dark, body.dark) .badge {
+    background: rgba(63, 93, 245, 0.25);
+    color: #dbeafe;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+  }
+
   .table-responsive {
     @apply overflow-x-auto rounded-3xl border border-base-200 bg-base-100 shadow-soft;
   }
