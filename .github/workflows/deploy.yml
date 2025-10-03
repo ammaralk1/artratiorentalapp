@@ -41,23 +41,23 @@ jobs:
             --transfers 2 \
             --checkers 2 \
             --ftp-concurrency 2 \
-            --exclude ".git/**" \
-            --exclude ".github/**" \
-            --exclude "node_modules/**" \
-            --exclude "tests/**" \
-            --exclude "README.md" \
-            --exclude "package-lock.json" \
-            --exclude "package.json" \
-            --exclude "deploy-test*.txt" \
-            --exclude "vite.config.js" \
-            --exclude "vitest.config.js" \
-            --exclude ".gitignore" \
-            --exclude "src/**" \
-            --exclude "ART RATIO APP.code-workspace" \
-            --exclude "eqouipment list for app.xlsx" \
-            --exclude "main" \
-            --exclude "public/**" \
-            --exclude "deploy-test-latest.txt"
+            --exclude "/.git/**" \
+            --exclude "/.github/**" \
+            --exclude "/node_modules/**" \
+            --exclude "/tests/**" \
+            --exclude "/README.md" \
+            --exclude "/package-lock.json" \
+            --exclude "/package.json" \
+            --exclude "/deploy-test*.txt" \
+            --exclude "/vite.config.js" \
+            --exclude "/vitest.config.js" \
+            --exclude "/.gitignore" \
+            --exclude "/src/**" \
+            --exclude "/ART RATIO APP.code-workspace" \
+            --exclude "/eqouipment list for app.xlsx" \
+            --exclude "/main" \
+            --exclude "/public/**" \
+            --exclude "/deploy-test-latest.txt"
 
       - name: Create backend config from secret
         env:
