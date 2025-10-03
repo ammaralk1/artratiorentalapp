@@ -255,25 +255,21 @@
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
       </div>
-    </header>
-
-    <div class="flex flex-1 flex-col">
-      <main class="dashboard-main w-full">
-        <div class="dashboard-main-inner space-y-8">
-          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
-            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
-              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M6 9l6 6l6 -6"></path>
-              </svg>
-            </button>
-            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                  <div class="space-y-1 text-start">
-                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</p>
-                  </div>
+      <div class="dashboard-header-addon container mx-auto px-4 pb-4 pt-4">
+        <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
+          <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
+            <span class="dashboard-greeting-toggle-label">لوحة التحكم</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M6 9l6 6l6 -6"></path>
+            </svg>
+          </button>
+          <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
+            <div class="flex flex-col gap-6">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-1 text-start">
+                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="dashboard.header.greeting">👋 أهلاً بك في لوحة التحكم</p>
+                </div>
                   <div class="flex flex-wrap items-center gap-2">
                     <a href="projects.html" class="add-project-btn" data-i18n data-i18n-key="dashboard.actions.addProject">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -348,7 +344,14 @@
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
+      </div>
+    </header>
+
+    <div class="flex flex-1 flex-col">
+      <main class="dashboard-main w-full">
+        <div class="dashboard-main-inner space-y-8">
 
           <div class="glass-card hidden lg:block dashboard-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
