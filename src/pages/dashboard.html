@@ -5,25 +5,10 @@
   <meta charset="UTF-8">
   <title>لوحة التحكم - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
 
-  <script>
-    (function () {
-      document.documentElement.classList.add('theme-loading');
-      try {
-        var theme = localStorage.getItem('app-theme');
-        if (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          theme = 'dark';
-        }
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark-mode');
-        }
-      } catch (error) {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          document.documentElement.classList.add('dark-mode');
-        }
-      }
-    })();
-  </script>
+  <script src="../../js/godaddy-monitor.js" defer></script>
+  <script src="../../js/page-boot.js"></script>
 
   <!-- ✅ Bootstrap RTL -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
@@ -46,14 +31,14 @@
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-  <script type="module" crossorigin src="/artratiorentalapp/assets/dashboard-Bxd2fAwV.js"></script>
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/auth-CNAfl19F.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/storage-DOnDLvtb.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/reservationsSummary-CBdNx1nm.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/controller-DfdUmPnp.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/customers-JnWiO8yC.js">
-  <link rel="modulepreload" crossorigin href="/artratiorentalapp/assets/events-BbKR8R1v.js">
-  <link rel="stylesheet" crossorigin href="/artratiorentalapp/assets/auth-BVA1-zST.css">
+  <script type="module" crossorigin src="../../assets/dashboard-CxxLfNJ0.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-F79eM6s1.js">
+  <link rel="modulepreload" crossorigin href="../../assets/common-cX5geGZ9.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CvNA_8g1.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-CruqOaln.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers-CeMlwLtv.js">
+  <link rel="modulepreload" crossorigin href="../../assets/events-E_kQeC2v.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth-WYOFshE-.css">
 </head>
 <body class="tabs-loading">
 
@@ -263,9 +248,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h3 data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h3>
           <div>
-            <button class="btn btn-danger btn-sm" onclick="clearEquipment()" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
-            <button type="button" id="excel-upload-trigger" class="btn btn-primary btn-sm" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
-            <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden>
+            <button type="button" id="equipment-clear-btn" class="btn btn-danger btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
+            <button type="button" id="excel-upload-trigger" class="btn btn-primary btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
+            <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden class="requires-admin">
           </div>
         </div>
 
@@ -441,6 +426,32 @@
         </div>
       </div> <!-- نهاية تبويب الصيانة -->
 
+      <!-- Modal: Close Maintenance Ticket -->
+      <div class="modal fade" id="closeMaintenanceModal" tabindex="-1" aria-labelledby="maintenance-close-modal-title" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form id="maintenance-close-form">
+              <div class="modal-header">
+                <h5 class="modal-title" id="maintenance-close-modal-title" data-i18n data-i18n-key="maintenance.closeModal.title">🔧 إغلاق تذكرة الصيانة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p class="text-muted mb-3" data-i18n data-i18n-key="maintenance.closeModal.subtitle">يرجى كتابة تقرير الإصلاح قبل إغلاق هذه التذكرة.</p>
+                <div id="maintenance-close-modal-details" class="mb-3 small text-muted"></div>
+                <div class="mb-3">
+                  <label for="maintenance-close-report" class="form-label" data-i18n data-i18n-key="maintenance.closeModal.reportLabel">📝 تقرير الإصلاح</label>
+                  <textarea class="form-control" id="maintenance-close-report" rows="4" placeholder="اكتب تفاصيل الإصلاح والإجراءات المتخذة..." data-i18n data-i18n-placeholder-key="maintenance.closeModal.reportPlaceholder"></textarea>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
+                <button type="submit" class="btn btn-success" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">✅ إغلاق التذكرة</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- ✅ تبويب: الحجوزات -->
       <div class="tab" id="reservations-tab">
         <h2 data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
@@ -482,9 +493,11 @@
                 <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
                 <div id="customer-suggestions" class="suggestions-list"></div>
               </div>
-              <div class="col-md-6">
-                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <select id="res-project" class="form-select" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+              <div class="col-md-6 position-relative">
+                <label for="res-project-search" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <input class="form-control" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+                <div id="project-suggestions" class="suggestions-list"></div>
+                <select id="res-project" class="form-select d-none" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
                   <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
                 </select>
               </div>
@@ -781,7 +794,10 @@
         <!-- ✅ تبويب فرعي: التقويم -->
         <div class="sub-tab" id="calendar-tab">
           <h4 data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
-          <div id="calendar" class="p-3 bg-white rounded border mt-3"></div>
+          <div id="calendar-panel" class="calendar-panel mt-3">
+            <div id="calendar-status" class="calendar-status" role="status"></div>
+            <div id="calendar" class="p-3 bg-white rounded border"></div>
+          </div>
         </div>
       </div> <!-- نهاية تبويب الحجوزات -->
 
