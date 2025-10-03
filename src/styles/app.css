@@ -54,8 +54,8 @@
   .sidebar-shell {
     @apply flex flex-col gap-4 backdrop-blur border-l border-base-200 shadow-soft p-6 w-72 xl:w-80;
     background: linear-gradient(180deg, rgba(248, 250, 255, 0.96) 0%, rgba(238, 242, 255, 0.9) 100%);
-    max-height: calc(100vh - 1.5rem);
-    overflow-y: hidden;
+    height: calc(100vh - 1.5rem);
+    overflow-y: auto;
     scrollbar-width: thin;
   }
 
@@ -63,10 +63,6 @@
     background: linear-gradient(180deg, rgba(9, 14, 28, 0.97) 0%, rgba(8, 18, 40, 0.92) 100%);
     border-color: rgba(63, 93, 245, 0.28);
     box-shadow: 0 32px 55px rgba(4, 9, 22, 0.65);
-  }
-
-  .sidebar-shell:hover {
-    overflow-y: auto;
   }
 
   .sidebar-shell::-webkit-scrollbar {
@@ -527,7 +523,8 @@
   }
 
   .sidebar-drawer {
-    @apply fixed inset-y-0 start-0 z-50 w-72 max-w-full translate-x-full bg-base-100 shadow-2xl transition-transform duration-300 ease-in-out;
+    @apply fixed inset-y-0 start-0 z-50 w-72 max-w-full translate-x-full shadow-2xl transition-transform duration-300 ease-in-out;
+    background: transparent;
   }
 
   @screen lg {
