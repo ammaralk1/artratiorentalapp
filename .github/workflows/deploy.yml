@@ -52,3 +52,15 @@ jobs:
             --exclude "main" \
             --exclude "public/**" \
             --exclude "deploy-test-latest.txt" 
+
+      - name: Upload backend config via FTPS
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+          curl --ftp-ssl --ssl-reqd --ftp-create-dirs \
+            --user "${FTP_USERNAME}:${FTP_PASSWORD}" \
+            -T backend/config.php \
+            "ftp://${FTP_SERVER}/backend/config.php"
