@@ -44,8 +44,7 @@ jobs:
             --exclude "deploy-test*.txt" \
             --exclude "vite.config.js" \
             --exclude "vitest.config.js" \
-            --exclude ".gitignore" \
-            --exclude ".htaccess" \
+            --exclude ".gitignore" \ 
             --exclude "src/**" \
             --exclude "ART RATIO APP.code-workspace" \
             --exclude "eqouipment list for app.xlsx" \
