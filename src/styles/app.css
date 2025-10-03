@@ -67,6 +67,12 @@
     color: rgba(219, 234, 254, 0.85);
   }
 
+  :where(html.dark, body.dark) .sidebar-shell .badge-soft {
+    background: rgba(63, 93, 245, 0.22);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #e2e8f0;
+  }
+
   .sidebar-menu {
     @apply flex flex-col gap-2;
   }
@@ -83,6 +89,7 @@
   .sidebar-link {
     @apply btn btn-ghost justify-start gap-3 rounded-2xl hover:text-base-content;
     color: hsl(var(--bc) / 0.8);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .sidebar-link:hover {
@@ -104,6 +111,28 @@
 
   :where(html.dark, body.dark) .dashboard-header p {
     color: rgba(203, 213, 225, 0.75);
+  }
+
+  .dashboard-hero-logo {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  :where(html.dark, body.dark) .dashboard-hero-logo {
+    background: rgba(63, 93, 245, 0.25);
+    color: #f8fafc;
+    box-shadow: 0 18px 35px rgba(10, 19, 40, 0.55);
+  }
+
+  .dashboard-hero-title {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+
+  .dashboard-hero-subtitle {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+
+  :where(html.dark, body.dark) .dashboard-hero-subtitle {
+    color: rgba(203, 213, 225, 0.75) !important;
   }
 
   .sidebar-link-active {
@@ -154,6 +183,27 @@
 
   .tab-buttons-vertical .tab-button {
     @apply justify-between text-start;
+  }
+
+  :where(html.dark, body.dark) .tab-buttons-vertical {
+    background-color: rgba(11, 17, 32, 0.85);
+    border-color: rgba(63, 93, 245, 0.25);
+  }
+
+  :where(html.dark, body.dark) .tab-buttons-vertical .tab-button {
+    color: rgba(219, 234, 254, 0.82);
+  }
+
+  :where(html.dark, body.dark) .tab-buttons-vertical .tab-button:hover {
+    background-color: rgba(63, 93, 245, 0.2);
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .tab-buttons-vertical .tab-button.active {
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.5), rgba(56, 189, 248, 0.35));
+    color: #f8fafc;
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 18px 35px rgba(9, 17, 39, 0.55);
   }
 
   .tab-buttons-horizontal {
