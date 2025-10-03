@@ -71,12 +71,21 @@ jobs:
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
           FTP_PORT: ${{ secrets.FTP_PORT }}
+          FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
         run: |
           set -euo pipefail
           FTP_PORT=${FTP_PORT:-21}
-          curl --fail --show-error --silent \
-            --ftp-create-dirs --ftp-method nocwd --ftp-pasv \
-            --ftp-ssl --ssl-reqd \
-            --user "${FTP_USERNAME}:${FTP_PASSWORD}" \
-            -T backend/config.php \
+          curl_args=(
+            --fail --show-error --silent
+            --ftp-create-dirs --ftp-method nocwd --ftp-pasv
+            --ftp-ssl --ssl-reqd
+            --user "${FTP_USERNAME}:${FTP_PASSWORD}"
+            -T backend/config.php
             "ftp://${FTP_SERVER}:${FTP_PORT}/backend/config.php"
+          )
+
+          if [[ "${FTP_SKIP_TLS_VERIFY:-false}" == "true" ]]; then
+            curl_args+=(--insecure)
+          fi
+
+          curl "${curl_args[@]}"
