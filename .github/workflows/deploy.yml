@@ -60,7 +60,8 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -euo pipefail
-          curl --ftp-ssl --ssl-reqd --ftp-create-dirs \
+          curl --fail --show-error --silent \
+            --ftp-create-dirs --ftp-method nocwd --ftp-pasv \
             --user "${FTP_USERNAME}:${FTP_PASSWORD}" \
             -T backend/config.php \
-            "ftp://${FTP_SERVER}/backend/config.php"
+            "ftps://${FTP_SERVER}/backend/config.php"
