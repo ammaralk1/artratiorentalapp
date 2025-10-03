@@ -20,8 +20,8 @@ let restorePendingTimeout = null;
 export function setupTabs() {
   console.log("🚀 [tabs.js] setupTabs()");
 
-  const tabButtons = document.querySelectorAll("[data-tab]");
-  const tabContents = document.querySelectorAll(".tab");
+  const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
+  const tabContents = document.querySelectorAll('.tab');
 
   console.log("📌 tabButtons:", tabButtons);
   console.log("📌 tabContents:", tabContents);
@@ -29,13 +29,22 @@ export function setupTabs() {
   const activateTab = (target, { skipStore = false } = {}) => {
     if (!target) return;
 
-    const tabButton = document.querySelector(`[data-tab="${target}"]`);
+    const matchingButtons = tabButtons.filter((button) => button?.getAttribute('data-tab') === target);
     const tabContent = document.getElementById(target);
-    if (!tabButton || !tabContent) return;
+    if (!matchingButtons.length || !tabContent) return;
 
     // 🔄 تغيير شكل التبويب النشط
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    tabButton.classList.add("active");
+    tabButtons.forEach((button) => {
+      const isActive = button?.getAttribute('data-tab') === target;
+      button.classList.toggle('active', isActive);
+      if (isActive) {
+        button.setAttribute('aria-selected', 'true');
+        button.setAttribute('tabindex', '0');
+      } else {
+        button.setAttribute('aria-selected', 'false');
+        button.setAttribute('tabindex', '-1');
+      }
+    });
 
     // 👁️ عرض التبويب المناسب
     tabContents.forEach((content) => {
@@ -91,6 +100,14 @@ export function setupTabs() {
   };
 
   tabButtons.forEach((btn) => {
+    if (!btn) return;
+    if (!btn.getAttribute('type')) {
+      btn.setAttribute('type', 'button');
+    }
+    btn.setAttribute('role', 'tab');
+    if (!btn.hasAttribute('tabindex')) {
+      btn.setAttribute('tabindex', btn.classList.contains('active') ? '0' : '-1');
+    }
     btn.addEventListener("click", () => {
       const target = btn.getAttribute("data-tab");
       console.log("🖱️ Tab clicked:", target);

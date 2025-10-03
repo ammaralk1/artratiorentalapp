@@ -4,44 +4,67 @@
   <meta charset="UTF-8">
   <title>تسجيل الدخول</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
 
-  <!-- Bootstrap RTL -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-
-  <!-- Custom Styles -->
-  <script type="module" crossorigin src="../../assets/login-Cj5rbU7_.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-F79eM6s1.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth-WYOFshE-.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="../../assets/login-BPM0DFXG.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-BJNkeD3K.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-DAWVtPUK.css">
 </head>
-<body>
+<body class="page-shell" data-theme="light">
+  <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-base-200 dark:via-base-200 dark:to-base-200">
+    <header class="flex items-center justify-between px-6 pt-6">
+      <a href="home.html" class="flex items-center gap-3 text-base-content transition hover:text-primary">
+        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-soft">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
+            <path d="M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"></path>
+            <path d="M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
+            <path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"></path>
+          </svg>
+        </span>
+        <span class="flex flex-col text-start">
+          <span class="text-xs text-base-content/60">Art Ratio</span>
+          <span class="text-lg font-semibold">Rental Hub</span>
+        </span>
+      </a>
+      <button class="theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+    </header>
 
-  <div class="theme-toggle-fixed">
-    <button class="btn btn-outline-secondary theme-toggle-btn" id="theme-toggle">🌙 الوضع الليلي</button>
-  </div>
+    <main class="flex flex-1 items-center justify-center px-4 py-12">
+      <section class="glass-card w-full max-w-md space-y-8">
+        <div class="space-y-2 text-center">
+          <h1 class="text-2xl font-bold text-base-content">🔐 تسجيل الدخول</h1>
+          <p class="text-sm text-base-content/60">أدخل بيانات الحساب للوصول إلى لوحة التحكم.</p>
+        </div>
 
-  <div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="box w-100" style="max-width: 400px;">
-      <h3 class="text-center mb-4">🔐 تسجيل الدخول</h3>
-      <form id="login-form">
-        <div class="mb-3">
-          <label for="username" class="form-label">اسم المستخدم</label>
-          <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
-        </div>
-        <div class="mb-3">
-          <label for="password" class="form-label">كلمة المرور</label>
-          <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
-        </div>
-        <button type="submit" class="btn btn-primary w-100">دخول</button>
-      </form>
-    </div>
+        <form id="login-form" class="space-y-5">
+          <div class="form-field">
+            <label for="username" class="form-label">اسم المستخدم</label>
+            <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
+          </div>
+          <div class="form-field">
+            <label for="password" class="form-label">كلمة المرور</label>
+            <div class="relative">
+              <input type="password" class="form-control pe-12" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+              <span class="absolute inset-y-0 end-4 flex items-center text-base-content/40">•••</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-full">دخول</button>
+        </form>
+
+        <p class="text-center text-xs text-base-content/50">
+          محمي لأعضاء فريق Art Ratio. تواصل معنا إذا واجهت مشكلة في تسجيل الدخول.
+        </p>
+      </section>
+    </main>
   </div>
 
 </body>

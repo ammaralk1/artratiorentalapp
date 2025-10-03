@@ -1,3 +1,5 @@
+import './styles/app.css';
+
 import { logout, checkAuth } from './scripts/auth.js';
 import { setupTabs } from './scripts/tabs.js';
 import { initCustomers } from './scripts/customers.js';
@@ -15,6 +17,8 @@ import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initReports } from './scripts/reports.js';
+import { initDashboardMetrics } from './scripts/dashboardMetrics.js';
+import { initDashboardShell } from './scripts/dashboardShell.js';
 
 applyStoredTheme();
 
@@ -25,8 +29,10 @@ async function initApp() {
   if (!user) {
     return;
   }
+  initDashboardShell();
   setupTabs();
   initCustomers();
+  initDashboardMetrics();
   initThemeToggle();
   renderEquipment();
   renderCalendar();

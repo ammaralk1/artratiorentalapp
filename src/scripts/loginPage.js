@@ -1,3 +1,5 @@
+import '../styles/app.css';
+
 import { login } from './auth.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 
