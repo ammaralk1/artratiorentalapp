@@ -70,10 +70,13 @@ jobs:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_PORT: ${{ secrets.FTP_PORT }}
         run: |
           set -euo pipefail
+          FTP_PORT=${FTP_PORT:-21}
           curl --fail --show-error --silent \
             --ftp-create-dirs --ftp-method nocwd --ftp-pasv \
+            --ftp-ssl --ssl-reqd \
             --user "${FTP_USERNAME}:${FTP_PASSWORD}" \
             -T backend/config.php \
-            "ftps://${FTP_SERVER}/backend/config.php"
+            "ftp://${FTP_SERVER}:${FTP_PORT}/backend/config.php"
