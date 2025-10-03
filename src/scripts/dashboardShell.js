@@ -1,10 +1,3 @@
-const DESKTOP_BREAKPOINT = 1024;
-
-function isDesktop() {
-  if (typeof window === 'undefined') return false;
-  return window.innerWidth >= DESKTOP_BREAKPOINT;
-}
-
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -15,30 +8,14 @@ function getElements() {
 
 function addOpenState({ sidebar, backdrop }) {
   sidebar?.classList.add('open');
-  if (!isDesktop()) {
-    backdrop?.classList.add('open');
-  } else {
-    backdrop?.classList.remove('open');
-  }
+  backdrop?.classList.add('open');
   sidebar?.setAttribute('aria-hidden', 'false');
 }
 
 function removeOpenState({ sidebar, backdrop }) {
   sidebar?.classList.remove('open');
-  if (!isDesktop()) {
-    backdrop?.classList.remove('open');
-    sidebar?.setAttribute('aria-hidden', 'true');
-  } else {
-    sidebar?.setAttribute('aria-hidden', 'false');
-  }
-}
-
-function handleResize(elements) {
-  if (isDesktop()) {
-    addOpenState(elements);
-  } else {
-    removeOpenState(elements);
-  }
+  backdrop?.classList.remove('open');
+  sidebar?.setAttribute('aria-hidden', 'true');
 }
 
 export function initDashboardShell() {
@@ -49,30 +26,19 @@ export function initDashboardShell() {
     return;
   }
 
-  const syncWithViewport = () => {
-    if (isDesktop()) {
-      addOpenState(elements);
-    } else {
-      removeOpenState(elements);
-    }
-  };
-
-  syncWithViewport();
+  sidebar.setAttribute('aria-hidden', 'true');
 
   openTrigger?.addEventListener('click', (event) => {
     event.preventDefault();
-    if (isDesktop()) return;
     addOpenState(elements);
   });
 
   closeTrigger?.addEventListener('click', (event) => {
     event.preventDefault();
-    if (isDesktop()) return;
     removeOpenState(elements);
   });
 
   backdrop?.addEventListener('click', () => {
-    if (isDesktop()) return;
     removeOpenState(elements);
   });
 
@@ -87,10 +53,4 @@ export function initDashboardShell() {
       removeOpenState(elements);
     }
   });
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('resize', () => {
-      handleResize(elements);
-    }, { passive: true });
-  }
 }
