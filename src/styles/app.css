@@ -62,6 +62,11 @@
     box-shadow: 0 32px 55px rgba(4, 9, 22, 0.65);
   }
 
+  :where(html.dark, body.dark) .sidebar-shell p,
+  :where(html.dark, body.dark) .sidebar-shell span {
+    color: rgba(219, 234, 254, 0.85);
+  }
+
   .sidebar-menu {
     @apply flex flex-col gap-2;
   }
@@ -91,6 +96,14 @@
   :where(html.dark, body.dark) .sidebar-link:hover {
     background-color: rgba(63, 93, 245, 0.18);
     color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .dashboard-header h1 {
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .dashboard-header p {
+    color: rgba(203, 213, 225, 0.75);
   }
 
   .sidebar-link-active {
