@@ -34,9 +34,9 @@
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
-      <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4">
+      <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
         <div class="flex items-center gap-3">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sidebar-brand-logo">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
@@ -45,7 +45,7 @@
             <path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"></path>
           </svg>
         </div>
-        <div class="text-start">
+        <div class="text-start sidebar-brand-text">
           <p class="text-xs text-base-content/60">Art Ratio</p>
           <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
         </div>
@@ -82,7 +82,7 @@
     </div>
 
     <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
-      <div>
+      <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
           <button class="tab-button active" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">
@@ -155,7 +155,7 @@
           </button>
         </div>
       </div>
-      <div class="flex flex-col gap-2">
+      <div class="sidebar-panel sidebar-panel--links flex flex-col gap-2">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.quickLinksHeading">روابط سريعة</p>
         <a class="sidebar-link" href="home.html" data-close-sidebar>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
