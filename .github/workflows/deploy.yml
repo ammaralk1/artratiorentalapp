@@ -53,6 +53,18 @@ jobs:
             --exclude "public/**" \
             --exclude "deploy-test-latest.txt" 
 
+      - name: Create backend config from secret
+        env:
+          BACKEND_CONFIG_PHP: ${{ secrets.BACKEND_CONFIG_PHP }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BACKEND_CONFIG_PHP:-}" ]; then
+            echo "BACKEND_CONFIG_PHP secret is empty."
+            exit 1
+          fi
+          mkdir -p backend
+          printf '%s' "${BACKEND_CONFIG_PHP}" | base64 --decode > backend/config.php
+
       - name: Upload backend config via FTPS
         env:
           FTP_SERVER: ${{ secrets.FTP_SERVER }}
