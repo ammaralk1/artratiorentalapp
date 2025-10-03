@@ -684,8 +684,7 @@
   }
 
   .language-toggle-btn,
-  .theme-toggle-btn,
-  #logout-btn {
+  .theme-toggle-btn {
     @apply btn btn-sm md:btn-md btn-ghost rounded-full border border-base-300;
     border-color: hsl(var(--bc) / 0.35);
   }
@@ -696,7 +695,29 @@
   }
 
   #logout-btn {
-    @apply btn-error text-error-content border-none hover:brightness-105;
+    @apply btn btn-sm md:btn-md rounded-full font-semibold text-white;
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    border: 2px solid rgba(248, 113, 113, 0.75);
+    box-shadow: 0 14px 30px rgba(239, 68, 68, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  #logout-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #fb7185, #dc2626);
+    box-shadow: 0 20px 40px rgba(220, 38, 38, 0.28);
+  }
+
+  :where(html.dark, body.dark) #logout-btn {
+    background: linear-gradient(135deg, #991b1b, #7f1d1d);
+    border-color: rgba(248, 113, 113, 0.68);
+    box-shadow: 0 18px 38px rgba(185, 28, 28, 0.32);
+    color: #fff;
+  }
+
+  :where(html.dark, body.dark) #logout-btn:hover {
+    background: linear-gradient(135deg, #7f1d1d, #65121c);
+    box-shadow: 0 26px 52px rgba(185, 28, 28, 0.38);
   }
 
   .theme-toggle-btn {
