@@ -18,6 +18,31 @@ function removeOpenState({ sidebar, backdrop }) {
   sidebar?.setAttribute('aria-hidden', 'true');
 }
 
+function initDashboardGreetingToggle() {
+  const root = document.querySelector('[data-dashboard-greeting]');
+  if (!root) return;
+
+  const toggle = root.querySelector('[data-greeting-toggle]');
+  const panel = root.querySelector('[data-greeting-panel]');
+  if (!toggle || !panel) return;
+
+  const setState = (isOpen) => {
+    panel.hidden = !isOpen;
+    toggle.setAttribute('aria-expanded', String(isOpen));
+    root.dataset.state = isOpen ? 'open' : 'closed';
+  };
+
+  setState(false);
+
+  toggle.addEventListener('click', () => {
+    const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+    setState(!isOpen);
+    if (!isOpen) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+}
+
 export function initDashboardShell() {
   const elements = getElements();
   const { sidebar, backdrop, openTrigger, closeTrigger } = elements;
@@ -53,4 +78,6 @@ export function initDashboardShell() {
       removeOpenState(elements);
     }
   });
+
+  initDashboardGreetingToggle();
 }
