@@ -286,6 +286,21 @@
     @apply flex-shrink-0 whitespace-nowrap;
   }
 
+  .dashboard-tabbar {
+    @apply mx-auto;
+    max-width: min(100%, 48rem);
+  }
+
+  .dashboard-tabbar .tab-buttons-horizontal {
+    @apply justify-between px-2;
+  }
+
+  @media (min-width: 1536px) {
+    .dashboard-tabbar {
+      max-width: 44rem;
+    }
+  }
+
   .tab-content-wrapper {
     @apply space-y-8;
   }
