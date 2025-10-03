@@ -28,12 +28,19 @@ jobs:
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
-          rclone config create site ftp host "${FTP_SERVER}" user "${FTP_USERNAME}" pass "${FTP_PASSWORD}" port 21 tls false
+          set -euo pipefail
+
+          rclone config create site ftp \
+            host "${FTP_SERVER}" \
+            user "${FTP_USERNAME}" \
+            pass "${FTP_PASSWORD}" \
+            port 21 \
+            tls false
 
           rclone sync ./ site:/ \
-          --transfers 2 \
-          --checkers 2 \
-          --ftp-concurrency 2 \
+            --transfers 2 \
+            --checkers 2 \
+            --ftp-concurrency 2 \
             --exclude ".git/**" \
             --exclude ".github/**" \
             --exclude "node_modules/**" \
@@ -44,13 +51,13 @@ jobs:
             --exclude "deploy-test*.txt" \
             --exclude "vite.config.js" \
             --exclude "vitest.config.js" \
-            --exclude ".gitignore" \ 
+            --exclude ".gitignore" \
             --exclude "src/**" \
             --exclude "ART RATIO APP.code-workspace" \
             --exclude "eqouipment list for app.xlsx" \
             --exclude "main" \
             --exclude "public/**" \
-            --exclude "deploy-test-latest.txt" 
+            --exclude "deploy-test-latest.txt"
 
       - name: Create backend config from secret
         env:
