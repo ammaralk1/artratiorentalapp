@@ -337,7 +337,19 @@
   }
 
   .theme-toggle-btn {
-    @apply btn-ghost;
+    @apply btn-ghost swap swap-rotate px-3;
+  }
+
+  .theme-toggle-btn svg {
+    @apply w-5 h-5;
+  }
+
+  .theme-toggle-btn .swap-on {
+    @apply text-primary;
+  }
+
+  .theme-toggle-btn .swap-off {
+    @apply text-warning;
   }
 
   .language-toggle-btn {

@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-kH-kCAMU.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-BJNkeD3K.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-DpJnZ2lX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CapBR50G.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-Bn05ahgd.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers-scFC-oKO.js">
-  <link rel="modulepreload" crossorigin href="../../assets/events-B7QhqRcH.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-DAWVtPUK.css">
+  <script type="module" crossorigin src="../../assets/dashboard-BzioyW5T.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-BFfBcFpP.js">
+  <link rel="modulepreload" crossorigin href="../../assets/common-DcORSGj0.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-DrKNHhdT.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-CD8ZMzPx.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers-BwFGFPnM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/events-BHQJr54_.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-tg6hlQ2J.css">
 </head>
 <body class="tabs-loading page-shell" data-theme="light">
 
@@ -243,7 +243,26 @@
         <div class="flex items-center gap-2">
           <a href="home.html" class="btn btn-sm rounded-full border border-base-300/60 bg-base-100 text-base-content/70 hover:border-primary/40 hover:text-primary" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
           <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-          <button class="theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 4v-1"></path>
+              <path d="M12 21v-1"></path>
+              <path d="M4 12h-1"></path>
+              <path d="M21 12h-1"></path>
+              <path d="M5.6 5.6l-.7 -.7"></path>
+              <path d="M18.4 18.4l-.7 -.7"></path>
+              <path d="M5.6 18.4l-.7 .7"></path>
+              <path d="M18.4 5.6l-.7 .7"></path>
+              <path d="M16 12a4 4 0 1 0 -4 4"></path>
+            </svg>
+            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+            </svg>
+            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+          </label>
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
       </div>

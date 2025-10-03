@@ -15,13 +15,13 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects-CKR5WdtB.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-BJNkeD3K.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-DpJnZ2lX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CapBR50G.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-Bn05ahgd.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projects-Dli5QIuU.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers-scFC-oKO.js">
+  <script type="module" crossorigin src="../../assets/projects-DmERfGjI.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-BFfBcFpP.js">
+  <link rel="modulepreload" crossorigin href="../../assets/common-DcORSGj0.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-DrKNHhdT.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-CD8ZMzPx.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projects-CSQS-5is.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers-BwFGFPnM.js">
   <link rel="stylesheet" crossorigin href="../../assets/index-B0AsrNyy.css">
   <link rel="stylesheet" crossorigin href="../../assets/reports-C3755L4W.css">
 </head>
@@ -45,7 +45,7 @@
       <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
     </div>
 
-    <div id="projects-section" class="tab-pane active" data-tab-pane>
+    <div id="projects-section" class="tab-pane active" data-tab-pane="projects-section">
       <div class="sub-tab-buttons mb-4">
         <button type="button" class="sub-tab-button active" data-project-subtab-target="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
         <button type="button" class="sub-tab-button" data-project-subtab-target="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
@@ -53,7 +53,7 @@
         <a class="sub-tab-button" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
       </div>
 
-      <div class="tab-pane active project-creation-pane" id="create-project-tab" data-project-subtab>
+      <div class="tab-pane active project-creation-pane" id="create-project-tab" data-project-subtab="create-project-tab">
         <div class="mb-4">
           <p class="text-muted projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
         </div>
@@ -228,7 +228,7 @@
         </div>
       </div>
 
-      <div class="tab-pane d-none" id="projects-list-tab" data-project-subtab>
+      <div class="tab-pane d-none" id="projects-list-tab" data-project-subtab="projects-list-tab">
         <div class="box project-focus-wrapper mb-4">
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
@@ -288,7 +288,7 @@
         </div>
       </div>
     </div>
-    <div id="customers-section" class="tab-pane d-none" data-tab-pane>
+    <div id="customers-section" class="tab-pane d-none" data-tab-pane="customers-section">
       <div class="tab-content-wrapper">
         <div class="tab active" id="embedded-customers-tab">
           <h2 data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
@@ -368,7 +368,7 @@
       </div>
     </div>
 
-    <div id="technicians-section" class="tab-pane d-none" data-tab-pane>
+    <div id="technicians-section" class="tab-pane d-none" data-tab-pane="technicians-section">
       <div class="tab-content-wrapper">
         <div class="tab active" id="embedded-technicians-tab">
           <h2 data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>

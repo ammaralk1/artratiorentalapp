@@ -7,6 +7,10 @@ const THEME_LOADING_CLASS = 'theme-loading';
 const THEME_SESSION_KEY = 'art-ratio:session-theme';
 let themeInitialized = false;
 
+function getToggleElements() {
+  return Array.from(document.querySelectorAll('[data-theme-toggle], .theme-toggle-btn'));
+}
+
 function normaliseTheme(theme) {
   return theme === 'dark' ? 'dark' : 'light';
 }
@@ -79,42 +83,78 @@ function toggleTheme() {
   applyThemeInternal(newTheme, { persist: true });
 }
 
-function updateToggleButton(button, theme) {
-  if (!button) return;
+function updateToggleElement(element, theme) {
+  if (!element) return;
   const isDark = theme === 'dark';
-  const label = isDark
-    ? t('theme.toggle.toLight', '☀️ الوضع العادي')
-    : t('theme.toggle.toDark', '🌙 الوضع الليلي');
-  button.textContent = label;
-  button.setAttribute('aria-pressed', String(isDark));
-  button.setAttribute('title', isDark
-    ? t('theme.toggle.titleLight', 'التبديل إلى الوضع العادي')
-    : t('theme.toggle.titleDark', 'التبديل إلى الوضع الليلي'));
-  button.setAttribute('aria-label', isDark
-    ? t('theme.toggle.ariaLight', 'الوضع العادي مفعل')
-    : t('theme.toggle.ariaDark', 'الوضع الليلي مفعل'));
+  const labelLight = t('theme.toggle.toLight', '☀️ الوضع العادي');
+  const labelDark = t('theme.toggle.toDark', '🌙 الوضع الليلي');
+  const ariaLight = t('theme.toggle.ariaLight', 'الوضع العادي مفعل');
+  const ariaDark = t('theme.toggle.ariaDark', 'الوضع الليلي مفعل');
+  const titleLight = t('theme.toggle.titleLight', 'التبديل إلى الوضع العادي');
+  const titleDark = t('theme.toggle.titleDark', 'التبديل إلى الوضع الليلي');
+
+  if (element.matches('[data-theme-toggle]')) {
+    const input = element.matches('input') ? element : element.querySelector('input[type="checkbox"]');
+    const currentLabel = isDark ? labelLight : labelDark;
+    const currentAria = isDark ? ariaLight : ariaDark;
+    const currentTitle = isDark ? titleLight : titleDark;
+    if (input) {
+      input.checked = isDark;
+      input.setAttribute('aria-label', currentLabel);
+      input.setAttribute('aria-checked', String(isDark));
+    }
+    element.setAttribute('title', currentTitle);
+    element.setAttribute('aria-label', currentAria);
+    element.setAttribute('data-theme-state', isDark ? 'dark' : 'light');
+    const srOnlyLabel = element.querySelector('[data-theme-label]');
+    if (srOnlyLabel) {
+      srOnlyLabel.textContent = currentLabel;
+    }
+  } else {
+    element.textContent = isDark ? labelLight : labelDark;
+    element.setAttribute('aria-pressed', String(isDark));
+    element.setAttribute('title', isDark ? titleLight : titleDark);
+    element.setAttribute('aria-label', isDark ? ariaLight : ariaDark);
+  }
 }
 
 function updateAllToggleButtons(theme) {
-  document.querySelectorAll('.theme-toggle-btn').forEach((btn) => updateToggleButton(btn, theme));
+  getToggleElements().forEach((element) => updateToggleElement(element, theme));
   markThemeReady();
 }
 
 export function initThemeToggle() {
-  const buttons = document.querySelectorAll('.theme-toggle-btn');
+  const toggles = getToggleElements();
   updateAllToggleButtons(getCurrentTheme());
 
-  buttons.forEach((btn) => {
-    if (!btn) return;
-    if (!btn.getAttribute('type')) {
-      btn.setAttribute('type', 'button');
+  toggles.forEach((toggle) => {
+    if (!toggle || boundButtons.has(toggle)) return;
+
+    if (toggle.matches('[data-theme-toggle]')) {
+      const input = toggle.matches('input') ? toggle : toggle.querySelector('input[type="checkbox"]');
+      const handler = () => {
+        toggleTheme();
+      };
+      if (input && !boundButtons.has(input)) {
+        input.addEventListener('change', handler);
+        boundButtons.add(input);
+      } else if (!input) {
+        toggle.addEventListener('click', (event) => {
+          event.preventDefault();
+          toggleTheme();
+        });
+      }
+    } else {
+      if (!toggle.getAttribute('type')) {
+        toggle.setAttribute('type', 'button');
+      }
+      toggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        toggleTheme();
+      });
     }
-    if (boundButtons.has(btn)) return;
-    btn.addEventListener('click', (event) => {
-      event.preventDefault();
-      toggleTheme();
-    });
-    boundButtons.add(btn);
+
+    boundButtons.add(toggle);
   });
 }
 

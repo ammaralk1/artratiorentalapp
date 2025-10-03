@@ -13,9 +13,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/login-BPM0DFXG.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-BJNkeD3K.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-DAWVtPUK.css">
+  <script type="module" crossorigin src="../../assets/login-Bf6juhhe.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-BFfBcFpP.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-tg6hlQ2J.css">
 </head>
 <body class="page-shell" data-theme="light">
   <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-base-200 dark:via-base-200 dark:to-base-200">
@@ -35,7 +35,26 @@
           <span class="text-lg font-semibold">Rental Hub</span>
         </span>
       </a>
-      <button class="theme-toggle-btn" id="theme-toggle" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
+      <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+        <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+        <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M12 4v-1"></path>
+          <path d="M12 21v-1"></path>
+          <path d="M4 12h-1"></path>
+          <path d="M21 12h-1"></path>
+          <path d="M5.6 5.6l-.7 -.7"></path>
+          <path d="M18.4 18.4l-.7 -.7"></path>
+          <path d="M5.6 18.4l-.7 .7"></path>
+          <path d="M18.4 5.6l-.7 .7"></path>
+          <path d="M16 12a4 4 0 1 0 -4 4"></path>
+        </svg>
+        <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+        </svg>
+        <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+      </label>
     </header>
 
     <main class="flex flex-1 items-center justify-center px-4 py-12">
