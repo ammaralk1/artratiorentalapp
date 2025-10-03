@@ -1,5 +1,3 @@
-const LG_BREAKPOINT = 1024;
-
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -17,18 +15,11 @@ function addOpenState({ sidebar, backdrop }) {
 function removeOpenState({ sidebar, backdrop }) {
   sidebar?.classList.remove('open');
   backdrop?.classList.remove('open');
-  sidebar?.setAttribute('aria-hidden', isDesktop() ? 'false' : 'true');
-}
-
-function isDesktop() {
-  if (typeof window === 'undefined') return false;
-  return window.innerWidth >= LG_BREAKPOINT;
+  sidebar?.setAttribute('aria-hidden', 'true');
 }
 
 function handleResize(elements) {
-  if (isDesktop()) {
-    removeOpenState(elements);
-  }
+  removeOpenState(elements);
 }
 
 export function initDashboardShell() {
@@ -39,7 +30,7 @@ export function initDashboardShell() {
     return;
   }
 
-  sidebar.setAttribute('aria-hidden', isDesktop() ? 'false' : 'true');
+  sidebar.setAttribute('aria-hidden', 'true');
 
   openTrigger?.addEventListener('click', (event) => {
     event.preventDefault();
@@ -70,7 +61,6 @@ export function initDashboardShell() {
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', () => {
       handleResize(elements);
-      sidebar.setAttribute('aria-hidden', isDesktop() ? 'false' : (sidebar.classList.contains('open') ? 'false' : 'true'));
     }, { passive: true });
   }
 }

@@ -325,7 +325,13 @@
   }
 
   .sidebar-drawer {
-    @apply fixed inset-y-0 start-0 z-50 w-72 max-w-full translate-x-full bg-base-100 shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:shadow-none lg:border-l lg:border-base-200 lg:bg-transparent lg:w-72 lg:max-w-none;
+    @apply fixed inset-y-0 start-0 z-50 w-72 max-w-full translate-x-full bg-base-100 shadow-2xl transition-transform duration-300 ease-in-out;
+  }
+
+  @screen lg {
+    .sidebar-drawer {
+      width: 20rem;
+    }
   }
 
   .sidebar-drawer.open {
@@ -592,11 +598,52 @@
     color: #e2e8f0;
   }
 
+  :where(html.dark, body.dark) input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  :where(html.dark, body.dark) select,
+  :where(html.dark, body.dark) textarea {
+    background-color: rgba(13, 19, 35, 0.9);
+    border-color: rgba(63, 93, 245, 0.35);
+    color: #e2e8f0;
+  }
+
+  :where(html.dark, body.dark) input::placeholder,
+  :where(html.dark, body.dark) textarea::placeholder,
+  :where(html.dark, body.dark) select option {
+    color: rgba(148, 163, 184, 0.65);
+  }
+
   :where(html.dark, body.dark) .form-control:focus,
   :where(html.dark, body.dark) .form-select:focus,
   :where(html.dark, body.dark) textarea:focus {
     border-color: rgba(99, 102, 241, 0.6);
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
+  }
+
+  :where(html.dark, body.dark) .input-group-text,
+  :where(html.dark, body.dark) .form-check-label,
+  :where(html.dark, body.dark) label {
+    color: #dbeafe;
+  }
+
+  :where(html.dark, body.dark) .input-group-text {
+    background-color: rgba(17, 26, 46, 0.92);
+    border-color: rgba(63, 93, 245, 0.35);
+  }
+
+  :where(html.dark, body.dark) .selected-list,
+  :where(html.dark, body.dark) .selected-technicians-list,
+  :where(html.dark, body.dark) .project-focus-card,
+  :where(html.dark, body.dark) .calendar-panel,
+  :where(html.dark, body.dark) #calendar {
+    background-color: rgba(11, 17, 32, 0.92);
+    border-color: rgba(63, 93, 245, 0.25);
+    color: #dbeafe;
+  }
+
+  :where(html.dark, body.dark) .selected-list .badge,
+  :where(html.dark, body.dark) .selected-technicians-list .badge {
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #dbeafe;
   }
 
   :where(html.dark, body.dark) .suggestions-list {
