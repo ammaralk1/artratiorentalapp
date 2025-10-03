@@ -47,11 +47,11 @@ function applyThemeInternal(theme, { persist = true } = {}) {
   const root = document.documentElement;
   const body = document.body;
   if (normalizedTheme === 'dark') {
-    root.classList.add(DARK_CLASS);
-    if (body) body.classList.add(DARK_CLASS);
+    root.classList.add(DARK_CLASS, 'dark');
+    if (body) body.classList.add(DARK_CLASS, 'dark');
   } else {
-    root.classList.remove(DARK_CLASS);
-    if (body) body.classList.remove(DARK_CLASS);
+    root.classList.remove(DARK_CLASS, 'dark');
+    if (body) body.classList.remove(DARK_CLASS, 'dark');
   }
   root.setAttribute('data-theme', normalizedTheme === 'dark' ? 'dark' : 'light');
   storeSessionTheme(normalizedTheme);
