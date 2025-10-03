@@ -16,6 +16,7 @@ npm run dev
 
 - الأمر `npm run dev` يشغل خادم Vite المحلي على `http://localhost:5173` ويفتح لوحة التحكم (`src/pages/dashboard.html`).
 - استخدم `npm run build` لإنشاء ملفات الإنتاج داخل مجلد `dist/`، ثم `npm run preview` لاختبار الخرج.
+- أي تحديث يتم دفعه إلى الفرع `main` سيشغّل سير عمل GitHub Actions الذي يبني المشروع ويعيد نشره على الخادم.
 
 ## هيكل المجلدات
 
