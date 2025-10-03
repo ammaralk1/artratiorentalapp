@@ -56,6 +56,12 @@
     background-color: hsl(var(--b1) / 0.9);
   }
 
+  :where(html.dark, body.dark) .sidebar-shell {
+    background: rgba(11, 17, 32, 0.94);
+    border-color: rgba(63, 93, 245, 0.28);
+    box-shadow: 0 32px 55px rgba(4, 9, 22, 0.65);
+  }
+
   .sidebar-menu {
     @apply flex flex-col gap-2;
   }
@@ -65,6 +71,10 @@
     color: hsl(var(--bc) / 0.6);
   }
 
+  :where(html.dark, body.dark) .sidebar-heading {
+    color: rgba(203, 213, 225, 0.75);
+  }
+
   .sidebar-link {
     @apply btn btn-ghost justify-start gap-3 rounded-2xl hover:text-base-content;
     color: hsl(var(--bc) / 0.8);
@@ -72,6 +82,15 @@
 
   .sidebar-link:hover {
     background-color: hsl(var(--p) / 0.1);
+  }
+
+  :where(html.dark, body.dark) .sidebar-link {
+    color: rgba(219, 234, 254, 0.85);
+  }
+
+  :where(html.dark, body.dark) .sidebar-link:hover {
+    background-color: rgba(63, 93, 245, 0.18);
+    color: #f8fafc;
   }
 
   .sidebar-link-active {
@@ -316,7 +335,13 @@
   }
 
   .mobile-sidebar-toggle {
-    @apply lg:hidden btn btn-circle btn-ghost border border-base-300;
+    @apply btn btn-circle btn-ghost border border-base-300;
+  }
+
+  :where(html.dark, body.dark) .mobile-sidebar-toggle {
+    border-color: rgba(99, 102, 241, 0.45);
+    color: #dbeafe;
+    background-color: rgba(17, 26, 46, 0.75);
   }
 
   .sidebar-backdrop {
