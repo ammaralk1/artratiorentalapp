@@ -49,7 +49,7 @@
   }
 
   .dashboard-header-nav {
-    @apply container mx-auto flex items-center justify-between gap-4 px-4 py-4;
+    @apply container mx-auto flex items-center justify-between gap-3 px-4 py-3;
   }
 
   .sidebar-shell {
@@ -265,8 +265,14 @@
     color: rgba(203, 213, 225, 0.75);
   }
 
+  .dashboard-hero-brand {
+    @apply flex items-center gap-3;
+  }
+
   .dashboard-hero-logo {
     @apply transition-all duration-200 ease-in-out;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   :where(html.dark, body.dark) .dashboard-hero-logo {
@@ -277,14 +283,37 @@
 
   .dashboard-hero-title {
     @apply transition-colors duration-200 ease-in-out;
+    font-size: 1.05rem;
+    line-height: 1.4;
   }
 
   .dashboard-hero-subtitle {
     @apply transition-colors duration-200 ease-in-out;
+    font-size: 0.78rem;
   }
 
   :where(html.dark, body.dark) .dashboard-hero-subtitle {
     color: rgba(203, 213, 225, 0.75) !important;
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-header-nav {
+      @apply gap-4;
+      padding-block: 0.75rem;
+    }
+
+    .dashboard-hero-logo {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .dashboard-hero-title {
+      font-size: 1.2rem;
+    }
+
+    .dashboard-hero-subtitle {
+      font-size: 0.9rem;
+    }
   }
 
   .sidebar-link-active {
@@ -310,7 +339,7 @@
   .dashboard-header-addon {
     @apply flex justify-center;
     position: relative;
-    padding-block: 0.75rem;
+    padding-block: 0.5rem;
   }
 
   .dashboard-greeting {
@@ -1183,7 +1212,8 @@
   }
 
   .add-project-btn {
-    @apply btn btn-primary btn-lg rounded-full shadow-soft gap-2;
+    @apply btn btn-primary btn-sm md:btn-md rounded-full shadow-soft gap-2 px-4 md:px-5;
+    min-height: 2.25rem;
   }
 
   /* Legacy Bootstrap utility aliases */
