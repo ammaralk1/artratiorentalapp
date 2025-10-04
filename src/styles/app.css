@@ -717,45 +717,58 @@
 
   .customer-table-wrapper {
     @apply mt-4;
+    position: relative;
     border-radius: 1.75rem;
-    border: 1px solid rgba(88, 124, 255, 0.38);
-    background: linear-gradient(135deg, rgba(19, 30, 66, 0.96), rgba(12, 21, 47, 0.95));
-    box-shadow: 0 30px 64px rgba(7, 13, 30, 0.52);
+    border: 1px solid rgba(80, 120, 240, 0.48);
+    background: linear-gradient(155deg, rgba(10, 17, 39, 0.96) 8%, rgba(6, 12, 28, 0.97) 55%, rgba(4, 9, 20, 0.98) 100%);
+    box-shadow: 0 34px 70px rgba(4, 9, 24, 0.55);
     padding: 0;
     overflow: hidden;
+    isolation: isolate;
+  }
+
+  .customer-table-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -22% -10% 45% -18%;
+    background: radial-gradient(circle at top left, rgba(104, 148, 255, 0.42), rgba(46, 86, 204, 0.12) 42%, transparent 68%);
+    opacity: 0.85;
+    pointer-events: none;
+    mix-blend-mode: screen;
   }
 
   .customer-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
-    color: rgba(230, 238, 255, 0.92);
+    color: rgba(224, 234, 255, 0.95);
     background: transparent;
   }
 
   .customer-table thead th {
-    background: linear-gradient(135deg, rgba(46, 94, 205, 0.82), rgba(67, 121, 242, 0.78));
-    color: #f4f7ff;
+    background: linear-gradient(130deg, rgba(56, 108, 232, 0.94), rgba(90, 140, 255, 0.88));
+    color: #f7f9ff;
     font-weight: 700;
     padding: 1rem 1.25rem;
-    border: 1px solid rgba(96, 138, 255, 0.58);
+    border: 1px solid rgba(110, 150, 255, 0.64);
     text-align: start;
+    letter-spacing: 0.01em;
   }
 
   .customer-table tbody td {
     padding: 0.9rem 1.25rem;
-    border: 1px solid rgba(80, 120, 220, 0.28);
-    background: rgba(14, 23, 50, 0.88);
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(70, 108, 210, 0.26);
+    background: rgba(7, 14, 34, 0.9);
+    transition: background-color 0.24s ease, box-shadow 0.24s ease, transform 0.24s ease;
   }
 
   .customer-table tbody tr:nth-child(even) td {
-    background: rgba(17, 26, 54, 0.9);
+    background: rgba(9, 18, 40, 0.92);
   }
 
   .customer-table tbody tr:hover td {
-    background: rgba(33, 52, 100, 0.95);
-    box-shadow: inset 0 0 0 1px rgba(122, 160, 255, 0.48);
+    background: rgba(30, 54, 116, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(120, 162, 255, 0.5), 0 18px 32px rgba(22, 40, 92, 0.45);
   }
 
   [dir='rtl'] .customer-table thead th:first-child,
@@ -783,7 +796,7 @@
   }
 
   .customer-table a {
-    color: rgba(169, 198, 255, 0.95);
+    color: rgba(182, 208, 255, 0.96);
     font-weight: 600;
     text-decoration: none;
   }
@@ -797,9 +810,9 @@
   }
 
   .customer-table-row-editing td {
-    background: linear-gradient(135deg, rgba(45, 88, 204, 0.5), rgba(28, 58, 146, 0.45));
-    border-color: rgba(92, 138, 255, 0.54);
-    box-shadow: inset 0 0 0 1px rgba(110, 156, 255, 0.42);
+    background: linear-gradient(135deg, rgba(40, 82, 194, 0.55), rgba(26, 56, 148, 0.48));
+    border-color: rgba(102, 150, 255, 0.54);
+    box-shadow: inset 0 0 0 1px rgba(124, 168, 255, 0.45);
   }
 
   .customer-action-btn {
@@ -815,28 +828,28 @@
   }
 
   .customer-action-btn--edit {
-    background: rgba(59, 130, 246, 0.22);
-    border-color: rgba(96, 165, 250, 0.5);
-    color: #e7eeff;
+    background: linear-gradient(135deg, rgba(44, 94, 220, 0.32), rgba(82, 126, 255, 0.36));
+    border-color: rgba(118, 165, 255, 0.55);
+    color: #ecf3ff;
   }
 
   .customer-action-btn--edit:hover {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(79, 70, 229, 0.82));
+    background: linear-gradient(135deg, rgba(32, 78, 215, 0.95), rgba(89, 114, 255, 0.9));
     color: #f8fafc;
-    box-shadow: 0 16px 32px rgba(37, 99, 235, 0.35);
+    box-shadow: 0 18px 36px rgba(32, 78, 215, 0.38);
     transform: translateY(-1px);
   }
 
   .customer-action-btn--delete {
-    background: rgba(248, 113, 113, 0.2);
-    border-color: rgba(248, 113, 113, 0.38);
-    color: #fecaca;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.24), rgba(190, 24, 93, 0.24));
+    border-color: rgba(248, 113, 113, 0.42);
+    color: #ffd6d6;
   }
 
   .customer-action-btn--delete:hover {
-    background: linear-gradient(135deg, rgba(248, 113, 113, 0.92), rgba(220, 38, 38, 0.86));
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.94), rgba(220, 38, 38, 0.88));
     color: #fff;
-    box-shadow: 0 18px 36px rgba(220, 38, 38, 0.32);
+    box-shadow: 0 18px 36px rgba(190, 24, 93, 0.34);
     transform: translateY(-1px);
   }
 
@@ -848,37 +861,41 @@
   }
 
   :where(html.dark, body.dark) .customer-table-wrapper {
-    background: linear-gradient(135deg, rgba(5, 9, 22, 0.98), rgba(3, 6, 16, 0.96));
-    border-color: rgba(63, 104, 230, 0.42);
-    box-shadow: 0 44px 86px rgba(1, 4, 16, 0.78);
+    border-color: rgba(86, 124, 255, 0.5);
+    background: linear-gradient(155deg, rgba(4, 8, 20, 0.98) 10%, rgba(3, 7, 18, 0.98) 54%, rgba(6, 12, 30, 0.96) 100%);
+    box-shadow: 0 44px 90px rgba(0, 3, 12, 0.82);
+  }
+
+  :where(html.dark, body.dark) .customer-table-wrapper::before {
+    background: radial-gradient(circle at top left, rgba(118, 160, 255, 0.48), rgba(54, 92, 210, 0.18) 45%, transparent 70%);
   }
 
   :where(html.dark, body.dark) .customer-table {
-    color: rgba(220, 231, 255, 0.94);
+    color: rgba(222, 232, 255, 0.95);
   }
 
   :where(html.dark, body.dark) .customer-table thead th {
-    background: linear-gradient(135deg, rgba(38, 85, 204, 0.86), rgba(68, 118, 238, 0.74));
-    border-color: rgba(88, 132, 246, 0.66);
-    color: rgba(233, 240, 254, 0.94);
+    background: linear-gradient(130deg, rgba(64, 118, 238, 0.94), rgba(98, 146, 255, 0.88));
+    border-color: rgba(122, 160, 255, 0.68);
+    color: rgba(238, 244, 255, 0.96);
   }
 
   :where(html.dark, body.dark) .customer-table tbody td {
-    background: rgba(6, 11, 26, 0.94);
-    border-color: rgba(63, 102, 214, 0.32);
+    background: rgba(5, 10, 26, 0.94);
+    border-color: rgba(82, 120, 226, 0.35);
   }
 
   :where(html.dark, body.dark) .customer-table tbody tr:nth-child(even) td {
-    background: rgba(9, 15, 33, 0.94);
+    background: rgba(7, 14, 32, 0.94);
   }
 
   :where(html.dark, body.dark) .customer-table tbody tr:hover td {
-    background: rgba(28, 50, 110, 0.68);
-    box-shadow: inset 0 0 0 1px rgba(104, 150, 250, 0.52);
+    background: rgba(35, 62, 130, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(132, 170, 255, 0.55), 0 16px 36px rgba(18, 32, 78, 0.55);
   }
 
   :where(html.dark, body.dark) .customer-table a {
-    color: #dbe8ff;
+    color: #dfebff;
   }
 
   :where(html.dark, body.dark) .customer-table a:hover {
@@ -886,32 +903,30 @@
   }
 
   :where(html.dark, body.dark) .customer-table-row-editing td {
-    background: linear-gradient(135deg, rgba(34, 76, 180, 0.58), rgba(24, 54, 138, 0.52));
-    border-color: rgba(92, 138, 255, 0.58);
+    background: linear-gradient(135deg, rgba(48, 96, 214, 0.6), rgba(32, 68, 168, 0.56));
+    border-color: rgba(126, 170, 255, 0.62);
   }
 
   :where(html.dark, body.dark) .customer-action-btn--edit {
-    background: rgba(37, 99, 235, 0.32);
-    border-color: rgba(129, 140, 248, 0.58);
-    color: #e6eeff;
+    background: linear-gradient(135deg, rgba(48, 98, 228, 0.42), rgba(92, 134, 255, 0.4));
+    border-color: rgba(146, 176, 255, 0.65);
+    color: #eaf1ff;
   }
 
   :where(html.dark, body.dark) .customer-action-btn--edit:hover {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(99, 102, 241, 0.82));
-    color: #f8fafc;
-    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.48);
+    background: linear-gradient(135deg, rgba(63, 123, 255, 0.95), rgba(104, 142, 255, 0.88));
+    box-shadow: 0 20px 40px rgba(63, 123, 255, 0.5);
   }
 
   :where(html.dark, body.dark) .customer-action-btn--delete {
-    background: rgba(190, 24, 93, 0.24);
-    border-color: rgba(248, 113, 113, 0.42);
-    color: #fedee2;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.28), rgba(190, 24, 93, 0.26));
+    border-color: rgba(248, 113, 113, 0.46);
+    color: #ffdada;
   }
 
   :where(html.dark, body.dark) .customer-action-btn--delete:hover {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.94), rgba(220, 38, 38, 0.86));
-    color: #fff;
-    box-shadow: 0 20px 40px rgba(185, 28, 28, 0.48);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.96), rgba(220, 38, 38, 0.9));
+    box-shadow: 0 20px 42px rgba(190, 24, 93, 0.5);
   }
 
   @media (max-width: 768px) {
