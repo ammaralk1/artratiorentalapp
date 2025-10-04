@@ -49,26 +49,28 @@
   }
 
   .dashboard-header-nav {
-    @apply mx-auto grid items-center gap-3 px-4 py-3 text-center;
+    @apply mx-auto grid items-center gap-4 px-4 py-3 text-center;
     width: min(100%, 312rem);
     grid-auto-flow: column;
-    grid-template-columns: auto minmax(16rem, auto) auto;
-    justify-content: center;
+    grid-template-columns: auto minmax(18rem, 1fr) auto;
+    justify-content: space-between;
+    justify-items: center;
   }
 
   .dashboard-header-start {
-    @apply flex flex-wrap items-center gap-2 sm:gap-3;
+    @apply flex flex-wrap items-center gap-3 sm:gap-4;
     min-width: 0;
   }
 
   .dashboard-header-center {
     @apply flex justify-center;
-    min-width: clamp(16rem, 45vw, 24rem);
+    min-width: clamp(16rem, 45vw, 26rem);
     padding-block: 0.25rem;
+    justify-self: center;
   }
 
   .dashboard-header-end {
-    @apply flex items-center gap-1.5 sm:gap-2 flex-wrap;
+    @apply flex items-center gap-2 sm:gap-3 flex-wrap;
     min-width: 0;
   }
 
@@ -90,7 +92,8 @@
 
   @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply flex flex-col items-center gap-4;
+      @apply flex flex-col items-center gap-5;
+      width: 100%;
     }
 
     .dashboard-header-start,
@@ -100,8 +103,12 @@
       justify-content: center;
     }
 
+    .dashboard-header-start {
+      gap: 2.5rem;
+    }
+
     .dashboard-header-end {
-      gap: 1rem;
+      gap: 1.25rem;
     }
   }
 
@@ -110,7 +117,7 @@
       width: min(100%, 336rem);
       padding-inline: 2.5rem;
       grid-template-columns: auto minmax(18rem, 28vw) auto;
-      gap: 4rem;
+      gap: clamp(2.5rem, 6vw, 4.5rem);
     }
   }
 
