@@ -374,14 +374,14 @@ export function renderCustomers(customersOverride, options = {}) {
     const isEditing = editingCustomerId && String(editingCustomerId) === String(customer.id);
     const row = document.createElement("tr");
     if (isEditing) {
-      row.classList.add("table-info");
+      row.classList.add("customer-table-row-editing");
     }
     const actionButtons = [
-      `<button class="btn btn-sm btn-warning customer-edit-btn" data-id="${customer.id}">${editLabel}</button>`
+      `<button type="button" class="customer-action-btn customer-action-btn--edit customer-edit-btn" data-id="${customer.id}">${editLabel}</button>`
     ];
 
     if (canDelete) {
-      actionButtons.push(`<button class="btn btn-sm btn-danger customer-delete-btn" data-id="${customer.id}">${deleteLabel}</button>`);
+      actionButtons.push(`<button type="button" class="customer-action-btn customer-action-btn--delete customer-delete-btn" data-id="${customer.id}">${deleteLabel}</button>`);
     }
     row.innerHTML = `
       <td><a href="customer.html?id=${customer.id}" class="text-decoration-none">${customer.full_name}</a></td>
