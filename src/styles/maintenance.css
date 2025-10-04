@@ -741,8 +741,8 @@ body[dir="ltr"] .maintenance-close-modal__ticket-info {
   }
 }
 :is(html.dark-mode, body.dark-mode) .maintenance-status-badge,
-:is(html.dark-mode, body-dark-mode) .maintenance-status-label,
-:is(html.dark-mode, body-dark-mode) .maintenance-status-tag {
+:is(html.dark-mode, body.dark-mode) .maintenance-status-label,
+:is(html.dark-mode, body.dark-mode) .maintenance-status-tag {
   box-shadow: 0 12px 24px rgba(8, 15, 35, 0.35);
 }
 
@@ -770,14 +770,14 @@ body[dir="ltr"] .maintenance-close-modal__ticket-info {
   box-shadow: 0 10px 20px rgba(34, 197, 94, 0.18);
 }
 
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--open {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--open {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.26), rgba(37, 99, 235, 0.32));
   border-color: rgba(96, 165, 250, 0.45);
   color: rgba(219, 234, 254, 0.95);
   box-shadow: 0 14px 28px rgba(37, 99, 235, 0.35);
 }
 
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--closed {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--closed {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.32), rgba(22, 163, 74, 0.36));
   border-color: rgba(134, 239, 172, 0.45);
   color: rgba(226, 252, 239, 0.95);

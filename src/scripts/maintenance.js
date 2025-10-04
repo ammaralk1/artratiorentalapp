@@ -488,8 +488,8 @@ function renderTable(tickets) {
       const statusOpen = t('maintenance.status.open', 'قيد الصيانة');
       const statusClosed = t('maintenance.status.closed', 'مغلقة');
       const statusBadge = ticket.status === 'open'
-        ? `<span class="maintenance-status-label maintenance-status-label--open">${statusOpen}</span>`
-        : `<span class="maintenance-status-label maintenance-status-label--closed">${statusClosed}</span>`;
+        ? `<span class="maintenance-status-badge maintenance-status-label maintenance-status-label--open">${statusOpen}</span>`
+        : `<span class="maintenance-status-badge maintenance-status-label maintenance-status-label--closed">${statusClosed}</span>`;
       const rowStatusClass = ticket.status === 'open'
         ? 'maintenance-row maintenance-row--open'
         : 'maintenance-row maintenance-row--closed';
