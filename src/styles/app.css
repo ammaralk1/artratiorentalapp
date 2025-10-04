@@ -92,23 +92,44 @@
 
   @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply flex flex-col items-center gap-5;
+      @apply flex-row items-center gap-3;
       width: 100%;
-    }
-
-    .dashboard-header-start,
-    .dashboard-header-center,
-    .dashboard-header-end {
-      width: 100%;
-      justify-content: center;
+      justify-content: space-between;
+      flex-wrap: nowrap;
     }
 
     .dashboard-header-start {
-      gap: 2.5rem;
+      flex: 0 1 auto;
+      gap: 0.75rem;
+    }
+
+    .dashboard-header-center {
+      flex: 0 1 auto;
+      min-width: 0;
+      margin-inline: 0;
+      justify-self: center;
     }
 
     .dashboard-header-end {
-      gap: 1.25rem;
+      flex: 0 1 auto;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+
+    .dashboard-header-end .language-toggle-btn,
+    .dashboard-header-end .theme-toggle-btn,
+    .dashboard-header-end #logout-btn {
+      @apply btn-xs;
+    }
+
+    .dashboard-greeting-toggle {
+      width: clamp(10rem, 34vw, 15rem);
+      font-size: 0.85rem;
+      padding-inline: 1rem;
+    }
+
+    .dashboard-greeting-toggle-label {
+      font-size: clamp(0.95rem, 3.2vw, 1.1rem);
     }
   }
 
