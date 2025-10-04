@@ -45,6 +45,7 @@
   .dashboard-header {
     @apply sticky top-0 z-40 backdrop-blur border-b border-base-200 bg-base-100 shadow-sm;
     background-color: hsl(var(--b1) / 0.92);
+    overflow: visible;
   }
 
   .dashboard-header-nav {
@@ -310,6 +311,15 @@
     @apply flex flex-col gap-4;
   }
 
+  .dashboard-header-addon {
+    @apply flex justify-center;
+    position: relative;
+  }
+
+  .dashboard-greeting-panel {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
   .dashboard-greeting-toggle {
     @apply flex items-center justify-between gap-3 rounded-3xl border border-base-200 px-5 py-4 text-base font-semibold text-base-content cursor-pointer;
     background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(238, 242, 255, 0.9));
@@ -363,6 +373,34 @@
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(79, 70, 229, 0.16));
     border-color: rgba(99, 102, 241, 0.4);
     box-shadow: 0 26px 52px rgba(37, 99, 235, 0.28);
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-header-addon {
+      padding-bottom: 0;
+    }
+
+    .dashboard-greeting {
+      width: 100%;
+      max-width: 56rem;
+    }
+
+    .dashboard-greeting-panel {
+      position: absolute;
+      top: calc(100% + 0.75rem);
+      left: 50%;
+      transform: translate(-50%, -8px);
+      width: min(100%, 52rem);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 60;
+    }
+
+    .dashboard-greeting-panel:not([hidden]) {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
+    }
   }
 
   .dashboard-main {

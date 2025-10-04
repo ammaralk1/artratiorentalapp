@@ -36,8 +36,9 @@ function initDashboardGreetingToggle() {
 
   toggle.addEventListener('click', () => {
     const isOpen = toggle.getAttribute('aria-expanded') === 'true';
-    setState(!isOpen);
-    if (!isOpen) {
+    const willOpen = !isOpen;
+    setState(willOpen);
+    if (willOpen && !window.matchMedia('(min-width: 768px)').matches) {
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   });
