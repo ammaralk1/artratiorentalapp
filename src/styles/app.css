@@ -92,51 +92,37 @@
 
   @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply flex flex-col gap-3 items-stretch;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.5rem;
       width: 100%;
     }
 
     .dashboard-header-start {
-      @apply flex flex-row items-center justify-between gap-2;
-      width: 100%;
+      grid-column: 3;
+      justify-self: end;
+      @apply flex items-center gap-2;
     }
 
     .dashboard-header-center {
+      grid-column: 2;
+      justify-self: center;
       @apply flex justify-center;
       width: 100%;
       margin-inline: 0;
     }
 
     .dashboard-header-end {
-      @apply flex flex-row items-center justify-start gap-2;
-      width: 100%;
+      grid-column: 1;
+      justify-self: start;
+      @apply flex items-center gap-2;
     }
 
     .dashboard-header-end .language-toggle-btn,
     .dashboard-header-end .theme-toggle-btn,
     .dashboard-header-end #logout-btn {
       @apply btn-xs;
-    }
-
-    .dashboard-header-end {
-      order: 3;
-    }
-
-    .dashboard-header-center {
-      order: 2;
-    }
-
-    .dashboard-header-start {
-      order: 1;
-      justify-content: space-between;
-    }
-
-    [dir='rtl'] .dashboard-header-start {
-      flex-direction: row-reverse;
-    }
-
-    [dir='rtl'] .dashboard-header-end {
-      justify-content: flex-end;
     }
 
     .dashboard-greeting-toggle {
@@ -147,6 +133,30 @@
 
     .dashboard-greeting-toggle-label {
       font-size: clamp(1.05rem, 3.6vw, 1.2rem);
+    }
+
+    [dir='rtl'] .dashboard-header-nav {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    [dir='rtl'] .dashboard-header-start {
+      grid-column: 1;
+      justify-self: start;
+      flex-direction: row-reverse;
+    }
+
+    [dir='rtl'] .dashboard-header-center {
+      grid-column: 2;
+    }
+
+    [dir='rtl'] .dashboard-header-end {
+      grid-column: 3;
+      justify-self: end;
+      justify-content: flex-end;
+    }
+
+    [dir='ltr'] .dashboard-header-end {
+      justify-content: flex-start;
     }
   }
 
@@ -1152,7 +1162,7 @@
   }
 
   .management-form-header {
-    @apply flex flex-wrap items-start justify-between gap-4;
+    @apply flex flex-wrap items-start justify-start gap-4;
   }
 
   .management-form-icon {
