@@ -490,6 +490,9 @@ function renderTable(tickets) {
       const statusBadge = ticket.status === 'open'
         ? `<span class="maintenance-status-badge maintenance-status-badge--open">${statusOpen}</span>`
         : `<span class="maintenance-status-badge maintenance-status-badge--closed">${statusClosed}</span>`;
+      const rowStatusClass = ticket.status === 'open'
+        ? 'maintenance-row maintenance-row--open'
+        : 'maintenance-row maintenance-row--closed';
 
       const priorityBadge = (() => {
         const high = t('maintenance.priority.high', 'مرتفعة');
@@ -526,7 +529,7 @@ function renderTable(tickets) {
       const createdDisplay = ticket.createdAt ? normalizeNumbers(formatDateTime(ticket.createdAt)) : '—';
 
       return `
-        <tr>
+        <tr class="${rowStatusClass}">
           <td>
             <strong>${ticket.equipmentDesc}</strong><br>
             <small class="text-muted">${barcodeDisplay}</small>
