@@ -851,10 +851,16 @@
 
   .dashboard-tabbar {
     @apply mx-auto;
-    max-width: min(100%, 48rem);
+    max-width: min(100%, 60rem);
     background: linear-gradient(135deg, rgba(248, 250, 255, 0.9), rgba(232, 240, 255, 0.82));
     border: 1px solid rgba(76, 110, 245, 0.18);
     box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+  }
+
+  @media (max-width: 1023px) {
+    .dashboard-tabbar {
+      padding-inline: clamp(0.4rem, 3vw, 1rem);
+    }
   }
 
   .dashboard-tabbar .tab-buttons-horizontal {
@@ -892,12 +898,16 @@
     white-space: normal;
   }
 
+  [dir='ltr'] .dashboard-tabbar .tab-button {
+    max-width: 9.5rem;
+  }
+
   [dir='ltr'] .dashboard-tabbar .tab-button span {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    max-width: 6.75rem;
+    max-width: 7.5rem;
     text-align: center;
     white-space: normal;
     line-height: 1.25;
