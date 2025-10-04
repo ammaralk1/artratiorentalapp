@@ -28,16 +28,41 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-BHgmk27z.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-1jMV0rNp.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-C0-_Kxfj.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-DkH_AiSE.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-Dvdl897X.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers-B0MORT4c.js">
-  <link rel="modulepreload" crossorigin href="../../assets/events-9Kn_bx7j.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-Bi2qd52I.css">
+  <script type="module" crossorigin src="../../assets/dashboard-D22Ksy2s.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-D7vsTkCC.js">
+  <link rel="modulepreload" crossorigin href="../../assets/common-oge7Tgon.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-DqRaHQO5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-BFlqyFwL.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers-B85OhmuZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/events-TM51L9VV.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-Ba51bpv0.css">
 </head>
-<body class="tabs-loading page-shell" data-theme="light">
+<body class="no-js tabs-loading page-shell" data-theme="light">
+
+<noscript>
+  <style>
+    body.tabs-loading .tab-buttons,
+    body.tabs-loading .tab-content-wrapper {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    body.tabs-loading .tab,
+    body.no-js .tab {
+      display: none !important;
+    }
+
+    body.tabs-loading .tab:first-of-type,
+    body.no-js .tab:first-of-type {
+      display: block !important;
+    }
+
+    body.tabs-loading .sub-tab:first-of-type,
+    body.no-js .sub-tab:first-of-type {
+      display: block !important;
+    }
+  </style>
+</noscript>
 
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
@@ -67,22 +92,22 @@
       </button>
     </div>
 
-    <div class="glass-card mt-6 space-y-4">
-      <h3 class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
-      <div class="flex flex-col gap-3 text-sm text-base-content/70">
-        <div class="flex items-center justify-between gap-4">
+    <div class="sidebar-panel sidebar-panel--stats mt-6">
+      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
+      <div class="sidebar-stats" role="list">
+        <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
           <span id="sidebar-stat-projects" class="badge-soft">0</span>
         </div>
-        <div class="flex items-center justify-between gap-4">
+        <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
           <span id="sidebar-stat-reservations" class="badge-soft">0</span>
         </div>
-        <div class="flex items-center justify-between gap-4">
+        <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
           <span id="sidebar-stat-equipment" class="badge-soft">0</span>
         </div>
-        <div class="flex items-center justify-between gap-4">
+        <div class="sidebar-stats-row" role="listitem">
           <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
           <span id="sidebar-stat-technicians" class="badge-soft">0</span>
         </div>
@@ -93,7 +118,7 @@
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
-          <button class="tab-button active" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">
+          <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -223,7 +248,7 @@
             </svg>
           </button>
           <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
-            <div class="dashboard-hero-logo hidden h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:flex">
+            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                 <path d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
@@ -232,14 +257,15 @@
                 <path d="M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1"></path>
               </svg>
             </div>
-            <div class="flex flex-col gap-1 text-start">
-              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio Rental Hub</h1>
-              <p class="dashboard-hero-subtitle text-sm text-base-content/60" data-i18n data-i18n-key="dashboard.hero.subtitle">تابع المشاريع والحجوزات وكل ما يهم فريقك في مكان واحد.</p>
+            <div class="dashboard-hero-brand-text">
+              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
             </div>
           </a>
+        </div>
+        <div class="dashboard-header-center">
           <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
             <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
-              <span class="dashboard-greeting-toggle-label">لوحة التحكم</span>
+              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="dashboard.header.toggleLabel">لوحة التحكم</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                 <path d="M6 9l6 6l6 -6"></path>
@@ -361,7 +387,7 @@
 
           <div class="glass-card hidden lg:block dashboard-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button class="tab-button active" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
+              <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
               <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
               <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
               <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
@@ -371,7 +397,7 @@
 
           <div class="glass-card dashboard-tabbar p-3 lg:hidden">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button class="tab-button active" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
+              <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
               <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
               <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
               <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
@@ -383,7 +409,7 @@
     <div class="tab-content-wrapper">
 
       <!-- ✅ تبويب: العملاء -->
-      <div class="tab active" id="customers-tab">
+      <div class="tab" id="customers-tab">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
         </div>
@@ -391,11 +417,11 @@
         <!-- ✅ نموذج إضافة عميل -->
         <div class="box customer-form-box management-form-box mb-4">
           <div class="management-form-header">
-            <div>
-              <h4 data-i18n data-i18n-key="customers.form.title">📋 إضافة / تعديل عميل</h4>
+            <div class="management-form-icon">👤</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="customers.form.title">إضافة / تعديل عميل</h4>
               <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
             </div>
-            <div class="management-form-icon">👤</div>
           </div>
           <form id="customer-form" class="management-form">
             <input type="hidden" id="customer-id">
@@ -410,7 +436,7 @@
               </div>
               <div class="form-field">
                 <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
-                <input type="email" class="form-control" id="customer-email" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                <input type="email" class="form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
               </div>
               <div class="form-field">
                 <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
@@ -473,11 +499,11 @@
         <!-- ✅ نموذج إضافة فني -->
         <div class="box add-technicians-box management-form-box mb-4">
           <div class="management-form-header">
-            <div>
-              <h4 data-i18n data-i18n-key="technicians.form.title">📝 إضافة / تعديل عضو طاقم</h4>
+            <div class="management-form-icon">😎</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
               <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
             </div>
-            <div class="management-form-icon">😎</div>
           </div>
           <form id="technician-form" class="management-form technician-form">
             <input type="hidden" id="technician-id">
@@ -522,23 +548,23 @@
         </div>
 
         <!-- ✅ شريط البحث -->
-        <div class="mb-3 d-flex flex-wrap gap-2">
+        <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
           <input
             type="text"
             id="search-technician-input"
-            class="form-control w-auto"
+            class="form-control"
             placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
             data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
           >
-          <select id="technician-role-filter" class="form-select w-auto">
+          <select id="technician-role-filter" class="form-select">
             <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
           </select>
         </div>
 
         <!-- ✅ جدول الفريق الفني -->
-        <div class="table-responsive">
-          <table class="table table-bordered table-striped table-hover align-middle">
-            <thead class="table-dark">
+        <div class="customer-table-wrapper technician-table-wrapper table-responsive">
+          <table class="customer-table technician-table align-middle">
+            <thead>
               <tr>
                 <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
                 <th data-i18n data-i18n-key="technicians.table.headers.phone">📞 الجوال</th>
@@ -552,7 +578,7 @@
             </thead>
             <tbody id="technicians-table">
               <tr>
-                <td colspan="8" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
               </tr>
             </tbody>
           </table>
@@ -576,8 +602,9 @@
 
         <div class="box management-form-box equipment-form-box mb-4">
           <div class="management-form-header">
-            <div>
-              <h4 data-i18n data-i18n-key="equipment.form.title">🎥 إضافة معدة</h4>
+            <div class="management-form-icon">🎥</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="equipment.form.title">إضافة معدة</h4>
               <p class="management-form-hint" data-i18n data-i18n-key="equipment.form.hint">أدخل بيانات المعدة ليتم حفظها ضمن قائمة المعدات.</p>
             </div>
           </div>
@@ -667,16 +694,16 @@
           <h2 class="tab-section-title" data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
         </div>
 
-        <div class="box maintenance-form-box">
-          <div class="maintenance-form-header">
-            <div>
+        <div class="box maintenance-form-box management-form-box mb-5">
+          <div class="management-form-header">
+            <div class="management-form-icon maintenance-form-icon">🔧</div>
+            <div class="management-form-header-text">
               <h4 data-i18n data-i18n-key="maintenance.form.title">➕ إنشاء تذكرة صيانة</h4>
-              <p class="maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
+              <p class="management-form-hint maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
             </div>
-            <div class="maintenance-form-icon">🔧</div>
           </div>
-          <form id="maintenance-form" class="maintenance-form">
-            <div class="maintenance-form-grid">
+          <form id="maintenance-form" class="maintenance-form management-form">
+            <div class="management-form-grid maintenance-form-grid mt-3">
               <div class="form-field">
                 <label for="maintenance-equipment-barcode" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.barcode">🏷️ الباركود</label>
                 <input type="text" id="maintenance-equipment-barcode" class="form-control" placeholder="🖨️ امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.barcode">
@@ -701,7 +728,7 @@
               <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
               <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
-            <div class="maintenance-form-actions">
+            <div class="management-form-actions maintenance-form-actions">
               <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
             </div>
           </form>
@@ -715,16 +742,16 @@
             </div>
             <div class="maintenance-stats" id="maintenance-stats"></div>
           </div>
-          <div class="maintenance-filters">
+          <div class="maintenance-filters filters-bar">
             <label for="maintenance-status-filter" class="form-label" data-i18n data-i18n-key="maintenance.filters.status.label">الحالة</label>
-            <select id="maintenance-status-filter" class="form-select w-auto">
+            <select id="maintenance-status-filter" class="form-select">
               <option value="all" data-i18n data-i18n-key="maintenance.filters.status.all">كل الحالات</option>
               <option value="open" data-i18n data-i18n-key="maintenance.filters.status.open">قيد الصيانة</option>
               <option value="closed" data-i18n data-i18n-key="maintenance.filters.status.closed">مغلقة</option>
             </select>
           </div>
-          <div class="table-responsive">
-            <table class="maintenance-table reservation-items-table">
+          <div class="customer-table-wrapper maintenance-table-wrapper table-responsive">
+            <table class="customer-table maintenance-table align-middle">
               <thead>
                 <tr>
                   <th data-i18n data-i18n-key="maintenance.table.headers.equipment">المعدة</th>
@@ -736,14 +763,9 @@
                 </tr>
               </thead>
               <tbody id="maintenance-table-body">
-                <tr><td colspan="6" class="text-muted text-center" data-i18n data-i18n-key="maintenance.table.empty">لا توجد تذاكر بعد.</td></tr>
+                <tr><td colspan="6" data-i18n data-i18n-key="maintenance.table.empty" class="text-center">لا توجد تذاكر بعد.</td></tr>
               </tbody>
             </table>
-          </div>
-          <div id="maintenance-empty-state" class="maintenance-empty-state">
-            <div class="maintenance-empty-icon">✅</div>
-            <h5 data-i18n data-i18n-key="maintenance.empty.title">لا توجد تذاكر صيانة</h5>
-            <p class="text-muted" data-i18n data-i18n-key="maintenance.empty.subtitle">عند إنشاء تذكرة جديدة ستظهر في هذه القائمة.</p>
           </div>
         </div>
       </div> <!-- نهاية تبويب الصيانة -->
@@ -792,14 +814,14 @@
 
         <!-- ✅ التبويبات الفرعية -->
         <div class="sub-tab-buttons mb-3">
-          <button class="sub-tab-button active" data-sub-tab="create-tab" data-i18n data-i18n-key="reservations.tabs.create">➕ إنشاء حجز</button>
+          <button class="sub-tab-button" data-sub-tab="create-tab" data-i18n data-i18n-key="reservations.tabs.create">➕ إنشاء حجز</button>
           <button class="sub-tab-button" data-sub-tab="my-reservations-tab" data-i18n data-i18n-key="reservations.tabs.mine">📋 حجوزاتي</button>
           <button class="sub-tab-button" data-sub-tab="reports-tab" data-i18n data-i18n-key="reservations.tabs.reports">📊 تقارير</button>
           <button class="sub-tab-button" data-sub-tab="calendar-tab" data-i18n data-i18n-key="reservations.tabs.calendar">📅 التقويم</button>
         </div>
 
         <!-- ✅ تبويب فرعي: إنشاء حجز -->
-        <div class="sub-tab active" id="create-tab">
+        <div class="sub-tab" id="create-tab">
           <div class="box">
             <h4 data-i18n data-i18n-key="reservations.create.title">➕ إنشاء حجز جديد</h4>
             <form id="reservation-form">
