@@ -343,14 +343,10 @@
     color: currentColor;
   }
 
-  .dashboard-header-addon {
-    @apply flex justify-center;
-    position: relative;
-    padding-block: 0.4rem;
-  }
-
   .dashboard-greeting {
     @apply flex flex-col gap-2;
+    position: relative;
+    flex-shrink: 0;
   }
 
   .dashboard-greeting-panel {
