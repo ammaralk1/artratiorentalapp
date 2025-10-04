@@ -1247,8 +1247,9 @@
   }
 
   .management-form-header {
-    @apply flex items-start gap-4 flex-nowrap;
-    width: 100%;
+    @apply inline-flex items-start gap-4 flex-nowrap;
+    align-self: flex-start;
+    max-width: 100%;
     padding: 14px 18px;
     border-radius: 18px;
     border: 1px solid rgba(76, 110, 245, 0.18);
@@ -1266,6 +1267,7 @@
     min-width: 0;
     text-align: start;
     align-items: flex-start;
+    max-width: min(48ch, 100%);
   }
 
   .management-form-header-text > * {
