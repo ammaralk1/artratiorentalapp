@@ -19,11 +19,28 @@
   box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
 }
 
+
 .management-form-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16px;
+}
+
+.management-form-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: start;
+  flex: 1 1 auto;
+}
+
+[dir='rtl'] .management-form-header-text {
+  text-align: right;
+}
+
+.management-form-header .management-form-icon {
+  margin-inline-end: 12px;
 }
 
 .management-form-header h4 {
@@ -123,6 +140,11 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .management-form-header-text {
+    width: 100%;
+    text-align: start;
   }
 
   .management-form-grid {
