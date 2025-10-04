@@ -50,7 +50,7 @@
 
   .dashboard-header-nav {
     @apply mx-auto flex items-center justify-between gap-3 px-4 py-3 flex-wrap;
-    width: min(100%, 78rem);
+    width: min(100%, 312rem);
   }
 
   .dashboard-header-start {
@@ -77,7 +77,7 @@
 
   @media (min-width: 1024px) {
     .dashboard-header-nav {
-      width: min(100%, 84rem);
+      width: min(100%, 336rem);
       padding-inline: 2.5rem;
     }
   }
