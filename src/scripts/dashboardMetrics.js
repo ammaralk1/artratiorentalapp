@@ -33,9 +33,7 @@ function normalizeNumericValue(value) {
 function formatNumber(value) {
   try {
     const numericValue = normalizeNumericValue(value);
-    const lang = document.documentElement?.lang || 'ar';
-    const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat('en-US', {
       maximumFractionDigits: 0,
       useGrouping: true
     }).format(numericValue);
