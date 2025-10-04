@@ -1007,14 +1007,13 @@
     }
   }
 
-  #customers-tab .form-field-address,
   #customers-tab .form-field-notes {
     @apply sm:col-span-2 lg:col-span-3;
     max-width: none;
   }
 
   #customers-tab #customer-notes {
-    min-height: 120px;
+    min-height: 180px;
   }
 
   .table tbody tr td {
