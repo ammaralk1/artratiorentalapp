@@ -59,9 +59,10 @@
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-stat {
-  background: linear-gradient(135deg, rgba(30, 42, 68, 0.85), rgba(20, 31, 54, 0.82));
-  color: rgba(226, 232, 240, 0.94);
-  border: 1px solid rgba(59, 130, 246, 0.32);
+  background: linear-gradient(135deg, rgba(30, 42, 68, 0.88), rgba(18, 31, 54, 0.84));
+  color: rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(59, 130, 246, 0.38);
+  box-shadow: 0 12px 24px rgba(8, 15, 35, 0.45);
 }
 
 .maintenance-filters {
@@ -89,26 +90,26 @@
 
 .maintenance-table thead th:nth-child(3),
 .maintenance-table tbody td:nth-child(3) {
-  width: 12%;
-  min-width: 8rem;
+  width: 10%;
+  min-width: 7rem;
 }
 
 .maintenance-table thead th:nth-child(4),
 .maintenance-table tbody td:nth-child(4) {
-  width: 14%;
-  min-width: 9rem;
+  width: 13%;
+  min-width: 8.5rem;
 }
 
 .maintenance-table thead th:nth-child(5),
 .maintenance-table tbody td:nth-child(5) {
-  width: 12%;
-  min-width: 8rem;
+  width: 11%;
+  min-width: 7.5rem;
 }
 
 .maintenance-table thead th:nth-child(6),
 .maintenance-table tbody td:nth-child(6) {
-  width: 22%;
-  min-width: 12rem;
+  width: 28%;
+  min-width: 14rem;
 }
 
 .maintenance-table td:first-child,
@@ -215,21 +216,22 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   color: #f8fafc;
 }
 
+
 .maintenance-priority-badge--high {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.94), rgba(220, 38, 38, 0.9));
-  border-color: rgba(248, 113, 113, 0.5);
-  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(185, 28, 28, 0.92));
+  border-color: rgba(239, 68, 68, 0.58);
+  color: #fef2f2;
 }
 
 .maintenance-priority-badge--medium {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.86));
-  border-color: rgba(96, 165, 250, 0.55);
-  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.9), rgba(217, 119, 6, 0.86));
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #1f2937;
 }
 
 .maintenance-priority-badge--low {
-  background: linear-gradient(135deg, rgba(226, 232, 240, 0.92), rgba(203, 213, 225, 0.88));
-  border-color: rgba(148, 163, 184, 0.4);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(56, 189, 248, 0.16));
+  border-color: rgba(14, 165, 233, 0.35);
   color: #1f2937;
 }
 
@@ -252,21 +254,21 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-priority-badge--high {
-  background: linear-gradient(135deg, rgba(244, 63, 94, 0.42), rgba(220, 38, 38, 0.42));
-  border-color: rgba(248, 113, 113, 0.5);
-  color: rgba(254, 226, 226, 0.95);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.55), rgba(185, 28, 28, 0.52));
+  border-color: rgba(239, 68, 68, 0.58);
+  color: rgba(254, 226, 226, 0.98);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-priority-badge--medium {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.45), rgba(2, 132, 199, 0.42));
-  border-color: rgba(59, 130, 246, 0.52);
-  color: rgba(221, 242, 255, 0.95);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.52), rgba(180, 83, 9, 0.5));
+  border-color: rgba(251, 191, 36, 0.55);
+  color: rgba(255, 237, 213, 0.95);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-priority-badge--low {
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.78), rgba(15, 23, 42, 0.74));
-  border-color: rgba(148, 163, 184, 0.38);
-  color: rgba(226, 232, 240, 0.9);
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.36), rgba(8, 145, 178, 0.34));
+  border-color: rgba(20, 184, 166, 0.48);
+  color: rgba(224, 242, 254, 0.95);
 }
 
 .maintenance-table-wrapper {
