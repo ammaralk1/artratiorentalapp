@@ -1956,3 +1956,16 @@ html[data-user-role="manager"] .requires-admin,
 html[data-user-role="technician"] .requires-admin {
   display: none !important;
 }
+
+.modal.show {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+}
+
+.modal.show .modal-dialog {
+  pointer-events: auto;
+}

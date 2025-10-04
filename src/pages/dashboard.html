@@ -767,7 +767,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content maintenance-close-modal">
             <form id="maintenance-close-form" class="maintenance-close-modal__form">
-              <div class="maintenance-close-modal__header">
+              <div class="modal-header maintenance-close-modal__header">
                 <div class="maintenance-close-modal__icon" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M9 2h6"></path>
@@ -782,14 +782,14 @@
                 </div>
                 <button type="button" class="btn-close maintenance-close-modal__dismiss" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
-              <div class="maintenance-close-modal__body">
+              <div class="modal-body maintenance-close-modal__body">
                 <div id="maintenance-close-modal-details" class="maintenance-close-modal__ticket"></div>
                 <div class="maintenance-close-modal__field">
                   <label for="maintenance-close-report" class="form-label maintenance-close-modal__label" data-i18n data-i18n-key="maintenance.closeModal.reportLabel">📝 تقرير الإصلاح</label>
                   <textarea class="form-control maintenance-close-modal__textarea" id="maintenance-close-report" rows="4" placeholder="اكتب تفاصيل الإصلاح والإجراءات المتخذة..." data-i18n data-i18n-placeholder-key="maintenance.closeModal.reportPlaceholder"></textarea>
                 </div>
               </div>
-              <div class="maintenance-close-modal__actions">
+              <div class="modal-footer maintenance-close-modal__actions">
                 <button type="button" class="btn btn-outline btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
                 <button type="submit" class="btn btn-success" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">✅ إغلاق التذكرة</button>
               </div>
