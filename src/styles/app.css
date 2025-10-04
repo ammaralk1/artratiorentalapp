@@ -392,20 +392,20 @@
   .dashboard-greeting {
     @apply flex flex-col items-center gap-3;
     position: relative;
-    flex: 0 1 clamp(22rem, 58vw, 36rem);
-    min-width: clamp(20rem, 50vw, 28rem);
-    max-width: clamp(22rem, 58vw, 36rem);
+    flex: 0 1 clamp(22rem, 56vw, 36rem);
+    min-width: clamp(20rem, 48vw, 28rem);
+    max-width: clamp(22rem, 56vw, 36rem);
     width: 100%;
     margin-inline: auto;
   }
 
   .dashboard-greeting-panel {
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition: opacity 0.24s ease, transform 0.24s ease;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 255, 0.88));
     border: 1px solid rgba(148, 163, 255, 0.24);
     box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(14px);
-    width: min(100%, 34rem);
+    width: min(100%, 36rem);
     padding: 1.8rem;
     overflow: hidden;
     overflow-x: clip;
@@ -475,9 +475,11 @@
     .dashboard-greeting-panel {
       position: absolute;
       top: calc(100% + 0.65rem);
-      left: 50%;
-      transform: translate(-50%, -4px);
-      width: clamp(24rem, 60vw, 38rem);
+      left: 0;
+      right: 0;
+      margin-inline: auto;
+      transform: translateY(-6px);
+      width: clamp(24rem, 58vw, 38rem);
       opacity: 0;
       pointer-events: none;
       z-index: 60;
@@ -486,7 +488,7 @@
     .dashboard-greeting-panel:not([hidden]) {
       opacity: 1;
       pointer-events: auto;
-      transform: translate(-50%, 0);
+      transform: translateY(0);
     }
   }
 
@@ -530,8 +532,14 @@
 
   .dashboard-greeting-panel .stats {
     @apply grid gap-5 w-full;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: stretch;
+  }
+
+  @media (max-width: 1023px) {
+    .dashboard-greeting-panel .stats {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
   }
 
   .dashboard-greeting-panel .stat {
