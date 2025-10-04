@@ -92,28 +92,24 @@
 
   @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply flex-row items-center gap-3;
+      @apply flex flex-col gap-3 items-stretch;
       width: 100%;
-      justify-content: space-between;
-      flex-wrap: nowrap;
     }
 
     .dashboard-header-start {
-      flex: 0 1 auto;
-      gap: 0.75rem;
+      @apply flex flex-row items-center justify-between gap-2;
+      width: 100%;
     }
 
     .dashboard-header-center {
-      flex: 0 1 auto;
-      min-width: 0;
+      @apply flex justify-center;
+      width: 100%;
       margin-inline: 0;
-      justify-self: center;
     }
 
     .dashboard-header-end {
-      flex: 0 1 auto;
-      gap: 0.5rem;
-      justify-content: flex-end;
+      @apply flex flex-row items-center justify-center gap-2;
+      width: 100%;
     }
 
     .dashboard-header-end .language-toggle-btn,
@@ -123,13 +119,13 @@
     }
 
     .dashboard-greeting-toggle {
-      width: clamp(10rem, 34vw, 15rem);
-      font-size: 0.85rem;
-      padding-inline: 1rem;
+      width: clamp(12rem, 60vw, 18rem);
+      font-size: 0.95rem;
+      align-self: center;
     }
 
     .dashboard-greeting-toggle-label {
-      font-size: clamp(0.95rem, 3.2vw, 1.1rem);
+      font-size: clamp(1.05rem, 3.6vw, 1.2rem);
     }
   }
 
