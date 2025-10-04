@@ -405,6 +405,7 @@
     border: 1px solid rgba(148, 163, 255, 0.24);
     box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(14px);
+    width: min(100%, 34rem);
   }
 
   .dashboard-greeting-toggle {
@@ -478,7 +479,7 @@
       top: calc(100% + 0.65rem);
       left: 50%;
       transform: translate(-50%, -4px);
-      width: clamp(18rem, 52vw, 32rem);
+      width: clamp(22rem, 58vw, 36rem);
       opacity: 0;
       pointer-events: none;
       z-index: 60;
@@ -1106,9 +1107,9 @@
   }
 
   #search-customer-input.form-control {
-    max-width: 200px;
-    width: 200px;
-    flex: 0 0 200px;
+    max-width: 240px;
+    width: 240px;
+    flex: 0 0 240px;
   }
 
   .table-wrapper {

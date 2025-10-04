@@ -240,9 +240,9 @@
 }
 
 .management-search-bar .form-control {
-  max-width: 200px;
-  width: 200px !important;
-  flex: 0 0 200px;
+  max-width: 240px;
+  width: 240px !important;
+  flex: 0 0 240px;
   border-radius: 999px;
   padding: 10px 18px;
   border: 1px solid rgba(76, 110, 245, 0.22);
