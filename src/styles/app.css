@@ -406,6 +406,9 @@
     box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(14px);
     width: min(100%, 34rem);
+    padding: 1.8rem;
+    overflow: hidden;
+    overflow-x: clip;
   }
 
   .dashboard-greeting-toggle {
@@ -526,42 +529,44 @@
   }
 
   .dashboard-greeting-panel .stats {
-    @apply grid gap-4 w-full;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    @apply grid gap-5 w-full;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    align-items: stretch;
   }
 
   .dashboard-greeting-panel .stat {
-    @apply flex flex-col items-center justify-center gap-2 rounded-3xl border bg-transparent px-5 py-6 text-center shadow-none;
-    border-color: rgba(203, 213, 225, 0.6);
-    min-height: 140px;
+    @apply flex flex-col items-center justify-center gap-3 rounded-3xl border bg-transparent px-6 py-7 text-center shadow-none;
+    border-color: rgba(203, 213, 225, 0.55);
+    min-height: 150px;
   }
 
   .dashboard-greeting-panel .stat-figure {
     font-size: 0;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
   }
 
   .dashboard-greeting-panel .stat-title {
-    @apply text-sm font-semibold;
-    color: hsl(var(--bc) / 0.7);
+    @apply text-sm font-semibold tracking-tight;
+    color: hsl(var(--bc) / 0.72);
   }
 
   .dashboard-greeting-panel .stat-value {
-    @apply text-3xl font-extrabold;
+    @apply text-3xl font-extrabold leading-tight;
     color: hsl(var(--bc));
   }
 
   .dashboard-greeting-panel .stat-desc {
-    @apply text-xs leading-relaxed;
-    color: hsl(var(--bc) / 0.55);
+    @apply text-xs leading-relaxed mt-1;
+    color: hsl(var(--bc) / 0.52);
+    max-width: 14rem;
   }
 
   :where(html.dark, body.dark) .dashboard-greeting-panel .stat {
-    border-color: rgba(82, 116, 246, 0.32);
+    border-color: rgba(82, 116, 246, 0.38);
   }
 
   :where(html.dark, body.dark) .dashboard-greeting-panel .stat-title {
-    color: rgba(226, 232, 240, 0.75);
+    color: rgba(226, 232, 240, 0.82);
   }
 
   :where(html.dark, body.dark) .dashboard-greeting-panel .stat-value {
