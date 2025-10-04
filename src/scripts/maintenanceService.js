@@ -137,7 +137,7 @@ function normalizeStatusRaw(value) {
 }
 
 function normalizeStatusDisplay(rawStatus) {
-  const category = matchStatus(rawStatus);
+  const category = categorizeMaintenanceStatus(rawStatus);
   return ['completed', 'cancelled'].includes(category) ? 'closed' : 'open';
 }
 
@@ -162,7 +162,7 @@ function normalizeStatusLabel(raw = {}, statusRaw = 'open') {
   return statusRaw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function matchStatus(status) {
+export function categorizeMaintenanceStatus(status) {
   const slug = String(status ?? '').toLowerCase();
   switch (slug) {
     case 'open':
@@ -183,6 +183,11 @@ function matchStatus(status) {
     case 'ملغي':
       return 'cancelled';
     default:
+      if (slug.includes('progress') || slug.includes('تنفيذ')) return 'in_progress';
+      if (slug.includes('complete') || slug.includes('close') || slug.includes('منجز') || slug.includes('مغلق')) {
+        return 'completed';
+      }
+      if (slug.includes('cancel') || slug.includes('ملغي')) return 'cancelled';
       return slug || 'open';
   }
 }

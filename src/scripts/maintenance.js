@@ -10,6 +10,7 @@ import {
   updateMaintenanceRequest,
   deleteMaintenanceRequest,
   buildMaintenancePayload,
+  categorizeMaintenanceStatus,
   isApiError as isMaintenanceApiError,
 } from './maintenanceService.js';
 
@@ -462,30 +463,36 @@ function renderStats(tickets) {
 
 
 function buildMaintenanceStatusTag(ticket) {
-  const statusSlugRaw = String(ticket?.statusRaw ?? ticket?.status ?? 'open').toLowerCase();
-  const statusSlug = statusSlugRaw.replace(/[^a-z0-9_-]/g, '').replace(/[\s]+/g, '_') || 'open';
+  const rawStatus = String(ticket?.statusRaw ?? ticket?.status ?? 'open');
+  const statusSlug = rawStatus
+    .toLowerCase()
+    .replace(/[^a-z0-9_\-\s]/g, '')
+    .replace(/[\s]+/g, '_')
+    || 'open';
+
+  const category = categorizeMaintenanceStatus(statusSlug) || 'open';
+
   const statusMap = {
     open: { key: 'maintenance.status.open', fallback: 'قيد الصيانة', className: 'maintenance-status-tag--open' },
     in_progress: { key: 'maintenance.status.inProgress', fallback: 'قيد التنفيذ', className: 'maintenance-status-tag--in-progress' },
     completed: { key: 'maintenance.status.completed', fallback: 'مكتملة', className: 'maintenance-status-tag--completed' },
     cancelled: { key: 'maintenance.status.cancelled', fallback: 'ملغاة', className: 'maintenance-status-tag--cancelled' },
-    closed: { key: 'maintenance.status.closed', fallback: 'مغلقة', className: 'maintenance-status-tag--completed' },
   };
 
-  const config = statusMap[statusSlug] ?? null;
-  const label = config
-    ? t(config.key, config.fallback)
-    : (ticket?.statusLabel || statusSlug.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()));
+  const config = statusMap[category] ?? statusMap.open;
+  const fallbackLabel = config ? t(config.key, config.fallback) : t('maintenance.status.open', 'قيد الصيانة');
+  const label = (ticket?.statusLabel && String(ticket.statusLabel).trim())
+    ? String(ticket.statusLabel).trim()
+    : fallbackLabel;
 
   const classes = ['maintenance-status-badge', 'maintenance-status-tag'];
-  if (config) {
+  if (config?.className) {
     classes.push(config.className);
-  } else {
-    classes.push('maintenance-status-tag--custom');
-    classes.push(`maintenance-status-tag--${statusSlug}`);
   }
+  classes.push(`maintenance-status-tag--${category}`);
+  classes.push(`maintenance-status-tag--${statusSlug}`);
 
-  return `<span class="${classes.join(' ')}">${label}</span>`;
+  return `<span class="${classes.filter(Boolean).join(' ')}">${label}</span>`;
 }
 
 function renderTable(tickets) {
