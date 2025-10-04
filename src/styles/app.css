@@ -765,6 +765,12 @@
     @apply cursor-not-allowed opacity-70 bg-base-200;
   }
 
+  .form-control[type='email'],
+  input[type='email'] {
+    direction: ltr;
+    text-align: left;
+  }
+
   .management-form-actions {
     @apply flex flex-wrap justify-end gap-3;
   }
@@ -777,6 +783,22 @@
     @apply bg-base-200 text-base-content;
     background-color: hsl(var(--b2) / 0.85);
     color: hsl(var(--bc) / 0.7);
+  }
+
+  @media (min-width: 1024px) {
+    #customers-tab .management-form-grid {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      justify-items: flex-start;
+    }
+
+    #customers-tab .management-form-grid .form-field:not(.form-field-notes) {
+      max-width: 22rem;
+      width: 100%;
+    }
+
+    #customers-tab .management-search-bar .form-control {
+      max-width: 22rem;
+    }
   }
 
   .table tbody tr td {
