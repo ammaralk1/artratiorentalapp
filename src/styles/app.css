@@ -1318,6 +1318,9 @@
   .sidebar-drawer {
     @apply fixed inset-y-0 start-0 z-50 w-72 max-w-full translate-x-full shadow-2xl transition-transform duration-300 ease-in-out;
     background: transparent;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   [dir='ltr'] .sidebar-drawer {
@@ -1332,6 +1335,9 @@
 
   .sidebar-drawer.open {
     @apply translate-x-0;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .sidebar-backdrop.open {
