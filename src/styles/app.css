@@ -157,36 +157,51 @@
     }
 
     .dashboard-header-end {
-      display: grid;
-      grid-template-columns: repeat(2, max-content);
-      column-gap: 0.6rem;
-      row-gap: 0.45rem;
-      align-items: stretch;
-      justify-content: flex-end;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      flex-wrap: nowrap;
+      margin-inline-end: auto;
+      justify-content: flex-start;
     }
 
     .dashboard-header-end .language-toggle-btn,
     .dashboard-header-end .theme-toggle-btn,
     .dashboard-header-end #logout-btn {
       @apply btn-xs;
+      min-height: 2.1rem;
     }
 
     .dashboard-header-end .language-toggle-btn,
     .dashboard-header-end .theme-toggle-btn {
-      justify-self: auto;
-      padding: 0.3rem 0.55rem;
-      font-size: 0.68rem;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.7rem;
       border-radius: 9999px;
       white-space: nowrap;
       line-height: 1.1;
+      min-width: 5.2rem;
     }
 
     .dashboard-header-end #logout-btn {
-      justify-self: end;
-      grid-column: auto;
-      padding: 0.35rem 0.65rem;
+      padding: 0.35rem 0.7rem;
       font-size: 0.74rem;
-      min-width: 0;
+      border-radius: 9999px;
+      min-width: 5.2rem;
+    }
+
+    .dashboard-header-end .language-toggle-btn {
+      order: 1;
+    }
+
+    .dashboard-header-end .theme-toggle-btn {
+      order: 2;
+      width: 2.4rem;
+      min-width: 2.4rem;
+      padding: 0.3rem;
+    }
+
+    .dashboard-header-end #logout-btn {
+      order: 3;
     }
 
     .dashboard-greeting-toggle,
