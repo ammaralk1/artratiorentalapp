@@ -80,12 +80,57 @@
 
 .maintenance-table {
   width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(248, 250, 255, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+}
+
+.maintenance-table thead {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(14, 165, 233, 0.18));
+  color: #1f2d52;
 }
 
 .maintenance-table thead th,
 .maintenance-table td {
   vertical-align: middle;
   text-align: center;
+}
+
+.maintenance-table thead th {
+  padding: 14px 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.maintenance-table tbody tr {
+  background: rgba(255, 255, 255, 0.92);
+  transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.maintenance-table tbody tr:nth-child(even) {
+  background: rgba(244, 247, 255, 0.95);
+}
+
+.maintenance-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
+}
+
+.maintenance-table tbody td {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(228, 232, 247, 0.6);
+  font-size: 0.95rem;
+}
+
+.maintenance-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .maintenance-table thead th:nth-child(3),
@@ -122,6 +167,7 @@
 .maintenance-row > td {
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
+
 
 
 
@@ -328,36 +374,37 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table {
-  border: 1px solid rgba(59, 76, 117, 0.45);
-  background: transparent;
+  background: linear-gradient(180deg, rgba(19, 31, 55, 0.95), rgba(12, 20, 40, 0.92));
+  border: 1px solid rgba(80, 125, 255, 0.32);
+  box-shadow: 0 24px 48px rgba(3, 8, 26, 0.65);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table thead {
-  background: rgba(37, 55, 88, 0.85);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.32), rgba(14, 165, 233, 0.24));
+  color: rgba(219, 234, 254, 0.95);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table thead th {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody {
-  background: transparent;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.38);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr {
-  background: rgba(24, 33, 59, 0.88);
+  background: rgba(20, 29, 52, 0.88);
+  border-bottom-color: rgba(30, 58, 138, 0.45);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(even) {
-  background: rgba(28, 40, 68, 0.9);
+  background: rgba(18, 26, 46, 0.9);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table td {
-  color: var(--clr-text);
+  color: rgba(226, 232, 240, 0.96);
+  border-bottom: 1px solid rgba(30, 58, 138, 0.45);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.18);
+  background: rgba(37, 99, 235, 0.26);
+  box-shadow: 0 14px 28px rgba(17, 24, 39, 0.65);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-empty-state {
@@ -365,69 +412,9 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   color: rgba(203, 213, 225, 0.75);
 }
 
-:is(html.dark-mode, body.dark-mode) .maintenance-list-box .table-responsive {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
 
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody {
-  background: transparent;
-}
 
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(even) {
-  background: rgba(28, 40, 68, 0.92);
-}
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--open > td {
-  background: rgba(37, 99, 235, 0.28);
-  border-top: 1px solid rgba(96, 165, 250, 0.28);
-  border-bottom: 1px solid rgba(96, 165, 250, 0.28);
-  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.55);
-}
-
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--closed > td {
-  background: rgba(34, 197, 94, 0.22);
-  border-top: 1px solid rgba(134, 239, 172, 0.28);
-  border-bottom: 1px solid rgba(134, 239, 172, 0.28);
-  box-shadow: inset 3px 0 0 rgba(134, 239, 172, 0.55);
-}
-
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--open:hover > td {
-  background: rgba(37, 99, 235, 0.38);
-}
-
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--closed:hover > td {
-  background: rgba(34, 197, 94, 0.32);
-}
-
-.maintenance-row--open > td,
-.maintenance-row--closed > td {
-  background: transparent;
-  border-top: none;
-  border-bottom: none;
-  box-shadow: none;
-}
-
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--open > td,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--closed > td {
-  background: transparent;
-  border-top: none;
-  border-bottom: none;
-  box-shadow: none;
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table td {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.2);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(odd) {
-  background: rgba(24, 33, 59, 0.9);
-}
 
 /* ===================== Close Ticket Modal ===================== */
 
