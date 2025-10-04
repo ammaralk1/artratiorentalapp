@@ -756,30 +756,29 @@
   #logout-btn {
     @apply btn btn-sm md:btn-md rounded-full font-semibold;
     background: transparent;
-    color: #ef4444;
-    border: 2px solid rgba(248, 113, 113, 0.75);
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.85);
     box-shadow: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
 
   #logout-btn:hover {
     transform: translateY(-1px);
     background: linear-gradient(135deg, #fb7185, #dc2626);
     box-shadow: 0 20px 40px rgba(220, 38, 38, 0.28);
+    border-color: rgba(248, 113, 113, 0.85);
     color: #fff;
   }
 
   :where(html.dark, body.dark) #logout-btn {
-    background: transparent;
-    border-color: rgba(248, 113, 113, 0.68);
-    box-shadow: none;
-    color: #fca5a5;
+    border-color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
   }
 
   :where(html.dark, body.dark) #logout-btn:hover {
     background: linear-gradient(135deg, #7f1d1d, #65121c);
     box-shadow: 0 26px 52px rgba(185, 28, 28, 0.38);
-    color: #fff;
+    border-color: rgba(248, 113, 113, 0.75);
   }
 
   .theme-toggle-btn {
