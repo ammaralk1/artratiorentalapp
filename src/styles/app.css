@@ -1248,6 +1248,7 @@
 
   .management-form-header {
     @apply inline-flex items-start gap-4 flex-nowrap;
+    flex-direction: row-reverse;
     align-self: flex-start;
     max-width: 100%;
     padding: 14px 18px;
@@ -1275,17 +1276,9 @@
     text-align: inherit;
   }
 
-  [dir='rtl'] .management-form-header {
-    flex-direction: row-reverse;
-  }
-
   [dir='rtl'] .management-form-header-text {
     text-align: right;
     align-items: flex-end;
-  }
-
-  [dir='ltr'] .management-form-header {
-    flex-direction: row;
   }
 
   [dir='ltr'] .management-form-header-text {
