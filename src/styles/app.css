@@ -513,16 +513,113 @@
   .dashboard-tabbar {
     @apply mx-auto;
     max-width: min(100%, 48rem);
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.9), rgba(232, 240, 255, 0.82));
+    border: 1px solid rgba(76, 110, 245, 0.18);
+    box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
   }
 
   .dashboard-tabbar .tab-buttons-horizontal {
-    @apply justify-between px-2;
+    @apply justify-start;
+    gap: 0.75rem;
+  }
+
+  .dashboard-tabbar .tab-buttons {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(236, 243, 255, 0.82));
+    border: 1px solid rgba(76, 110, 245, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 12px 24px rgba(76, 110, 245, 0.08);
+    padding: 0.4rem 0.6rem;
+    border-radius: 999px;
+  }
+
+  .dashboard-tabbar .tab-button {
+    @apply btn btn-sm lg:btn-md;
+    border: none;
+    background: transparent;
+    color: hsl(var(--bc) / 0.72);
+    font-weight: 600;
+    border-radius: 999px;
+    padding-inline: 1.25rem;
+    position: relative;
+    transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .dashboard-tabbar .tab-button::after {
+    content: '';
+    position: absolute;
+    inset-inline: 18%;
+    bottom: 10%;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(76, 110, 245, 0), rgba(76, 110, 245, 0.55), rgba(76, 110, 245, 0));
+    opacity: 0;
+    transform: scaleX(0.6);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+  }
+
+  .dashboard-tabbar .tab-button:hover {
+    color: hsl(var(--bc));
+    background: rgba(76, 110, 245, 0.12);
+    box-shadow: 0 12px 26px rgba(76, 110, 245, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-tabbar .tab-button:hover::after {
+    opacity: 0.6;
+    transform: scaleX(1);
+  }
+
+  .dashboard-tabbar .tab-button.active {
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.92), rgba(90, 141, 255, 0.88));
+    color: #fff;
+    box-shadow: 0 20px 40px rgba(76, 110, 245, 0.28);
+  }
+
+  .dashboard-tabbar .tab-button.active::after {
+    opacity: 1;
+    transform: scaleX(1);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
   }
 
   @media (min-width: 1536px) {
     .dashboard-tabbar {
       max-width: 44rem;
     }
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar {
+    background: linear-gradient(135deg, rgba(26, 35, 62, 0.92), rgba(18, 28, 52, 0.88));
+    border-color: rgba(63, 93, 245, 0.32);
+    box-shadow: 0 26px 52px rgba(3, 8, 26, 0.58);
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-buttons {
+    background: linear-gradient(135deg, rgba(32, 47, 82, 0.88), rgba(26, 39, 70, 0.82));
+    border-color: rgba(99, 102, 241, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.18), 0 14px 28px rgba(3, 8, 26, 0.6);
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-button {
+    color: rgba(226, 232, 240, 0.85);
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-button::after {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0), rgba(99, 102, 241, 0.5), rgba(59, 130, 246, 0));
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-button:hover {
+    background: rgba(59, 130, 246, 0.2);
+    color: #f8fafc;
+    box-shadow: 0 16px 32px rgba(59, 130, 246, 0.28);
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-button.active {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(99, 102, 241, 0.88));
+    box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32);
+  }
+
+  :where(html.dark, body.dark) .dashboard-tabbar .tab-button.active::after {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(226, 232, 240, 0.85), rgba(255, 255, 255, 0));
   }
 
   .tab-content-wrapper {
