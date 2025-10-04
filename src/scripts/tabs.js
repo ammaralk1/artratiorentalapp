@@ -209,6 +209,7 @@ export function setupTabs() {
 
     if (!tabsInitialised) {
       document.body?.classList.remove('tabs-loading');
+      document.body?.classList.remove('no-js');
       tabsInitialised = true;
     }
   };
@@ -319,10 +320,11 @@ function setupSubTabs() {
     activateSubTab(pendingSubTabPreference, { skipStore: true });
     pendingSubTabPreference = null;
   } else {
-    const defaultSubTab = document.querySelector(".sub-tab-button.active");
-    const initialSubTarget = defaultSubTab?.getAttribute("data-sub-tab");
+    const defaultSubTab = document.querySelector('.sub-tab-button.active');
+    const fallbackSubTab = subTabButtons.length ? subTabButtons[0].getAttribute('data-sub-tab') : null;
+    const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {
-      console.log("⭐ Initial sub-tab:", initialSubTarget);
+      console.log('⭐ Initial sub-tab:', initialSubTarget);
       activateSubTab(initialSubTarget, { skipStore: true });
     }
   }

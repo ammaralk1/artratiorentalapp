@@ -88,6 +88,18 @@ body.tabs-loading .tab {
   display: block;
 }
 
+body.no-js .tab:first-of-type {
+  display: block;
+}
+
+body.no-js .tab-buttons .tab-button:first-child,
+body.no-js .tab-buttons .tab-button:first-child:focus-visible {
+  background: linear-gradient(135deg, #4c6ef5, #5a8dff);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.25);
+  border-color: transparent;
+}
+
 .tab-content-wrapper {
   margin-top: 18px;
   display: flex;
@@ -101,6 +113,18 @@ body.tabs-loading .tab {
 
 .sub-tab.active {
   display: block;
+}
+
+body.no-js .sub-tab:first-of-type {
+  display: block;
+}
+
+body.no-js .sub-tab-buttons .sub-tab-button:first-child,
+body.no-js .sub-tab-buttons .sub-tab-button:first-child:focus-visible {
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-soft));
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(76, 110, 245, 0.25);
+  border-color: transparent;
 }
 
 .sub-tab-button {
