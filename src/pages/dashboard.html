@@ -686,16 +686,16 @@
           <h2 class="tab-section-title" data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
         </div>
 
-        <div class="box maintenance-form-box">
-          <div class="maintenance-form-header">
-            <div>
+        <div class="box maintenance-form-box management-form-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon maintenance-form-icon">🔧</div>
+            <div class="management-form-header-text">
               <h4 data-i18n data-i18n-key="maintenance.form.title">➕ إنشاء تذكرة صيانة</h4>
-              <p class="maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
+              <p class="management-form-hint maintenance-form-hint" data-i18n data-i18n-key="maintenance.form.hint">حدد المعدة المتضررة وسجّل المشكلة لإيقافها عن الاستخدام لحين الإصلاح.</p>
             </div>
-            <div class="maintenance-form-icon">🔧</div>
           </div>
-          <form id="maintenance-form" class="maintenance-form">
-            <div class="maintenance-form-grid">
+          <form id="maintenance-form" class="maintenance-form management-form">
+            <div class="management-form-grid maintenance-form-grid">
               <div class="form-field">
                 <label for="maintenance-equipment-barcode" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.barcode">🏷️ الباركود</label>
                 <input type="text" id="maintenance-equipment-barcode" class="form-control" placeholder="🖨️ امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.barcode">
@@ -720,7 +720,7 @@
               <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
               <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
-            <div class="maintenance-form-actions">
+            <div class="management-form-actions maintenance-form-actions">
               <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
             </div>
           </form>
@@ -734,7 +734,7 @@
             </div>
             <div class="maintenance-stats" id="maintenance-stats"></div>
           </div>
-          <div class="maintenance-filters">
+          <div class="maintenance-filters filters-bar">
             <label for="maintenance-status-filter" class="form-label" data-i18n data-i18n-key="maintenance.filters.status.label">الحالة</label>
             <select id="maintenance-status-filter" class="form-select w-auto">
               <option value="all" data-i18n data-i18n-key="maintenance.filters.status.all">كل الحالات</option>
@@ -742,8 +742,8 @@
               <option value="closed" data-i18n data-i18n-key="maintenance.filters.status.closed">مغلقة</option>
             </select>
           </div>
-          <div class="table-responsive">
-            <table class="maintenance-table reservation-items-table">
+          <div class="customer-table-wrapper maintenance-table-wrapper table-responsive">
+            <table class="customer-table maintenance-table align-middle">
               <thead>
                 <tr>
                   <th data-i18n data-i18n-key="maintenance.table.headers.equipment">المعدة</th>
@@ -755,7 +755,7 @@
                 </tr>
               </thead>
               <tbody id="maintenance-table-body">
-                <tr><td colspan="6" class="text-muted text-center" data-i18n data-i18n-key="maintenance.table.empty">لا توجد تذاكر بعد.</td></tr>
+                <tr><td colspan="6" data-i18n data-i18n-key="maintenance.table.empty" class="text-center">لا توجد تذاكر بعد.</td></tr>
               </tbody>
             </table>
           </div>
