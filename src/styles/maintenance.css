@@ -212,6 +212,18 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   border: 1px solid transparent;
 }
 
+.maintenance-status-tag--custom {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(100, 116, 139, 0.24));
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #1f2937;
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--custom {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(71, 85, 105, 0.34));
+  border-color: rgba(148, 163, 184, 0.55);
+  color: #e2e8f0;
+}
+
 .maintenance-status-badge--open {
   background: linear-gradient(135deg, rgba(250, 204, 21, 0.92), rgba(251, 191, 36, 0.88));
   border-color: rgba(251, 191, 36, 0.5);

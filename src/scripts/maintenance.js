@@ -462,8 +462,8 @@ function renderStats(tickets) {
 
 
 function buildMaintenanceStatusTag(ticket) {
-  const statusRaw = String(ticket?.statusRaw ?? ticket?.status ?? 'open').toLowerCase();
-  const normalizedStatus = statusRaw.replace(/[\s-]+/g, '_');
+  const statusSlugRaw = String(ticket?.statusRaw ?? ticket?.status ?? 'open').toLowerCase();
+  const statusSlug = statusSlugRaw.replace(/[^a-z0-9_-]/g, '').replace(/[\s]+/g, '_') || 'open';
   const statusMap = {
     open: { key: 'maintenance.status.open', fallback: 'قيد الصيانة', className: 'maintenance-status-tag--open' },
     in_progress: { key: 'maintenance.status.inProgress', fallback: 'قيد التنفيذ', className: 'maintenance-status-tag--in-progress' },
@@ -471,9 +471,21 @@ function buildMaintenanceStatusTag(ticket) {
     cancelled: { key: 'maintenance.status.cancelled', fallback: 'ملغاة', className: 'maintenance-status-tag--cancelled' },
     closed: { key: 'maintenance.status.closed', fallback: 'مغلقة', className: 'maintenance-status-tag--completed' },
   };
-  const config = statusMap[normalizedStatus] ?? statusMap.open;
-  const label = t(config.key, config.fallback);
-  return `<span class="maintenance-status-badge maintenance-status-tag ${config.className}">${label}</span>`;
+
+  const config = statusMap[statusSlug] ?? null;
+  const label = config
+    ? t(config.key, config.fallback)
+    : (ticket?.statusLabel || statusSlug.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()));
+
+  const classes = ['maintenance-status-badge', 'maintenance-status-tag'];
+  if (config) {
+    classes.push(config.className);
+  } else {
+    classes.push('maintenance-status-tag--custom');
+    classes.push(`maintenance-status-tag--${statusSlug}`);
+  }
+
+  return `<span class="${classes.join(' ')}">${label}</span>`;
 }
 
 function renderTable(tickets) {

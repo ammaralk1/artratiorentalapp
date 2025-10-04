@@ -105,6 +105,7 @@ function toInternalMaintenanceTicket(raw = {}) {
   const equipmentDesc = raw.equipmentDesc ?? raw.equipment_desc ?? raw.equipmentDescription ?? raw.equipment_name ?? '';
   const statusRaw = normalizeStatusRaw(raw.status_raw ?? raw.status ?? 'open');
   const status = normalizeStatusDisplay(statusRaw);
+  const statusLabel = normalizeStatusLabel(raw, statusRaw);
 
   return {
     id: Number(idValue),
@@ -115,6 +116,7 @@ function toInternalMaintenanceTicket(raw = {}) {
     priority: normalizePriority(raw.priority ?? 'medium'),
     status,
     statusRaw,
+    statusLabel,
     createdAt: raw.createdAt ?? raw.reportedAt ?? raw.reported_at ?? null,
     reportedAt: raw.reportedAt ?? raw.reported_at ?? null,
     scheduledAt: raw.scheduledAt ?? raw.scheduled_at ?? null,
@@ -125,12 +127,18 @@ function toInternalMaintenanceTicket(raw = {}) {
 }
 
 function normalizeStatusRaw(value) {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  return matchStatus(normalized);
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return 'open';
+  const safe = normalized
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_\-]/g, '');
+  return safe || 'open';
 }
 
 function normalizeStatusDisplay(rawStatus) {
-  return ['completed', 'cancelled'].includes(rawStatus) ? 'closed' : 'open';
+  const category = matchStatus(rawStatus);
+  return ['completed', 'cancelled'].includes(category) ? 'closed' : 'open';
 }
 
 function normalizePriority(value) {
@@ -139,8 +147,24 @@ function normalizePriority(value) {
   return 'medium';
 }
 
+function normalizeStatusLabel(raw = {}, statusRaw = 'open') {
+  const rawLabel = raw.status_label
+    ?? raw.statusLabel
+    ?? raw.status_display
+    ?? raw.status_text
+    ?? raw.status
+    ?? raw.status_raw
+    ?? statusRaw;
+  const trimmed = String(rawLabel ?? '').trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  return statusRaw.replace(/[_-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function matchStatus(status) {
-  switch (status) {
+  const slug = String(status ?? '').toLowerCase();
+  switch (slug) {
     case 'open':
     case 'قيد الصيانة':
     case 'قيد الانتظار':
@@ -159,7 +183,7 @@ function matchStatus(status) {
     case 'ملغي':
       return 'cancelled';
     default:
-      return 'open';
+      return slug || 'open';
   }
 }
 
