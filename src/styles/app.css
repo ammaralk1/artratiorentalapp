@@ -2150,6 +2150,13 @@
 
   .modal.show {
     @apply flex;
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .modal.show .modal-dialog {
+    pointer-events: auto;
   }
 
   .modal-dialog {
