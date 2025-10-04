@@ -973,6 +973,12 @@
   }
 
   @media (max-width: 640px) {
+    #search-customer-input.form-control {
+      max-width: 100%;
+      width: 100%;
+      flex: 1 1 100%;
+    }
+
     .customer-action-btn {
       padding: 0.35rem 0.75rem;
       font-size: 0.8rem;
@@ -1096,6 +1102,12 @@
 
   .management-form-actions {
     @apply flex flex-wrap justify-end gap-3;
+  }
+
+  #search-customer-input.form-control {
+    max-width: 200px;
+    width: 200px;
+    flex: 0 0 200px;
   }
 
   .table-wrapper {
