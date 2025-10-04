@@ -26,10 +26,32 @@ function initDashboardGreetingToggle() {
   const panel = root.querySelector('[data-greeting-panel]');
   if (!toggle || !panel) return;
 
+  const outsideClickHandler = (event) => {
+    if (!(event.target instanceof Node)) return;
+    if (!root.contains(event.target)) {
+      setState(false);
+    }
+  };
+
+  const addOutsideListener = () => {
+    window.requestAnimationFrame(() => {
+      document.addEventListener('click', outsideClickHandler, { capture: true });
+    });
+  };
+
+  const removeOutsideListener = () => {
+    document.removeEventListener('click', outsideClickHandler, { capture: true });
+  };
+
   const setState = (isOpen) => {
     panel.hidden = !isOpen;
     toggle.setAttribute('aria-expanded', String(isOpen));
     root.dataset.state = isOpen ? 'open' : 'closed';
+    if (isOpen) {
+      addOutsideListener();
+    } else {
+      removeOutsideListener();
+    }
   };
 
   setState(false);

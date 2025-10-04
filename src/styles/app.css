@@ -392,9 +392,9 @@
   .dashboard-greeting {
     @apply flex flex-col items-center gap-3;
     position: relative;
-    flex: 0 1 clamp(26rem, 60vw, 40rem);
-    min-width: clamp(24rem, 52vw, 36rem);
-    max-width: clamp(26rem, 60vw, 40rem);
+    flex: 0 1 clamp(28rem, 62vw, 42rem);
+    min-width: clamp(26rem, 56vw, 38rem);
+    max-width: clamp(28rem, 62vw, 42rem);
     width: 100%;
     margin-inline: auto;
   }
@@ -405,7 +405,7 @@
     border: 1px solid rgba(148, 163, 255, 0.24);
     box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(14px);
-    width: min(100%, 38rem);
+    width: min(100%, 42rem);
     padding: 1.8rem;
     overflow: hidden;
     overflow-x: clip;
