@@ -8,6 +8,52 @@ import { renderReports } from "./reports.js";
 import { renderMaintenance } from "./maintenance.js";
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
+const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
+const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
+const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
+
+function readStoredTab(key) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return null;
+    }
+    const value = window.localStorage.getItem(key);
+    if (!value || !TAB_ID_PATTERN.test(value)) {
+      return null;
+    }
+    return value;
+  } catch (error) {
+    console.warn("⚠️ [tabs.js] Failed to read stored tab", error);
+    return null;
+  }
+}
+
+function writeStoredTab(key, value) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    if (!value || !TAB_ID_PATTERN.test(value)) {
+      window.localStorage.removeItem(key);
+      return;
+    }
+    window.localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn("⚠️ [tabs.js] Failed to persist tab", error);
+  }
+}
+
+function clearStoredTab(key) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    console.warn("⚠️ [tabs.js] Failed to clear stored tab", error);
+  }
+}
+
 let currentMainTab = null;
 let currentSubTab = null;
 let tabsInitialised = false;
@@ -55,6 +101,8 @@ export function setupTabs() {
 
     currentMainTab = target;
 
+    writeStoredTab(DASHBOARD_TAB_STORAGE_KEY, target);
+
     if (!skipStore) {
       updatePreferences({ dashboardTab: target }).catch((error) => {
         console.warn('⚠️ [tabs.js] Failed to store dashboard tab preference', error);
@@ -64,6 +112,7 @@ export function setupTabs() {
     if (target !== "reservations-tab") {
       currentSubTab = null;
       pendingSubTabPreference = null;
+      clearStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
       if (!skipStore) {
         updatePreferences({ dashboardSubTab: null }).catch((error) => {
           console.warn('⚠️ [tabs.js] Failed to clear sub-tab preference', error);
@@ -122,32 +171,53 @@ export function setupTabs() {
   });
 
   const applyInitialTabs = (prefs) => {
-    const defaultTabButton = document.querySelector("[data-tab].active");
-    const storedTab = prefs?.dashboardTab;
-    const initialTarget = storedTab && document.getElementById(storedTab)
-      ? storedTab
-      : defaultTabButton?.getAttribute("data-tab") || tabButtons[0]?.getAttribute("data-tab");
+    const defaultTabButton = document.querySelector('[data-tab].active');
+    const localStoredTab = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
+    const fallbackTab = tabButtons[0]?.getAttribute('data-tab') || null;
 
-    if (initialTarget) {
-      console.log("⭐ Initial tab:", initialTarget);
-      activateTab(initialTarget, { skipStore: true });
+    const candidateTabs = [
+      prefs?.dashboardTab,
+      localStoredTab,
+      currentMainTab,
+      defaultTabButton?.getAttribute('data-tab'),
+      fallbackTab,
+    ].filter(Boolean);
+
+    const targetTab = candidateTabs.find((tabId) => document.getElementById(tabId)) || fallbackTab;
+
+    if (targetTab && (!tabsInitialised || targetTab !== currentMainTab)) {
+      console.log('⭐ Initial tab:', targetTab);
+      activateTab(targetTab, { skipStore: true });
     }
 
-    const storedSubTab = prefs?.dashboardSubTab;
+    const storedSubCandidates = [
+      prefs?.dashboardSubTab,
+      readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY),
+    ].filter(Boolean);
+
+    const storedSubTab = storedSubCandidates.find((subId) => document.getElementById(subId));
+
     if (storedSubTab) {
-      pendingSubTabPreference = storedSubTab;
-      if (currentMainTab === 'reservations-tab') {
-        activateStoredSubTab(storedSubTab);
-        pendingSubTabPreference = null;
+      if (currentMainTab === 'reservations-tab' && typeof activateSubTabRef === 'function') {
+        if (!tabsInitialised || storedSubTab !== currentSubTab) {
+          activateSubTabRef(storedSubTab, { skipStore: true });
+        }
+      } else {
+        pendingSubTabPreference = storedSubTab;
       }
     }
 
-    document.body?.classList.remove("tabs-loading");
-    tabsInitialised = true;
+    if (!tabsInitialised) {
+      document.body?.classList.remove('tabs-loading');
+      tabsInitialised = true;
+    }
   };
 
+  const cachedPrefs = typeof getCachedPreferences === 'function' ? getCachedPreferences() : null;
+  applyInitialTabs(cachedPrefs || null);
+
   getPreferences()
-    .then((prefs) => applyInitialTabs(prefs))
+    .then((prefs) => applyInitialTabs(prefs || null))
     .catch((error) => {
       console.warn('⚠️ [tabs.js] Failed to load tab preferences', error);
       applyInitialTabs(null);
@@ -199,6 +269,8 @@ function setupSubTabs() {
 
     currentSubTab = subTarget;
 
+    writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, subTarget);
+
     if (!skipStore) {
       updatePreferences({ dashboardSubTab: subTarget }).catch((error) => {
         console.warn('⚠️ [tabs.js] Failed to store sub-tab preference', error);
@@ -231,6 +303,7 @@ function setupSubTabs() {
       subTabButtons.forEach((b) => b.classList.remove('active'));
       subTabContents.forEach((subContent) => subContent.classList.remove('active'));
       currentSubTab = null;
+      clearStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
     }
   };
 
@@ -295,6 +368,10 @@ function restoreActiveTabsView() {
   let target = activeContent?.id
     ?? activeButton?.dataset.tab
     ?? (cachedPrefs.dashboardTab && document.getElementById(cachedPrefs.dashboardTab) ? cachedPrefs.dashboardTab : null)
+    ?? (() => {
+      const stored = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
+      return stored && document.getElementById(stored) ? stored : null;
+    })()
     ?? tabButtons[0]?.dataset.tab;
 
   if (!target) {
@@ -325,6 +402,10 @@ function restoreActiveTabsView() {
       let subTarget = activeSubContent?.id
         ?? activeSubButton?.dataset.subTab
         ?? (cachedPrefs.dashboardSubTab && document.getElementById(cachedPrefs.dashboardSubTab) ? cachedPrefs.dashboardSubTab : null)
+        ?? (() => {
+          const stored = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
+          return stored && document.getElementById(stored) ? stored : null;
+        })()
         ?? subButtons[0]?.dataset.subTab;
 
       if (subTarget) {

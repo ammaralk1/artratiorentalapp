@@ -452,8 +452,14 @@ function renderTechniciansTable() {
     const activeNow = isTechnicianActiveNow(tech.id, reservations, now);
     const effectiveStatus = activeNow ? "busy" : (tech.status || tech.baseStatus || "available");
     const statusInfo = effectiveStatus === "busy"
-      ? { label: t("technicians.status.busy", "⛔ مشغول"), className: "badge bg-danger" }
-      : { label: t("technicians.status.available", "✅ متاح"), className: "badge bg-success" };
+      ? {
+          label: t("technicians.status.busy", "⛔ مشغول"),
+          className: "badge technician-status-badge technician-status-badge--busy"
+        }
+      : {
+          label: t("technicians.status.available", "✅ متاح"),
+          className: "badge technician-status-badge technician-status-badge--available"
+        };
     const wageNumberRaw = Number(tech.dailyWage);
     const wageNumber = Number.isFinite(wageNumberRaw) ? wageNumberRaw : 0;
     const wageDisplay = wageNumber.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -479,7 +485,7 @@ function renderTechniciansTable() {
         <td>${tech.role || ""}</td>
         <td>${tech.department || "—"}</td>
         <td>${wageDisplay} ${wageSuffix}</td>
-        <td><span class="${statusInfo.className}">${statusInfo.label}</span></td>
+        <td><span class="${statusInfo.className}"><span class="technician-status-badge__text">${statusInfo.label}</span></span></td>
         <td class="table-notes-cell">${tech.notes || "—"}</td>
         <td class="table-actions-cell">
           <div class="table-action-buttons">

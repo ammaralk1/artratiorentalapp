@@ -1100,6 +1100,39 @@
     box-shadow: inset 0 0 0 1px rgba(148, 178, 255, 0.35);
   }
 
+  .technician-status-badge {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.1;
+    white-space: nowrap;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+    border: 1px solid transparent;
+  }
+
+  .technician-status-badge__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .technician-status-badge--available {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(16, 185, 129, 0.85));
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #f8fafc;
+  }
+
+  .technician-status-badge--busy {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(220, 38, 38, 0.88));
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #f8fafc;
+  }
+
   :is(.customer-action-btn, .technician-action-btn) {
     display: inline-flex;
     align-items: center;
@@ -1169,6 +1202,18 @@
   :is(.customer-table, .technician-table) tbody .table-notes-cell {
     width: 38%;
     min-width: 18rem;
+  }
+
+  .technician-table thead th:first-child,
+  .technician-table tbody td:first-child {
+    width: 28%;
+    min-width: 16rem;
+  }
+
+  .technician-table .table-notes-head,
+  .technician-table tbody .table-notes-cell {
+    width: 24%;
+    min-width: 12rem;
   }
 
   :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table),
