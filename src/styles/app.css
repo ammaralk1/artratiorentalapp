@@ -27,8 +27,8 @@
   }
 
   .page-grid {
-    @apply flex flex-col min-h-screen;
-    background: linear-gradient(135deg, rgba(238, 242, 255, 0.95) 0%, rgba(248, 250, 252, 0.92) 55%, rgba(248, 250, 252, 0));
+    @apply flex flex-col min-h-screen w-full;
+    background: linear-gradient(135deg, rgba(238, 242, 255, 0.96) 0%, rgba(248, 250, 252, 0.94) 55%, rgba(248, 250, 252, 0.92));
   }
 
   html.dark,
@@ -39,7 +39,7 @@
 
   html.dark .page-grid,
   body.dark .page-grid {
-    background: linear-gradient(135deg, rgba(11, 17, 32, 0.98) 0%, rgba(8, 14, 30, 0.92) 45%, rgba(16, 25, 46, 0.85) 100%);
+    background: linear-gradient(135deg, rgba(11, 17, 32, 0.98) 0%, rgba(8, 14, 30, 0.94) 45%, rgba(16, 25, 46, 0.9) 100%);
   }
 
   .dashboard-header {
