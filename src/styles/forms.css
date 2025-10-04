@@ -27,20 +27,35 @@
   gap: 16px;
 }
 
+.management-form-header .management-form-icon {
+  margin-inline-end: 12px;
+}
+
 .management-form-header-text {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  text-align: start;
   flex: 1 1 auto;
+  text-align: start;
+}
+
+[dir='rtl'] .management-form-header {
+  flex-direction: row-reverse;
+}
+
+[dir='rtl'] .management-form-header .management-form-icon {
+  margin-inline-end: 0;
+  margin-inline-start: 12px;
 }
 
 [dir='rtl'] .management-form-header-text {
   text-align: right;
+  align-items: flex-end;
 }
 
-.management-form-header .management-form-icon {
-  margin-inline-end: 12px;
+[dir='ltr'] .management-form-header-text {
+  text-align: left;
+  align-items: flex-start;
 }
 
 .management-form-header h4 {
