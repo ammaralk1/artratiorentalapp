@@ -58,7 +58,7 @@
   color: #1f2d52;
 }
 
-:is(html.dark-mode, body.dark-mode) .maintenance-stat {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat {
   background: linear-gradient(135deg, rgba(30, 42, 68, 0.88), rgba(18, 31, 54, 0.84));
   color: rgba(226, 232, 240, 0.95) !important;
   border: 1px solid rgba(59, 130, 246, 0.38);
@@ -303,7 +303,7 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   color: var(--clr-text) !important;
 }
 
-:is(html.dark-mode, body.dark-mode) .maintenance-stat strong {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat strong {
   color: rgba(191, 219, 254, 0.98) !important;
 }
 
