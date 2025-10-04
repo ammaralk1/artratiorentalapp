@@ -770,10 +770,11 @@
   .customer-table-wrapper::before {
     content: '';
     position: absolute;
-    inset: 0;
-    background: none;
-    opacity: 0;
+    inset: -12% -20% 45% -18%;
+    background: radial-gradient(circle at top left, rgba(92, 140, 255, 0.32), rgba(44, 76, 180, 0.14) 45%, transparent 75%);
+    opacity: 0.75;
     pointer-events: none;
+    z-index: 0;
   }
 
   .customer-table {
@@ -782,6 +783,8 @@
     font-size: 0.97rem;
     color: #ffffff;
     background: rgba(9, 15, 34, 0.96);
+    position: relative;
+    z-index: 1;
   }
 
   .customer-table thead th {
@@ -873,8 +876,10 @@
   }
 
   :where(html.dark, body.dark) .customer-table-wrapper::before {
-    background: none;
-    opacity: 0;
+    inset: -14% -18% 48% -20%;
+    background: radial-gradient(circle at top left, rgba(82, 124, 240, 0.4), rgba(32, 58, 142, 0.16) 48%, transparent 76%);
+    opacity: 0.7;
+    z-index: 0;
   }
 
   :where(html.dark, body.dark) .customer-table {
