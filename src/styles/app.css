@@ -108,7 +108,7 @@
     }
 
     .dashboard-header-end {
-      @apply flex flex-row items-center justify-center gap-2;
+      @apply flex flex-row items-center justify-start gap-2;
       width: 100%;
     }
 
@@ -116,6 +116,27 @@
     .dashboard-header-end .theme-toggle-btn,
     .dashboard-header-end #logout-btn {
       @apply btn-xs;
+    }
+
+    .dashboard-header-end {
+      order: 3;
+    }
+
+    .dashboard-header-center {
+      order: 2;
+    }
+
+    .dashboard-header-start {
+      order: 1;
+      justify-content: space-between;
+    }
+
+    [dir='rtl'] .dashboard-header-start {
+      flex-direction: row-reverse;
+    }
+
+    [dir='rtl'] .dashboard-header-end {
+      justify-content: flex-end;
     }
 
     .dashboard-greeting-toggle {
