@@ -123,27 +123,7 @@
   transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
-.maintenance-row--open > td {
-  background: rgba(59, 130, 246, 0.08);
-  border-top: 1px solid rgba(59, 130, 246, 0.12);
-  border-bottom: 1px solid rgba(59, 130, 246, 0.12);
-  box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.35);
-}
 
-.maintenance-row--closed > td {
-  background: rgba(34, 197, 94, 0.08);
-  border-top: 1px solid rgba(34, 197, 94, 0.12);
-  border-bottom: 1px solid rgba(34, 197, 94, 0.12);
-  box-shadow: inset 3px 0 0 rgba(34, 197, 94, 0.35);
-}
-
-.maintenance-row--open:hover > td {
-  background: rgba(59, 130, 246, 0.14);
-}
-
-.maintenance-row--closed:hover > td {
-  background: rgba(34, 197, 94, 0.14);
-}
 
 body[dir="ltr"] .maintenance-table td:first-child,
 body[dir="ltr"] .maintenance-table th:first-child,
@@ -216,7 +196,9 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 }
 
 .maintenance-status-badge,
-.maintenance-priority-badge {
+.maintenance-priority-badge,
+.maintenance-status-label,
+.maintenance-status-tag {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -757,4 +739,66 @@ body[dir="ltr"] .maintenance-close-modal__ticket-info {
     text-align: inherit;
     width: 100%;
   }
+}
+:is(html.dark-mode, body.dark-mode) .maintenance-status-badge,
+:is(html.dark-mode, body-dark-mode) .maintenance-status-label,
+:is(html.dark-mode, body-dark-mode) .maintenance-status-tag {
+  box-shadow: 0 12px 24px rgba(8, 15, 35, 0.35);
+}
+
+.maintenance-status-label,
+.maintenance-status-tag {
+  font-size: 0.78rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.maintenance-status-label--open {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(37, 99, 235, 0.28));
+  border: 1px solid rgba(59, 130, 246, 0.32);
+  color: #1849a7;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.18);
+}
+
+.maintenance-status-label--closed {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.22), rgba(16, 185, 129, 0.26));
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #0f5132;
+  box-shadow: 0 10px 20px rgba(34, 197, 94, 0.18);
+}
+
+:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--open {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.26), rgba(37, 99, 235, 0.32));
+  border-color: rgba(96, 165, 250, 0.45);
+  color: rgba(219, 234, 254, 0.95);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.35);
+}
+
+:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--closed {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.32), rgba(22, 163, 74, 0.36));
+  border-color: rgba(134, 239, 172, 0.45);
+  color: rgba(226, 252, 239, 0.95);
+  box-shadow: 0 14px 28px rgba(22, 163, 74, 0.32);
+}
+
+.maintenance-status-label--open::before,
+.maintenance-status-label--closed::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 0.45rem;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
+}
+
+.maintenance-status-label--open::before {
+  background: linear-gradient(135deg, #60a5fa, #2563eb);
+}
+
+.maintenance-status-label--closed::before {
+  background: linear-gradient(135deg, #4ade80, #22c55e);
 }
