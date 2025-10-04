@@ -1164,6 +1164,10 @@
     background: transparent;
   }
 
+  [dir='ltr'] .sidebar-drawer {
+    --tw-translate-x: -100%;
+  }
+
   @screen lg {
     .sidebar-drawer {
       width: 20rem;

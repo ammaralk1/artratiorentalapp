@@ -3,6 +3,7 @@ import { registerTranslations } from '../language.js';
 registerTranslations({
   ar: {
     'dashboard.header.greeting': '👋 أهلاً بك في لوحة التحكم',
+    'dashboard.header.toggleLabel': 'لوحة التحكم',
     'dashboard.sidebar.title': 'مركز التحكم',
     'dashboard.sidebar.statsHeading': 'ملخص اليوم',
     'dashboard.sidebar.tabsHeading': 'التبويبات',
@@ -553,6 +554,7 @@ registerTranslations({
   },
   en: {
     'dashboard.header.greeting': '👋 Welcome to the Dashboard',
+    'dashboard.header.toggleLabel': 'Dashboard',
     'dashboard.sidebar.title': 'Control Center',
     'dashboard.sidebar.statsHeading': 'Today at a Glance',
     'dashboard.sidebar.tabsHeading': 'Dashboard Tabs',
