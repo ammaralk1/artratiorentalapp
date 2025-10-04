@@ -48,6 +48,25 @@
     overflow: visible;
   }
 
+  .dashboard-hero-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    text-align: start;
+    align-items: flex-start;
+  }
+
+  [dir='rtl'] .dashboard-hero-brand-text {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  [dir='ltr'] .dashboard-hero-brand-text {
+    text-align: left;
+    align-items: flex-start;
+  }
+
   .dashboard-header-nav {
     @apply mx-auto grid items-center gap-4 px-4 py-3 text-center;
     width: min(100%, 312rem);
@@ -120,6 +139,9 @@
     .dashboard-header-start .dashboard-hero-brand {
       flex: 1 1 auto;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     [dir='rtl'] .dashboard-header-start .dashboard-hero-brand {
