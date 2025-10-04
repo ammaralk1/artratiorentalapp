@@ -49,54 +49,36 @@
   }
 
   .dashboard-header-nav {
-    @apply mx-auto flex items-center justify-between gap-2 px-4 py-3 flex-wrap;
+    @apply mx-auto flex flex-col items-center justify-center gap-4 px-4 py-4 text-center;
     width: min(100%, 312rem);
   }
 
   .dashboard-header-start {
-    @apply flex flex-wrap items-center gap-2 text-center;
+    @apply flex flex-wrap items-center justify-center gap-3 text-center w-full;
     min-width: 0;
-    flex: 1 1 auto;
   }
 
   .dashboard-header-end {
-    @apply flex items-center gap-1.5 sm:gap-2;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    min-width: 0;
-    margin-inline-start: auto;
+    @apply flex items-center justify-center gap-2 flex-wrap w-full;
   }
 
   @media (min-width: 768px) {
     .dashboard-header-nav {
-      @apply flex-nowrap gap-3;
-      padding-block: 0.7rem;
-    }
-
-    .dashboard-header-start {
-      @apply flex-nowrap text-start;
-      gap: 1rem;
+      @apply gap-5;
+      padding-block: 0.75rem;
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-header-nav {
+      @apply flex-row flex-wrap items-center justify-center gap-6;
       width: min(100%, 336rem);
       padding-inline: 2.5rem;
     }
-  }
 
-  @media (max-width: 767px) {
-    .dashboard-header-start {
-      @apply justify-center;
-    }
-
+    .dashboard-header-start,
     .dashboard-header-end {
-      width: 100%;
-      justify-content: center;
-      margin-inline-start: 0;
-      padding-top: 0.35rem;
-      gap: 1rem;
+      width: auto;
     }
   }
 
@@ -336,22 +318,7 @@
     line-height: 1.3;
   }
 
-  .dashboard-hero-subtitle {
-    @apply transition-colors duration-200 ease-in-out;
-    font-size: 0.72rem;
-    max-width: 18rem;
-  }
-
-  :where(html.dark, body.dark) .dashboard-hero-subtitle {
-    color: rgba(203, 213, 225, 0.75) !important;
-  }
-
   @media (min-width: 768px) {
-    .dashboard-header-nav {
-      @apply gap-4;
-      padding-block: 0.75rem;
-    }
-
     .dashboard-hero-logo {
       width: 2.75rem;
       height: 2.75rem;
@@ -361,15 +328,6 @@
       font-size: 1.12rem;
     }
 
-    .dashboard-hero-subtitle {
-      font-size: 0.82rem;
-    }
-  }
-
-  @media (max-width: 1023px) {
-    .dashboard-hero-subtitle {
-      display: none;
-    }
   }
 
   .sidebar-link-active {
