@@ -959,8 +959,8 @@
 
   .customer-table .table-actions-head,
   .customer-table .table-actions-cell {
-    width: 8.5rem;
-    min-width: 8.5rem;
+    width: 11rem;
+    min-width: 11rem;
     text-align: center;
   }
 
