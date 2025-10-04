@@ -1188,9 +1188,9 @@
 
   #logout-btn {
     @apply btn btn-xs sm:btn-sm md:btn-md rounded-full font-semibold;
-    background: transparent;
-    color: #ffffff;
-    border: 2px solid rgba(255, 255, 255, 0.85);
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(244, 63, 94, 0.2));
+    color: #b91c1c;
+    border: 2px solid rgba(239, 68, 68, 0.55);
     box-shadow: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
@@ -1204,6 +1204,7 @@
   }
 
   :where(html.dark, body.dark) #logout-btn {
+    background: transparent;
     border-color: rgba(255, 255, 255, 0.85);
     color: #ffffff;
   }
