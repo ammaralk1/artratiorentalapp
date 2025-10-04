@@ -389,6 +389,22 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   background: rgba(34, 197, 94, 0.32);
 }
 
+.maintenance-row--open > td,
+.maintenance-row--closed > td {
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--open > td,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-row--closed > td {
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
+  box-shadow: none;
+}
+
 :is(html.dark-mode, body.dark-mode) .maintenance-table td {
   color: var(--clr-text);
 }
@@ -748,12 +764,20 @@ body[dir="ltr"] .maintenance-close-modal__ticket-info {
 
 .maintenance-status-label,
 .maintenance-status-tag {
-  font-size: 0.78rem;
-  padding: 0.28rem 0.75rem;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 999px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.85rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .maintenance-status-label--open,
