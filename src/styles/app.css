@@ -392,9 +392,9 @@
   .dashboard-greeting {
     @apply flex flex-col items-center gap-3;
     position: relative;
-    flex: 0 1 clamp(22rem, 56vw, 36rem);
-    min-width: clamp(20rem, 48vw, 28rem);
-    max-width: clamp(22rem, 56vw, 36rem);
+    flex: 0 1 clamp(20rem, 48vw, 34rem);
+    min-width: clamp(18rem, 44vw, 28rem);
+    max-width: clamp(20rem, 48vw, 34rem);
     width: 100%;
     margin-inline: auto;
   }
@@ -405,7 +405,7 @@
     border: 1px solid rgba(148, 163, 255, 0.24);
     box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(14px);
-    width: min(100%, 36rem);
+    width: min(100%, 34rem);
     padding: 1.8rem;
     overflow: hidden;
     overflow-x: clip;
@@ -478,8 +478,8 @@
       left: 0;
       right: 0;
       margin-inline: auto;
-      transform: translateY(-6px);
-      width: clamp(24rem, 58vw, 38rem);
+      transform: translateY(-4px);
+      width: clamp(22rem, 52vw, 34rem);
       opacity: 0;
       pointer-events: none;
       z-index: 60;
