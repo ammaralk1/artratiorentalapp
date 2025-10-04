@@ -846,9 +846,9 @@
   }
 
   .tab-buttons-horizontal .tab-button {
-    @apply flex-shrink-0 flex items-center;
+    @apply flex-shrink-0 flex items-center justify-center;
     white-space: normal;
-    min-height: 2.4rem;
+    min-height: 3rem;
   }
 
   .dashboard-tabbar {
@@ -891,7 +891,7 @@
   }
 
   .dashboard-tabbar .tab-button span {
-    @apply inline-flex items-center gap-2;
+    @apply inline-flex items-center justify-center gap-2;
   }
 
   [dir='ltr'] .dashboard-tabbar .tab-button {
@@ -917,6 +917,7 @@
       padding-inline: 0.85rem;
       font-size: 0.86rem;
       line-height: 1.2;
+      min-height: 3.1rem;
     }
 
     [dir='ltr'] .dashboard-tabbar .tab-button span {
