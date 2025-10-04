@@ -1180,6 +1180,33 @@
     @apply cursor-not-allowed opacity-70 bg-base-200;
   }
 
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px rgba(248, 250, 255, 0.9) inset;
+    -webkit-text-fill-color: #1f2937;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  :where(html.dark, body.dark) input:-webkit-autofill,
+  :where(html.dark, body.dark) input:-webkit-autofill:hover,
+  :where(html.dark, body.dark) input:-webkit-autofill:focus,
+  :where(html.dark, body.dark) textarea:-webkit-autofill,
+  :where(html.dark, body.dark) textarea:-webkit-autofill:hover,
+  :where(html.dark, body.dark) textarea:-webkit-autofill:focus,
+  :where(html.dark, body.dark) select:-webkit-autofill,
+  :where(html.dark, body.dark) select:-webkit-autofill:hover,
+  :where(html.dark, body.dark) select:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px rgba(15, 23, 42, 0.92) inset;
+    -webkit-text-fill-color: rgba(226, 232, 240, 0.95);
+  }
+
   .management-form-actions {
     @apply flex flex-wrap justify-end gap-3;
   }
