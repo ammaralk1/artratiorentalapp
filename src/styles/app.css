@@ -1345,7 +1345,8 @@
     }
 
     #search-technician-input.form-control,
-    #technician-role-filter.form-select {
+    #technician-role-filter.form-select,
+    #maintenance-status-filter.form-select {
       max-width: 100%;
       width: 100%;
       flex: 1 1 100%;
@@ -1559,14 +1560,23 @@
     flex: 0 0 240px;
   }
 
-  #technician-role-filter.form-select {
-    max-width: 200px;
-    width: 200px;
-    flex: 0 0 200px;
-    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
-    border: 1px solid rgba(148, 163, 255, 0.28);
-    color: #1f2937;
-  }
+#technician-role-filter.form-select {
+  max-width: 200px;
+  width: 200px;
+  flex: 0 0 200px;
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+  border: 1px solid rgba(148, 163, 255, 0.28);
+  color: #1f2937;
+}
+
+#maintenance-status-filter.form-select {
+  max-width: 200px;
+  width: 200px;
+  flex: 0 0 200px;
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+  border: 1px solid rgba(148, 163, 255, 0.28);
+  color: #1f2937;
+}
 
   :is(html.dark-mode, body.dark-mode) #search-technician-input.form-control {
     background: rgba(15, 23, 42, 0.88);
@@ -1574,11 +1584,17 @@
     border-color: rgba(59, 130, 246, 0.32);
   }
 
-  :is(html.dark-mode, body.dark-mode) #technician-role-filter.form-select {
-    background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
-    color: rgba(226, 232, 240, 0.95);
-    border-color: rgba(59, 130, 246, 0.35);
-  }
+:is(html.dark-mode, body.dark-mode) #technician-role-filter.form-select {
+  background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
+  color: rgba(226, 232, 240, 0.95);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) #maintenance-status-filter.form-select {
+  background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
+  color: rgba(226, 232, 240, 0.95);
+  border-color: rgba(59, 130, 246, 0.35);
+}
 
   .table-wrapper {
     @apply glass-card overflow-hidden p-0;
