@@ -315,6 +315,37 @@
     @apply space-y-3;
   }
 
+  .sidebar-panel--stats {
+    @apply space-y-4;
+  }
+
+  .sidebar-stats {
+    @apply flex flex-col gap-3;
+  }
+
+  .sidebar-stats-row {
+    @apply flex items-center justify-between gap-3 rounded-2xl border border-base-200 px-4 py-3 text-sm font-semibold text-base-content;
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(238, 242, 255, 0.9));
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+
+  .sidebar-stats-row > span:first-child {
+    @apply flex-1 text-start;
+  }
+
+  .sidebar-stats-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
+    background: linear-gradient(135deg, rgba(234, 240, 255, 0.98), rgba(228, 236, 255, 0.92));
+    color: hsl(var(--bc));
+  }
+
+  .sidebar-stats-row:hover .badge-soft {
+    background: rgba(76, 110, 245, 0.16);
+    color: hsl(var(--bc));
+  }
+
   .sidebar-panel--tabs .tab-buttons {
     @apply flex flex-col gap-3 p-0 border-0 bg-transparent shadow-none;
     background: transparent;
@@ -356,6 +387,24 @@
 
   .sidebar-panel--tabs .tab-button.active svg {
     color: #fff;
+  }
+
+  :where(html.dark, body.dark) .sidebar-stats-row {
+    background: linear-gradient(135deg, rgba(14, 24, 48, 0.96), rgba(9, 17, 36, 0.9));
+    border-color: rgba(63, 93, 245, 0.32);
+    box-shadow: inset 0 0 0 1px rgba(63, 93, 245, 0.14), 0 20px 42px rgba(4, 9, 22, 0.65);
+    color: rgba(219, 234, 254, 0.9);
+  }
+
+  :where(html.dark, body.dark) .sidebar-stats-row .badge-soft {
+    background: rgba(63, 93, 245, 0.25);
+    border-color: rgba(99, 102, 241, 0.38);
+    color: #e2e8f0;
+  }
+
+  :where(html.dark, body.dark) .sidebar-stats-row:hover {
+    background: linear-gradient(135deg, rgba(32, 54, 112, 0.92), rgba(28, 45, 94, 0.88));
+    color: #f8fafc;
   }
 
   :where(html.dark, body.dark) .sidebar-link {
