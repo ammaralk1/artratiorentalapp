@@ -9,11 +9,36 @@ const METRIC_IDS = {
 
 let updateScheduled = false;
 
+const EASTERN_ARABIC_ZERO = 0x0660;
+const PERSIAN_ZERO = 0x06f0;
+
+function normalizeNumericValue(value) {
+  if (value == null) return 0;
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  const stringValue = String(value)
+    .trim()
+    .replace(/[\s,_]/g, '')
+    .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - EASTERN_ARABIC_ZERO))
+    .replace(/[\u06f0-\u06f9]/g, (digit) => String(digit.charCodeAt(0) - PERSIAN_ZERO))
+    .replace(/[^0-9.+-]/g, '');
+
+  const parsed = Number(stringValue);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function formatNumber(value) {
   try {
+    const numericValue = normalizeNumericValue(value);
     const lang = document.documentElement?.lang || 'ar';
     const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
-    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value ?? 0);
+    return new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
+      useGrouping: true
+    }).format(numericValue);
   } catch (error) {
     return String(value ?? 0);
   }

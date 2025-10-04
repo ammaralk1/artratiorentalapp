@@ -1701,6 +1701,14 @@
   .badge-soft {
     @apply badge badge-outline badge-lg px-4 rounded-full text-primary;
     border-color: hsl(var(--p) / 0.4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.2rem;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'kern' 1;
+    direction: ltr;
+    text-align: center;
   }
 
   .empty-state {
