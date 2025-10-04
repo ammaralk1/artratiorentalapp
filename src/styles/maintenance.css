@@ -305,7 +305,11 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 
 :is(html.dark-mode, body.dark-mode) .maintenance-stat {
   background: rgba(37, 55, 88, 0.7);
-  color: var(--clr-text);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-stat strong {
+  color: rgba(191, 219, 254, 0.98);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-table {
