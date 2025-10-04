@@ -1720,14 +1720,3 @@
     }
   }
 }
-  .customer-table a {
-    color: #ffffff;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .customer-table a:hover,
-  .customer-table a:focus-visible {
-    color: #ffffff;
-    text-decoration: underline;
-  }
