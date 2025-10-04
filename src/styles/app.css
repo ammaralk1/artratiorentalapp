@@ -49,7 +49,8 @@
   }
 
   .dashboard-header-nav {
-    @apply container mx-auto flex items-center justify-between gap-3 px-4 py-3 flex-wrap;
+    @apply mx-auto flex items-center justify-between gap-3 px-4 py-3 flex-wrap;
+    width: min(100%, 78rem);
   }
 
   .dashboard-header-start {
@@ -71,6 +72,13 @@
     .dashboard-header-start {
       @apply flex-nowrap justify-start text-start;
       gap: 1rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-header-nav {
+      width: min(100%, 84rem);
+      padding-inline: 2.5rem;
     }
   }
 
