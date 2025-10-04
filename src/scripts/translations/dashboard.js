@@ -558,7 +558,7 @@ registerTranslations({
     'dashboard.sidebar.statsHeading': 'Today at a Glance',
     'dashboard.sidebar.tabsHeading': 'Dashboard Tabs',
     'dashboard.sidebar.quickLinksHeading': 'Quick Links',
-    'dashboard.hero.title': 'Art Ratio Rental Hub',
+    'dashboard.hero.title': 'Art Ratio',
     'dashboard.actions.addProject': '➕ Add Project',
     'dashboard.metrics.projects.label': 'Projects',
     'dashboard.metrics.projects.caption': 'Active projects this month',

@@ -158,7 +158,7 @@
 
     .dashboard-header-end {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, auto));
+      grid-template-columns: repeat(2, max-content);
       column-gap: 0.6rem;
       row-gap: 0.45rem;
       align-items: stretch;
@@ -173,17 +173,20 @@
 
     .dashboard-header-end .language-toggle-btn,
     .dashboard-header-end .theme-toggle-btn {
-      justify-self: stretch;
-      padding: 0.35rem 0.6rem;
-      font-size: 0.72rem;
+      justify-self: auto;
+      padding: 0.3rem 0.55rem;
+      font-size: 0.68rem;
       border-radius: 9999px;
+      white-space: nowrap;
+      line-height: 1.1;
     }
 
     .dashboard-header-end #logout-btn {
-      grid-column: 1 / -1;
-      justify-self: stretch;
-      padding: 0.45rem 0.85rem;
-      font-size: 0.78rem;
+      justify-self: end;
+      grid-column: auto;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.74rem;
+      min-width: 0;
     }
 
     .dashboard-greeting-toggle,
@@ -825,7 +828,8 @@
   }
 
   .tab-buttons-horizontal .tab-button {
-    @apply flex-shrink-0 whitespace-nowrap;
+    @apply flex-shrink-0;
+    white-space: normal;
   }
 
   .dashboard-tabbar {
@@ -859,6 +863,27 @@
     padding-inline: 1.25rem;
     position: relative;
     transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .dashboard-tabbar .tab-button span {
+    @apply inline-flex items-center gap-2;
+  }
+
+  [dir='ltr'] .dashboard-tabbar .tab-button {
+    max-width: 8.5rem;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  [dir='ltr'] .dashboard-tabbar .tab-button span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 6.75rem;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.25;
   }
 
   .dashboard-tabbar .tab-button:hover {
@@ -1521,6 +1546,13 @@
   .theme-toggle-btn {
     @apply btn btn-xs sm:btn-sm md:btn-md btn-ghost rounded-full border border-base-300;
     border-color: hsl(var(--bc) / 0.35);
+  }
+
+  .language-toggle-btn {
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: clamp(0.72rem, 2vw, 0.85rem);
+    padding-inline: 0.85rem;
   }
 
   .language-toggle-btn:hover,
