@@ -49,36 +49,57 @@
   }
 
   .dashboard-header-nav {
-    @apply mx-auto flex flex-col items-center justify-center gap-4 px-4 py-4 text-center;
+    @apply mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3;
     width: min(100%, 312rem);
   }
 
   .dashboard-header-start {
-    @apply flex flex-wrap items-center justify-center gap-3 text-center w-full;
+    @apply flex flex-wrap items-center gap-2 sm:gap-3;
+    flex: 0 0 auto;
     min-width: 0;
   }
 
-  .dashboard-header-end {
-    @apply flex items-center justify-center gap-2 flex-wrap w-full;
+  .dashboard-header-center {
+    @apply flex justify-center;
+    flex: 1 1 clamp(16rem, 40%, 24rem);
+    min-width: clamp(12rem, 45%, 18rem);
+    padding-block: 0.25rem;
   }
 
-  @media (min-width: 768px) {
+  .dashboard-header-end {
+    @apply flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
+
+  @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply gap-5;
-      padding-block: 0.75rem;
+      @apply flex-col items-center gap-4;
+    }
+
+    .dashboard-header-start,
+    .dashboard-header-center,
+    .dashboard-header-end {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .dashboard-header-end {
+      margin-inline-start: 0;
+      gap: 1rem;
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-header-nav {
-      @apply flex-row flex-wrap items-center justify-center gap-6;
+      @apply flex-nowrap items-center justify-between gap-6;
       width: min(100%, 336rem);
       padding-inline: 2.5rem;
     }
 
-    .dashboard-header-start,
-    .dashboard-header-end {
-      width: auto;
+    .dashboard-header-center {
+      flex: 0 1 clamp(18rem, 28vw, 26rem);
+      min-width: clamp(16rem, 26vw, 24rem);
     }
   }
 
@@ -353,10 +374,10 @@
   .dashboard-greeting {
     @apply flex flex-col items-center gap-3;
     position: relative;
-    flex: 1 1 clamp(16rem, 35vw, 24rem);
+    flex: 1 1 auto;
     min-width: min(100%, 16rem);
-    max-width: clamp(16rem, 40vw, 24rem);
-    width: min(100%, 24rem);
+    max-width: 24rem;
+    width: 100%;
     margin-inline: auto;
   }
 
@@ -426,8 +447,8 @@
 
   @media (min-width: 768px) {
     .dashboard-greeting {
-      flex: 1 1 clamp(18rem, 30vw, 26rem);
-      max-width: clamp(18rem, 32vw, 26rem);
+      flex: 0 1 clamp(18rem, 28vw, 26rem);
+      max-width: clamp(18rem, 28vw, 26rem);
     }
 
     .dashboard-greeting-panel {
