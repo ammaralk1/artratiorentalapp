@@ -466,8 +466,8 @@ function renderTable(tickets) {
       const statusOpen = t('maintenance.status.open', 'قيد الصيانة');
       const statusClosed = t('maintenance.status.closed', 'مغلقة');
       const statusBadge = ticket.status === 'open'
-        ? `<span class="badge bg-warning text-dark">${statusOpen}</span>`
-        : `<span class="badge bg-success">${statusClosed}</span>`;
+        ? `<span class="maintenance-status-badge maintenance-status-badge--open">${statusOpen}</span>`
+        : `<span class="maintenance-status-badge maintenance-status-badge--closed">${statusClosed}</span>`;
 
       const priorityBadge = (() => {
         const high = t('maintenance.priority.high', 'مرتفعة');
@@ -475,11 +475,11 @@ function renderTable(tickets) {
         const low = t('maintenance.priority.low', 'منخفضة');
         switch (ticket.priority) {
           case 'high':
-            return `<span class="badge bg-danger">${high}</span>`;
+            return `<span class="maintenance-priority-badge maintenance-priority-badge--high">${high}</span>`;
           case 'low':
-            return `<span class="badge bg-secondary">${low}</span>`;
+            return `<span class="maintenance-priority-badge maintenance-priority-badge--low">${low}</span>`;
           default:
-            return `<span class="badge bg-info text-dark">${medium}</span>`;
+            return `<span class="maintenance-priority-badge maintenance-priority-badge--medium">${medium}</span>`;
         }
       })();
 
@@ -488,12 +488,12 @@ function renderTable(tickets) {
       const viewLabel = t('maintenance.actions.view', '👁️ عرض التقرير');
       const deleteLabel = t('maintenance.actions.delete', '🗑️ حذف التذكرة');
       if (ticket.status === 'open') {
-        actionButtons.push(`<button class="btn btn-sm btn-success" data-action="close" data-id="${ticket.id}">${closeLabel}</button>`);
+        actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="close" data-id="${ticket.id}">${closeLabel}</button>`);
       } else {
-        actionButtons.push(`<button class="btn btn-sm btn-warning" data-action="view" data-id="${ticket.id}">${viewLabel}</button>`);
+        actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="view" data-id="${ticket.id}">${viewLabel}</button>`);
       }
       if (userCanManageDestructiveActions()) {
-        actionButtons.push(`<button class="btn btn-sm btn-danger" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
+        actionButtons.push(`<button type="button" class="maintenance-action-btn maintenance-action-btn--delete" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
       }
 
       const actions = actionButtons.join('');
