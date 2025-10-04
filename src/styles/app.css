@@ -622,6 +622,29 @@
     background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(226, 232, 240, 0.85), rgba(255, 255, 255, 0));
   }
 
+  .tab-section-header {
+    @apply flex flex-col items-center justify-center gap-2 text-center mb-6;
+  }
+
+  .tab-section-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight text-base-content;
+  }
+
+  :where(html.dark, body.dark) .tab-section-title {
+    color: rgba(226, 232, 240, 0.95);
+  }
+
+  .tab-section-toolbar {
+    @apply flex flex-wrap items-center justify-center gap-2 mb-4;
+    width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .tab-section-toolbar {
+      justify-content: space-between;
+    }
+  }
+
   .tab-content-wrapper {
     @apply space-y-8;
   }

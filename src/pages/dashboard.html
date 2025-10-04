@@ -378,7 +378,9 @@
 
       <!-- ✅ تبويب: العملاء -->
       <div class="tab active" id="customers-tab">
-        <h2 data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+        </div>
 
         <!-- ✅ نموذج إضافة عميل -->
         <div class="box customer-form-box management-form-box mb-4">
@@ -458,7 +460,9 @@
 
       <!-- ✅ تبويب: الفريق الفني -->
       <div class="tab" id="technicians-tab">
-        <h2 data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+        </div>
 
         <!-- ✅ نموذج إضافة فني -->
         <div class="box add-technicians-box management-form-box mb-4">
@@ -549,13 +553,17 @@
         </div>
       </div> <!-- نهاية تبويب الفريق الفني -->
 
-            <!-- ✅ تبويب: المعدات -->
+      <!-- ✅ تبويب: المعدات -->
       <div class="tab" id="equipment-tab">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h3 data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h3>
-          <div>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h2>
+        </div>
+        <div class="tab-section-toolbar d-flex flex-wrap align-items-center justify-content-center justify-content-lg-between gap-2 mb-4">
+          <div class="d-flex flex-wrap gap-2">
             <button type="button" id="equipment-clear-btn" class="btn btn-error btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
             <button type="button" id="excel-upload-trigger" class="btn btn-primary btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
+          </div>
+          <div class="d-none">
             <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden class="requires-admin">
           </div>
         </div>
@@ -649,7 +657,9 @@
 
       <!-- ✅ تبويب: الصيانة -->
       <div class="tab" id="maintenance-tab">
-        <h2 data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
+        </div>
 
         <div class="box maintenance-form-box">
           <div class="maintenance-form-header">
@@ -760,7 +770,9 @@
 
       <!-- ✅ تبويب: الحجوزات -->
       <div class="tab" id="reservations-tab">
-        <h2 data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
+        <div class="tab-section-header">
+          <h2 class="tab-section-title" data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
+        </div>
 
         <!-- ✅ التبويبات الفرعية -->
         <div class="sub-tab-buttons mb-3">
