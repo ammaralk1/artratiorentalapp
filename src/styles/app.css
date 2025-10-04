@@ -1204,16 +1204,64 @@
     min-width: 18rem;
   }
 
-  .technician-table thead th:first-child,
-  .technician-table tbody td:first-child {
-    width: 28%;
-    min-width: 16rem;
+  .technician-table thead th:nth-child(1),
+  .technician-table tbody td:nth-child(1) {
+    width: 20%;
+    min-width: 14rem;
+  }
+
+  .technician-table thead th:nth-child(2),
+  .technician-table tbody td:nth-child(2) {
+    width: 12%;
+    min-width: 9rem;
+  }
+
+  .technician-table thead th:nth-child(3),
+  .technician-table tbody td:nth-child(3) {
+    width: 12%;
+    min-width: 9rem;
+  }
+
+  .technician-table thead th:nth-child(4),
+  .technician-table tbody td:nth-child(4) {
+    width: 12%;
+    min-width: 9rem;
+  }
+
+  .technician-table thead th:nth-child(5),
+  .technician-table tbody td:nth-child(5) {
+    width: 10%;
+    min-width: 8rem;
+  }
+
+  .technician-table thead th:nth-child(6),
+  .technician-table tbody td:nth-child(6) {
+    width: 10%;
+    min-width: 8rem;
+  }
+
+  .technician-table thead th:nth-child(7),
+  .technician-table tbody td:nth-child(7) {
+    width: 18%;
+    min-width: 13rem;
+  }
+
+  .technician-table thead th:nth-child(8),
+  .technician-table tbody td:nth-child(8) {
+    width: 6%;
+    min-width: 6rem;
   }
 
   .technician-table .table-notes-head,
   .technician-table tbody .table-notes-cell {
-    width: 24%;
-    min-width: 12rem;
+    width: 18%;
+    min-width: 13rem;
+  }
+
+  .technician-table .table-actions-head,
+  .technician-table .table-actions-cell {
+    width: 6%;
+    min-width: 6rem;
   }
 
   :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table),
@@ -1291,6 +1339,13 @@
 
   @media (max-width: 640px) {
     #search-customer-input.form-control {
+      max-width: 100%;
+      width: 100%;
+      flex: 1 1 100%;
+    }
+
+    #search-technician-input.form-control,
+    #technician-role-filter.form-select {
       max-width: 100%;
       width: 100%;
       flex: 1 1 100%;
@@ -1496,6 +1551,33 @@
     max-width: 240px;
     width: 240px;
     flex: 0 0 240px;
+  }
+
+  #search-technician-input.form-control {
+    max-width: 240px;
+    width: 240px;
+    flex: 0 0 240px;
+  }
+
+  #technician-role-filter.form-select {
+    max-width: 200px;
+    width: 200px;
+    flex: 0 0 200px;
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+    border: 1px solid rgba(148, 163, 255, 0.28);
+    color: #1f2937;
+  }
+
+  :is(html.dark-mode, body.dark-mode) #search-technician-input.form-control {
+    background: rgba(15, 23, 42, 0.88);
+    color: rgba(226, 232, 240, 0.95);
+    border-color: rgba(59, 130, 246, 0.32);
+  }
+
+  :is(html.dark-mode, body.dark-mode) #technician-role-filter.form-select {
+    background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
+    color: rgba(226, 232, 240, 0.95);
+    border-color: rgba(59, 130, 246, 0.35);
   }
 
   .table-wrapper {
