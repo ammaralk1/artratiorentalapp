@@ -392,9 +392,9 @@
   .dashboard-greeting {
     @apply flex flex-col items-center gap-3;
     position: relative;
-    flex: 1 1 auto;
-    min-width: min(100%, 16rem);
-    max-width: 24rem;
+    flex: 0 1 clamp(22rem, 58vw, 36rem);
+    min-width: clamp(20rem, 50vw, 28rem);
+    max-width: clamp(22rem, 58vw, 36rem);
     width: 100%;
     margin-inline: auto;
   }
@@ -469,17 +469,12 @@
   }
 
   @media (min-width: 768px) {
-    .dashboard-greeting {
-      flex: 0 1 clamp(18rem, 28vw, 26rem);
-      max-width: clamp(18rem, 28vw, 26rem);
-    }
-
     .dashboard-greeting-panel {
       position: absolute;
       top: calc(100% + 0.65rem);
       left: 50%;
       transform: translate(-50%, -4px);
-      width: clamp(22rem, 58vw, 36rem);
+      width: clamp(24rem, 60vw, 38rem);
       opacity: 0;
       pointer-events: none;
       z-index: 60;
@@ -528,6 +523,52 @@
     background: linear-gradient(140deg, rgba(12, 22, 48, 0.96) 0%, rgba(8, 16, 36, 0.92) 45%, rgba(10, 18, 40, 0.9) 100%);
     border-color: rgba(82, 116, 246, 0.32);
     box-shadow: 0 26px 52px rgba(3, 8, 22, 0.55);
+  }
+
+  .dashboard-greeting-panel .stats {
+    @apply grid gap-4 w-full;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .dashboard-greeting-panel .stat {
+    @apply flex flex-col items-center justify-center gap-2 rounded-3xl border border-base-200/60 bg-transparent px-5 py-6 text-center shadow-none;
+    min-height: 140px;
+  }
+
+  .dashboard-greeting-panel .stat-figure {
+    font-size: 0;
+    margin-bottom: 0.35rem;
+  }
+
+  .dashboard-greeting-panel .stat-title {
+    @apply text-sm font-semibold;
+    color: hsl(var(--bc) / 0.7);
+  }
+
+  .dashboard-greeting-panel .stat-value {
+    @apply text-3xl font-extrabold;
+    color: hsl(var(--bc));
+  }
+
+  .dashboard-greeting-panel .stat-desc {
+    @apply text-xs leading-relaxed;
+    color: hsl(var(--bc) / 0.55);
+  }
+
+  :where(html.dark, body.dark) .dashboard-greeting-panel .stat {
+    border-color: rgba(82, 116, 246, 0.32);
+  }
+
+  :where(html.dark, body.dark) .dashboard-greeting-panel .stat-title {
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  :where(html.dark, body.dark) .dashboard-greeting-panel .stat-value {
+    color: rgba(248, 250, 255, 0.98);
+  }
+
+  :where(html.dark, body.dark) .dashboard-greeting-panel .stat-desc {
+    color: rgba(203, 213, 225, 0.72);
   }
 
   .tab-buttons {
