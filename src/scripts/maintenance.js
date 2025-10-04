@@ -283,11 +283,13 @@ async function refreshEquipmentData() {
 function ensureCloseTicketModalElements() {
   const modalEl = document.getElementById('closeMaintenanceModal');
   if (!modalEl) return false;
-  if (typeof bootstrap === 'undefined' || !bootstrap?.Modal) {
+
+  const bootstrapLib = (typeof window !== 'undefined' ? window.bootstrap : undefined) ?? globalThis?.bootstrap;
+  if (!bootstrapLib?.Modal) {
     return false;
   }
 
-  closeTicketModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  closeTicketModal = bootstrapLib.Modal.getOrCreateInstance(modalEl);
 
   if (!closeTicketReportInput) {
     closeTicketReportInput = modalEl.querySelector('#maintenance-close-report');
@@ -377,7 +379,6 @@ function openCloseTicketModal(id) {
   }
 
   if (closeTicketDetailsContainer) {
-    const equipmentLabel = t('maintenance.report.equipment', 'المعدة');
     const barcodeLabel = t('maintenance.report.barcode', 'الباركود');
     const notAvailable = t('maintenance.report.notAvailable', 'غير متوفر');
     const equipmentText = closeTicketState.equipmentDesc || notAvailable;
@@ -385,8 +386,20 @@ function openCloseTicketModal(id) {
       ? normalizeNumbers(closeTicketState.equipmentBarcode)
       : notAvailable;
     closeTicketDetailsContainer.innerHTML = `
-      <div class="fw-semibold">${equipmentText}</div>
-      <div class="text-muted small">${barcodeLabel}: ${barcodeText}</div>
+      <div class="maintenance-close-modal__ticket-card" role="group" aria-labelledby="maintenance-close-ticket-title">
+        <div class="maintenance-close-modal__ticket-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 2h6"></path>
+            <path d="M10 4h4"></path>
+            <path d="M8 4h-2a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="maintenance-close-modal__ticket-info">
+          <div id="maintenance-close-ticket-title" class="maintenance-close-modal__ticket-title">${equipmentText}</div>
+          <div class="maintenance-close-modal__ticket-meta">${barcodeLabel}: <span>${barcodeText}</span></div>
+        </div>
+      </div>
     `;
   }
 
