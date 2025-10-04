@@ -460,6 +460,22 @@ function renderStats(tickets) {
   `;
 }
 
+
+function buildMaintenanceStatusTag(ticket) {
+  const statusRaw = String(ticket?.statusRaw ?? ticket?.status ?? 'open').toLowerCase();
+  const normalizedStatus = statusRaw.replace(/[\s-]+/g, '_');
+  const statusMap = {
+    open: { key: 'maintenance.status.open', fallback: 'قيد الصيانة', className: 'maintenance-status-tag--open' },
+    in_progress: { key: 'maintenance.status.inProgress', fallback: 'قيد التنفيذ', className: 'maintenance-status-tag--in-progress' },
+    completed: { key: 'maintenance.status.completed', fallback: 'مكتملة', className: 'maintenance-status-tag--completed' },
+    cancelled: { key: 'maintenance.status.cancelled', fallback: 'ملغاة', className: 'maintenance-status-tag--cancelled' },
+    closed: { key: 'maintenance.status.closed', fallback: 'مغلقة', className: 'maintenance-status-tag--completed' },
+  };
+  const config = statusMap[normalizedStatus] ?? statusMap.open;
+  const label = t(config.key, config.fallback);
+  return `<span class="maintenance-status-badge maintenance-status-tag ${config.className}">${label}</span>`;
+}
+
 function renderTable(tickets) {
   const tbody = document.getElementById('maintenance-table-body');
   const emptyState = document.getElementById('maintenance-empty-state');
@@ -485,11 +501,7 @@ function renderTable(tickets) {
 
   tbody.innerHTML = tickets
     .map((ticket) => {
-      const statusOpen = t('maintenance.status.open', 'قيد الصيانة');
-      const statusClosed = t('maintenance.status.closed', 'مغلقة');
-      const statusBadge = ticket.status === 'open'
-        ? `<span class="maintenance-status-badge maintenance-status-label maintenance-status-label--open">${statusOpen}</span>`
-        : `<span class="maintenance-status-badge maintenance-status-label maintenance-status-label--closed">${statusClosed}</span>`;
+      const statusBadge = buildMaintenanceStatusTag(ticket);
       const rowStatusClass = ticket.status === 'open'
         ? 'maintenance-row maintenance-row--open'
         : 'maintenance-row maintenance-row--closed';
