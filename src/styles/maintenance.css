@@ -80,57 +80,12 @@
 
 .maintenance-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 18px;
-  overflow: hidden;
-  background: rgba(248, 250, 255, 0.88);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
-}
-
-.maintenance-table thead {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(14, 165, 233, 0.18));
-  color: #1f2d52;
 }
 
 .maintenance-table thead th,
 .maintenance-table td {
   vertical-align: middle;
   text-align: center;
-}
-
-.maintenance-table thead th {
-  padding: 14px 18px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
-}
-
-.maintenance-table tbody tr {
-  background: rgba(255, 255, 255, 0.92);
-  transition: background-color 0.25s ease, transform 0.2s ease;
-}
-
-.maintenance-table tbody tr:nth-child(even) {
-  background: rgba(244, 247, 255, 0.95);
-}
-
-.maintenance-table tbody tr:hover {
-  background: rgba(59, 130, 246, 0.12);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.18);
-}
-
-.maintenance-table tbody td {
-  padding: 16px 18px;
-  border-bottom: 1px solid rgba(228, 232, 247, 0.6);
-  font-size: 0.95rem;
-}
-
-.maintenance-table tbody tr:last-child td {
-  border-bottom: none;
 }
 
 .maintenance-table thead th:nth-child(3),
@@ -388,8 +343,8 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--open,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--open,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--open {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--open,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--open {
   --maintenance-status-background: linear-gradient(135deg, #3f83ff, #1d4ed8);
   --maintenance-status-border: rgba(96, 165, 250, 0.88);
   --maintenance-status-color: #f8fafc;
@@ -397,9 +352,9 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   --maintenance-status-dot: linear-gradient(135deg, #93c5fd, #3b82f6);
 }
 
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--in-progress,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--in-progress,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--in-progress {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--in-progress,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--in-progress,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--in-progress {
   --maintenance-status-background: linear-gradient(135deg, #facc15, #b45309);
   --maintenance-status-border: rgba(251, 191, 36, 0.9);
   --maintenance-status-color: #fff7ed;
@@ -407,12 +362,12 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   --maintenance-status-dot: linear-gradient(135deg, #fde047, #f59e0b);
 }
 
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--completed,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--closed,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--completed,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--closed,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--completed,
-:is(html-dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--closed {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--completed,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--closed,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--completed,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--closed,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--completed,
+:is(html-dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--closed {
   --maintenance-status-background: linear-gradient(135deg, #22c55e, #14b8a6);
   --maintenance-status-border: rgba(134, 239, 172, 0.88);
   --maintenance-status-color: #ecfdf5;
@@ -420,9 +375,9 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   --maintenance-status-dot: linear-gradient(135deg, #86efac, #22c55e);
 }
 
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--cancelled,
-:is(html.dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--cancelled,
-:is(html-dark-mode, body-dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--cancelled {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--cancelled,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--cancelled,
+:is(html-dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--cancelled {
   --maintenance-status-background: linear-gradient(135deg, #4b5563, #1f2937);
   --maintenance-status-border: rgba(148, 163, 184, 0.88);
   --maintenance-status-color: #f8fafc;
@@ -464,40 +419,6 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat strong {
   color: rgba(191, 219, 254, 0.98) !important;
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table {
-  background: linear-gradient(180deg, rgba(19, 31, 55, 0.95), rgba(12, 20, 40, 0.92));
-  border: 1px solid rgba(80, 125, 255, 0.32);
-  box-shadow: 0 24px 48px rgba(3, 8, 26, 0.65);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table thead {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.32), rgba(14, 165, 233, 0.24));
-  color: rgba(219, 234, 254, 0.95);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table thead th {
-  border-bottom: 1px solid rgba(37, 99, 235, 0.38);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr {
-  background: rgba(20, 29, 52, 0.88);
-  border-bottom-color: rgba(30, 58, 138, 0.45);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:nth-child(even) {
-  background: rgba(18, 26, 46, 0.9);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table td {
-  color: rgba(226, 232, 240, 0.96);
-  border-bottom: 1px solid rgba(30, 58, 138, 0.45);
-}
-
-:is(html.dark-mode, body.dark-mode) .maintenance-table tbody tr:hover {
-  background: rgba(37, 99, 235, 0.26);
-  box-shadow: 0 14px 28px rgba(17, 24, 39, 0.65);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-empty-state {
