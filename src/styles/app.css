@@ -898,6 +898,7 @@
 
   .customer-table tbody td.table-notes-cell {
     line-height: 1.6;
+    white-space: normal;
   }
 
   .customer-table-row-editing td {
@@ -954,6 +955,19 @@
   .customer-table a:focus-visible {
     color: #1d4ed8;
     text-decoration: underline;
+  }
+
+  .customer-table .table-actions-head,
+  .customer-table .table-actions-cell {
+    width: 8.5rem;
+    min-width: 8.5rem;
+    text-align: center;
+  }
+
+  .customer-table .table-notes-head,
+  .customer-table tbody .table-notes-cell {
+    width: 38%;
+    min-width: 18rem;
   }
 
   :where(html):not(.dark):not(.dark-mode) .customer-table,
