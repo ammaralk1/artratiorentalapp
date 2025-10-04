@@ -890,6 +890,26 @@
     text-decoration: underline;
   }
 
+  :where(html):not(.dark):not(.dark-mode) .customer-table,
+  :where(body):not(.dark):not(.dark-mode) .customer-table {
+    color: #1f2937;
+  }
+
+  :where(html):not(.dark):not(.dark-mode) .customer-table thead th,
+  :where(body):not(.dark):not(.dark-mode) .customer-table thead th {
+    color: #1e293b;
+  }
+
+  :where(html):not(.dark):not(.dark-mode) .customer-table tbody td,
+  :where(body):not(.dark):not(.dark-mode) .customer-table tbody td {
+    color: #1f2937;
+  }
+
+  :where(html):not(.dark):not(.dark-mode) .customer-table-row-editing td,
+  :where(body):not(.dark):not(.dark-mode) .customer-table-row-editing td {
+    color: #1f2937;
+  }
+
   :where(html.dark, body.dark) .customer-table-wrapper::before {
     inset: -14% -18% 48% -20%;
     background: radial-gradient(circle at top left, rgba(82, 124, 240, 0.4), rgba(32, 58, 142, 0.16) 48%, transparent 76%);
