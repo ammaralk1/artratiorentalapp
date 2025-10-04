@@ -531,7 +531,8 @@
   }
 
   .dashboard-greeting-panel .stat {
-    @apply flex flex-col items-center justify-center gap-2 rounded-3xl border border-base-200/60 bg-transparent px-5 py-6 text-center shadow-none;
+    @apply flex flex-col items-center justify-center gap-2 rounded-3xl border bg-transparent px-5 py-6 text-center shadow-none;
+    border-color: rgba(203, 213, 225, 0.6);
     min-height: 140px;
   }
 
