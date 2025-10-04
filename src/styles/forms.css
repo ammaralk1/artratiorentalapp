@@ -23,12 +23,12 @@
 .management-form-header {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 16px;
 }
 
 .management-form-header .management-form-icon {
-  margin-inline-end: 12px;
+  margin-inline-end: 0;
 }
 
 .management-form-header-text {
@@ -36,15 +36,14 @@
   flex-direction: column;
   gap: 6px;
   flex: 1 1 auto;
-  text-align: start;
+  text-align: end;
 }
 
 [dir='rtl'] .management-form-header {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 [dir='rtl'] .management-form-header .management-form-icon {
-  margin-inline-end: 0;
   margin-inline-start: 12px;
 }
 
@@ -160,6 +159,7 @@
   .management-form-header-text {
     width: 100%;
     text-align: start;
+    align-items: flex-start;
   }
 
   .management-form-grid {
