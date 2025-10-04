@@ -543,30 +543,11 @@
     transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   }
 
-  .dashboard-tabbar .tab-button::after {
-    content: '';
-    position: absolute;
-    inset-inline: 18%;
-    bottom: 10%;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(76, 110, 245, 0), rgba(76, 110, 245, 0.55), rgba(76, 110, 245, 0));
-    opacity: 0;
-    transform: scaleX(0.6);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
-  }
-
   .dashboard-tabbar .tab-button:hover {
     color: hsl(var(--bc));
     background: rgba(76, 110, 245, 0.12);
     box-shadow: 0 12px 26px rgba(76, 110, 245, 0.2);
     transform: translateY(-1px);
-  }
-
-  .dashboard-tabbar .tab-button:hover::after {
-    opacity: 0.6;
-    transform: scaleX(1);
   }
 
   .dashboard-tabbar .tab-button.active {
@@ -575,15 +556,28 @@
     box-shadow: 0 20px 40px rgba(76, 110, 245, 0.28);
   }
 
-  .dashboard-tabbar .tab-button.active::after {
-    opacity: 1;
-    transform: scaleX(1);
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
-  }
-
   @media (min-width: 1536px) {
     .dashboard-tabbar {
-      max-width: 44rem;
+      max-width: 52rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-tabbar {
+      max-width: min(100%, 56rem);
+      padding: 1.25rem 1.5rem;
+      border-radius: 2.25rem;
+    }
+
+    .dashboard-tabbar .tab-buttons {
+      padding: 0.85rem 1.1rem;
+      gap: 1rem;
+    }
+
+    .dashboard-tabbar .tab-button {
+      font-size: 1.05rem;
+      padding-inline: 1.75rem;
+      padding-block: 0.9rem;
     }
   }
 
@@ -603,10 +597,6 @@
     color: rgba(226, 232, 240, 0.85);
   }
 
-  :where(html.dark, body.dark) .dashboard-tabbar .tab-button::after {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0), rgba(99, 102, 241, 0.5), rgba(59, 130, 246, 0));
-  }
-
   :where(html.dark, body.dark) .dashboard-tabbar .tab-button:hover {
     background: rgba(59, 130, 246, 0.2);
     color: #f8fafc;
@@ -616,10 +606,6 @@
   :where(html.dark, body.dark) .dashboard-tabbar .tab-button.active {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(99, 102, 241, 0.88));
     box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32);
-  }
-
-  :where(html.dark, body.dark) .dashboard-tabbar .tab-button.active::after {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(226, 232, 240, 0.85), rgba(255, 255, 255, 0));
   }
 
   .tab-section-header {
