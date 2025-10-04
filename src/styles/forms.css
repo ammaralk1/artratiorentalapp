@@ -27,10 +27,6 @@
   gap: 16px;
 }
 
-.management-form-header .management-form-icon {
-  margin-inline-end: 0;
-}
-
 .management-form-header-text {
   display: flex;
   flex-direction: column;
@@ -41,10 +37,6 @@
 
 [dir='rtl'] .management-form-header {
   flex-direction: row;
-}
-
-[dir='rtl'] .management-form-header .management-form-icon {
-  margin-inline-start: 12px;
 }
 
 [dir='rtl'] .management-form-header-text {
@@ -151,7 +143,7 @@
   }
 
   .management-form-header {
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
