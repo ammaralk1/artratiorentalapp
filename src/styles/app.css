@@ -49,32 +49,48 @@
   }
 
   .dashboard-header-nav {
-    @apply mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3;
+    @apply mx-auto grid items-center gap-3 px-4 py-3 text-center;
     width: min(100%, 312rem);
+    grid-auto-flow: column;
+    grid-template-columns: auto minmax(16rem, auto) auto;
+    justify-content: center;
   }
 
   .dashboard-header-start {
     @apply flex flex-wrap items-center gap-2 sm:gap-3;
-    flex: 0 0 auto;
     min-width: 0;
   }
 
   .dashboard-header-center {
     @apply flex justify-center;
-    flex: 1 1 clamp(16rem, 40%, 24rem);
-    min-width: clamp(12rem, 45%, 18rem);
+    min-width: clamp(16rem, 45vw, 24rem);
     padding-block: 0.25rem;
   }
 
   .dashboard-header-end {
-    @apply flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end;
-    flex: 0 0 auto;
-    margin-inline-start: auto;
+    @apply flex items-center gap-1.5 sm:gap-2 flex-wrap;
+    min-width: 0;
+  }
+
+  [dir='rtl'] .dashboard-header-start {
+    justify-content: flex-end;
+  }
+
+  [dir='ltr'] .dashboard-header-start {
+    justify-content: flex-start;
+  }
+
+  [dir='rtl'] .dashboard-header-end {
+    justify-content: flex-start;
+  }
+
+  [dir='ltr'] .dashboard-header-end {
+    justify-content: flex-end;
   }
 
   @media (max-width: 767px) {
     .dashboard-header-nav {
-      @apply flex-col items-center gap-4;
+      @apply flex flex-col items-center gap-4;
     }
 
     .dashboard-header-start,
@@ -85,21 +101,16 @@
     }
 
     .dashboard-header-end {
-      margin-inline-start: 0;
       gap: 1rem;
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-header-nav {
-      @apply flex-nowrap items-center justify-between gap-6;
       width: min(100%, 336rem);
       padding-inline: 2.5rem;
-    }
-
-    .dashboard-header-center {
-      flex: 0 1 clamp(18rem, 28vw, 26rem);
-      min-width: clamp(16rem, 26vw, 24rem);
+      grid-template-columns: auto minmax(18rem, 28vw) auto;
+      gap: 4rem;
     }
   }
 
