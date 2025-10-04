@@ -408,12 +408,12 @@ function renderTechniciansTable() {
 
   if (techniciansLoading && !techniciansHasLoaded) {
     const loadingMessage = t("technicians.table.loading", "جاري التحميل...");
-    tableBody.innerHTML = `<tr><td colspan='8' class='text-center text-muted'>${loadingMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='8'>${loadingMessage}</td></tr>`;
     return;
   }
 
   if (techniciansErrorMessage && !techniciansHasLoaded) {
-    tableBody.innerHTML = `<tr><td colspan='8' class='text-center text-danger'>${techniciansErrorMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='8' class='text-danger'>${techniciansErrorMessage}</td></tr>`;
     return;
   }
 
@@ -443,7 +443,7 @@ function renderTechniciansTable() {
 
   if (filtered.length === 0) {
     const emptyMessage = t("technicians.table.empty", "لا يوجد أعضاء في الطاقم بعد.");
-    tableBody.innerHTML = `<tr><td colspan='8' class='text-center'>${emptyMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='8'>${emptyMessage}</td></tr>`;
     return;
   }
 
@@ -463,15 +463,17 @@ function renderTechniciansTable() {
     const deleteLabel = t("technicians.actions.delete", "🗑️ حذف");
     const canDelete = userCanManageDestructiveActions();
     const actionButtons = [
-      `<button class="btn btn-sm btn-warning technician-edit-btn" data-id="${tech.id}">${editLabel}</button>`
+      `<button type="button" class="technician-action-btn technician-action-btn--edit technician-edit-btn" data-id="${tech.id}">${editLabel}</button>`
     ];
 
     if (canDelete) {
-      actionButtons.push(`<button class="btn btn-sm btn-danger technician-delete-btn" data-id="${tech.id}">${deleteLabel}</button>`);
+      actionButtons.push(`<button type="button" class="technician-action-btn technician-action-btn--delete technician-delete-btn" data-id="${tech.id}">${deleteLabel}</button>`);
     }
 
+    const rowClass = isEditing ? ' class="technician-table-row-editing"' : '';
+
     return `
-      <tr${isEditing ? ' class="table-info"' : ''}>
+      <tr${rowClass}>
         <td><a href="technician.html?id=${tech.id}" class="text-decoration-none">${tech.name}</a></td>
         <td>${phoneDisplay}</td>
         <td>${tech.role || ""}</td>
