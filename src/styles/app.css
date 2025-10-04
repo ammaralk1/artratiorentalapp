@@ -956,9 +956,17 @@
 
   .customer-table .table-actions-head,
   .customer-table .table-actions-cell {
-    width: 11rem;
-    min-width: 11rem;
+    width: 12rem;
+    min-width: 12rem;
     text-align: center;
+  }
+
+  .customer-table .table-actions-cell .table-action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
   }
 
   .customer-table .table-notes-head,
@@ -1045,6 +1053,10 @@
       max-width: 100%;
       width: 100%;
       flex: 1 1 100%;
+    }
+
+    .customer-table .table-actions-cell .table-action-buttons {
+      flex-wrap: wrap;
     }
 
     .customer-action-btn {
