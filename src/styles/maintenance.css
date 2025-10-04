@@ -137,6 +137,44 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   word-break: break-word;
 }
 
+.maintenance-empty-row {
+  text-align: center;
+  padding: 32px 24px;
+  background: rgba(248, 250, 255, 0.7);
+  border-radius: 18px;
+  color: #475569;
+}
+
+.maintenance-empty-row h5 {
+  margin: 12px 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1f2d52;
+}
+
+.maintenance-empty-row p {
+  margin: 0;
+  color: rgba(71, 85, 105, 0.85);
+}
+
+.maintenance-empty-icon {
+  font-size: 1.8rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-empty-row {
+  background: rgba(26, 36, 58, 0.82);
+  color: rgba(203, 213, 225, 0.92);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-empty-row h5 {
+  color: rgba(226, 232, 240, 0.96);
+}
+
+:is(html.dark-mode, body.dark-mode) .maintenance-empty-row p {
+  color: rgba(148, 163, 184, 0.85);
+}
+
 .maintenance-table .table-actions-cell .table-action-buttons {
   justify-content: center;
   gap: 0.6rem;

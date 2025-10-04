@@ -453,8 +453,17 @@ function renderTable(tickets) {
   if (!tbody) return;
 
   if (!tickets || tickets.length === 0) {
-    const emptyMessage = t('maintenance.table.emptyFiltered', 'لا توجد تذاكر صيانة بعد. عند إنشاء تذكرة جديدة ستظهر هنا.');
-    tbody.innerHTML = `<tr><td colspan="6" class="maintenance-empty-row">${emptyMessage}</td></tr>`;
+    const emptyTitle = t('maintenance.empty.title', 'لا توجد تذاكر صيانة');
+    const emptySubtitle = t('maintenance.empty.subtitle', 'عند إنشاء تذكرة جديدة ستظهر في هذه القائمة.');
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="maintenance-empty-row">
+          <div class="maintenance-empty-icon">✅</div>
+          <h5>${emptyTitle}</h5>
+          <p>${emptySubtitle}</p>
+        </td>
+      </tr>
+    `;
     if (emptyState) emptyState.classList.add('active');
     return;
   }
