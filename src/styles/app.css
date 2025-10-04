@@ -2159,6 +2159,14 @@
     pointer-events: auto;
   }
 
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat {
+    color: rgba(226, 232, 240, 0.95) !important;
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat strong {
+    color: rgba(191, 219, 254, 0.98) !important;
+  }
+
   .modal-dialog {
     @apply relative mx-auto my-auto w-full max-w-3xl;
   }
