@@ -453,8 +453,8 @@ function renderTable(tickets) {
   if (!tbody) return;
 
   if (!tickets || tickets.length === 0) {
-    const emptyMessage = t('maintenance.table.emptyFiltered', 'لا توجد تذاكر ضمن هذا الفلتر.');
-    tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center">${emptyMessage}</td></tr>`;
+    const emptyMessage = t('maintenance.table.emptyFiltered', 'لا توجد تذاكر صيانة بعد. عند إنشاء تذكرة جديدة ستظهر هنا.');
+    tbody.innerHTML = `<tr><td colspan="6" class="maintenance-empty-row">${emptyMessage}</td></tr>`;
     if (emptyState) emptyState.classList.add('active');
     return;
   }

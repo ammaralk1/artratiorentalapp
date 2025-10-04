@@ -59,9 +59,9 @@
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-stat {
-  background: linear-gradient(135deg, rgba(37, 55, 88, 0.72), rgba(30, 48, 82, 0.68));
-  color: rgba(226, 232, 240, 0.86);
-  border: 1px solid rgba(59, 130, 246, 0.24);
+  background: linear-gradient(135deg, rgba(30, 42, 68, 0.85), rgba(20, 31, 54, 0.82));
+  color: rgba(226, 232, 240, 0.94);
+  border: 1px solid rgba(59, 130, 246, 0.32);
 }
 
 .maintenance-filters {
@@ -85,6 +85,30 @@
 .maintenance-table td {
   vertical-align: middle;
   text-align: center;
+}
+
+.maintenance-table thead th:nth-child(3),
+.maintenance-table tbody td:nth-child(3) {
+  width: 12%;
+  min-width: 8rem;
+}
+
+.maintenance-table thead th:nth-child(4),
+.maintenance-table tbody td:nth-child(4) {
+  width: 14%;
+  min-width: 9rem;
+}
+
+.maintenance-table thead th:nth-child(5),
+.maintenance-table tbody td:nth-child(5) {
+  width: 12%;
+  min-width: 8rem;
+}
+
+.maintenance-table thead th:nth-child(6),
+.maintenance-table tbody td:nth-child(6) {
+  width: 22%;
+  min-width: 12rem;
 }
 
 .maintenance-table td:first-child,
@@ -111,6 +135,19 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   white-space: normal;
   line-height: 1.5;
   word-break: break-word;
+}
+
+.maintenance-table .table-actions-cell .table-action-buttons {
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 768px) {
+  .maintenance-table .table-actions-cell .table-action-buttons {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }
 
 .maintenance-status-badge,
@@ -198,25 +235,7 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
   margin-top: 12px;
 }
 
-.maintenance-empty-state {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 28px;
-  border: 1px dashed rgba(76, 110, 245, 0.22);
-  border-radius: 16px;
-  text-align: center;
-  margin-top: 18px;
-}
-
-.maintenance-empty-state.active {
-  display: flex;
-}
-
-.maintenance-empty-icon {
-  font-size: 2rem;
-}
+/*.maintenance-empty-state styles removed with inline empty row*/
 
 :is(html.dark-mode, body.dark-mode) .maintenance-form-hint,
 :is(html.dark-mode, body.dark-mode) .maintenance-list-hint {
