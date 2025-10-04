@@ -1247,17 +1247,63 @@
   }
 
   .management-form-header {
-    @apply flex flex-wrap items-start justify-start gap-4;
+    @apply flex items-start gap-4 flex-nowrap;
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(76, 110, 245, 0.18);
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.08), rgba(76, 110, 245, 0.02));
   }
 
   .management-form-icon {
-    @apply text-4xl w-14 h-14 flex items-center justify-center rounded-2xl bg-primary text-primary;
-    background-color: hsl(var(--p) / 0.12);
+    @apply text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-primary text-primary;
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.22), rgba(59, 130, 246, 0.1));
+  }
+
+  .management-form-header-text {
+    @apply flex flex-col gap-2;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: start;
+    align-items: flex-start;
+  }
+
+  .management-form-header-text > * {
+    width: 100%;
+    text-align: inherit;
+  }
+
+  [dir='rtl'] .management-form-header {
+    flex-direction: row-reverse;
+  }
+
+  [dir='rtl'] .management-form-header-text {
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  [dir='ltr'] .management-form-header {
+    flex-direction: row;
+  }
+
+  [dir='ltr'] .management-form-header-text {
+    text-align: left;
+    align-items: flex-start;
   }
 
   .management-form-hint {
     @apply text-sm;
-    color: hsl(var(--bc) / 0.6);
+    color: hsl(var(--bc) / 0.58);
+  }
+
+  :where(html.dark, body.dark) .management-form-header {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(15, 23, 42, 0.65));
+  }
+
+  :where(html.dark, body.dark) .management-form-icon {
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.4), rgba(37, 99, 235, 0.18));
+    color: rgba(226, 232, 240, 0.96);
   }
 
   .management-form {
