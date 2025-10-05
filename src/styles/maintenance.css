@@ -27,6 +27,16 @@
   gap: 14px;
 }
 
+.maintenance-list-box .maintenance-list-header h4 {
+  font-size: 1.45rem;
+  letter-spacing: 0.01em;
+}
+
+.maintenance-list-box .maintenance-list-header p {
+  font-size: 0.95rem;
+  color: var(--clr-muted);
+}
+
 .maintenance-form-hint,
 .maintenance-list-hint {
   margin: 0;
@@ -87,16 +97,17 @@
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-bottom: 20px;
 }
 
 .maintenance-stat {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.35rem 0.9rem;
+  padding: 0.3rem 0.8rem;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   letter-spacing: 0.01em;
   background: rgba(76, 110, 245, 0.12);
   border: 1px solid rgba(76, 110, 245, 0.18);
