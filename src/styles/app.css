@@ -1,4 +1,5 @@
 @import './maintenance.css';
+@import './reservations.css';
 @import './tabs.css';
 
 @tailwind base;
