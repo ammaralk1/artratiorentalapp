@@ -2079,24 +2079,24 @@
     @apply space-y-8;
   }
 
-  .tab {
+  .tab-content-wrapper > .tab {
     @apply hidden;
   }
 
-  .tab.active {
+  .tab-content-wrapper > .tab.active {
     @apply block;
   }
 
-  .sub-tab-buttons {
+  .sub-tab-buttons:not(.tabs) {
     @apply flex flex-wrap gap-2 rounded-full bg-base-100 border border-base-200 p-1 shadow-sm;
     background-color: hsl(var(--b1) / 0.92);
   }
 
-  .sub-tab-button {
+  .sub-tab-button:not(.tab) {
     @apply btn btn-xs sm:btn-sm md:btn-md btn-ghost rounded-full px-4;
   }
 
-  .sub-tab-button.active {
+  .sub-tab-button.active:not(.tab) {
     @apply btn-active btn-primary text-primary-content shadow;
   }
 

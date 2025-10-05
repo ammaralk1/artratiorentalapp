@@ -247,8 +247,8 @@ export function setupTabs() {
 function setupSubTabs() {
   console.log("🚀 [tabs.js] setupSubTabs()");
 
-  const subTabButtons = document.querySelectorAll(".sub-tab-button");
-  const subTabContents = document.querySelectorAll(".sub-tab");
+  const subTabButtons = document.querySelectorAll('#reservations-tab .sub-tab-button');
+  const subTabContents = document.querySelectorAll('#reservations-tab .sub-tab');
 
   console.log("📌 subTabButtons:", subTabButtons);
   console.log("📌 subTabContents:", subTabContents);
@@ -256,17 +256,31 @@ function setupSubTabs() {
   const activateSubTab = (subTarget, { skipStore = false } = {}) => {
     if (!subTarget) return;
 
-    const subTabButton = document.querySelector(`.sub-tab-button[data-sub-tab="${subTarget}"]`);
+    const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${subTarget}"]`);
     const subTabContent = document.getElementById(subTarget);
     if (!subTabButton || !subTabContent) return;
 
-    subTabButtons.forEach((b) => b.classList.remove("active"));
-    subTabButton.classList.add("active");
+    subTabButtons.forEach((buttonEl) => {
+      buttonEl.classList.remove('active', 'tab-active');
+      buttonEl.setAttribute('aria-selected', 'false');
+      buttonEl.setAttribute('tabindex', '-1');
+    });
+    subTabButton.classList.add('active', 'tab-active');
+    subTabButton.setAttribute('aria-selected', 'true');
+    subTabButton.setAttribute('tabindex', '0');
 
     subTabContents.forEach((subContent) => {
-      subContent.classList.remove("active");
+      const isActive = subContent.id === subTarget;
+      subContent.classList.toggle('active', isActive);
+      subContent.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      if (!isActive) {
+        subContent.setAttribute('hidden', '');
+        subContent.style.display = 'none';
+      } else {
+        subContent.removeAttribute('hidden');
+        subContent.style.display = 'block';
+      }
     });
-    subTabContent.classList.add("active");
 
     currentSubTab = subTarget;
 
@@ -301,8 +315,17 @@ function setupSubTabs() {
       activateSubTab(target, options);
     } else {
       // Clear active state
-      subTabButtons.forEach((b) => b.classList.remove('active'));
-      subTabContents.forEach((subContent) => subContent.classList.remove('active'));
+      subTabButtons.forEach((buttonEl) => {
+        buttonEl.classList.remove('active', 'tab-active');
+        buttonEl.setAttribute('aria-selected', 'false');
+        buttonEl.setAttribute('tabindex', '-1');
+      });
+      subTabContents.forEach((subContent) => {
+        subContent.classList.remove('active');
+        subContent.setAttribute('aria-hidden', 'true');
+        subContent.setAttribute('hidden', '');
+        subContent.style.display = 'none';
+      });
       currentSubTab = null;
       clearStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
     }
@@ -320,7 +343,7 @@ function setupSubTabs() {
     activateSubTab(pendingSubTabPreference, { skipStore: true });
     pendingSubTabPreference = null;
   } else {
-    const defaultSubTab = document.querySelector('.sub-tab-button.active');
+    const defaultSubTab = document.querySelector('#reservations-tab .sub-tab-button.active');
     const fallbackSubTab = subTabButtons.length ? subTabButtons[0].getAttribute('data-sub-tab') : null;
     const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {

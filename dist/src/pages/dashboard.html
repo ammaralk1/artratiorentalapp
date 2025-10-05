@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-B1TtbR0w.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard-CAjN60lm.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth-CXJ9BVF7.js">
   <link rel="modulepreload" crossorigin href="../../assets/common-DiVDZi68.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService-D_k_Qiiq.js">
   <link rel="modulepreload" crossorigin href="../../assets/controller-CuVK2rR_.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers-C_bDRz6Y.js">
   <link rel="modulepreload" crossorigin href="../../assets/events-CH5R5ku-.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-RFcbijog.css">
+  <link rel="stylesheet" crossorigin href="../../assets/app-hKvXhY2A.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -812,15 +812,55 @@
         </div>
 
         <!-- ✅ التبويبات الفرعية -->
-        <div class="sub-tab-buttons mb-3">
-          <button class="sub-tab-button" data-sub-tab="create-tab" data-i18n data-i18n-key="reservations.tabs.create">➕ إنشاء حجز</button>
-          <button class="sub-tab-button" data-sub-tab="my-reservations-tab" data-i18n data-i18n-key="reservations.tabs.mine">📋 حجوزاتي</button>
-          <button class="sub-tab-button" data-sub-tab="reports-tab" data-i18n data-i18n-key="reservations.tabs.reports">📊 تقارير</button>
-          <button class="sub-tab-button" data-sub-tab="calendar-tab" data-i18n data-i18n-key="reservations.tabs.calendar">📅 التقويم</button>
+        <div class="sub-tab-buttons tabs tabs-boxed mb-6" role="tablist">
+          <button
+            type="button"
+            class="sub-tab-button tab tab-active active"
+            id="sub-tab-trigger-create-tab"
+            data-sub-tab="create-tab"
+            role="tab"
+            aria-selected="true"
+            aria-controls="create-tab"
+            data-i18n
+            data-i18n-key="reservations.tabs.create"
+          >➕ إنشاء حجز</button>
+          <button
+            type="button"
+            class="sub-tab-button tab"
+            id="sub-tab-trigger-my-reservations-tab"
+            data-sub-tab="my-reservations-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="my-reservations-tab"
+            data-i18n
+            data-i18n-key="reservations.tabs.mine"
+          >📋 حجوزاتي</button>
+          <button
+            type="button"
+            class="sub-tab-button tab"
+            id="sub-tab-trigger-reports-tab"
+            data-sub-tab="reports-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="reports-tab"
+            data-i18n
+            data-i18n-key="reservations.tabs.reports"
+          >📊 تقارير</button>
+          <button
+            type="button"
+            class="sub-tab-button tab"
+            id="sub-tab-trigger-calendar-tab"
+            data-sub-tab="calendar-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="calendar-tab"
+            data-i18n
+            data-i18n-key="reservations.tabs.calendar"
+          >📅 التقويم</button>
         </div>
 
         <!-- ✅ تبويب فرعي: إنشاء حجز -->
-        <div class="sub-tab" id="create-tab">
+        <div class="sub-tab tab-content active" id="create-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-create-tab">
           <div class="box">
             <h4 data-i18n data-i18n-key="reservations.create.title">➕ إنشاء حجز جديد</h4>
             <form id="reservation-form">
@@ -938,7 +978,7 @@
         </div>
 
         <!-- ✅ تبويب فرعي: حجوزاتي -->
-        <div class="sub-tab" id="my-reservations-tab">
+        <div class="sub-tab tab-content" id="my-reservations-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-my-reservations-tab">
           <h4 data-i18n data-i18n-key="reservations.list.title">📋 حجوزاتي</h4>
           <div class="mb-3">
             <input type="text" id="search-reservation" class="form-control" placeholder="🔍 ابحث باسم العميل أو الكود..." data-i18n data-i18n-placeholder-key="reservations.list.search.placeholder">
@@ -965,7 +1005,7 @@
         </div>
 
         <!-- ✅ تبويب فرعي: التقارير -->
-        <div class="sub-tab" id="reports-tab">
+        <div class="sub-tab tab-content" id="reports-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-reports-tab">
           <div class="reports-wrapper">
             <div class="box reports-header-card">
               <div class="reports-header-text">
@@ -1147,7 +1187,7 @@
         </div>
 
         <!-- ✅ تبويب فرعي: التقويم -->
-        <div class="sub-tab" id="calendar-tab">
+        <div class="sub-tab tab-content" id="calendar-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-calendar-tab">
           <h4 data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
           <div id="calendar-panel" class="calendar-panel mt-3">
             <div id="calendar-status" class="calendar-status" role="status"></div>
