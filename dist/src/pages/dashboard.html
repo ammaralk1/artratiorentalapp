@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-CN3HzDRV.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard-BGUdEVbB.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth-CXJ9BVF7.js">
   <link rel="modulepreload" crossorigin href="../../assets/common-DiVDZi68.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService-D_k_Qiiq.js">
   <link rel="modulepreload" crossorigin href="../../assets/controller-CuVK2rR_.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers-C_bDRz6Y.js">
   <link rel="modulepreload" crossorigin href="../../assets/events-CH5R5ku-.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-BPNX7uLh.css">
+  <link rel="stylesheet" crossorigin href="../../assets/app-DbheYXQB.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -866,33 +866,39 @@
           <div class="box">
             <h4 data-i18n data-i18n-key="reservations.create.title">➕ إنشاء حجز جديد</h4>
             <form id="reservation-form">
-              <div class="row mb-3">
-                <div class="col-md-6">
+              <div class="reservation-row mb-3">
+                <div class="reservation-field reservation-field--quarter">
                   <label for="res-start" data-i18n data-i18n-key="reservations.create.labels.startDate">📅 تاريخ البداية</label>
-                  <input type="text" id="res-start" class="form-control">
-
-                  <label for="res-start-time" data-i18n data-i18n-key="reservations.create.labels.startTime">⏰ وقت البداية</label>
-                  <input type="text" id="res-start-time" class="form-control">
+                  <input type="text" id="res-start" class="form-control form-control-sm">
                 </div>
 
-                <div class="col-md-6">
+                <div class="reservation-field reservation-field--quarter">
                   <label for="res-end" data-i18n data-i18n-key="reservations.create.labels.endDate">📅 تاريخ النهاية</label>
-                  <input type="text" id="res-end" class="form-control">
-
-                  <label for="res-end-time" data-i18n data-i18n-key="reservations.create.labels.endTime">⏰ وقت النهاية</label>
-                  <input type="text" id="res-end-time" class="form-control">
+                  <input type="text" id="res-end" class="form-control form-control-sm">
                 </div>
               </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6 position-relative">
+              <div class="reservation-row mb-3">
+                <div class="reservation-field">
+                  <label for="res-start-time" data-i18n data-i18n-key="reservations.create.labels.startTime">⏰ وقت البداية</label>
+                  <input type="text" id="res-start-time" class="form-control form-control-sm">
+                </div>
+
+                <div class="reservation-field">
+                  <label for="res-end-time" data-i18n data-i18n-key="reservations.create.labels.endTime">⏰ وقت النهاية</label>
+                  <input type="text" id="res-end-time" class="form-control form-control-sm">
+                </div>
+              </div>
+
+            <div class="reservation-row mb-3">
+              <div class="reservation-field position-relative">
                 <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
+                <input class="form-control form-control-sm" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
                 <div id="customer-suggestions" class="suggestions-list"></div>
               </div>
-              <div class="col-md-6 position-relative">
+              <div class="reservation-field position-relative">
                 <label for="res-project-search" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <input class="form-control" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+                <input class="form-control form-control-sm" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
                 <div id="project-suggestions" class="suggestions-list"></div>
                 <select id="res-project" class="form-select d-none" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
                   <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
