@@ -60,8 +60,8 @@ let tabsInitialised = false;
 let pendingSubTabPreference = null;
 let unsubscribePreferences = null;
 let activateSubTabRef = null;
+let activateTabRef = null;
 let restorePendingTimeout = null;
-let restoreRetryOptions = { attempts: 0, delay: 30 };
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
@@ -148,6 +148,8 @@ export function setupTabs() {
       }
     }
   };
+
+  activateTabRef = activateTab;
 
   tabButtons.forEach((btn) => {
     if (!btn) return;
@@ -407,148 +409,91 @@ function resolveCachedPreferences() {
   return {};
 }
 
-function restoreActiveTabsView() {
-  if (!tabsInitialised) {
-    return;
+function restoreActiveTabsView({ attemptsLeft = 0 } = {}) {
+  if (!tabsInitialised || typeof activateTabRef !== 'function') {
+    return false;
   }
 
   const cachedPrefs = resolveCachedPreferences();
   const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
-  const tabContents = Array.from(document.querySelectorAll('.tab-content-wrapper > .tab'));
 
-  if (!tabButtons.length || !tabContents.length) {
-    if (restoreRetryOptions.attempts > 0) {
-      scheduleRestoreActiveTabs({
-        attempts: restoreRetryOptions.attempts,
-        delay: restoreRetryOptions.delay
-      });
-    }
-    return;
+  if (!tabButtons.length) {
+    return false;
   }
 
-  const activeContent = tabContents.find((tab) => tab.classList.contains('active'));
-  const activeButton = tabButtons.find((btn) => btn.classList.contains('active'));
+  const fallbackTab = tabButtons[0]?.dataset.tab || null;
 
-  let target = activeContent?.id
-    ?? activeButton?.dataset.tab
-    ?? (cachedPrefs.dashboardTab && document.getElementById(cachedPrefs.dashboardTab) ? cachedPrefs.dashboardTab : null)
-    ?? (() => {
-      const stored = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
-      return stored && document.getElementById(stored) ? stored : null;
-    })()
-    ?? tabButtons[0]?.dataset.tab;
+  const candidateTabs = [
+    currentMainTab,
+    (() => document.querySelector('[data-tab].active')?.getAttribute('data-tab') || null)(),
+    cachedPrefs.dashboardTab,
+    readStoredTab(DASHBOARD_TAB_STORAGE_KEY),
+    fallbackTab
+  ].filter(Boolean);
 
-  if (!target) {
-    if (restoreRetryOptions.attempts > 0) {
-      scheduleRestoreActiveTabs({
-        attempts: restoreRetryOptions.attempts,
-        delay: restoreRetryOptions.delay
-      });
-    }
-    return;
+  const targetTab = candidateTabs.find((tabId) => document.getElementById(tabId));
+
+  if (!targetTab) {
+    return false;
   }
 
-  tabButtons.forEach((btn) => {
-    const isActive = btn.dataset.tab === target;
-    btn.classList.toggle('active', isActive);
-    if (btn.classList.contains('tab')) {
-      btn.classList.toggle('tab-active', isActive);
-    }
-  });
-
-  tabContents.forEach((content) => {
-    const isActive = content.id === target;
-    content.style.display = isActive ? 'block' : 'none';
-    content.classList.toggle('active', isActive);
-  });
-
-  currentMainTab = target;
-
-  if (target === 'reservations-tab') {
+  if (targetTab === 'reservations-tab') {
     const subButtons = Array.from(document.querySelectorAll('#reservations-tab .sub-tab-button'));
-    const fallbackSubTarget = subButtons[0]?.getAttribute('data-sub-tab') || null;
-
     if (!subButtons.length) {
-      if (restoreRetryOptions.attempts > 0) {
-        scheduleRestoreActiveTabs({
-          attempts: restoreRetryOptions.attempts,
-          delay: restoreRetryOptions.delay
-        });
-      }
-      return;
+      return false;
     }
 
-    const candidateSubTargets = [
+    const fallbackSub = subButtons[0]?.getAttribute('data-sub-tab') || null;
+
+    const candidateSubTabs = [
       currentSubTab,
-      (() => {
-        const activeSubContent = document.querySelector('#reservations-tab .sub-tab.active');
-        return activeSubContent?.id || null;
-      })(),
-      (() => {
-        const activeSubButton = document.querySelector('#reservations-tab .sub-tab-button.active');
-        return activeSubButton?.getAttribute('data-sub-tab') || null;
-      })(),
-      cachedPrefs.dashboardSubTab && document.getElementById(cachedPrefs.dashboardSubTab) ? cachedPrefs.dashboardSubTab : null,
-      (() => {
-        const stored = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
-        return stored && document.getElementById(stored) ? stored : null;
-      })(),
-      fallbackSubTarget
+      (() => document.querySelector('#reservations-tab .sub-tab-button.active')?.getAttribute('data-sub-tab') || null)(),
+      (() => document.querySelector('#reservations-tab .sub-tab.active')?.id || null)(),
+      cachedPrefs.dashboardSubTab,
+      readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY),
+      fallbackSub
     ].filter(Boolean);
 
-    const targetSubTab = candidateSubTargets.find((subId) => document.getElementById(subId)) || fallbackSubTarget;
-
+    const targetSubTab = candidateSubTabs.find((subId) => document.getElementById(subId));
     if (targetSubTab) {
-      if (typeof activateSubTabRef === 'function') {
-        activateStoredSubTab(targetSubTab);
-      } else if (fallbackSubTarget) {
-        pendingSubTabPreference = targetSubTab;
-        if (restoreRetryOptions.attempts > 0) {
-          scheduleRestoreActiveTabs({
-            attempts: restoreRetryOptions.attempts,
-            delay: restoreRetryOptions.delay
-          });
-        }
-        return;
-      } else if (restoreRetryOptions.attempts > 0) {
-        scheduleRestoreActiveTabs({
-          attempts: restoreRetryOptions.attempts,
-          delay: restoreRetryOptions.delay
-        });
-        return;
-      }
-    } else if (restoreRetryOptions.attempts > 0) {
-      scheduleRestoreActiveTabs({
-        attempts: restoreRetryOptions.attempts,
-        delay: restoreRetryOptions.delay
-      });
-      return;
+      pendingSubTabPreference = targetSubTab;
+    } else if (attemptsLeft > 0) {
+      return false;
     }
   }
 
-  restoreRetryOptions = { attempts: 0, delay: restoreRetryOptions.delay };
+  activateTabRef(targetTab, { skipStore: true });
+  return true;
 }
 
-function scheduleRestoreActiveTabs({ attempts = 3, delay = 30 } = {}) {
+function scheduleRestoreActiveTabs() {
   if (!tabsInitialised) {
     return;
   }
 
-  restoreRetryOptions = { attempts, delay };
+  let attempts = 0;
+  const maxAttempts = 5;
 
   if (restorePendingTimeout) {
     clearTimeout(restorePendingTimeout);
+    restorePendingTimeout = null;
   }
 
-  restorePendingTimeout = setTimeout(() => {
-    if (restoreRetryOptions.attempts > 0) {
-      restoreRetryOptions = {
-        attempts: restoreRetryOptions.attempts - 1,
-        delay: restoreRetryOptions.delay
-      };
+  const attemptRestore = () => {
+    const success = restoreActiveTabsView({ attemptsLeft: maxAttempts - attempts });
+    if (success) {
+      restorePendingTimeout = null;
+      return;
     }
-    restoreActiveTabsView();
-  }, delay);
+    if (attempts >= maxAttempts) {
+      restorePendingTimeout = null;
+      return;
+    }
+    attempts += 1;
+    restorePendingTimeout = setTimeout(attemptRestore, 50 * (attempts + 1));
+  };
+
+  attemptRestore();
 }
 
 document.addEventListener('language:translationsReady', scheduleRestoreActiveTabs);
