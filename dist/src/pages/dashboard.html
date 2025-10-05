@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-b2R4_AzA.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard-CwDHMJgh.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth-CXJ9BVF7.js">
   <link rel="modulepreload" crossorigin href="../../assets/common-DiVDZi68.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService-D_k_Qiiq.js">
   <link rel="modulepreload" crossorigin href="../../assets/controller-CuVK2rR_.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers-C_bDRz6Y.js">
   <link rel="modulepreload" crossorigin href="../../assets/events-CH5R5ku-.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-CvD1gYjL.css">
+  <link rel="stylesheet" crossorigin href="../../assets/app-DSFP7oWf.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -906,15 +906,22 @@
               </div>
             </div>
 
-            <div class="row g-3 mb-3 reservation-notes-row">
-              <div class="col-12 col-xl-6 col-xxl-5 reservation-notes-column">
-                <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
-                <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
+            <div class="row mb-3">
+              <div class="col-12">
+                <div class="reservation-pane reservation-notes-pane">
+                  <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
+                  <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
+                </div>
               </div>
-              <div class="col-12 col-xl-6 col-xxl-5 reservation-technicians-column">
-                <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
-                <div id="selected-technicians-list" class="selected-technicians-list"></div>
-                <button type="button" class="btn btn-outline btn-primary mt-2" id="open-technician-picker" data-i18n data-i18n-key="technicians.picker.openButton">➕ اختيار الطاقم</button>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-12">
+                <div class="reservation-pane reservation-technicians-pane">
+                  <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
+                  <div id="selected-technicians-list" class="selected-technicians-list"></div>
+                  <button type="button" class="btn btn-outline btn-primary mt-2" id="open-technician-picker" data-i18n data-i18n-key="technicians.picker.openButton">➕ اختيار الطاقم</button>
+                </div>
               </div>
             </div>
 
