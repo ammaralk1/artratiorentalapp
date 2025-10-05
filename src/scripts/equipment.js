@@ -473,28 +473,28 @@ function renderEquipmentItem({ item, index }) {
 
   return `
     <article class="equipment-card" data-equipment-index="${index}" role="listitem">
-      <div class="equipment-card__top">
+      <div class="equipment-card__header">
         <div class="equipment-card__status-block">
           <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
           ${renderStatus(item.status)}
         </div>
-        <div class="equipment-card__media-group">
-          ${metricsHtml}
-          <div class="equipment-card__media" aria-hidden="true">
-            ${
-              imageUrl
-                ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
-                : `<div class="equipment-card__placeholder">📦</div>`
-            }
-          </div>
+        ${metricsHtml}
+        <div class="equipment-card__media" aria-hidden="true">
+          ${
+            imageUrl
+              ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+              : `<div class="equipment-card__placeholder">📦</div>`
+          }
         </div>
       </div>
-      <div class="equipment-card__description">
-        <span class="equipment-card__label">${labels.description}</span>
-        <h3 class="equipment-card__title">${title}</h3>
+      <div class="equipment-card__body">
+        <div class="equipment-card__description">
+          <span class="equipment-card__label">${labels.description}</span>
+          <h3 class="equipment-card__title">${title}</h3>
+        </div>
+        ${categoriesHtml}
+        ${aliasHtml}
       </div>
-      ${categoriesHtml}
-      ${aliasHtml}
       <div class="equipment-card__actions">
         ${actionButtons.join("\n")}
       </div>
