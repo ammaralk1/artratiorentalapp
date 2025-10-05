@@ -646,7 +646,7 @@
         </div>
 
         <!-- ✅ البحث والفلترة -->
-        <div class="mb-3 d-flex flex-wrap gap-2 align-items-center equipment-filters">
+        <div class="equipment-filters management-search-bar mb-4">
           <!-- 🔍 البحث -->
           <input type="text" id="search-equipment" class="form-control" placeholder="🔍 ابحث عن معدة..." data-i18n data-i18n-placeholder-key="equipment.filters.search">
 
@@ -670,32 +670,12 @@
         </div>
 
         <!-- ✅ قائمة المعدات -->
-        <div class="equipment-table-section">
-          <div class="equipment-table-header">
+        <div class="box equipment-list-box">
+          <div class="equipment-list-header">
             <h5 data-i18n data-i18n-key="equipment.list.title">📋 كل المعدات</h5>
             <span class="equipment-list-count" id="equipment-list-count">—</span>
           </div>
-          <div class="customer-table-wrapper equipment-table-wrapper table-responsive">
-            <table class="customer-table equipment-table align-middle">
-              <thead>
-                <tr>
-                  <th data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</th>
-                  <th data-i18n data-i18n-key="equipment.form.labels.status">⚙️ الحالة</th>
-                  <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody id="equipment-list">
-                <tr>
-                  <td colspan="8" data-i18n data-i18n-key="equipment.table.loading">جاري التحميل...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <div id="equipment-list" class="equipment-grid" role="list"></div>
         </div>
       </div> <!-- نهاية تبويب المعدات -->
 

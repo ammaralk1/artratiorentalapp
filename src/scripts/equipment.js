@@ -8,7 +8,6 @@ const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
 let isEquipmentLoading = false;
 let equipmentErrorMessage = "";
-const EQUIPMENT_TABLE_COLUMN_COUNT = 8;
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -362,28 +361,28 @@ function renderStatus(status) {
   const statusConfig = {
     available: {
       label: t("equipment.form.options.available", "✅ متاح"),
-      className: "equipment-status-badge equipment-status-badge--available",
+      className: "badge badge-success equipment-status-badge",
     },
     reserved: {
       label: t("equipment.form.options.booked", "📌 محجوز"),
-      className: "equipment-status-badge equipment-status-badge--reserved",
+      className: "badge badge-warning equipment-status-badge",
     },
     maintenance: {
       label: t("equipment.form.options.maintenance", "🛠️ صيانة"),
-      className: "equipment-status-badge equipment-status-badge--maintenance",
+      className: "badge badge-info equipment-status-badge",
     },
     retired: {
       label: t("equipment.form.options.retired", "📦 خارج الخدمة"),
-      className: "equipment-status-badge equipment-status-badge--retired",
+      className: "badge badge-neutral equipment-status-badge",
     },
   };
 
   const { label, className } = statusConfig[value] || {
     label: status || "-",
-    className: "equipment-status-badge equipment-status-badge--default",
+    className: "badge badge-outline equipment-status-badge",
   };
 
-  return `<span class="badge ${className}"><span class="equipment-status-badge__text">${label}</span></span>`;
+  return `<span class="${className}">${label}</span>`;
 }
 
 function renderEquipmentItem({ item, index }) {
@@ -393,57 +392,70 @@ function renderEquipmentItem({ item, index }) {
   const imageAlt = t("equipment.item.imageAlt", "صورة");
   const currencyLabel = t("equipment.item.currency", "ريال");
   const canDelete = userCanManageDestructiveActions();
+  const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
+  const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
+  const qtyDisplay = qtyNumber.toLocaleString("en-US");
+  const priceDisplay = priceNumber.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  const barcodeDisplay = item.barcode || "—";
+  const title = item.desc || item.name || "—";
+  const subtitleParts = [];
+  if (item.name && item.name !== item.desc) subtitleParts.push(item.name);
+  if (barcodeDisplay && barcodeDisplay !== "—") subtitleParts.push(`#${barcodeDisplay}`);
+  const subtitle = subtitleParts.join(" • ");
+
+  const tags = [item.category, item.sub]
+    .filter(Boolean)
+    .map((value) => `<span class="equipment-tag badge badge-outline">${value}</span>`)
+    .join("");
 
   const actionButtons = [
-    `<button type="button" class="equipment-action-btn equipment-action-btn--edit" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
+    `<button type="button" class="btn btn-outline btn-primary btn-sm" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
 
   if (canDelete) {
     actionButtons.push(
-      `<button type="button" class="equipment-action-btn equipment-action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
+      `<button type="button" class="btn btn-outline btn-error btn-sm" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
     );
   }
 
-  const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
-  const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
-  const qtyDisplay = qtyNumber.toLocaleString("en-US");
-  const priceDisplay = priceNumber.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  const barcodeDisplay = item.barcode || "—";
-  const title = item.desc || item.name || "—";
-  const subtitleValue = item.name && item.name !== item.desc ? item.name : barcodeDisplay;
-  const subtitle = subtitleValue && subtitleValue !== "—"
-    ? `<div class="equipment-name-cell__subtitle text-muted">${subtitleValue}</div>`
-    : "";
-
   return `
-    <tr class="equipment-row" data-equipment-index="${index}">
-      <td class="equipment-name-cell">
-        <div class="equipment-name-cell__wrapper">
-          <div class="equipment-name-cell__image" aria-hidden="true">
-            ${
-              imageUrl
-                ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
-                : `<div class="equipment-name-cell__placeholder">📦</div>`
-            }
-          </div>
-          <div class="equipment-name-cell__content">
-            <div class="equipment-name-cell__title">${title}</div>
-            ${subtitle}
-          </div>
+    <article class="equipment-card" data-equipment-index="${index}" role="listitem">
+      <div class="equipment-card__media" aria-hidden="true">
+        ${
+          imageUrl
+            ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+            : `<div class="equipment-card__placeholder">📦</div>`
+        }
+      </div>
+      <div class="equipment-card__body">
+        <div class="equipment-card__header">
+          <h3 class="equipment-card__title">${title}</h3>
+          ${renderStatus(item.status)}
         </div>
-      </td>
-      <td>${item.category || "—"}</td>
-      <td>${item.sub || "—"}</td>
-      <td>${barcodeDisplay}</td>
-      <td>${qtyDisplay}</td>
-      <td>${priceDisplay} ${currencyLabel}</td>
-      <td>${renderStatus(item.status)}</td>
-      <td class="table-actions-cell">
-        <div class="table-action-buttons">
-          ${actionButtons.join('')}
+        ${subtitle ? `<p class="equipment-card__subtitle">${subtitle}</p>` : ""}
+        ${tags ? `<div class="equipment-card__tags">${tags}</div>` : ""}
+        <dl class="equipment-card__metrics">
+          <div class="equipment-card__metric" title="${t("equipment.form.labels.quantity", "🔢 الكمية")}">
+            <dt>📦</dt>
+            <dd>${qtyDisplay}</dd>
+          </div>
+          <div class="equipment-card__metric" title="${t("equipment.form.labels.price", "💵 السعر")}">
+            <dt>💵</dt>
+            <dd>${priceDisplay} ${currencyLabel}</dd>
+          </div>
+          <div class="equipment-card__metric" title="${t("equipment.form.labels.barcode", "🏷️ الباركود")}">
+            <dt>🏷️</dt>
+            <dd>${barcodeDisplay}</dd>
+          </div>
+        </dl>
+        <div class="equipment-card__actions">
+          ${actionButtons.join("\n")}
         </div>
-      </td>
-    </tr>
+      </div>
+    </article>
   `;
 }
 
@@ -556,9 +568,20 @@ function isReservationActiveNow(reservation, now) {
   return start <= now && now < end;
 }
 
+function renderEmptyState(message, { tone = "", icon = "📦" } = {}) {
+  const classes = ["equipment-empty-state"];
+  if (tone) classes.push(`equipment-empty-state--${tone}`);
+  return `
+    <div class="${classes.join(" ")}">
+      <div class="equipment-empty-state__icon" aria-hidden="true">${icon}</div>
+      <p class="equipment-empty-state__text">${message}</p>
+    </div>
+  `;
+}
+
 export function renderEquipment() {
-  const tableBody = document.getElementById("equipment-list");
-  if (!tableBody) return;
+  const container = document.getElementById("equipment-list");
+  if (!container) return;
 
   const synced = syncEquipmentStatuses();
   const data = Array.isArray(synced) ? synced : getAllEquipment();
@@ -571,19 +594,18 @@ export function renderEquipment() {
   const statusFilterRaw = document.getElementById("filter-status")?.value || "";
   const statusFilter = statusFilterRaw ? normalizeStatusValue(statusFilterRaw) : "";
 
-  const renderMessageRow = (message, className = "") => {
-    const classes = ["equipment-table-message", "text-center"];
-    if (className) classes.push(className);
-    return `<tr><td colspan="${EQUIPMENT_TABLE_COLUMN_COUNT}" class="${classes.join(' ')}">${message}</td></tr>`;
-  };
-
   if (isEquipmentLoading && !data.length) {
-    tableBody.innerHTML = renderMessageRow(t("equipment.table.loading", "جاري التحميل..."));
+    container.innerHTML = renderEmptyState(t("equipment.list.loading", "⏳ جاري تحميل المعدات..."), {
+      icon: "⏳",
+    });
     return;
   }
 
   if (equipmentErrorMessage && !data.length) {
-    tableBody.innerHTML = renderMessageRow(equipmentErrorMessage, "text-danger");
+    container.innerHTML = renderEmptyState(equipmentErrorMessage, {
+      tone: "error",
+      icon: "⚠️",
+    });
     return;
   }
 
@@ -623,11 +645,11 @@ export function renderEquipment() {
 
   const emptyMessage = search
     ? t("equipment.list.emptyFiltered", "⚠️ لا توجد معدات مطابقة.")
-    : t("equipment.table.empty", "لا يوجد معدات");
+    : t("equipment.list.empty", "لا توجد معدات مسجلة بعد.");
 
-  tableBody.innerHTML = sortedEntries.length
+  container.innerHTML = sortedEntries.length
     ? sortedEntries.map(renderEquipmentItem).join("")
-    : renderMessageRow(emptyMessage);
+    : renderEmptyState(emptyMessage);
 
   const countBadge = document.getElementById("equipment-list-count");
   if (countBadge) {

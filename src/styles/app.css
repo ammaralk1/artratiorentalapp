@@ -1014,7 +1014,7 @@
     }
   }
 
-  :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper) {
+  :is(.customer-table-wrapper, .technician-table-wrapper) {
     @apply mt-4;
     position: relative;
     border-radius: 1.75rem;
@@ -1028,7 +1028,7 @@
     backdrop-filter: blur(18px);
   }
 
-  :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper)::before {
+  :is(.customer-table-wrapper, .technician-table-wrapper)::before {
     content: '';
     position: absolute;
     inset: -16% -18% 42% -20%;
@@ -1038,7 +1038,7 @@
     z-index: 0;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) {
+  :is(.customer-table, .technician-table) {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.97rem;
@@ -1048,7 +1048,7 @@
     z-index: 1;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) thead th {
+  :is(.customer-table, .technician-table) thead th {
     background: linear-gradient(135deg, rgba(226, 232, 255, 0.92), rgba(210, 220, 255, 0.86));
     color: #1e293b;
     font-weight: 700;
@@ -1059,7 +1059,7 @@
     box-shadow: inset 0 -1px 0 rgba(148, 163, 255, 0.38);
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) tbody td {
+  :is(.customer-table, .technician-table) tbody td {
     padding: 1rem 1.35rem;
     border: 1px solid rgba(209, 217, 255, 0.4);
     background: #ffffff;
@@ -1067,31 +1067,31 @@
     font-weight: 500;
   }
 
-  [dir='rtl'] :is(.customer-table, .technician-table, .equipment-table) thead th:first-child,
-  [dir='rtl'] :is(.customer-table, .technician-table, .equipment-table) tbody tr:last-child td:first-child {
+  [dir='rtl'] :is(.customer-table, .technician-table) thead th:first-child,
+  [dir='rtl'] :is(.customer-table, .technician-table) tbody tr:last-child td:first-child {
     border-top-right-radius: 1.25rem;
     border-bottom-right-radius: 1.25rem;
   }
 
-  [dir='rtl'] :is(.customer-table, .technician-table, .equipment-table) thead th:last-child,
-  [dir='rtl'] :is(.customer-table, .technician-table, .equipment-table) tbody tr:last-child td:last-child {
+  [dir='rtl'] :is(.customer-table, .technician-table) thead th:last-child,
+  [dir='rtl'] :is(.customer-table, .technician-table) tbody tr:last-child td:last-child {
     border-top-left-radius: 1.25rem;
     border-bottom-left-radius: 1.25rem;
   }
 
-  [dir='ltr'] :is(.customer-table, .technician-table, .equipment-table) thead th:first-child,
-  [dir='ltr'] :is(.customer-table, .technician-table, .equipment-table) tbody tr:last-child td:first-child {
+  [dir='ltr'] :is(.customer-table, .technician-table) thead th:first-child,
+  [dir='ltr'] :is(.customer-table, .technician-table) tbody tr:last-child td:first-child {
     border-top-left-radius: 1.25rem;
     border-bottom-left-radius: 1.25rem;
   }
 
-  [dir='ltr'] :is(.customer-table, .technician-table, .equipment-table) thead th:last-child,
-  [dir='ltr'] :is(.customer-table, .technician-table, .equipment-table) tbody tr:last-child td:last-child {
+  [dir='ltr'] :is(.customer-table, .technician-table) thead th:last-child,
+  [dir='ltr'] :is(.customer-table, .technician-table) tbody tr:last-child td:last-child {
     border-top-right-radius: 1.25rem;
     border-bottom-right-radius: 1.25rem;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) tbody td.table-notes-cell {
+  :is(.customer-table, .technician-table) tbody td.table-notes-cell {
     line-height: 1.6;
     white-space: normal;
   }
@@ -1102,8 +1102,7 @@
     box-shadow: inset 0 0 0 1px rgba(148, 178, 255, 0.35);
   }
 
-  .technician-status-badge,
-  .equipment-status-badge {
+  .technician-status-badge {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -1118,15 +1117,13 @@
     border: 1px solid transparent;
   }
 
-  .technician-status-badge__text,
-  .equipment-status-badge__text {
+  .technician-status-badge__text {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
   }
 
-  .technician-status-badge--available,
-  .equipment-status-badge--available {
+  .technician-status-badge--available {
     background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(16, 185, 129, 0.85));
     border-color: rgba(16, 185, 129, 0.35);
     color: #f8fafc;
@@ -1138,31 +1135,7 @@
     color: #f8fafc;
   }
 
-  .equipment-status-badge--reserved {
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.92), rgba(245, 158, 11, 0.9));
-    border-color: rgba(245, 158, 11, 0.45);
-    color: #1f2937;
-  }
-
-  .equipment-status-badge--maintenance {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.92), rgba(234, 88, 12, 0.9));
-    border-color: rgba(249, 115, 22, 0.45);
-    color: #f8fafc;
-  }
-
-  .equipment-status-badge--retired {
-    background: linear-gradient(135deg, rgba(148, 163, 184, 0.75), rgba(107, 114, 128, 0.68));
-    border-color: rgba(148, 163, 184, 0.45);
-    color: #e2e8f0;
-  }
-
-  .equipment-status-badge--default {
-    background: linear-gradient(135deg, rgba(226, 232, 255, 0.9), rgba(203, 213, 225, 0.85));
-    border-color: rgba(148, 163, 255, 0.35);
-    color: #1f2937;
-  }
-
-  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn) {
+  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn) {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -1177,8 +1150,8 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
 
-  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn):hover,
-  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn):focus-visible {
+  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn):hover,
+  :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn):focus-visible {
     background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(96, 165, 250, 0.9));
     color: #f8fafc;
     border-color: rgba(140, 172, 255, 0.55);
@@ -1186,40 +1159,40 @@
     transform: translateY(-1px);
   }
 
-  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete) {
+  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete) {
     background: linear-gradient(135deg, rgba(254, 226, 226, 0.92), rgba(254, 215, 215, 0.88));
     border-color: rgba(254, 178, 178, 0.6);
     color: #dc2626;
   }
 
-  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete):hover,
-  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete):focus-visible {
+  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete):hover,
+  :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete):focus-visible {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.96), rgba(220, 38, 38, 0.92));
     border-color: rgba(248, 113, 113, 0.7);
     color: #ffffff;
     box-shadow: 0 18px 36px rgba(239, 68, 68, 0.28);
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) a {
+  :is(.customer-table, .technician-table) a {
     color: #2563eb;
     font-weight: 600;
     text-decoration: none;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) a:hover,
-  :is(.customer-table, .technician-table, .equipment-table) a:focus-visible {
+  :is(.customer-table, .technician-table) a:hover,
+  :is(.customer-table, .technician-table) a:focus-visible {
     color: #1d4ed8;
     text-decoration: underline;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) .table-actions-head,
-  :is(.customer-table, .technician-table, .equipment-table) .table-actions-cell {
+  :is(.customer-table, .technician-table) .table-actions-head,
+  :is(.customer-table, .technician-table) .table-actions-cell {
     width: 12rem;
     min-width: 12rem;
     text-align: center;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) .table-actions-cell .table-action-buttons {
+  :is(.customer-table, .technician-table) .table-actions-cell .table-action-buttons {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1227,8 +1200,8 @@
     flex-wrap: nowrap;
   }
 
-  :is(.customer-table, .technician-table, .equipment-table) .table-notes-head,
-  :is(.customer-table, .technician-table, .equipment-table) tbody .table-notes-cell {
+  :is(.customer-table, .technician-table) .table-notes-head,
+  :is(.customer-table, .technician-table) tbody .table-notes-cell {
     width: 38%;
     min-width: 18rem;
   }
@@ -1293,173 +1266,18 @@
     min-width: 6rem;
   }
 
-  .equipment-table-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 16px;
-  }
-
-  .equipment-table-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .equipment-table-header h5 {
-    margin: 0;
-    font-weight: 700;
-    color: #1d2b56;
-  }
-
-  :is(html.dark-mode, body.dark-mode) .equipment-table-header h5 {
-    color: rgba(226, 232, 240, 0.95);
-  }
-
-  .equipment-name-cell {
-    min-width: 18rem;
-  }
-
-  .equipment-name-cell__wrapper {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    min-width: 0;
-  }
-
-  .equipment-name-cell__image {
-    width: 52px;
-    height: 52px;
-    border-radius: 16px;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, rgba(226, 232, 255, 0.85), rgba(203, 213, 225, 0.6));
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  .equipment-name-cell__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: inherit;
-  }
-
-  .equipment-name-cell__placeholder {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    place-items: center;
-    font-size: 1.35rem;
-    color: rgba(76, 110, 245, 0.78);
-    background: linear-gradient(135deg, rgba(226, 232, 255, 0.86), rgba(203, 213, 225, 0.66));
-  }
-
-  .equipment-name-cell__content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .equipment-name-cell__title {
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1.3;
-    word-break: break-word;
-  }
-
-  .equipment-name-cell__subtitle {
-    font-size: 0.85rem;
-    color: rgba(71, 85, 105, 0.85);
-    word-break: break-word;
-  }
-
-  :is(html.dark-mode, body.dark-mode) .equipment-name-cell__title {
-    color: rgba(226, 232, 240, 0.95);
-  }
-
-  :is(html.dark-mode, body.dark-mode) .equipment-name-cell__subtitle {
-    color: rgba(148, 163, 184, 0.78);
-  }
-
-  .equipment-table-message {
-    padding: 2.25rem 1rem;
-    font-weight: 600;
-    color: var(--clr-muted);
-  }
-
-  :is(html.dark-mode, body.dark-mode) .equipment-table-message {
-    color: rgba(148, 163, 184, 0.82);
-  }
-
-  .equipment-table td:first-child,
-  .equipment-table th:first-child {
-    text-align: start;
-    width: 28%;
-    min-width: 18rem;
-  }
-
-  [dir='rtl'] .equipment-table td:first-child,
-  [dir='rtl'] .equipment-table th:first-child {
-    text-align: right;
-  }
-
-  [dir='ltr'] .equipment-table td:first-child,
-  [dir='ltr'] .equipment-table th:first-child {
-    text-align: left;
-  }
-
-  .equipment-table thead th:nth-child(2),
-  .equipment-table tbody td:nth-child(2) {
-    width: 14%;
-    min-width: 9rem;
-  }
-
-  .equipment-table thead th:nth-child(3),
-  .equipment-table tbody td:nth-child(3) {
-    width: 14%;
-    min-width: 9rem;
-  }
-
-  .equipment-table thead th:nth-child(4),
-  .equipment-table tbody td:nth-child(4) {
-    width: 14%;
-    min-width: 9rem;
-  }
-
-  .equipment-table thead th:nth-child(5),
-  .equipment-table tbody td:nth-child(5) {
-    width: 8%;
-    min-width: 6.5rem;
-  }
-
-  .equipment-table thead th:nth-child(6),
-  .equipment-table tbody td:nth-child(6) {
-    width: 12%;
-    min-width: 8rem;
-  }
-
-  .equipment-table thead th:nth-child(7),
-  .equipment-table tbody td:nth-child(7) {
-    width: 10%;
-    min-width: 7.5rem;
-  }
-
-  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table),
-  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table) {
+  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table),
+  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table) {
     color: #1f2937;
   }
 
-  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table) thead th,
-  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table) thead th {
+  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table) thead th,
+  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table) thead th {
     color: #1e293b;
   }
 
-  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table) tbody td,
-  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table, .equipment-table) tbody td {
+  :where(html):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table) tbody td,
+  :where(body):not(.dark):not(.dark-mode) :is(.customer-table, .technician-table) tbody td {
     color: #1f2937;
   }
 
@@ -1468,25 +1286,25 @@
     color: #1f2937;
   }
 
-  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper)::before {
+  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper)::before {
     inset: -14% -18% 48% -20%;
     background: radial-gradient(circle at top left, rgba(82, 124, 240, 0.4), rgba(32, 58, 142, 0.16) 48%, transparent 76%);
     opacity: 0.7;
     z-index: 0;
   }
 
-  :where(html.dark, body.dark) :is(.customer-table, .technician-table, .equipment-table) {
+  :where(html.dark, body.dark) :is(.customer-table, .technician-table) {
     background: rgba(5, 10, 24, 0.98);
     color: #ffffff;
   }
 
-  :where(html.dark, body.dark) :is(.customer-table, .technician-table, .equipment-table) thead th {
+  :where(html.dark, body.dark) :is(.customer-table, .technician-table) thead th {
     background: rgba(8, 16, 34, 0.98);
     border-color: rgba(62, 90, 170, 0.32);
     color: #ffffff;
   }
 
-  :where(html.dark, body.dark) :is(.customer-table, .technician-table, .equipment-table) tbody td {
+  :where(html.dark, body.dark) :is(.customer-table, .technician-table) tbody td {
     background: rgba(5, 10, 24, 0.98);
     border-color: rgba(60, 88, 168, 0.24);
     color: #ffffff;
@@ -1498,27 +1316,290 @@
     box-shadow: inset 0 0 0 1px rgba(134, 176, 248, 0.3);
   }
 
-  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn) {
+  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn) {
     background: linear-gradient(135deg, rgba(54, 100, 226, 0.4), rgba(92, 136, 248, 0.44));
     border-color: rgba(132, 166, 244, 0.28);
     color: rgba(236, 244, 255, 0.96);
   }
 
-  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn):hover,
-  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn, .equipment-action-btn):focus-visible {
+  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn):hover,
+  :where(html.dark, body.dark) :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn):focus-visible {
     background: linear-gradient(135deg, rgba(60, 118, 246, 0.92), rgba(108, 154, 255, 0.9));
     border-color: rgba(156, 188, 255, 0.46);
   }
 
-  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete) {
+  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete) {
     background: linear-gradient(135deg, rgba(240, 86, 120, 0.38), rgba(220, 64, 132, 0.38));
     border-color: rgba(244, 132, 160, 0.34);
   }
 
-  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete):hover,
-  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete, .equipment-action-btn--delete):focus-visible {
+  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete):hover,
+  :where(html.dark, body.dark) :is(.customer-action-btn--delete, .technician-action-btn--delete, .maintenance-action-btn--delete):focus-visible {
     background: linear-gradient(135deg, rgba(238, 74, 104, 0.94), rgba(226, 66, 142, 0.92));
     border-color: rgba(250, 150, 176, 0.5);
+  }
+
+  .equipment-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .equipment-filters .form-select {
+    max-width: 220px;
+    width: 220px;
+    flex: 0 0 220px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 255, 0.28);
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+    color: #1f2937;
+    padding-inline: 18px;
+    padding-block: 10px;
+  }
+
+  :where(html.dark, body.dark) .equipment-filters .form-select {
+    background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
+    border-color: rgba(59, 130, 246, 0.32);
+    color: rgba(226, 232, 240, 0.95);
+  }
+
+  .equipment-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+    padding: 20px 22px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 255, 0.22);
+    background: linear-gradient(150deg, rgba(248, 250, 255, 0.95) 0%, rgba(236, 242, 255, 0.9) 60%, rgba(219, 233, 255, 0.88) 100%);
+    box-shadow: 0 26px 48px rgba(15, 23, 42, 0.16);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .equipment-card:hover,
+  .equipment-card:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 32px 60px rgba(59, 91, 220, 0.18);
+  }
+
+  .equipment-card__media {
+    width: 90px;
+    height: 90px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(226, 232, 255, 0.82), rgba(203, 213, 225, 0.65));
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 12px 28px rgba(15, 23, 42, 0.12);
+  }
+
+  .equipment-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .equipment-card__placeholder {
+    font-size: 1.8rem;
+    color: rgba(37, 99, 235, 0.75);
+  }
+
+  .equipment-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .equipment-card__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  .equipment-card__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #1e293b;
+    line-height: 1.35;
+  }
+
+  .equipment-card__subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(71, 85, 105, 0.85);
+  }
+
+  .equipment-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .equipment-tag {
+    border-radius: 999px;
+    padding-inline: 0.9rem;
+    padding-block: 0.35rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border-color: rgba(148, 163, 255, 0.45);
+    color: #1d4ed8;
+    background: rgba(226, 232, 255, 0.65);
+  }
+
+  .equipment-card__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+  }
+
+  .equipment-card__metric {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 14px;
+    background: rgba(248, 250, 255, 0.8);
+    border: 1px solid rgba(208, 220, 255, 0.4);
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: #1f2937;
+  }
+
+  .equipment-card__metric dt {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+
+  .equipment-card__metric dd {
+    margin: 0;
+  }
+
+  .equipment-card__actions {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .equipment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.01em;
+    min-width: 7rem;
+  }
+
+  .equipment-empty-state {
+    grid-column: 1 / -1;
+    padding: 36px 28px;
+    border-radius: 22px;
+    border: 1px dashed rgba(148, 163, 255, 0.45);
+    background: rgba(248, 250, 255, 0.9);
+    color: #1f2d52;
+    text-align: center;
+    display: grid;
+    place-items: center;
+    gap: 12px;
+  }
+
+  .equipment-empty-state__icon {
+    font-size: 2rem;
+  }
+
+  .equipment-empty-state__text {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: rgba(71, 85, 105, 0.9);
+  }
+
+  .equipment-empty-state--error {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(254, 226, 226, 0.85);
+    color: #b91c1c;
+  }
+
+  @media (max-width: 768px) {
+    .equipment-card {
+      grid-template-columns: 1fr;
+      padding: 18px;
+    }
+
+    .equipment-card__media {
+      width: 72px;
+      height: 72px;
+    }
+
+    .equipment-card__actions {
+      justify-content: flex-start;
+    }
+  }
+
+  :where(html.dark, body.dark) .equipment-card {
+    border-color: rgba(56, 87, 200, 0.42);
+    background: linear-gradient(165deg, rgba(12, 19, 42, 0.96) 0%, rgba(7, 13, 30, 0.94) 62%, rgba(10, 18, 40, 0.9) 100%);
+    box-shadow: 0 30px 60px rgba(2, 6, 23, 0.75);
+  }
+
+  :where(html.dark, body.dark) .equipment-card__media {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.88), rgba(59, 130, 246, 0.18));
+    box-shadow: inset 0 1px 0 rgba(59, 130, 246, 0.2), 0 12px 28px rgba(0, 0, 0, 0.4);
+  }
+
+  :where(html.dark, body.dark) .equipment-card__title {
+    color: rgba(226, 232, 240, 0.96);
+  }
+
+  :where(html.dark, body.dark) .equipment-card__subtitle {
+    color: rgba(148, 163, 184, 0.78);
+  }
+
+  :where(html.dark, body.dark) .equipment-tag {
+    color: rgba(191, 219, 254, 0.92);
+    border-color: rgba(59, 130, 246, 0.38);
+    background: rgba(37, 55, 88, 0.48);
+  }
+
+  :where(html.dark, body.dark) .equipment-card__metric {
+    background: rgba(17, 24, 39, 0.78);
+    border-color: rgba(59, 130, 246, 0.32);
+    color: rgba(226, 232, 240, 0.92);
+  }
+
+  :where(html.dark, body.dark) .equipment-empty-state {
+    border-color: rgba(59, 130, 246, 0.32);
+    background: rgba(15, 23, 42, 0.82);
+    color: rgba(226, 232, 240, 0.9);
+  }
+
+  :where(html.dark, body.dark) .equipment-empty-state__text {
+    color: rgba(148, 163, 184, 0.85);
+  }
+
+  :where(html.dark, body.dark) .equipment-empty-state--error {
+    border-color: rgba(252, 165, 165, 0.45);
+    background: rgba(127, 29, 29, 0.68);
+    color: rgba(254, 226, 226, 0.92);
+  }
+
+  @media (max-width: 768px) {
+    .equipment-filters .form-select,
+    .equipment-filters .form-control {
+      max-width: 100%;
+      width: 100%;
+      flex: 1 1 100%;
+    }
   }
 
   @media (max-width: 640px) {
@@ -1536,7 +1617,7 @@
       flex: 1 1 100%;
     }
 
-    :is(.customer-table, .technician-table, .equipment-table) .table-actions-cell .table-action-buttons {
+    :is(.customer-table, .technician-table) .table-actions-cell .table-action-buttons {
       flex-wrap: wrap;
     }
 
@@ -1546,29 +1627,22 @@
     }
   }
 
-  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper) {
+  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper) {
     border-color: rgba(42, 70, 158, 0.62);
     background: linear-gradient(165deg, rgba(3, 6, 16, 0.98) 8%, rgba(5, 10, 24, 0.99) 58%, rgba(8, 16, 36, 0.99) 100%);
     box-shadow: 0 44px 94px rgba(0, 3, 14, 0.82);
     backdrop-filter: blur(18px);
   }
 
-  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper)::before {
+  :where(html.dark, body.dark) :is(.customer-table-wrapper, .technician-table-wrapper)::before {
     background: radial-gradient(circle at top left, rgba(82, 120, 222, 0.28), rgba(32, 60, 138, 0.22) 46%, rgba(6, 12, 30, 0.92) 78%);
     mix-blend-mode: normal;
     opacity: 0.68;
   }
 
   @media (max-width: 768px) {
-    :is(.customer-table-wrapper, .technician-table-wrapper, .equipment-table-wrapper) {
+    :is(.customer-table-wrapper, .technician-table-wrapper) {
       overflow-x: auto;
-    }
-
-    #search-equipment.form-control,
-    :is(#filter-status, #filter-category, #filter-sub).form-select {
-      max-width: 100%;
-      width: 100%;
-      flex: 1 1 100%;
     }
   }
 
@@ -1751,12 +1825,6 @@
     flex: 0 0 240px;
   }
 
-  #search-equipment.form-control {
-    max-width: 240px;
-    width: 240px;
-    flex: 0 0 240px;
-  }
-
 #technician-role-filter.form-select {
   max-width: 200px;
   width: 200px;
@@ -1767,15 +1835,6 @@
 }
 
 #maintenance-status-filter.form-select {
-  max-width: 200px;
-  width: 200px;
-  flex: 0 0 200px;
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
-  border: 1px solid rgba(148, 163, 255, 0.28);
-  color: #1f2937;
-}
-
-:is(#filter-status, #filter-category, #filter-sub).form-select {
   max-width: 200px;
   width: 200px;
   flex: 0 0 200px;
@@ -1797,18 +1856,6 @@
 }
 
 :is(html.dark-mode, body.dark-mode) #maintenance-status-filter.form-select {
-  background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
-  color: rgba(226, 232, 240, 0.95);
-  border-color: rgba(59, 130, 246, 0.35);
-}
-
-  :is(html.dark-mode, body.dark-mode) #search-equipment.form-control {
-    background: rgba(15, 23, 42, 0.88);
-    color: rgba(226, 232, 240, 0.95);
-    border-color: rgba(59, 130, 246, 0.32);
-  }
-
-:is(html.dark-mode, body.dark-mode) :is(#filter-status, #filter-category, #filter-sub).form-select {
   background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
   color: rgba(226, 232, 240, 0.95);
   border-color: rgba(59, 130, 246, 0.35);
