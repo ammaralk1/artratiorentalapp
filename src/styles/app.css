@@ -2105,23 +2105,23 @@
   }
 
   .management-form-header {
-    @apply inline-flex items-start gap-4 flex-nowrap;
+    @apply inline-flex items-start flex-nowrap;
     align-self: flex-start;
     max-width: 100%;
     padding: 14px 18px;
     border-radius: 18px;
     border: 1px solid rgba(76, 110, 245, 0.18);
     background: linear-gradient(135deg, rgba(76, 110, 245, 0.08), rgba(76, 110, 245, 0.02));
-  }
-
-  .equipment-form-box .management-form-header {
+    gap: 18px;
     margin-bottom: 36px;
   }
 
+  .equipment-list-header h5,
   .equipment-list-count {
     color: var(--clr-muted);
   }
 
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-header h5,
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-count {
     color: #c0c0c0;
   }
@@ -2171,7 +2171,7 @@
   }
 
   @media (max-width: 768px) {
-    .equipment-form-box .management-form-header {
+    .management-form-header {
       margin-bottom: 30px;
     }
   }
