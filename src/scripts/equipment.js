@@ -420,16 +420,20 @@ function renderEquipmentItem({ item, index }) {
   ].filter(Boolean);
 
   const metricsHtml = metricItems.length
-    ? `<div class="equipment-card__metrics">${metricItems
-        .map(
-          ({ label, value }) => `
-            <div class="equipment-card__metric">
-              <span class="equipment-card__detail-label">${label}</span>
-              <span class="equipment-card__detail-value">${value}</span>
-            </div>
-          `
-        )
-        .join("")}</div>`
+    ? `<div class="equipment-card__metrics">
+        <div class="equipment-card__metric equipment-card__metric--group">
+          ${metricItems
+            .map(
+              ({ label, value }) => `
+                <span class="equipment-card__metric-entry">
+                  <span class="equipment-card__detail-label">${label}</span>
+                  <span class="equipment-card__detail-value">${value}</span>
+                </span>
+              `
+            )
+            .join("")}
+        </div>
+      </div>`
     : "";
 
   const categoryItems = [

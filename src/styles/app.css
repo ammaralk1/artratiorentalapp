@@ -1408,10 +1408,8 @@
 
   .equipment-card__metrics {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 8px;
+    align-items: stretch;
+    justify-content: flex-start;
   }
 
   .equipment-card__media {
@@ -1449,7 +1447,7 @@
   }
 
   [dir='rtl'] .equipment-card__metrics {
-    align-items: flex-end;
+    justify-content: flex-end;
     margin-inline-end: 12px;
     margin-inline-start: 0;
   }
@@ -1500,6 +1498,33 @@
     border: 1px solid rgba(208, 220, 255, 0.4);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     min-width: 0;
+  }
+
+  .equipment-card__metric--group {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 12px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .equipment-card__metric-entry {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .equipment-card__metric-entry:not(:first-of-type)::before {
+    content: "•";
+    color: rgba(100, 116, 139, 0.55);
+    font-size: 0.75rem;
+    margin-inline-start: 6px;
+  }
+
+  [dir='rtl'] .equipment-card__metric-entry:not(:first-of-type)::before {
+    margin-inline-end: 6px;
+    margin-inline-start: 0;
   }
 
   .equipment-card__alias {
