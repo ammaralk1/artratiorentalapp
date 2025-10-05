@@ -1,12 +1,19 @@
 /* ===================== الصيانة ===================== */
 
 .maintenance-form-box .management-form-header,
+#maintenance-tab .maintenance-list-header,
+#maintenance-tab .maintenance-filters {
+  max-width: 520px;
+  margin-inline: auto;
+  width: 100%;
+}
+
 .maintenance-list-box .maintenance-list-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
 }
 
 .maintenance-form-hint,
@@ -68,6 +75,7 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .maintenance-stat {
@@ -97,6 +105,7 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
+  justify-content: center;
 }
 
 .maintenance-table {
