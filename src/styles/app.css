@@ -1502,12 +1502,25 @@
     min-width: 0;
   }
 
-  .equipment-card__metric--vertical {
+  .equipment-card__metric--stack {
     align-items: flex-start;
     width: 100%;
+    gap: 8px;
   }
 
-  [dir='rtl'] .equipment-card__metric--vertical {
+  .equipment-card__metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  [dir='rtl'] .equipment-card__metric--stack {
+    align-items: flex-end;
+  }
+
+  [dir='rtl'] .equipment-card__metric-item {
     align-items: flex-end;
   }
 
