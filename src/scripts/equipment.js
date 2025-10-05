@@ -469,12 +469,12 @@ function renderEquipmentItem({ item, index }) {
   `;
 
   const actionButtons = [
-    `<button type="button" class="btn btn-outline btn-primary btn-sm" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
+    `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--edit" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
 
   if (canDelete) {
     actionButtons.push(
-      `<button type="button" class="btn btn-outline btn-error btn-sm" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
+      `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
     );
   }
 
