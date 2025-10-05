@@ -128,8 +128,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .reservations-subtabs-container {
-  width: 100%;
-  margin: 0 auto 24px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px auto 24px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -259,8 +260,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   }
 
   .reservations-subtabs-container {
+    width: 100%;
     justify-content: stretch;
-    margin-bottom: 20px;
+    margin: 16px 0 20px;
   }
 
   .reservations-subtabs-container .tabs {
