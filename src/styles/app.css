@@ -1346,6 +1346,32 @@
     justify-content: center;
   }
 
+  .equipment-filters {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .equipment-filters #search-equipment {
+    max-width: 260px;
+    width: 100%;
+    flex: 0 0 260px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 255, 0.3);
+    padding-inline: 18px;
+    padding-block: 10px;
+    box-shadow: 0 10px 22px rgba(59, 91, 220, 0.08);
+  }
+
+  :where(html.dark, body.dark) .equipment-filters #search-equipment {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.85));
+    color: rgba(226, 232, 240, 0.95);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.45);
+  }
+
   .equipment-filters .form-select {
     max-width: 220px;
     width: 220px;
@@ -1477,11 +1503,11 @@
     position: relative;
   }
 
-  .equipment-card__info-item:not(:last-child)::after {
+  .equipment-card__info-item:not(:first-child)::before {
     content: "";
     position: absolute;
     top: 50%;
-    right: -6px;
+    left: -6px;
     transform: translateY(-50%);
     width: 1px;
     height: 22px;
@@ -1786,7 +1812,7 @@
     color: rgba(226, 232, 240, 0.96);
   }
 
-  :where(html.dark, body.dark) .equipment-card__info-item:not(:last-child)::after {
+  :where(html.dark, body.dark) .equipment-card__info-item:not(:first-child)::before {
     background: rgba(96, 165, 250, 0.45);
   }
 
@@ -1867,6 +1893,11 @@
     .equipment-filters .form-control {
       max-width: 100%;
       width: 100%;
+      flex: 1 1 100%;
+    }
+
+    .equipment-filters #search-equipment {
+      max-width: 100%;
       flex: 1 1 100%;
     }
   }
@@ -2797,3 +2828,7 @@
     }
   }
 }
+  [dir='rtl'] .equipment-card__info-item:not(:first-child)::before {
+    left: auto;
+    right: -6px;
+  }
