@@ -1542,7 +1542,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-count {
-  color: rgba(226, 232, 240, 0.85);
+  color: #c0c0c0;
 }
 
 .equipment-form-box {
