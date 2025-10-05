@@ -858,19 +858,23 @@
           <div class="box">
             <h4 data-i18n data-i18n-key="reservations.create.title">➕ إنشاء حجز جديد</h4>
             <form id="reservation-form">
-              <div class="row mb-3">
-                <div class="col-md-6">
+              <div class="row g-3 mb-3">
+                <div class="col-12 col-md-6">
                   <label for="res-start" data-i18n data-i18n-key="reservations.create.labels.startDate">📅 تاريخ البداية</label>
                   <input type="text" id="res-start" class="form-control">
+                </div>
 
+                <div class="col-12 col-md-6">
+                  <label for="res-end" data-i18n data-i18n-key="reservations.create.labels.endDate">📅 تاريخ النهاية</label>
+                  <input type="text" id="res-end" class="form-control">
+                </div>
+
+                <div class="col-12 col-md-6">
                   <label for="res-start-time" data-i18n data-i18n-key="reservations.create.labels.startTime">⏰ وقت البداية</label>
                   <input type="text" id="res-start-time" class="form-control">
                 </div>
 
-                <div class="col-md-6">
-                  <label for="res-end" data-i18n data-i18n-key="reservations.create.labels.endDate">📅 تاريخ النهاية</label>
-                  <input type="text" id="res-end" class="form-control">
-
+                <div class="col-12 col-md-6">
                   <label for="res-end-time" data-i18n data-i18n-key="reservations.create.labels.endTime">⏰ وقت النهاية</label>
                   <input type="text" id="res-end-time" class="form-control">
                 </div>
