@@ -1560,7 +1560,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   flex-wrap: wrap;
   gap: 16px;
   align-items: flex-end;
-  justify-content: flex-start;
 }
 
 .reservation-field {
@@ -1573,25 +1572,20 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   width: 100%;
 }
 
-@media (min-width: 768px) {
-  .reservation-field {
-    flex: 0 1 clamp(220px, 32vw, 300px);
-    max-width: clamp(220px, 32vw, 300px);
+@media (min-width: 1200px) {
+  .reservation-row {
+    flex-wrap: nowrap;
   }
-}
 
-@media (min-width: 1400px) {
   .reservation-field {
-    flex-basis: 280px;
-    max-width: 320px;
+    flex: 0 0 48%;
+    max-width: 48%;
   }
-}
 
-@media (min-width: 992px) {
   .reservation-field--quarter {
     flex: 0 0 25%;
     max-width: 25%;
-    min-width: 200px;
+    min-width: 240px;
   }
 }
 
