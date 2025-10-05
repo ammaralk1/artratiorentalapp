@@ -1639,6 +1639,83 @@
     justify-content: center;
   }
 
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card {
+    border-color: rgba(59, 130, 246, 0.28);
+    background: radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.18), transparent 55%),
+      radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.12), transparent 60%),
+      linear-gradient(190deg, rgba(9, 15, 35, 0.94), rgba(8, 16, 44, 0.92) 55%, rgba(6, 12, 32, 0.92));
+    box-shadow: 0 28px 60px rgba(8, 15, 38, 0.55);
+    color: rgba(226, 232, 240, 0.96);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__status-block {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__media {
+    background: linear-gradient(140deg, rgba(25, 33, 64, 0.85), rgba(46, 60, 102, 0.72));
+    box-shadow: inset 0 1px 0 rgba(59, 130, 246, 0.25), 0 20px 40px rgba(5, 10, 30, 0.52);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__label,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__detail-label {
+    color: rgba(148, 163, 184, 0.72);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__label--status {
+    color: rgba(165, 180, 203, 0.76);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__title {
+    color: rgba(248, 250, 255, 0.96);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__detail-value {
+    color: rgba(241, 245, 249, 0.95);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__info-item:not(:first-child)::before {
+    background: rgba(148, 163, 184, 0.35);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__category,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__alias {
+    background: rgba(17, 24, 48, 0.82);
+    border-color: rgba(59, 130, 246, 0.38);
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18), 0 16px 30px rgba(8, 15, 38, 0.4);
+    color: rgba(226, 232, 240, 0.92);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__category .equipment-card__detail-label,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__alias .equipment-card__detail-label {
+    color: rgba(148, 163, 184, 0.68);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__actions {
+    justify-content: center;
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__action-btn--edit {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(217, 119, 6, 0.92));
+    color: #0f172a;
+    box-shadow: 0 18px 38px rgba(245, 158, 11, 0.48);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__action-btn--delete {
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.95), rgba(239, 68, 68, 0.9));
+    color: rgba(255, 241, 241, 0.95);
+    box-shadow: 0 18px 36px rgba(239, 68, 68, 0.5);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__action-btn--edit:hover {
+    box-shadow: 0 20px 42px rgba(245, 158, 11, 0.55);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__action-btn--delete:hover {
+    box-shadow: 0 20px 42px rgba(239, 68, 68, 0.6);
+  }
+
   .equipment-card__action-btn {
     border: none;
     border-radius: 999px;
