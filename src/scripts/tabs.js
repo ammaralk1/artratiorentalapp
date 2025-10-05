@@ -61,6 +61,7 @@ let pendingSubTabPreference = null;
 let unsubscribePreferences = null;
 let activateSubTabRef = null;
 let restorePendingTimeout = null;
+let restoreRetryOptions = { attempts: 0, delay: 30 };
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
@@ -416,6 +417,12 @@ function restoreActiveTabsView() {
   const tabContents = Array.from(document.querySelectorAll('.tab-content-wrapper > .tab'));
 
   if (!tabButtons.length || !tabContents.length) {
+    if (restoreRetryOptions.attempts > 0) {
+      scheduleRestoreActiveTabs({
+        attempts: restoreRetryOptions.attempts,
+        delay: restoreRetryOptions.delay
+      });
+    }
     return;
   }
 
@@ -432,12 +439,21 @@ function restoreActiveTabsView() {
     ?? tabButtons[0]?.dataset.tab;
 
   if (!target) {
+    if (restoreRetryOptions.attempts > 0) {
+      scheduleRestoreActiveTabs({
+        attempts: restoreRetryOptions.attempts,
+        delay: restoreRetryOptions.delay
+      });
+    }
     return;
   }
 
   tabButtons.forEach((btn) => {
     const isActive = btn.dataset.tab === target;
     btn.classList.toggle('active', isActive);
+    if (btn.classList.contains('tab')) {
+      btn.classList.toggle('tab-active', isActive);
+    }
   });
 
   tabContents.forEach((content) => {
@@ -451,6 +467,16 @@ function restoreActiveTabsView() {
   if (target === 'reservations-tab') {
     const subButtons = Array.from(document.querySelectorAll('#reservations-tab .sub-tab-button'));
     const fallbackSubTarget = subButtons[0]?.getAttribute('data-sub-tab') || null;
+
+    if (!subButtons.length) {
+      if (restoreRetryOptions.attempts > 0) {
+        scheduleRestoreActiveTabs({
+          attempts: restoreRetryOptions.attempts,
+          delay: restoreRetryOptions.delay
+        });
+      }
+      return;
+    }
 
     const candidateSubTargets = [
       currentSubTab,
@@ -473,23 +499,56 @@ function restoreActiveTabsView() {
     const targetSubTab = candidateSubTargets.find((subId) => document.getElementById(subId)) || fallbackSubTarget;
 
     if (targetSubTab) {
-      activateStoredSubTab(targetSubTab);
+      if (typeof activateSubTabRef === 'function') {
+        activateStoredSubTab(targetSubTab);
+      } else if (fallbackSubTarget) {
+        pendingSubTabPreference = targetSubTab;
+        if (restoreRetryOptions.attempts > 0) {
+          scheduleRestoreActiveTabs({
+            attempts: restoreRetryOptions.attempts,
+            delay: restoreRetryOptions.delay
+          });
+        }
+        return;
+      } else if (restoreRetryOptions.attempts > 0) {
+        scheduleRestoreActiveTabs({
+          attempts: restoreRetryOptions.attempts,
+          delay: restoreRetryOptions.delay
+        });
+        return;
+      }
+    } else if (restoreRetryOptions.attempts > 0) {
+      scheduleRestoreActiveTabs({
+        attempts: restoreRetryOptions.attempts,
+        delay: restoreRetryOptions.delay
+      });
+      return;
     }
   }
+
+  restoreRetryOptions = { attempts: 0, delay: restoreRetryOptions.delay };
 }
 
-function scheduleRestoreActiveTabs() {
+function scheduleRestoreActiveTabs({ attempts = 3, delay = 30 } = {}) {
   if (!tabsInitialised) {
     return;
   }
+
+  restoreRetryOptions = { attempts, delay };
 
   if (restorePendingTimeout) {
     clearTimeout(restorePendingTimeout);
   }
 
   restorePendingTimeout = setTimeout(() => {
+    if (restoreRetryOptions.attempts > 0) {
+      restoreRetryOptions = {
+        attempts: restoreRetryOptions.attempts - 1,
+        delay: restoreRetryOptions.delay
+      };
+    }
     restoreActiveTabsView();
-  }, 0);
+  }, delay);
 }
 
 document.addEventListener('language:translationsReady', scheduleRestoreActiveTabs);
