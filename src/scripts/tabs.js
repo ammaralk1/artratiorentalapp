@@ -253,24 +253,53 @@ function setupSubTabs() {
   console.log("📌 subTabButtons:", subTabButtons);
   console.log("📌 subTabContents:", subTabContents);
 
-  const activateSubTab = (subTarget, { skipStore = false } = {}) => {
-    if (!subTarget) return;
+  if (!subTabButtons.length) {
+    console.warn('⚠️ [tabs.js] No reservation sub-tab buttons found');
+    return;
+  }
 
-    const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${subTarget}"]`);
-    const subTabContent = document.getElementById(subTarget);
-    if (!subTabButton || !subTabContent) return;
+  const availableSubTargets = Array.from(subTabButtons)
+    .map((btn) => btn?.getAttribute('data-sub-tab'))
+    .filter((value) => typeof value === 'string' && value.trim().length > 0);
+
+  const activateSubTab = (subTarget, { skipStore = false } = {}) => {
+    if (!availableSubTargets.length) return;
+
+    let targetToActivate = subTarget;
+    if (!targetToActivate || !availableSubTargets.includes(targetToActivate)) {
+      console.warn('⚠️ [tabs.js] Invalid sub-tab target, falling back to first available', {
+        requested: targetToActivate,
+        available: availableSubTargets
+      });
+      targetToActivate = availableSubTargets[0];
+    }
+
+    const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${targetToActivate}"]`);
+    const subTabContent = document.getElementById(targetToActivate);
+    if (!subTabButton || !subTabContent) {
+      console.warn('⚠️ [tabs.js] Unable to locate sub-tab button/content after fallback', {
+        target: targetToActivate
+      });
+      return;
+    }
 
     subTabButtons.forEach((buttonEl) => {
-      buttonEl.classList.remove('active', 'tab-active');
+      buttonEl.classList.remove('active');
+      if (buttonEl.classList.contains('tab')) {
+        buttonEl.classList.remove('tab-active');
+      }
       buttonEl.setAttribute('aria-selected', 'false');
       buttonEl.setAttribute('tabindex', '-1');
     });
-    subTabButton.classList.add('active', 'tab-active');
+    subTabButton.classList.add('active');
+    if (subTabButton.classList.contains('tab')) {
+      subTabButton.classList.add('tab-active');
+    }
     subTabButton.setAttribute('aria-selected', 'true');
     subTabButton.setAttribute('tabindex', '0');
 
     subTabContents.forEach((subContent) => {
-      const isActive = subContent.id === subTarget;
+      const isActive = subContent.id === targetToActivate;
       subContent.classList.toggle('active', isActive);
       subContent.setAttribute('aria-hidden', isActive ? 'false' : 'true');
       if (!isActive) {
@@ -282,27 +311,27 @@ function setupSubTabs() {
       }
     });
 
-    currentSubTab = subTarget;
+    currentSubTab = targetToActivate;
 
-    writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, subTarget);
+    writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, targetToActivate);
 
     if (!skipStore) {
-      updatePreferences({ dashboardSubTab: subTarget }).catch((error) => {
+      updatePreferences({ dashboardSubTab: targetToActivate }).catch((error) => {
         console.warn('⚠️ [tabs.js] Failed to store sub-tab preference', error);
       });
     }
 
-    if (subTarget === "my-reservations-tab") {
+    if (targetToActivate === "my-reservations-tab") {
       console.log("📋 Rendering reservations list");
       setTimeout(() => {
         renderReservations();
       }, 50); // ⏱ تأخير بسيط حتى يظهر العنصر فعليًا
-    } else if (subTarget === "calendar-tab") {
+    } else if (targetToActivate === "calendar-tab") {
       console.log("📅 Rendering calendar view");
       setTimeout(() => {
         renderCalendar();
       }, 100);
-    } else if (subTarget === "reports-tab") {
+    } else if (targetToActivate === "reports-tab") {
       console.log("📊 Rendering reports view");
       setTimeout(() => {
         renderReports();
@@ -316,7 +345,10 @@ function setupSubTabs() {
     } else {
       // Clear active state
       subTabButtons.forEach((buttonEl) => {
-        buttonEl.classList.remove('active', 'tab-active');
+        buttonEl.classList.remove('active');
+        if (buttonEl.classList.contains('tab')) {
+          buttonEl.classList.remove('tab-active');
+        }
         buttonEl.setAttribute('aria-selected', 'false');
         buttonEl.setAttribute('tabindex', '-1');
       });
@@ -344,7 +376,7 @@ function setupSubTabs() {
     pendingSubTabPreference = null;
   } else {
     const defaultSubTab = document.querySelector('#reservations-tab .sub-tab-button.active');
-    const fallbackSubTab = subTabButtons.length ? subTabButtons[0].getAttribute('data-sub-tab') : null;
+    const fallbackSubTab = availableSubTargets[0] || null;
     const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {
       console.log('⭐ Initial sub-tab:', initialSubTarget);
