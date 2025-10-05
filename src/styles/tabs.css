@@ -138,6 +138,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .reservations-subtabs-container .tabs {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
   border-radius: 999px;
@@ -146,12 +148,32 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  text-align: center;
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tabs {
   background: linear-gradient(135deg, rgba(19, 28, 52, 0.85), rgba(22, 36, 60, 0.92));
   border: 1px solid rgba(59, 130, 246, 0.28);
   box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
+}
+
+.reservations-subtabs-container .tab {
+  color: #1f2d52;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color 0.2s ease-in-out;
+}
+
+.reservations-subtabs-container .tab.tab-active {
+  color: #ffffff;
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab {
+  color: rgba(226, 232, 240, 0.82);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tab.tab-active {
+  color: #f8fafc;
 }
 
 .reservations-subtabs-container .sub-tab-button {
