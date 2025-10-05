@@ -1541,6 +1541,22 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: var(--clr-muted);
 }
 
+:is(html.dark-mode, body.dark-mode) .equipment-list-count {
+  color: rgba(191, 219, 254, 0.85);
+}
+
+.equipment-form-box {
+  padding: 34px 32px;
+  margin-bottom: 36px;
+}
+
+@media (max-width: 768px) {
+  .equipment-form-box {
+    padding: 28px 24px;
+    margin-bottom: 28px;
+  }
+}
+
 
 .selected-technicians-list {
   min-height: 52px;
