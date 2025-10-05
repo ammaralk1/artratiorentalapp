@@ -168,7 +168,7 @@
 .maintenance-table th:first-child,
 .maintenance-table td:nth-child(2),
 .maintenance-table th:nth-child(2) {
-  text-align: right;
+  text-align: center;
 }
 
 .maintenance-row > td {
@@ -177,13 +177,6 @@
 
 
 
-
-body[dir="ltr"] .maintenance-table td:first-child,
-body[dir="ltr"] .maintenance-table th:first-child,
-body[dir="ltr"] .maintenance-table td:nth-child(2),
-body[dir="ltr"] .maintenance-table th:nth-child(2) {
-  text-align: left;
-}
 
 .maintenance-table td:last-child,
 .maintenance-table th:last-child {
