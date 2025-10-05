@@ -413,22 +413,49 @@ function renderEquipmentItem({ item, index }) {
   const title = item.desc || item.name || "—";
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
-  const details = [
+  const metricItems = [
     barcodeDisplay ? { label: labels.barcode, value: barcodeDisplay } : null,
     { label: labels.quantity, value: qtyDisplay },
     { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
+  ].filter(Boolean);
+
+  const metricsHtml = metricItems.length
+    ? `<div class="equipment-card__metrics">${metricItems
+        .map(
+          ({ label, value }) => `
+            <div class="equipment-card__metric">
+              <span class="equipment-card__detail-label">${label}</span>
+              <span class="equipment-card__detail-value">${value}</span>
+            </div>
+          `
+        )
+        .join("")}</div>`
+    : "";
+
+  const categoryItems = [
     item.category ? { label: labels.category, value: item.category } : null,
     item.sub ? { label: labels.subcategory, value: item.sub } : null,
-    aliasValue ? { label: labels.alias, value: aliasValue } : null,
-  ]
-    .filter(Boolean)
-    .map(({ label, value }) => `
-      <div class="equipment-card__detail">
-        <span class="equipment-card__detail-label">${label}</span>
-        <span class="equipment-card__detail-value">${value}</span>
-      </div>
-    `)
-    .join("");
+  ].filter(Boolean);
+
+  const categoriesHtml = categoryItems.length
+    ? `<div class="equipment-card__categories">${categoryItems
+        .map(
+          ({ label, value }) => `
+            <div class="equipment-card__category">
+              <span class="equipment-card__detail-label">${label}</span>
+              <span class="equipment-card__detail-value">${value}</span>
+            </div>
+          `
+        )
+        .join("")}</div>`
+    : "";
+
+  const aliasHtml = aliasValue
+    ? `<div class="equipment-card__alias">
+        <span class="equipment-card__detail-label">${labels.alias}</span>
+        <span class="equipment-card__detail-value">${aliasValue}</span>
+      </div>`
+    : "";
 
   const actionButtons = [
     `<button type="button" class="btn btn-outline btn-primary btn-sm" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
@@ -442,28 +469,32 @@ function renderEquipmentItem({ item, index }) {
 
   return `
     <article class="equipment-card" data-equipment-index="${index}" role="listitem">
-      <div class="equipment-card__media-block">
-        <div class="equipment-card__media" aria-hidden="true">
-          ${
-            imageUrl
-              ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
-              : `<div class="equipment-card__placeholder">📦</div>`
-          }
-        </div>
-        <div class="equipment-card__description">
-          <span class="equipment-card__label">${labels.description}</span>
-          <h3 class="equipment-card__title">${title}</h3>
+      <div class="equipment-card__top">
+        <div class="equipment-card__media-stack">
+          <div class="equipment-card__media-header">
+            <div class="equipment-card__media" aria-hidden="true">
+              ${
+                imageUrl
+                  ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+                  : `<div class="equipment-card__placeholder">📦</div>`
+              }
+            </div>
+            <div class="equipment-card__status">
+              <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
+              ${renderStatus(item.status)}
+            </div>
+          </div>
+          ${metricsHtml}
+          <div class="equipment-card__description">
+            <span class="equipment-card__label">${labels.description}</span>
+            <h3 class="equipment-card__title">${title}</h3>
+          </div>
+          ${categoriesHtml}
+          ${aliasHtml}
         </div>
       </div>
-      <div class="equipment-card__body">
-        <div class="equipment-card__status">
-          <span class="equipment-card__label">${labels.status}</span>
-          ${renderStatus(item.status)}
-        </div>
-        ${details ? `<div class="equipment-card__details">${details}</div>` : ""}
-        <div class="equipment-card__actions">
-          ${actionButtons.join("\n")}
-        </div>
+      <div class="equipment-card__actions">
+        ${actionButtons.join("\n")}
       </div>
     </article>
   `;
