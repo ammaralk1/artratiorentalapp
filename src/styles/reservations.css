@@ -1587,6 +1587,14 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   }
 }
 
+@media (min-width: 992px) {
+  .reservation-field--quarter {
+    flex: 0 0 25%;
+    max-width: 25%;
+    min-width: 200px;
+  }
+}
+
 .selected-technicians-list {
   min-height: 52px;
   border: 1px solid rgba(76, 110, 245, 0.15);
