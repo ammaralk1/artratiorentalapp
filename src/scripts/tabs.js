@@ -144,6 +144,12 @@ export function setupTabs() {
       if (!skipRender) {
         renderReservations();
       }
+
+      if (!pendingSubTabPreference) {
+        const storedSubPreference = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
+        pendingSubTabPreference = currentSubTab || storedSubPreference || DEFAULT_RESERVATION_SUB_TAB;
+      }
+
       setupSubTabs();
       if (pendingSubTabPreference) {
         activateStoredSubTab(pendingSubTabPreference);
@@ -169,10 +175,11 @@ export function setupTabs() {
       activateTab(target);
 
       if (target === "reservations-tab") {
+        const storedSubPreference = currentSubTab || readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY) || DEFAULT_RESERVATION_SUB_TAB;
         if (typeof activateSubTabRef === 'function') {
-          activateSubTabRef(DEFAULT_RESERVATION_SUB_TAB);
+          activateSubTabRef(storedSubPreference);
         } else {
-          pendingSubTabPreference = DEFAULT_RESERVATION_SUB_TAB;
+          pendingSubTabPreference = storedSubPreference;
         }
       } else {
         updatePreferences({ dashboardSubTab: null }).catch((error) => {
