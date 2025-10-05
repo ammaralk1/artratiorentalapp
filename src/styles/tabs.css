@@ -8,7 +8,12 @@
   max-width: 100%;
 }
 
-body[dir="rtl"] .tab-buttons,
+.tab-buttons-horizontal {
+  width: 100%;
+  max-width: 100%;
+}
+
+body[dir="rtl"] .tab-buttons:not(.tab-buttons-horizontal),
 body[dir="rtl"] .sub-tab-buttons {
   flex-direction: row;
   justify-content: flex-end;
@@ -16,7 +21,7 @@ body[dir="rtl"] .sub-tab-buttons {
   margin-right: 0;
 }
 
-body[dir="ltr"] .tab-buttons,
+body[dir="ltr"] .tab-buttons:not(.tab-buttons-horizontal),
 body[dir="ltr"] .sub-tab-buttons {
   flex-direction: row;
   justify-content: flex-start;
