@@ -3,6 +3,7 @@ import { apiRequest, ApiError } from './apiClient.js';
 import { updatePreferences, clearSkipRemotePreferencesFlag } from './preferencesService.js';
 import { getCurrentTheme } from './theme.js';
 import { t } from './language.js';
+import { isPreviewMode, setPreviewUser, getPreviewUser } from './preview.js';
 
 const ERROR_MESSAGE = '❌ بيانات الدخول غير صحيحة';
 let currentUser = null;
@@ -47,6 +48,7 @@ function setCurrentUser(user) {
 
   applyRoleToDocument(currentUser?.role || '');
   emitUserUpdated();
+  return currentUser;
 }
 
 function renderLoginError(message = ERROR_MESSAGE) {
@@ -63,6 +65,20 @@ export async function login(username, password) {
 
   if (!sanitizedUsername || !sanitizedPassword) {
     renderLoginError();
+    return;
+  }
+
+  if (isPreviewMode()) {
+    const loginAt = new Date().toISOString();
+    const previewUser = {
+      id: 1,
+      username: sanitizedUsername || 'preview-admin',
+      role: 'admin',
+      loginAt,
+    };
+    setCurrentUserForPreview(previewUser);
+    clearSkipRemotePreferencesFlag();
+    window.location.href = 'home.html';
     return;
   }
 
@@ -98,6 +114,13 @@ export async function login(username, password) {
 }
 
 export async function logout() {
+  if (isPreviewMode()) {
+    setCurrentUserForPreview(null);
+    showToast('🚪 تم تسجيل الخروج');
+    window.location.href = 'login.html';
+    return;
+  }
+
   try {
     await apiRequest('/auth/', { method: 'DELETE' });
   } catch (error) {
@@ -114,6 +137,12 @@ export async function getCurrentUser({ refresh = false } = {}) {
     return currentUser;
   }
 
+  if (isPreviewMode()) {
+    const previewUser = getPreviewUser();
+    setCurrentUser(previewUser ?? null);
+    return currentUser;
+  }
+
   try {
     const response = await apiRequest('/auth/');
     setCurrentUser(response?.data ?? null);
@@ -127,6 +156,15 @@ export async function getCurrentUser({ refresh = false } = {}) {
 }
 
 export function checkAuth({ redirect = true } = {}) {
+  if (isPreviewMode()) {
+    const user = getPreviewUser();
+    setCurrentUser(user ?? null);
+    if (!user && redirect) {
+      window.location.href = 'login.html';
+    }
+    return Promise.resolve(currentUser);
+  }
+
   return getCurrentUser({ refresh: true })
     .then((user) => {
       if (!user && redirect) {
@@ -160,4 +198,9 @@ export function userCanManageDestructiveActions() {
 
 export function notifyPermissionDenied() {
   showToast(t('auth.permissions.denied', '⚠️ ليس لديك صلاحية لتنفيذ هذا الإجراء'), 'error');
+}
+
+export function setCurrentUserForPreview(user) {
+  const sanitized = setCurrentUser(user);
+  setPreviewUser(sanitized ?? null);
 }

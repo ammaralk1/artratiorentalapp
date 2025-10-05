@@ -1,3 +1,5 @@
+import { handlePreviewApiRequest } from './preview.js';
+
 const DEFAULT_API_BASE = '/backend/api';
 
 export class ApiError extends Error {
@@ -19,6 +21,17 @@ export function getApiBase() {
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
   const cleanedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${getApiBase()}${cleanedPath}`;
+
+  const previewResponse = await handlePreviewApiRequest(cleanedPath, { method, body });
+  if (previewResponse) {
+    if (!previewResponse.ok) {
+      throw new ApiError(previewResponse.message || `Preview request failed for ${cleanedPath}`, {
+        status: previewResponse.status ?? 500,
+        payload: previewResponse.payload ?? null,
+      });
+    }
+    return previewResponse.payload;
+  }
 
   const finalHeaders = {
     Accept: 'application/json',
