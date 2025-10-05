@@ -1342,7 +1342,7 @@
   .equipment-grid {
     display: grid;
     gap: 22px;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     justify-content: center;
   }
 
@@ -1375,7 +1375,7 @@
     background: linear-gradient(150deg, rgba(248, 250, 255, 0.95) 0%, rgba(236, 242, 255, 0.9) 60%, rgba(219, 233, 255, 0.88) 100%);
     box-shadow: 0 24px 44px rgba(15, 23, 42, 0.15);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    max-width: 360px;
+    max-width: 320px;
     width: 100%;
   }
 
@@ -1387,8 +1387,8 @@
 
   .equipment-card__header {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "status metrics media";
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "status media";
     align-items: flex-start;
     gap: 16px;
     width: 100%;
@@ -1402,19 +1402,6 @@
     gap: 6px;
     grid-area: status;
     justify-self: start;
-  }
-
-  .equipment-card__metrics {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    grid-area: metrics;
-    min-width: 0;
-    width: max-content;
-    justify-self: center;
-    text-align: center;
   }
 
   .equipment-card__media {
@@ -1432,7 +1419,7 @@
   .equipment-card__media-wrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     grid-area: media;
     justify-self: end;
@@ -1462,6 +1449,45 @@
     color: rgba(37, 99, 235, 0.75);
   }
 
+  .equipment-card__details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .equipment-card__info-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .equipment-card__info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px;
+    position: relative;
+  }
+
+  .equipment-card__info-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -6px;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 22px;
+    background: rgba(148, 163, 255, 0.45);
+  }
+
   .equipment-card__body {
     display: flex;
     flex-direction: column;
@@ -1472,14 +1498,14 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    align-items: stretch;
-    text-align: start;
+    align-items: center;
+    text-align: center;
     width: 100%;
-    max-width: 190px;
+    max-width: 240px;
   }
 
   [dir='rtl'] .equipment-card__description {
-    text-align: right;
+    text-align: center;
   }
 
   .equipment-card__label {
@@ -1506,50 +1532,18 @@
     line-height: 1.35;
   }
 
-  .equipment-card__metric,
   .equipment-card__category,
   .equipment-card__alias {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
-    padding: 6px 8px;
+    padding: 4px 6px;
     border-radius: 10px;
     background: rgba(248, 250, 255, 0.85);
     border: 1px solid rgba(208, 220, 255, 0.4);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     min-width: 0;
-  }
-
-  .equipment-card__metric {
-    padding: 4px 10px;
-  }
-
-  .equipment-card__metric--stack {
-    align-items: center;
-    width: 100%;
-    gap: 8px;
-  }
-
-  .equipment-card__metric-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    width: 100%;
-    align-items: center;
-    text-align: center;
-  }
-
-  [dir='rtl'] .equipment-card__metric--stack {
-    align-items: center;
-  }
-
-  [dir='rtl'] .equipment-card__metric-item {
-    align-items: center;
-  }
-
-  .equipment-card__alias {
-    width: 100%;
   }
 
   .equipment-card__categories {
@@ -1564,6 +1558,10 @@
     flex: 0 1 auto;
     max-width: none;
     padding: 4px 6px;
+  }
+
+  .equipment-card__alias {
+    width: 100%;
   }
 
   .equipment-tag {
@@ -1737,15 +1735,10 @@
     }
 
     .equipment-card__header {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       grid-template-areas:
-        "status media"
-        "metrics metrics";
-    }
-
-    .equipment-card__metrics {
-      align-items: center;
-      justify-content: flex-start;
+        "status"
+        "media";
     }
 
     .equipment-card__media {
@@ -1782,7 +1775,6 @@
     color: rgba(148, 163, 184, 0.76);
   }
 
-  :where(html.dark, body.dark) .equipment-card__metric,
   :where(html.dark, body.dark) .equipment-card__category,
   :where(html.dark, body.dark) .equipment-card__alias {
     background: rgba(24, 35, 62, 0.82);
@@ -1792,6 +1784,10 @@
 
   :where(html.dark, body.dark) .equipment-card__detail-value {
     color: rgba(226, 232, 240, 0.96);
+  }
+
+  :where(html.dark, body.dark) .equipment-card__info-item:not(:last-child)::after {
+    background: rgba(96, 165, 250, 0.45);
   }
 
   :where(html.dark, body.dark) .equipment-card__action-btn {

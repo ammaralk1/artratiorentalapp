@@ -419,20 +419,18 @@ function renderEquipmentItem({ item, index }) {
     { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
   ].filter(Boolean);
 
-  const metricsHtml = metricItems.length
-    ? `<div class="equipment-card__metrics">
-        <div class="equipment-card__metric equipment-card__metric--stack">
-          ${metricItems
-            .map(
-              ({ label, value }) => `
-                <span class="equipment-card__metric-item">
-                  <span class="equipment-card__detail-label">${label}</span>
-                  <span class="equipment-card__detail-value">${value}</span>
-                </span>
-              `
-            )
-            .join("")}
-        </div>
+  const metricsRowHtml = metricItems.length
+    ? `<div class="equipment-card__info-row">
+        ${metricItems
+          .map(
+            ({ label, value }) => `
+              <span class="equipment-card__info-item">
+                <span class="equipment-card__detail-label">${label}</span>
+                <span class="equipment-card__detail-value">${value}</span>
+              </span>
+            `
+          )
+          .join("")}
       </div>`
     : "";
 
@@ -468,6 +466,13 @@ function renderEquipmentItem({ item, index }) {
     </div>
   `;
 
+  const detailsHtml = `
+    <div class="equipment-card__details">
+      ${descriptionHtml}
+      ${metricsRowHtml}
+    </div>
+  `;
+
   const actionButtons = [
     `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--edit" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
@@ -485,7 +490,6 @@ function renderEquipmentItem({ item, index }) {
           <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
           ${renderStatus(item.status)}
         </div>
-        ${metricsHtml}
         <div class="equipment-card__media-wrapper">
           <div class="equipment-card__media" aria-hidden="true">
             ${
@@ -494,7 +498,7 @@ function renderEquipmentItem({ item, index }) {
                 : `<div class="equipment-card__placeholder">📦</div>`
             }
           </div>
-          ${descriptionHtml}
+          ${detailsHtml}
         </div>
       </div>
       <div class="equipment-card__body">
