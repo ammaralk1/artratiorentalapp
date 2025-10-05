@@ -413,7 +413,7 @@ function restoreActiveTabsView() {
 
   const cachedPrefs = resolveCachedPreferences();
   const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
-  const tabContents = Array.from(document.querySelectorAll('.tab'));
+  const tabContents = Array.from(document.querySelectorAll('.tab-content-wrapper > .tab'));
 
   if (!tabButtons.length || !tabContents.length) {
     return;
@@ -449,33 +449,31 @@ function restoreActiveTabsView() {
   currentMainTab = target;
 
   if (target === 'reservations-tab') {
-    const subButtons = Array.from(document.querySelectorAll('.sub-tab-button'));
-    const subContents = Array.from(document.querySelectorAll('.sub-tab'));
+    const subButtons = Array.from(document.querySelectorAll('#reservations-tab .sub-tab-button'));
+    const fallbackSubTarget = subButtons[0]?.getAttribute('data-sub-tab') || null;
 
-    if (subButtons.length && subContents.length) {
-      const activeSubContent = subContents.find((sub) => sub.classList.contains('active'));
-      const activeSubButton = subButtons.find((btn) => btn.classList.contains('active'));
+    const candidateSubTargets = [
+      currentSubTab,
+      (() => {
+        const activeSubContent = document.querySelector('#reservations-tab .sub-tab.active');
+        return activeSubContent?.id || null;
+      })(),
+      (() => {
+        const activeSubButton = document.querySelector('#reservations-tab .sub-tab-button.active');
+        return activeSubButton?.getAttribute('data-sub-tab') || null;
+      })(),
+      cachedPrefs.dashboardSubTab && document.getElementById(cachedPrefs.dashboardSubTab) ? cachedPrefs.dashboardSubTab : null,
+      (() => {
+        const stored = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
+        return stored && document.getElementById(stored) ? stored : null;
+      })(),
+      fallbackSubTarget
+    ].filter(Boolean);
 
-      let subTarget = activeSubContent?.id
-        ?? activeSubButton?.dataset.subTab
-        ?? (cachedPrefs.dashboardSubTab && document.getElementById(cachedPrefs.dashboardSubTab) ? cachedPrefs.dashboardSubTab : null)
-        ?? (() => {
-          const stored = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
-          return stored && document.getElementById(stored) ? stored : null;
-        })()
-        ?? subButtons[0]?.dataset.subTab;
+    const targetSubTab = candidateSubTargets.find((subId) => document.getElementById(subId)) || fallbackSubTarget;
 
-      if (subTarget) {
-        subButtons.forEach((btn) => {
-          btn.classList.toggle('active', btn.dataset.subTab === subTarget);
-        });
-
-        subContents.forEach((sub) => {
-          sub.classList.toggle('active', sub.id === subTarget);
-        });
-
-        currentSubTab = subTarget;
-      }
+    if (targetSubTab) {
+      activateStoredSubTab(targetSubTab);
     }
   }
 }
