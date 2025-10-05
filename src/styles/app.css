@@ -2114,6 +2114,18 @@
     background: linear-gradient(135deg, rgba(76, 110, 245, 0.08), rgba(76, 110, 245, 0.02));
   }
 
+  .equipment-form-box .management-form-header {
+    margin-bottom: 36px;
+  }
+
+  .equipment-list-count {
+    color: var(--clr-muted);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-count {
+    color: #c0c0c0;
+  }
+
   .management-form-icon {
     @apply text-3xl w-14 h-14 flex items-center justify-center rounded-2xl bg-primary text-primary;
     background: linear-gradient(135deg, rgba(76, 110, 245, 0.22), rgba(59, 130, 246, 0.1));
@@ -2156,6 +2168,12 @@
   :where(html.dark, body.dark) .management-form-icon {
     background: linear-gradient(135deg, rgba(76, 110, 245, 0.4), rgba(37, 99, 235, 0.18));
     color: rgba(226, 232, 240, 0.96);
+  }
+
+  @media (max-width: 768px) {
+    .equipment-form-box .management-form-header {
+      margin-bottom: 30px;
+    }
   }
 
   .management-form {
