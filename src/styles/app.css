@@ -1925,6 +1925,14 @@
     .equipment-card__info-item:not(:first-child)::before {
       display: none;
     }
+
+    .equipment-card__body {
+      align-items: center;
+    }
+
+    .equipment-card__categories {
+      justify-content: center;
+    }
   }
 
   @media (max-width: 640px) {
