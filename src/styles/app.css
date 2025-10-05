@@ -1926,6 +1926,11 @@
       display: none;
     }
 
+    .equipment-card__media-wrapper {
+      align-items: center;
+      justify-self: center;
+    }
+
     .equipment-card__body {
       align-items: center;
     }
