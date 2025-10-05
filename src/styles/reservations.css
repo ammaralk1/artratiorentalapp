@@ -1572,6 +1572,45 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   width: 100%;
 }
 
+.reservation-notes {
+  background: rgba(248, 250, 255, 0.92);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 14px;
+  color: #1f2d52;
+  padding: 12px 14px;
+  min-height: 140px;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  resize: vertical;
+}
+
+.reservation-notes:focus {
+  background: rgba(238, 243, 255, 0.98);
+  border-color: rgba(76, 110, 245, 0.35);
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+  outline: none;
+}
+
+.reservation-notes::placeholder {
+  color: rgba(38, 51, 77, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-notes {
+  background: rgba(24, 33, 59, 0.92);
+  border: 1px solid rgba(93, 133, 255, 0.32);
+  color: var(--clr-text);
+  box-shadow: 0 6px 16px rgba(3, 8, 26, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-notes:focus {
+  background: rgba(30, 42, 68, 0.96);
+  border-color: rgba(117, 156, 255, 0.48);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-notes::placeholder {
+  color: rgba(203, 213, 225, 0.65);
+}
+
 @media (min-width: 1200px) {
   .reservation-row {
     display: grid;
