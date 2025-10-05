@@ -487,6 +487,12 @@ function restoreActiveTabsView({ attemptsLeft = 0 } = {}) {
     return false;
   }
 
+  const isCurrentTabActive = () => {
+    const activeButton = document.querySelector(`[data-tab].active[data-tab="${targetTab}"]`);
+    const activePanel = document.getElementById(targetTab);
+    return Boolean(activeButton && activePanel?.classList.contains('active') && activePanel?.style.display !== 'none');
+  };
+
   if (targetTab === 'reservations-tab') {
     const subButtons = Array.from(document.querySelectorAll('#reservations-tab .sub-tab-button'));
     if (!subButtons.length) {
@@ -505,11 +511,27 @@ function restoreActiveTabsView({ attemptsLeft = 0 } = {}) {
     ].filter(Boolean);
 
     const targetSubTab = candidateSubTabs.find((subId) => document.getElementById(subId));
+
+    const activeButton = document.querySelector('#reservations-tab .sub-tab-button.active');
+    const activeContent = document.querySelector('#reservations-tab .sub-tab.active');
+    const activeSubTabId = activeContent?.id || activeButton?.getAttribute('data-sub-tab') || null;
+
+    if (targetSubTab && activeSubTabId === targetSubTab && isCurrentTabActive()) {
+      if (activeContent) {
+        activeContent.removeAttribute('hidden');
+        activeContent.style.display = 'block';
+        activeContent.setAttribute('aria-hidden', 'false');
+      }
+      return true;
+    }
+
     if (targetSubTab) {
       pendingSubTabPreference = targetSubTab;
     } else if (attemptsLeft > 0) {
       return false;
     }
+  } else if (isCurrentTabActive()) {
+    return true;
   }
 
   activateTabRef(targetTab, { skipStore: true, skipRender: true });
