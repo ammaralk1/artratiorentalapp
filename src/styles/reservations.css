@@ -1552,7 +1552,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .equipment-form-box .management-form-header {
   gap: 18px;
-  margin-bottom: 26px;
+  margin-bottom: 36px;
 }
 
 .equipment-form-box .management-form-header h4 {
@@ -1566,7 +1566,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   }
 
   .equipment-form-box .management-form-header {
-    margin-bottom: 22px;
+    margin-bottom: 30px;
   }
 }
 
