@@ -1403,9 +1403,9 @@
   .equipment-card__status--floating {
     position: absolute;
     top: 14px;
-    right: 16px;
-    align-items: flex-end;
-    text-align: right;
+    left: 16px;
+    align-items: flex-start;
+    text-align: left;
     gap: 2px;
   }
 
