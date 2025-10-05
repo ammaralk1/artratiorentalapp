@@ -1995,6 +1995,11 @@
       flex: 1 1 100%;
     }
 
+    .equipment-card {
+      padding: 22px 18px;
+      min-height: 460px;
+    }
+
     .equipment-card__info-row {
       flex-wrap: wrap;
       row-gap: 10px;
