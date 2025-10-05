@@ -8,6 +8,7 @@ const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
 let isEquipmentLoading = false;
 let equipmentErrorMessage = "";
+const EQUIPMENT_TABLE_COLUMN_COUNT = 8;
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -358,19 +359,31 @@ function getEquipmentImage(item) {
 
 function renderStatus(status) {
   const value = normalizeStatusValue(status);
-  if (value === "available") {
-    return `<span class="badge bg-success">${t("equipment.form.options.available", "✅ متاح")}</span>`;
-  }
-  if (value === "reserved") {
-    return `<span class="badge bg-warning text-dark">${t("equipment.form.options.booked", "📌 محجوز")}</span>`;
-  }
-  if (value === "maintenance") {
-    return `<span class="badge bg-danger">${t("equipment.form.options.maintenance", "🛠️ صيانة")}</span>`;
-  }
-  if (value === "retired") {
-    return `<span class="badge bg-secondary">${t("equipment.form.options.retired", "📦 خارج الخدمة")}</span>`;
-  }
-  return `<span class="badge bg-secondary">${status || "-"}</span>`;
+  const statusConfig = {
+    available: {
+      label: t("equipment.form.options.available", "✅ متاح"),
+      className: "equipment-status-badge equipment-status-badge--available",
+    },
+    reserved: {
+      label: t("equipment.form.options.booked", "📌 محجوز"),
+      className: "equipment-status-badge equipment-status-badge--reserved",
+    },
+    maintenance: {
+      label: t("equipment.form.options.maintenance", "🛠️ صيانة"),
+      className: "equipment-status-badge equipment-status-badge--maintenance",
+    },
+    retired: {
+      label: t("equipment.form.options.retired", "📦 خارج الخدمة"),
+      className: "equipment-status-badge equipment-status-badge--retired",
+    },
+  };
+
+  const { label, className } = statusConfig[value] || {
+    label: status || "-",
+    className: "equipment-status-badge equipment-status-badge--default",
+  };
+
+  return `<span class="badge ${className}"><span class="equipment-status-badge__text">${label}</span></span>`;
 }
 
 function renderEquipmentItem({ item, index }) {
@@ -382,40 +395,55 @@ function renderEquipmentItem({ item, index }) {
   const canDelete = userCanManageDestructiveActions();
 
   const actionButtons = [
-    `<button type="button" class="btn btn-sm btn-warning" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
+    `<button type="button" class="equipment-action-btn equipment-action-btn--edit" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
 
   if (canDelete) {
     actionButtons.push(
-      `<button type="button" class="btn btn-sm btn-danger" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
+      `<button type="button" class="equipment-action-btn equipment-action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
     );
   }
 
+  const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
+  const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
+  const qtyDisplay = qtyNumber.toLocaleString("en-US");
+  const priceDisplay = priceNumber.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const barcodeDisplay = item.barcode || "—";
+  const title = item.desc || item.name || "—";
+  const subtitleValue = item.name && item.name !== item.desc ? item.name : barcodeDisplay;
+  const subtitle = subtitleValue && subtitleValue !== "—"
+    ? `<div class="equipment-name-cell__subtitle text-muted">${subtitleValue}</div>`
+    : "";
+
   return `
-    <div class="border-bottom py-3 d-flex align-items-center" data-equipment-index="${index}">
-      <div class="equipment-image me-3">
-        ${
-          imageUrl
-            ? `<img src="${imageUrl}" alt="${imageAlt}" class="img-fluid rounded">`
-            : `<div class="no-image d-flex align-items-center justify-content-center bg-light rounded">📦</div>`
-        }
-      </div>
-
-      <div class="flex-grow-1">
-        <div><strong>🏷️ ${item.desc || item.name || "-"}</strong></div>
-        <div class="text-muted">${item.category || "-"} - ${item.sub || "-"}</div>
-
-        <div class="mt-1">
-          📦 <strong>${item.qty || 0}</strong> | 💵 <strong>${item.price || 0}</strong> ${currencyLabel} | 🔖 ${item.barcode || "-"}
+    <tr class="equipment-row" data-equipment-index="${index}">
+      <td class="equipment-name-cell">
+        <div class="equipment-name-cell__wrapper">
+          <div class="equipment-name-cell__image" aria-hidden="true">
+            ${
+              imageUrl
+                ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+                : `<div class="equipment-name-cell__placeholder">📦</div>`
+            }
+          </div>
+          <div class="equipment-name-cell__content">
+            <div class="equipment-name-cell__title">${title}</div>
+            ${subtitle}
+          </div>
         </div>
-
-        <div class="mt-1">⚙️ ${renderStatus(item.status)}</div>
-      </div>
-
-      <div class="ms-3 d-flex flex-column gap-2">
-        ${actionButtons.join('')}
-      </div>
-    </div>
+      </td>
+      <td>${item.category || "—"}</td>
+      <td>${item.sub || "—"}</td>
+      <td>${barcodeDisplay}</td>
+      <td>${qtyDisplay}</td>
+      <td>${priceDisplay} ${currencyLabel}</td>
+      <td>${renderStatus(item.status)}</td>
+      <td class="table-actions-cell">
+        <div class="table-action-buttons">
+          ${actionButtons.join('')}
+        </div>
+      </td>
+    </tr>
   `;
 }
 
@@ -529,8 +557,8 @@ function isReservationActiveNow(reservation, now) {
 }
 
 export function renderEquipment() {
-  const container = document.getElementById("equipment-list");
-  if (!container) return;
+  const tableBody = document.getElementById("equipment-list");
+  if (!tableBody) return;
 
   const synced = syncEquipmentStatuses();
   const data = Array.isArray(synced) ? synced : getAllEquipment();
@@ -543,13 +571,19 @@ export function renderEquipment() {
   const statusFilterRaw = document.getElementById("filter-status")?.value || "";
   const statusFilter = statusFilterRaw ? normalizeStatusValue(statusFilterRaw) : "";
 
+  const renderMessageRow = (message, className = "") => {
+    const classes = ["equipment-table-message", "text-center"];
+    if (className) classes.push(className);
+    return `<tr><td colspan="${EQUIPMENT_TABLE_COLUMN_COUNT}" class="${classes.join(' ')}">${message}</td></tr>`;
+  };
+
   if (isEquipmentLoading && !data.length) {
-    container.innerHTML = `<em>${t("equipment.table.loading", "جاري التحميل...")}</em>`;
+    tableBody.innerHTML = renderMessageRow(t("equipment.table.loading", "جاري التحميل..."));
     return;
   }
 
   if (equipmentErrorMessage && !data.length) {
-    container.innerHTML = `<em class="text-danger">${equipmentErrorMessage}</em>`;
+    tableBody.innerHTML = renderMessageRow(equipmentErrorMessage, "text-danger");
     return;
   }
 
@@ -591,9 +625,9 @@ export function renderEquipment() {
     ? t("equipment.list.emptyFiltered", "⚠️ لا توجد معدات مطابقة.")
     : t("equipment.table.empty", "لا يوجد معدات");
 
-  container.innerHTML = sortedEntries.length
+  tableBody.innerHTML = sortedEntries.length
     ? sortedEntries.map(renderEquipmentItem).join("")
-    : `<em>${emptyMessage}</em>`;
+    : renderMessageRow(emptyMessage);
 
   const countBadge = document.getElementById("equipment-list-count");
   if (countBadge) {
