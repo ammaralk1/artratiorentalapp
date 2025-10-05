@@ -1578,7 +1578,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   border-radius: 14px;
   color: var(--clr-text, #1f2d52);
   padding: 12px 14px;
-  min-height: 140px;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   resize: vertical;
   caret-color: var(--clr-text, #1f2d52);
@@ -1598,9 +1597,9 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 :is(html.dark-mode, body.dark-mode) .reservation-notes {
   background: rgba(24, 33, 59, 0.92);
   border: 1px solid rgba(93, 133, 255, 0.32);
-  color: var(--clr-text);
+  color: #f1f5f9;
   box-shadow: 0 6px 16px rgba(3, 8, 26, 0.55);
-  caret-color: var(--clr-text);
+  caret-color: #f1f5f9;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes:focus {
@@ -1612,29 +1611,24 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 :is(html.dark-mode, body.dark-mode) .reservation-notes::placeholder {
   color: rgba(203, 213, 225, 0.65);
 }
-
-.reservation-notes-row {
-  align-items: stretch;
+.reservation-pane {
+  width: min(100%, 520px);
 }
 
-.reservation-technicians-column .selected-technicians-list {
-  min-height: 140px;
+@media (min-width: 1400px) {
+  .reservation-pane {
+    width: min(100%, 480px);
+  }
 }
 
-@media (min-width: 1200px) {
-  .reservation-notes-row {
-    justify-content: flex-start;
-    gap: 20px;
-  }
+body[dir="rtl"] .reservation-pane {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
 
-  body[dir="rtl"] .reservation-notes-row {
-    justify-content: flex-end;
-  }
-
-  .reservation-notes-column,
-  .reservation-technicians-column {
-    flex: 0 0 auto;
-  }
+body[dir="ltr"] .reservation-pane {
+  margin-inline-end: auto;
+  margin-inline-start: 0;
 }
 
 @media (min-width: 1200px) {

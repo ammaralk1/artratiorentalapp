@@ -898,15 +898,22 @@
               </div>
             </div>
 
-            <div class="row g-3 mb-3 reservation-notes-row">
-              <div class="col-12 col-xl-6 col-xxl-5 reservation-notes-column">
-                <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
-                <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
+            <div class="row mb-3">
+              <div class="col-12">
+                <div class="reservation-pane reservation-notes-pane">
+                  <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
+                  <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
+                </div>
               </div>
-              <div class="col-12 col-xl-6 col-xxl-5 reservation-technicians-column">
-                <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
-                <div id="selected-technicians-list" class="selected-technicians-list"></div>
-                <button type="button" class="btn btn-outline btn-primary mt-2" id="open-technician-picker" data-i18n data-i18n-key="technicians.picker.openButton">➕ اختيار الطاقم</button>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-12">
+                <div class="reservation-pane reservation-technicians-pane">
+                  <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
+                  <div id="selected-technicians-list" class="selected-technicians-list"></div>
+                  <button type="button" class="btn btn-outline btn-primary mt-2" id="open-technician-picker" data-i18n data-i18n-key="technicians.picker.openButton">➕ اختيار الطاقم</button>
+                </div>
               </div>
             </div>
 
