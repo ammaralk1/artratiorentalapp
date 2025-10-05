@@ -29,7 +29,8 @@ body[dir="ltr"] .sub-tab-buttons {
   margin-left: 0;
 }
 
-.tab-button {
+.tab-button,
+.sub-tab-button {
   border: 1px solid rgba(76, 110, 245, 0.25);
   background: linear-gradient(135deg, #f8faff, #e6edff);
   color: #2c3e66;
@@ -45,32 +46,39 @@ body[dir="ltr"] .sub-tab-buttons {
   text-decoration: none;
 }
 
-.tab-button:hover {
+.tab-button:hover,
+.sub-tab-button:hover {
   background: linear-gradient(135deg, #eff4ff, #d6e1ff);
   color: #1f2d52;
   transform: translateY(-1px);
 }
 
-.tab-button.active {
+.tab-button.active,
+.sub-tab-button.active,
+.sub-tab-button.tab-active {
   background: linear-gradient(135deg, #4c6ef5, #5a8dff);
   color: #fff;
   box-shadow: 0 6px 14px rgba(76, 110, 245, 0.25);
   border-color: transparent;
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button {
+:is(html.dark-mode, body.dark-mode) .tab-button,
+:is(html.dark-mode, body.dark-mode) .sub-tab-button {
   border: 1px solid rgba(93, 133, 255, 0.25);
   background: linear-gradient(135deg, rgba(30, 42, 68, 0.95), rgba(24, 38, 64, 0.85));
   color: var(--clr-text);
   box-shadow: 0 4px 10px rgba(4, 10, 25, 0.55);
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button:hover {
+:is(html.dark-mode, body.dark-mode) .tab-button:hover,
+:is(html.dark-mode, body.dark-mode) .sub-tab-button:hover {
   background: linear-gradient(135deg, rgba(37, 55, 88, 0.95), rgba(30, 48, 82, 0.88));
   color: #f8fafc;
 }
 
-:is(html.dark-mode, body.dark-mode) .tab-button.active {
+:is(html.dark-mode, body.dark-mode) .tab-button.active,
+:is(html.dark-mode, body.dark-mode) .sub-tab-button.active,
+:is(html.dark-mode, body.dark-mode) .sub-tab-button.tab-active {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
 }
