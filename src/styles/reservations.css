@@ -1555,6 +1555,33 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 
+.reservation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.reservation-field {
+  flex: 1 1 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .reservation-field {
+    flex: 1 1 260px;
+    max-width: 320px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .reservation-field {
+    flex: 1 1 280px;
+    max-width: 360px;
+  }
+}
+
 .selected-technicians-list {
   min-height: 52px;
   border: 1px solid rgba(76, 110, 245, 0.15);
