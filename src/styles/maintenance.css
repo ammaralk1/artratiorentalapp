@@ -9,10 +9,6 @@
   flex-wrap: wrap;
 }
 
-.maintenance-form-icon {
-  font-size: 2.4rem;
-}
-
 .maintenance-form-hint,
 .maintenance-list-hint {
   margin: 0;
@@ -36,12 +32,13 @@
 }
 
 .maintenance-selected-info {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(76, 110, 245, 0.08);
-  background: rgba(248, 250, 255, 0.72);
+  background: var(--clr-card);
+  border: 1px solid rgba(76, 110, 245, 0.16);
   font-size: 0.9rem;
   color: var(--clr-muted);
+  box-shadow: var(--shadow-xs);
 }
 
 .maintenance-stats {
@@ -51,18 +48,25 @@
 }
 
 .maintenance-stat {
-  background: rgba(76, 110, 245, 0.08);
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  background: rgba(76, 110, 245, 0.12);
+  border: 1px solid rgba(76, 110, 245, 0.18);
   color: #1f2d52;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-stat {
-  background: linear-gradient(135deg, rgba(30, 42, 68, 0.88), rgba(18, 31, 54, 0.84));
-  color: #111827;
-  border: 1px solid rgba(59, 130, 246, 0.38);
-  box-shadow: 0 12px 24px rgba(8, 15, 35, 0.45);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(37, 99, 235, 0.22));
+  border: 1px solid rgba(96, 165, 250, 0.42);
+  color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 10px 22px rgba(8, 15, 35, 0.45);
 }
 
 .maintenance-filters {
@@ -397,9 +401,10 @@ body[dir="ltr"] .maintenance-table th:nth-child(2) {
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-selected-info {
-  border: 1px solid rgba(59, 76, 117, 0.35);
-  background: rgba(24, 33, 59, 0.88);
-  color: rgba(203, 213, 225, 0.85);
+  background: rgba(24, 33, 59, 0.92);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 24px rgba(8, 15, 35, 0.45);
 }
 
 :is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode,
