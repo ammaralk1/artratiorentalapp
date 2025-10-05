@@ -13,6 +13,13 @@ RewriteRule ^ https://art-ratio.com%{REQUEST_URI} [L,R=301]
 RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Serve clean URLs for the built static assets and pages.
+RewriteRule ^assets/(.*)$ dist/assets/$1 [L,NC]
+RewriteRule ^js/(.*)$ dist/js/$1 [L,NC]
+
+RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
+RewriteRule ^$ dist/src/pages/login.html [L]
+
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 Header always set X-Content-Type-Options "nosniff"
 Header always set X-Frame-Options "SAMEORIGIN"
