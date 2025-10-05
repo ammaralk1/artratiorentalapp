@@ -361,25 +361,25 @@ function renderStatus(status) {
   const statusConfig = {
     available: {
       label: t("equipment.form.options.available", "✅ متاح"),
-      className: "badge badge-success equipment-status-badge",
+      className: "equipment-status-badge equipment-status-badge--available",
     },
     reserved: {
       label: t("equipment.form.options.booked", "📌 محجوز"),
-      className: "badge badge-warning equipment-status-badge",
+      className: "equipment-status-badge equipment-status-badge--reserved",
     },
     maintenance: {
       label: t("equipment.form.options.maintenance", "🛠️ صيانة"),
-      className: "badge badge-info equipment-status-badge",
+      className: "equipment-status-badge equipment-status-badge--maintenance",
     },
     retired: {
       label: t("equipment.form.options.retired", "📦 خارج الخدمة"),
-      className: "badge badge-neutral equipment-status-badge",
+      className: "equipment-status-badge equipment-status-badge--retired",
     },
   };
 
   const { label, className } = statusConfig[value] || {
     label: status || "-",
-    className: "badge badge-outline equipment-status-badge",
+    className: "equipment-status-badge equipment-status-badge--default",
   };
 
   return `<span class="${className}">${label}</span>`;
@@ -392,6 +392,16 @@ function renderEquipmentItem({ item, index }) {
   const imageAlt = t("equipment.item.imageAlt", "صورة");
   const currencyLabel = t("equipment.item.currency", "ريال");
   const canDelete = userCanManageDestructiveActions();
+  const labels = {
+    description: t("equipment.card.labels.description", "الوصف"),
+    status: t("equipment.card.labels.status", "الحالة"),
+    alias: t("equipment.card.labels.alias", "الاسم"),
+    quantity: t("equipment.card.labels.quantity", "الكمية"),
+    price: t("equipment.card.labels.price", "السعر"),
+    category: t("equipment.card.labels.category", "القسم"),
+    subcategory: t("equipment.card.labels.subcategory", "القسم الثانوي"),
+    barcode: t("equipment.card.labels.barcode", "الباركود"),
+  };
   const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
   const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
   const qtyDisplay = qtyNumber.toLocaleString("en-US");
@@ -399,16 +409,25 @@ function renderEquipmentItem({ item, index }) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
-  const barcodeDisplay = item.barcode || "—";
+  const barcodeDisplay = item.barcode ? String(item.barcode).trim() : "";
   const title = item.desc || item.name || "—";
-  const subtitleParts = [];
-  if (item.name && item.name !== item.desc) subtitleParts.push(item.name);
-  if (barcodeDisplay && barcodeDisplay !== "—") subtitleParts.push(`#${barcodeDisplay}`);
-  const subtitle = subtitleParts.join(" • ");
+  const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
-  const tags = [item.category, item.sub]
+  const details = [
+    aliasValue ? { label: labels.alias, value: aliasValue } : null,
+    { label: labels.quantity, value: qtyDisplay },
+    { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
+    item.category ? { label: labels.category, value: item.category } : null,
+    item.sub ? { label: labels.subcategory, value: item.sub } : null,
+    barcodeDisplay ? { label: labels.barcode, value: barcodeDisplay } : null,
+  ]
     .filter(Boolean)
-    .map((value) => `<span class="equipment-tag badge badge-outline">${value}</span>`)
+    .map(({ label, value }) => `
+      <div class="equipment-card__detail">
+        <span class="equipment-card__detail-label">${label}</span>
+        <span class="equipment-card__detail-value">${value}</span>
+      </div>
+    `)
     .join("");
 
   const actionButtons = [
@@ -432,25 +451,16 @@ function renderEquipmentItem({ item, index }) {
       </div>
       <div class="equipment-card__body">
         <div class="equipment-card__header">
-          <h3 class="equipment-card__title">${title}</h3>
-          ${renderStatus(item.status)}
+          <div class="equipment-card__title-block">
+            <span class="equipment-card__label">${labels.description}</span>
+            <h3 class="equipment-card__title">${title}</h3>
+          </div>
+          <div class="equipment-card__status">
+            <span class="equipment-card__label">${labels.status}</span>
+            ${renderStatus(item.status)}
+          </div>
         </div>
-        ${subtitle ? `<p class="equipment-card__subtitle">${subtitle}</p>` : ""}
-        ${tags ? `<div class="equipment-card__tags">${tags}</div>` : ""}
-        <dl class="equipment-card__metrics">
-          <div class="equipment-card__metric" title="${t("equipment.form.labels.quantity", "🔢 الكمية")}">
-            <dt>📦</dt>
-            <dd>${qtyDisplay}</dd>
-          </div>
-          <div class="equipment-card__metric" title="${t("equipment.form.labels.price", "💵 السعر")}">
-            <dt>💵</dt>
-            <dd>${priceDisplay} ${currencyLabel}</dd>
-          </div>
-          <div class="equipment-card__metric" title="${t("equipment.form.labels.barcode", "🏷️ الباركود")}">
-            <dt>🏷️</dt>
-            <dd>${barcodeDisplay}</dd>
-          </div>
-        </dl>
+        ${details ? `<div class="equipment-card__details">${details}</div>` : ""}
         <div class="equipment-card__actions">
           ${actionButtons.join("\n")}
         </div>
