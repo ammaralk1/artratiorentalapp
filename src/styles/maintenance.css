@@ -925,3 +925,24 @@ body[dir="ltr"] .maintenance-close-modal__ticket-info {
 .maintenance-status-tag--cancelled::before {
   background: linear-gradient(135deg, #cbd5f5, #94a3b8);
 }
+
+
+.maintenance-form-grid #maintenance-equipment-barcode:-webkit-autofill,
+.maintenance-form-grid #maintenance-equipment-barcode:-webkit-autofill:hover,
+.maintenance-form-grid #maintenance-equipment-barcode:-webkit-autofill:focus,
+.maintenance-form-grid #maintenance-equipment-search:-webkit-autofill,
+.maintenance-form-grid #maintenance-equipment-search:-webkit-autofill:hover,
+.maintenance-form-grid #maintenance-equipment-search:-webkit-autofill:focus {
+  box-shadow: 0 0 0 30px rgba(255, 255, 255, 0.96) inset !important;
+  -webkit-text-fill-color: #1f2d52 !important;
+}
+
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode:-webkit-autofill,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode:-webkit-autofill:hover,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-barcode:-webkit-autofill:focus,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-search:-webkit-autofill,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-search:-webkit-autofill:hover,
+:is(html.dark-mode, body.dark-mode) #maintenance-equipment-search:-webkit-autofill:focus {
+  box-shadow: 0 0 0 30px rgba(17, 26, 46, 0.96) inset !important;
+  -webkit-text-fill-color: rgba(226, 232, 240, 0.98) !important;
+}
