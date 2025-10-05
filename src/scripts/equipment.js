@@ -421,18 +421,16 @@ function renderEquipmentItem({ item, index }) {
 
   const metricsHtml = metricItems.length
     ? `<div class="equipment-card__metrics">
-        <div class="equipment-card__metric equipment-card__metric--group">
-          ${metricItems
-            .map(
-              ({ label, value }) => `
-                <span class="equipment-card__metric-entry">
-                  <span class="equipment-card__detail-label">${label}</span>
-                  <span class="equipment-card__detail-value">${value}</span>
-                </span>
-              `
-            )
-            .join("")}
-        </div>
+        ${metricItems
+          .map(
+            ({ label, value }) => `
+              <div class="equipment-card__metric equipment-card__metric--vertical">
+                <span class="equipment-card__detail-label">${label}</span>
+                <span class="equipment-card__detail-value">${value}</span>
+              </div>
+            `
+          )
+          .join("")}
       </div>`
     : "";
 
