@@ -193,6 +193,30 @@ describe('tabs module', () => {
     expect(document.querySelector('.sub-tab-button[data-sub-tab="calendar-tab"]').classList.contains('active')).toBe(true);
   });
 
+  it('keeps the active reservations sub-tab when language changes', async () => {
+    resetState();
+    const module = await import('../../src/scripts/tabs.js');
+    module.setupTabs();
+
+    await nextTick();
+
+    const reservationsButton = document.querySelector('[data-tab="reservations-tab"]');
+    reservationsButton.click();
+    await nextTick();
+
+    document.querySelector('.sub-tab-button[data-sub-tab="reports-tab"]').click();
+    await nextTick();
+
+    expect(document.querySelector('.sub-tab-button[data-sub-tab="reports-tab"]').classList.contains('active')).toBe(true);
+
+    document.dispatchEvent(new CustomEvent('language:changed', { detail: { language: 'en' } }));
+    document.dispatchEvent(new Event('language:translationsReady'));
+    await nextTick();
+    await nextTick();
+
+    expect(document.querySelector('.sub-tab-button[data-sub-tab="reports-tab"]').classList.contains('active')).toBe(true);
+  });
+
   it('restores stored sub-tab when re-entering reservations', async () => {
     resetState();
     setMockPreferences({

@@ -312,6 +312,27 @@ function setupSubTabs() {
       return;
     }
 
+    const isAlreadyActive = currentSubTab === targetToActivate
+      && subTabButton.classList.contains('active')
+      && subTabContent.classList.contains('active')
+      && subTabContent.getAttribute('aria-hidden') === 'false';
+
+    if (isAlreadyActive) {
+      subTabContent.removeAttribute('hidden');
+      subTabContent.style.display = 'block';
+      subTabContent.setAttribute('aria-hidden', 'false');
+      currentSubTab = targetToActivate;
+
+      if (!skipStore) {
+        writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, targetToActivate);
+        updatePreferences({ dashboardSubTab: targetToActivate }).catch((error) => {
+          console.warn('⚠️ [tabs.js] Failed to store sub-tab preference', error);
+        });
+      }
+
+      return;
+    }
+
     subTabButtons.forEach((buttonEl) => {
       buttonEl.classList.remove('active');
       if (buttonEl.classList.contains('tab')) {
@@ -393,11 +414,14 @@ function setupSubTabs() {
   };
 
   subTabButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const subTarget = btn.getAttribute("data-sub-tab");
-      console.log("🖱️ Sub-tab clicked:", subTarget);
-      activateSubTab(subTarget);
-    });
+    if (!btn.dataset.subTabListenerAttached) {
+      btn.addEventListener("click", () => {
+        const subTarget = btn.getAttribute("data-sub-tab");
+        console.log("🖱️ Sub-tab clicked:", subTarget);
+        activateSubTab(subTarget);
+      });
+      btn.dataset.subTabListenerAttached = 'true';
+    }
   });
 
   if (pendingSubTabPreference) {
