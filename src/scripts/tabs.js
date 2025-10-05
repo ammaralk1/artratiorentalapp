@@ -10,6 +10,7 @@ import { getPreferences, updatePreferences, subscribePreferences, getCachedPrefe
 
 const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
 const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
+const DEFAULT_RESERVATION_SUB_TAB = "create-tab";
 const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
 
 function readStoredTab(key) {
@@ -167,7 +168,13 @@ export function setupTabs() {
       console.log("🖱️ Tab clicked:", target);
       activateTab(target);
 
-      if (target !== "reservations-tab") {
+      if (target === "reservations-tab") {
+        if (typeof activateSubTabRef === 'function') {
+          activateSubTabRef(DEFAULT_RESERVATION_SUB_TAB);
+        } else {
+          pendingSubTabPreference = DEFAULT_RESERVATION_SUB_TAB;
+        }
+      } else {
         updatePreferences({ dashboardSubTab: null }).catch((error) => {
           console.warn('⚠️ [tabs.js] Failed to clear sub-tab preference', error);
         });
@@ -267,6 +274,16 @@ function setupSubTabs() {
     .map((btn) => btn?.getAttribute('data-sub-tab'))
     .filter((value) => typeof value === 'string' && value.trim().length > 0);
 
+  const resolveFallbackSubTarget = () => {
+    if (!availableSubTargets.length) {
+      return null;
+    }
+    if (availableSubTargets.includes(DEFAULT_RESERVATION_SUB_TAB)) {
+      return DEFAULT_RESERVATION_SUB_TAB;
+    }
+    return availableSubTargets[0];
+  };
+
   const activateSubTab = (subTarget, { skipStore = false } = {}) => {
     if (!availableSubTargets.length) return;
 
@@ -276,7 +293,7 @@ function setupSubTabs() {
         requested: targetToActivate,
         available: availableSubTargets
       });
-      targetToActivate = availableSubTargets[0];
+      targetToActivate = resolveFallbackSubTarget();
     }
 
     const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${targetToActivate}"]`);
@@ -381,7 +398,7 @@ function setupSubTabs() {
     pendingSubTabPreference = null;
   } else {
     const defaultSubTab = document.querySelector('#reservations-tab .sub-tab-button.active');
-    const fallbackSubTab = availableSubTargets[0] || null;
+    const fallbackSubTab = resolveFallbackSubTarget();
     const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {
       console.log('⭐ Initial sub-tab:', initialSubTarget);

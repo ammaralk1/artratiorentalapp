@@ -35,11 +35,13 @@ const setupDom = () => {
       <div class="tab" id="equipment-tab"></div>
       <div class="tab" id="reservations-tab">
         <div class="sub-tabs">
-          <button class="sub-tab-button active" data-sub-tab="my-reservations-tab"></button>
-          <button class="sub-tab-button" data-sub-tab="calendar-tab"></button>
-          <button class="sub-tab-button" data-sub-tab="reports-tab"></button>
+          <button class="sub-tab-button tab tab-active active" data-sub-tab="create-tab"></button>
+          <button class="sub-tab-button tab" data-sub-tab="my-reservations-tab"></button>
+          <button class="sub-tab-button tab" data-sub-tab="calendar-tab"></button>
+          <button class="sub-tab-button tab" data-sub-tab="reports-tab"></button>
         </div>
-        <div class="sub-tab active" id="my-reservations-tab"></div>
+        <div class="sub-tab active" id="create-tab"></div>
+        <div class="sub-tab" id="my-reservations-tab"></div>
         <div class="sub-tab" id="calendar-tab"></div>
         <div class="sub-tab" id="reports-tab"></div>
       </div>
@@ -147,6 +149,25 @@ describe('tabs module', () => {
     document.querySelector('.sub-tab-button[data-sub-tab="reports-tab"]').click();
     await nextTick();
     expect(renderReportsMock).toHaveBeenCalled();
+  });
+
+  it('defaults to create reservation sub-tab when entering reservations without explicit preference', async () => {
+    resetState();
+    const module = await import('../../src/scripts/tabs.js');
+    module.setupTabs();
+
+    await nextTick();
+
+    const updateMock = updatePreferencesMockAccessor();
+    const reservationsButton = document.querySelector('[data-tab="reservations-tab"]');
+    reservationsButton.click();
+
+    await nextTick();
+
+    const createButton = document.querySelector('.sub-tab-button[data-sub-tab="create-tab"]');
+    expect(createButton?.classList.contains('active')).toBe(true);
+    expect(getMockPreferences().dashboardSubTab).toBe('create-tab');
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardSubTab: 'create-tab' }));
   });
 
   it('restores stored sub-tab when re-entering reservations', async () => {
