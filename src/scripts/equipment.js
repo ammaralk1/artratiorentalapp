@@ -461,6 +461,13 @@ function renderEquipmentItem({ item, index }) {
       </div>`
     : "";
 
+  const descriptionHtml = `
+    <div class="equipment-card__description">
+      <span class="equipment-card__label">${labels.description}</span>
+      <h3 class="equipment-card__title">${title}</h3>
+    </div>
+  `;
+
   const actionButtons = [
     `<button type="button" class="btn btn-outline btn-primary btn-sm" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
   ];
@@ -479,19 +486,18 @@ function renderEquipmentItem({ item, index }) {
           ${renderStatus(item.status)}
         </div>
         ${metricsHtml}
-        <div class="equipment-card__media" aria-hidden="true">
-          ${
-            imageUrl
-              ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
-              : `<div class="equipment-card__placeholder">📦</div>`
-          }
+        <div class="equipment-card__media-wrapper">
+          <div class="equipment-card__media" aria-hidden="true">
+            ${
+              imageUrl
+                ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+                : `<div class="equipment-card__placeholder">📦</div>`
+            }
+          </div>
+          ${descriptionHtml}
         </div>
       </div>
       <div class="equipment-card__body">
-        <div class="equipment-card__description">
-          <span class="equipment-card__label">${labels.description}</span>
-          <h3 class="equipment-card__title">${title}</h3>
-        </div>
         ${categoriesHtml}
         ${aliasHtml}
       </div>

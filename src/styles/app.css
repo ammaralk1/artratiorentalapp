@@ -1404,11 +1404,14 @@
   .equipment-card__metrics {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-start;
     gap: 8px;
     grid-area: metrics;
     min-width: 0;
+    width: max-content;
+    justify-self: center;
+    text-align: center;
   }
 
   .equipment-card__media {
@@ -1421,6 +1424,13 @@
     justify-content: center;
     overflow: hidden;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 28px rgba(15, 23, 42, 0.16);
+  }
+
+  .equipment-card__media-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
     grid-area: media;
     justify-self: end;
     align-self: start;
@@ -1434,6 +1444,14 @@
 
   [dir='rtl'] .equipment-card__status-block {
     text-align: left;
+  }
+
+  [dir='rtl'] .equipment-card__header {
+    direction: ltr;
+  }
+
+  [dir='rtl'] .equipment-card__header > * {
+    direction: rtl;
   }
 
   .equipment-card__placeholder {
@@ -1451,6 +1469,14 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    align-items: stretch;
+    text-align: start;
+    width: 100%;
+    max-width: 190px;
+  }
+
+  [dir='rtl'] .equipment-card__description {
+    text-align: right;
   }
 
   .equipment-card__label {
@@ -1490,8 +1516,12 @@
     min-width: 0;
   }
 
+  .equipment-card__metric {
+    padding: 4px 10px;
+  }
+
   .equipment-card__metric--stack {
-    align-items: flex-start;
+    align-items: center;
     width: 100%;
     gap: 8px;
   }
@@ -1501,15 +1531,16 @@
     flex-direction: column;
     gap: 2px;
     width: 100%;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
   }
 
   [dir='rtl'] .equipment-card__metric--stack {
-    align-items: flex-end;
+    align-items: center;
   }
 
   [dir='rtl'] .equipment-card__metric-item {
-    align-items: flex-end;
+    align-items: center;
   }
 
   .equipment-card__alias {
@@ -1518,15 +1549,16 @@
 
   .equipment-card__categories {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-wrap: wrap;
     justify-content: flex-start;
     width: 100%;
   }
 
   .equipment-card__category {
-    flex: 1 1 140px;
-    max-width: 220px;
+    flex: 0 1 auto;
+    max-width: none;
+    padding: 4px 6px;
   }
 
   .equipment-tag {
