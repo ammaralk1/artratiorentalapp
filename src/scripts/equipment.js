@@ -469,10 +469,6 @@ function renderEquipmentItem({ item, index }) {
 
   return `
     <article class="equipment-card" data-equipment-index="${index}" role="listitem">
-      <div class="equipment-card__status equipment-card__status--floating">
-        <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
-        ${renderStatus(item.status)}
-      </div>
       <div class="equipment-card__media-stack">
         <div class="equipment-card__media" aria-hidden="true">
           ${
@@ -482,12 +478,16 @@ function renderEquipmentItem({ item, index }) {
           }
         </div>
         ${metricsHtml}
-        <div class="equipment-card__description">
-          <span class="equipment-card__label">${labels.description}</span>
-          <h3 class="equipment-card__title">${title}</h3>
-        </div>
-        ${categoriesHtml}
-        ${aliasHtml}
+      <div class="equipment-card__description">
+        <span class="equipment-card__label">${labels.description}</span>
+        <h3 class="equipment-card__title">${title}</h3>
+      </div>
+      ${categoriesHtml}
+      ${aliasHtml}
+      </div>
+      <div class="equipment-card__status equipment-card__status--floating">
+        <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
+        ${renderStatus(item.status)}
       </div>
       <div class="equipment-card__actions">
         ${actionButtons.join("\n")}

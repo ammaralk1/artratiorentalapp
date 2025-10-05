@@ -1386,10 +1386,19 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
     text-align: left;
     min-width: 0;
     margin-top: 4px;
+  }
+
+  .equipment-card__metrics {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: auto;
+    margin-top: 6px;
   }
 
   .equipment-card__status {
@@ -1403,9 +1412,9 @@
   .equipment-card__status--floating {
     position: absolute;
     top: 12px;
-    left: 16px;
-    align-items: center;
-    text-align: center;
+    right: 16px;
+    align-items: flex-end;
+    text-align: right;
     gap: 2px;
   }
 
