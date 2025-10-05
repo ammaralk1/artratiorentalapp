@@ -1,5 +1,16 @@
 /* ===================== الصيانة ===================== */
 
+#maintenance-tab #maintenance-tab .maintenance-form-box {
+  max-width: 620px;
+  margin-inline: auto;
+}
+
+#maintenance-tab .maintenance-form-box,
+#maintenance-tab .maintenance-list-box {
+  max-width: 620px;
+  margin-inline: auto;
+}
+
 .maintenance-form-box .management-form-header,
 #maintenance-tab .maintenance-list-header,
 #maintenance-tab .maintenance-filters {
