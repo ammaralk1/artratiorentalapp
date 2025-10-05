@@ -8,23 +8,8 @@
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
 
-  <script>
-    (function configurePreviewAssets() {
-      const isPreview = window.location.protocol === 'file:' || window.location.hostname === '';
-      window.__PINEGROW_PREVIEW__ = isPreview;
-      if (isPreview) {
-        return;
-      }
-      const monitor = document.createElement('script');
-      monitor.src = '/js/godaddy-monitor.js';
-      monitor.defer = true;
-      document.head.appendChild(monitor);
-
-      const boot = document.createElement('script');
-      boot.src = '/js/page-boot.js';
-      document.head.appendChild(boot);
-    })();
-  </script>
+  <script src="../../js/godaddy-monitor.js" defer></script>
+  <script src="../../js/page-boot.js"></script>
 
   <!-- ✅ FullCalendar -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
@@ -36,17 +21,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    (function attachPreviewStyles() {
-      if (!window.__PINEGROW_PREVIEW__) {
-        return;
-      }
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = '../styles/app.preview.css';
-      document.head.appendChild(link);
-    })();
-  </script>
 
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -54,16 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Local dashboard bootstrapping for Pinegrow -->
-  <script type="module" crossorigin src="../../assets/dashboard-BxeAftyd.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-CX320jqT.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers-U2H4uprb.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-Bd9a53Mn.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard-BioJFZy9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/events-CzIQtjGT.js">
-  <link rel="modulepreload" crossorigin href="../../assets/pinegrow-preview-LMsajO19.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-BaVD3hzN.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-BLrH-WVw.css">
+  <script type="module" crossorigin src="../../assets/dashboard-DySzvx2L.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth-D7vsTkCC.js">
+  <link rel="modulepreload" crossorigin href="../../assets/common-oge7Tgon.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-DqRaHQO5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-BFlqyFwL.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers-B85OhmuZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/events-TM51L9VV.js">
+  <link rel="stylesheet" crossorigin href="../../assets/app-Ba51bpv0.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -676,18 +648,18 @@
               </div>
             </div>
             <div class="management-form-actions equipment-form-actions">
-              <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="equipment.form.actions.submit">➕ إضافة معدة</button>
+              <button type="submit" class="btn btn-success" data-i18n data-i18n-key="equipment.form.actions.submit">➕ إضافة معدة</button>
             </div>
           </form>
         </div>
 
         <!-- ✅ البحث والفلترة -->
-        <div class="equipment-filters management-search-bar mb-4">
+        <div class="d-flex flex-wrap gap-2 mb-3 filters-bar">
           <!-- 🔍 البحث -->
-          <input type="text" id="search-equipment" class="form-control" placeholder="🔍 ابحث عن معدة..." data-i18n data-i18n-placeholder-key="equipment.filters.search">
+          <input type="text" id="search-equipment" class="form-control w-auto" placeholder="🔍 ابحث عن معدة..." data-i18n data-i18n-placeholder-key="equipment.filters.search">
 
           <!-- ⚙️ الحالة -->
-          <select id="filter-status" class="form-select">
+          <select id="filter-status" class="form-select w-auto">
             <option value="" data-i18n data-i18n-key="equipment.filters.status.all">⚙️ كل الحالات</option>
             <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
             <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
@@ -695,12 +667,12 @@
           </select>
 
           <!-- 📂 القسم -->
-          <select id="filter-category" class="form-select">
+          <select id="filter-category" class="form-select w-auto">
             <option value="" data-i18n data-i18n-key="equipment.filters.category.all">📂 كل الأقسام</option>
           </select>
 
           <!-- 📑 القسم الثانوي -->
-          <select id="filter-sub" class="form-select">
+          <select id="filter-sub" class="form-select w-auto">
             <option value="" data-i18n data-i18n-key="equipment.filters.subcategory.all">📑 كل الأقسام الثانوية</option>
           </select>
         </div>
@@ -711,9 +683,10 @@
             <h5 data-i18n data-i18n-key="equipment.list.title">📋 كل المعدات</h5>
             <span class="equipment-list-count" id="equipment-list-count">—</span>
           </div>
-          <div id="equipment-list" class="equipment-grid" role="list"></div>
-        </div>
-      </div> <!-- نهاية تبويب المعدات -->
+          <div id="equipments" class="tab-content"></div>
+      <div id="equipment-list"></div>
+    </div>
+  </div> <!-- نهاية تبويب المعدات -->
 
       <!-- ✅ تبويب: الصيانة -->
       <div class="tab" id="maintenance-tab">

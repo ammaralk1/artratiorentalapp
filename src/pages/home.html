@@ -7,32 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
 
-  <script>
-    (function configurePreviewAssets() {
-      const pathname = typeof window !== 'undefined' ? window.location.pathname || '' : '';
-      const isPreview = window.location.protocol === 'file:'
-        || /\/src\/pages\//.test(pathname)
-        || /\\src\\pages\\/.test(pathname);
-      window.__PINEGROW_PREVIEW__ = isPreview;
-      if (isPreview) {
-        return;
-      }
-      const monitor = document.createElement('script');
-      monitor.src = '/js/godaddy-monitor.js';
-      monitor.defer = true;
-      document.head.appendChild(monitor);
-
-      const boot = document.createElement('script');
-      boot.src = '/js/page-boot.js';
-      document.head.appendChild(boot);
-    })();
-  </script>
+  <script src="/js/godaddy-monitor.js" defer></script>
+  <script src="/js/page-boot.js"></script>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/app.preview.css">
-  <link rel="stylesheet" href="../styles/index.css">
+  <link rel="stylesheet" href="/src/styles/index.css">
 </head>
 <body class="theme-loading">
   <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-4 px-3 home-navbar">
@@ -88,25 +69,8 @@
       </div>
     </section>
   </main>
-  <script>
-    (function loadHomeModules() {
-      if (window.__PINEGROW_PREVIEW__) {
-        return;
-      }
-      const modules = [
-        '/src/scripts/language.js',
-        '/src/scripts/translations/common.js',
-        '/src/scripts/home.js'
-      ];
-      modules.forEach((src) => {
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src = src;
-        document.head.appendChild(script);
-      });
-    })();
-  </script>
-  <!-- Pinegrow local bootstrap -->
-  <script type="module" src="../pinegrow-home.js"></script>
+  <script type="module" src="/src/scripts/language.js"></script>
+  <script type="module" src="/src/scripts/translations/common.js"></script>
+  <script type="module" src="/src/scripts/home.js"></script>
 </body>
 </html>

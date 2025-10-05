@@ -7,31 +7,12 @@
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
 
-  <script>
-    (function configurePreviewAssets() {
-      const pathname = typeof window !== 'undefined' ? window.location.pathname || '' : '';
-      const isPreview = window.location.protocol === 'file:'
-        || /\/src\/pages\//.test(pathname)
-        || /\\src\\pages\\/.test(pathname);
-      window.__PINEGROW_PREVIEW__ = isPreview;
-      if (isPreview) {
-        return;
-      }
-      const monitor = document.createElement('script');
-      monitor.src = '/js/godaddy-monitor.js';
-      monitor.defer = true;
-      document.head.appendChild(monitor);
-
-      const boot = document.createElement('script');
-      boot.src = '/js/page-boot.js';
-      document.head.appendChild(boot);
-    })();
-  </script>
+  <script src="/js/godaddy-monitor.js" defer></script>
+  <script src="/js/page-boot.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles/app.preview.css">
 </head>
 <body class="page-shell" data-theme="light">
   <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-base-200 dark:via-base-200 dark:to-base-200">
@@ -102,17 +83,6 @@
     </main>
   </div>
 
-  <script>
-    (function loadLoginModule() {
-      if (window.__PINEGROW_PREVIEW__) {
-        return;
-      }
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = '/src/scripts/loginPage.js';
-      document.head.appendChild(script);
-    })();
-  </script>
-  <script type="module" src="../pinegrow-login.js"></script>
+  <script type="module" src="/src/scripts/loginPage.js"></script>
 </body>
 </html>
