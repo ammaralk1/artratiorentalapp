@@ -73,7 +73,7 @@ export function setupTabs() {
   console.log("📌 tabButtons:", tabButtons);
   console.log("📌 tabContents:", tabContents);
 
-  const activateTab = (target, { skipStore = false } = {}) => {
+  const activateTab = (target, { skipStore = false, skipRender = false } = {}) => {
     if (!target) return;
 
     const matchingButtons = tabButtons.filter((button) => button?.getAttribute('data-tab') === target);
@@ -122,25 +122,27 @@ export function setupTabs() {
     }
 
     // 📌 استدعاء الدوال الخاصة بكل تبويب
-    if (target === "customers-tab") {
+    if (!skipRender && target === "customers-tab") {
       console.log("👤 Rendering customers");
       renderCustomers();
     }
-    if (target === "equipment-tab") {
+    if (!skipRender && target === "equipment-tab") {
       console.log("📦 Rendering equipment");
       renderEquipment();
     }
-    if (target === "maintenance-tab") {
+    if (!skipRender && target === "maintenance-tab") {
       console.log("🛠️ Rendering maintenance");
       renderMaintenance();
     }
-    if (target === "technicians-tab") {
+    if (!skipRender && target === "technicians-tab") {
       console.log("🛠️ Rendering technicians");
       renderTechnicians();
     }
     if (target === "reservations-tab") {
       console.log("📅 Rendering reservations");
-      renderReservations();
+      if (!skipRender) {
+        renderReservations();
+      }
       setupSubTabs();
       if (pendingSubTabPreference) {
         activateStoredSubTab(pendingSubTabPreference);
@@ -462,7 +464,7 @@ function restoreActiveTabsView({ attemptsLeft = 0 } = {}) {
     }
   }
 
-  activateTabRef(targetTab, { skipStore: true });
+  activateTabRef(targetTab, { skipStore: true, skipRender: true });
   return true;
 }
 
