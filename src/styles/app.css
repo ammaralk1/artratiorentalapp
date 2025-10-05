@@ -1406,7 +1406,7 @@
   .equipment-card__metrics {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
     gap: 8px;
     width: auto;
@@ -1417,8 +1417,9 @@
     height: 160px;
     border-radius: 28px;
     background: linear-gradient(135deg, rgba(226, 232, 255, 0.82), rgba(203, 213, 225, 0.65));
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 28px rgba(15, 23, 42, 0.16);
   }
@@ -1437,9 +1438,9 @@
   .equipment-card__metrics {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 6px;
-    width: 100%;
+    width: auto;
   }
 
   .equipment-card__description {
