@@ -1435,10 +1435,11 @@
   .equipment-card__status-block {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
+    text-align: center;
     gap: 6px;
-    width: 100%;
+    align-self: flex-start;
+    width: auto;
   }
 
   .equipment-card__media {
@@ -1562,7 +1563,7 @@
     font-size: 0.55rem;
     letter-spacing: 0.14em;
     text-align: center;
-    width: 100%;
+    width: auto;
   }
 
   .equipment-card__title {
@@ -1651,8 +1652,9 @@
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__status-block {
-    align-items: flex-start;
-    text-align: left;
+    align-items: center;
+    text-align: center;
+    align-self: flex-start;
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__media {
