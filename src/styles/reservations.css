@@ -1532,8 +1532,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: #1d2b56;
 }
 
-:is(html.dark-mode, body.dark-mode) .equipment-list-header h5 {
-  color: rgba(248, 250, 255, 0.95) !important;
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-header h5 {
+  color: rgba(248, 250, 255, 0.95);
 }
 
 .equipment-list-count {
@@ -1541,8 +1541,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: var(--clr-muted);
 }
 
-:is(html.dark-mode, body.dark-mode) .equipment-list-count {
-  color: rgba(226, 232, 240, 0.85) !important;
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-list-count {
+  color: rgba(226, 232, 240, 0.85);
 }
 
 .equipment-form-box {
