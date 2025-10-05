@@ -414,12 +414,12 @@ function renderEquipmentItem({ item, index }) {
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
   const details = [
-    aliasValue ? { label: labels.alias, value: aliasValue } : null,
+    barcodeDisplay ? { label: labels.barcode, value: barcodeDisplay } : null,
     { label: labels.quantity, value: qtyDisplay },
     { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
     item.category ? { label: labels.category, value: item.category } : null,
     item.sub ? { label: labels.subcategory, value: item.sub } : null,
-    barcodeDisplay ? { label: labels.barcode, value: barcodeDisplay } : null,
+    aliasValue ? { label: labels.alias, value: aliasValue } : null,
   ]
     .filter(Boolean)
     .map(({ label, value }) => `
@@ -442,23 +442,23 @@ function renderEquipmentItem({ item, index }) {
 
   return `
     <article class="equipment-card" data-equipment-index="${index}" role="listitem">
-      <div class="equipment-card__media" aria-hidden="true">
-        ${
-          imageUrl
-            ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
-            : `<div class="equipment-card__placeholder">📦</div>`
-        }
+      <div class="equipment-card__media-block">
+        <div class="equipment-card__media" aria-hidden="true">
+          ${
+            imageUrl
+              ? `<img src="${imageUrl}" alt="${imageAlt}" loading="lazy">`
+              : `<div class="equipment-card__placeholder">📦</div>`
+          }
+        </div>
+        <div class="equipment-card__description">
+          <span class="equipment-card__label">${labels.description}</span>
+          <h3 class="equipment-card__title">${title}</h3>
+        </div>
       </div>
       <div class="equipment-card__body">
-        <div class="equipment-card__header">
-          <div class="equipment-card__title-block">
-            <span class="equipment-card__label">${labels.description}</span>
-            <h3 class="equipment-card__title">${title}</h3>
-          </div>
-          <div class="equipment-card__status">
-            <span class="equipment-card__label">${labels.status}</span>
-            ${renderStatus(item.status)}
-          </div>
+        <div class="equipment-card__status">
+          <span class="equipment-card__label">${labels.status}</span>
+          ${renderStatus(item.status)}
         </div>
         ${details ? `<div class="equipment-card__details">${details}</div>` : ""}
         <div class="equipment-card__actions">
