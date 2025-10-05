@@ -253,7 +253,12 @@ export function setupTabs() {
         if (prefs.dashboardSubTab && prefs.dashboardSubTab !== currentSubTab) {
           activateStoredSubTab(prefs.dashboardSubTab);
         } else if (!prefs.dashboardSubTab && currentSubTab) {
-          activateStoredSubTab(null);
+          const locallyStoredSubTab = readStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY);
+          if (!locallyStoredSubTab) {
+            activateStoredSubTab(null);
+          } else if (locallyStoredSubTab !== currentSubTab) {
+            activateStoredSubTab(locallyStoredSubTab);
+          }
         }
       } else if (prefs.dashboardSubTab) {
         pendingSubTabPreference = prefs.dashboardSubTab;
