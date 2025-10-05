@@ -1574,18 +1574,20 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 @media (min-width: 1200px) {
   .reservation-row {
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .reservation-field {
-    flex: 0 0 48%;
-    max-width: 48%;
+    width: 100%;
+    max-width: none;
+    flex: initial;
+    grid-column: span 2;
   }
 
   .reservation-field--quarter {
-    flex: 0 0 25%;
-    max-width: 25%;
-    min-width: 240px;
+    grid-column: span 1;
   }
 }
 
