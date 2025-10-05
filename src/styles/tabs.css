@@ -127,6 +127,37 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border-color: transparent;
 }
 
+.reservations-subtabs-container {
+  width: 100%;
+  margin: 0 auto 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.reservations-subtabs-container .tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(230, 237, 255, 0.94));
+  border: 1px solid rgba(76, 110, 245, 0.16);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .tabs {
+  background: linear-gradient(135deg, rgba(19, 28, 52, 0.85), rgba(22, 36, 60, 0.92));
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  box-shadow: 0 12px 28px rgba(3, 8, 26, 0.55);
+}
+
+.reservations-subtabs-container .sub-tab-button {
+  min-width: 0;
+}
+
 .sub-tab-button:not(.tab) {
   border: 1px solid rgba(76, 110, 245, 0.2);
   background: linear-gradient(135deg, #f9fafc, #eef3ff);
@@ -204,6 +235,28 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   .sub-tab-button:not(.tab) {
     padding-inline: 16px;
   }
+
+  .reservations-subtabs-container {
+    justify-content: stretch;
+    margin-bottom: 20px;
+  }
+
+  .reservations-subtabs-container .tabs {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .reservations-subtabs-container .tabs::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .reservations-subtabs-container .tabs::-webkit-scrollbar-thumb {
+    background: rgba(76, 110, 245, 0.35);
+    border-radius: 999px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -216,6 +269,11 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   .tab-buttons,
   .sub-tab-buttons {
     gap: 10px;
+  }
+
+  .reservations-subtabs-container .tabs {
+    gap: 6px;
+    padding: 6px;
   }
 }
 
