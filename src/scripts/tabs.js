@@ -67,7 +67,7 @@ export function setupTabs() {
   console.log("🚀 [tabs.js] setupTabs()");
 
   const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
-  const tabContents = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content-wrapper > .tab');
 
   console.log("📌 tabButtons:", tabButtons);
   console.log("📌 tabContents:", tabContents);
