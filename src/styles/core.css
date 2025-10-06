@@ -1892,7 +1892,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   padding: 14px;
   border-top: 1px solid rgba(76, 110, 245, 0.12);
   background: rgba(246, 248, 255, 0.96);
@@ -1900,15 +1900,16 @@ textarea {
 
 .flatpickr-time .numInputWrapper,
 .flatpickr-time .flatpickr-am-pm {
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(236, 240, 255, 0.92);
   border: 1px solid rgba(76, 110, 245, 0.18);
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   overflow: hidden;
+  position: relative;
 }
 
 .flatpickr-time .numInputWrapper {
-  width: 64px;
+  width: 72px;
   display: flex;
   align-items: center;
 }
@@ -1917,138 +1918,183 @@ textarea {
   font-size: 16px;
   font-weight: 600;
   color: #1f2d52;
-  height: 40px;
-  line-height: 40px;
+  height: 42px;
+  line-height: 42px;
   background: transparent;
   border: none;
   text-align: center;
+  letter-spacing: 0.05em;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  width: 28px;
-  height: 20px;
-  line-height: 18px;
-  font-size: 14px;
-  color: rgba(31, 45, 82, 0.65);
+  width: 34px;
+  height: 22px;
+  font-size: 0;
+  position: relative;
 }
 
-.flatpickr-time .numInputWrapper span.arrowUp:hover,
-.flatpickr-time .numInputWrapper span.arrowDown:hover,
-.flatpickr-time .flatpickr-am-pm:hover {
-  background: rgba(76, 110, 245, 0.18);
-  color: #1f2d52;
+.flatpickr-time .numInputWrapper span.arrowUp::after,
+.flatpickr-time .numInputWrapper span.arrowDown::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 8px;
+  height: 8px;
+  border: 2px solid rgba(31, 45, 82, 0.55);
+  border-left: transparent;
+  border-right: transparent;
+  transform: rotate(45deg);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.flatpickr-time .numInputWrapper span.arrowDown::after {
+  transform: rotate(225deg);
+}
+
+.flatpickr-time .numInputWrapper span:hover::after {
+  border-color: rgba(76, 110, 245, 0.85);
 }
 
 .flatpickr-time .flatpickr-am-pm {
-  width: 64px;
-  font-size: 14px;
-  font-weight: 600;
+  width: 74px;
+  font-size: 13px;
+  font-weight: 700;
   color: #1f2d52;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   cursor: pointer;
 }
 
+.flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time .numInputWrapper:hover {
+  background: rgba(76, 110, 245, 0.18);
+  border-color: rgba(76, 110, 245, 0.28);
+  box-shadow: 0 10px 18px rgba(76, 110, 245, 0.16);
+}
+
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar {
-  background: linear-gradient(180deg, rgba(17, 25, 46, 0.98) 0%, rgba(14, 22, 42, 0.98) 100%);
-  border: 1px solid rgba(93, 133, 255, 0.22);
-  box-shadow: 0 18px 36px rgba(5, 13, 32, 0.55);
-  color: var(--clr-text);
+  background: linear-gradient(180deg, rgba(13, 21, 40, 0.97) 0%, rgba(8, 14, 30, 0.98) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 24px 48px rgba(7, 12, 23, 0.65);
+  color: #e2e8f0;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar.arrowTop:before,
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar.arrowTop:after {
-  border-bottom-color: rgba(24, 33, 59, 0.96);
+  border-bottom-color: rgba(13, 21, 40, 0.98);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar.arrowBottom:before,
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar.arrowBottom:after {
-  border-top-color: rgba(24, 33, 59, 0.96);
+  border-top-color: rgba(13, 21, 40, 0.98);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-months {
-  border-bottom: 1px solid rgba(59, 76, 117, 0.38);
+  border-bottom: 1px solid rgba(94, 132, 214, 0.28);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-months .flatpickr-month,
 :is(html.dark-mode, body.dark-mode) .flatpickr-months .flatpickr-month .flatpickr-current-month,
 :is(html.dark-mode, body.dark-mode) .flatpickr-months .flatpickr-month .flatpickr-current-month input.cur-year {
-  color: var(--clr-text);
+  color: #f1f5f9;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-weekdays {
-  background: rgba(28, 40, 68, 0.85);
-  border-bottom: 1px solid rgba(59, 76, 117, 0.35);
+  background: rgba(23, 33, 58, 0.92);
+  border-bottom: 1px solid rgba(94, 132, 214, 0.2);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-weekday {
-  color: rgba(226, 232, 240, 0.8);
+  color: rgba(226, 232, 240, 0.82);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day {
-  color: var(--clr-text);
+  color: #f8fafc;
   border-radius: 10px;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day:hover,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day:focus {
-  background: rgba(76, 110, 245, 0.28);
+  background: rgba(59, 130, 246, 0.32);
   color: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.45);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.today {
-  border-color: rgba(76, 110, 245, 0.6);
+  border-color: rgba(59, 130, 246, 0.45);
   color: #cbd5f5;
+  background: rgba(59, 130, 246, 0.12);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.selected,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.startRange,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.endRange {
-  background: #4c6ef5;
-  border-color: #4c6ef5;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
   color: #f8fafc;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.35);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.inRange,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.nextMonthDay.inRange,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.prevMonthDay.inRange {
-  background: rgba(76, 110, 245, 0.18);
-  border-color: transparent;
-  color: var(--clr-text);
+  background: rgba(59, 130, 246, 0.22);
+  border: none;
+  color: #e2e8f0;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.disabled,
 :is(html.dark-mode, body.dark-mode) .flatpickr-day.disabled:hover {
   background: transparent;
-  color: rgba(148, 163, 184, 0.35);
+  color: rgba(148, 163, 184, 0.32);
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-time,
 :is(html.dark-mode, body.dark-mode) .flatpickr-time input,
 :is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span,
 :is(html.dark-mode, body.dark-mode) .flatpickr-time .flatpickr-am-pm {
-  background: rgba(24, 33, 59, 0.92);
-  color: var(--clr-text);
-  border: 1px solid rgba(59, 76, 117, 0.35);
+  background: rgba(15, 23, 42, 0.96);
+  color: #f1f5f9;
+  border: 1px solid rgba(94, 132, 214, 0.28);
 }
 :is(html.dark-mode, body.dark-mode) .flatpickr-time input {
   border: none;
   background: transparent;
+  color: #f8fafc;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper {
-  border: 1px solid rgba(59, 76, 117, 0.35);
-  background: rgba(28, 40, 68, 0.9);
+  border: 1px solid rgba(94, 132, 214, 0.28);
+  background: rgba(30, 41, 59, 0.92);
 }
-
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-time .flatpickr-am-pm:hover,
-:is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span:hover {
-  background: rgba(76, 110, 245, 0.28);
+:is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper:hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.22);
   color: #f8fafc;
 }
+
+:is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span.arrowUp::after,
+:is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span.arrowDown::after {
+  border-color: rgba(203, 213, 225, 0.65);
+}
+
+:is(html.dark-mode, body.dark-mode) .flatpickr-time .numInputWrapper span:hover::after {
+  border-color: rgba(148, 197, 255, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .flatpickr-time .flatpickr-time-separator {
+  color: rgba(226, 232, 240, 0.72);
+  font-weight: 600;
+}
+
 :is(html.dark-mode, body.dark-mode) .project-focus-card--confirmed {
   box-shadow: 0 18px 40px rgba(34, 197, 94, 0.18);
 }
