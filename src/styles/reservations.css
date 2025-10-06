@@ -847,6 +847,8 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
   border: 1px solid rgba(76, 110, 245, 0.12);
   box-shadow: var(--shadow-sm);
+  width: min(100%, 460px);
+  margin-inline: auto;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-info-card,
@@ -862,18 +864,7 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 }
 
 .reservation-summary-card .summary-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: rgba(76, 110, 245, 0.18);
-  display: grid;
-  place-items: center;
-  font-size: 1.4rem;
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-summary-card .summary-icon {
-  background: rgba(37, 99, 235, 0.35);
-  color: #f8fafc;
+  display: none;
 }
 
 .reservation-summary-card .summary-body {
@@ -922,17 +913,19 @@ body[dir="rtl"] .reservation-summary-card {
   align-items: flex-start;
 }
 
+
 .reservation-summary-card .summary-details {
   margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 .reservation-summary-card .summary-details-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   font-size: 0.9rem;
   color: #26334d;
   width: 100%;
@@ -942,20 +935,20 @@ body[dir="rtl"] .reservation-summary-card {
   color: var(--clr-text);
 }
 
+
 body[dir="rtl"] .reservation-summary-card .summary-details-row {
-  flex-direction: row;
-  justify-content: flex-start;
+  align-items: flex-end;
+  text-align: right;
 }
 
 body[dir="ltr"] .reservation-summary-card .summary-details-row {
-  flex-direction: row;
-  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .reservation-summary-card .summary-details-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
+  font-weight: 600;
   color: var(--clr-muted);
 }
 
@@ -963,11 +956,9 @@ body[dir="ltr"] .reservation-summary-card .summary-details-row {
   color: rgba(148, 163, 184, 0.8);
 }
 
-body[dir="rtl"] .reservation-summary-card .summary-details-label {
-  text-align: right;
-}
 
 .reservation-summary-card .summary-details-value {
+  display: block;
   font-weight: 600;
   color: #1d2b56;
 }
@@ -1644,22 +1635,22 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-summary-box {
-  width: min(100%, 480px);
+  width: min(100%, 460px);
   margin-inline: auto;
   text-align: left;
   background: rgba(238, 243, 255, 0.92);
-  border: 1px solid rgba(76, 110, 245, 0.16);
+  border: 1px solid rgba(76, 110, 245, 0.12);
   border-radius: 16px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
   padding: 18px 20px;
   line-height: 1.6;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
   background: rgba(24, 33, 59, 0.94);
-  border: 1px solid rgba(93, 133, 255, 0.28);
+  border: 1px solid rgba(93, 133, 255, 0.2);
   color: #f1f5f9;
-  box-shadow: 0 16px 32px rgba(6, 12, 28, 0.55);
+  box-shadow: 0 16px 30px rgba(6, 12, 28, 0.5);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box strong {
@@ -1709,17 +1700,37 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
-  body[dir="rtl"] .reservation-summary-box {
+  body[dir="rtl"] .reservation-summary-box,
+  body[dir="rtl"] .reservation-summary-card {
     margin-inline-start: 0;
     margin-inline-end: auto;
     text-align: right;
   }
 
   body[dir="ltr"] .reservation-stack,
-  body[dir="ltr"] .reservation-summary-box {
+  body[dir="ltr"] .reservation-summary-box,
+  body[dir="ltr"] .reservation-summary-card {
     margin-inline-start: auto;
     margin-inline-end: 0;
     text-align: left;
+  }
+
+  #reservation-preview,
+  #reservation-preview-bottom {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  body[dir="rtl"] #reservation-preview,
+  body[dir="rtl"] #reservation-preview-bottom {
+    justify-content: flex-start;
+  }
+
+  #reservation-preview .reservation-summary-box,
+  #reservation-preview-bottom .reservation-summary-box,
+  #reservation-preview .reservation-summary-card,
+  #reservation-preview-bottom .reservation-summary-card {
+    width: min(100%, 460px);
   }
 }
 
