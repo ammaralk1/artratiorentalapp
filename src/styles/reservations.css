@@ -1629,7 +1629,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-summary-container {
   width: 100%;
   display: flex;
-  justify-content: flex-end;
   align-items: flex-start;
   margin: 0;
 }
@@ -1641,19 +1640,19 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-summary-box {
-  width: fit-content;
-  max-width: min(100%, 420px);
+  display: inline-flex;
   margin: 0;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background: rgba(238, 243, 255, 0.96);
   border: 1px solid rgba(76, 110, 245, 0.18);
   border-radius: 16px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-  display: inline-flex;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   flex-direction: column;
   gap: 12px;
   line-height: 1.45;
   align-self: flex-start;
+  width: auto;
+  max-width: 100%;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
@@ -1674,7 +1673,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-summary-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   font-size: 0.98rem;
   color: #2c3a5c;
@@ -1692,6 +1691,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: inherit;
   flex: 0 0 auto;
   text-align: end;
+  margin-inline-start: auto;
 }
 
 .reservation-summary-total {
@@ -1718,7 +1718,7 @@ body[dir="ltr"] .reservation-summary-box {
 }
 
 body[dir="rtl"] .reservation-summary-container {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 body[dir="ltr"] .reservation-summary-container {
