@@ -841,12 +841,14 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 .reservation-summary-card {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
   padding: 18px 20px;
-  border-radius: 18px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
-  border: 1px solid rgba(76, 110, 245, 0.12);
+  border: 1px solid rgba(76, 110, 245, 0.1);
   box-shadow: var(--shadow-sm);
+  width: min(100%, 460px);
+  margin-inline: auto;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-info-card,
@@ -861,20 +863,7 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   border-color: rgba(93, 133, 255, 0.2);
 }
 
-.reservation-summary-card .summary-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: rgba(76, 110, 245, 0.18);
-  display: grid;
-  place-items: center;
-  font-size: 1.4rem;
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-summary-card .summary-icon {
-  background: rgba(37, 99, 235, 0.35);
-  color: #f8fafc;
-}
+.reservation-summary-card .summary-icon { display: none; }
 
 .reservation-summary-card .summary-body {
   display: flex;
@@ -1644,22 +1633,22 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-summary-box {
-  width: min(100%, 480px);
+  width: min(100%, 460px);
   margin-inline: auto;
   text-align: left;
-  background: rgba(238, 243, 255, 0.92);
-  border: 1px solid rgba(76, 110, 245, 0.16);
+  background: rgba(238, 243, 255, 0.94);
+  border: 1px solid rgba(76, 110, 245, 0.12);
   border-radius: 16px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
   padding: 18px 20px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
   background: rgba(24, 33, 59, 0.94);
-  border: 1px solid rgba(93, 133, 255, 0.28);
+  border: 1px solid rgba(93, 133, 255, 0.2);
   color: #f1f5f9;
-  box-shadow: 0 16px 32px rgba(6, 12, 28, 0.55);
+  box-shadow: 0 16px 30px rgba(6, 12, 28, 0.5);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box strong {
