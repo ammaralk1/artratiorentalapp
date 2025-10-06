@@ -57,13 +57,21 @@ function initializeReservationPickers() {
   const fp = getFlatpickrInstance();
   if (!fp) return;
 
+  const baseDateConfig = {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'Y-m-d',
+    allowInput: true,
+    disableMobile: true
+  };
+
   const datePickers = [
-    ['#res-start', { dateFormat: 'Y-m-d' }],
-    ['#res-end', { dateFormat: 'Y-m-d' }],
-    ['#filter-start-date', { dateFormat: 'Y-m-d' }],
-    ['#filter-end-date', { dateFormat: 'Y-m-d' }],
-    ['#edit-res-start', { dateFormat: 'Y-m-d' }],
-    ['#edit-res-end', { dateFormat: 'Y-m-d' }]
+    ['#res-start', {}],
+    ['#res-end', {}],
+    ['#filter-start-date', {}],
+    ['#filter-end-date', {}],
+    ['#edit-res-start', {}],
+    ['#edit-res-end', {}]
   ];
 
   const timePickers = [
@@ -75,7 +83,8 @@ function initializeReservationPickers() {
       altFormat: 'h:i K',
       time_24hr: false,
       defaultHour: 9,
-      defaultMinute: 0
+      defaultMinute: 0,
+      disableMobile: true
     }],
     ['#res-end-time', {
       enableTime: true,
@@ -85,7 +94,8 @@ function initializeReservationPickers() {
       altFormat: 'h:i K',
       time_24hr: false,
       defaultHour: 9,
-      defaultMinute: 0
+      defaultMinute: 0,
+      disableMobile: true
     }],
     ['#edit-res-start-time', {
       enableTime: true,
@@ -95,7 +105,8 @@ function initializeReservationPickers() {
       altFormat: 'h:i K',
       time_24hr: false,
       defaultHour: 9,
-      defaultMinute: 0
+      defaultMinute: 0,
+      disableMobile: true
     }],
     ['#edit-res-end-time', {
       enableTime: true,
@@ -105,11 +116,18 @@ function initializeReservationPickers() {
       altFormat: 'h:i K',
       time_24hr: false,
       defaultHour: 9,
-      defaultMinute: 0
+      defaultMinute: 0,
+      disableMobile: true
     }]
   ];
 
-  [...datePickers, ...timePickers].forEach(([selector, config]) => {
+  datePickers.forEach(([selector, config]) => {
+    if (document.querySelector(selector)) {
+      fp(selector, { ...baseDateConfig, ...config });
+    }
+  });
+
+  timePickers.forEach(([selector, config]) => {
     if (document.querySelector(selector)) {
       fp(selector, config);
     }
