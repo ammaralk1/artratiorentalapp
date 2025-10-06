@@ -2204,6 +2204,7 @@
   .form-control,
   input.form-control,
   input.flatpickr-input,
+  input.flatpickr-alt-input,
   textarea.form-control,
   select.form-select,
   .form-select,
@@ -2730,6 +2731,7 @@
 
   :where(html.dark, body.dark) .form-control,
   :where(html.dark, body.dark) input.flatpickr-input,
+  :where(html.dark, body.dark) input.flatpickr-alt-input,
   :where(html.dark, body.dark) .form-select,
   :where(html.dark, body.dark) textarea {
     background-color: rgba(13, 19, 35, 0.9);
@@ -2753,6 +2755,7 @@
 
   :where(html.dark, body.dark) .form-control:focus,
   :where(html.dark, body.dark) input.flatpickr-input:focus,
+  :where(html.dark, body.dark) input.flatpickr-alt-input:focus,
   :where(html.dark, body.dark) .form-select:focus,
   :where(html.dark, body.dark) textarea:focus {
     border-color: rgba(99, 102, 241, 0.6);
