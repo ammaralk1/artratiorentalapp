@@ -951,6 +951,28 @@ body[dir="rtl"] .reservation-summary-card {
   }
 }
 
+.reservation-equipment-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.reservation-equipment-inputs .reservation-equipment-field {
+  flex: 1 1 100%;
+  max-width: 100%;
+}
+
+.reservation-equipment-inputs .reservation-equipment-field .form-control {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .reservation-equipment-inputs .reservation-equipment-field {
+    flex: 1 1 calc(50% - 0.75rem);
+    max-width: 50%;
+  }
+}
+
 .reservation-remove-button {
   display: inline-flex;
   align-items: center;
