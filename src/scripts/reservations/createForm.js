@@ -488,6 +488,55 @@ function populateEquipmentDescriptionLists() {
   if (editList) editList.innerHTML = optionsHtml;
 }
 
+function addDraftEquipmentByBarcode(rawCode, inputElement) {
+  const normalizedCode = normalizeBarcodeValue(rawCode);
+  if (!normalizedCode) return false;
+
+  const { start, end } = getCreateReservationDateRange();
+  if (!start || !end) {
+    showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
+    return false;
+  }
+
+  const currentItems = getSelectedItems();
+  if (currentItems.some((item) => normalizeBarcodeValue(item.barcode) === normalizedCode)) {
+    showToast(t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز'));
+    return false;
+  }
+
+  if (hasEquipmentConflict(normalizedCode, start, end)) {
+    showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
+    return false;
+  }
+
+  const item = findEquipmentByBarcode(normalizedCode);
+  if (!item) {
+    showToast(t('reservations.toast.barcodeNotFound', '❌ الباركود غير موجود'));
+    return false;
+  }
+
+  if (isEquipmentInMaintenance(item.barcode)) {
+    showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
+    return false;
+  }
+
+  addSelectedItem({
+    id: item.id,
+    equipmentId: item.id,
+    barcode: normalizedCode,
+    desc: item.desc,
+    qty: 1,
+    price: item.price,
+    image: resolveItemImage(item)
+  });
+
+  if (inputElement) inputElement.value = '';
+  renderReservationItems();
+  renderDraftReservationSummary();
+  showToast(t('reservations.toast.equipmentAdded', '✅ تم إضافة المعدة بنجاح'));
+  return true;
+}
+
 function addDraftEquipmentByDescription(inputElement) {
   if (!inputElement) return;
   const rawValue = inputElement.value.trim();
@@ -910,54 +959,23 @@ function setupBarcodeInput() {
   input.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    const code = normalizeBarcodeValue(input.value);
-    if (!code) return;
-
-    const { start, end } = getCreateReservationDateRange();
-    if (!start || !end) {
-      showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
-      return;
-    }
-
-    const currentItems = getSelectedItems();
-    const duplicate = currentItems.some((item) => normalizeBarcodeValue(item.barcode) === code);
-    if (duplicate) {
-      showToast(t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز'));
-      return;
-    }
-
-    if (hasEquipmentConflict(code, start, end)) {
-      showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
-      return;
-    }
-
-    const { equipment } = loadData();
-    const item = (equipment || []).find((eq) => normalizeBarcodeValue(eq.barcode) === code);
-    if (!item) {
-      showToast(t('reservations.toast.barcodeNotFound', '❌ الباركود غير موجود'));
-      return;
-    }
-
-    if (isEquipmentInMaintenance(item.barcode)) {
-      showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
-      return;
-    }
-
-    addSelectedItem({
-      id: item.id,
-      equipmentId: item.id,
-      barcode: normalizeBarcodeValue(item.barcode),
-      desc: item.desc,
-      qty: 1,
-      price: item.price,
-      image: resolveItemImage(item)
-    });
-
-    input.value = '';
-    renderReservationItems();
-    renderDraftReservationSummary();
-    showToast(t('reservations.toast.equipmentAdded', '✅ تم إضافة المعدة بنجاح'));
+    addDraftEquipmentByBarcode(input.value, input);
   });
+
+  let autoAddTimer = null;
+  const scheduleAutoAdd = () => {
+    clearTimeout(autoAddTimer);
+    const raw = input.value;
+    if (!raw?.trim()) return;
+    const { start, end } = getCreateReservationDateRange();
+    if (!start || !end) return;
+    autoAddTimer = setTimeout(() => {
+      addDraftEquipmentByBarcode(raw, input);
+    }, 150);
+  };
+
+  input.addEventListener('input', scheduleAutoAdd);
+  input.addEventListener('change', () => addDraftEquipmentByBarcode(input.value, input));
 
   input.dataset.listenerAttached = 'true';
 }

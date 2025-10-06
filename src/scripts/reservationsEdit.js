@@ -446,6 +446,18 @@ export function setupEditReservationModalEvents(context = {}) {
         addEquipmentToEditingReservation?.(barcodeInput);
       }
     });
+    let barcodeTimer = null;
+    const scheduleAutoAdd = () => {
+      clearTimeout(barcodeTimer);
+      if (!barcodeInput.value?.trim()) return;
+      const { start, end } = getEditReservationDateRange();
+      if (!start || !end) return;
+      barcodeTimer = setTimeout(() => {
+        addEquipmentToEditingReservation?.(barcodeInput);
+      }, 150);
+    };
+    barcodeInput.addEventListener('input', scheduleAutoAdd);
+    barcodeInput.addEventListener('change', () => addEquipmentToEditingReservation?.(barcodeInput));
     barcodeInput.dataset.listenerAttached = 'true';
   }
 
