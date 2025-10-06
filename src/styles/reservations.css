@@ -1731,18 +1731,22 @@ body[dir="ltr"] .reservation-summary-container {
 
 #reservation-preview.reservation-summary-host,
 #reservation-preview-bottom.reservation-summary-host {
-  display: flex;
+  display: inline-flex;
   justify-content: flex-end;
   background: transparent;
   border: 0;
   padding: 0;
   box-shadow: none;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  margin-inline-start: auto;
 }
 
 body[dir="rtl"] #reservation-preview.reservation-summary-host,
 body[dir="rtl"] #reservation-preview-bottom.reservation-summary-host {
   justify-content: flex-start;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
 }
 
 @media (min-width: 992px) {
