@@ -1898,6 +1898,30 @@ textarea {
   background: rgba(246, 248, 255, 0.96);
 }
 
+.flatpickr-input,
+input.flatpickr-input,
+.flatpickr-input[readonly] {
+  background: rgba(248, 250, 255, 0.92);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 14px;
+  color: #1f2d52;
+  font-weight: 600;
+  width: 100%;
+  display: block;
+  padding: 10px 14px;
+  line-height: 1.4;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.flatpickr-input:focus,
+input.flatpickr-input:focus {
+  outline: none;
+  background: rgba(238, 243, 255, 0.98);
+  border-color: rgba(76, 110, 245, 0.35);
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
+}
+
 .flatpickr-time .numInputWrapper,
 .flatpickr-time .flatpickr-am-pm {
   border-radius: 14px;
@@ -1982,6 +2006,23 @@ textarea {
   border: 1px solid rgba(148, 163, 184, 0.24);
   box-shadow: 0 24px 48px rgba(7, 12, 23, 0.65);
   color: #e2e8f0;
+}
+
+:is(html.dark-mode, body.dark-mode) .flatpickr-input,
+:is(html.dark-mode, body.dark-mode) input.flatpickr-input,
+:is(html.dark-mode, body.dark-mode) .flatpickr-input[readonly] {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(94, 132, 214, 0.32);
+  color: #f1f5f9;
+  box-shadow: 0 10px 24px rgba(7, 12, 23, 0.45);
+}
+
+:is(html.dark-mode, body.dark-mode) .flatpickr-input:focus,
+:is(html.dark-mode, body.dark-mode) input.flatpickr-input:focus {
+  background: rgba(24, 33, 59, 0.96);
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  color: #f8fafc;
 }
 
 :is(html.dark-mode, body.dark-mode) .flatpickr-calendar.arrowTop:before,
