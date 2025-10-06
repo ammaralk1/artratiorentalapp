@@ -1670,6 +1670,43 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   line-height: 1.4;
 }
 
+.reservation-summary-line {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.98rem;
+  color: #2c3a5c;
+}
+
+.reservation-summary-line:last-child {
+  margin-bottom: 0;
+}
+
+.reservation-summary-label {
+  display: block;
+  font-weight: 600;
+  color: inherit;
+  margin-bottom: 2px;
+}
+
+.reservation-summary-value {
+  display: block;
+  font-size: 1.02rem;
+  color: inherit;
+}
+
+.reservation-summary-total {
+  margin-top: 12px;
+  font-size: 1.08rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-summary-line {
+  color: rgba(229, 235, 247, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-summary-total {
+  color: #f8fafc;
+}
+
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
   body[dir="rtl"] .reservation-summary-box {
