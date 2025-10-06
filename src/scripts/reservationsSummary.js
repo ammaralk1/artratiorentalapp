@@ -129,7 +129,7 @@ export function buildSummaryHtml({
     .replace('{status}', paidText);
 
   return `
-    <div class="alert alert-info">
+    <div class="reservation-summary-box alert alert-info">
       ${totalLine}<br>
       ${itemsLine}<br>
       ${durationLine}<br>
