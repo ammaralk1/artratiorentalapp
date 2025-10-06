@@ -1611,25 +1611,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 :is(html.dark-mode, body.dark-mode) .reservation-notes::placeholder {
   color: rgba(203, 213, 225, 0.65);
 }
-.reservation-pane {
-  width: min(100%, 520px);
-}
-
-@media (min-width: 1400px) {
-  .reservation-pane {
-    width: min(100%, 480px);
-  }
-}
-
-body[dir="rtl"] .reservation-pane {
-  margin-inline-start: auto;
-  margin-inline-end: 0;
-}
-
-body[dir="ltr"] .reservation-pane {
-  margin-inline-end: auto;
-  margin-inline-start: 0;
-}
 
 @media (min-width: 1200px) {
   .reservation-row {
