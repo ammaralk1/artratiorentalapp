@@ -221,18 +221,18 @@
   inset-inline-end: 0;
   top: calc(100% + 2px);
   z-index: 360;
-  background: rgba(255, 255, 255, 0.97);
-  border: 1px solid rgba(76, 110, 245, 0.22);
-  border-radius: 14px;
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.14);
-  backdrop-filter: blur(10px);
+  background: rgba(248, 250, 255, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(12px);
   max-height: 260px;
   overflow-y: auto;
-  padding: 6px 0;
+  padding: 4px;
   display: none;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .position-relative > .suggestions-list,
@@ -248,12 +248,18 @@
   transform: translateY(0);
 }
 
+
 .suggestion-item {
-  padding: 10px 16px;
+  padding: 10px 18px;
+  border-radius: 12px;
   cursor: pointer;
   color: #0f172a;
   font-weight: 500;
-  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.18s ease;
+}
+
+.suggestion-item + .suggestion-item {
+  margin-top: 4px;
 }
 
 .suggestion-item__primary {
@@ -266,17 +272,23 @@
   color: rgba(71, 85, 105, 0.85);
 }
 
+
 .suggestion-item:hover,
 .suggestion-item:focus {
-  background: rgba(76, 110, 245, 0.12);
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.18), rgba(148, 163, 255, 0.12));
   color: #1d2b56;
-  transform: translateX(-2px);
+  transform: translateX(-1px);
+}
+
+.suggestion-item:hover .suggestion-item__meta,
+.suggestion-item:focus .suggestion-item__meta {
+  color: rgba(71, 85, 105, 0.6);
 }
 
 :is(html.dark-mode, body.dark-mode) .suggestions-list {
-  background: rgba(15, 23, 42, 0.95);
-  border-color: rgba(59, 130, 246, 0.28);
-  box-shadow: 0 18px 45px rgba(2, 6, 23, 0.75);
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(59, 130, 246, 0.32);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.65);
 }
 
 :is(html.dark-mode, body.dark-mode) .suggestion-item {
@@ -284,13 +296,19 @@
 }
 
 :is(html.dark-mode, body.dark-mode) .suggestion-item__meta {
-  color: rgba(148, 163, 184, 0.80);
+  color: rgba(148, 163, 184, 0.78);
 }
 
 :is(html.dark-mode, body.dark-mode) .suggestion-item:hover,
 :is(html.dark-mode, body.dark-mode) .suggestion-item:focus {
-  background: rgba(59, 130, 246, 0.22);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(148, 163, 255, 0.18));
   color: #e2e8f0;
+  transform: translateX(-1px);
+}
+
+:is(html.dark-mode, body.dark-mode) .suggestion-item:hover .suggestion-item__meta,
+:is(html.dark-mode, body.dark-mode) .suggestion-item:focus .suggestion-item__meta {
+  color: rgba(226, 232, 240, 0.78);
 }
 
 .equipment-form-grid {
