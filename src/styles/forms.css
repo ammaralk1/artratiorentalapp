@@ -219,7 +219,7 @@
   position: absolute;
   inset-inline-start: 0;
   inset-inline-end: 0;
-  top: calc(100% + 6px);
+  top: calc(100% + 2px);
   z-index: 360;
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(76, 110, 245, 0.22);
@@ -233,6 +233,14 @@
   opacity: 0;
   transform: translateY(-4px);
   transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.position-relative > .suggestions-list,
+.autocomplete-wrapper > .suggestions-list {
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  width: 100%;
+  min-width: 100%;
 }
 
 .suggestions-list.is-visible {
