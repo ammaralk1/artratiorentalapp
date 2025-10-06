@@ -1567,8 +1567,19 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 20px 16px;
   align-items: flex-end;
+}
+
+.reservation-create-title {
+  margin: 0 auto 28px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--clr-text, #1f2d52);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-create-title {
+  color: #f1f5f9;
 }
 
 .reservation-field {
