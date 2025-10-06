@@ -104,9 +104,8 @@ function renderProjectSuggestions(projects) {
   if (!suggestionsBox || !input) return;
 
   if (!projects || projects.length === 0) {
-    suggestionsBox.style.display = 'none';
+    closeFloatingDropdown(suggestionsBox);
     suggestionsBox.innerHTML = '';
-    toggleFieldDropdown(input, false);
     return;
   }
 
@@ -133,8 +132,7 @@ function renderProjectSuggestions(projects) {
     })
     .join('');
 
-  suggestionsBox.style.display = 'block';
-  toggleFieldDropdown(input, true);
+  openFloatingDropdown(suggestionsBox, input);
 
   suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
     item.addEventListener('mousedown', (event) => {
@@ -152,8 +150,7 @@ function renderProjectSuggestions(projects) {
         select.value = selectedId;
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
-      suggestionsBox.style.display = 'none';
-      toggleFieldDropdown(input, false);
+      closeFloatingDropdown(suggestionsBox);
     });
   });
 }
@@ -167,9 +164,8 @@ function updateProjectSuggestions() {
   if (!isFocused && !value) {
     const { suggestionsBox } = getProjectSearchElements();
     if (suggestionsBox) {
-      suggestionsBox.style.display = 'none';
+      closeFloatingDropdown(suggestionsBox);
       suggestionsBox.innerHTML = '';
-      toggleFieldDropdown(input, false);
     }
     return;
   }
@@ -205,6 +201,65 @@ function toggleFieldDropdown(inputElement, open) {
   const field = inputElement?.closest('.reservation-field');
   if (!field) return;
   field.classList.toggle('dropdown-open', Boolean(open));
+}
+
+const activeDropdowns = new Map();
+let dropdownWatcherAttached = false;
+
+function positionFloatingDropdown(dropdown, input) {
+  if (!dropdown || !input) return;
+  const rect = input.getBoundingClientRect();
+  dropdown.style.position = 'fixed';
+  dropdown.style.left = `${rect.left}px`;
+  dropdown.style.top = `${rect.bottom + 6}px`;
+  dropdown.style.minWidth = `${rect.width}px`;
+  dropdown.style.maxWidth = `${rect.width}px`;
+  dropdown.style.zIndex = '360';
+}
+
+function repositionFloatingDropdowns() {
+  activeDropdowns.forEach((input, dropdown) => {
+    positionFloatingDropdown(dropdown, input);
+  });
+}
+
+function ensureDropdownWatcher() {
+  if (dropdownWatcherAttached) return;
+  dropdownWatcherAttached = true;
+  window.addEventListener('scroll', repositionFloatingDropdowns, true);
+  window.addEventListener('resize', repositionFloatingDropdowns);
+}
+
+function releaseDropdownWatcher() {
+  if (dropdownWatcherAttached && activeDropdowns.size === 0) {
+    dropdownWatcherAttached = false;
+    window.removeEventListener('scroll', repositionFloatingDropdowns, true);
+    window.removeEventListener('resize', repositionFloatingDropdowns);
+  }
+}
+
+function openFloatingDropdown(dropdown, input) {
+  if (!dropdown || !input) return;
+  positionFloatingDropdown(dropdown, input);
+  dropdown.style.display = 'block';
+  activeDropdowns.set(dropdown, input);
+  toggleFieldDropdown(input, true);
+  ensureDropdownWatcher();
+}
+
+function closeFloatingDropdown(dropdown) {
+  if (!dropdown) return;
+  const input = activeDropdowns.get(dropdown);
+  if (input) toggleFieldDropdown(input, false);
+  activeDropdowns.delete(dropdown);
+  dropdown.style.display = 'none';
+  dropdown.style.position = '';
+  dropdown.style.left = '';
+  dropdown.style.top = '';
+  dropdown.style.minWidth = '';
+  dropdown.style.maxWidth = '';
+  dropdown.style.zIndex = '';
+  releaseDropdownWatcher();
 }
 
 function setDateTimeInputs(dateInputId, timeInputId, isoString) {
@@ -253,7 +308,7 @@ function applyProjectContextToForm(project, { forceNotes = false } = {}) {
   syncProjectSearchInput(project.id);
   const { suggestionsBox } = getProjectSearchElements();
   if (suggestionsBox) {
-    suggestionsBox.style.display = 'none';
+    closeFloatingDropdown(suggestionsBox);
     suggestionsBox.innerHTML = '';
   }
 
@@ -320,7 +375,7 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
   if (input && document.activeElement === input) {
     updateProjectSuggestions();
   } else if (suggestionsBox) {
-    suggestionsBox.style.display = 'none';
+    closeFloatingDropdown(suggestionsBox);
     suggestionsBox.innerHTML = '';
   }
 }
@@ -361,7 +416,7 @@ function setupProjectSelection() {
       }
     }
     if (suggestionsBox) {
-      suggestionsBox.style.display = 'none';
+      closeFloatingDropdown(suggestionsBox);
       suggestionsBox.innerHTML = '';
     }
     if (project) {
@@ -404,7 +459,7 @@ function applyPendingProjectContext() {
     syncProjectSearchInput(select.value);
     const { suggestionsBox } = getProjectSearchElements();
     if (suggestionsBox) {
-      suggestionsBox.style.display = 'none';
+      closeFloatingDropdown(suggestionsBox);
       suggestionsBox.innerHTML = '';
     }
   }
@@ -1017,25 +1072,22 @@ function setupCustomerAutocomplete() {
 
   const renderSuggestions = (items) => {
     if (!items || items.length === 0) {
-      suggestionsBox.style.display = 'none';
+      closeFloatingDropdown(suggestionsBox);
       suggestionsBox.innerHTML = '';
-      toggleFieldDropdown(input, false);
       return;
     }
 
     suggestionsBox.innerHTML = items
       .map((name) => `<div class="suggestion-item" data-name="${name}">${name}</div>`)
       .join('');
-    suggestionsBox.style.display = 'block';
-    toggleFieldDropdown(input, true);
+    openFloatingDropdown(suggestionsBox, input);
 
     suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
       item.addEventListener('mousedown', (event) => {
         event.preventDefault();
         const selectedName = event.target.getAttribute('data-name');
         input.value = selectedName;
-        suggestionsBox.style.display = 'none';
-        toggleFieldDropdown(input, false);
+        closeFloatingDropdown(suggestionsBox);
       });
     });
   };
@@ -1064,8 +1116,7 @@ function setupCustomerAutocomplete() {
 
   input.addEventListener('blur', () => {
     setTimeout(() => {
-      suggestionsBox.style.display = 'none';
-      toggleFieldDropdown(input, false);
+      closeFloatingDropdown(suggestionsBox);
     }, 150);
   });
 }
@@ -1088,8 +1139,7 @@ function setupProjectAutocomplete() {
 
   input.addEventListener('blur', () => {
     setTimeout(() => {
-      suggestionsBox.style.display = 'none';
-      toggleFieldDropdown(input, false);
+      closeFloatingDropdown(suggestionsBox);
     }, 150);
   });
 
