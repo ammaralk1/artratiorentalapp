@@ -1668,9 +1668,9 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 22px;
+  padding: 10px 18px;
   font-weight: 600;
-  border-radius: 999px;
+  border-radius: 14px;
   box-shadow: 0 12px 24px rgba(76, 110, 245, 0.2);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1986,12 +1986,26 @@ body[dir="ltr"] .reservation-field textarea {
   position: relative;
 }
 
+.reservation-billing-field--percent,
+.reservation-billing-field--amount {
+  flex: 0 1 160px;
+  max-width: 160px;
+}
+
 .reservation-billing-field--percent {
   order: 0;
 }
 
 .reservation-billing-field--amount {
   order: 1;
+}
+
+@media (max-width: 992px) {
+  .reservation-billing-field--percent,
+  .reservation-billing-field--amount {
+    flex: 1 1 45%;
+    max-width: none;
+  }
 }
 
 :is(html[dir='rtl'], body[dir='rtl']) .reservation-billing-field--percent {
@@ -2008,6 +2022,7 @@ body[dir="ltr"] .reservation-field textarea {
   background: rgba(248, 250, 255, 0.85);
   padding: 10px 14px;
   font-weight: 500;
+  color: #1f2d52;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
@@ -2050,9 +2065,11 @@ body[dir="ltr"] .reservation-field textarea {
   margin-bottom: 0;
 }
 
+
 .reservation-meta-card--narrow {
-  min-width: 220px;
-  max-width: 260px;
+  min-width: 180px;
+  max-width: 200px;
+  flex: 0 1 200px;
 }
 
 .reservation-meta-card--narrow .reservation-billing-input {
