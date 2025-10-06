@@ -1612,6 +1612,17 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: rgba(203, 213, 225, 0.65);
 }
 
+.reservation-stack {
+  width: min(100%, 520px);
+  margin-inline: auto;
+}
+
+@media (min-width: 1400px) {
+  .reservation-stack {
+    width: min(100%, 500px);
+  }
+}
+
 @media (min-width: 1200px) {
   .reservation-row {
     display: grid;
