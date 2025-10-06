@@ -649,7 +649,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           <td>${item.desc}</td>
           <td>${priceDisplay}</td>
           <td>${imageCell}</td>
-          <td><button type="button" class="btn btn-sm btn-danger" data-action="remove-item" data-index="${index}">🗑️</button></td>
+          <td><button type="button" class="reservation-remove-button" data-action="remove-item" data-index="${index}">🗑️</button></td>
         </tr>
       `;
     })

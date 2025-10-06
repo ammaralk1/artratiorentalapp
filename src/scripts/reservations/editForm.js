@@ -61,7 +61,7 @@ export function renderEditReservationItems(items = []) {
           <td>${priceDisplay}</td>
           <td>${qtyDisplay}</td>
           <td>${imageCell}</td>
-          <td><button type="button" class="btn btn-sm btn-danger" data-action="remove-edit-item" data-item-index="${index}">🗑️</button></td>
+          <td><button type="button" class="reservation-remove-button" data-action="remove-edit-item" data-item-index="${index}">🗑️</button></td>
         </tr>
       `;
     })

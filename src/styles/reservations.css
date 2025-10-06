@@ -939,6 +939,52 @@ body[dir="rtl"] .reservation-summary-card {
   color: #e2e8f0;
 }
 
+.reservation-equipment-table {
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+@media (min-width: 992px) {
+  .reservation-equipment-table {
+    max-width: 55%;
+  }
+}
+
+.reservation-remove-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(220, 38, 38, 0.85));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 12px 24px rgba(220, 38, 38, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.reservation-remove-button:hover,
+.reservation-remove-button:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(220, 38, 38, 0.45);
+  filter: brightness(1.05);
+}
+
+.reservation-remove-button:active {
+  transform: translateY(0);
+  box-shadow: 0 10px 20px rgba(220, 38, 38, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-remove-button {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.82), rgba(185, 28, 28, 0.88));
+  border-color: rgba(248, 113, 113, 0.58);
+  box-shadow: 0 16px 28px rgba(185, 28, 28, 0.45);
+}
+
 :is(html.dark-mode, body.dark-mode) .reservation-summary-card .summary-details-row {
   color: var(--clr-text);
 }
