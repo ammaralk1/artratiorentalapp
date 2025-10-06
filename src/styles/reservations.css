@@ -1613,40 +1613,28 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-stack {
-  width: min(100%, 520px);
-  margin-inline: auto;
+  width: min(100%, 480px);
+  margin-left: 0;
+  margin-right: auto;
 }
 
 @media (min-width: 1400px) {
   .reservation-stack {
-    width: min(100%, 500px);
+    width: min(100%, 440px);
   }
 }
 
-body[dir="rtl"] .reservation-stack {
-  margin-inline-start: auto;
-  margin-inline-end: 0;
-}
-
-body[dir="ltr"] .reservation-stack {
-  margin-inline-end: auto;
-  margin-inline-start: 0;
-}
-
 .reservation-summary-box {
-  width: min(100%, 520px);
-  margin-inline: auto;
-  text-align: right;
+  width: min(100%, 480px);
+  margin-left: 0;
+  margin-right: auto;
+  text-align: left;
   background: rgba(238, 243, 255, 0.92);
   border: 1px solid rgba(76, 110, 245, 0.16);
   border-radius: 16px;
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
   padding: 18px 20px;
   line-height: 1.6;
-}
-
-body[dir="ltr"] .reservation-summary-box {
-  text-align: left;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
