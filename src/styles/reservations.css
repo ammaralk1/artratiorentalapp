@@ -1614,8 +1614,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-stack {
   width: min(100%, 480px);
-  margin-left: 0;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 @media (min-width: 1400px) {
@@ -1626,8 +1625,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-summary-box {
   width: min(100%, 480px);
-  margin-left: 0;
-  margin-right: auto;
+  margin-inline: auto;
   text-align: left;
   background: rgba(238, 243, 255, 0.92);
   border: 1px solid rgba(76, 110, 245, 0.16);
@@ -1650,6 +1648,22 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-summary-box br + br {
   line-height: 1.4;
+}
+
+@media (min-width: 992px) {
+  body[dir="rtl"] .reservation-stack,
+  body[dir="rtl"] .reservation-summary-box {
+    margin-inline-start: 0;
+    margin-inline-end: auto;
+    text-align: right;
+  }
+
+  body[dir="ltr"] .reservation-stack,
+  body[dir="ltr"] .reservation-summary-box {
+    margin-inline-start: auto;
+    margin-inline-end: 0;
+    text-align: left;
+  }
 }
 
 @media (min-width: 1200px) {
