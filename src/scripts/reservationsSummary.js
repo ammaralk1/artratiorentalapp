@@ -130,12 +130,12 @@ export function buildSummaryHtml({
 
   return `
     <div class="reservation-summary-box alert alert-info">
-      ${totalLine}<br>
-      ${itemsLine}<br>
-      ${durationLine}<br>
-      ${crewLine}<br>
-      ${taxLabel}<br>
-      ${paymentLine}
+      <div class="reservation-summary-line">${itemsLine}</div>
+      <div class="reservation-summary-line">${durationLine}</div>
+      <div class="reservation-summary-line">${crewLine}</div>
+      <div class="reservation-summary-line">${taxLabel}</div>
+      <div class="reservation-summary-line">${paymentLine}</div>
+      <div class="reservation-summary-line reservation-summary-total">${totalLine}</div>
     </div>
   `;
 }

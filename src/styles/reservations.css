@@ -1670,6 +1670,26 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   line-height: 1.4;
 }
 
+.reservation-summary-line {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.98rem;
+}
+
+.reservation-summary-line:last-child {
+  margin-bottom: 0;
+}
+
+.reservation-summary-total {
+  margin-top: 12px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-summary-total {
+  color: #f8fafc;
+}
+
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
   body[dir="rtl"] .reservation-summary-box {
