@@ -1986,6 +1986,22 @@ body[dir="ltr"] .reservation-field textarea {
   position: relative;
 }
 
+.reservation-billing-field--percent {
+  order: 0;
+}
+
+.reservation-billing-field--amount {
+  order: 1;
+}
+
+:is(html[dir='rtl'], body[dir='rtl']) .reservation-billing-field--percent {
+  order: 1;
+}
+
+:is(html[dir='rtl'], body[dir='rtl']) .reservation-billing-field--amount {
+  order: 0;
+}
+
 .reservation-billing-input {
   border-radius: 12px;
   border: 1px solid rgba(76, 110, 245, 0.18);
@@ -2032,6 +2048,60 @@ body[dir="ltr"] .reservation-field textarea {
 
 .reservation-meta-card--compact .form-label {
   margin-bottom: 0;
+}
+
+.reservation-meta-card--narrow {
+  min-width: 220px;
+  max-width: 260px;
+}
+
+.reservation-meta-card--narrow .reservation-billing-input {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .reservation-meta-card--narrow {
+    min-width: 100%;
+    max-width: 100%;
+  }
+}
+
+.reservation-share-switch,
+.reservation-tax-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+
+.reservation-share-switch .form-check-input,
+.reservation-tax-switch .form-check-input {
+  margin-inline-start: 0;
+  margin-inline-end: 10px;
+}
+
+.reservation-share-switch .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+}
+
+.reservation-share-switch .form-check-label {
+  font-weight: 500;
+  color: #1f2d52;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-share-switch .form-check-label {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-share-switch .form-check-input {
+  background-color: rgba(24, 33, 59, 0.9);
+  border-color: rgba(93, 133, 255, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-share-switch .form-check-input:checked {
+  background-color: rgba(76, 110, 245, 0.85);
+  border-color: rgba(76, 110, 245, 0.85);
 }
 
 @media (max-width: 768px) {

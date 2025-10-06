@@ -60,14 +60,17 @@ function getProjectSearchElements() {
 
 function getCompanySharePercent() {
   const shareInput = document.getElementById('res-company-share');
-  if (!shareInput) {
-    return DEFAULT_COMPANY_SHARE_PERCENT;
+  if (!shareInput || !shareInput.checked) {
+    return null;
   }
 
   const raw = shareInput.dataset.companyShare ?? shareInput.value ?? DEFAULT_COMPANY_SHARE_PERCENT;
   const normalized = normalizeNumbers(String(raw).replace('%', '').trim());
   const parsed = parseFloat(normalized);
-  return Number.isFinite(parsed) ? parsed : DEFAULT_COMPANY_SHARE_PERCENT;
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+  return parsed;
 }
 
 function isProjectConfirmed(project) {
@@ -781,6 +784,12 @@ function setupSummaryEvents() {
     taxCheckbox.dataset.listenerAttached = 'true';
   }
 
+  const shareCheckbox = document.getElementById('res-company-share');
+  if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
+    shareCheckbox.addEventListener('change', renderDraftReservationSummary);
+    shareCheckbox.dataset.listenerAttached = 'true';
+  }
+
   const paymentSelect = document.getElementById('res-payment-status');
   if (paymentSelect && !paymentSelect.dataset.listenerAttached) {
     paymentSelect.addEventListener('change', renderDraftReservationSummary);
@@ -997,6 +1006,10 @@ function resetForm() {
     taxCheckbox.checked = false;
     taxCheckbox.disabled = false;
     taxCheckbox.classList.remove('disabled');
+  }
+  const shareCheckbox = document.getElementById('res-company-share');
+  if (shareCheckbox) {
+    shareCheckbox.checked = true;
   }
   const projectSelect = document.getElementById('res-project');
   if (projectSelect) projectSelect.value = '';

@@ -3,7 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
-import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
+import { calculateReservationDays } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
@@ -85,8 +85,24 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ? Math.round(computedTotal)
     : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
-  const companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
-  const companyShareAmount = Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100));
+  const rawCompanySharePercent = reservation.companySharePercent
+    ?? reservation.company_share_percent
+    ?? reservation.companyShare
+    ?? reservation.company_share;
+  const normalizedCompanyShare = rawCompanySharePercent != null
+    ? parseFloat(normalizeNumbers(String(rawCompanySharePercent)))
+    : NaN;
+  const companyShareEnabledFlag = reservation.companyShareEnabled
+    ?? reservation.company_share_enabled
+    ?? reservation.companyShareApplied;
+  const hasCompanyShare = (companyShareEnabledFlag === true)
+    || (Number.isFinite(normalizedCompanyShare) && normalizedCompanyShare > 0);
+  const companySharePercent = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
+    ? normalizedCompanyShare
+    : 0;
+  const companyShareAmount = companySharePercent > 0
+    ? Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100))
+    : 0;
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -180,7 +196,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     summaryDetails.push({ icon: '🧾', label: taxLabel, value: `${taxAmountDisplay} ${currencyLabel}` });
   }
 
-  summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
+  if (companySharePercent > 0) {
+    summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
+  }
 
   summaryDetails.push({ icon: '💰', label: finalTotalLabel, value: `${finalTotalDisplay} ${currencyLabel}` });
 

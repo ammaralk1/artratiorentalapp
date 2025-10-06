@@ -954,19 +954,19 @@
                   <div class="reservation-meta-card">
                     <label id="res-billing-label" class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
                     <div class="reservation-billing-grid" role="group" aria-labelledby="res-billing-label">
-                      <div class="reservation-billing-field">
-                        <input type="text" id="res-discount" class="form-control reservation-billing-input" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
-                      </div>
-                      <div class="reservation-billing-field">
+                      <div class="reservation-billing-field reservation-billing-field--percent">
                         <select id="res-discount-type" class="form-select reservation-billing-input">
                           <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
                           <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
                         </select>
                       </div>
-                      <div class="reservation-billing-field">
-                        <label for="res-company-share" class="visually-hidden" data-i18n data-i18n-key="reservations.create.billing.companyShare">نسبة الشركة</label>
-                        <input type="text" id="res-company-share" class="form-control reservation-billing-input reservation-billing-input--readonly" value="10%" readonly data-company-share="10" data-i18n-value-key="reservations.create.billing.companyShareValue">
+                      <div class="reservation-billing-field reservation-billing-field--amount">
+                        <input type="text" id="res-discount" class="form-control reservation-billing-input" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
                       </div>
+                    </div>
+                    <div class="form-check form-switch reservation-share-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="res-company-share" data-company-share="10" checked>
+                      <label class="form-check-label" for="res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
                     </div>
                     <div class="form-check form-switch reservation-tax-switch">
                       <input class="form-check-input" type="checkbox" role="switch" id="res-tax">
@@ -974,8 +974,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                  <div class="reservation-meta-card reservation-meta-card--compact">
+                <div class="col-lg-auto col-md-6">
+                  <div class="reservation-meta-card reservation-meta-card--compact reservation-meta-card--narrow">
                     <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
                     <select id="res-payment-status" class="form-select reservation-billing-input">
                       <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>

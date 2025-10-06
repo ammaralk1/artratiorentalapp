@@ -140,7 +140,7 @@ export function buildSummaryHtml({
     ? Number(companySharePercent)
     : null;
 
-  if (sharePercent !== null) {
+  if (sharePercent !== null && sharePercent > 0) {
     const shareAmount = Number.isFinite(companyShareAmount)
       ? Number(companyShareAmount)
       : total * (sharePercent / 100);
@@ -182,16 +182,16 @@ export function renderDraftSummary({
   paidStatus,
   start,
   end,
-  companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT,
+  companySharePercent = null,
 }) {
   const technicianIds = getSelectedTechnicians();
   const techniciansCount = technicianIds.length;
   const rentalDays = calculateReservationDays(start, end);
   const total = calculateReservationTotal(selectedItems, discount, discountType, applyTax, technicianIds, { start, end });
-  const sharePercent = Number.isFinite(companySharePercent)
-    ? companySharePercent
-    : DEFAULT_COMPANY_SHARE_PERCENT;
-  const companyShareAmount = Math.max(0, total * (sharePercent / 100));
+  const sharePercent = Number.isFinite(companySharePercent) ? companySharePercent : null;
+  const companyShareAmount = sharePercent && sharePercent > 0
+    ? Math.max(0, total * (sharePercent / 100))
+    : null;
   const summaryHtml = buildSummaryHtml({
     total,
     itemsCount: selectedItems.length,
@@ -214,16 +214,16 @@ export function renderEditSummary({
   paidStatus,
   start,
   end,
-  companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT,
+  companySharePercent = null,
 }) {
   const technicianIds = getEditingTechnicians();
   const techniciansCount = technicianIds.length;
   const rentalDays = calculateReservationDays(start, end);
   const total = calculateReservationTotal(items, discount, discountType, applyTax, technicianIds, { start, end });
-  const sharePercent = Number.isFinite(companySharePercent)
-    ? companySharePercent
-    : DEFAULT_COMPANY_SHARE_PERCENT;
-  const companyShareAmount = Math.max(0, total * (sharePercent / 100));
+  const sharePercent = Number.isFinite(companySharePercent) ? companySharePercent : null;
+  const companyShareAmount = sharePercent && sharePercent > 0
+    ? Math.max(0, total * (sharePercent / 100))
+    : null;
   return buildSummaryHtml({
     total,
     itemsCount: items.length,
