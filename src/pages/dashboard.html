@@ -952,13 +952,21 @@
               <div class="row mb-3 mt-3 align-items-end g-3 reservation-meta-row">
                 <div class="col-lg-5 col-md-6">
                   <div class="reservation-meta-card">
-                    <label class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
-                    <div class="input-group reservation-discount-group mb-3">
-                      <input type="text" id="res-discount" class="form-control" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
-                      <select id="res-discount-type" class="form-select">
-                        <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
-                        <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
-                      </select>
+                    <label id="res-billing-label" class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
+                    <div class="reservation-billing-grid" role="group" aria-labelledby="res-billing-label">
+                      <div class="reservation-billing-field">
+                        <input type="text" id="res-discount" class="form-control reservation-billing-input" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
+                      </div>
+                      <div class="reservation-billing-field">
+                        <select id="res-discount-type" class="form-select reservation-billing-input">
+                          <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
+                          <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
+                        </select>
+                      </div>
+                      <div class="reservation-billing-field">
+                        <label for="res-company-share" class="visually-hidden" data-i18n data-i18n-key="reservations.create.billing.companyShare">نسبة الشركة</label>
+                        <input type="text" id="res-company-share" class="form-control reservation-billing-input reservation-billing-input--readonly" value="10%" readonly data-company-share="10" data-i18n-value-key="reservations.create.billing.companyShareValue">
+                      </div>
                     </div>
                     <div class="form-check form-switch reservation-tax-switch">
                       <input class="form-check-input" type="checkbox" role="switch" id="res-tax">
@@ -967,14 +975,16 @@
                   </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                  <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
-                  <select id="res-payment-status" class="form-select">
-                    <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
-                    <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
-                  </select>
+                  <div class="reservation-meta-card reservation-meta-card--compact">
+                    <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
+                    <select id="res-payment-status" class="form-select reservation-billing-input">
+                      <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="col-lg-3 col-md-12 d-flex justify-content-lg-end justify-content-start mt-3 mt-lg-0">
-                  <button type="button" class="btn btn-primary btn-lg w-100 w-lg-auto" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
+                  <button type="button" class="btn btn-primary reservation-primary-action w-100 w-lg-auto" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
                 </div>
               </div>
             </form>

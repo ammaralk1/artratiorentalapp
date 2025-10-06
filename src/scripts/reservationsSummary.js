@@ -3,6 +3,8 @@ import { t } from './language.js';
 import { getSelectedTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
 
+export const DEFAULT_COMPANY_SHARE_PERCENT = 10;
+
 function resolveTechnicianRate(tech = {}) {
   const candidates = [
     tech.dailyWage,
@@ -102,6 +104,8 @@ export function buildSummaryHtml({
   techniciansCount,
   applyTax,
   paidStatus,
+  companySharePercent = null,
+  companyShareAmount = null,
   totalKey = 'reservations.summary.total'
 }) {
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
@@ -119,7 +123,8 @@ export function buildSummaryHtml({
   const taxLabelShort = t('reservations.summary.taxLabelShort', '🧾 الضريبة');
   const paymentLabel = t('reservations.summary.paymentLabelShort', '💳 حالة الدفع');
   const totalLabel = t(totalKey.replace('.total', '.totalLabel'), '💰 التكلفة الإجمالية');
-
+  const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
+  
   const taxValue = applyTax
     ? t('reservations.summary.taxIncludedValue', 'شامل 15%')
     : t('reservations.summary.taxExcludedValue', 'غير شامل');
@@ -129,8 +134,25 @@ export function buildSummaryHtml({
     { label: daysLabel, value: rentalDaysDisplay },
     { label: crewLabel, value: crewCountDisplay },
     { label: taxLabelShort, value: taxValue },
-    { label: paymentLabel, value: paidText },
   ];
+
+  const sharePercent = Number.isFinite(companySharePercent)
+    ? Number(companySharePercent)
+    : null;
+
+  if (sharePercent !== null) {
+    const shareAmount = Number.isFinite(companyShareAmount)
+      ? Number(companyShareAmount)
+      : total * (sharePercent / 100);
+    const sharePercentDisplay = normalizeNumbers(String(sharePercent));
+    const shareAmountDisplay = normalizeNumbers(
+      Number.isFinite(shareAmount) ? shareAmount.toFixed(2) : '0'
+    );
+    const shareValue = `${sharePercentDisplay}% (${shareAmountDisplay} ${currencyLabel})`;
+    summaryRows.push({ label: companyShareLabel, value: shareValue });
+  }
+
+  summaryRows.push({ label: paymentLabel, value: paidText });
 
   const totalValue = `${totalDisplay} ${currencyLabel}`;
 
@@ -152,28 +174,56 @@ export function buildSummaryHtml({
   `;
 }
 
-export function renderDraftSummary({ selectedItems, discount, discountType, applyTax, paidStatus, start, end }) {
+export function renderDraftSummary({
+  selectedItems,
+  discount,
+  discountType,
+  applyTax,
+  paidStatus,
+  start,
+  end,
+  companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT,
+}) {
   const technicianIds = getSelectedTechnicians();
   const techniciansCount = technicianIds.length;
   const rentalDays = calculateReservationDays(start, end);
   const total = calculateReservationTotal(selectedItems, discount, discountType, applyTax, technicianIds, { start, end });
+  const sharePercent = Number.isFinite(companySharePercent)
+    ? companySharePercent
+    : DEFAULT_COMPANY_SHARE_PERCENT;
+  const companyShareAmount = Math.max(0, total * (sharePercent / 100));
   const summaryHtml = buildSummaryHtml({
     total,
     itemsCount: selectedItems.length,
     rentalDays,
     techniciansCount,
     applyTax,
-    paidStatus
+    paidStatus,
+    companySharePercent: sharePercent,
+    companyShareAmount
   });
 
   setSummaryHtml(summaryHtml);
 }
 
-export function renderEditSummary({ items, discount, discountType, applyTax, paidStatus, start, end }) {
+export function renderEditSummary({
+  items,
+  discount,
+  discountType,
+  applyTax,
+  paidStatus,
+  start,
+  end,
+  companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT,
+}) {
   const technicianIds = getEditingTechnicians();
   const techniciansCount = technicianIds.length;
   const rentalDays = calculateReservationDays(start, end);
   const total = calculateReservationTotal(items, discount, discountType, applyTax, technicianIds, { start, end });
+  const sharePercent = Number.isFinite(companySharePercent)
+    ? companySharePercent
+    : DEFAULT_COMPANY_SHARE_PERCENT;
+  const companyShareAmount = Math.max(0, total * (sharePercent / 100));
   return buildSummaryHtml({
     total,
     itemsCount: items.length,
@@ -181,6 +231,8 @@ export function renderEditSummary({ items, discount, discountType, applyTax, pai
     techniciansCount,
     applyTax,
     paidStatus,
+    companySharePercent: sharePercent,
+    companyShareAmount,
     totalKey: 'reservations.summary.totalAfterEdit'
   });
 }

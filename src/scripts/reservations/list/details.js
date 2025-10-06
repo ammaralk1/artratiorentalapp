@@ -3,7 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
-import { calculateReservationDays } from '../../reservationsSummary.js';
+import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
@@ -85,6 +85,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ? Math.round(computedTotal)
     : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
+  const companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+  const companyShareAmount = Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100));
+
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
@@ -102,6 +105,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const crewTotalLabel = t('reservations.details.labels.crewTotal', 'إجمالي الفريق');
   const subtotalAfterDiscountLabel = t('reservations.details.labels.subtotalAfterDiscount', 'الإجمالي');
   const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
+  const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 نسبة الشركة');
   const tableHeaders = {
     index: '#',
     code: t('reservations.details.table.headers.code', 'الكود'),
@@ -153,6 +157,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
 
   const crewTotalDisplay = normalizeNumbers(crewTotal.toFixed(2));
+  const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
+  const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
+  const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
 
   const summaryDetails = [
     { icon: '💳', label: paymentStatusLabel, value: paymentStatusText },
@@ -172,6 +179,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   if (applyTaxFlag && taxAmount > 0) {
     summaryDetails.push({ icon: '🧾', label: taxLabel, value: `${taxAmountDisplay} ${currencyLabel}` });
   }
+
+  summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
 
   summaryDetails.push({ icon: '💰', label: finalTotalLabel, value: `${finalTotalDisplay} ${currencyLabel}` });
 

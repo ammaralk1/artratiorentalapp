@@ -3,7 +3,7 @@ import { showToast, generateReservationId, normalizeNumbers } from '../utils.js'
 import { t } from '../language.js';
 import { resolveItemImage, getEquipmentRecordByBarcode, isEquipmentInMaintenance, findEquipmentByBarcode } from '../reservationsEquipment.js';
 import { getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
-import { calculateReservationTotal, renderDraftSummary } from '../reservationsSummary.js';
+import { calculateReservationTotal, renderDraftSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import { normalizeText } from '../reservationsShared.js';
 import {
   getSelectedItems,
@@ -56,6 +56,18 @@ function getProjectSearchElements() {
   const suggestionsBox = document.getElementById('project-suggestions');
   const select = document.getElementById('res-project');
   return { input, suggestionsBox, select };
+}
+
+function getCompanySharePercent() {
+  const shareInput = document.getElementById('res-company-share');
+  if (!shareInput) {
+    return DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+
+  const raw = shareInput.dataset.companyShare ?? shareInput.value ?? DEFAULT_COMPANY_SHARE_PERCENT;
+  const normalized = normalizeNumbers(String(raw).replace('%', '').trim());
+  const parsed = parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_COMPANY_SHARE_PERCENT;
 }
 
 function isProjectConfirmed(project) {
@@ -733,6 +745,7 @@ function renderDraftReservationSummary() {
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
   const { start, end } = getCreateReservationDateRange();
+  const companySharePercent = getCompanySharePercent();
 
   renderDraftSummary({
     selectedItems: getSelectedItems(),
@@ -741,7 +754,8 @@ function renderDraftReservationSummary() {
     applyTax,
     paidStatus,
     start,
-    end
+    end,
+    companySharePercent
   });
 }
 
