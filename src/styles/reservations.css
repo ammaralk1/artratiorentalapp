@@ -927,6 +927,18 @@ body[dir="rtl"] .reservation-summary-card {
   width: 100%;
 }
 
+.reservation-equipment-heading {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1f2d52;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-equipment-heading {
+  color: #e2e8f0;
+}
+
 :is(html.dark-mode, body.dark-mode) .reservation-summary-card .summary-details-row {
   color: var(--clr-text);
 }

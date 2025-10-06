@@ -16,7 +16,7 @@ import {
   saveReservationChanges
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
-import { findEquipmentByDescription } from './createForm.js';
+import { findEquipmentByDescription, hasExactEquipmentDescription } from './createForm.js';
 
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
@@ -265,6 +265,13 @@ export function setupEditEquipmentDescriptionInput() {
         addEquipmentToEditingByDescription(editInput);
       }
     });
+    const tryAutoAdd = () => {
+      if (hasExactEquipmentDescription(editInput.value, 'edit-res-equipment-description-options')) {
+        addEquipmentToEditingByDescription(editInput);
+      }
+    };
+    editInput.addEventListener('input', tryAutoAdd);
+    editInput.addEventListener('change', tryAutoAdd);
     editInput.dataset.listenerAttached = 'true';
   }
 }

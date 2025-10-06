@@ -439,10 +439,31 @@ export function findEquipmentByDescription(term) {
   const normalizedTerm = normalizeText(term);
   if (!normalizedTerm) return null;
   const equipment = getCachedEquipment() || [];
+
+  const exactMatch = equipment.find((item) => {
+    const descriptionText = normalizeText(item?.desc || item?.description || '');
+    return descriptionText === normalizedTerm;
+  });
+  if (exactMatch) return exactMatch;
+
   return equipment.find((item) => {
     const descriptionText = normalizeText(item?.desc || item?.description || '');
     return descriptionText.includes(normalizedTerm);
   }) || null;
+}
+
+export function hasExactEquipmentDescription(value, listId = 'equipment-description-options') {
+  const normalizedValue = normalizeText(value);
+  if (!normalizedValue) return false;
+
+  const list = document.getElementById(listId);
+  if (list && list.options) {
+    const match = Array.from(list.options).some((option) => normalizeText(option.value) === normalizedValue);
+    if (match) return true;
+  }
+
+  const equipment = getCachedEquipment() || [];
+  return equipment.some((item) => normalizeText(item?.desc || item?.description || '') === normalizedValue);
 }
 
 function populateEquipmentDescriptionLists() {
@@ -541,6 +562,13 @@ function setupEquipmentDescriptionInputs() {
         addDraftEquipmentByDescription(createInput);
       }
     });
+    const tryAutoAdd = () => {
+      if (hasExactEquipmentDescription(createInput.value, 'equipment-description-options')) {
+        addDraftEquipmentByDescription(createInput);
+      }
+    };
+    createInput.addEventListener('input', tryAutoAdd);
+    createInput.addEventListener('change', tryAutoAdd);
     createInput.dataset.listenerAttached = 'true';
   }
 }
