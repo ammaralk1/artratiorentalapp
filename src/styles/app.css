@@ -2762,6 +2762,85 @@
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.28);
   }
 
+  :where(html.dark, body.dark) .flatpickr-calendar {
+    background: linear-gradient(182deg, rgba(13, 20, 38, 0.98), rgba(7, 12, 27, 0.98)) !important;
+    border: 1px solid rgba(92, 132, 214, 0.4) !important;
+    box-shadow: 0 24px 48px rgba(4, 9, 22, 0.72) !important;
+    color: #e2e8f0 !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-calendar.arrowTop:before,
+  :where(html.dark, body.dark) .flatpickr-calendar.arrowTop:after {
+    border-bottom-color: rgba(13, 20, 38, 0.98) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-calendar.arrowBottom:before,
+  :where(html.dark, body.dark) .flatpickr-calendar.arrowBottom:after {
+    border-top-color: rgba(13, 20, 38, 0.98) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-months,
+  :where(html.dark, body.dark) .flatpickr-weekdays {
+    background: rgba(21, 30, 55, 0.96) !important;
+    border-bottom: 1px solid rgba(92, 132, 214, 0.32) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-month,
+  :where(html.dark, body.dark) .flatpickr-weekday,
+  :where(html.dark, body.dark) .flatpickr-current-month,
+  :where(html.dark, body.dark) .flatpickr-current-month input.cur-year {
+    color: rgba(226, 232, 240, 0.88) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-day {
+    color: #f8fafc !important;
+    border-radius: 10px !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-day:hover,
+  :where(html.dark, body.dark) .flatpickr-day:focus {
+    background: rgba(59, 130, 246, 0.32) !important;
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.48) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-day.today {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(96, 165, 250, 0.6) !important;
+    color: #dbeafe !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-day.selected,
+  :where(html.dark, body.dark) .flatpickr-day.startRange,
+  :where(html.dark, body.dark) .flatpickr-day.endRange {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.38) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-day.inRange {
+    background: rgba(59, 130, 246, 0.24) !important;
+    color: #e2e8f0 !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-time,
+  :where(html.dark, body.dark) .flatpickr-time input,
+  :where(html.dark, body.dark) .flatpickr-time .numInputWrapper,
+  :where(html.dark, body.dark) .flatpickr-time .flatpickr-am-pm {
+    background: rgba(16, 24, 44, 0.95) !important;
+    border: 1px solid rgba(96, 143, 230, 0.4) !important;
+    color: #f1f5f9 !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp::after,
+  :where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown::after {
+    border-color: rgba(203, 213, 225, 0.75) !important;
+  }
+
+  :where(html.dark, body.dark) .flatpickr-time .flatpickr-time-separator {
+    color: rgba(226, 232, 240, 0.78) !important;
+    font-weight: 600 !important;
+  }
+
   :where(html.dark, body.dark) .input-group-text,
   :where(html.dark, body.dark) .form-check-label,
   :where(html.dark, body.dark) label {
