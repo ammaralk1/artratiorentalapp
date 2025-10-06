@@ -1627,10 +1627,10 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-summary-container {
-  display: flex;
+  display: inline-flex;
   align-items: flex-start;
+  flex: 0 0 auto;
   width: auto;
-  width: fit-content;
   max-width: 100%;
   margin: 0;
 }
@@ -1654,7 +1654,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   line-height: 1.45;
   align-self: flex-start;
   width: auto;
-  max-width: 100%;
+  max-width: min(100%, 320px);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
