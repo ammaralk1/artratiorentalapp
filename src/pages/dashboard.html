@@ -977,7 +977,7 @@
                 <div class="col-lg-auto col-md-12">
                   <div class="reservation-meta-card reservation-meta-card--compact reservation-meta-card--narrow">
                     <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
-                    <select id="res-payment-status" class="form-select reservation-billing-input reservation-billing-select reservation-billing-input--payment">
+                    <select id="res-payment-status" class="form-select reservation-billing-input reservation-billing-select reservation-billing-input--payment payment-status-select">
                       <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
                       <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
                     </select>
@@ -1381,7 +1381,7 @@
 
             <div class="col-md-6">
               <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-              <select id="edit-res-paid" class="form-select">
+              <select id="edit-res-paid" class="form-select payment-status-select">
                 <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
                 <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
               </select>

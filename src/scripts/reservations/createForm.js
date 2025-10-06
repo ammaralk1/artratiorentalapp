@@ -31,6 +31,17 @@ import {
 let afterSubmitCallback = null;
 let cachedProjects = [];
 
+export function updatePaymentStatusAppearance(select, statusValue) {
+  if (!select) return;
+  const value = statusValue ?? select.value;
+  select.classList.remove('payment-status-select--paid', 'payment-status-select--unpaid');
+  if (value === 'paid') {
+    select.classList.add('payment-status-select--paid');
+  } else {
+    select.classList.add('payment-status-select--unpaid');
+  }
+}
+
 function setCachedProjects(projects) {
   cachedProjects = Array.isArray(projects) ? [...projects] : [];
 }
@@ -750,6 +761,9 @@ function renderDraftReservationSummary() {
   const { start, end } = getCreateReservationDateRange();
   const companySharePercent = getCompanySharePercent();
 
+  const paymentSelect = document.getElementById('res-payment-status');
+  updatePaymentStatusAppearance(paymentSelect, paidStatus);
+
   renderDraftSummary({
     selectedItems: getSelectedItems(),
     discount,
@@ -792,9 +806,14 @@ function setupSummaryEvents() {
 
   const paymentSelect = document.getElementById('res-payment-status');
   if (paymentSelect && !paymentSelect.dataset.listenerAttached) {
-    paymentSelect.addEventListener('change', renderDraftReservationSummary);
+    paymentSelect.addEventListener('change', () => {
+      updatePaymentStatusAppearance(paymentSelect);
+      renderDraftReservationSummary();
+    });
     paymentSelect.dataset.listenerAttached = 'true';
   }
+
+  updatePaymentStatusAppearance(paymentSelect);
 }
 
 function setupReservationTimeSync() {
@@ -1022,7 +1041,10 @@ function resetForm() {
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
   const paymentSelect = document.getElementById('res-payment-status');
-  if (paymentSelect) paymentSelect.value = 'unpaid';
+  if (paymentSelect) {
+    paymentSelect.value = 'unpaid';
+    updatePaymentStatusAppearance(paymentSelect, 'unpaid');
+  }
   resetSelectedTechnicians();
   setSelectedItems([]);
   renderReservationItems();

@@ -16,7 +16,7 @@ import {
   saveReservationChanges
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
-import { findEquipmentByDescription, hasExactEquipmentDescription } from './createForm.js';
+import { findEquipmentByDescription, hasExactEquipmentDescription, updatePaymentStatusAppearance } from './createForm.js';
 
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
@@ -103,6 +103,8 @@ export function updateEditReservationSummary() {
     paidSelect.dataset.listenerAttached = 'true';
   }
 
+  updatePaymentStatusAppearance(paidSelect);
+
   const rawDiscount = normalizeNumbers(discountInput?.value || '0');
   if (discountInput) discountInput.value = rawDiscount;
 
@@ -112,6 +114,7 @@ export function updateEditReservationSummary() {
   const taxCheckbox = document.getElementById('edit-res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = paidSelect?.value || 'unpaid';
+  updatePaymentStatusAppearance(paidSelect, paidStatus);
 
   const { items: editingItems = [] } = getEditingState();
   const { start, end } = getEditReservationDateRange();

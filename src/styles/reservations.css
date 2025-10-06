@@ -2049,6 +2049,26 @@ body[dir="ltr"] .reservation-field textarea {
   appearance: auto;
 }
 
+.payment-status-select {
+  font-weight: 600;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+  border-width: 2px !important;
+}
+
+.payment-status-select--unpaid {
+  background-color: rgba(248, 113, 113, 0.18) !important;
+  border-color: rgba(248, 113, 113, 0.48) !important;
+  color: #b91c1c !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+.payment-status-select--paid {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  border-color: rgba(34, 197, 94, 0.45) !important;
+  color: #166534 !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
 .reservation-billing-input:focus {
   border-color: rgba(76, 110, 245, 0.48);
   box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
@@ -2082,6 +2102,20 @@ body[dir="ltr"] .reservation-field textarea {
 :is(html.dark-mode, body.dark-mode) .reservation-billing-select option {
   color: rgba(226, 232, 240, 0.95);
   background: rgba(24, 33, 59, 0.98);
+}
+
+:is(html.dark-mode, body.dark-mode) .payment-status-select--unpaid {
+  background-color: rgba(127, 29, 29, 0.55) !important;
+  border-color: rgba(248, 150, 150, 0.55) !important;
+  color: #fecaca !important;
+  box-shadow: 0 0 0 3px rgba(127, 29, 29, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .payment-status-select--paid {
+  background-color: rgba(22, 101, 52, 0.55) !important;
+  border-color: rgba(74, 222, 128, 0.55) !important;
+  color: #bbf7d0 !important;
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.3);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input:focus {
@@ -2174,6 +2208,12 @@ body[dir="ltr"] .reservation-field textarea {
   justify-content: center;
 }
 
+#create-tab .reservation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 16px;
+}
+
 #create-tab .reservation-field > .form-control,
 #create-tab .reservation-field > .form-select,
 #create-tab .reservation-billing-input,
@@ -2193,6 +2233,7 @@ body[dir="ltr"] .reservation-field textarea {
 #create-tab .reservation-meta-card,
 #create-tab .reservation-equipment-field {
   max-width: 420px;
+  margin-inline: auto;
 }
 
 #create-tab .reservation-stack {
@@ -2200,6 +2241,11 @@ body[dir="ltr"] .reservation-field textarea {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+#create-tab .reservation-field label {
+  display: block;
+  width: 100%;
 }
 
 #create-tab .reservation-stack button,
