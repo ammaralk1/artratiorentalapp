@@ -2092,6 +2092,25 @@ body[dir="ltr"] .reservation-field textarea {
   flex: 0 1 360px;
 }
 
+.reservation-payment-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reservation-payment-row .reservation-billing-input {
+  flex: 1 1 auto;
+  max-width: 160px;
+}
+
+.reservation-primary-action--compact {
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .reservation-meta-card--narrow {
     min-width: 100%;
@@ -2101,6 +2120,17 @@ body[dir="ltr"] .reservation-field textarea {
   .reservation-meta-card--billing {
     max-width: 100%;
     flex: 1 1 100%;
+  }
+
+  .reservation-payment-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .reservation-payment-row .reservation-billing-input,
+  .reservation-payment-row .reservation-primary-action--compact {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 }
 

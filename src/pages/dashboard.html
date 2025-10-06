@@ -974,17 +974,17 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-auto col-md-6">
+                <div class="col-lg-auto col-md-12">
                   <div class="reservation-meta-card reservation-meta-card--compact reservation-meta-card--narrow">
                     <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
-                    <select id="res-payment-status" class="form-select reservation-billing-input">
-                      <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
-                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
-                    </select>
+                    <div class="reservation-payment-row">
+                      <select id="res-payment-status" class="form-select reservation-billing-input">
+                        <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                        <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
+                      </select>
+                      <button type="button" class="btn btn-primary reservation-primary-action reservation-primary-action--compact" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
+                    </div>
                   </div>
-                </div>
-                <div class="col-lg-3 col-md-12 d-flex justify-content-lg-end justify-content-start mt-3 mt-lg-0">
-                  <button type="button" class="btn btn-primary reservation-primary-action w-100 w-lg-auto" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
                 </div>
               </div>
             </form>
