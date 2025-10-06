@@ -2133,16 +2133,46 @@ body[dir="ltr"] .reservation-field textarea {
     flex: 1 1 100%;
   }
 
-  .reservation-payment-row {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+}
 
-  .reservation-payment-row .reservation-billing-input,
-  .reservation-payment-row .reservation-primary-action--compact {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
+/* Center alignment for Create Reservation tab */
+#create-tab .box,
+#create-tab .reservation-meta-card,
+#create-tab .reservation-field,
+#create-tab .reservation-equipment-field,
+#create-tab .reservation-meta-card .form-label,
+#create-tab .reservation-meta-card .form-check-label,
+#create-tab .reservation-equipment-heading,
+#create-tab .reservation-create-title {
+  text-align: center;
+}
+
+#create-tab .reservation-row,
+#create-tab .reservation-meta-row,
+#create-tab .reservation-equipment-inputs,
+#create-tab .selected-technicians-list,
+#create-tab .reservation-equipment-table,
+#create-tab .reservation-meta-card {
+  margin-inline: auto;
+}
+
+#create-tab .reservation-row,
+#create-tab .reservation-meta-row,
+#create-tab .reservation-equipment-inputs,
+#create-tab .selected-technicians-list {
+  justify-content: center;
+}
+
+#create-tab .reservation-field > .form-control,
+#create-tab .reservation-field > .form-select,
+#create-tab .reservation-billing-input,
+#create-tab .reservation-equipment-field .form-control,
+#create-tab #res-payment-status {
+  margin-inline: auto;
+}
+
+#create-tab #create-reservation-btn {
+  margin-inline: auto;
 }
 
 .reservation-share-switch,
