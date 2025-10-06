@@ -1848,7 +1848,7 @@ body[dir="rtl"] .reservation-summary-box {
 }
 
 body[dir="ltr"] .reservation-summary-box {
-  text-align: left;
+  text-align: right;
 }
 
 body[dir="rtl"] .reservation-summary-container {
@@ -1857,8 +1857,8 @@ body[dir="rtl"] .reservation-summary-container {
 }
 
 body[dir="ltr"] .reservation-summary-container {
-  margin-inline-start: auto;
-  margin-inline-end: 0;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
 }
 
 #reservation-preview.reservation-summary-host,
@@ -1890,9 +1890,28 @@ body[dir="rtl"] #reservation-preview-bottom.reservation-summary-host {
 
   body[dir="ltr"] .reservation-stack,
   body[dir="ltr"] .reservation-summary-container {
-    margin-inline-start: auto;
-    margin-inline-end: 0;
+    margin-inline-start: 0;
+    margin-inline-end: auto;
   }
+}
+
+body[dir="ltr"] .reservation-row {
+  justify-content: flex-end;
+}
+
+body[dir="ltr"] .reservation-field {
+  text-align: right;
+}
+
+body[dir="ltr"] .reservation-field label {
+  text-align: right;
+  display: block;
+}
+
+body[dir="ltr"] .reservation-field > .form-control,
+body[dir="ltr"] .reservation-field > .form-select,
+body[dir="ltr"] .reservation-field textarea {
+  text-align: left;
 }
 
 @media (min-width: 1200px) {
