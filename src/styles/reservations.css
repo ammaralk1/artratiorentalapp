@@ -1612,6 +1612,27 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: rgba(203, 213, 225, 0.65);
 }
 
+.reservation-narrow {
+  width: 100%;
+  max-width: 520px;
+}
+
+@media (min-width: 1400px) {
+  .reservation-narrow {
+    max-width: 500px;
+  }
+}
+
+body[dir="rtl"] .reservation-narrow {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+body[dir="ltr"] .reservation-narrow {
+  margin-inline-end: auto;
+  margin-inline-start: 0;
+}
+
 @media (min-width: 1200px) {
   .reservation-row {
     display: grid;
