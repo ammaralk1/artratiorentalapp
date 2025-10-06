@@ -109,16 +109,10 @@ export function buildSummaryHtml({
   const itemsCountDisplay = normalizeNumbers(String(itemsCount));
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays ?? 1));
   const crewCountDisplay = normalizeNumbers(String(techniciansCount));
-  const taxLabel = applyTax
-    ? t('reservations.summary.taxIncluded', 'شامل الضريبة 15%')
-    : t('reservations.summary.taxExcluded', 'غير شامل الضريبة');
   const paidText = paidStatus === 'paid'
     ? t('reservations.create.paymentStatus.paid', 'مدفوع')
     : t('reservations.create.paymentStatus.unpaid', 'غير مدفوع');
 
-  const totalLine = t(totalKey, '💰 التكلفة الإجمالية: <strong>{total} {currency}</strong>')
-    .replace('{total}', totalDisplay)
-    .replace('{currency}', currencyLabel);
   const itemsLabel = t('reservations.summary.itemsLabel', '📦 عدد المعدات');
   const daysLabel = t('reservations.summary.durationLabel', '⏱️ عدد الأيام');
   const crewLabel = t('reservations.summary.crewLabel', '😎 عدد الفريق');
@@ -141,16 +135,18 @@ export function buildSummaryHtml({
   const totalValue = `${totalDisplay} ${currencyLabel}`;
 
   return `
-    <div class="reservation-summary-box alert alert-info">
-      ${summaryRows.map(({ label, value }) => `
-        <div class="reservation-summary-line">
-          <span class="reservation-summary-label">${label}</span>
-          ${value ? `<span class="reservation-summary-value">${value}</span>` : ''}
+    <div class="reservation-summary-container">
+      <div class="reservation-summary-box">
+        ${summaryRows.map(({ label, value }) => `
+          <div class="reservation-summary-line">
+            <span class="reservation-summary-label">${label}</span>
+            ${value ? `<span class="reservation-summary-value">${value}</span>` : ''}
+          </div>
+        `).join('')}
+        <div class="reservation-summary-line reservation-summary-total">
+          <span class="reservation-summary-label">${totalLabel}</span>
+          <span class="reservation-summary-value">${totalValue}</span>
         </div>
-      `).join('')}
-      <div class="reservation-summary-line reservation-summary-total">
-        <span class="reservation-summary-label">${totalLabel}</span>
-        <span class="reservation-summary-value">${totalValue}</span>
       </div>
     </div>
   `;
