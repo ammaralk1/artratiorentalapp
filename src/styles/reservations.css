@@ -1701,6 +1701,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-field {
   flex: 1 1 100%;
   min-width: 0;
+  position: relative;
 }
 
 .reservation-field > .form-control,
