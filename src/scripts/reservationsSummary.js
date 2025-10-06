@@ -187,8 +187,19 @@ export function renderEditSummary({ items, discount, discountType, applyTax, pai
 
 function setSummaryHtml(html) {
   const previewTop = document.getElementById('reservation-preview');
-  if (previewTop) previewTop.innerHTML = html;
+  if (previewTop) {
+    previewTop.innerHTML = html;
+    toggleSummaryHostClass(previewTop, html);
+  }
 
   const previewBottom = document.getElementById('reservation-preview-bottom');
-  if (previewBottom) previewBottom.innerHTML = html;
+  if (previewBottom) {
+    previewBottom.innerHTML = html;
+    toggleSummaryHostClass(previewBottom, html);
+  }
+}
+
+function toggleSummaryHostClass(element, html) {
+  const hasSummary = typeof html === 'string' && html.trim().length > 0;
+  element.classList.toggle('reservation-summary-host', hasSummary);
 }

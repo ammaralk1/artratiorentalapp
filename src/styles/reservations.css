@@ -1729,6 +1729,22 @@ body[dir="ltr"] .reservation-summary-container {
   margin-inline-end: 0;
 }
 
+#reservation-preview.reservation-summary-host,
+#reservation-preview-bottom.reservation-summary-host {
+  display: flex;
+  justify-content: flex-end;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+  width: 100%;
+}
+
+body[dir="rtl"] #reservation-preview.reservation-summary-host,
+body[dir="rtl"] #reservation-preview-bottom.reservation-summary-host {
+  justify-content: flex-start;
+}
+
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
   body[dir="rtl"] .reservation-summary-container {
