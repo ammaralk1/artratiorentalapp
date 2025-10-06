@@ -2044,14 +2044,11 @@ body[dir="ltr"] .reservation-field textarea {
   color: #1f233d !important;
   background-color: rgba(248, 250, 255, 0.96) !important;
   border: 1px solid rgba(76, 110, 245, 0.26) !important;
-  padding-inline-end: 36px;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='rgba(108,124,247,0.95)' d='M6 8c-.256 0-.512-.098-.707-.293l-5-5A1 1 0 0 1 1.707.293L6 4.586 10.293.293a1 1 0 1 1 1.414 1.414l-5 5A1 1 0 0 1 6 8Z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 12px 8px;
+  padding-inline-end: 32px;
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: menulist;
+  background-image: none;
 }
 
 .payment-status-select {
@@ -2102,7 +2099,7 @@ body[dir="ltr"] .reservation-field textarea {
   color: rgba(226, 232, 240, 0.96) !important;
   background-color: rgba(24, 33, 59, 0.92) !important;
   border: 1px solid rgba(148, 191, 255, 0.4) !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='rgba(148,191,255,0.95)' d='M6 8c-.256 0-.512-.098-.707-.293l-5-5A1 1 0 0 1 1.707.293L6 4.586 10.293.293a1 1 0 1 1 1.414 1.414l-5 5A1 1 0 0 1 6 8Z'/%3E%3C/svg%3E");
+  background-image: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-select option {
