@@ -847,32 +847,6 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
   border: 1px solid rgba(76, 110, 245, 0.12);
   box-shadow: var(--shadow-sm);
-  width: min(100%, 480px);
-  margin-inline: auto;
-}
-
-@media (min-width: 992px) {
-  .reservation-summary-card,
-  .reservation-info-card {
-    max-width: 480px;
-    margin-inline: auto;
-  }
-
-  body[dir="ltr"] .reservation-summary-card,
-  body[dir="ltr"] .reservation-info-card {
-    margin-inline-start: auto;
-    margin-inline-end: 0;
-  }
-
-  body[dir="rtl"] .reservation-summary-card,
-  body[dir="rtl"] .reservation-info-card {
-    margin-inline-start: 0;
-    margin-inline-end: auto;
-  }
-}
-
-.reservation-summary-card .summary-icon {
-  display: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-info-card,
@@ -885,6 +859,21 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 :is(html.dark-mode, body.dark-mode) .reservation-summary-card {
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(24, 33, 59, 0.88));
   border-color: rgba(93, 133, 255, 0.2);
+}
+
+.reservation-summary-card .summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(76, 110, 245, 0.18);
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-summary-card .summary-icon {
+  background: rgba(37, 99, 235, 0.35);
+  color: #f8fafc;
 }
 
 .reservation-summary-card .summary-body {
@@ -925,6 +914,10 @@ body[dir="rtl"] .reservation-summary-card .summary-heading {
   align-self: stretch;
 }
 
+body[dir="rtl"] .reservation-summary-card .summary-icon {
+  display: none;
+}
+
 body[dir="rtl"] .reservation-summary-card {
   align-items: flex-start;
 }
@@ -938,9 +931,8 @@ body[dir="rtl"] .reservation-summary-card {
 
 .reservation-summary-card .summary-details-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
   font-size: 0.9rem;
   color: #26334d;
   width: 100%;
@@ -951,12 +943,19 @@ body[dir="rtl"] .reservation-summary-card {
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-details-row {
-  align-items: flex-end;
-  text-align: right;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+body[dir="ltr"] .reservation-summary-card .summary-details-row {
+  flex-direction: row;
+  justify-content: flex-start;
 }
 
 .reservation-summary-card .summary-details-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--clr-muted);
 }
 
@@ -964,8 +963,11 @@ body[dir="rtl"] .reservation-summary-card .summary-details-row {
   color: rgba(148, 163, 184, 0.8);
 }
 
+body[dir="rtl"] .reservation-summary-card .summary-details-label {
+  text-align: right;
+}
+
 .reservation-summary-card .summary-details-value {
-  display: block;
   font-weight: 600;
   color: #1d2b56;
 }
@@ -1668,31 +1670,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   line-height: 1.4;
 }
 
-.reservation-summary-line {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 0.98rem;
-  color: #2c3a5c;
-}
-
-.reservation-summary-line:last-child {
-  margin-bottom: 0;
-}
-
-.reservation-summary-total {
-  margin-top: 12px;
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-summary-total {
-  color: #f8fafc;
-}
-
-:is(html.dark-mode, body-dark-mode) .reservation-summary-line {
-  color: rgba(229, 235, 247, 0.9);
-}
-
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
   body[dir="rtl"] .reservation-summary-box {
@@ -1706,22 +1683,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
     margin-inline-start: auto;
     margin-inline-end: 0;
     text-align: left;
-  }
-
-  #reservation-preview,
-  #reservation-preview-bottom {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  body[dir="rtl"] #reservation-preview,
-  body[dir="rtl"] #reservation-preview-bottom {
-    justify-content: flex-start;
-  }
-
-  #reservation-preview .reservation-summary-box,
-  #reservation-preview-bottom .reservation-summary-box {
-    width: min(100%, 480px);
   }
 }
 
@@ -2721,7 +2682,4 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .reserv
 
 :is(html.dark-mode, body.dark-mode) .fc-reservation-event .fc-reservation-id {
   color: #f8fafc;
-}
-:is(html.dark-mode, body-dark-mode) .reservation-summary-card .summary-details-row {
-  color: var(--clr-text);
 }
