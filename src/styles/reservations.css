@@ -2018,11 +2018,11 @@ body[dir="ltr"] .reservation-field textarea {
 }
 
 :is(html[dir='rtl'], body[dir='rtl']) .reservation-billing-field--percent {
-  order: 1;
+  order: 0;
 }
 
 :is(html[dir='rtl'], body[dir='rtl']) .reservation-billing-field--amount {
-  order: 0;
+  order: 1;
 }
 
 .reservation-billing-input {
@@ -2044,9 +2044,13 @@ body[dir="ltr"] .reservation-field textarea {
   color: #1f233d !important;
   background-color: rgba(248, 250, 255, 0.96) !important;
   border: 1px solid rgba(76, 110, 245, 0.26) !important;
-  padding-inline-end: 32px;
-  -webkit-appearance: menulist;
-  appearance: auto;
+  padding-inline-end: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236c7cf7' d='M6 8c-.256 0-.512-.098-.707-.293l-5-5A1 1 0 0 1 1.707.293L6 4.586 10.293.293a1 1 0 1 1 1.414 1.414l-5 5A1 1 0 0 1 6 8Z'/%3E%3C/svg%3E"), linear-gradient(to bottom, rgba(248, 250, 255, 0.96), rgba(248, 250, 255, 0.96));
+  background-position: calc(100% - 18px) 50%, 100% 0;
+  background-repeat: no-repeat;
+  background-size: 12px 8px, 100% 100%;
 }
 
 .payment-status-select {
@@ -2097,6 +2101,7 @@ body[dir="ltr"] .reservation-field textarea {
   color: rgba(226, 232, 240, 0.96) !important;
   background-color: rgba(24, 33, 59, 0.92) !important;
   border: 1px solid rgba(148, 191, 255, 0.4) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394bfff' d='M6 8c-.256 0-.512-.098-.707-.293l-5-5A1 1 0 0 1 1.707.293L6 4.586 10.293.293a1 1 0 1 1 1.414 1.414l-5 5A1 1 0 0 1 6 8Z'/%3E%3C/svg%3E"), linear-gradient(to bottom, rgba(24, 33, 59, 0.92), rgba(24, 33, 59, 0.92));
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-select option {
@@ -2211,7 +2216,8 @@ body[dir="ltr"] .reservation-field textarea {
 #create-tab .reservation-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px 16px;
+  gap: 14px 12px;
+  max-width: 920px;
 }
 
 #create-tab .reservation-field > .form-control,
@@ -2222,6 +2228,12 @@ body[dir="ltr"] .reservation-field textarea {
 #create-tab textarea,
 #create-tab .selected-technicians-list {
   margin-inline: auto;
+  text-align: center;
+}
+
+#create-tab .reservation-field > .form-control::placeholder,
+#create-tab textarea::placeholder {
+  text-align: center;
 }
 
 #create-tab textarea {
@@ -2232,7 +2244,8 @@ body[dir="ltr"] .reservation-field textarea {
 #create-tab .reservation-stack,
 #create-tab .reservation-meta-card,
 #create-tab .reservation-equipment-field {
-  max-width: 420px;
+  flex: 1 1 280px;
+  max-width: 320px;
   margin-inline: auto;
 }
 
@@ -2241,6 +2254,7 @@ body[dir="ltr"] .reservation-field textarea {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  width: 100%;
 }
 
 #create-tab .reservation-field label {
