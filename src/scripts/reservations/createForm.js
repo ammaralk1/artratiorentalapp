@@ -106,6 +106,7 @@ function renderProjectSuggestions(projects) {
   if (!projects || projects.length === 0) {
     suggestionsBox.style.display = 'none';
     suggestionsBox.innerHTML = '';
+    toggleFieldDropdown(input, false);
     return;
   }
 
@@ -133,6 +134,7 @@ function renderProjectSuggestions(projects) {
     .join('');
 
   suggestionsBox.style.display = 'block';
+  toggleFieldDropdown(input, true);
 
   suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
     item.addEventListener('mousedown', (event) => {
@@ -151,6 +153,7 @@ function renderProjectSuggestions(projects) {
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
       suggestionsBox.style.display = 'none';
+      toggleFieldDropdown(input, false);
     });
   });
 }
@@ -166,6 +169,7 @@ function updateProjectSuggestions() {
     if (suggestionsBox) {
       suggestionsBox.style.display = 'none';
       suggestionsBox.innerHTML = '';
+      toggleFieldDropdown(input, false);
     }
     return;
   }
@@ -195,6 +199,12 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function toggleFieldDropdown(inputElement, open) {
+  const field = inputElement?.closest('.reservation-field');
+  if (!field) return;
+  field.classList.toggle('dropdown-open', Boolean(open));
 }
 
 function setDateTimeInputs(dateInputId, timeInputId, isoString) {
@@ -1009,6 +1019,7 @@ function setupCustomerAutocomplete() {
     if (!items || items.length === 0) {
       suggestionsBox.style.display = 'none';
       suggestionsBox.innerHTML = '';
+      toggleFieldDropdown(input, false);
       return;
     }
 
@@ -1016,6 +1027,7 @@ function setupCustomerAutocomplete() {
       .map((name) => `<div class="suggestion-item" data-name="${name}">${name}</div>`)
       .join('');
     suggestionsBox.style.display = 'block';
+    toggleFieldDropdown(input, true);
 
     suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
       item.addEventListener('mousedown', (event) => {
@@ -1023,6 +1035,7 @@ function setupCustomerAutocomplete() {
         const selectedName = event.target.getAttribute('data-name');
         input.value = selectedName;
         suggestionsBox.style.display = 'none';
+        toggleFieldDropdown(input, false);
       });
     });
   };
@@ -1052,6 +1065,7 @@ function setupCustomerAutocomplete() {
   input.addEventListener('blur', () => {
     setTimeout(() => {
       suggestionsBox.style.display = 'none';
+      toggleFieldDropdown(input, false);
     }, 150);
   });
 }
@@ -1075,6 +1089,7 @@ function setupProjectAutocomplete() {
   input.addEventListener('blur', () => {
     setTimeout(() => {
       suggestionsBox.style.display = 'none';
+      toggleFieldDropdown(input, false);
     }, 150);
   });
 

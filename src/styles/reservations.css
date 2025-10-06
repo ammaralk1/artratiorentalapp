@@ -1704,6 +1704,10 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   position: relative;
 }
 
+.reservation-field.dropdown-open {
+  z-index: 250;
+}
+
 .reservation-field > .form-control,
 .reservation-field > .form-select {
   width: 100%;
