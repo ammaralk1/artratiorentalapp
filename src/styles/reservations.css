@@ -1627,9 +1627,11 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-summary-container {
-  width: 100%;
   display: flex;
   align-items: flex-start;
+  width: auto;
+  width: fit-content;
+  max-width: 100%;
   margin: 0;
 }
 
@@ -1718,11 +1720,13 @@ body[dir="ltr"] .reservation-summary-box {
 }
 
 body[dir="rtl"] .reservation-summary-container {
-  justify-content: flex-start;
+  margin-inline-end: auto;
+  margin-inline-start: 0;
 }
 
 body[dir="ltr"] .reservation-summary-container {
-  justify-content: flex-end;
+  margin-inline-start: auto;
+  margin-inline-end: 0;
 }
 
 @media (min-width: 992px) {
