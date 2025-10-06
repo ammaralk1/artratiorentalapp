@@ -2869,10 +2869,11 @@
   }
 
   :where(html.dark, body.dark) .suggestions-list {
-    background: rgba(11, 17, 32, 0.96);
-    border-color: rgba(63, 93, 245, 0.28);
-    box-shadow: 0 24px 45px rgba(3, 7, 20, 0.55);
-    color: #dbeafe;
+    background: rgba(11, 17, 32, 0.94);
+    border-color: rgba(99, 102, 241, 0.32);
+    box-shadow: 0 26px 50px rgba(4, 10, 26, 0.65);
+    color: #e2e8f0;
+    backdrop-filter: blur(14px);
   }
 
   :where(html.dark, body.dark) .suggestion-item__meta {
@@ -2881,7 +2882,7 @@
 
   :where(html.dark, body.dark) .suggestion-item:hover,
   :where(html.dark, body.dark) .suggestion-item:focus {
-    background: rgba(63, 93, 245, 0.28);
+    background: rgba(63, 93, 245, 0.32);
     color: #f8fafc;
   }
 

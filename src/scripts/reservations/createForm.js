@@ -242,6 +242,7 @@ function openFloatingDropdown(dropdown, input) {
   if (!dropdown || !input) return;
   positionFloatingDropdown(dropdown, input);
   dropdown.style.display = 'block';
+  dropdown.classList.add('is-visible');
   activeDropdowns.set(dropdown, input);
   toggleFieldDropdown(input, true);
   ensureDropdownWatcher();
@@ -252,6 +253,7 @@ function closeFloatingDropdown(dropdown) {
   const input = activeDropdowns.get(dropdown);
   if (input) toggleFieldDropdown(input, false);
   activeDropdowns.delete(dropdown);
+  dropdown.classList.remove('is-visible');
   dropdown.style.display = 'none';
   dropdown.style.position = '';
   dropdown.style.left = '';

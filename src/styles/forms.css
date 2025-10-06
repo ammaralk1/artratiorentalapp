@@ -220,15 +220,24 @@
   inset-inline-start: 0;
   inset-inline-end: 0;
   top: calc(100% + 6px);
-  z-index: 160;
-  background: #ffffff;
-  border: 1px solid rgba(76, 110, 245, 0.18);
-  border-radius: 12px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
-  max-height: 240px;
+  z-index: 360;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(76, 110, 245, 0.22);
+  border-radius: 14px;
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(10px);
+  max-height: 260px;
   overflow-y: auto;
   padding: 6px 0;
   display: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.suggestions-list.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .suggestion-item {
@@ -236,7 +245,7 @@
   cursor: pointer;
   color: #0f172a;
   font-weight: 500;
-  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, transform 0.15s ease;
 }
 
 .suggestion-item__primary {
@@ -251,8 +260,9 @@
 
 .suggestion-item:hover,
 .suggestion-item:focus {
-  background: rgba(76, 110, 245, 0.08);
+  background: rgba(76, 110, 245, 0.12);
   color: #1d2b56;
+  transform: translateX(-2px);
 }
 
 :is(html.dark-mode, body.dark-mode) .suggestions-list {
