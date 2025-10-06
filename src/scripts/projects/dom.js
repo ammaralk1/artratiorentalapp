@@ -78,7 +78,7 @@ export function initProjectDatePickers() {
       noCalendar: true,
       dateFormat: 'H:i',
       altInput: true,
-      altFormat: 'h:i K',
+      altFormat: 'h:iK',
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0
@@ -88,7 +88,7 @@ export function initProjectDatePickers() {
       noCalendar: true,
       dateFormat: 'H:i',
       altInput: true,
-      altFormat: 'h:i K',
+      altFormat: 'h:iK',
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0
