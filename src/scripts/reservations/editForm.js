@@ -293,3 +293,9 @@ export function getEditContext() {
     ensureModal: getBootstrapModalInstance
   };
 }
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('language:changed', () => {
+    updateEditReservationSummary();
+  });
+}

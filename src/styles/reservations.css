@@ -1881,6 +1881,13 @@ body[dir="rtl"] #reservation-preview-bottom.reservation-summary-host {
   margin-inline-end: auto;
 }
 
+body[dir="ltr"] #reservation-preview.reservation-summary-host,
+body[dir="ltr"] #reservation-preview-bottom.reservation-summary-host {
+  justify-content: flex-start;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
 @media (min-width: 992px) {
   body[dir="rtl"] .reservation-stack,
   body[dir="rtl"] .reservation-summary-container {

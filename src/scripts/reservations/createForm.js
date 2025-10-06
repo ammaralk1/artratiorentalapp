@@ -1189,9 +1189,12 @@ export function refreshCreateReservationForm() {
 }
 
 if (typeof document !== 'undefined') {
-  const refreshProjectOptions = () => populateProjectSelect();
-  document.addEventListener('language:changed', refreshProjectOptions);
-  document.addEventListener('language:translationsReady', refreshProjectOptions, { once: false });
+  const handleLanguageRefresh = () => {
+    populateProjectSelect();
+    renderDraftReservationSummary();
+  };
+  document.addEventListener('language:changed', handleLanguageRefresh);
+  document.addEventListener('language:translationsReady', handleLanguageRefresh);
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };
