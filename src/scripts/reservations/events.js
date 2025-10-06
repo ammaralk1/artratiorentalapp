@@ -62,7 +62,8 @@ function initializeReservationPickers() {
     altInput: true,
     altFormat: 'Y-m-d',
     allowInput: true,
-    disableMobile: true
+    disableMobile: true,
+    altInputClass: 'flatpickr-alt-input form-control'
   };
 
   const datePickers = [
@@ -84,7 +85,8 @@ function initializeReservationPickers() {
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0,
-      disableMobile: true
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
     }],
     ['#res-end-time', {
       enableTime: true,
@@ -95,7 +97,8 @@ function initializeReservationPickers() {
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0,
-      disableMobile: true
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
     }],
     ['#edit-res-start-time', {
       enableTime: true,
@@ -106,7 +109,8 @@ function initializeReservationPickers() {
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0,
-      disableMobile: true
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
     }],
     ['#edit-res-end-time', {
       enableTime: true,
@@ -117,7 +121,8 @@ function initializeReservationPickers() {
       time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0,
-      disableMobile: true
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
     }]
   ];
 
