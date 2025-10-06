@@ -1009,7 +1009,7 @@ function resetForm() {
   }
   const shareCheckbox = document.getElementById('res-company-share');
   if (shareCheckbox) {
-    shareCheckbox.checked = true;
+    shareCheckbox.checked = false;
   }
   const projectSelect = document.getElementById('res-project');
   if (projectSelect) projectSelect.value = '';

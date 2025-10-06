@@ -125,16 +125,16 @@ export function buildSummaryHtml({
   const totalLabel = t(totalKey.replace('.total', '.totalLabel'), '💰 التكلفة الإجمالية');
   const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
   
-  const taxValue = applyTax
-    ? t('reservations.summary.taxIncludedValue', 'شامل 15%')
-    : t('reservations.summary.taxExcludedValue', 'غير شامل');
-
   const summaryRows = [
     { label: itemsLabel, value: itemsCountDisplay },
     { label: daysLabel, value: rentalDaysDisplay },
     { label: crewLabel, value: crewCountDisplay },
-    { label: taxLabelShort, value: taxValue },
   ];
+
+  if (applyTax) {
+    const taxValue = t('reservations.summary.taxIncludedValue', 'شامل 15%');
+    summaryRows.push({ label: taxLabelShort, value: taxValue });
+  }
 
   const sharePercent = Number.isFinite(companySharePercent)
     ? Number(companySharePercent)
