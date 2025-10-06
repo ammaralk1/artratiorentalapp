@@ -879,7 +879,7 @@ body[dir="rtl"] .reservation-summary-card .summary-body {
 }
 
 body[dir="ltr"] .reservation-summary-card .summary-body {
-  text-align: left;
+  text-align: right;
 }
 
 .reservation-summary-card .summary-heading {
@@ -894,7 +894,7 @@ body[dir="ltr"] .reservation-summary-card .summary-body {
 }
 
 body[dir="ltr"] .reservation-summary-card .summary-heading {
-  text-align: left;
+  text-align: right;
   align-self: stretch;
 }
 
