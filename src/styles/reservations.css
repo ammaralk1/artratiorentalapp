@@ -1621,32 +1621,37 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: rgba(203, 213, 225, 0.65);
 }
 
-.reservation-stack,
-.reservation-summary-container {
+.reservation-stack {
   width: min(100%, 480px);
   margin-inline: auto;
 }
 
+.reservation-summary-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+}
+
 @media (min-width: 1400px) {
-  .reservation-stack,
-  .reservation-summary-container {
+  .reservation-stack {
     width: min(100%, 440px);
   }
 }
 
 .reservation-summary-box {
-  width: 100%;
+  width: auto;
+  max-width: min(100%, 420px);
   margin: 0;
-  padding: 20px 24px;
+  padding: 16px 20px;
   background: rgba(238, 243, 255, 0.96);
   border: 1px solid rgba(76, 110, 245, 0.18);
   border-radius: 16px;
-  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  text-align: start;
-  line-height: 1.5;
+  gap: 12px;
+  line-height: 1.45;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-summary-box {
@@ -1666,20 +1671,25 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-summary-line {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 0.98rem;
   color: #2c3a5c;
+  flex-wrap: wrap;
 }
 
 .reservation-summary-label {
   font-weight: 600;
   color: inherit;
+  flex: 1 1 auto;
 }
 
 .reservation-summary-value {
   font-size: 1.02rem;
   color: inherit;
+  flex: 0 0 auto;
+  text-align: end;
 }
 
 .reservation-summary-total {
@@ -1703,6 +1713,14 @@ body[dir="rtl"] .reservation-summary-box {
 
 body[dir="ltr"] .reservation-summary-box {
   text-align: left;
+}
+
+body[dir="rtl"] .reservation-summary-container {
+  justify-content: flex-end;
+}
+
+body[dir="ltr"] .reservation-summary-container {
+  justify-content: flex-start;
 }
 
 @media (min-width: 992px) {
