@@ -1987,17 +1987,15 @@ body[dir="ltr"] .reservation-field textarea {
   position: relative;
 }
 
-.reservation-billing-field--percent,
 .reservation-billing-field--amount {
-  flex: 0 1 160px;
-  max-width: 160px;
-}
-
-.reservation-billing-field--percent {
+  flex: 0 1 200px;
+  max-width: 200px;
   order: 0;
 }
 
-.reservation-billing-field--amount {
+.reservation-billing-field--percent {
+  flex: 0 1 140px;
+  max-width: 140px;
   order: 1;
 }
 
