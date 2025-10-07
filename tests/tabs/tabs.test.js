@@ -34,11 +34,13 @@ const setupDom = () => {
       <div class="tab active" id="customers-tab"></div>
       <div class="tab" id="equipment-tab"></div>
       <div class="tab" id="reservations-tab">
-        <div class="sub-tabs">
-          <button class="sub-tab-button tab tab-active active" data-sub-tab="create-tab"></button>
-          <button class="sub-tab-button tab" data-sub-tab="my-reservations-tab"></button>
-          <button class="sub-tab-button tab" data-sub-tab="calendar-tab"></button>
-          <button class="sub-tab-button tab" data-sub-tab="reports-tab"></button>
+        <div class="reservations-subtabs-container">
+          <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
+            <button type="button" class="sub-tab-button tab tab-active active" data-sub-tab="create-tab" role="tab" aria-selected="true" aria-controls="create-tab"></button>
+            <button type="button" class="sub-tab-button tab" data-sub-tab="my-reservations-tab" role="tab" aria-selected="false" aria-controls="my-reservations-tab"></button>
+            <button type="button" class="sub-tab-button tab" data-sub-tab="calendar-tab" role="tab" aria-selected="false" aria-controls="calendar-tab"></button>
+            <button type="button" class="sub-tab-button tab" data-sub-tab="reports-tab" role="tab" aria-selected="false" aria-controls="reports-tab"></button>
+          </div>
         </div>
         <div class="sub-tab active" id="create-tab"></div>
         <div class="sub-tab" id="my-reservations-tab"></div>
@@ -71,6 +73,9 @@ const resetState = () => {
   vi.resetModules();
   resetMockPreferences();
   preferenceListeners.clear();
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.clear();
+  }
   setupDom();
   renderCustomersMock.mockClear();
   renderEquipmentMock.mockClear();
