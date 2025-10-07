@@ -516,6 +516,22 @@
   color: #f9fafb !important;
 }
 
+
+.choices:not(.choices--ready) {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.choices.choices--ready {
+  opacity: 1;
+  background-color: #111827;
+  color: #f9fafb;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  box-shadow: none;
+  transition: opacity 0.2s ease-in-out;
+}
+
 .choices__list--dropdown .choices__item.is-highlighted,
 .choices__list--dropdown .choices__item:hover {
   background-color: #374151 !important;

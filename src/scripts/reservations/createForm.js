@@ -36,29 +36,30 @@ let cachedProjects = [];
 let customerChoices = null;
 let projectChoices = null;
 
-function applyChoicesDarkTheme(instance) {
-  if (!instance) return;
-  instance.containerOuter?.element?.classList.add('choices--reservation-dark');
-  instance.containerInner?.element?.classList.add('choices__inner--reservation-dark');
-  instance.dropdown?.element?.classList.add('choices__list--dropdown-reservation-dark');
-  instance.input?.element?.classList.add('choices__input--reservation-dark');
-}
+function initDarkChoices(target, options = {}) {
+  const element = typeof target === 'string' ? document.querySelector(target) : target;
+  if (!element) return null;
 
-function applyDarkModeToChoices() {
-  document.querySelectorAll('.choices').forEach((choice) => {
-    const inner = choice.querySelector('.choices__inner');
-    const dropdown = choice.querySelector('.choices__list--dropdown');
-    if (inner) {
-      inner.style.backgroundColor = '#111827';
-      inner.style.color = '#f9fafb';
-      inner.style.border = '1px solid #374151';
-    }
-    if (dropdown) {
-      dropdown.style.backgroundColor = '#1f2937';
-      dropdown.style.color = '#f9fafb';
-      dropdown.style.border = '1px solid #374151';
-    }
+  element.style.visibility = 'hidden';
+
+  const instance = new Choices(element, {
+    shouldSort: false,
+    allowHTML: false,
+    ...options
   });
+
+  const reveal = () => {
+    const container = instance.containerOuter?.element;
+    if (container) {
+      container.classList.add('choices--ready');
+    }
+    element.style.visibility = 'visible';
+  };
+
+  requestAnimationFrame(reveal);
+  setTimeout(reveal, 120);
+
+  return instance;
 }
 
 export function updatePaymentStatusAppearance(select, statusValue) {
@@ -179,12 +180,9 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
 
   if (!customerChoices) {
     select.innerHTML = '';
-    customerChoices = new Choices(select, {
+    customerChoices = initDarkChoices(select, {
       searchEnabled: true,
       searchChoices: true,
-      shouldSort: false,
-      itemSelectText: '',
-      allowHTML: false,
       placeholder: true,
       placeholderValue: placeholderLabel,
       searchPlaceholderValue: placeholderLabel,
@@ -192,14 +190,12 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
       noResultsText: t('common.noResults', 'لا توجد نتائج'),
       noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
     });
-    applyChoicesDarkTheme(customerChoices);
     select.addEventListener('change', () => {
       renderDraftReservationSummary();
     });
   } else {
-    applyChoicesDarkTheme(customerChoices);
+    select.closest('.choices')?.classList.add('choices--ready');
   }
-  applyDarkModeToChoices();
 
   customerChoices.clearChoices();
   customerChoices.setChoices(
@@ -243,12 +239,9 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
 
   if (!projectChoices) {
     select.innerHTML = '';
-    projectChoices = new Choices(select, {
+    projectChoices = initDarkChoices(select, {
       searchEnabled: true,
       searchChoices: true,
-      shouldSort: false,
-      itemSelectText: '',
-      allowHTML: false,
       placeholder: true,
       placeholderValue: placeholderLabel,
       searchPlaceholderValue: placeholderLabel,
@@ -256,7 +249,6 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
       noResultsText: t('common.noResults', 'لا توجد نتائج'),
       noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
     });
-    applyChoicesDarkTheme(projectChoices);
 
     select.addEventListener('change', () => {
       const projectId = select.value;
@@ -269,9 +261,8 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
       }
     });
   } else {
-    applyChoicesDarkTheme(projectChoices);
+    select.closest('.choices')?.classList.add('choices--ready');
   }
-  applyDarkModeToChoices();
 
   projectChoices.clearChoices();
   projectChoices.setChoices(
@@ -1124,11 +1115,3 @@ if (typeof document !== 'undefined') {
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };
-
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    applyDarkModeToChoices();
-    setTimeout(applyDarkModeToChoices, 300);
-  });
-}
