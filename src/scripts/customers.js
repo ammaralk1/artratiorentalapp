@@ -10,7 +10,6 @@ let customersErrorMessage = "";
 const initialCustomersData = loadData() || {};
 let customersState = (initialCustomersData.customers || []).map(mapToInternalCustomer);
 let currentCustomerDocument = null;
-let customerDocumentObjectUrl = null;
 let documentUploadStatus = 'idle';
 let documentUploadError = null;
 
@@ -154,13 +153,6 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function releaseCustomerDocumentObjectUrl() {
-  if (customerDocumentObjectUrl) {
-    URL.revokeObjectURL(customerDocumentObjectUrl);
-    customerDocumentObjectUrl = null;
-  }
 }
 
 function resetDocumentUploadState() {
@@ -371,7 +363,6 @@ function resetCustomerForm() {
   form?.reset();
   if (idInput) idInput.value = "";
   if (phoneInput) phoneInput.value = phoneInput.value.trim();
-  releaseCustomerDocumentObjectUrl();
   currentCustomerDocument = null;
   resetDocumentUploadState();
   updateDocumentPreviewUI();
@@ -407,7 +398,6 @@ function populateCustomerForm(customer) {
   if (taxInput) taxInput.value = customer.tax_id || "";
   if (documentInput) documentInput.value = '';
 
-  releaseCustomerDocumentObjectUrl();
   currentCustomerDocument = customer.document ? { ...customer.document } : null;
   resetDocumentUploadState();
   updateDocumentPreviewUI();
@@ -479,7 +469,6 @@ async function handleDocumentInputChange(event) {
   const file = event.target?.files && event.target.files[0];
 
   if (!file) {
-    releaseCustomerDocumentObjectUrl();
     currentCustomerDocument = null;
     resetDocumentUploadState();
     updateDocumentPreviewUI();
@@ -489,7 +478,6 @@ async function handleDocumentInputChange(event) {
     return;
   }
 
-  releaseCustomerDocumentObjectUrl();
   setDocumentUploadState('uploading');
 
   try {
@@ -555,167 +543,19 @@ function buildDocumentDataUrl(documentData) {
   return `data:${mimeType};base64,${base64}`;
 }
 
-function base64ToBlob(base64, contentType = 'application/octet-stream') {
-  try {
-    const cleaned = base64.replace(/\s/g, '');
-    const byteCharacters = atob(cleaned);
-    const sliceSize = 1024;
-    const byteArrays = [];
-    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      const slice = byteCharacters.slice(offset, offset + sliceSize);
-      const byteNumbers = new Array(slice.length);
-      for (let i = 0; i < slice.length; i += 1) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      byteArrays.push(new Uint8Array(byteNumbers));
-    }
-    return new Blob(byteArrays, { type: contentType });
-  } catch (error) {
-    console.warn('[customers] Failed to convert base64 to blob', error);
-    return null;
-  }
-}
-
-function prepareDocumentPreview(documentData) {
-  if (!documentHasData(documentData)) {
-    return { ok: false, reason: 'missing' };
-  }
-
-  const mimeType = (documentData.mimeType || '').toLowerCase();
-  const directUrl = buildDocumentDataUrl(documentData);
-
-  let previewUrl = directUrl;
-  let downloadUrl = directUrl;
-  let cleanupUrl = null;
-
-  const shouldUseBlob = Boolean(documentData.data)
-    && (!directUrl || directUrl.startsWith('data:'));
-
-  if (shouldUseBlob) {
-    const blob = base64ToBlob(documentData.data, documentData.mimeType || 'application/octet-stream');
-    if (blob) {
-      const objectUrl = URL.createObjectURL(blob);
-      previewUrl = objectUrl;
-      downloadUrl = objectUrl;
-      cleanupUrl = objectUrl;
-    }
-  }
-
-  if (!previewUrl) {
-    return { ok: false, reason: 'unsupported' };
-  }
-
-  let previewKind = 'other';
-  if (mimeType.startsWith('image/')) {
-    previewKind = 'image';
-  } else if (mimeType.includes('pdf') || /\.pdf($|\?)/i.test(previewUrl)) {
-    previewKind = 'pdf';
-  }
-
-  let isExternal = false;
-  if (previewUrl && /^https?:/i.test(previewUrl)) {
-    try {
-      const parsed = new URL(previewUrl, window.location.origin);
-      isExternal = parsed.origin !== window.location.origin;
-    } catch (_error) {
-      isExternal = false;
-    }
-  }
-
-  return {
-    ok: true,
-    previewUrl,
-    downloadUrl,
-    cleanupUrl,
-    mimeType,
-    previewKind,
-    external: isExternal,
-  };
-}
-
-function showCustomerDocumentModal(documentData, title = '') {
-  const preview = prepareDocumentPreview(documentData);
-
-  if (!preview.ok) {
-    const messageKey = preview.reason === 'missing'
-      ? 'customers.documents.missing'
-      : 'customers.documents.unsupportedPreview';
-    const fallback = preview.reason === 'missing'
-      ? 'لا يوجد ملف لعرضه'
-      : 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.';
-    showToast(t(messageKey, fallback), preview.reason === 'missing' ? 'info' : 'warning');
-    return;
-  }
-
-  const modalElement = document.getElementById('customerDocumentModal');
-  if (!modalElement) {
-    return;
-  }
-
-  const container = document.getElementById('customer-document-preview-container');
-  const downloadLink = document.getElementById('customer-document-download');
-  const modalTitle = document.getElementById('customer-document-modal-title');
-
-  if (modalTitle) {
-    modalTitle.textContent = title || documentData?.fileName || t('customers.documents.modalTitle', '📎 ملف العميل');
-  }
-
-  releaseCustomerDocumentObjectUrl();
-  customerDocumentObjectUrl = preview.cleanupUrl;
-
-  if (downloadLink) {
-    downloadLink.href = preview.downloadUrl;
-    downloadLink.download = documentData?.fileName || 'customer-document';
-    if (/^https?:/i.test(preview.downloadUrl)) {
-      downloadLink.target = '_blank';
-      downloadLink.rel = 'noopener';
-    } else {
-      downloadLink.removeAttribute('target');
-      downloadLink.removeAttribute('rel');
-    }
-  }
-
-  if (container) {
-    if (preview.previewKind === 'image') {
-      container.innerHTML = `<img src="${preview.previewUrl}" alt="${escapeHtml(documentData?.fileName || 'customer document')}" class="img-fluid">`;
-    } else if (preview.previewKind === 'pdf') {
-      if (preview.external) {
-        const message = t('customers.documents.externalPdfBlocked', 'لا يمكن عرض هذا الملف داخل التطبيق. الرجاء فتحه في نافذة جديدة من خلال زر التحميل.');
-        container.innerHTML = `<p class="text-muted">${message}</p>`;
-      } else {
-        container.innerHTML = `<iframe src="${preview.previewUrl}" title="${escapeHtml(documentData?.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
-      }
-    } else {
-      container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
-    }
-  }
-
-  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-  if (!modalElement.dataset.documentCleanupAttached) {
-    modalElement.addEventListener('hidden.bs.modal', () => {
-      releaseCustomerDocumentObjectUrl();
-      const containerEl = document.getElementById('customer-document-preview-container');
-      if (containerEl) {
-        containerEl.innerHTML = `<p class="text-muted">${t('customers.documents.emptyState', 'لا يوجد ملف لعرضه.')}</p>`;
-      }
-    });
-    modalElement.dataset.documentCleanupAttached = 'true';
-  }
-  modal.show();
-}
-
 function handleInlineDocumentPreview() {
   if (!documentHasData(currentCustomerDocument)) {
     showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
     return;
   }
-  const { nameInput } = getFormElements();
-  const customerName = nameInput?.value?.trim() || '';
-  const baseTitle = customerName || t('customers.documents.modalTitle', '📎 ملف العميل');
-  const title = currentCustomerDocument.fileName
-    ? `${baseTitle} - ${currentCustomerDocument.fileName}`.trim()
-    : baseTitle;
-  showCustomerDocumentModal(currentCustomerDocument, title);
+
+  const url = buildDocumentDataUrl(currentCustomerDocument);
+  if (!url) {
+    showToast(t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.'), 'info');
+    return;
+  }
+
+  window.open(url, '_blank', 'noopener');
 }
 
 async function refreshCustomersFromApi({ showToastOnError = true } = {}) {
@@ -839,9 +679,14 @@ async function handleCustomerTableClick(event) {
       showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
       return;
     }
-    const parts = [customer.full_name, customer.document.fileName].filter(Boolean);
-    const title = parts.length ? parts.join(' - ') : undefined;
-    showCustomerDocumentModal(customer.document, title);
+
+    const href = buildDocumentDataUrl(customer.document);
+    if (!href) {
+      showToast(t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.'), 'info');
+      return;
+    }
+
+    window.open(href, '_blank', 'noopener');
     return;
   }
 
