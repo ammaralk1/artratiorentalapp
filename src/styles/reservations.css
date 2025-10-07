@@ -1719,26 +1719,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   width: 100%;
 }
 
-.reservation-field .reservation-autocomplete {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  gap: 0;
-}
-
-.reservation-autocomplete-input {
-  width: 100%;
-}
-
-.reservation-autocomplete-input::placeholder {
-  color: rgba(38, 51, 77, 0.55);
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-autocomplete-input::placeholder {
-  color: rgba(203, 213, 225, 0.65);
-}
-
 .reservation-notes {
   background: rgba(248, 250, 255, 0.92);
   border: 1px solid rgba(76, 110, 245, 0.18);
