@@ -384,6 +384,7 @@ select.form-select option {
   padding-inline: 18px;
   padding-block: 0;
   min-height: 3.1rem;
+  height: 3.1rem;
   line-height: 3.1rem;
   border: 1px solid rgba(76, 110, 245, 0.22);
   box-shadow: none;
