@@ -17,4 +17,13 @@ return [
         ],
         'session_name' => 'art_ratio_session',
     ],
+    'sirv' => [
+        // Sirv API credentials – obtain from your Sirv dashboard
+        'client_id' => 'YOUR_SIRV_CLIENT_ID',
+        'client_secret' => 'YOUR_SIRV_CLIENT_SECRET',
+        // Optional overrides
+        'api_base' => 'https://api.sirv.com',
+        'cdn_base' => 'https://your-bucket.sirv.com',
+        'upload_folder' => '/art-ratio/uploads',
+    ],
 ];

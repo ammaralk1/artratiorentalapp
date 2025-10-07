@@ -15,6 +15,28 @@ if (!is_file($configFile)) {
 }
 
 $config = require $configFile;
+$GLOBALS['app_config'] = $config;
+
+function getAppConfig(?string $section = null, ?string $key = null, mixed $default = null): mixed
+{
+    $config = $GLOBALS['app_config'] ?? [];
+
+    if ($section === null) {
+        return $config;
+    }
+
+    if (!array_key_exists($section, $config)) {
+        return $default;
+    }
+
+    $sectionConfig = $config[$section];
+
+    if ($key === null) {
+        return $sectionConfig;
+    }
+
+    return $sectionConfig[$key] ?? $default;
+}
 
 $appTimezone = 'Asia/Riyadh';
 if (isset($config['app']['timezone'])) {

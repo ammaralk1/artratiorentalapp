@@ -51,7 +51,7 @@ function handleGetCustomers(PDO $pdo): void
             return;
         }
 
-        respond($customer);
+        respond(formatCustomerRecord($customer));
         return;
     }
 
@@ -89,7 +89,7 @@ function handleGetCustomers(PDO $pdo): void
     }
 
     $statement->execute();
-    $customers = $statement->fetchAll();
+    $customers = array_map('formatCustomerRecord', $statement->fetchAll());
 
     respond(
         $customers,
@@ -112,7 +112,15 @@ function handleCreateCustomer(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO customers (full_name, phone, email, address, company, notes) VALUES (:full_name, :phone, :email, :address, :company, :notes)';
+    $columns = array_keys($data);
+    $placeholders = array_map(static fn($column) => ':' . $column, $columns);
+
+    $sql = sprintf(
+        'INSERT INTO customers (%s) VALUES (%s)',
+        implode(', ', $columns),
+        implode(', ', $placeholders)
+    );
+
     $statement = $pdo->prepare($sql);
     $statement->execute($data);
 
@@ -127,7 +135,7 @@ function handleCreateCustomer(PDO $pdo): void
         'payload' => $data,
     ]);
 
-    respond($customer, 201);
+    respond(formatCustomerRecord($customer), 201);
 }
 
 function handleUpdateCustomer(PDO $pdo): void
@@ -183,7 +191,7 @@ function handleUpdateCustomer(PDO $pdo): void
         'changes' => $changedColumns,
     ]);
 
-    respond($customer);
+    respond(formatCustomerRecord($customer));
 }
 
 function handleDeleteCustomer(PDO $pdo): void
@@ -245,6 +253,15 @@ function validateCustomerPayload(array $payload, bool $isUpdate): array
     $company = isset($payload['company']) ? trim((string) $payload['company']) : null;
     $notes = isset($payload['notes']) ? trim((string) $payload['notes']) : null;
 
+    $taxId = null;
+    foreach (['tax_id', 'taxId', 'vat_number', 'vatNumber', 'taxNumber'] as $taxKey) {
+        if (array_key_exists($taxKey, $payload)) {
+            $value = $payload[$taxKey];
+            $taxId = $value === null ? null : trim((string) $value);
+            break;
+        }
+    }
+
     if (!$isUpdate || array_key_exists('full_name', $payload)) {
         if ($fullName === null || $fullName === '') {
             $errors['full_name'] = 'Full name is required';
@@ -277,11 +294,17 @@ function validateCustomerPayload(array $payload, bool $isUpdate): array
         $errors['company'] = 'Company is too long (max 150 characters)';
     }
 
-    $data = [];
+    if ($taxId !== null && $taxId !== '' && mb_strlen($taxId) > 128) {
+        $errors['tax_id'] = 'Tax/VAT number is too long (max 128 characters)';
+    }
+
+    $documentColumns = normalizeDocumentPayload($payload, $isUpdate, $errors);
 
     if ($errors) {
-        return [$data, $errors];
+        return [[], $errors];
     }
+
+    $data = [];
 
     if (!$isUpdate || array_key_exists('full_name', $payload)) {
         $data['full_name'] = $fullName;
@@ -307,5 +330,230 @@ function validateCustomerPayload(array $payload, bool $isUpdate): array
         $data['notes'] = $notes ?: null;
     }
 
+    $taxRequested = array_key_exists('tax_id', $payload)
+        || array_key_exists('taxId', $payload)
+        || array_key_exists('vat_number', $payload)
+        || array_key_exists('vatNumber', $payload)
+        || array_key_exists('taxNumber', $payload);
+
+    if (!$isUpdate || $taxRequested) {
+        $data['tax_id'] = $taxId !== '' ? $taxId : null;
+    }
+
+    if ($documentColumns !== null) {
+        $data = array_merge($data, $documentColumns);
+    } elseif (!$isUpdate) {
+        $data = array_merge($data, buildDocumentColumnDefaults());
+    }
+
     return [$data, $errors];
+}
+
+function normalizeDocumentPayload(array $payload, bool $isUpdate, array &$errors): ?array
+{
+    $documentProvided = false;
+    $documentInput = null;
+
+    if (array_key_exists('document', $payload)) {
+        $documentProvided = true;
+        $documentInput = $payload['document'];
+
+        if ($documentInput === null) {
+            return buildDocumentColumnDefaults();
+        }
+
+        if (!is_array($documentInput)) {
+            $errors['document'] = 'Document payload must be an object';
+            return null;
+        }
+    } else {
+        $documentInput = [
+            'url' => $payload['document_url'] ?? $payload['documentUrl'] ?? null,
+            'path' => $payload['document_path'] ?? $payload['documentPath'] ?? null,
+            'mimeType' => $payload['document_mime_type'] ?? $payload['documentMimeType'] ?? null,
+            'fileName' => $payload['document_file_name'] ?? $payload['documentFileName'] ?? null,
+            'size' => $payload['document_size'] ?? $payload['documentSize'] ?? null,
+        ];
+
+        foreach ($documentInput as $value) {
+            if (!in_array($value, [null, ''], true)) {
+                $documentProvided = true;
+                break;
+            }
+        }
+    }
+
+    if (!$documentProvided) {
+        return $isUpdate ? null : buildDocumentColumnDefaults();
+    }
+
+    if ($documentInput === null) {
+        return buildDocumentColumnDefaults();
+    }
+
+    $url = '';
+    foreach (['url', 'document_url', 'href', 'link'] as $candidate) {
+        if (isset($documentInput[$candidate]) && $documentInput[$candidate] !== null) {
+            $url = trim((string) $documentInput[$candidate]);
+            break;
+        }
+    }
+
+    $path = '';
+    foreach (['path', 'document_path'] as $candidate) {
+        if (isset($documentInput[$candidate]) && $documentInput[$candidate] !== null) {
+            $path = trim((string) $documentInput[$candidate]);
+            break;
+        }
+    }
+
+    $mimeType = '';
+    foreach (['mimeType', 'document_mime_type', 'contentType', 'type'] as $candidate) {
+        if (isset($documentInput[$candidate]) && $documentInput[$candidate] !== null) {
+            $mimeType = trim((string) $documentInput[$candidate]);
+            break;
+        }
+    }
+
+    $fileName = '';
+    foreach (['fileName', 'document_file_name', 'filename', 'name'] as $candidate) {
+        if (isset($documentInput[$candidate]) && $documentInput[$candidate] !== null) {
+            $fileName = trim((string) $documentInput[$candidate]);
+            break;
+        }
+    }
+
+    $sizeRaw = $documentInput['size'] ?? $documentInput['document_size'] ?? null;
+    $documentSize = null;
+
+    if ($sizeRaw !== null && $sizeRaw !== '') {
+        if (is_int($sizeRaw)) {
+            if ($sizeRaw < 0) {
+                $errors['document_size'] = 'Document size must be zero or a positive integer';
+            } else {
+                $documentSize = $sizeRaw;
+            }
+        } elseif (is_float($sizeRaw)) {
+            if ($sizeRaw < 0) {
+                $errors['document_size'] = 'Document size must be zero or a positive integer';
+            } else {
+                $documentSize = (int) floor($sizeRaw);
+            }
+        } elseif (is_string($sizeRaw)) {
+            $trimmed = trim($sizeRaw);
+            if ($trimmed === '') {
+                $documentSize = null;
+            } elseif (ctype_digit($trimmed)) {
+                $documentSize = (int) $trimmed;
+            } else {
+                $errors['document_size'] = 'Document size must be zero or a positive integer';
+            }
+        } else {
+            $errors['document_size'] = 'Document size must be zero or a positive integer';
+        }
+    }
+
+    $hasMetaWithoutUrl = ($path !== '' || $mimeType !== '' || $fileName !== '' || $documentSize !== null);
+
+    if ($url === '') {
+        if ($hasMetaWithoutUrl) {
+            $errors['document_url'] = 'Document URL is required when providing document metadata';
+            return null;
+        }
+
+        return buildDocumentColumnDefaults();
+    }
+
+    if (!preg_match('/^(https?:\/\/|data:|blob:)/i', $url)) {
+        $errors['document_url'] = 'Document URL must start with http(s), data:, or blob:';
+    }
+
+    if ($path !== '' && mb_strlen($path) > 512) {
+        $errors['document_path'] = 'Document path is too long (max 512 characters)';
+    }
+
+    if ($mimeType !== '' && mb_strlen($mimeType) > 128) {
+        $errors['document_mime_type'] = 'Document MIME type is too long (max 128 characters)';
+    }
+
+    if ($fileName !== '' && mb_strlen($fileName) > 255) {
+        $errors['document_file_name'] = 'Document file name is too long (max 255 characters)';
+    }
+
+    if ($documentSize !== null && $documentSize < 0) {
+        $errors['document_size'] = 'Document size must be zero or a positive integer';
+    }
+
+    if ($errors) {
+        return null;
+    }
+
+    return [
+        'document_url' => $url,
+        'document_path' => $path !== '' ? $path : null,
+        'document_mime_type' => $mimeType !== '' ? $mimeType : null,
+        'document_file_name' => $fileName !== '' ? $fileName : null,
+        'document_size' => $documentSize,
+    ];
+}
+
+function buildDocumentColumnDefaults(): array
+{
+    return [
+        'document_url' => null,
+        'document_path' => null,
+        'document_mime_type' => null,
+        'document_file_name' => null,
+        'document_size' => null,
+    ];
+}
+
+function formatCustomerRecord($customer)
+{
+    if (!is_array($customer)) {
+        return $customer;
+    }
+
+    $document = buildCustomerDocumentFromRow($customer);
+    $customer['document'] = $document;
+
+    return $customer;
+}
+
+function buildCustomerDocumentFromRow(array $row): ?array
+{
+    $url = isset($row['document_url']) ? trim((string) $row['document_url']) : '';
+    $path = isset($row['document_path']) ? trim((string) $row['document_path']) : '';
+    $mimeType = isset($row['document_mime_type']) ? trim((string) $row['document_mime_type']) : '';
+    $fileName = isset($row['document_file_name']) ? trim((string) $row['document_file_name']) : '';
+    $sizeRaw = $row['document_size'] ?? null;
+
+    $size = null;
+    if ($sizeRaw !== null && $sizeRaw !== '') {
+        if (is_int($sizeRaw)) {
+            $size = $sizeRaw;
+        } elseif (is_numeric($sizeRaw)) {
+            $size = (int) $sizeRaw;
+        }
+    }
+
+    $hasValues = ($url !== '' || $path !== '' || $mimeType !== '' || $fileName !== '' || $size !== null);
+
+    if (!$hasValues) {
+        return null;
+    }
+
+    $document = [
+        'url' => $url !== '' ? $url : null,
+        'path' => $path !== '' ? $path : null,
+        'mimeType' => $mimeType !== '' ? $mimeType : null,
+        'fileName' => $fileName !== '' ? $fileName : null,
+        'size' => $size,
+    ];
+
+    if ($document['url'] && stripos((string) $document['url'], 'sirv.com') !== false) {
+        $document['source'] = 'sirv';
+    }
+
+    return $document;
 }

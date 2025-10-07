@@ -21,6 +21,12 @@ CREATE TABLE customers (
   address VARCHAR(255) DEFAULT NULL,
   company VARCHAR(255) DEFAULT NULL,
   notes TEXT,
+  tax_id VARCHAR(128) DEFAULT NULL,
+  document_url TEXT DEFAULT NULL,
+  document_path VARCHAR(512) DEFAULT NULL,
+  document_mime_type VARCHAR(128) DEFAULT NULL,
+  document_file_name VARCHAR(255) DEFAULT NULL,
+  document_size BIGINT UNSIGNED DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

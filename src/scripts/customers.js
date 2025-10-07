@@ -11,40 +11,140 @@ const initialCustomersData = loadData() || {};
 let customersState = (initialCustomersData.customers || []).map(mapToInternalCustomer);
 let currentCustomerDocument = null;
 let customerDocumentObjectUrl = null;
+let documentUploadStatus = 'idle';
+let documentUploadError = null;
 
-function normalizeCustomerDocument(rawDocument) {
-  if (!rawDocument || typeof rawDocument !== 'object') {
+function normalizeCustomerDocument(rawCustomer) {
+  if (!rawCustomer || typeof rawCustomer !== 'object') {
     return null;
   }
 
-  let data = rawDocument.data
-    ?? rawDocument.base64
-    ?? rawDocument.content
-    ?? '';
+  const documentCandidate = [rawCustomer.document, rawCustomer.attachment, rawCustomer.file]
+    .find((value) => value && typeof value === 'object');
 
-  if (typeof data === 'string') {
-    data = data.trim();
-    if (data.startsWith('data:')) {
-      const commaIndex = data.indexOf(',');
-      data = commaIndex !== -1 ? data.slice(commaIndex + 1) : data;
+  const urlCandidates = [
+    rawCustomer.document_url,
+    rawCustomer.documentUrl,
+    rawCustomer.url,
+    rawCustomer.href,
+    rawCustomer.link,
+    documentCandidate?.url,
+    documentCandidate?.href,
+    documentCandidate?.link,
+  ];
+
+  const pathCandidates = [
+    rawCustomer.document_path,
+    rawCustomer.documentPath,
+    rawCustomer.path,
+    documentCandidate?.path,
+    documentCandidate?.documentPath,
+  ];
+
+  const nameCandidates = [
+    rawCustomer.document_file_name,
+    rawCustomer.documentFileName,
+    rawCustomer.document_name,
+    rawCustomer.fileName,
+    rawCustomer.filename,
+    rawCustomer.name,
+    documentCandidate?.fileName,
+    documentCandidate?.filename,
+    documentCandidate?.name,
+  ];
+
+  const mimeCandidates = [
+    rawCustomer.document_mime_type,
+    rawCustomer.documentMimeType,
+    rawCustomer.document_type,
+    rawCustomer.mimeType,
+    rawCustomer.contentType,
+    rawCustomer.type,
+    documentCandidate?.mimeType,
+    documentCandidate?.contentType,
+    documentCandidate?.type,
+  ];
+
+  const sizeCandidates = [
+    rawCustomer.document_size,
+    rawCustomer.documentSize,
+    rawCustomer.size,
+    documentCandidate?.size,
+    documentCandidate?.length,
+  ];
+
+  const base64Candidates = [
+    documentCandidate?.data,
+    documentCandidate?.base64,
+    documentCandidate?.content,
+    rawCustomer.data,
+    rawCustomer.base64,
+    rawCustomer.content,
+    rawCustomer.document_data,
+  ];
+
+  const pickFirstString = (list) => {
+    for (const value of list) {
+      if (typeof value === 'string' && value.trim() !== '') {
+        return value.trim();
+      }
+    }
+    return '';
+  };
+
+  const pickFirstNumber = (list) => {
+    for (const value of list) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return Math.max(0, Math.trunc(value));
+      }
+      if (typeof value === 'string' && value.trim() !== '' && /^\d+$/.test(value.trim())) {
+        return Math.max(0, parseInt(value.trim(), 10));
+      }
+    }
+    return null;
+  };
+
+  const directUrl = pickFirstString(urlCandidates);
+  const fileName = pickFirstString(nameCandidates);
+  const mimeType = pickFirstString(mimeCandidates) || 'application/octet-stream';
+  const path = pickFirstString(pathCandidates);
+  const base64 = pickFirstString(base64Candidates);
+  const size = pickFirstNumber(sizeCandidates);
+
+  if (!directUrl && !base64) {
+    return null;
+  }
+
+  let normalizedUrl = directUrl;
+  let base64Payload = base64;
+
+  if (!normalizedUrl && base64Payload && base64Payload.startsWith('data:')) {
+    const commaIndex = base64Payload.indexOf(',');
+    if (commaIndex !== -1) {
+      normalizedUrl = base64Payload;
+      base64Payload = base64Payload.slice(commaIndex + 1);
     }
   }
 
-  if (!data) {
-    return null;
+  if (!normalizedUrl && base64Payload) {
+    const prefix = base64Payload.startsWith('data:') ? '' : `data:${mimeType};base64,`;
+    normalizedUrl = `${prefix}${base64Payload}`;
   }
 
-  return {
-    fileName: rawDocument.fileName
-      ?? rawDocument.filename
-      ?? rawDocument.name
-      ?? '',
-    mimeType: rawDocument.mimeType
-      ?? rawDocument.contentType
-      ?? rawDocument.type
-      ?? 'application/octet-stream',
-    data,
+  const normalized = {
+    url: normalizedUrl,
+    fileName,
+    mimeType,
+    path,
+    data: base64Payload || null,
+    size,
   };
+
+  if (normalized.url && /sirv\.com/i.test(normalized.url)) {
+    normalized.source = 'sirv';
+  }
+
+  return normalized;
 }
 
 function escapeHtml(value = '') {
@@ -61,6 +161,70 @@ function releaseCustomerDocumentObjectUrl() {
     URL.revokeObjectURL(customerDocumentObjectUrl);
     customerDocumentObjectUrl = null;
   }
+}
+
+function resetDocumentUploadState() {
+  documentUploadStatus = 'idle';
+  documentUploadError = null;
+}
+
+function setDocumentUploadState(status, errorMessage) {
+  documentUploadStatus = status;
+  documentUploadError = errorMessage || null;
+  updateDocumentPreviewUI();
+}
+
+function documentIsUploading() {
+  return documentUploadStatus === 'uploading';
+}
+
+function documentHasData(documentData) {
+  if (!documentData || typeof documentData !== 'object') {
+    return false;
+  }
+  return Boolean(documentData.url) || Boolean(documentData.data);
+}
+
+function buildDocumentPayload(documentData) {
+  if (!documentHasData(documentData)) {
+    return null;
+  }
+
+  const payload = {};
+  const baseUrl = typeof documentData.url === 'string' ? documentData.url.trim() : '';
+  const sizeValue = documentData.size;
+
+  let finalUrl = baseUrl;
+
+  if (!finalUrl) {
+    finalUrl = buildDocumentDataUrl(documentData);
+  }
+
+  if (!finalUrl) {
+    return null;
+  }
+
+  payload.url = finalUrl;
+
+  if (documentData.path) {
+    payload.path = documentData.path;
+  }
+
+  if (documentData.mimeType) {
+    payload.mimeType = documentData.mimeType;
+  }
+
+  if (documentData.fileName) {
+    payload.fileName = documentData.fileName;
+  }
+
+  if (typeof sizeValue === 'number' && Number.isFinite(sizeValue)) {
+    payload.size = Math.max(0, Math.trunc(sizeValue));
+  } else if (typeof sizeValue === 'string' && sizeValue.trim() !== '' && /^\d+$/.test(sizeValue.trim())) {
+    payload.size = Math.max(0, parseInt(sizeValue.trim(), 10));
+  }
+
+  return payload;
 }
 
 function mapToInternalCustomer(rawCustomer = {}) {
@@ -89,7 +253,7 @@ function mapToInternalCustomer(rawCustomer = {}) {
     ?? rawCustomer.vatNumber
     ?? rawCustomer.taxNumber
     ?? '';
-  const document = normalizeCustomerDocument(rawCustomer.document ?? rawCustomer.attachment ?? rawCustomer.file);
+  const document = normalizeCustomerDocument(rawCustomer);
 
   return {
     id: idValue !== undefined && idValue !== null ? String(idValue) : "",
@@ -141,22 +305,39 @@ function getFormElements() {
   };
 }
 
+function updateSubmitButtonDisabled() {
+  const { submitBtn } = getFormElements();
+  if (!submitBtn) return;
+  submitBtn.disabled = documentIsUploading();
+}
+
 function updateDocumentPreviewUI() {
   const { documentNameLabel, documentPreviewBtn } = getFormElements();
-  const hasDocument = Boolean(currentCustomerDocument?.data);
+  const uploading = documentIsUploading();
+  const hasDocument = documentHasData(currentCustomerDocument);
+
   if (documentPreviewBtn) {
-    documentPreviewBtn.disabled = !hasDocument;
+    documentPreviewBtn.disabled = !hasDocument || uploading;
   }
+
   if (documentNameLabel) {
     const emptyLabel = t('customers.form.document.empty', 'لم يتم اختيار ملف بعد');
-    if (hasDocument) {
-      const selectedLabel = currentCustomerDocument.fileName?.trim()
+    let label = emptyLabel;
+
+    if (uploading) {
+      label = t('customers.form.document.uploading', '📤 جارٍ رفع الملف...');
+    } else if (documentUploadStatus === 'error') {
+      label = documentUploadError
+        || t('customers.form.document.uploadFailed', '⚠️ فشل رفع الملف');
+    } else if (hasDocument) {
+      label = currentCustomerDocument?.fileName?.trim()
         || t('customers.form.document.selected', 'تم إرفاق ملف.');
-      documentNameLabel.textContent = selectedLabel;
-    } else {
-      documentNameLabel.textContent = emptyLabel;
     }
+
+    documentNameLabel.textContent = label;
   }
+
+  updateSubmitButtonDisabled();
 }
 
 function setSubmitButtonState(mode = "add") {
@@ -190,8 +371,9 @@ function resetCustomerForm() {
   form?.reset();
   if (idInput) idInput.value = "";
   if (phoneInput) phoneInput.value = phoneInput.value.trim();
-  currentCustomerDocument = null;
   releaseCustomerDocumentObjectUrl();
+  currentCustomerDocument = null;
+  resetDocumentUploadState();
   updateDocumentPreviewUI();
   editingCustomerId = null;
   setSubmitButtonState("add");
@@ -225,8 +407,9 @@ function populateCustomerForm(customer) {
   if (taxInput) taxInput.value = customer.tax_id || "";
   if (documentInput) documentInput.value = '';
 
-  currentCustomerDocument = customer.document ? { ...customer.document } : null;
   releaseCustomerDocumentObjectUrl();
+  currentCustomerDocument = customer.document ? { ...customer.document } : null;
+  resetDocumentUploadState();
   updateDocumentPreviewUI();
 
   editingCustomerId = customer.id;
@@ -256,6 +439,17 @@ function collectCustomerForm() {
     return null;
   }
 
+  if (documentIsUploading()) {
+    showToast(t('customers.form.document.uploadingWait', '⏳ يرجى الانتظار حتى يكتمل رفع الملف'), 'info');
+    return null;
+  }
+
+  if (documentUploadStatus === 'error') {
+    const message = documentUploadError || t('customers.form.document.uploadFailed', '⚠️ فشل رفع الملف، حاول مرة أخرى');
+    showToast(message, 'error');
+    return null;
+  }
+
   const payload = {
     full_name: customerName,
     phone,
@@ -269,8 +463,9 @@ function collectCustomerForm() {
   payload.tax_id = taxIdValue;
   payload.taxId = taxIdValue;
 
-  if (currentCustomerDocument?.data) {
-    payload.document = currentCustomerDocument;
+  const documentPayload = buildDocumentPayload(currentCustomerDocument);
+  if (documentPayload) {
+    payload.document = documentPayload;
   }
 
   return {
@@ -279,43 +474,85 @@ function collectCustomerForm() {
   };
 }
 
-function handleDocumentInputChange(event) {
+async function handleDocumentInputChange(event) {
   const { documentInput } = getFormElements();
   const file = event.target?.files && event.target.files[0];
 
   if (!file) {
+    releaseCustomerDocumentObjectUrl();
+    currentCustomerDocument = null;
+    resetDocumentUploadState();
     updateDocumentPreviewUI();
     if (documentInput) {
       documentInput.value = '';
     }
-    releaseCustomerDocumentObjectUrl();
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const result = typeof reader.result === 'string' ? reader.result : '';
-    const base64 = result.includes(',') ? result.split(',')[1] : result;
+  releaseCustomerDocumentObjectUrl();
+  setDocumentUploadState('uploading');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (editingCustomerId) {
+      formData.append('customer_id', editingCustomerId);
+    }
+
+    const response = await apiRequest('/uploads/sirv.php', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const uploaded = response?.data;
+    if (!uploaded || !uploaded.url) {
+      throw new Error('Missing upload URL from server response');
+    }
+
     currentCustomerDocument = {
-      fileName: file.name,
-      mimeType: file.type || 'application/octet-stream',
-      data: base64,
+      url: uploaded.url,
+      path: uploaded.path || '',
+      fileName: uploaded.fileName || file.name,
+      mimeType: uploaded.mimeType || file.type || 'application/octet-stream',
+      size: typeof uploaded.size === 'number' ? uploaded.size : file.size,
+      source: uploaded.source || 'sirv',
     };
-    releaseCustomerDocumentObjectUrl();
-    updateDocumentPreviewUI();
+
+    setDocumentUploadState('success');
+    showToast(t('customers.form.document.uploadSuccess', '✅ تم رفع الملف بنجاح'), 'success');
+  } catch (error) {
+    console.error('[customers] Failed to upload document to Sirv', error);
+    currentCustomerDocument = null;
+    const message = error instanceof ApiError
+      ? error.message
+      : t('customers.form.document.uploadFailed', '⚠️ تعذر رفع الملف، حاول مرة أخرى');
+    setDocumentUploadState('error', message);
+    showToast(message, 'error');
+  } finally {
     if (documentInput) {
       documentInput.value = '';
     }
-  };
-  reader.readAsDataURL(file);
+    updateDocumentPreviewUI();
+  }
 }
 
 function buildDocumentDataUrl(documentData) {
-  if (!documentData?.data) {
+  if (!documentData || typeof documentData !== 'object') {
     return '';
   }
+
+  const directUrl = typeof documentData.url === 'string' ? documentData.url.trim() : '';
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const base64 = typeof documentData.data === 'string' ? documentData.data.trim() : '';
+  if (!base64) {
+    return '';
+  }
+
   const mimeType = documentData.mimeType || 'application/octet-stream';
-  return `data:${mimeType};base64,${documentData.data}`;
+  return `data:${mimeType};base64,${base64}`;
 }
 
 function base64ToBlob(base64, contentType = 'application/octet-stream') {
@@ -339,9 +576,63 @@ function base64ToBlob(base64, contentType = 'application/octet-stream') {
   }
 }
 
+function prepareDocumentPreview(documentData) {
+  if (!documentHasData(documentData)) {
+    return { ok: false, reason: 'missing' };
+  }
+
+  const mimeType = (documentData.mimeType || '').toLowerCase();
+  const directUrl = buildDocumentDataUrl(documentData);
+
+  let previewUrl = directUrl;
+  let downloadUrl = directUrl;
+  let cleanupUrl = null;
+
+  const shouldUseBlob = Boolean(documentData.data)
+    && (!directUrl || directUrl.startsWith('data:'));
+
+  if (shouldUseBlob) {
+    const blob = base64ToBlob(documentData.data, documentData.mimeType || 'application/octet-stream');
+    if (blob) {
+      const objectUrl = URL.createObjectURL(blob);
+      previewUrl = objectUrl;
+      downloadUrl = objectUrl;
+      cleanupUrl = objectUrl;
+    }
+  }
+
+  if (!previewUrl) {
+    return { ok: false, reason: 'unsupported' };
+  }
+
+  let previewKind = 'other';
+  if (mimeType.startsWith('image/')) {
+    previewKind = 'image';
+  } else if (mimeType.includes('pdf') || /\.pdf($|\?)/i.test(previewUrl)) {
+    previewKind = 'pdf';
+  }
+
+  return {
+    ok: true,
+    previewUrl,
+    downloadUrl,
+    cleanupUrl,
+    mimeType,
+    previewKind,
+  };
+}
+
 function showCustomerDocumentModal(documentData, title = '') {
-  if (!documentData?.data) {
-    showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
+  const preview = prepareDocumentPreview(documentData);
+
+  if (!preview.ok) {
+    const messageKey = preview.reason === 'missing'
+      ? 'customers.documents.missing'
+      : 'customers.documents.unsupportedPreview';
+    const fallback = preview.reason === 'missing'
+      ? 'لا يوجد ملف لعرضه'
+      : 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.';
+    showToast(t(messageKey, fallback), preview.reason === 'missing' ? 'info' : 'warning');
     return;
   }
 
@@ -355,37 +646,29 @@ function showCustomerDocumentModal(documentData, title = '') {
   const modalTitle = document.getElementById('customer-document-modal-title');
 
   if (modalTitle) {
-    modalTitle.textContent = title || documentData.fileName || t('customers.documents.modalTitle', '📎 ملف العميل');
+    modalTitle.textContent = title || documentData?.fileName || t('customers.documents.modalTitle', '📎 ملف العميل');
   }
 
   releaseCustomerDocumentObjectUrl();
-  const blob = base64ToBlob(documentData.data, documentData.mimeType || 'application/octet-stream');
-  if (!blob) {
-    if (container) {
-      container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
-    }
-    if (downloadLink) {
-      downloadLink.href = buildDocumentDataUrl(documentData);
-      downloadLink.download = documentData.fileName || 'customer-document';
-    }
-    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-    modal.show();
-    return;
-  }
-
-  customerDocumentObjectUrl = URL.createObjectURL(blob);
+  customerDocumentObjectUrl = preview.cleanupUrl;
 
   if (downloadLink) {
-    downloadLink.href = customerDocumentObjectUrl;
-    downloadLink.download = documentData.fileName || 'customer-document';
+    downloadLink.href = preview.downloadUrl;
+    downloadLink.download = documentData?.fileName || 'customer-document';
+    if (/^https?:/i.test(preview.downloadUrl)) {
+      downloadLink.target = '_blank';
+      downloadLink.rel = 'noopener';
+    } else {
+      downloadLink.removeAttribute('target');
+      downloadLink.removeAttribute('rel');
+    }
   }
 
   if (container) {
-    const mimeType = (documentData.mimeType || '').toLowerCase();
-    if (mimeType.startsWith('image/')) {
-      container.innerHTML = `<img src="${customerDocumentObjectUrl}" alt="${escapeHtml(documentData.fileName || 'customer document')}" class="img-fluid">`;
-    } else if (mimeType === 'application/pdf' || mimeType.includes('pdf')) {
-      container.innerHTML = `<iframe src="${customerDocumentObjectUrl}" title="${escapeHtml(documentData.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
+    if (preview.previewKind === 'image') {
+      container.innerHTML = `<img src="${preview.previewUrl}" alt="${escapeHtml(documentData?.fileName || 'customer document')}" class="img-fluid">`;
+    } else if (preview.previewKind === 'pdf') {
+      container.innerHTML = `<iframe src="${preview.previewUrl}" title="${escapeHtml(documentData?.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
     } else {
       container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
     }
@@ -406,7 +689,7 @@ function showCustomerDocumentModal(documentData, title = '') {
 }
 
 function handleInlineDocumentPreview() {
-  if (!currentCustomerDocument?.data) {
+  if (!documentHasData(currentCustomerDocument)) {
     showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
     return;
   }
@@ -536,7 +819,7 @@ async function handleCustomerTableClick(event) {
   if (button.classList.contains("customer-view-file-btn")) {
     const id = button.dataset.id;
     const customer = getCustomers().find((c) => String(c.id) === String(id));
-    if (!customer?.document) {
+    if (!documentHasData(customer?.document)) {
       showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
       return;
     }
@@ -670,7 +953,7 @@ export function renderCustomers(customersOverride, options = {}) {
       `<button type="button" class="customer-action-btn customer-action-btn--edit customer-edit-btn" data-id="${customer.id}">${editLabel}</button>`
     ];
 
-    if (customer.document?.data) {
+    if (documentHasData(customer.document)) {
       actionButtons.push(`<button type="button" class="customer-action-btn customer-action-btn--file customer-view-file-btn" data-id="${customer.id}">${viewLabel}</button>`);
     }
 
