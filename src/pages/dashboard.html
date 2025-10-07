@@ -1045,20 +1045,20 @@
         <!-- ✅ تبويب فرعي: حجوزاتي -->
         <div class="sub-tab tab-content" id="my-reservations-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-my-reservations-tab">
           <h4 data-i18n data-i18n-key="reservations.list.title">📋 حجوزاتي</h4>
-          <div class="mb-3">
-            <input type="text" id="search-reservation" class="form-control" placeholder="🔍 ابحث باسم العميل أو الكود..." data-i18n data-i18n-placeholder-key="reservations.list.search.placeholder">
+          <div class="reservations-search-bar mb-3">
+            <input type="text" id="search-reservation" class="form-control reservations-search-input" placeholder="🔍 ابحث باسم العميل أو الكود..." data-i18n data-i18n-placeholder-key="reservations.list.search.placeholder">
           </div>
 
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-3 filters-bar">
-            <input type="text" id="filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-            <input type="text" id="filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
-            <select id="reservation-date-range" class="form-select w-auto">
+          <div class="reservations-filters-bar d-flex flex-wrap align-items-center mb-3">
+            <input type="text" id="filter-start-date" class="form-control reservations-filter-input reservations-filter-date" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+            <input type="text" id="filter-end-date" class="form-control reservations-filter-input reservations-filter-date" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+            <select id="reservation-date-range" class="form-select reservations-filter-select">
               <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
               <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
               <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
               <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
             </select>
-            <select id="reservation-status-filter" class="form-select w-auto">
+            <select id="reservation-status-filter" class="form-select reservations-filter-select">
               <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
               <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
               <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>

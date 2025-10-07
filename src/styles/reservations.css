@@ -34,6 +34,82 @@
   opacity: 0.95;
 }
 
+.reservations-search-bar {
+  display: flex;
+  justify-content: center;
+}
+
+.reservations-search-input {
+  width: min(360px, 100%);
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 255, 0.28);
+  padding-inline: 18px;
+  padding-block: 0.55rem;
+  min-height: 3rem;
+  box-shadow: 0 12px 24px rgba(59, 91, 220, 0.14);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+  color: #1f2d52;
+}
+
+:where(html.dark, body.dark) .reservations-search-input {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+  color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.42);
+}
+
+.reservations-filters-bar {
+  display: flex;
+  gap: 10px;
+}
+
+.reservations-filter-input,
+.reservations-filter-select {
+  border-radius: 12px;
+  min-height: 2.75rem;
+  border: 1px solid rgba(148, 163, 255, 0.24);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.95), rgba(236, 242, 255, 0.9));
+  color: #1f2d52;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+  flex: 0 0 auto;
+}
+
+.reservations-filter-input {
+  width: 180px;
+  padding-inline: 14px;
+}
+
+.reservations-filter-select {
+  width: 200px;
+  padding-inline: 1.1rem 2.4rem;
+}
+
+:where(html.dark, body.dark) .reservations-filter-input,
+:where(html.dark, body.dark) .reservations-filter-select {
+  background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
+  border-color: rgba(59, 130, 246, 0.32);
+  color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 12px 26px rgba(8, 15, 35, 0.36);
+}
+
+@media (max-width: 640px) {
+  .reservations-search-bar {
+    justify-content: flex-start;
+  }
+
+  .reservations-search-input,
+  .reservations-filter-input,
+  .reservations-filter-select {
+    width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .reservations-filters-bar {
+    gap: 12px;
+  }
+}
+
 .reservations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
