@@ -172,22 +172,27 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
     });
   }
 
-  customerChoices.clearChoices();
-  customerChoices.setChoices(
-    choicesItems.map((choice) => ({
+  const choiceData = [
+    {
+      value: '',
+      label: placeholderLabel,
+      selected: !normalizedSelected,
+      placeholder: true
+    },
+    ...choicesItems.map((choice) => ({
       value: choice.value,
       label: choice.label,
       selected: normalizedSelected && choice.value === normalizedSelected
-    })),
-    'value',
-    'label',
-    true
-  );
+    }))
+  ];
+
+  customerChoices.clearChoices();
+  customerChoices.setChoices(choiceData, 'value', 'label', true);
 
   if (normalizedSelected && choicesItems.some((choice) => choice.value === normalizedSelected)) {
     customerChoices.setChoiceByValue(normalizedSelected);
   } else {
-    customerChoices.removeActiveItems();
+    customerChoices.setChoiceByValue('');
   }
 }
 
@@ -239,22 +244,27 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
     });
   }
 
-  projectChoices.clearChoices();
-  projectChoices.setChoices(
-    sortedProjects.map((project) => ({
+  const projectChoicesData = [
+    {
+      value: '',
+      label: placeholderLabel,
+      selected: !normalizedSelected,
+      placeholder: true
+    },
+    ...sortedProjects.map((project) => ({
       value: String(project.id),
       label: getProjectDisplayName(project),
       selected: normalizedSelected && String(project.id) === normalizedSelected
-    })),
-    'value',
-    'label',
-    true
-  );
+    }))
+  ];
+
+  projectChoices.clearChoices();
+  projectChoices.setChoices(projectChoicesData, 'value', 'label', true);
 
   if (normalizedSelected && sortedProjects.some((project) => String(project.id) === normalizedSelected)) {
     projectChoices.setChoiceByValue(normalizedSelected);
   } else {
-    projectChoices.removeActiveItems();
+    projectChoices.setChoiceByValue('');
   }
 }
 
