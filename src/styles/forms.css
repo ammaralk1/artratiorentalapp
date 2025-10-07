@@ -83,15 +83,13 @@
   color: var(--clr-text);
 }
 
-.management-form .form-control,
-.management-form .form-select {
+.management-form .form-control {
   border-radius: 12px;
   border: 1px solid rgba(76, 110, 245, 0.18);
   box-shadow: none;
 }
 
-.management-form .form-control:focus,
-.management-form .form-select:focus {
+.management-form .form-control:focus {
   border-color: rgba(76, 110, 245, 0.5);
   box-shadow: 0 0 0 0.15rem rgba(76, 110, 245, 0.15);
 }
@@ -332,6 +330,18 @@
 
 .customer-document-preview iframe {
   min-height: 60vh;
+}
+
+.form-select option,
+select.form-select option {
+  background-color: rgba(248, 250, 255, 0.95);
+  color: hsl(var(--bc));
+}
+
+:where(html.dark, body.dark) .form-select option,
+:where(html.dark, body.dark) select.form-select option {
+  background-color: rgba(18, 28, 52, 0.96);
+  color: rgba(226, 232, 240, 0.92);
 }
 
 .equipment-form-grid {
