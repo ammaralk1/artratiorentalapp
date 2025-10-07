@@ -157,8 +157,19 @@ function sirvUploadFile(string $filePath, string $destinationPath, string $mimeT
     $statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE) ?: 0;
     curl_close($ch);
 
-    $data = json_decode($responseBody, true);
-    if (!is_array($data)) {
+    $decoded = json_decode($responseBody, true);
+
+    if (is_array($decoded)) {
+        $data = $decoded;
+    } elseif ($statusCode >= 200 && $statusCode < 300 && trim((string) $responseBody) === '') {
+        // Sirv sometimes returns an empty body on success; fabricate minimal payload.
+        $data = [
+            'file' => [
+                'size' => filesize($filePath),
+            ],
+        ];
+    } else {
+        error_log(sprintf('Sirv upload unexpected response (status %d): %s', $statusCode, $responseBody));
         throw new RuntimeException('Unexpected response from Sirv upload endpoint.');
     }
 
