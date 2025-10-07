@@ -885,12 +885,14 @@
             <div class="reservation-row mb-3">
               <div class="reservation-field reservation-field--quarter">
                 <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                <select id="res-customer" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.client"></select>
+                <select id="res-customer" class="form-select reservation-choice" data-placeholder-key="reservations.create.placeholders.client">
+                  <option value="" selected hidden disabled data-placeholder-option data-i18n data-i18n-key="reservations.create.placeholders.client">اختر عميلًا (اختياري)</option>
+                </select>
               </div>
               <div class="reservation-field reservation-field--quarter">
                 <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <select id="res-project" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.project">
-                  <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+                <select id="res-project" class="form-select reservation-choice" data-placeholder-key="reservations.create.placeholders.project">
+                  <option value="" selected hidden disabled data-placeholder-option data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
                 </select>
               </div>
             </div>

@@ -181,7 +181,10 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
     });
   }
 
-  const placeholderChoice = buildChoicePlaceholder(placeholderLabel, !normalizedSelected);
+  const placeholderChoice = {
+    ...buildChoicePlaceholder(placeholderLabel, !normalizedSelected),
+    disabled: false
+  };
   const choiceData = [placeholderChoice].concat(
     choicesItems.map((choice) => ({
       value: choice.value,
@@ -196,7 +199,7 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
   if (normalizedSelected && choicesItems.some((choice) => choice.value === normalizedSelected)) {
     customerChoices.setChoiceByValue(normalizedSelected);
   } else {
-    customerChoices.removeActiveItems();
+    customerChoices.setChoiceByValue('');
   }
 }
 
@@ -248,7 +251,10 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
     });
   }
 
-  const placeholderChoice = buildChoicePlaceholder(placeholderLabel, !normalizedSelected);
+  const placeholderChoice = {
+    ...buildChoicePlaceholder(placeholderLabel, !normalizedSelected),
+    disabled: false
+  };
   const projectChoicesData = [placeholderChoice].concat(
     sortedProjects.map((project) => ({
       value: String(project.id),
@@ -263,7 +269,7 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
   if (normalizedSelected && sortedProjects.some((project) => String(project.id) === normalizedSelected)) {
     projectChoices.setChoiceByValue(normalizedSelected);
   } else {
-    projectChoices.removeActiveItems();
+    projectChoices.setChoiceByValue('');
   }
 }
 

@@ -311,6 +311,38 @@
   color: rgba(226, 232, 240, 0.78);
 }
 
+.reservation-choice {
+  border-radius: 999px;
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  background: rgba(248, 250, 255, 0.94);
+  color: var(--bc, #1f2d52);
+  padding: 0.65rem 1rem;
+  font-weight: 500;
+  min-height: 48px;
+  box-shadow: inset 0 1px 2px rgba(46, 64, 99, 0.05);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reservation-choice:focus {
+  border-color: rgba(76, 110, 245, 0.55);
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.18);
+  background: rgba(241, 245, 255, 0.98);
+  outline: none;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-choice {
+  background: rgba(24, 33, 59, 0.92);
+  border-color: rgba(59, 130, 246, 0.32);
+  color: rgba(226, 232, 240, 0.9);
+  box-shadow: inset 0 1px 2px rgba(10, 18, 38, 0.45);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-choice:focus {
+  border-color: rgba(124, 176, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28);
+  background: rgba(30, 42, 68, 0.95);
+}
+
 .reservation-choice + .choices,
 .reservation-choice.choices {
   width: 100%;
@@ -323,7 +355,7 @@
   border: none;
   margin: 0;
   inset-inline-end: 1.1rem;
-  border-radius: 999px;
+  border-radius: 50%;
   width: 1.1rem;
   height: 1.1rem;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%236366f1' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/100%;
@@ -334,7 +366,7 @@
 .reservation-choice.choices .choices__inner {
   background: rgba(248, 250, 255, 0.94);
   border: 1px solid rgba(76, 110, 245, 0.18);
-  border-radius: 1rem;
+  border-radius: 999px;
   padding: 0;
   min-height: 48px;
   display: flex;
@@ -397,7 +429,7 @@
 .reservation-choice.choices .choices__list--dropdown {
   background: rgba(248, 250, 255, 0.98);
   border: 1px solid rgba(76, 110, 245, 0.2);
-  border-radius: 1rem;
+  border-radius: 18px;
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.14);
   margin-top: 8px;
   padding: 6px;
@@ -428,55 +460,64 @@
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-choice + .choices,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices {
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices {
   color: rgba(226, 232, 240, 0.9);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-choice + .choices[data-type*='select-one']::after,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices[data-type*='select-one']::after {
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices[data-type*='select-one']::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%239bb4ff' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");
 }
 
-:is(html.dark-mode, body-dark-mode) .reservation-choice + .choices .choices__inner,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__inner {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__inner,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__inner {
   background: rgba(24, 33, 59, 0.92);
   border-color: rgba(59, 130, 246, 0.32);
   color: rgba(226, 232, 240, 0.9);
   box-shadow: inset 0 1px 2px rgba(10, 18, 38, 0.45);
 }
 
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices.is-open .choices__inner,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices.is-open .choices__inner,
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices:hover .choices__inner,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices:hover .choices__inner {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices.is-open .choices__inner,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices.is-open .choices__inner,
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices:hover .choices__inner,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices:hover .choices__inner {
   background: rgba(30, 42, 68, 0.95);
   border-color: rgba(117, 156, 255, 0.4);
 }
 
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices .choices__inner:focus-within,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__inner:focus-within {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__inner:focus-within,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__inner:focus-within {
   border-color: rgba(124, 176, 255, 0.7);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28);
 }
 
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown {
   background: rgba(21, 30, 52, 0.96);
   border-color: rgba(79, 120, 255, 0.32);
   box-shadow: 0 20px 40px rgba(2, 6, 23, 0.68);
 }
 
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item {
   color: rgba(226, 232, 240, 0.92);
 }
 
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-:is(html-dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-:is(html-dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(148, 163, 255, 0.18));
   color: #e2e8f0;
+}
+
+#reservation-form .choices {
+  width: 100%;
+}
+
+#create-tab .reservation-choice + .choices,
+#create-tab .reservation-choice.choices {
+  margin-inline: auto;
 }
 
 
