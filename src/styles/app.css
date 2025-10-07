@@ -1110,15 +1110,16 @@
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.9rem;
+    gap: 0.3rem;
+    padding: 0.28rem 0.75rem;
     border-radius: 999px;
     font-weight: 600;
-    font-size: 0.85rem;
-    line-height: 1.1;
+    font-size: 0.78rem;
+    line-height: 1;
     white-space: nowrap;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 8px 22px rgba(59, 130, 246, 0.18);
     border: 1px solid transparent;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .technician-status-badge__text {
@@ -1128,15 +1129,31 @@
   }
 
   .technician-status-badge--available {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(16, 185, 129, 0.85));
-    border-color: rgba(16, 185, 129, 0.35);
-    color: #f8fafc;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.28));
+    border-color: rgba(16, 185, 129, 0.42);
+    color: rgba(15, 118, 110, 0.92);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.25);
   }
 
   .technician-status-badge--busy {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(220, 38, 38, 0.88));
-    border-color: rgba(248, 113, 113, 0.4);
-    color: #f8fafc;
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.28));
+    border-color: rgba(239, 68, 68, 0.45);
+    color: rgba(153, 27, 27, 0.92);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.25);
+  }
+
+  :where(html.dark, body.dark) .technician-status-badge--available {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.32), rgba(16, 185, 129, 0.38));
+    border-color: rgba(16, 185, 129, 0.52);
+    color: rgba(226, 252, 239, 0.94);
+    box-shadow: 0 0 22px rgba(16, 185, 129, 0.45);
+  }
+
+  :where(html.dark, body.dark) .technician-status-badge--busy {
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.35), rgba(239, 68, 68, 0.42));
+    border-color: rgba(248, 113, 113, 0.55);
+    color: rgba(254, 226, 226, 0.94);
+    box-shadow: 0 0 22px rgba(248, 113, 113, 0.45);
   }
 
   :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn) {
@@ -2559,9 +2576,9 @@
   }
 
 #technician-role-filter.form-select {
-  max-width: 200px;
-  width: 200px;
-  flex: 0 0 200px;
+  flex: 0 0 25%;
+  max-width: 25%;
+  min-width: 160px;
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
   border: 1px solid rgba(148, 163, 255, 0.28);
   color: #1f2937;
