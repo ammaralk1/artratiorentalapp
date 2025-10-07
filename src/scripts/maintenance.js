@@ -30,6 +30,8 @@ let closeTicketModal = null;
 let closeTicketReportInput = null;
 let closeTicketSubmitButton = null;
 let closeTicketDetailsContainer = null;
+let reportModal = null;
+let reportModalContent = null;
 
 async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
   if (maintenanceLoading) return;
@@ -67,6 +69,15 @@ function normalizeBarcodeValue(value) {
 
 function normalizeText(value = '') {
   return normalizeNumbers(String(value)).trim().toLowerCase();
+}
+
+function escapeHtml(value = '') {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function toSqlDatetime(dateInput = new Date()) {
@@ -334,10 +345,38 @@ function resetCloseTicketModal() {
   setCloseModalLoading(false);
 }
 
+function ensureReportModalElements() {
+  const modalEl = document.getElementById('maintenanceReportModal');
+  if (!modalEl) return false;
+
+  const bootstrapLib = (typeof window !== 'undefined' ? window.bootstrap : undefined) ?? globalThis?.bootstrap;
+  if (!bootstrapLib?.Modal) {
+    return false;
+  }
+
+  reportModal = bootstrapLib.Modal.getOrCreateInstance(modalEl);
+  if (!reportModalContent) {
+    reportModalContent = modalEl.querySelector('#maintenance-report-modal-content');
+  }
+
+  if (!modalEl.dataset.listenerAttached) {
+    modalEl.addEventListener('hidden.bs.modal', resetReportModalContent);
+    modalEl.dataset.listenerAttached = 'true';
+  }
+
+  return true;
+}
+
+function resetReportModalContent() {
+  if (reportModalContent) {
+    reportModalContent.innerHTML = '';
+  }
+}
+
 function setCloseModalLoading(isLoading) {
   if (!closeTicketSubmitButton) return;
   const savingLabel = t('maintenance.closeModal.saving', '⏳ جاري الإغلاق...');
-  const confirmLabel = t('maintenance.closeModal.confirm', '✅ إغلاق التذكرة');
+  const confirmLabel = t('maintenance.closeModal.confirm', 'إغلاق التذكرة');
 
   if (isLoading) {
     closeTicketSubmitButton.disabled = true;
@@ -682,6 +721,29 @@ function viewTicketReport(id) {
   const ticket = tickets.find((t) => Number(t.id) === Number(id));
   if (!ticket) return;
 
+  if (!ensureReportModalElements()) {
+    const equipmentLabelFallback = t('maintenance.report.equipment', 'المعدة');
+    const barcodeLabelFallback = t('maintenance.report.barcode', 'الباركود');
+    const issueLabelFallback = t('maintenance.report.issue', 'الوصف');
+    const createdLabelFallback = t('maintenance.report.createdAt', 'تاريخ الإنشاء');
+    const closedLabelFallback = t('maintenance.report.closedAt', 'تاريخ الإغلاق');
+    const summaryLabelFallback = t('maintenance.report.summary', 'التقرير');
+    const notAvailableFallback = t('maintenance.report.notAvailable', 'غير متوفر');
+    const noneFallback = t('maintenance.report.none', '—');
+
+    const fallbackDetails = [
+      `${equipmentLabelFallback}: ${ticket.equipmentDesc}`,
+      `${barcodeLabelFallback}: ${ticket.equipmentBarcode ? normalizeNumbers(ticket.equipmentBarcode) : notAvailableFallback}`,
+      `${issueLabelFallback}: ${ticket.issue ? normalizeNumbers(ticket.issue) : noneFallback}`,
+      `${createdLabelFallback}: ${ticket.createdAt ? normalizeNumbers(formatDateTime(ticket.createdAt)) : noneFallback}`,
+      `${closedLabelFallback}: ${ticket.resolvedAt ? normalizeNumbers(formatDateTime(ticket.resolvedAt)) : noneFallback}`,
+      `${summaryLabelFallback}: ${ticket.resolutionReport ? normalizeNumbers(ticket.resolutionReport) : noneFallback}`
+    ].join('\n');
+
+    alert(fallbackDetails);
+    return;
+  }
+
   const equipmentLabel = t('maintenance.report.equipment', 'المعدة');
   const barcodeLabel = t('maintenance.report.barcode', 'الباركود');
   const issueLabel = t('maintenance.report.issue', 'الوصف');
@@ -691,16 +753,77 @@ function viewTicketReport(id) {
   const notAvailable = t('maintenance.report.notAvailable', 'غير متوفر');
   const none = t('maintenance.report.none', '—');
 
-  const details = [
-    `${equipmentLabel}: ${ticket.equipmentDesc}`,
-    `${barcodeLabel}: ${ticket.equipmentBarcode ? normalizeNumbers(ticket.equipmentBarcode) : notAvailable}`,
-    `${issueLabel}: ${ticket.issue ? normalizeNumbers(ticket.issue) : none}`,
-    `${createdLabel}: ${ticket.createdAt ? normalizeNumbers(formatDateTime(ticket.createdAt)) : none}`,
-    `${closedLabel}: ${ticket.resolvedAt ? normalizeNumbers(formatDateTime(ticket.resolvedAt)) : none}`,
-    `${summaryLabel}: ${ticket.resolutionReport ? normalizeNumbers(ticket.resolutionReport) : none}`
-  ].join('\n');
+  const formatValue = (value, fallback = none) => {
+    if (!value) {
+      return `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(fallback)}</span>`;
+    }
+    return `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(String(value)))}</span>`;
+  };
 
-  alert(details);
+  const formattedFields = [
+    {
+      label: equipmentLabel,
+      value: `<span class="maintenance-report-modal__value">${escapeHtml(ticket.equipmentDesc || none)}</span>`
+    },
+    {
+      label: barcodeLabel,
+      value: ticket.equipmentBarcode
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(ticket.equipmentBarcode))}</span>`
+        : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(notAvailable)}</span>`
+    },
+    {
+      label: issueLabel,
+      value: ticket.issue
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(ticket.issue))}</span>`
+        : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
+    },
+    {
+      label: createdLabel,
+      value: ticket.createdAt
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(formatDateTime(ticket.createdAt)))}</span>`
+        : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
+    },
+    {
+      label: closedLabel,
+      value: ticket.resolvedAt
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(formatDateTime(ticket.resolvedAt)))}</span>`
+        : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
+    }
+  ];
+
+  const summaryText = ticket.resolutionReport ? normalizeNumbers(ticket.resolutionReport) : '';
+  const summaryHtml = summaryText
+    ? `<p>${escapeHtml(summaryText).replace(/\r?\n/g, '<br>')}</p>`
+    : `<p class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</p>`;
+
+  const itemsHtml = formattedFields
+    .map((item) => `
+      <div class="maintenance-report-modal__item">
+        <span class="maintenance-report-modal__label">${escapeHtml(item.label)}</span>
+        ${item.value}
+      </div>
+    `)
+    .join('');
+
+  const summarySection = `
+    <div class="maintenance-report-modal__summary">
+      <h6>${escapeHtml(summaryLabel)}</h6>
+      ${summaryHtml}
+    </div>
+  `;
+
+  if (reportModalContent) {
+    reportModalContent.innerHTML = `
+      <div class="maintenance-report-modal__details">
+        <div class="maintenance-report-modal__grid">
+          ${itemsHtml}
+        </div>
+        ${summarySection}
+      </div>
+    `;
+  }
+
+  reportModal?.show();
 }
 
 async function deleteTicket(id) {
@@ -877,6 +1000,10 @@ export function initMaintenance() {
 
   if (ensureCloseTicketModalElements()) {
     resetCloseTicketModal();
+  }
+
+  if (ensureReportModalElements()) {
+    resetReportModalContent();
   }
 
   maintenanceInitialized = true;

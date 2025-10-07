@@ -797,10 +797,32 @@
                 </div>
               </div>
               <div class="modal-footer maintenance-close-modal__actions">
-                <button type="button" class="btn btn-outline btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
-                <button type="submit" class="btn btn-success" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">✅ إغلاق التذكرة</button>
+          <button type="button" class="btn btn-neutral" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.closeModal.cancel">إلغاء</button>
+          <button type="submit" class="btn btn-primary" id="maintenance-close-submit" data-i18n data-i18n-key="maintenance.closeModal.confirm">إغلاق التذكرة</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+      <!-- Modal: Maintenance Report Details -->
+      <div class="modal fade" id="maintenanceReportModal" tabindex="-1" aria-labelledby="maintenance-report-modal-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered maintenance-report-modal__dialog">
+          <div class="modal-content maintenance-report-modal">
+            <div class="modal-header maintenance-report-modal__header">
+              <div class="maintenance-report-modal__icon" aria-hidden="true">📝</div>
+              <div class="maintenance-report-modal__heading">
+                <h5 class="maintenance-report-modal__title" id="maintenance-report-modal-title" data-i18n data-i18n-key="maintenance.report.modalTitle">📝 تقرير الصيانة</h5>
+                <p class="maintenance-report-modal__subtitle" data-i18n data-i18n-key="maintenance.report.modalSubtitle">تفاصيل التذكرة وتقرير الإصلاح.</p>
               </div>
-            </form>
+              <button type="button" class="btn-close maintenance-report-modal__dismiss" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body maintenance-report-modal__body">
+              <div id="maintenance-report-modal-content" class="maintenance-report-modal__details"></div>
+            </div>
+            <div class="modal-footer maintenance-report-modal__actions">
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-i18n data-i18n-key="maintenance.report.modalClose">تم</button>
+            </div>
           </div>
         </div>
       </div>
