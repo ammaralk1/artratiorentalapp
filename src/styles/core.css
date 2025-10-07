@@ -1674,9 +1674,15 @@ textarea {
   box-shadow: inset 0 1px 2px rgba(46, 64, 99, 0.05);
 }
 
-.form-select {
+:is(html[dir='ltr']) .form-select {
   background-position: right 1.35rem center;
-  padding-inline-end: 3.25rem;
+  padding-inline-end: 2.75rem;
+}
+
+:is(html[dir='rtl']) .form-select {
+  background-position: left 1.35rem center;
+  padding-inline-start: 2.75rem;
+  text-align: right;
 }
 
 /* Table Helpers */
