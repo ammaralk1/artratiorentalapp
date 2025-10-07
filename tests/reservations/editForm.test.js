@@ -19,6 +19,9 @@ const combineDateTimeMock = vi.fn();
 const hasEquipmentConflictMock = vi.fn();
 const hasTechnicianConflictMock = vi.fn();
 const findEquipmentByDescriptionMock = vi.fn();
+const updatePaymentStatusAppearanceMock = vi.fn();
+const ensureCustomerChoicesMock = vi.fn();
+const ensureProjectChoicesMock = vi.fn();
 
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
@@ -52,7 +55,10 @@ vi.mock('../../src/scripts/reservations/state.js', () => ({
 }));
 vi.mock('../../src/scripts/reservations/createForm.js', () => ({
   findEquipmentByDescription: findEquipmentByDescriptionMock,
-  populateEquipmentDescriptionLists: vi.fn()
+  populateEquipmentDescriptionLists: vi.fn(),
+  updatePaymentStatusAppearance: updatePaymentStatusAppearanceMock,
+  ensureCustomerChoices: ensureCustomerChoicesMock,
+  ensureProjectChoices: ensureProjectChoicesMock
 }));
 vi.mock('../../src/scripts/reservations/controller.js', () => ({
   renderReservations: vi.fn(),
@@ -85,6 +91,9 @@ describe('reservations/editForm module', () => {
     combineDateTimeMock.mockReset().mockImplementation((date, time) => `${date}T${time}`);
     hasEquipmentConflictMock.mockReset().mockReturnValue(false);
     findEquipmentByDescriptionMock.mockReset();
+    updatePaymentStatusAppearanceMock.mockReset();
+    ensureCustomerChoicesMock.mockReset();
+    ensureProjectChoicesMock.mockReset();
     tMock.mockImplementation((key, fallback) => fallback ?? key);
     loadDataMock.mockReturnValue({ reservations: [], technicians: [] });
   });
@@ -200,6 +209,7 @@ describe('reservations/editForm module', () => {
     }));
     expect(summary.innerHTML).toBe('<div>summary</div>');
     expect(paidSelect.dataset.listenerAttached).toBe('true');
+    expect(updatePaymentStatusAppearanceMock).toHaveBeenCalled();
   });
 
   it('removeEditReservationItem updates state and re-renders', async () => {
@@ -307,7 +317,7 @@ describe('reservations/editForm module', () => {
     expect(setEditingStateMock).toHaveBeenCalledTimes(1);
 
     module.setupEditEquipmentDescriptionInput();
-    expect(input.addEventListener).toHaveBeenCalledTimes(1);
+    expect(input.addEventListener).toHaveBeenCalledTimes(3);
     storedHandler({ key: 'Enter', preventDefault: vi.fn() });
     expect(setEditingStateMock).toHaveBeenCalledTimes(1);
   });

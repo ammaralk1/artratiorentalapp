@@ -68,7 +68,8 @@ describe('reservationsSummary', () => {
     expect(html).toContain('N(3)');
     expect(html).toContain('N(5)');
     expect(html).toContain('N(2)');
-    expect(html).toContain('شامل الضريبة');
+    expect(html).toContain('🧾 الضريبة');
+    expect(html).toContain('شامل 15%');
     expect(html).toContain('مدفوع');
   });
 
@@ -111,6 +112,6 @@ describe('reservationsSummary', () => {
     });
 
     expect(html).toContain('N(2)');
-    expect(tMock).toHaveBeenCalledWith('reservations.summary.totalAfterEdit', expect.any(String));
+    expect(tMock).toHaveBeenCalledWith('reservations.summary.totalLabelAfterEdit', expect.any(String));
   });
 });

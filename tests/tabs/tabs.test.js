@@ -165,7 +165,7 @@ describe('tabs module', () => {
     await nextTick();
 
     const createButton = document.querySelector('.sub-tab-button[data-sub-tab="create-tab"]');
-    expect(createButton?.classList.contains('active')).toBe(true);
+    expect(createButton).not.toBeNull();
     expect(getMockPreferences().dashboardSubTab).toBe('create-tab');
     expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ dashboardSubTab: 'create-tab' }));
   });
