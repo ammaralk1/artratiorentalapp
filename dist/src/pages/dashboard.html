@@ -28,14 +28,15 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard-BVRrBY-I.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard-CZfTbX2c.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth-CXJ9BVF7.js">
   <link rel="modulepreload" crossorigin href="../../assets/common-DiVDZi68.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-qZ8HP5ns.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-BHrySFV9.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService-D4pKr09t.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller-B1ATaY9u.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers-C_bDRz6Y.js">
-  <link rel="modulepreload" crossorigin href="../../assets/events-Co7zaDCq.js">
-  <link rel="stylesheet" crossorigin href="../../assets/app-CQujYnUJ.css">
+  <link rel="modulepreload" crossorigin href="../../assets/events-M5oAJ2ut.js">
+  <link rel="stylesheet" crossorigin href="../../assets/controller-CuGIXCpK.css">
+  <link rel="stylesheet" crossorigin href="../../assets/app-Bk77tvK9.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -891,16 +892,13 @@
               </div>
 
             <div class="reservation-row mb-3">
-              <div class="reservation-field reservation-field--quarter position-relative">
+              <div class="reservation-field reservation-field--quarter">
                 <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
-                <div id="customer-suggestions" class="suggestions-list"></div>
+                <select id="res-customer" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.client"></select>
               </div>
-              <div class="reservation-field reservation-field--quarter position-relative">
-                <label for="res-project-search" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <input class="form-control" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
-                <div id="project-suggestions" class="suggestions-list"></div>
-                <select id="res-project" class="form-select d-none" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+              <div class="reservation-field reservation-field--quarter">
+                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <select id="res-project" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.project">
                   <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
                 </select>
               </div>
@@ -958,15 +956,23 @@
               </div>
 
               <div class="row mb-3 mt-3 align-items-end g-3 reservation-meta-row">
-                <div class="col-lg-5 col-md-6">
-                  <div class="reservation-meta-card">
-                    <label class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
-                    <div class="input-group reservation-discount-group mb-3">
-                      <input type="text" id="res-discount" class="form-control" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
-                      <select id="res-discount-type" class="form-select">
-                        <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
-                        <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
-                      </select>
+                <div class="col-lg-auto col-md-6">
+                  <div class="reservation-meta-card reservation-meta-card--billing">
+                    <label id="res-billing-label" class="form-label" for="res-discount" data-i18n data-i18n-key="reservations.create.billing.title">💵 الخصم والضريبة</label>
+                    <div class="reservation-billing-grid" role="group" aria-labelledby="res-billing-label">
+                      <div class="reservation-billing-field reservation-billing-field--percent">
+                        <select id="res-discount-type" class="form-select reservation-billing-input reservation-billing-select">
+                          <option value="percent" data-i18n data-i18n-key="reservations.create.billing.discountPercent">٪ نسبة</option>
+                          <option value="amount" data-i18n data-i18n-key="reservations.create.billing.discountAmount">💵 مبلغ</option>
+                        </select>
+                      </div>
+                      <div class="reservation-billing-field reservation-billing-field--amount">
+                        <input type="text" id="res-discount" class="form-control reservation-billing-input" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.create.billing.discount">
+                      </div>
+                    </div>
+                    <div class="form-check form-switch reservation-share-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="res-company-share" data-company-share="10">
+                      <label class="form-check-label" for="res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
                     </div>
                     <div class="form-check form-switch reservation-tax-switch">
                       <input class="form-check-input" type="checkbox" role="switch" id="res-tax">
@@ -974,15 +980,17 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                  <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
-                  <select id="res-payment-status" class="form-select">
-                    <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
-                    <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
-                  </select>
+                <div class="col-lg-auto col-md-12">
+                  <div class="reservation-meta-card reservation-meta-card--compact reservation-meta-card--narrow">
+                    <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
+                    <select id="res-payment-status" class="form-select reservation-billing-input reservation-billing-select reservation-billing-input--payment payment-status-select">
+                      <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="col-lg-3 col-md-12 d-flex justify-content-lg-end justify-content-start mt-3 mt-lg-0">
-                  <button type="button" class="btn btn-primary btn-lg w-100 w-lg-auto" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
+                <div class="col-lg-auto col-md-12 d-flex justify-content-lg-start justify-content-start">
+                  <button type="button" class="btn btn-primary reservation-primary-action reservation-primary-action--compact" id="create-reservation-btn" data-i18n data-i18n-key="reservations.create.actions.submit">💾 إنشاء الحجز</button>
                 </div>
               </div>
             </form>
@@ -1379,7 +1387,7 @@
 
             <div class="col-md-6">
               <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-              <select id="edit-res-paid" class="form-select">
+              <select id="edit-res-paid" class="form-select payment-status-select">
                 <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
                 <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
               </select>

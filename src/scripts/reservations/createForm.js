@@ -108,7 +108,6 @@ function resolveProjectDateTime(project, key) {
   return '';
 }
 
-function syncProjectSearchInput(projectId) {
 function getCustomerDisplayName(customer) {
   if (!customer) return '';
 
