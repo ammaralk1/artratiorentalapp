@@ -51,7 +51,6 @@ function sirvGetToken(): string
     $payload = json_encode([
         'clientId' => $config['client_id'],
         'clientSecret' => $config['client_secret'],
-        'grant_type' => 'client_credentials',
     ], JSON_UNESCAPED_SLASHES);
 
     if ($payload === false) {
@@ -87,6 +86,20 @@ function sirvGetToken(): string
 
     if ($statusCode >= 400 || empty($data['token'])) {
         $message = $data['error_description'] ?? $data['error'] ?? 'Failed to obtain Sirv access token';
+
+        if (isset($data['message']) && is_string($data['message'])) {
+            $message .= ' - ' . $data['message'];
+        }
+
+        if (isset($data['details']) && !is_string($data['details'])) {
+            $details = json_encode($data['details'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($details !== false) {
+                $message .= ' :: ' . $details;
+            }
+        }
+
+        error_log('Sirv token error: ' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
         throw new RuntimeException($message);
     }
 
