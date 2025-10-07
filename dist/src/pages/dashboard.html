@@ -452,12 +452,10 @@
               </div>
               <div class="form-field">
                 <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
-                <div class="customer-upload-field">
+                <div class="customer-upload-inline">
                   <input type="file" class="form-control" id="customer-document" accept="application/pdf,image/*">
-                  <div class="customer-upload-actions">
-                    <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
-                    <small class="text-muted" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
-                  </div>
+                  <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                  <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
                 </div>
               </div>
               <div class="form-field form-field-notes">
