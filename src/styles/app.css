@@ -1387,10 +1387,12 @@
 
   .equipment-filter-controls {
     width: 100%;
-  }
-
-  .equipment-filter-controls.management-search-bar {
+    display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-inline: auto;
   }
 
   .equipment-filters .form-select,
