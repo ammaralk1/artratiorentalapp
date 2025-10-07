@@ -801,7 +801,7 @@ export function renderCustomers(customersOverride, options = {}) {
 
   const editLabel = t("customers.actions.edit", "✏️ تعديل");
   const deleteLabel = t("customers.actions.delete", "🗑️ حذف");
-  const viewLabel = t('customers.actions.viewDocument', '📎 عرض المستند');
+  const viewLabel = t('customers.actions.viewDocument', '📎 عرض الملف');
   const canDelete = userCanManageDestructiveActions();
 
   customers.forEach((customer) => {
