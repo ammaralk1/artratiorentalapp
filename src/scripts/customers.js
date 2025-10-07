@@ -612,6 +612,16 @@ function prepareDocumentPreview(documentData) {
     previewKind = 'pdf';
   }
 
+  let isExternal = false;
+  if (previewUrl && /^https?:/i.test(previewUrl)) {
+    try {
+      const parsed = new URL(previewUrl, window.location.origin);
+      isExternal = parsed.origin !== window.location.origin;
+    } catch (_error) {
+      isExternal = false;
+    }
+  }
+
   return {
     ok: true,
     previewUrl,
@@ -619,6 +629,7 @@ function prepareDocumentPreview(documentData) {
     cleanupUrl,
     mimeType,
     previewKind,
+    external: isExternal,
   };
 }
 
@@ -668,7 +679,12 @@ function showCustomerDocumentModal(documentData, title = '') {
     if (preview.previewKind === 'image') {
       container.innerHTML = `<img src="${preview.previewUrl}" alt="${escapeHtml(documentData?.fileName || 'customer document')}" class="img-fluid">`;
     } else if (preview.previewKind === 'pdf') {
-      container.innerHTML = `<iframe src="${preview.previewUrl}" title="${escapeHtml(documentData?.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
+      if (preview.external) {
+        const message = t('customers.documents.externalPdfBlocked', 'لا يمكن عرض هذا الملف داخل التطبيق. الرجاء فتحه في نافذة جديدة من خلال زر التحميل.');
+        container.innerHTML = `<p class="text-muted">${message}</p>`;
+      } else {
+        container.innerHTML = `<iframe src="${preview.previewUrl}" title="${escapeHtml(documentData?.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
+      }
     } else {
       container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
     }
