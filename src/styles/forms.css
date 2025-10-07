@@ -480,13 +480,14 @@
 }
 
 /* Dark theme overrides for Choices.js */
+
 .choices,
 .choices__inner {
   background-color: #111827 !important;  /* داكن أكثر */
   color: #f9fafb !important;
   border: 1px solid #374151 !important;
-  border-radius: 1.25rem !important;
-  min-height: 3rem !important;
+  border-radius: 0.5rem !important;
+  min-height: 2.75rem !important;
   display: flex;
   align-items: center;
   box-shadow: none !important;

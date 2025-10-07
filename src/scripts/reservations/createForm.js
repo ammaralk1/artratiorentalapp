@@ -44,6 +44,23 @@ function applyChoicesDarkTheme(instance) {
   instance.input?.element?.classList.add('choices__input--reservation-dark');
 }
 
+function applyDarkModeToChoices() {
+  document.querySelectorAll('.choices').forEach((choice) => {
+    const inner = choice.querySelector('.choices__inner');
+    const dropdown = choice.querySelector('.choices__list--dropdown');
+    if (inner) {
+      inner.style.backgroundColor = '#111827';
+      inner.style.color = '#f9fafb';
+      inner.style.border = '1px solid #374151';
+    }
+    if (dropdown) {
+      dropdown.style.backgroundColor = '#1f2937';
+      dropdown.style.color = '#f9fafb';
+      dropdown.style.border = '1px solid #374151';
+    }
+  });
+}
+
 export function updatePaymentStatusAppearance(select, statusValue) {
   if (!select) return;
   const value = statusValue ?? select.value;
@@ -182,6 +199,7 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
   } else {
     applyChoicesDarkTheme(customerChoices);
   }
+  applyDarkModeToChoices();
 
   customerChoices.clearChoices();
   customerChoices.setChoices(
@@ -253,6 +271,7 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
   } else {
     applyChoicesDarkTheme(projectChoices);
   }
+  applyDarkModeToChoices();
 
   projectChoices.clearChoices();
   projectChoices.setChoices(
@@ -1105,3 +1124,11 @@ if (typeof document !== 'undefined') {
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };
+
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    applyDarkModeToChoices();
+    setTimeout(applyDarkModeToChoices, 300);
+  });
+}
