@@ -450,14 +450,30 @@ function renderStats(tickets) {
   const open = tickets.filter((ticket) => ticket.status === 'open').length;
   const closed = total - open;
   const formatCount = (value) => normalizeNumbers(String(value));
-  const openHtml = t('maintenance.stats.open', '{count} قيد الصيانة').replace('{count}', `<strong>${formatCount(open)}</strong>`);
-  const closedHtml = t('maintenance.stats.closed', '{count} مغلقة').replace('{count}', `<strong>${formatCount(closed)}</strong>`);
-  const totalHtml = t('maintenance.stats.total', '{count} إجمالي التذاكر').replace('{count}', `<strong>${formatCount(total)}</strong>`);
+  const summaryTitle = t('maintenance.stats.summaryTitle', 'ملخص الصيانة');
+  const openLabel = t('maintenance.filters.status.open', 'قيد الصيانة');
+  const closedLabel = t('maintenance.filters.status.closed', 'مغلقة');
+  const totalLabel = t('maintenance.stats.totalLabel', 'إجمالي التذاكر');
+
+  const buildItem = (value, label, modifier) => `
+    <div class="maintenance-summary__item maintenance-summary__item--${modifier}">
+      <span class="maintenance-summary__value">${formatCount(value)}</span>
+      <span class="maintenance-summary__label">${label}</span>
+    </div>
+  `;
 
   container.innerHTML = `
-    <span class="maintenance-stat">${openHtml}</span>
-    <span class="maintenance-stat">${closedHtml}</span>
-    <span class="maintenance-stat">${totalHtml}</span>
+    <section class="maintenance-summary" aria-labelledby="maintenance-summary-title">
+      <header class="maintenance-summary__header">
+        <span class="maintenance-summary__icon" aria-hidden="true">🛠️</span>
+        <h4 id="maintenance-summary-title" class="maintenance-summary__title">${summaryTitle}</h4>
+      </header>
+      <div class="maintenance-summary__items">
+        ${buildItem(open, openLabel, 'open')}
+        ${buildItem(closed, closedLabel, 'closed')}
+        ${buildItem(total, totalLabel, 'total')}
+      </div>
+    </section>
   `;
 }
 
