@@ -438,6 +438,20 @@
                 <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
                 <input type="text" class="form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
               </div>
+              <div class="form-field">
+                <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                <input type="text" class="form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+              </div>
+              <div class="form-field">
+                <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                <div class="customer-upload-field">
+                  <input type="file" class="form-control" id="customer-document" accept="application/pdf,image/*">
+                  <div class="customer-upload-actions">
+                    <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                    <small class="text-muted" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                  </div>
+                </div>
+              </div>
               <div class="form-field form-field-notes">
                 <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
                 <textarea class="form-control" id="customer-notes" rows="2" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
@@ -479,6 +493,23 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      
+        <div class="modal fade" id="customerDocumentModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="customer-document-modal-title" data-i18n data-i18n-key="customers.documents.modalTitle">📎 ملف العميل</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+              </div>
+              <div class="modal-body">
+                <div id="customer-document-preview-container" class="customer-document-preview text-center text-muted" data-i18n data-i18n-key="customers.documents.emptyState">لا يوجد ملف لعرضه.</div>
+                <div class="d-flex justify-content-end mt-3">
+                  <a id="customer-document-download" class="btn btn-primary" href="#" target="_blank" rel="noopener" download data-i18n data-i18n-key="customers.documents.download">⬇️ تحميل الملف</a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div> <!-- نهاية تبويب العملاء -->
 

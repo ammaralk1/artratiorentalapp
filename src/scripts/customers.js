@@ -9,6 +9,51 @@ let isCustomersLoading = false;
 let customersErrorMessage = "";
 const initialCustomersData = loadData() || {};
 let customersState = (initialCustomersData.customers || []).map(mapToInternalCustomer);
+let currentCustomerDocument = null;
+
+function normalizeCustomerDocument(rawDocument) {
+  if (!rawDocument || typeof rawDocument !== 'object') {
+    return null;
+  }
+
+  let data = rawDocument.data
+    ?? rawDocument.base64
+    ?? rawDocument.content
+    ?? '';
+
+  if (typeof data === 'string') {
+    data = data.trim();
+    if (data.startsWith('data:')) {
+      const commaIndex = data.indexOf(',');
+      data = commaIndex !== -1 ? data.slice(commaIndex + 1) : data;
+    }
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    fileName: rawDocument.fileName
+      ?? rawDocument.filename
+      ?? rawDocument.name
+      ?? '',
+    mimeType: rawDocument.mimeType
+      ?? rawDocument.contentType
+      ?? rawDocument.type
+      ?? 'application/octet-stream',
+    data,
+  };
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function mapToInternalCustomer(rawCustomer = {}) {
   if (!rawCustomer || typeof rawCustomer !== "object") {
@@ -30,6 +75,13 @@ function mapToInternalCustomer(rawCustomer = {}) {
   const idValue = rawCustomer.id ?? rawCustomer.customerId ?? rawCustomer.reservationId ?? rawCustomer.customerID;
   const rawFullName = rawCustomer.full_name ?? rawCustomer.customerName ?? rawCustomer.name ?? "";
   const fullName = typeof rawFullName === "string" ? rawFullName.trim() : String(rawFullName || "").trim();
+  const rawTaxId = rawCustomer.tax_id
+    ?? rawCustomer.taxId
+    ?? rawCustomer.vat_number
+    ?? rawCustomer.vatNumber
+    ?? rawCustomer.taxNumber
+    ?? '';
+  const document = normalizeCustomerDocument(rawCustomer.document ?? rawCustomer.attachment ?? rawCustomer.file);
 
   return {
     id: idValue !== undefined && idValue !== null ? String(idValue) : "",
@@ -41,6 +93,9 @@ function mapToInternalCustomer(rawCustomer = {}) {
     address: rawCustomer.address ?? "",
     company: rawCustomer.company ?? rawCustomer.companyName ?? "",
     notes: rawCustomer.notes ?? "",
+    tax_id: typeof rawTaxId === 'string' ? rawTaxId.trim() : String(rawTaxId || '').trim(),
+    taxId: typeof rawTaxId === 'string' ? rawTaxId.trim() : String(rawTaxId || '').trim(),
+    document,
     created_at: rawCustomer.created_at ?? null,
     updated_at: rawCustomer.updated_at ?? null,
   };
@@ -69,9 +124,31 @@ function getFormElements() {
     addressInput: document.getElementById("customer-address"),
     companyInput: document.getElementById("customer-company"),
     notesInput: document.getElementById("customer-notes"),
+    taxInput: document.getElementById("customer-tax-id"),
+    documentInput: document.getElementById("customer-document"),
+    documentNameLabel: document.getElementById("customer-document-name"),
+    documentPreviewBtn: document.getElementById("customer-document-preview"),
     submitBtn: document.getElementById("submit-btn"),
     cancelBtn: document.getElementById("customer-cancel-btn"),
   };
+}
+
+function updateDocumentPreviewUI() {
+  const { documentNameLabel, documentPreviewBtn } = getFormElements();
+  const hasDocument = Boolean(currentCustomerDocument?.data);
+  if (documentPreviewBtn) {
+    documentPreviewBtn.disabled = !hasDocument;
+  }
+  if (documentNameLabel) {
+    const emptyLabel = t('customers.form.document.empty', 'لم يتم اختيار ملف بعد');
+    if (hasDocument) {
+      const selectedLabel = currentCustomerDocument.fileName?.trim()
+        || t('customers.form.document.selected', 'تم إرفاق ملف.');
+      documentNameLabel.textContent = selectedLabel;
+    } else {
+      documentNameLabel.textContent = emptyLabel;
+    }
+  }
 }
 
 function setSubmitButtonState(mode = "add") {
@@ -97,6 +174,7 @@ function refreshCustomerLanguageStrings() {
   const isEditing = Boolean(editingCustomerId);
   setSubmitButtonState(isEditing ? "update" : "add");
   updateCancelButtonVisibility(isEditing);
+  updateDocumentPreviewUI();
 }
 
 function resetCustomerForm() {
@@ -104,6 +182,8 @@ function resetCustomerForm() {
   form?.reset();
   if (idInput) idInput.value = "";
   if (phoneInput) phoneInput.value = phoneInput.value.trim();
+  currentCustomerDocument = null;
+  updateDocumentPreviewUI();
   editingCustomerId = null;
   setSubmitButtonState("add");
   updateCancelButtonVisibility(false);
@@ -118,6 +198,8 @@ function populateCustomerForm(customer) {
     addressInput,
     companyInput,
     notesInput,
+    taxInput,
+    documentInput,
     submitBtn,
     cancelBtn,
   } = getFormElements();
@@ -131,6 +213,11 @@ function populateCustomerForm(customer) {
   if (addressInput) addressInput.value = customer.address || "";
   if (companyInput) companyInput.value = customer.company || "";
   if (notesInput) notesInput.value = customer.notes || "";
+  if (taxInput) taxInput.value = customer.tax_id || "";
+  if (documentInput) documentInput.value = '';
+
+  currentCustomerDocument = customer.document ? { ...customer.document } : null;
+  updateDocumentPreviewUI();
 
   editingCustomerId = customer.id;
   setSubmitButtonState("update");
@@ -146,6 +233,7 @@ function collectCustomerForm() {
     addressInput,
     companyInput,
     notesInput,
+    taxInput,
   } = getFormElements();
 
   if (!nameInput || !phoneInput) return null;
@@ -167,10 +255,109 @@ function collectCustomerForm() {
     notes: notesInput?.value.trim() || "",
   };
 
+  const taxIdValue = taxInput?.value.trim() || "";
+  payload.tax_id = taxIdValue;
+  payload.taxId = taxIdValue;
+
+  if (currentCustomerDocument?.data) {
+    payload.document = currentCustomerDocument;
+  }
+
   return {
     payload,
     id: idInput?.value || editingCustomerId || "",
   };
+}
+
+function handleDocumentInputChange(event) {
+  const { documentInput } = getFormElements();
+  const file = event.target?.files && event.target.files[0];
+
+  if (!file) {
+    updateDocumentPreviewUI();
+    if (documentInput) {
+      documentInput.value = '';
+    }
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = typeof reader.result === 'string' ? reader.result : '';
+    const base64 = result.includes(',') ? result.split(',')[1] : result;
+    currentCustomerDocument = {
+      fileName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      data: base64,
+    };
+    updateDocumentPreviewUI();
+    if (documentInput) {
+      documentInput.value = '';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function buildDocumentDataUrl(documentData) {
+  if (!documentData?.data) {
+    return '';
+  }
+  const mimeType = documentData.mimeType || 'application/octet-stream';
+  return `data:${mimeType};base64,${documentData.data}`;
+}
+
+function showCustomerDocumentModal(documentData, title = '') {
+  if (!documentData?.data) {
+    showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
+    return;
+  }
+
+  const modalElement = document.getElementById('customerDocumentModal');
+  if (!modalElement) {
+    return;
+  }
+
+  const container = document.getElementById('customer-document-preview-container');
+  const downloadLink = document.getElementById('customer-document-download');
+  const modalTitle = document.getElementById('customer-document-modal-title');
+
+  if (modalTitle) {
+    modalTitle.textContent = title || documentData.fileName || t('customers.documents.modalTitle', '📎 ملف العميل');
+  }
+
+  const dataUrl = buildDocumentDataUrl(documentData);
+  if (downloadLink) {
+    downloadLink.href = dataUrl;
+    downloadLink.download = documentData.fileName || 'customer-document';
+  }
+
+  if (container) {
+    const mimeType = (documentData.mimeType || '').toLowerCase();
+    if (mimeType.startsWith('image/')) {
+      container.innerHTML = `<img src="${dataUrl}" alt="${escapeHtml(documentData.fileName || 'customer document')}" class="img-fluid">`;
+    } else if (mimeType === 'application/pdf' || mimeType.includes('pdf')) {
+      container.innerHTML = `<iframe src="${dataUrl}" title="${escapeHtml(documentData.fileName || 'customer document')}" class="customer-document-frame w-100"></iframe>`;
+    } else {
+      container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
+    }
+  }
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  modal.show();
+}
+
+function handleInlineDocumentPreview() {
+  if (!currentCustomerDocument?.data) {
+    showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
+    return;
+  }
+  const { nameInput } = getFormElements();
+  const customerName = nameInput?.value?.trim() || '';
+  const baseTitle = customerName || t('customers.documents.modalTitle', '📎 ملف العميل');
+  const title = currentCustomerDocument.fileName
+    ? `${baseTitle} - ${currentCustomerDocument.fileName}`.trim()
+    : baseTitle;
+  showCustomerDocumentModal(currentCustomerDocument, title);
 }
 
 async function refreshCustomersFromApi({ showToastOnError = true } = {}) {
@@ -210,7 +397,14 @@ async function handleCustomerSubmit(event) {
         method: 'PATCH',
         body: payload,
       });
-      const updatedCustomer = mapToInternalCustomer(response?.data);
+      const updatedCustomerRaw = mapToInternalCustomer(response?.data);
+      const fallbackDocument = normalizeCustomerDocument(payload.document);
+      const updatedCustomer = {
+        ...updatedCustomerRaw,
+        document: updatedCustomerRaw.document ?? fallbackDocument,
+        tax_id: updatedCustomerRaw.tax_id ?? payload.tax_id ?? '',
+        taxId: updatedCustomerRaw.taxId ?? payload.taxId ?? '',
+      };
       const updatedList = getCustomers().map((customer) =>
         String(customer.id) === String(id) ? updatedCustomer : customer
       );
@@ -221,7 +415,14 @@ async function handleCustomerSubmit(event) {
         method: 'POST',
         body: payload,
       });
-      const createdCustomer = mapToInternalCustomer(response?.data);
+      const createdCustomerRaw = mapToInternalCustomer(response?.data);
+      const fallbackDocument = normalizeCustomerDocument(payload.document);
+      const createdCustomer = {
+        ...createdCustomerRaw,
+        document: createdCustomerRaw.document ?? fallbackDocument,
+        tax_id: createdCustomerRaw.tax_id ?? payload.tax_id ?? '',
+        taxId: createdCustomerRaw.taxId ?? payload.taxId ?? '',
+      };
       const updatedList = [...getCustomers(), createdCustomer];
       setCustomers(updatedList);
       showToast(t('customers.toast.createSuccess', 'تمت إضافة العميل بنجاح'));
@@ -242,12 +443,15 @@ async function handleCustomerTableClick(event) {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
 
-  if (target.classList.contains("customer-delete-btn")) {
+  const button = target.closest('button');
+  if (!(button instanceof HTMLElement)) return;
+
+  if (button.classList.contains("customer-delete-btn")) {
     if (!userCanManageDestructiveActions()) {
       notifyPermissionDenied();
       return;
     }
-    const id = target.dataset.id;
+    const id = button.dataset.id;
     if (!confirm(t("customers.toast.deleteConfirm", "⚠️ هل أنت متأكد من حذف هذا العميل؟"))) {
       return;
     }
@@ -270,8 +474,21 @@ async function handleCustomerTableClick(event) {
     return;
   }
 
-  if (target.classList.contains("customer-edit-btn")) {
-    const id = target.dataset.id;
+  if (button.classList.contains("customer-view-file-btn")) {
+    const id = button.dataset.id;
+    const customer = getCustomers().find((c) => String(c.id) === String(id));
+    if (!customer?.document) {
+      showToast(t('customers.documents.missing', 'لا يوجد ملف لعرضه'), 'info');
+      return;
+    }
+    const parts = [customer.full_name, customer.document.fileName].filter(Boolean);
+    const title = parts.length ? parts.join(' - ') : undefined;
+    showCustomerDocumentModal(customer.document, title);
+    return;
+  }
+
+  if (button.classList.contains("customer-edit-btn")) {
+    const id = button.dataset.id;
     const customer = getCustomers().find((c) => String(c.id) === String(id));
     if (!customer) return;
     populateCustomerForm(customer);
@@ -302,6 +519,17 @@ function wireUpCustomersUI() {
     form.addEventListener("submit", handleCustomerSubmit);
   }
 
+  const { documentInput, documentPreviewBtn } = getFormElements();
+  if (documentInput && !documentInput.dataset.listenerAttached) {
+    documentInput.addEventListener('change', handleDocumentInputChange);
+    documentInput.dataset.listenerAttached = 'true';
+  }
+
+  if (documentPreviewBtn && !documentPreviewBtn.dataset.listenerAttached) {
+    documentPreviewBtn.addEventListener('click', handleInlineDocumentPreview);
+    documentPreviewBtn.dataset.listenerAttached = 'true';
+  }
+
   if (cancelBtn) {
     cancelBtn.addEventListener("click", () => {
       resetCustomerForm();
@@ -317,6 +545,8 @@ function wireUpCustomersUI() {
   if (searchInput) {
     searchInput.addEventListener("input", handleCustomerSearch);
   }
+
+  updateDocumentPreviewUI();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -368,6 +598,7 @@ export function renderCustomers(customersOverride, options = {}) {
 
   const editLabel = t("customers.actions.edit", "✏️ تعديل");
   const deleteLabel = t("customers.actions.delete", "🗑️ حذف");
+  const viewLabel = t('customers.actions.viewDocument', '📎 عرض المستند');
   const canDelete = userCanManageDestructiveActions();
 
   customers.forEach((customer) => {
@@ -379,6 +610,10 @@ export function renderCustomers(customersOverride, options = {}) {
     const actionButtons = [
       `<button type="button" class="customer-action-btn customer-action-btn--edit customer-edit-btn" data-id="${customer.id}">${editLabel}</button>`
     ];
+
+    if (customer.document?.data) {
+      actionButtons.push(`<button type="button" class="customer-action-btn customer-action-btn--file customer-view-file-btn" data-id="${customer.id}">${viewLabel}</button>`);
+    }
 
     if (canDelete) {
       actionButtons.push(`<button type="button" class="customer-action-btn customer-action-btn--delete customer-delete-btn" data-id="${customer.id}">${deleteLabel}</button>`);

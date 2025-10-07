@@ -310,8 +310,29 @@
 :is(html.dark-mode, body.dark-mode) .suggestion-item:focus .suggestion-item__meta {
   color: rgba(226, 232, 240, 0.78);
 }
+.customer-upload-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 
+.customer-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
 
+.customer-document-preview img,
+.customer-document-preview iframe {
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
+.customer-document-preview iframe {
+  min-height: 60vh;
+}
 
 .equipment-form-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
