@@ -153,6 +153,20 @@ function sirvUploadFile(string $filePath, string $destinationPath, string $mimeT
 
     if ($statusCode >= 400) {
         $message = $data['message'] ?? $data['error'] ?? 'Sirv upload failed';
+
+        if (!empty($data['error_description'])) {
+            $message .= ' - ' . $data['error_description'];
+        }
+
+        if (isset($data['details']) && !is_string($data['details'])) {
+            $encodedDetails = json_encode($data['details'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            if ($encodedDetails !== false) {
+                $message .= ' :: ' . $encodedDetails;
+            }
+        }
+
+        error_log('Sirv upload error: ' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
         throw new RuntimeException($message);
     }
 
