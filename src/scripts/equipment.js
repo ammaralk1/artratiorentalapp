@@ -3,6 +3,7 @@ import { showToast, normalizeNumbers } from "./utils.js";
 import { t } from "./language.js";
 import { apiRequest, ApiError } from "./apiClient.js";
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
+import { refreshEnhancedSelect } from "./ui/enhancedSelect.js";
 
 const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
@@ -533,6 +534,7 @@ function populateFilters(data) {
     if (categories.includes(currentValue)) {
       categorySelect.value = currentValue;
     }
+    refreshEnhancedSelect(categorySelect);
   }
 
   if (subSelect) {
@@ -549,6 +551,12 @@ function populateFilters(data) {
     if (subs.includes(currentValue)) {
       subSelect.value = currentValue;
     }
+    refreshEnhancedSelect(subSelect);
+  }
+
+  const statusSelect = document.getElementById("filter-status");
+  if (statusSelect) {
+    refreshEnhancedSelect(statusSelect);
   }
 }
 

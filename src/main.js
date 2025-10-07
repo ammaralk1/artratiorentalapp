@@ -19,6 +19,7 @@ import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initReports } from './scripts/reports.js';
 import { initDashboardMetrics } from './scripts/dashboardMetrics.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
+import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
 
 applyStoredTheme();
 
@@ -35,6 +36,7 @@ async function initApp() {
   initDashboardMetrics();
   initThemeToggle();
   renderEquipment();
+  initEnhancedSelects();
   renderCalendar();
 
   initMaintenance();
