@@ -479,6 +479,16 @@
   margin-inline: auto;
 }
 
+.choices:not(.choices--ready) {
+  opacity: 0;
+  transition: none;
+}
+
+#res-customer,
+#res-project {
+  visibility: hidden;
+}
+
 /* Dark theme overrides for Choices.js */
 
 .reservation-choice,

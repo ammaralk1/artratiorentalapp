@@ -41,25 +41,12 @@ function initDarkChoices(target, options = {}) {
   if (!element) return null;
 
   element.style.visibility = 'hidden';
-
-  const instance = new Choices(element, {
+  element.style.opacity = '0';
+  return new Choices(element, {
     shouldSort: false,
     allowHTML: false,
     ...options
   });
-
-  const reveal = () => {
-    const container = instance.containerOuter?.element;
-    if (container) {
-      container.classList.add('choices--ready');
-    }
-    element.style.visibility = 'visible';
-  };
-
-  requestAnimationFrame(reveal);
-  setTimeout(reveal, 120);
-
-  return instance;
 }
 
 export function updatePaymentStatusAppearance(select, statusValue) {
@@ -196,7 +183,10 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
   }
 
   const customerContainer = select.closest('.choices');
-  customerContainer?.classList.add('choices--reservation-dark', 'choices--ready');
+  if (customerContainer) {
+    customerContainer.classList.add('choices--reservation-dark', 'choices--ready');
+    customerContainer.style.opacity = '1';
+  }
 
   customerChoices.clearChoices();
   customerChoices.setChoices(
@@ -264,7 +254,10 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
   }
 
   const projectContainer = select.closest('.choices');
-  projectContainer?.classList.add('choices--reservation-dark', 'choices--ready');
+  if (projectContainer) {
+    projectContainer.classList.add('choices--reservation-dark', 'choices--ready');
+    projectContainer.style.opacity = '1';
+  }
 
   projectChoices.clearChoices();
   projectChoices.setChoices(
@@ -1117,6 +1110,59 @@ if (typeof document !== 'undefined') {
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    const darkModeEnabled = document.documentElement.classList.contains('dark')
+      || document.documentElement.classList.contains('dark-mode')
+      || document.body.classList.contains('dark-mode');
+
+    const config = {
+      '#res-customer': {
+        placeholder: 'اكتب اسم العميل...'
+      },
+      '#res-project': {
+        placeholder: 'اختر مشروعاً (اختياري)'
+      }
+    };
+
+    Object.entries(config).forEach(([selector, { placeholder }]) => {
+      const select = document.querySelector(selector);
+      if (!select || select.dataset.darkChoicesBootstrap === 'true') {
+        return;
+      }
+
+      select.dataset.darkChoicesBootstrap = 'true';
+      select.style.opacity = '0';
+
+      const instance = initDarkChoices(select, {
+        placeholder: true,
+        placeholderValue: placeholder,
+        searchPlaceholderValue: placeholder
+      });
+
+      if (selector === '#res-customer') {
+        customerChoices = instance;
+      } else {
+        projectChoices = instance;
+      }
+
+      setTimeout(() => {
+        const container = select.closest('.choices');
+        if (container) {
+          container.classList.add('choices--ready');
+          if (darkModeEnabled) {
+            container.classList.add('choices--reservation-dark');
+          }
+          container.style.opacity = '1';
+          container.style.transition = 'opacity 0.15s ease-in';
+        }
+        select.style.display = 'none';
+        select.style.visibility = 'hidden';
+      }, 150);
+    });
+  });
+}
 
 
 if (typeof window !== 'undefined') {
