@@ -479,29 +479,56 @@
   margin-inline: auto;
 }
 
-/* شكل الخانة المغلقة للقائمة المنسدلة */
+/* Dark theme overrides for Choices.js */
+.choices,
 .choices__inner {
-  background-color: #1f2937 !important;  /* خلفية داكنة */
-  color: white !important;               /* نص أبيض */
-  border: 1px solid #374151 !important;  /* حدود رمادية داكنة */
-  border-radius: 0.5rem;                 /* نفس انحناء الخانات الأخرى */
-  min-height: 3rem;                      /* نفس ارتفاع input العادي */
+  background-color: #111827 !important;  /* داكن أكثر */
+  color: #f9fafb !important;
+  border: 1px solid #374151 !important;
+  border-radius: 0.5rem !important;
+  min-height: 2.75rem !important;
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  box-shadow: none !important;
 }
 
-/* شكل السهم ▼ */
+.choices__item--selectable,
+.choices__placeholder {
+  color: #e5e7eb !important;
+  opacity: 0.7 !important;
+}
+
 .choices[data-type*='select-one']::after {
-  border-color: white transparent transparent transparent !important;
+  border-color: #e5e7eb transparent transparent transparent !important;
+  margin-top: -2px !important;
 }
 
-/* شكل العنصر المختار داخل الخانة */
-.choices__item.choices__item--selectable {
-  color: white !important;
+.choices__list--dropdown {
+  background-color: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  color: #f9fafb !important;
+  border-radius: 0.5rem !important;
 }
 
+.choices__list--dropdown .choices__item {
+  background-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+.choices__list--dropdown .choices__item.is-highlighted,
+.choices__list--dropdown .choices__item:hover {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+
+.choices.is-open .choices__inner,
+.choices__inner:focus {
+  box-shadow: none !important;
+}
+
+.choices__placeholder {
+  opacity: 0.7 !important;
+}
 
 .equipment-form-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
