@@ -1419,7 +1419,7 @@
   }
 
   .equipment-status-field .form-label {
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.25rem;
   }
 
   .equipment-status-select {
@@ -2267,6 +2267,7 @@
   .form-label {
     @apply text-sm font-semibold;
     color: hsl(var(--bc) / 0.7);
+    margin-bottom: 0.25rem;
   }
 
   .form-control,
@@ -2426,6 +2427,7 @@
     min-height: 3.1rem;
     border-radius: 1.75rem;
     padding-inline: 1.25rem 2.75rem;
+    margin-top: 0;
     border: 1px solid rgba(148, 163, 255, 0.24);
     background: linear-gradient(135deg, rgba(248, 250, 255, 0.9), rgba(238, 242, 255, 0.84));
     box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
