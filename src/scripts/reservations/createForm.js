@@ -121,15 +121,6 @@ function getCustomerDisplayName(customer) {
   return typeof name === 'string' ? name.trim() : String(name || '').trim();
 }
 
-function buildChoicePlaceholder(label, selected = true) {
-  return {
-    value: '',
-    label,
-    selected,
-    placeholder: true
-  };
-}
-
 function ensureCustomerChoices({ selectedValue = '' } = {}) {
   const select = document.getElementById('res-customer');
   if (!select) return;
@@ -181,25 +172,22 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
     });
   }
 
-  const placeholderChoice = {
-    ...buildChoicePlaceholder(placeholderLabel, !normalizedSelected),
-    disabled: false
-  };
-  const choiceData = [placeholderChoice].concat(
+  customerChoices.clearChoices();
+  customerChoices.setChoices(
     choicesItems.map((choice) => ({
       value: choice.value,
       label: choice.label,
       selected: normalizedSelected && choice.value === normalizedSelected
-    }))
+    })),
+    'value',
+    'label',
+    true
   );
-
-  customerChoices.clearChoices();
-  customerChoices.setChoices(choiceData, 'value', 'label', true);
 
   if (normalizedSelected && choicesItems.some((choice) => choice.value === normalizedSelected)) {
     customerChoices.setChoiceByValue(normalizedSelected);
   } else {
-    customerChoices.setChoiceByValue('');
+    customerChoices.removeActiveItems();
   }
 }
 
@@ -251,25 +239,22 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
     });
   }
 
-  const placeholderChoice = {
-    ...buildChoicePlaceholder(placeholderLabel, !normalizedSelected),
-    disabled: false
-  };
-  const projectChoicesData = [placeholderChoice].concat(
+  projectChoices.clearChoices();
+  projectChoices.setChoices(
     sortedProjects.map((project) => ({
       value: String(project.id),
       label: getProjectDisplayName(project),
       selected: normalizedSelected && String(project.id) === normalizedSelected
-    }))
+    })),
+    'value',
+    'label',
+    true
   );
-
-  projectChoices.clearChoices();
-  projectChoices.setChoices(projectChoicesData, 'value', 'label', true);
 
   if (normalizedSelected && sortedProjects.some((project) => String(project.id) === normalizedSelected)) {
     projectChoices.setChoiceByValue(normalizedSelected);
   } else {
-    projectChoices.setChoiceByValue('');
+    projectChoices.removeActiveItems();
   }
 }
 
