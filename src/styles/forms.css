@@ -336,7 +336,7 @@
 }
 
 :where(html.dark, body.dark) .customer-upload-inline .customer-upload-hint {
-  color: rgba(226, 232, 240, 0.8);
+  color: rgba(240, 244, 255, 0.92) !important;
 }
 
 .customer-document-preview img,
