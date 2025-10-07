@@ -454,11 +454,11 @@ function renderTechniciansTable() {
     const statusInfo = effectiveStatus === "busy"
       ? {
           label: t("technicians.status.busy", "⛔ مشغول"),
-          className: "badge technician-status-badge technician-status-badge--busy"
+          className: "technician-status-badge technician-status-badge--busy"
         }
       : {
           label: t("technicians.status.available", "✅ متاح"),
-          className: "badge technician-status-badge technician-status-badge--available"
+          className: "technician-status-badge technician-status-badge--available"
         };
     const wageNumberRaw = Number(tech.dailyWage);
     const wageNumber = Number.isFinite(wageNumberRaw) ? wageNumberRaw : 0;

@@ -1109,51 +1109,77 @@
   .technician-status-badge {
     display: inline-flex !important;
     align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    padding: 0.28rem 0.75rem;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
     border-radius: 999px;
     font-weight: 600;
-    font-size: 0.78rem;
-    line-height: 1;
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
     white-space: nowrap;
-    box-shadow: 0 8px 22px rgba(59, 130, 246, 0.18);
-    border: 1px solid transparent;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--tech-status-border, rgba(148, 163, 184, 0.45));
+    color: var(--tech-status-color, #1f2d52);
+    background: var(--tech-status-background, rgba(228, 233, 255, 0.92));
+    box-shadow: var(--tech-status-shadow, 0 8px 18px rgba(15, 23, 42, 0.12));
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .technician-status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--tech-status-dot, linear-gradient(135deg, #60a5fa, #2563eb));
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+  }
+
+  .technician-status-badge:hover,
+  .technician-status-badge:focus-visible {
+    box-shadow: 0 12px 22px rgba(59, 130, 246, 0.25);
+    transform: translateY(-1px);
   }
 
   .technician-status-badge__text {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
   .technician-status-badge--available {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.28));
-    border-color: rgba(16, 185, 129, 0.42);
-    color: rgba(15, 118, 110, 0.92);
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.25);
+    --tech-status-background: linear-gradient(135deg, rgba(34, 197, 94, 0.92), rgba(14, 165, 233, 0.6));
+    --tech-status-border: rgba(13, 148, 136, 0.55);
+    --tech-status-color: #f8fafc;
+    --tech-status-shadow: 0 12px 24px rgba(13, 148, 136, 0.32);
+    --tech-status-dot: linear-gradient(135deg, #bbf7d0, #34d399);
   }
 
   .technician-status-badge--busy {
-    background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.28));
-    border-color: rgba(239, 68, 68, 0.45);
-    color: rgba(153, 27, 27, 0.92);
-    box-shadow: 0 0 18px rgba(239, 68, 68, 0.25);
+    --tech-status-background: linear-gradient(135deg, rgba(248, 113, 113, 0.92), rgba(239, 68, 68, 0.88));
+    --tech-status-border: rgba(220, 38, 38, 0.58);
+    --tech-status-color: #fef2f2;
+    --tech-status-shadow: 0 12px 24px rgba(220, 38, 38, 0.3);
+    --tech-status-dot: linear-gradient(135deg, #fecaca, #f87171);
+  }
+
+  :where(html.dark, body.dark) .technician-status-badge {
+    border-color: rgba(96, 165, 250, 0.26);
+    box-shadow: 0 12px 22px rgba(8, 15, 35, 0.45);
   }
 
   :where(html.dark, body.dark) .technician-status-badge--available {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.32), rgba(16, 185, 129, 0.38));
-    border-color: rgba(16, 185, 129, 0.52);
-    color: rgba(226, 252, 239, 0.94);
-    box-shadow: 0 0 22px rgba(16, 185, 129, 0.45);
+    --tech-status-background: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(34, 197, 94, 0.32));
+    --tech-status-border: rgba(16, 185, 129, 0.48);
+    --tech-status-color: rgba(226, 252, 239, 0.96);
+    --tech-status-shadow: 0 14px 26px rgba(13, 148, 136, 0.45);
+    --tech-status-dot: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(74, 222, 128, 0.85));
   }
 
   :where(html.dark, body.dark) .technician-status-badge--busy {
-    background: linear-gradient(135deg, rgba(248, 113, 113, 0.35), rgba(239, 68, 68, 0.42));
-    border-color: rgba(248, 113, 113, 0.55);
-    color: rgba(254, 226, 226, 0.94);
-    box-shadow: 0 0 22px rgba(248, 113, 113, 0.45);
+    --tech-status-background: linear-gradient(135deg, rgba(239, 68, 68, 0.38), rgba(220, 38, 38, 0.4));
+    --tech-status-border: rgba(239, 68, 68, 0.6);
+    --tech-status-color: rgba(254, 226, 226, 0.96);
+    --tech-status-shadow: 0 14px 26px rgba(248, 113, 113, 0.5);
+    --tech-status-dot: linear-gradient(135deg, rgba(254, 178, 178, 0.9), rgba(248, 113, 113, 0.9));
   }
 
   :is(.customer-action-btn, .technician-action-btn, .maintenance-action-btn) {
