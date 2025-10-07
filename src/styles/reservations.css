@@ -95,7 +95,9 @@
 }
 
 :where(html.dark, body.dark) .reservations-filter-input,
-:where(html.dark, body.dark) .reservations-filter-select {
+:where(html.dark, body.dark) .reservations-filter-select,
+:where(html.dark, body.dark) .reservations-filters-bar .enhanced-select,
+:where(html.dark, body.dark) .reservations-filters-bar .enhanced-select__trigger {
   background: linear-gradient(135deg, rgba(20, 29, 54, 0.95), rgba(18, 28, 48, 0.9));
   border-color: rgba(59, 130, 246, 0.32);
   color: rgba(226, 232, 240, 0.95);
