@@ -23,6 +23,11 @@ export default defineConfig({
         projectsReports: resolve(__dirname, 'src/pages/projects-reports.html'),
         projectsExpenses: resolve(__dirname, 'src/pages/projects-expenses.html'),
         users: resolve(__dirname, 'src/pages/users.html')
+      },
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   }
