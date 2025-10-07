@@ -319,97 +319,106 @@
 
 .reservation-choice + .choices .choices__inner,
 .reservation-choice.choices .choices__inner {
-  background: rgba(248, 250, 255, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 14px;
-  padding: 8px 12px;
-  min-height: 48px;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 12px;
+  padding: 0;
+  min-height: 46px;
   display: flex;
-  align-items: center;
-  font-weight: 500;
-  color: #0f172a;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  align-items: stretch;
+  color: var(--bs-body-color, #0f172a);
+  box-shadow: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .reservation-choice + .choices .choices__inner:focus-within,
 .reservation-choice.choices .choices__inner:focus-within {
   border-color: rgba(76, 110, 245, 0.55);
-  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.12);
+  box-shadow: 0 0 0 0.15rem rgba(76, 110, 245, 0.18);
 }
 
 .reservation-choice + .choices .choices__placeholder,
 .reservation-choice.choices .choices__placeholder {
   opacity: 0.75;
-  color: rgba(71, 85, 105, 0.75);
+  color: rgba(100, 116, 139, 0.82);
+}
+
+.reservation-choice + .choices .choices__list--single,
+.reservation-choice.choices .choices__list--single {
+  padding: 0.55rem 0.9rem;
 }
 
 .reservation-choice + .choices .choices__list--single .choices__item,
 .reservation-choice.choices .choices__list--single .choices__item {
   color: inherit;
-}
-
-.reservation-choice + .choices .choices__list--dropdown,
-.reservation-choice.choices .choices__list--dropdown {
-  background: rgba(248, 250, 255, 0.98);
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 16px;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
-  margin-top: 6px;
-  padding: 6px;
-}
-
-.reservation-choice + .choices .choices__list--dropdown .choices__item,
-.reservation-choice.choices .choices__list--dropdown .choices__item {
-  border-radius: 10px;
-  padding: 9px 14px;
-  color: #0f172a;
-  transition: background-color 0.18s ease, color 0.18s ease;
-}
-
-.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
-.reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-.reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
-  background: linear-gradient(135deg, rgba(76, 110, 245, 0.18), rgba(148, 163, 255, 0.12));
-  color: #1d2b56;
+  font-weight: 500;
 }
 
 .reservation-choice + .choices .choices__input,
 .reservation-choice.choices .choices__input {
   background: transparent;
   color: inherit;
+  margin: 0;
+  padding: 0.55rem 0.9rem 0;
+}
+
+.reservation-choice + .choices .choices__list--dropdown,
+.reservation-choice.choices .choices__list--dropdown {
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+  margin-top: 6px;
+  padding: 4px;
+}
+
+.reservation-choice + .choices .choices__list--dropdown .choices__item,
+.reservation-choice.choices .choices__list--dropdown .choices__item {
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--bs-body-color, #0f172a);
+  transition: background-color 0.18s ease, color 0.18s ease;
+  font-weight: 500;
+}
+
+.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
+.reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
+  background: rgba(76, 110, 245, 0.12);
+  color: #1d2b56;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__inner,
 :is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__inner {
   background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(59, 130, 246, 0.32);
-  color: rgba(226, 232, 240, 0.9);
-}
-
-:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__inner:focus-within,
-:is(html.dark-mode, body-dark-mode) .reservation-choice.choices .choices__inner:focus-within {
-  border-color: rgba(124, 176, 255, 0.6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-}
-
-:is(html.dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown,
-:is(html.dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown {
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(59, 130, 246, 0.32);
-  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.65);
-}
-
-:is(html.dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item,
-:is(html.dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item {
+  border-color: rgba(59, 130, 246, 0.24);
   color: rgba(226, 232, 240, 0.92);
 }
 
-:is(html.dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-:is(html.dark-mode, body-dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
-:is(html.dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-:is(html.dark-mode, body-dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(148, 163, 255, 0.18));
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__inner:focus-within,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__inner:focus-within {
+  border-color: rgba(124, 176, 255, 0.6);
+  box-shadow: 0 0 0 0.15rem rgba(59, 130, 246, 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.65);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+:is(html.dark-mode, body.dark-mode) .reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+:is(html.dark-mode, body.dark-mode) .reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover {
+  background: rgba(59, 130, 246, 0.22);
   color: #e2e8f0;
 }
 
