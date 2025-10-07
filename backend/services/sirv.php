@@ -124,11 +124,9 @@ function sirvUploadFile(string $filePath, string $destinationPath, string $mimeT
     $token = sirvGetToken();
 
     $normalized = '/' . ltrim($destinationPath, '/');
-    $overwrite = !empty($options['overwrite']);
 
     $query = http_build_query([
         'filename' => $normalized,
-        'overwrite' => $overwrite ? 'true' : 'false',
     ]);
 
     $url = $config['api_base'] . '/v2/files/upload?' . $query;
