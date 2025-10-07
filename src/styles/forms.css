@@ -67,7 +67,7 @@
 .management-form-grid .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .management-form-grid .form-field-notes {
