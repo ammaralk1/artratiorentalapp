@@ -884,38 +884,12 @@
 
             <div class="reservation-row mb-3">
               <div class="reservation-field reservation-field--quarter">
-                <label for="res-customer-input" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                <div class="reservation-autocomplete">
-                  <input
-                    type="text"
-                    id="res-customer-input"
-                    class="form-control reservation-autocomplete-input"
-                    list="res-customer-options"
-                    autocomplete="off"
-                    placeholder="اكتب اسم العميل..."
-                    data-i18n
-                    data-i18n-placeholder-key="reservations.create.placeholders.client"
-                  >
-                  <datalist id="res-customer-options"></datalist>
-                  <input type="hidden" id="res-customer" value="">
-                </div>
+                <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
+                <select id="res-customer" class="form-select reservation-choice" data-placeholder-key="reservations.create.placeholders.client"></select>
               </div>
               <div class="reservation-field reservation-field--quarter">
-                <label for="res-project-input" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <div class="reservation-autocomplete">
-                  <input
-                    type="text"
-                    id="res-project-input"
-                    class="form-control reservation-autocomplete-input"
-                    list="res-project-options"
-                    autocomplete="off"
-                    placeholder="اختر مشروعاً (اختياري)"
-                    data-i18n
-                    data-i18n-placeholder-key="reservations.create.placeholders.project"
-                  >
-                  <datalist id="res-project-options"></datalist>
-                  <input type="hidden" id="res-project" value="">
-                </div>
+                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <select id="res-project" class="form-select reservation-choice" data-placeholder-key="reservations.create.placeholders.project"></select>
               </div>
             </div>
 
