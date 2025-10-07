@@ -1399,6 +1399,33 @@
     line-height: 3.1rem;
   }
 
+  .equipment-status-field {
+    width: 25%;
+    max-width: 220px;
+    min-width: 160px;
+  }
+
+  .equipment-status-field .form-label {
+    margin-bottom: 0.35rem;
+  }
+
+  .equipment-status-select {
+    min-height: 2.75rem;
+    height: 2.75rem;
+    line-height: 2.75rem;
+    padding-inline: 1rem 2.1rem;
+    padding-block: 0;
+  }
+
+  :where(html.dark, body.dark) .equipment-status-select {
+    padding-inline: 1rem 2.1rem;
+  }
+
+  :where(html[dir='rtl']) .equipment-status-select {
+    padding-inline: 2.1rem 1rem;
+    background-position: right 1.1rem center;
+  }
+
   :where(html.dark, body.dark) .equipment-filters .form-select {
     padding-inline: 1.25rem 2.75rem;
   }
@@ -1417,6 +1444,10 @@
     .equipment-filters > * {
       flex: 0 0 220px;
       max-width: 220px;
+    }
+
+    .equipment-status-field {
+      width: 220px;
     }
   }
 
@@ -2012,6 +2043,16 @@
     .equipment-filters #search-equipment {
       max-width: 100%;
       flex: 1 1 100%;
+    }
+
+    .equipment-status-field {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .equipment-status-select {
+      width: 100%;
     }
 
     .equipment-card {
