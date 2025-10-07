@@ -2154,9 +2154,9 @@
     #search-technician-input.form-control,
     #technician-role-filter.form-select,
     #maintenance-status-filter.form-select {
-      max-width: 100%;
-      width: 100%;
-      flex: 1 1 100%;
+      max-width: 100% !important;
+      width: 100% !important;
+      flex: 1 1 100% !important;
     }
 
     :is(.customer-table, .technician-table) .table-actions-cell .table-action-buttons {
@@ -2598,9 +2598,12 @@
   }
 
 #technician-role-filter.form-select {
-  flex: 0 0 25%;
-  max-width: 25%;
+  flex: 0 0 25% !important;
+  width: 25% !important;
+  max-width: 25% !important;
   min-width: 160px;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
   border: 1px solid rgba(148, 163, 255, 0.28);
   color: #1f2937;
