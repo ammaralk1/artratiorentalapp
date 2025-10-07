@@ -36,7 +36,7 @@
 
 .reservations-search-bar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .reservations-search-input {
@@ -65,7 +65,7 @@
 .reservations-filters-bar {
   display: flex;
   gap: 10px;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .reservations-filter-input,
@@ -138,15 +138,12 @@
 }
 
 #reservations-list .reservations-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 
-#reservations-list .reservation-tile {
-  width: min(100%, 360px);
-}
+
 
 @media (max-width: 768px) {
   .reservations-grid {
