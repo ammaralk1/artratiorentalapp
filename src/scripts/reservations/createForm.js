@@ -193,9 +193,10 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
     select.addEventListener('change', () => {
       renderDraftReservationSummary();
     });
-  } else {
-    select.closest('.choices')?.classList.add('choices--ready');
   }
+
+  const customerContainer = select.closest('.choices');
+  customerContainer?.classList.add('choices--reservation-dark', 'choices--ready');
 
   customerChoices.clearChoices();
   customerChoices.setChoices(
@@ -260,9 +261,10 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
         renderDraftReservationSummary();
       }
     });
-  } else {
-    select.closest('.choices')?.classList.add('choices--ready');
   }
+
+  const projectContainer = select.closest('.choices');
+  projectContainer?.classList.add('choices--reservation-dark', 'choices--ready');
 
   projectChoices.clearChoices();
   projectChoices.setChoices(
@@ -1115,3 +1117,16 @@ if (typeof document !== 'undefined') {
 }
 
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };
+
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    document.querySelectorAll('.choices').forEach((el) => {
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.15s ease-in';
+        el.style.opacity = '1';
+      }, 150);
+    });
+  });
+}
