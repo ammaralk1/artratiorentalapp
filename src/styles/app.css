@@ -1353,15 +1353,15 @@
   .equipment-filters {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
   }
 
   .equipment-filters #search-equipment {
-    max-width: 260px;
+    max-width: 220px;
     width: 100%;
-    flex: 0 0 260px;
+    flex: 0 0 220px;
     border-radius: 999px;
     border: 1px solid rgba(148, 163, 255, 0.3);
     padding-inline: 18px;
@@ -1378,9 +1378,9 @@
 
   .equipment-filters .form-select,
   .equipment-filters .enhanced-select {
-    max-width: 260px;
+    max-width: 220px;
     width: 100%;
-    flex: 0 0 260px;
+    flex: 0 0 220px;
   }
 
   .equipment-filters .form-select {
@@ -1390,6 +1390,12 @@
 
   .equipment-filters .enhanced-select__trigger {
     font-size: 0.95rem;
+    padding-inline: 2.75rem 1.25rem;
+  }
+
+  .equipment-filters .enhanced-select__trigger::after {
+    inset-inline-start: 1.35rem;
+    inset-inline-end: auto;
   }
 
   :where(html.dark, body.dark) .equipment-filters .form-select {
@@ -1400,7 +1406,7 @@
     padding-inline: 2.75rem 1.25rem;
   }
 
-  @media (min-width: 1200px) {
+  @media (min-width: 1024px) {
     .equipment-filters {
       flex-wrap: nowrap;
     }

@@ -332,10 +332,11 @@
   display: inline-block;
   font-size: 0.88rem;
   color: rgba(71, 85, 105, 0.78);
+  transition: color 0.2s ease;
 }
 
 :where(html.dark, body.dark) .customer-upload-inline .customer-upload-hint {
-  color: rgba(165, 180, 203, 0.78);
+  color: rgba(226, 232, 240, 0.8);
 }
 
 .customer-document-preview img,
