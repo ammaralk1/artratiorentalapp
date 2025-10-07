@@ -80,9 +80,9 @@
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.95), rgba(236, 242, 255, 0.9));
   color: #1f2d52;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
-  flex: 0 0 25% !important;
-  width: 25% !important;
-  max-width: 25% !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  max-width: 0% !important;
   min-width: 200px;
 }
 
