@@ -36,17 +36,47 @@ let cachedProjects = [];
 let customerChoices = null;
 let projectChoices = null;
 
+function isDarkModeEnabled() {
+  if (typeof document === 'undefined') return false;
+  return document.documentElement.classList.contains('dark')
+    || document.documentElement.classList.contains('dark-mode')
+    || document.body.classList.contains('dark-mode');
+}
+
+function applyReservationChoiceTheme(container) {
+  if (!container) return;
+  container.classList.add('choices--reservation');
+  container.classList.remove('choices--reservation-dark', 'choices--reservation-light');
+  container.classList.add(isDarkModeEnabled() ? 'choices--reservation-dark' : 'choices--reservation-light');
+}
+
 function initDarkChoices(target, options = {}) {
   const element = typeof target === 'string' ? document.querySelector(target) : target;
   if (!element) return null;
 
   element.style.visibility = 'hidden';
   element.style.opacity = '0';
-  return new Choices(element, {
+  const instance = new Choices(element, {
     shouldSort: false,
     allowHTML: false,
     ...options
   });
+
+  const container = instance.containerOuter?.element;
+  if (container) {
+    container.classList.remove('choices--ready');
+    applyReservationChoiceTheme(container);
+  }
+
+  setTimeout(() => {
+    if (container) {
+      applyReservationChoiceTheme(container);
+      container.classList.add('choices--ready');
+    }
+    element.style.visibility = 'hidden';
+  }, 150);
+
+  return instance;
 }
 
 export function updatePaymentStatusAppearance(select, statusValue) {
@@ -184,8 +214,8 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
 
   const customerContainer = select.closest('.choices');
   if (customerContainer) {
-    customerContainer.classList.add('choices--reservation-dark', 'choices--ready');
-    customerContainer.style.opacity = '1';
+    applyReservationChoiceTheme(customerContainer);
+    customerContainer.classList.add('choices--ready');
   }
 
   customerChoices.clearChoices();
@@ -255,8 +285,8 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
 
   const projectContainer = select.closest('.choices');
   if (projectContainer) {
-    projectContainer.classList.add('choices--reservation-dark', 'choices--ready');
-    projectContainer.style.opacity = '1';
+    applyReservationChoiceTheme(projectContainer);
+    projectContainer.classList.add('choices--ready');
   }
 
   projectChoices.clearChoices();
@@ -1113,10 +1143,6 @@ export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, rend
 
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
-    const darkModeEnabled = document.documentElement.classList.contains('dark')
-      || document.documentElement.classList.contains('dark-mode')
-      || document.body.classList.contains('dark-mode');
-
     const config = {
       '#res-customer': {
         placeholder: 'اكتب اسم العميل...'
@@ -1128,13 +1154,11 @@ if (typeof document !== 'undefined') {
 
     Object.entries(config).forEach(([selector, { placeholder }]) => {
       const select = document.querySelector(selector);
-      if (!select || select.dataset.darkChoicesBootstrap === 'true') {
+      if (!select || select.dataset.darkChoicesBootstrap === 'true' || select.closest('.choices')) {
         return;
       }
 
       select.dataset.darkChoicesBootstrap = 'true';
-      select.style.opacity = '0';
-
       const instance = initDarkChoices(select, {
         placeholder: true,
         placeholderValue: placeholder,
@@ -1150,14 +1174,9 @@ if (typeof document !== 'undefined') {
       setTimeout(() => {
         const container = select.closest('.choices');
         if (container) {
+          applyReservationChoiceTheme(container);
           container.classList.add('choices--ready');
-          if (darkModeEnabled) {
-            container.classList.add('choices--reservation-dark');
-          }
-          container.style.opacity = '1';
-          container.style.transition = 'opacity 0.15s ease-in';
         }
-        select.style.display = 'none';
         select.style.visibility = 'hidden';
       }, 150);
     });
@@ -1168,11 +1187,24 @@ if (typeof document !== 'undefined') {
 if (typeof window !== 'undefined') {
   window.addEventListener('load', () => {
     document.querySelectorAll('.choices').forEach((el) => {
+      if (el.classList.contains('choices--reservation')) {
+        applyReservationChoiceTheme(el);
+        if (!el.classList.contains('choices--ready')) {
+          el.classList.add('choices--ready');
+        }
+        return;
+      }
       el.style.opacity = '0';
       setTimeout(() => {
         el.style.transition = 'opacity 0.15s ease-in';
         el.style.opacity = '1';
       }, 150);
     });
+  });
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('theme:changed', () => {
+    document.querySelectorAll('.choices--reservation').forEach(applyReservationChoiceTheme);
   });
 }

@@ -346,137 +346,20 @@
   border-radius: 50%;
   width: 1.1rem;
   height: 1.1rem;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%239bb4ff' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E") no-repeat center/100%;
+  background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" fill="%239bb4ff" viewBox="0 0 20 20"%3E%3Cpath fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/%3E%3C/svg%3E') no-repeat center/100%;
   transform: none;
 }
 
-.reservation-choice + .choices .choices__inner,
-.reservation-choice.choices .choices__inner,
-.choices--reservation-dark .choices__inner,
-.choices__inner--reservation-dark {
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 1.25rem;
-  padding: 0;
-  min-height: 48px;
-  display: flex;
-  align-items: stretch;
-  color: #f9fafb;
-  box-shadow: inset 0 1px 2px rgba(8, 12, 24, 0.55);
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.reservation-choice + .choices.is-open .choices__inner,
-.reservation-choice.choices.is-open .choices__inner,
-.reservation-choice + .choices:hover .choices__inner,
-.reservation-choice.choices:hover .choices__inner,
-.choices--reservation-dark .choices__inner:hover,
-.choices--reservation-dark.is-open .choices__inner {
-  background: #252f3f;
-  border-color: #4b5563;
-}
-
-.reservation-choice + .choices .choices__inner:focus-within,
-.reservation-choice.choices .choices__inner:focus-within,
-.choices--reservation-dark .choices__inner:focus-within,
-.choices__inner--reservation-dark:focus-within {
-  border-color: #4c6ef5;
-  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.32);
-}
-
-.reservation-choice + .choices .choices__placeholder,
-.reservation-choice.choices .choices__placeholder,
-.choices--reservation-dark .choices__placeholder {
-  opacity: 0.75;
-  color: rgba(249, 250, 251, 0.72);
-}
-
-.reservation-choice + .choices .choices__list--single,
-.reservation-choice.choices .choices__list--single {
-  padding: 0.75rem 1rem;
-  width: 100%;
-}
-
-.reservation-choice + .choices .choices__list,
-.reservation-choice.choices .choices__list {
-  display: flex;
-  align-items: center;
-  min-height: inherit;
-}
-
-.reservation-choice + .choices .choices__list--single .choices__item,
-.reservation-choice.choices .choices__list--single .choices__item {
-  color: inherit;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-.reservation-choice + .choices .choices__input,
-.reservation-choice.choices .choices__input,
-.choices--reservation-dark .choices__input,
-.choices__input--reservation-dark {
-  background: transparent;
-  color: #f9fafb;
-  margin: 0;
-  padding: 0.65rem 1rem 0.35rem;
-  font-weight: 500;
-}
-
-.reservation-choice + .choices .choices__list--dropdown,
-.reservation-choice.choices .choices__list--dropdown,
-.choices--reservation-dark .choices__list--dropdown,
-.choices__list--dropdown-reservation-dark {
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 1.15rem;
-  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.55);
-  margin-top: 8px;
-  padding: 6px;
-}
-
-.reservation-choice + .choices .choices__list--dropdown .choices__item,
-.reservation-choice.choices .choices__list--dropdown .choices__item,
-.choices--reservation-dark .choices__list--dropdown .choices__item,
-.choices__list--dropdown-reservation-dark .choices__item {
-  border-radius: 12px;
-  padding: 10px 14px;
-  color: #f9fafb;
-  transition: background-color 0.18s ease, color 0.18s ease;
-  font-weight: 500;
-}
-
-.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-.reservation-choice + .choices .choices__list--dropdown .choices__item--selectable:hover,
-.reservation-choice.choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
-.reservation-choice.choices .choices__list--dropdown .choices__item--selectable:hover,
-.choices--reservation-dark .choices__list--dropdown .choices__item--selectable.is-highlighted,
-.choices__list--dropdown-reservation-dark .choices__item--selectable.is-highlighted,
-.choices--reservation-dark .choices__list--dropdown .choices__item--selectable:hover,
-.choices__list--dropdown-reservation-dark .choices__item--selectable:hover {
-  background: #374151;
-  color: #f9fafb;
-}
-
-.reservation-choice + .choices.is-disabled .choices__inner,
-.reservation-choice.choices.is-disabled .choices__inner,
-.choices--reservation-dark.is-disabled .choices__inner {
-  background: rgba(55, 65, 81, 0.5);
-  border-color: rgba(75, 85, 99, 0.8);
-  color: rgba(148, 163, 184, 0.85);
-}
-
-.reservation-choice + .choices .choices__list--dropdown .choices__item--placeholder,
-.reservation-choice.choices .choices__list--dropdown .choices__item--placeholder {
-  display: none;
-}
-
+/* Unified dropdown styling */
 #reservation-form .choices {
   width: 100%;
 }
 
-#create-tab .reservation-choice + .choices,
-#create-tab .reservation-choice.choices {
-  margin-inline: auto;
+#res-customer,
+#res-project {
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
 }
 
 .choices:not(.choices--ready) {
@@ -484,92 +367,101 @@
   transition: none;
 }
 
-#res-customer,
-#res-project {
-  visibility: hidden;
+.choices.choices--ready {
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
 }
 
-/* Dark theme overrides for Choices.js */
+.choices--reservation {
+  --choices-bg: #f8faff;
+  --choices-text: #1f2d52;
+  --choices-border: rgba(148, 163, 184, 0.35);
+  --choices-placeholder: rgba(100, 116, 139, 0.65);
+  --choices-dropdown-bg: #ffffff;
+  --choices-hover-bg: rgba(59, 130, 246, 0.12);
+  --choices-hover-text: #1f2937;
+  --choices-arrow: #4c6ef5;
+  width: 100%;
+}
 
-.reservation-choice,
-.choices,
-.choices__inner {
+.choices--reservation-light {
+  --choices-bg: #f8faff;
+  --choices-text: #1f2d52;
+  --choices-border: rgba(148, 163, 184, 0.35);
+  --choices-placeholder: rgba(100, 116, 139, 0.65);
+  --choices-dropdown-bg: #ffffff;
+  --choices-hover-bg: rgba(59, 130, 246, 0.12);
+  --choices-hover-text: #1f2937;
+  --choices-arrow: #4c6ef5;
+}
+
+.choices--reservation-dark {
+  --choices-bg: #1f2937;
+  --choices-text: #f9fafb;
+  --choices-border: #374151;
+  --choices-placeholder: rgba(229, 231, 235, 0.7);
+  --choices-dropdown-bg: #111827;
+  --choices-hover-bg: #374151;
+  --choices-hover-text: #ffffff;
+  --choices-arrow: #e5e7eb;
+}
+
+.choices--reservation .choices__inner {
+  background-color: var(--choices-bg) !important;
+  color: var(--choices-text) !important;
+  border: 1px solid var(--choices-border) !important;
   border-radius: 12px !important;
-  transition: none !important;
-  background-color: #111827 !important;
-  color: #f9fafb !important;
-  border: 1px solid #374151 !important;
   min-height: 2.75rem !important;
+  padding: 0.55rem 0.85rem !important;
   display: flex;
   align-items: center;
   box-shadow: none !important;
+  transition: none !important;
 }
 
-html.dark-mode .reservation-choice,
-html.dark-mode .choices,
-html.dark-mode .choices__inner,
-body.dark-mode .reservation-choice,
-body.dark-mode .choices,
-body.dark-mode .choices__inner {
-  background-color: #1f2937 !important;
-  border: 1px solid #374151 !important;
-  color: #f9fafb !important;
-  box-shadow: inset 0 1px 2px rgba(8, 12, 24, 0.55) !important;
-  border-radius: 12px !important;
+.choices--reservation .choices__list--single .choices__item {
+  color: var(--choices-text) !important;
+  font-weight: 600;
 }
 
-.choices__item--selectable,
-.choices__placeholder {
-  color: #e5e7eb !important;
-  opacity: 0.7 !important;
+.choices--reservation .choices__placeholder {
+  color: var(--choices-placeholder) !important;
+  opacity: 1 !important;
 }
 
-.choices[data-type*='select-one']::after {
-  border-color: #e5e7eb transparent transparent transparent !important;
-  margin-top: -2px !important;
-}
-
-.choices__list--dropdown {
-  background-color: #1f2937 !important;
-  border: 1px solid #374151 !important;
-  color: #f9fafb !important;
-  border-radius: 1.25rem !important;
-}
-
-.choices__list--dropdown .choices__item {
-  background-color: #1f2937 !important;
-  color: #f9fafb !important;
-}
-
-
-.choices:not(.choices--ready) {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.choices.choices--ready {
-  opacity: 1;
-  background-color: #111827;
-  color: #f9fafb;
-  border: 1px solid #374151;
-  border-radius: 0.5rem;
-  box-shadow: none;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.choices__list--dropdown .choices__item.is-highlighted,
-.choices__list--dropdown .choices__item:hover {
-  background-color: #374151 !important;
-  color: #ffffff !important;
-}
-
-.choices.is-open .choices__inner,
-.choices__inner:focus {
+.choices--reservation .choices__input {
+  background: transparent !important;
+  color: var(--choices-text) !important;
+  border: none !important;
   box-shadow: none !important;
 }
 
-.choices__placeholder {
-  opacity: 0.7 !important;
+.choices--reservation .choices__list--dropdown {
+  background-color: var(--choices-dropdown-bg) !important;
+  border: 1px solid var(--choices-border) !important;
+  border-radius: 12px !important;
+  padding: 4px 0 !important;
+  box-shadow: none !important;
+}
+
+.choices--reservation .choices__list--dropdown .choices__item {
+  background-color: transparent !important;
+  color: var(--choices-text) !important;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  margin: 0 0.4rem;
+}
+
+.choices--reservation .choices__list--dropdown .choices__item.is-highlighted,
+.choices--reservation .choices__list--dropdown .choices__item:hover {
+  background-color: var(--choices-hover-bg) !important;
+  color: var(--choices-hover-text) !important;
+}
+
+.choices--reservation.is-disabled .choices__inner {
+  background-color: rgba(55, 65, 81, 0.5) !important;
+  border-color: rgba(75, 85, 99, 0.8) !important;
+  color: rgba(148, 163, 184, 0.85) !important;
 }
 
 .equipment-form-grid {
