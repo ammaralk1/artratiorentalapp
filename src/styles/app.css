@@ -1393,12 +1393,6 @@
 
   .equipment-filters .enhanced-select__trigger {
     font-size: 0.95rem;
-    padding-inline: 2.75rem 1.25rem;
-  }
-
-  .equipment-filters .enhanced-select__trigger::after {
-    inset-inline-start: 1.35rem;
-    inset-inline-end: auto;
   }
 
   :where(html.dark, body.dark) .equipment-filters .form-select {
@@ -2362,9 +2356,22 @@
   inset-inline-end: auto;
 }
 
+.equipment-filters .enhanced-select__trigger {
+  padding-inline: 2.75rem 1.25rem;
+}
+
+:where(html[dir='ltr']) .equipment-filters .enhanced-select__trigger {
+  padding-inline: 1.25rem 2.75rem;
+}
+
 .equipment-filters .enhanced-select__trigger::after {
   inset-inline-start: 1.35rem;
   inset-inline-end: auto;
+}
+
+:where(html[dir='ltr']) .equipment-filters .enhanced-select__trigger::after {
+  inset-inline-end: 1.35rem;
+  inset-inline-start: auto;
 }
 
   .form-select,
