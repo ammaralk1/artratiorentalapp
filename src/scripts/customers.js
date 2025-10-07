@@ -10,6 +10,7 @@ let customersErrorMessage = "";
 const initialCustomersData = loadData() || {};
 let customersState = (initialCustomersData.customers || []).map(mapToInternalCustomer);
 let currentCustomerDocument = null;
+let customerDocumentObjectUrl = null;
 
 function normalizeCustomerDocument(rawDocument) {
   if (!rawDocument || typeof rawDocument !== 'object') {
@@ -53,6 +54,13 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function releaseCustomerDocumentObjectUrl() {
+  if (customerDocumentObjectUrl) {
+    URL.revokeObjectURL(customerDocumentObjectUrl);
+    customerDocumentObjectUrl = null;
+  }
 }
 
 function mapToInternalCustomer(rawCustomer = {}) {
@@ -183,6 +191,7 @@ function resetCustomerForm() {
   if (idInput) idInput.value = "";
   if (phoneInput) phoneInput.value = phoneInput.value.trim();
   currentCustomerDocument = null;
+  releaseCustomerDocumentObjectUrl();
   updateDocumentPreviewUI();
   editingCustomerId = null;
   setSubmitButtonState("add");
@@ -217,6 +226,7 @@ function populateCustomerForm(customer) {
   if (documentInput) documentInput.value = '';
 
   currentCustomerDocument = customer.document ? { ...customer.document } : null;
+  releaseCustomerDocumentObjectUrl();
   updateDocumentPreviewUI();
 
   editingCustomerId = customer.id;
@@ -278,6 +288,7 @@ function handleDocumentInputChange(event) {
     if (documentInput) {
       documentInput.value = '';
     }
+    releaseCustomerDocumentObjectUrl();
     return;
   }
 
@@ -290,6 +301,7 @@ function handleDocumentInputChange(event) {
       mimeType: file.type || 'application/octet-stream',
       data: base64,
     };
+    releaseCustomerDocumentObjectUrl();
     updateDocumentPreviewUI();
     if (documentInput) {
       documentInput.value = '';
@@ -304,6 +316,27 @@ function buildDocumentDataUrl(documentData) {
   }
   const mimeType = documentData.mimeType || 'application/octet-stream';
   return `data:${mimeType};base64,${documentData.data}`;
+}
+
+function base64ToBlob(base64, contentType = 'application/octet-stream') {
+  try {
+    const cleaned = base64.replace(/\s/g, '');
+    const byteCharacters = atob(cleaned);
+    const sliceSize = 1024;
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i += 1) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+    return new Blob(byteArrays, { type: contentType });
+  } catch (error) {
+    console.warn('[customers] Failed to convert base64 to blob', error);
+    return null;
+  }
 }
 
 function showCustomerDocumentModal(documentData, title = '') {
@@ -325,24 +358,50 @@ function showCustomerDocumentModal(documentData, title = '') {
     modalTitle.textContent = title || documentData.fileName || t('customers.documents.modalTitle', '📎 ملف العميل');
   }
 
-  const dataUrl = buildDocumentDataUrl(documentData);
+  releaseCustomerDocumentObjectUrl();
+  const blob = base64ToBlob(documentData.data, documentData.mimeType || 'application/octet-stream');
+  if (!blob) {
+    if (container) {
+      container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
+    }
+    if (downloadLink) {
+      downloadLink.href = buildDocumentDataUrl(documentData);
+      downloadLink.download = documentData.fileName || 'customer-document';
+    }
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modal.show();
+    return;
+  }
+
+  customerDocumentObjectUrl = URL.createObjectURL(blob);
+
   if (downloadLink) {
-    downloadLink.href = dataUrl;
+    downloadLink.href = customerDocumentObjectUrl;
     downloadLink.download = documentData.fileName || 'customer-document';
   }
 
   if (container) {
     const mimeType = (documentData.mimeType || '').toLowerCase();
     if (mimeType.startsWith('image/')) {
-      container.innerHTML = `<img src="${dataUrl}" alt="${escapeHtml(documentData.fileName || 'customer document')}" class="img-fluid">`;
+      container.innerHTML = `<img src="${customerDocumentObjectUrl}" alt="${escapeHtml(documentData.fileName || 'customer document')}" class="img-fluid">`;
     } else if (mimeType === 'application/pdf' || mimeType.includes('pdf')) {
-      container.innerHTML = `<iframe src="${dataUrl}" title="${escapeHtml(documentData.fileName || 'customer document')}" class="customer-document-frame w-100"></iframe>`;
+      container.innerHTML = `<iframe src="${customerDocumentObjectUrl}" title="${escapeHtml(documentData.fileName || 'customer document')}" class="customer-document-frame w-100" type="application/pdf"></iframe>`;
     } else {
       container.innerHTML = `<p class="text-muted">${t('customers.documents.unsupportedPreview', 'لا يمكن معاينة هذا النوع من الملفات، يمكنك تحميله بالأسفل.')}</p>`;
     }
   }
 
   const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  if (!modalElement.dataset.documentCleanupAttached) {
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      releaseCustomerDocumentObjectUrl();
+      const containerEl = document.getElementById('customer-document-preview-container');
+      if (containerEl) {
+        containerEl.innerHTML = `<p class="text-muted">${t('customers.documents.emptyState', 'لا يوجد ملف لعرضه.')}</p>`;
+      }
+    });
+    modalElement.dataset.documentCleanupAttached = 'true';
+  }
   modal.show();
 }
 
