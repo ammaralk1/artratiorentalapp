@@ -390,14 +390,8 @@ select.form-select option {
   box-shadow: none;
 }
 
-.equipment-filters.management-search-bar #search-equipment {
-  max-width: 220px;
-  width: 220px;
-  flex: 0 0 220px;
-}
-
-.equipment-filters.management-search-bar .form-select,
-.equipment-filters.management-search-bar select.form-select {
+.equipment-filter-controls.management-search-bar .form-select,
+.equipment-filter-controls.management-search-bar select.form-select {
   background-position: right 1.35rem center;
 }
 
