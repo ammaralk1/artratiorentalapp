@@ -80,10 +80,7 @@ function syncRequiredState(entry) {
 function syncFromSelect(entry) {
   const { select, input, options } = entry;
   const currentValue = select.value;
-  let match = options.find((option) => option.value === currentValue && !option.disabled);
-  if (!match) {
-    match = options.find((option) => option.value === currentValue);
-  }
+  const match = options.find((option) => option.value === currentValue);
   if (match) {
     input.value = match.label;
     input.dataset.autocompleteSelected = match.value;
