@@ -1376,11 +1376,19 @@
     box-shadow: 0 12px 26px rgba(15, 23, 42, 0.45);
   }
 
+  .equipment-filters .form-select,
+  .equipment-filters .enhanced-select {
+    max-width: 260px;
+    width: 100%;
+    flex: 0 0 260px;
+  }
+
   .equipment-filters .form-select {
-    max-width: 220px;
-    width: 220px;
-    flex: 0 0 220px;
     padding-inline: 1.25rem 2.75rem;
+    font-size: 0.95rem;
+  }
+
+  .equipment-filters .enhanced-select__trigger {
     font-size: 0.95rem;
   }
 
@@ -1390,6 +1398,12 @@
 
   :where(html[dir='rtl']) .equipment-filters .form-select {
     padding-inline: 2.75rem 1.25rem;
+  }
+
+  @media (min-width: 1200px) {
+    .equipment-filters {
+      flex-wrap: nowrap;
+    }
   }
 
   .equipment-card {
