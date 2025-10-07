@@ -22,7 +22,6 @@ import {
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
-import { refreshDropdownOptions } from '../dropdownAutocomplete.js';
 import {
   createReservationApi,
   buildReservationPayload,
@@ -31,6 +30,66 @@ import {
 
 let afterSubmitCallback = null;
 let cachedProjects = [];
+
+let customerOptionMap = new Map();
+let projectOptionMap = new Map();
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getCustomerElements() {
+  if (typeof document === 'undefined') {
+    return { input: null, hidden: null, list: null };
+  }
+  return {
+    input: document.getElementById('res-customer-input'),
+    hidden: document.getElementById('res-customer'),
+    list: document.getElementById('res-customer-options'),
+  };
+}
+
+function getProjectElements() {
+  if (typeof document === 'undefined') {
+    return { input: null, hidden: null, list: null };
+  }
+  return {
+    input: document.getElementById('res-project-input'),
+    hidden: document.getElementById('res-project'),
+    list: document.getElementById('res-project-options'),
+  };
+}
+
+function resolveOptionByLabel(optionMap, value, { allowPartial = false } = {}) {
+  const normalized = normalizeText(value);
+  if (!normalized) return null;
+  const exact = optionMap.get(normalized);
+  if (exact) return exact;
+  if (!allowPartial) return null;
+  const matches = [];
+  optionMap.forEach((entry, key) => {
+    if (key.includes(normalized)) {
+      matches.push(entry);
+    }
+  });
+  if (matches.length === 1) {
+    return matches[0];
+  }
+  return null;
+}
+
+function resolveCustomerByLabel(value, options = {}) {
+  return resolveOptionByLabel(customerOptionMap, value, options);
+}
+
+function resolveProjectByLabel(value, options = {}) {
+  return resolveOptionByLabel(projectOptionMap, value, options);
+}
 
 export function updatePaymentStatusAppearance(select, statusValue) {
   if (!select) return;
@@ -117,100 +176,113 @@ function getCustomerDisplayName(customer) {
   return typeof name === 'string' ? name.trim() : String(name || '').trim();
 }
 
-function ensureCustomerChoices({ selectedValue = '' } = {}) {
-  const select = document.getElementById('res-customer');
-  if (!select) return;
+function ensureCustomerChoices({ selectedValue = '', resetInput = false } = {}) {
+  const { input, hidden, list } = getCustomerElements();
+  if (!input || !hidden || !list) return;
 
   const customers = getCachedCustomers() || [];
   const placeholderLabel = t('reservations.create.placeholders.client', 'اختر عميلًا (اختياري)');
-  const previousValue = selectedValue ? String(selectedValue) : String(select.value || '');
+  const fallbackLabel = t('customers.fallback.unnamed', 'عميل بدون اسم');
 
-  select.innerHTML = '';
+  input.setAttribute('placeholder', placeholderLabel);
 
-  const placeholderOption = document.createElement('option');
-  placeholderOption.value = '';
-  placeholderOption.textContent = placeholderLabel;
-  placeholderOption.hidden = true;
-  placeholderOption.disabled = true;
-  select.appendChild(placeholderOption);
+  const seenLabels = new Set();
+  customerOptionMap = new Map();
 
-  customers
+  const customerOptions = customers
     .filter((customer) => customer && customer.id != null)
     .map((customer) => ({
-      value: String(customer.id),
-      label: getCustomerDisplayName(customer) || t('customers.fallback.unnamed', 'عميل بدون اسم')
+      id: String(customer.id),
+      label: getCustomerDisplayName(customer) || fallbackLabel
     }))
-    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }))
-    .forEach((customer) => {
-      const option = document.createElement('option');
-      option.value = customer.value;
-      option.textContent = customer.label;
-      select.appendChild(option);
-    });
+    .filter((option) => {
+      if (!option.label) return false;
+      const normalizedLabel = normalizeText(option.label);
+      if (!normalizedLabel) return false;
+      if (seenLabels.has(normalizedLabel)) return false;
+      seenLabels.add(normalizedLabel);
+      customerOptionMap.set(normalizedLabel, option);
+      return true;
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
-  if (previousValue && customers.some((customer) => String(customer.id) === previousValue)) {
-    select.value = previousValue;
+  list.innerHTML = customerOptions
+    .map((option) => `<option value="${escapeHtml(option.label)}"></option>`)
+    .join('');
+
+  const previousInputValue = resetInput ? '' : input.value;
+  const normalizedSelected = selectedValue ? String(selectedValue) : hidden.value ? String(hidden.value) : '';
+  const selectedCustomer = normalizedSelected
+    ? customers.find((customer) => String(customer.id) === normalizedSelected)
+    : null;
+
+  if (selectedCustomer) {
+    const label = getCustomerDisplayName(selectedCustomer) || fallbackLabel;
+    hidden.value = String(selectedCustomer.id);
+    input.value = label;
+    input.dataset.selectedId = String(selectedCustomer.id);
   } else {
-    select.value = '';
-  }
-
-  refreshDropdownOptions(select);
-
-  if (!select.dataset.autocompleteListenerAttached) {
-    select.addEventListener('change', () => {
-      renderDraftReservationSummary();
-    });
-    select.dataset.autocompleteListenerAttached = 'true';
+    hidden.value = '';
+    input.dataset.selectedId = '';
+    input.value = resetInput ? '' : previousInputValue;
   }
 }
 
-function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) {
-  const select = document.getElementById('res-project');
-  if (!select) return;
+function ensureProjectChoices({ selectedValue = '', projectsList = null, resetInput = false } = {}) {
+  const { input, hidden, list } = getProjectElements();
+  if (!input || !hidden || !list) return;
 
   const projectsSource = Array.isArray(projectsList) ? projectsList : (getCachedProjects() || []);
   const placeholderLabel = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
-  const previousValue = selectedValue ? String(selectedValue) : String(select.value || '');
 
-  select.innerHTML = '';
+  input.setAttribute('placeholder', placeholderLabel);
 
-  const placeholderOption = document.createElement('option');
-  placeholderOption.value = '';
-  placeholderOption.textContent = placeholderLabel;
-  placeholderOption.hidden = true;
-  placeholderOption.disabled = true;
-  select.appendChild(placeholderOption);
-
-  projectsSource
+  const sortedProjects = [...projectsSource]
     .filter((project) => project && project.id != null)
-    .sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')))
-    .forEach((project) => {
-      const option = document.createElement('option');
-      option.value = String(project.id);
-      option.textContent = getProjectDisplayName(project);
-      select.appendChild(option);
+    .sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')));
+
+  const previousInputValue = resetInput ? '' : input.value;
+  const fallbackLabel = t('projects.fallback.untitled', 'مشروع بدون اسم');
+
+  const seenLabels = new Set();
+  projectOptionMap = new Map();
+
+  const projectOptions = sortedProjects
+    .map((project) => {
+      const label = getProjectDisplayName(project) || fallbackLabel;
+      return {
+        id: String(project.id),
+        label,
+      };
+    })
+    .filter((option) => {
+      if (!option.label) return false;
+      const normalizedLabel = normalizeText(option.label);
+      if (!normalizedLabel) return false;
+      if (seenLabels.has(normalizedLabel)) return false;
+      seenLabels.add(normalizedLabel);
+      projectOptionMap.set(normalizedLabel, option);
+      return true;
     });
 
-  if (previousValue && projectsSource.some((project) => String(project.id) === previousValue)) {
-    select.value = previousValue;
+  list.innerHTML = projectOptions
+    .map((option) => `<option value="${escapeHtml(option.label)}"></option>`)
+    .join('');
+
+  const normalizedSelected = selectedValue ? String(selectedValue) : hidden.value ? String(hidden.value) : '';
+  const selectedProject = normalizedSelected
+    ? sortedProjects.find((project) => String(project.id) === normalizedSelected)
+    : null;
+
+  if (selectedProject) {
+    const label = getProjectDisplayName(selectedProject) || fallbackLabel;
+    hidden.value = String(selectedProject.id);
+    input.value = label;
+    input.dataset.selectedId = String(selectedProject.id);
   } else {
-    select.value = '';
-  }
-
-  refreshDropdownOptions(select);
-
-  if (!select.dataset.autocompleteListenerAttached) {
-    select.addEventListener('change', () => {
-      const projectId = select.value;
-      const project = projectId ? findProjectById(projectId) : null;
-      if (project) {
-        applyProjectContextToForm(project, { skipProjectSelectUpdate: true });
-      } else {
-        updateCreateProjectTaxState();
-        renderDraftReservationSummary();
-      }
-    });
-    select.dataset.autocompleteListenerAttached = 'true';
+    hidden.value = '';
+    input.dataset.selectedId = '';
+    input.value = resetInput ? '' : previousInputValue;
   }
 }
 
@@ -268,7 +340,7 @@ function applyProjectContextToForm(project, { forceNotes = false, skipProjectSel
   if (customerIdValue) {
     ensureCustomerChoices({ selectedValue: customerIdValue });
   } else {
-    ensureCustomerChoices({ selectedValue: '' });
+    ensureCustomerChoices({ selectedValue: '', resetInput: true });
   }
 
   const startIso = resolveProjectDateTime(project, 'start');
@@ -292,8 +364,8 @@ function applyProjectContextToForm(project, { forceNotes = false, skipProjectSel
 }
 
 function populateProjectSelect({ projectsList = null, preselectId = null } = {}) {
-  const select = document.getElementById('res-project');
-  if (!select) return;
+  const projectHidden = document.getElementById('res-project');
+  if (!projectHidden) return;
 
   const { projects } = projectsList ? { projects: projectsList } : loadData();
   const list = Array.isArray(projects) ? projects : [];
@@ -301,7 +373,7 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
 
   const previousValue = preselectId != null
     ? String(preselectId)
-    : String(select.value || '');
+    : (projectHidden.value ? String(projectHidden.value) : '');
 
   ensureProjectChoices({ selectedValue: previousValue, projectsList: list });
   updateCreateProjectTaxState();
@@ -326,6 +398,99 @@ function updateCreateProjectTaxState() {
       taxCheckbox.checked = false;
     }
   }
+}
+
+function setupProjectSelection() {
+  const { input, hidden } = getProjectElements();
+  if (!input || !hidden || input.dataset.listenerAttached) return;
+
+  const commitSelection = (allowPartial = false) => {
+    const rawValue = input.value.trim();
+    const entry = rawValue ? resolveProjectByLabel(rawValue, { allowPartial }) : null;
+
+    if (entry) {
+      hidden.value = String(entry.id);
+      input.value = entry.label;
+      input.dataset.selectedId = String(entry.id);
+      const project = findProjectById(entry.id);
+      if (project) {
+        applyProjectContextToForm(project, { skipProjectSelectUpdate: true });
+      } else {
+        updateCreateProjectTaxState();
+        renderDraftReservationSummary();
+      }
+    } else {
+      hidden.value = '';
+      input.dataset.selectedId = '';
+      updateCreateProjectTaxState();
+      renderDraftReservationSummary();
+    }
+  };
+
+  input.addEventListener('input', () => {
+    const rawValue = input.value.trim();
+    const entry = rawValue ? resolveProjectByLabel(rawValue) : null;
+    if (entry) {
+      hidden.value = String(entry.id);
+      input.dataset.selectedId = String(entry.id);
+    } else if (!rawValue) {
+      hidden.value = '';
+      input.dataset.selectedId = '';
+    }
+  });
+
+  input.addEventListener('change', () => commitSelection(true));
+  input.addEventListener('blur', () => commitSelection(true));
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commitSelection(true);
+    }
+  });
+
+  input.dataset.listenerAttached = 'true';
+}
+
+function setupCustomerAutocomplete() {
+  const { input, hidden } = getCustomerElements();
+  if (!input || !hidden || input.dataset.listenerAttached) return;
+
+  const commitSelection = (allowPartial = false) => {
+    const rawValue = input.value.trim();
+    const entry = rawValue ? resolveCustomerByLabel(rawValue, { allowPartial }) : null;
+    if (entry) {
+      hidden.value = String(entry.id);
+      input.value = entry.label;
+      input.dataset.selectedId = String(entry.id);
+    } else {
+      hidden.value = '';
+      input.dataset.selectedId = '';
+    }
+    renderDraftReservationSummary();
+  };
+
+  input.addEventListener('input', () => {
+    const rawValue = input.value.trim();
+    const entry = rawValue ? resolveCustomerByLabel(rawValue) : null;
+    if (entry) {
+      hidden.value = String(entry.id);
+      input.dataset.selectedId = String(entry.id);
+    } else if (!rawValue) {
+      hidden.value = '';
+      input.dataset.selectedId = '';
+    }
+  });
+
+  input.addEventListener('change', () => commitSelection(true));
+  input.addEventListener('blur', () => commitSelection(true));
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commitSelection(true);
+    }
+  });
+
+  input.dataset.listenerAttached = 'true';
 }
 
 function applyPendingProjectContext() {
@@ -734,11 +899,20 @@ function setupReservationTimeSync() {
 }
 
 async function handleReservationSubmit() {
-  const customerSelect = document.getElementById('res-customer');
-  const projectSelect = document.getElementById('res-project');
-  const customerValue = customerSelect?.value ? String(customerSelect.value) : '';
-  const projectIdValue = projectSelect?.value ? String(projectSelect.value) : '';
+  const { input: customerInput, hidden: customerHidden } = getCustomerElements();
+  const { input: projectInput, hidden: projectHidden } = getProjectElements();
   const { customers } = loadData();
+
+  let customerValue = customerHidden?.value ? String(customerHidden.value) : '';
+  if (!customerValue && customerInput?.value) {
+    const resolvedCustomer = resolveCustomerByLabel(customerInput.value, { allowPartial: true });
+    if (resolvedCustomer) {
+      customerValue = String(resolvedCustomer.id);
+      if (customerHidden) customerHidden.value = customerValue;
+      customerInput.value = resolvedCustomer.label;
+      customerInput.dataset.selectedId = customerValue;
+    }
+  }
 
   const customer = customers.find((c) => String(c.id) === customerValue);
 
@@ -748,6 +922,17 @@ async function handleReservationSubmit() {
   }
 
   const customerId = customer.id;
+
+  let projectIdValue = projectHidden?.value ? String(projectHidden.value) : '';
+  if (!projectIdValue && projectInput?.value) {
+    const resolvedProject = resolveProjectByLabel(projectInput.value, { allowPartial: true });
+    if (resolvedProject) {
+      projectIdValue = String(resolvedProject.id);
+      if (projectHidden) projectHidden.value = projectIdValue;
+      projectInput.value = resolvedProject.label;
+      projectInput.dataset.selectedId = projectIdValue;
+    }
+  }
   const startDate = document.getElementById('res-start').value;
   const endDate = document.getElementById('res-end').value;
   const startTime = document.getElementById('res-start-time')?.value || '00:00';
@@ -875,11 +1060,14 @@ async function handleReservationSubmit() {
 }
 
 function resetForm() {
-  const customerSelect = document.getElementById('res-customer');
-  if (customerSelect) {
-    customerSelect.value = '';
-    refreshDropdownOptions(customerSelect);
+  const customerHidden = document.getElementById('res-customer');
+  const customerInput = document.getElementById('res-customer-input');
+  if (customerHidden) customerHidden.value = '';
+  if (customerInput) {
+    customerInput.value = '';
+    customerInput.dataset.selectedId = '';
   }
+  ensureCustomerChoices({ selectedValue: '', resetInput: true });
   document.getElementById('res-start').value = '';
   document.getElementById('res-start-time').value = '';
   document.getElementById('res-end').value = '';
@@ -896,11 +1084,14 @@ function resetForm() {
   if (shareCheckbox) {
     shareCheckbox.checked = false;
   }
-  const projectSelect = document.getElementById('res-project');
-  if (projectSelect) {
-    projectSelect.value = '';
-    refreshDropdownOptions(projectSelect);
+  const projectHidden = document.getElementById('res-project');
+  const projectInput = document.getElementById('res-project-input');
+  if (projectHidden) projectHidden.value = '';
+  if (projectInput) {
+    projectInput.value = '';
+    projectInput.dataset.selectedId = '';
   }
+  ensureProjectChoices({ selectedValue: '', resetInput: true });
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
   const paymentSelect = document.getElementById('res-payment-status');
@@ -985,9 +1176,11 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   const { customers, projects } = loadData();
   setCachedCustomers(customers || []);
   ensureCustomerChoices();
+  setupCustomerAutocomplete();
 
   setCachedProjects(projects || []);
   populateProjectSelect({ projectsList: projects });
+  setupProjectSelection();
 
   populateEquipmentDescriptionLists();
   setupEquipmentDescriptionInputs();
@@ -1005,6 +1198,8 @@ export function refreshCreateReservationForm() {
   populateEquipmentDescriptionLists();
   populateProjectSelect();
   ensureCustomerChoices();
+  setupCustomerAutocomplete();
+  setupProjectSelection();
   renderReservationItems();
   renderDraftReservationSummary();
 }
@@ -1012,7 +1207,9 @@ export function refreshCreateReservationForm() {
 if (typeof document !== 'undefined') {
   const handleLanguageRefresh = () => {
     ensureCustomerChoices();
-    populateProjectSelect();
+    ensureProjectChoices({ projectsList: getCachedProjects() });
+    setupCustomerAutocomplete();
+    setupProjectSelection();
     renderDraftReservationSummary();
   };
   document.addEventListener('language:changed', handleLanguageRefresh);

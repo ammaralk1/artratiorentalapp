@@ -19,7 +19,6 @@ import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initReports } from './scripts/reports.js';
 import { initDashboardMetrics } from './scripts/dashboardMetrics.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
-import { initDropdownAutocomplete } from './scripts/dropdownAutocomplete.js';
 
 applyStoredTheme();
 
@@ -31,7 +30,6 @@ async function initApp() {
     return;
   }
   initDashboardShell();
-  initDropdownAutocomplete();
   setupTabs();
   initCustomers();
   initDashboardMetrics();
