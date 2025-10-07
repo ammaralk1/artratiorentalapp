@@ -36,6 +36,14 @@ let cachedProjects = [];
 let customerChoices = null;
 let projectChoices = null;
 
+function applyChoicesDarkTheme(instance) {
+  if (!instance) return;
+  instance.containerOuter?.element?.classList.add('choices--reservation-dark');
+  instance.containerInner?.element?.classList.add('choices__inner--reservation-dark');
+  instance.dropdown?.element?.classList.add('choices__list--dropdown-reservation-dark');
+  instance.input?.element?.classList.add('choices__input--reservation-dark');
+}
+
 export function updatePaymentStatusAppearance(select, statusValue) {
   if (!select) return;
   const value = statusValue ?? select.value;
@@ -167,32 +175,31 @@ function ensureCustomerChoices({ selectedValue = '' } = {}) {
       noResultsText: t('common.noResults', 'لا توجد نتائج'),
       noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
     });
+    applyChoicesDarkTheme(customerChoices);
     select.addEventListener('change', () => {
       renderDraftReservationSummary();
     });
+  } else {
+    applyChoicesDarkTheme(customerChoices);
   }
 
-  const choiceData = [
-    {
-      value: '',
-      label: placeholderLabel,
-      selected: !normalizedSelected,
-      placeholder: true
-    },
-    ...choicesItems.map((choice) => ({
+  customerChoices.clearChoices();
+  customerChoices.setChoices(
+    choicesItems.map((choice) => ({
       value: choice.value,
       label: choice.label,
       selected: normalizedSelected && choice.value === normalizedSelected
-    }))
-  ];
-
-  customerChoices.clearChoices();
-  customerChoices.setChoices(choiceData, 'value', 'label', true);
+    })),
+    'value',
+    'label',
+    true
+  );
 
   if (normalizedSelected && choicesItems.some((choice) => choice.value === normalizedSelected)) {
     customerChoices.setChoiceByValue(normalizedSelected);
   } else {
-    customerChoices.setChoiceByValue('');
+    customerChoices.removeActiveItems(true);
+    select.value = '';
   }
 }
 
@@ -231,6 +238,7 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
       noResultsText: t('common.noResults', 'لا توجد نتائج'),
       noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
     });
+    applyChoicesDarkTheme(projectChoices);
 
     select.addEventListener('change', () => {
       const projectId = select.value;
@@ -242,29 +250,27 @@ function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) 
         renderDraftReservationSummary();
       }
     });
+  } else {
+    applyChoicesDarkTheme(projectChoices);
   }
 
-  const projectChoicesData = [
-    {
-      value: '',
-      label: placeholderLabel,
-      selected: !normalizedSelected,
-      placeholder: true
-    },
-    ...sortedProjects.map((project) => ({
+  projectChoices.clearChoices();
+  projectChoices.setChoices(
+    sortedProjects.map((project) => ({
       value: String(project.id),
       label: getProjectDisplayName(project),
       selected: normalizedSelected && String(project.id) === normalizedSelected
-    }))
-  ];
-
-  projectChoices.clearChoices();
-  projectChoices.setChoices(projectChoicesData, 'value', 'label', true);
+    })),
+    'value',
+    'label',
+    true
+  );
 
   if (normalizedSelected && sortedProjects.some((project) => String(project.id) === normalizedSelected)) {
     projectChoices.setChoiceByValue(normalizedSelected);
   } else {
-    projectChoices.setChoiceByValue('');
+    projectChoices.removeActiveItems(true);
+    select.value = '';
   }
 }
 
