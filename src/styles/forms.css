@@ -479,6 +479,29 @@
   margin-inline: auto;
 }
 
+/* شكل الخانة المغلقة للقائمة المنسدلة */
+.choices__inner {
+  background-color: #1f2937 !important;  /* خلفية داكنة */
+  color: white !important;               /* نص أبيض */
+  border: 1px solid #374151 !important;  /* حدود رمادية داكنة */
+  border-radius: 0.5rem;                 /* نفس انحناء الخانات الأخرى */
+  min-height: 3rem;                      /* نفس ارتفاع input العادي */
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+}
+
+/* شكل السهم ▼ */
+.choices[data-type*='select-one']::after {
+  border-color: white transparent transparent transparent !important;
+}
+
+/* شكل العنصر المختار داخل الخانة */
+.choices__item.choices__item--selectable {
+  color: white !important;
+}
+
 
 .equipment-form-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
