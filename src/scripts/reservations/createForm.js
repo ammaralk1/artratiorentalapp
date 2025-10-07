@@ -22,6 +22,8 @@ import {
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
+import Choices from 'choices.js';
+import 'choices.js/public/assets/styles/choices.min.css';
 import {
   createReservationApi,
   buildReservationPayload,
@@ -30,6 +32,9 @@ import {
 
 let afterSubmitCallback = null;
 let cachedProjects = [];
+
+let customerChoices = null;
+let projectChoices = null;
 
 export function updatePaymentStatusAppearance(select, statusValue) {
   if (!select) return;
@@ -60,13 +65,6 @@ function getProjectDisplayName(project) {
   const title = typeof project.title === 'string' ? project.title.trim() : '';
   if (title) return title;
   return t('projects.fallback.untitled', 'مشروع بدون اسم');
-}
-
-function getProjectSearchElements() {
-  const input = document.getElementById('res-project-search');
-  const suggestionsBox = document.getElementById('project-suggestions');
-  const select = document.getElementById('res-project');
-  return { input, suggestionsBox, select };
 }
 
 function getCompanySharePercent() {
@@ -111,96 +109,6 @@ function resolveProjectDateTime(project, key) {
 }
 
 function syncProjectSearchInput(projectId) {
-  const { input } = getProjectSearchElements();
-  if (!input) return;
-  if (projectId) {
-    const project = findProjectById(projectId);
-    if (project) {
-      input.value = getProjectDisplayName(project);
-      input.dataset.selectedId = String(project.id);
-      return;
-    }
-  }
-  input.value = '';
-  delete input.dataset.selectedId;
-}
-
-function renderProjectSuggestions(projects) {
-  const { input, suggestionsBox } = getProjectSearchElements();
-  if (!suggestionsBox || !input) return;
-
-  if (!projects || projects.length === 0) {
-    closeFloatingDropdown(suggestionsBox);
-    suggestionsBox.innerHTML = '';
-    return;
-  }
-
-  const customerMap = new Map((getCachedCustomers() || []).map((customer) => [String(customer.id), customer]));
-
-  suggestionsBox.innerHTML = projects
-    .map((project) => {
-      const title = getProjectDisplayName(project);
-      const projectId = project?.id != null ? String(project.id) : '';
-      const code = project?.projectCode ? `#${project.projectCode}` : '';
-      const client = project?.clientId
-        ? getCustomerDisplayName(customerMap.get(String(project.clientId)))
-        : '';
-      const metaParts = [code, client].filter(Boolean);
-      const metaHtml = metaParts.length
-        ? `<span class="suggestion-item__meta">${escapeHtml(metaParts.join(' | '))}</span>`
-        : '';
-      return `
-        <div class="suggestion-item" data-id="${escapeHtml(projectId)}" data-name="${escapeHtml(title)}">
-          <span class="suggestion-item__primary">${escapeHtml(title)}</span>
-          ${metaHtml}
-        </div>
-      `;
-    })
-    .join('');
-
-  openFloatingDropdown(suggestionsBox, input);
-
-  suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
-    item.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-      const selectedId = event.currentTarget.getAttribute('data-id') || '';
-      const selectedName = event.currentTarget.getAttribute('data-name') || '';
-      input.value = selectedName;
-      if (selectedId) {
-        input.dataset.selectedId = selectedId;
-      } else {
-        delete input.dataset.selectedId;
-      }
-      const { select } = getProjectSearchElements();
-      if (select) {
-        select.value = selectedId;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      closeFloatingDropdown(suggestionsBox);
-    });
-  });
-}
-
-function updateProjectSuggestions() {
-  const { input } = getProjectSearchElements();
-  if (!input) return;
-  const projects = getCachedProjects() || [];
-  const value = normalizeText(input.value);
-  const isFocused = document.activeElement === input;
-  if (!isFocused && !value) {
-    const { suggestionsBox } = getProjectSearchElements();
-    if (suggestionsBox) {
-      closeFloatingDropdown(suggestionsBox);
-      suggestionsBox.innerHTML = '';
-    }
-    return;
-  }
-  const matches = !value
-    ? projects.slice(0, 10)
-    : projects.filter((project) => normalizeText(getProjectDisplayName(project)).includes(value)).slice(0, 10);
-  renderProjectSuggestions(matches);
-}
-
 function getCustomerDisplayName(customer) {
   if (!customer) return '';
 
@@ -214,80 +122,150 @@ function getCustomerDisplayName(customer) {
   return typeof name === 'string' ? name.trim() : String(name || '').trim();
 }
 
-function escapeHtml(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+function buildChoicePlaceholder(label, selected = true) {
+  return {
+    value: '',
+    label,
+    selected,
+    placeholder: true
+  };
 }
 
-function toggleFieldDropdown(inputElement, open) {
-  const field = inputElement?.closest('.reservation-field');
-  if (!field) return;
-  field.classList.toggle('dropdown-open', Boolean(open));
-}
+function ensureCustomerChoices({ selectedValue = '' } = {}) {
+  const select = document.getElementById('res-customer');
+  if (!select) return;
 
-const activeDropdowns = new Map();
-let dropdownWatcherAttached = false;
+  const customers = getCachedCustomers() || [];
+  const placeholderLabel = t('reservations.create.placeholders.client', 'اختر عميلًا (اختياري)');
+  const normalizedSelected = selectedValue ? String(selectedValue) : '';
 
-function positionFloatingDropdown(dropdown, input) {
-  if (!dropdown || !input) return;
-  const rect = input.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.left = `${rect.left}px`;
-  dropdown.style.top = `${rect.bottom + 6}px`;
-  dropdown.style.minWidth = `${rect.width}px`;
-  dropdown.style.maxWidth = `${rect.width}px`;
-  dropdown.style.zIndex = '360';
-}
+  if (customerChoices) {
+    customerChoices.config.placeholderValue = placeholderLabel;
+    customerChoices.config.searchPlaceholderValue = placeholderLabel;
+    customerChoices.config.loadingText = t('common.loading', 'جاري التحميل...');
+    customerChoices.config.noResultsText = t('common.noResults', 'لا توجد نتائج');
+    customerChoices.config.noChoicesText = t('common.noChoices', 'لا توجد عناصر متاحة');
+  }
 
-function repositionFloatingDropdowns() {
-  activeDropdowns.forEach((input, dropdown) => {
-    positionFloatingDropdown(dropdown, input);
-  });
-}
+  const seen = new Set();
+  const choicesItems = customers
+    .filter((customer) => customer && customer.id != null)
+    .map((customer) => ({
+      value: String(customer.id),
+      label: getCustomerDisplayName(customer) || t('customers.fallback.unnamed', 'عميل بدون اسم')
+    }))
+    .filter((choice) => {
+      if (!choice.label) return false;
+      if (seen.has(choice.value)) return false;
+      seen.add(choice.value);
+      return true;
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 
-function ensureDropdownWatcher() {
-  if (dropdownWatcherAttached) return;
-  dropdownWatcherAttached = true;
-  window.addEventListener('scroll', repositionFloatingDropdowns, true);
-  window.addEventListener('resize', repositionFloatingDropdowns);
-}
+  if (!customerChoices) {
+    select.innerHTML = '';
+    customerChoices = new Choices(select, {
+      searchEnabled: true,
+      searchChoices: true,
+      shouldSort: false,
+      itemSelectText: '',
+      allowHTML: false,
+      placeholder: true,
+      placeholderValue: placeholderLabel,
+      searchPlaceholderValue: placeholderLabel,
+      loadingText: t('common.loading', 'جاري التحميل...'),
+      noResultsText: t('common.noResults', 'لا توجد نتائج'),
+      noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
+    });
+    select.addEventListener('change', () => {
+      renderDraftReservationSummary();
+    });
+  }
 
-function releaseDropdownWatcher() {
-  if (dropdownWatcherAttached && activeDropdowns.size === 0) {
-    dropdownWatcherAttached = false;
-    window.removeEventListener('scroll', repositionFloatingDropdowns, true);
-    window.removeEventListener('resize', repositionFloatingDropdowns);
+  const placeholderChoice = buildChoicePlaceholder(placeholderLabel, !normalizedSelected);
+  const choiceData = [placeholderChoice].concat(
+    choicesItems.map((choice) => ({
+      value: choice.value,
+      label: choice.label,
+      selected: normalizedSelected && choice.value === normalizedSelected
+    }))
+  );
+
+  customerChoices.clearChoices();
+  customerChoices.setChoices(choiceData, 'value', 'label', true);
+
+  if (normalizedSelected && choicesItems.some((choice) => choice.value === normalizedSelected)) {
+    customerChoices.setChoiceByValue(normalizedSelected);
+  } else {
+    customerChoices.removeActiveItems();
   }
 }
 
-function openFloatingDropdown(dropdown, input) {
-  if (!dropdown || !input) return;
-  positionFloatingDropdown(dropdown, input);
-  dropdown.style.display = 'block';
-  dropdown.classList.add('is-visible');
-  activeDropdowns.set(dropdown, input);
-  toggleFieldDropdown(input, true);
-  ensureDropdownWatcher();
-}
+function ensureProjectChoices({ selectedValue = '', projectsList = null } = {}) {
+  const select = document.getElementById('res-project');
+  if (!select) return;
 
-function closeFloatingDropdown(dropdown) {
-  if (!dropdown) return;
-  const input = activeDropdowns.get(dropdown);
-  if (input) toggleFieldDropdown(input, false);
-  activeDropdowns.delete(dropdown);
-  dropdown.classList.remove('is-visible');
-  dropdown.style.display = 'none';
-  dropdown.style.position = '';
-  dropdown.style.left = '';
-  dropdown.style.top = '';
-  dropdown.style.minWidth = '';
-  dropdown.style.maxWidth = '';
-  dropdown.style.zIndex = '';
-  releaseDropdownWatcher();
+  const list = Array.isArray(projectsList) ? projectsList : (getCachedProjects() || []);
+  const placeholderLabel = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
+  const normalizedSelected = selectedValue ? String(selectedValue) : '';
+
+  if (projectChoices) {
+    projectChoices.config.placeholderValue = placeholderLabel;
+    projectChoices.config.searchPlaceholderValue = placeholderLabel;
+    projectChoices.config.loadingText = t('common.loading', 'جاري التحميل...');
+    projectChoices.config.noResultsText = t('common.noResults', 'لا توجد نتائج');
+    projectChoices.config.noChoicesText = t('common.noChoices', 'لا توجد عناصر متاحة');
+  }
+
+  const sortedProjects = [...list]
+    .filter((project) => project && project.id != null)
+    .sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')));
+
+  if (!projectChoices) {
+    select.innerHTML = '';
+    projectChoices = new Choices(select, {
+      searchEnabled: true,
+      searchChoices: true,
+      shouldSort: false,
+      itemSelectText: '',
+      allowHTML: false,
+      placeholder: true,
+      placeholderValue: placeholderLabel,
+      searchPlaceholderValue: placeholderLabel,
+      loadingText: t('common.loading', 'جاري التحميل...'),
+      noResultsText: t('common.noResults', 'لا توجد نتائج'),
+      noChoicesText: t('common.noChoices', 'لا توجد عناصر متاحة'),
+    });
+
+    select.addEventListener('change', () => {
+      const projectId = select.value;
+      const project = projectId ? findProjectById(projectId) : null;
+      if (project) {
+        applyProjectContextToForm(project, { skipProjectSelectUpdate: true });
+      } else {
+        updateCreateProjectTaxState();
+        renderDraftReservationSummary();
+      }
+    });
+  }
+
+  const placeholderChoice = buildChoicePlaceholder(placeholderLabel, !normalizedSelected);
+  const projectChoicesData = [placeholderChoice].concat(
+    sortedProjects.map((project) => ({
+      value: String(project.id),
+      label: getProjectDisplayName(project),
+      selected: normalizedSelected && String(project.id) === normalizedSelected
+    }))
+  );
+
+  projectChoices.clearChoices();
+  projectChoices.setChoices(projectChoicesData, 'value', 'label', true);
+
+  if (normalizedSelected && sortedProjects.some((project) => String(project.id) === normalizedSelected)) {
+    projectChoices.setChoiceByValue(normalizedSelected);
+  } else {
+    projectChoices.removeActiveItems();
+  }
 }
 
 function setDateTimeInputs(dateInputId, timeInputId, isoString) {
@@ -330,22 +308,27 @@ function setDateTimeInputs(dateInputId, timeInputId, isoString) {
   }
 }
 
-function applyProjectContextToForm(project, { forceNotes = false } = {}) {
+function applyProjectContextToForm(project, { forceNotes = false, skipProjectSelectUpdate = false } = {}) {
   if (!project) return;
 
-  syncProjectSearchInput(project.id);
-  const { suggestionsBox } = getProjectSearchElements();
-  if (suggestionsBox) {
-    closeFloatingDropdown(suggestionsBox);
-    suggestionsBox.innerHTML = '';
+  const projectIdValue = project?.id != null ? String(project.id) : '';
+  if (!skipProjectSelectUpdate) {
+    ensureProjectChoices({ selectedValue: projectIdValue });
   }
 
   const customers = getCachedCustomers() || [];
   const projectCustomer = customers.find((c) => String(c.id) === String(project.clientId));
-  const customerInput = document.getElementById('res-customer');
-  const projectCustomerName = getCustomerDisplayName(projectCustomer);
-  if (customerInput && projectCustomerName) {
-    customerInput.value = projectCustomerName;
+  const customerIdValue = projectCustomer?.id != null ? String(projectCustomer.id) : '';
+  if (customerIdValue) {
+    ensureCustomerChoices({ selectedValue: customerIdValue });
+    if (customerChoices) {
+      customerChoices.setChoiceByValue(customerIdValue);
+    } else {
+      const customerSelect = document.getElementById('res-customer');
+      if (customerSelect) customerSelect.value = customerIdValue;
+    }
+  } else {
+    ensureCustomerChoices({ selectedValue: '' });
   }
 
   const startIso = resolveProjectDateTime(project, 'start');
@@ -376,36 +359,13 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
   const list = Array.isArray(projects) ? projects : [];
   setCachedProjects(list);
 
-  const previousValue = preselectId != null ? String(preselectId) : select.value;
-  const placeholderLabel = t('reservations.create.placeholders.project', 'اختر مشروعاً (اختياري)');
+  const previousValue = preselectId != null
+    ? String(preselectId)
+    : (projectChoices ? projectChoices.getValue(true) : select.value);
 
-  const sortedProjects = [...list].sort((a, b) => String(b.createdAt || b.start || '').localeCompare(String(a.createdAt || a.start || '')));
-
-  const optionsHtml = [`<option value="">${escapeHtml(placeholderLabel)}</option>`]
-    .concat(
-      sortedProjects
-        .map((project) => `<option value="${escapeHtml(project.id)}">${escapeHtml(getProjectDisplayName(project))}</option>`)
-    )
-    .join('');
-
-  select.innerHTML = optionsHtml;
-  if (previousValue && list.some((proj) => String(proj.id) === previousValue)) {
-    select.value = previousValue;
-  } else if (preselectId != null) {
-    select.value = String(preselectId);
-  } else {
-    select.value = '';
-  }
-
+  ensureProjectChoices({ selectedValue: previousValue, projectsList: list });
   updateCreateProjectTaxState();
-  syncProjectSearchInput(select.value);
-  const { input, suggestionsBox } = getProjectSearchElements();
-  if (input && document.activeElement === input) {
-    updateProjectSuggestions();
-  } else if (suggestionsBox) {
-    closeFloatingDropdown(suggestionsBox);
-    suggestionsBox.innerHTML = '';
-  }
+  renderDraftReservationSummary();
 }
 
 function updateCreateProjectTaxState() {
@@ -431,24 +391,11 @@ function updateCreateProjectTaxState() {
 function setupProjectSelection() {
   const select = document.getElementById('res-project');
   if (!select || select.dataset.listenerAttached) return;
-  const { input, suggestionsBox } = getProjectSearchElements();
   select.addEventListener('change', () => {
-    const project = findProjectById(select.value);
-    if (input) {
-      if (project) {
-        input.value = getProjectDisplayName(project);
-        input.dataset.selectedId = String(project.id);
-      } else {
-        input.value = '';
-        delete input.dataset.selectedId;
-      }
-    }
-    if (suggestionsBox) {
-      closeFloatingDropdown(suggestionsBox);
-      suggestionsBox.innerHTML = '';
-    }
+    const projectId = select.value;
+    const project = projectId ? findProjectById(projectId) : null;
     if (project) {
-      applyProjectContextToForm(project);
+      applyProjectContextToForm(project, { skipProjectSelectUpdate: true });
     } else {
       updateCreateProjectTaxState();
       renderDraftReservationSummary();
@@ -482,14 +429,8 @@ function applyPendingProjectContext() {
 
   const select = document.getElementById('res-project');
   if (select) {
-    select.value = String(context.projectId);
+    ensureProjectChoices({ selectedValue: String(context.projectId) });
     updateCreateProjectTaxState();
-    syncProjectSearchInput(select.value);
-    const { suggestionsBox } = getProjectSearchElements();
-    if (suggestionsBox) {
-      closeFloatingDropdown(suggestionsBox);
-      suggestionsBox.innerHTML = '';
-    }
   }
   const project = findProjectById(context.projectId);
   if (project) {
@@ -506,11 +447,11 @@ function applyPendingProjectContext() {
   if (context.customerId) {
     const customers = getCachedCustomers() || [];
     const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
-    const projectCustomerName = getCustomerDisplayName(projectCustomer);
-    if (projectCustomerName) {
-      const customerInput = document.getElementById('res-customer');
-      if (customerInput) customerInput.value = projectCustomerName;
+    if (projectCustomer?.id != null) {
+      ensureCustomerChoices({ selectedValue: String(projectCustomer.id) });
     }
+  } else {
+    ensureCustomerChoices({ selectedValue: '' });
   }
 }
 
@@ -869,16 +810,13 @@ function setupReservationTimeSync() {
 }
 
 async function handleReservationSubmit() {
-  const inputValue = normalizeText(document.getElementById('res-customer').value.trim());
+  const customerSelect = document.getElementById('res-customer');
   const projectSelect = document.getElementById('res-project');
+  const customerValue = customerSelect?.value ? String(customerSelect.value) : '';
   const projectIdValue = projectSelect?.value ? String(projectSelect.value) : '';
   const { customers } = loadData();
 
-  let customer = customers.find((c) => normalizeText(getCustomerDisplayName(c)) === inputValue);
-
-  if (!customer) {
-    customer = customers.find((c) => normalizeText(getCustomerDisplayName(c)).includes(inputValue));
-  }
+  const customer = customers.find((c) => String(c.id) === customerValue);
 
   if (!customer) {
     showToast(t('reservations.toast.customerNotFound', '⚠️ لم يتم العثور على العميل بالاسم المدخل'));
@@ -1013,7 +951,12 @@ async function handleReservationSubmit() {
 }
 
 function resetForm() {
-  document.getElementById('res-customer').value = '';
+  const customerSelect = document.getElementById('res-customer');
+  if (customerChoices) {
+    customerChoices.removeActiveItems();
+  } else if (customerSelect) {
+    customerSelect.value = '';
+  }
   document.getElementById('res-start').value = '';
   document.getElementById('res-start-time').value = '';
   document.getElementById('res-end').value = '';
@@ -1031,12 +974,10 @@ function resetForm() {
     shareCheckbox.checked = false;
   }
   const projectSelect = document.getElementById('res-project');
-  if (projectSelect) projectSelect.value = '';
-  syncProjectSearchInput('');
-  const { suggestionsBox: projectSuggestions } = getProjectSearchElements();
-  if (projectSuggestions) {
-    projectSuggestions.style.display = 'none';
-    projectSuggestions.innerHTML = '';
+  if (projectChoices) {
+    projectChoices.removeActiveItems();
+  } else if (projectSelect) {
+    projectSelect.value = '';
   }
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
@@ -1116,106 +1057,16 @@ function setupFormSubmit() {
   }
 }
 
-function setupCustomerAutocomplete() {
-  const input = document.getElementById('res-customer');
-  const suggestionsBox = document.getElementById('customer-suggestions');
-  if (!input || !suggestionsBox) return;
-
-  const renderSuggestions = (items) => {
-    if (!items || items.length === 0) {
-      closeFloatingDropdown(suggestionsBox);
-      suggestionsBox.innerHTML = '';
-      return;
-    }
-
-    suggestionsBox.innerHTML = items
-      .map((name) => `<div class="suggestion-item" data-name="${name}">${name}</div>`)
-      .join('');
-    openFloatingDropdown(suggestionsBox, input);
-
-    suggestionsBox.querySelectorAll('.suggestion-item').forEach((item) => {
-      item.addEventListener('mousedown', (event) => {
-        event.preventDefault();
-        const selectedName = event.target.getAttribute('data-name');
-        input.value = selectedName;
-        closeFloatingDropdown(suggestionsBox);
-      });
-    });
-  };
-
-  const getUniqueNames = () => {
-    const customers = getCachedCustomers() || [];
-    return [...new Set(customers.map((c) => getCustomerDisplayName(c)).filter(Boolean))];
-  };
-
-  const updateSuggestions = () => {
-    const value = normalizeText(input.value);
-    const names = getUniqueNames();
-    const matches = !value
-      ? names.slice(0, 10)
-      : names.filter((name) => normalizeText(name).startsWith(value)).slice(0, 10);
-    renderSuggestions(matches);
-  };
-
-  input.addEventListener('input', () => {
-    updateSuggestions();
-  });
-
-  input.addEventListener('focus', () => {
-    updateSuggestions();
-  });
-
-  input.addEventListener('blur', () => {
-    setTimeout(() => {
-      closeFloatingDropdown(suggestionsBox);
-    }, 150);
-  });
-}
-
-function setupProjectAutocomplete() {
-  const { input, suggestionsBox, select } = getProjectSearchElements();
-  if (!input || !suggestionsBox || !select || input.dataset.listenerAttached) return;
-
-  input.addEventListener('input', () => {
-    if (!input.value.trim()) {
-      select.value = '';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    updateProjectSuggestions();
-  });
-
-  input.addEventListener('focus', () => {
-    updateProjectSuggestions();
-  });
-
-  input.addEventListener('blur', () => {
-    setTimeout(() => {
-      closeFloatingDropdown(suggestionsBox);
-    }, 150);
-  });
-
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      const firstSuggestion = suggestionsBox.querySelector('.suggestion-item');
-      if (firstSuggestion) {
-        event.preventDefault();
-        firstSuggestion.dispatchEvent(new MouseEvent('mousedown'));
-      }
-    }
-  });
-
-  input.dataset.listenerAttached = 'true';
-}
-
 export function initCreateReservationForm({ onAfterSubmit } = {}) {
   afterSubmitCallback = typeof onAfterSubmit === 'function' ? onAfterSubmit : null;
 
   const { customers, projects } = loadData();
   setCachedCustomers(customers || []);
+  ensureCustomerChoices();
+
   setCachedProjects(projects || []);
   populateProjectSelect({ projectsList: projects });
   setupProjectSelection();
-  setupProjectAutocomplete();
 
   populateEquipmentDescriptionLists();
   setupEquipmentDescriptionInputs();
@@ -1224,7 +1075,6 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   setupReservationButtons();
   setupBarcodeInput();
   setupFormSubmit();
-  setupCustomerAutocomplete();
   applyPendingProjectContext();
   renderDraftReservationSummary();
   renderReservationItems();
@@ -1233,12 +1083,14 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
 export function refreshCreateReservationForm() {
   populateEquipmentDescriptionLists();
   populateProjectSelect();
+  ensureCustomerChoices();
   renderReservationItems();
   renderDraftReservationSummary();
 }
 
 if (typeof document !== 'undefined') {
   const handleLanguageRefresh = () => {
+    ensureCustomerChoices();
     populateProjectSelect();
     renderDraftReservationSummary();
   };

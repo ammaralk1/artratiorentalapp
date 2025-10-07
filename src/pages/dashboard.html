@@ -883,16 +883,13 @@
               </div>
 
             <div class="reservation-row mb-3">
-              <div class="reservation-field reservation-field--quarter position-relative">
+              <div class="reservation-field reservation-field--quarter">
                 <label for="res-customer" data-i18n data-i18n-key="reservations.create.labels.client">👤 العميل</label>
-                <input class="form-control" id="res-customer" placeholder="اكتب اسم العميل..." autocomplete="off" required data-i18n data-i18n-placeholder-key="reservations.create.placeholders.client">
-                <div id="customer-suggestions" class="suggestions-list"></div>
+                <select id="res-customer" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.client"></select>
               </div>
-              <div class="reservation-field reservation-field--quarter position-relative">
-                <label for="res-project-search" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
-                <input class="form-control" id="res-project-search" placeholder="اختر مشروعاً (اختياري)" autocomplete="off" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
-                <div id="project-suggestions" class="suggestions-list"></div>
-                <select id="res-project" class="form-select d-none" data-i18n data-i18n-placeholder-key="reservations.create.placeholders.project">
+              <div class="reservation-field reservation-field--quarter">
+                <label for="res-project" data-i18n data-i18n-key="reservations.create.labels.project">📁 المشروع المرتبط</label>
+                <select id="res-project" class="form-select reservation-choice bg-base-100 text-base-content border border-base-200" data-placeholder-key="reservations.create.placeholders.project">
                   <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
                 </select>
               </div>
