@@ -1916,6 +1916,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   resize: vertical;
   caret-color: var(--clr-text, #1f2d52);
+  min-height: clamp(120px, 24vh, 180px);
 }
 
 .reservation-notes:focus {
@@ -2335,10 +2336,18 @@ body[dir="ltr"] .reservation-field textarea {
   min-width: 180px;
   max-width: 200px;
   flex: 0 1 200px;
+  align-items: center;
+  text-align: center;
 }
 
 .reservation-meta-card--narrow .reservation-billing-input {
   width: 100%;
+  margin-inline: auto;
+}
+
+.reservation-meta-card--narrow .form-label {
+  width: 100%;
+  text-align: center;
 }
 
 .reservation-meta-card--billing {
