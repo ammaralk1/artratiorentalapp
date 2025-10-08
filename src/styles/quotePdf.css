@@ -16,8 +16,6 @@ body,
 
 #quotation-pdf-root {
   width: 210mm;
-  min-width: 210mm;
-  max-width: 210mm;
   min-height: 100%;
   box-sizing: border-box;
   font-family: 'Tajawal', sans-serif;
@@ -35,8 +33,7 @@ body,
 }
 
 .quote-preview-pages {
-  width: 210mm;
-  max-width: 210mm;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -48,9 +45,8 @@ body,
 
 .quote-page {
   position: relative;
-  width: 210mm;
+  width: 100%;
   max-width: 210mm;
-  min-width: 210mm;
   min-height: 297mm;
   height: auto;
   margin: 0 auto;

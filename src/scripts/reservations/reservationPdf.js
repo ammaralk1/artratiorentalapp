@@ -41,15 +41,6 @@ const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
-// Render A4 pages at their physical size in the preview (96 DPI assumption).
-const CSS_DPI = 96;
-const MM_PER_INCH = 25.4;
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
-const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
-const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
-const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
-
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
@@ -75,74 +66,9 @@ function loadExternalScript(src) {
   });
 }
 
-function patchHtml2CanvasColorParsing() {
-  const html2canvas = window.html2canvas;
-  if (!html2canvas?.Color || html2canvas.Color.__artRatioPatched) return;
-
-  const originalFromString = html2canvas.Color.fromString.bind(html2canvas.Color);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  function normalizeColor(rawValue) {
-    if (!rawValue || !ctx) return null;
-    try {
-      ctx.fillStyle = '#000';
-      ctx.fillStyle = rawValue;
-      return ctx.fillStyle || null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  html2canvas.Color.fromString = (value) => {
-    try {
-      return originalFromString(value);
-    } catch (error) {
-      if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
-        console.warn('[quote/pdf] html2canvas color fallback', value);
-        const fallback = normalizeColor(value) || '#000';
-        try {
-          return originalFromString(fallback);
-        } catch (secondError) {
-          return originalFromString('#000');
-        }
-      }
-      throw error;
-    }
-  };
-
-  html2canvas.Color.__artRatioPatched = true;
-}
-
-function scrubUnsupportedColorFunctions(root) {
-  if (!root) return;
-
-  const replaceColorFunctions = (value = '') => (
-    value.includes('color(')
-      ? value.replace(COLOR_FUNCTION_REGEX, '#000')
-      : value
-  );
-
-  root.querySelectorAll?.('style')?.forEach?.((styleNode) => {
-    const text = styleNode.textContent;
-    if (typeof text === 'string' && text.includes('color(')) {
-      styleNode.textContent = replaceColorFunctions(text);
-    }
-  });
-
-  root.querySelectorAll?.('[style]')?.forEach?.((element) => {
-    const styleValue = element.getAttribute('style');
-    if (typeof styleValue === 'string' && styleValue.includes('color(')) {
-      element.setAttribute('style', replaceColorFunctions(styleValue));
-    }
-  });
-}
-
 async function ensureHtml2Pdf() {
-  if (!window.html2pdf) {
-    await loadExternalScript(HTML2PDF_SRC);
-  }
-  patchHtml2CanvasColorParsing();
+  if (window.html2pdf) return;
+  await loadExternalScript(HTML2PDF_SRC);
 }
 
 function escapeHtml(value = '') {
@@ -555,34 +481,15 @@ function renderQuotePreview() {
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', () => {
     const doc = previewFrame.contentDocument;
-    const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
-    const pagesContainer = doc?.querySelector('.quote-preview-pages');
-    const baseWidth = pages.length
-      ? pages.reduce((max, page) => Math.max(max, Math.round(page.getBoundingClientRect().width || 0)), A4_WIDTH_PX)
-      : A4_WIDTH_PX;
-
-    let pageGap = 18;
-    if (pagesContainer && doc?.defaultView) {
-      const styles = doc.defaultView.getComputedStyle(pagesContainer);
-      const gapCandidate = parseFloat(styles.rowGap || styles.gap || `${pageGap}`);
-      if (Number.isFinite(gapCandidate) && gapCandidate >= 0) {
-        pageGap = gapCandidate;
-      }
-    }
-
-    const totalHeight = pages.reduce((sum, page, index) => {
-      const rect = page.getBoundingClientRect();
-      const pageHeight = Math.max(Math.round(rect.height || 0), A4_HEIGHT_PX);
-      const gapOffset = index === 0 ? 0 : pageGap;
-      return sum + pageHeight + gapOffset;
-    }, 0) || A4_HEIGHT_PX;
-
-    previewFrame.dataset.baseWidth = String(baseWidth);
-    previewFrame.dataset.baseHeight = String(totalHeight);
-    previewFrame.style.width = `${baseWidth}px`;
-    previewFrame.style.minWidth = `${baseWidth}px`;
-    previewFrame.style.height = `${totalHeight}px`;
-    previewFrame.style.minHeight = `${totalHeight}px`;
+    const firstPage = doc?.querySelector('.quote-page');
+    const computedWidth = firstPage ? firstPage.getBoundingClientRect().width : 794;
+    const computedHeight = doc?.body?.scrollHeight || firstPage?.getBoundingClientRect().height || 1123;
+    previewFrame.dataset.baseWidth = String(computedWidth || 794);
+    previewFrame.dataset.baseHeight = String(computedHeight || 1123);
+    previewFrame.style.width = `${computedWidth}px`;
+    previewFrame.style.minWidth = `${computedWidth}px`;
+    previewFrame.style.height = `${computedHeight}px`;
+    previewFrame.style.minHeight = `${computedHeight}px`;
     applyPreviewZoom(previewZoom);
   }, { once: true });
 }
@@ -743,8 +650,7 @@ function applyPreviewZoom(value) {
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
   wrapper.style.width = `${baseWidth}px`;
-  wrapper.style.maxWidth = `${baseWidth}px`;
-  wrapper.style.minWidth = `${baseWidth}px`;
+  wrapper.style.maxWidth = '100%';
   wrapper.style.minHeight = `${baseHeight}px`;
   wrapper.style.height = `${baseHeight}px`;
 }
@@ -802,8 +708,6 @@ async function exportQuoteAsPdf() {
     pdfRoot.scrollLeft = 0;
   }
 
-  scrubUnsupportedColorFunctions(container);
-
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
     await window.html2pdf()
@@ -818,15 +722,7 @@ async function exportQuoteAsPdf() {
           scale: 2,
           useCORS: true,
           scrollX: 0,
-          scrollY: 0,
-          onclone: (clonedDoc) => {
-            try {
-              const root = clonedDoc?.querySelector?.('#quotation-pdf-root');
-              scrubUnsupportedColorFunctions(root || clonedDoc?.body || clonedDoc);
-            } catch (error) {
-              console.warn('[quote/pdf] failed to scrub cloned doc colors', error);
-            }
-          }
+          scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
