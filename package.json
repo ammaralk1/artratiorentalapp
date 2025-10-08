@@ -9,8 +9,7 @@
     "preview": "vite preview",
     "test:reservations": "vitest run",
     "predeploy": "npm run test:reservations && npm run build",
-    "deploy": "gh-pages -d dist",
-    "auto-sync": "node scripts/autoSync.js"
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
