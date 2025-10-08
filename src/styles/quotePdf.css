@@ -486,18 +486,14 @@ body,
   display: block;
   clear: both;
   overflow: visible;
-  break-inside: avoid;
-  page-break-inside: avoid;
-  page-break-after: always;
-}
-
-.quote-section--table:last-of-type {
+  break-inside: auto;
+  page-break-inside: auto;
   page-break-after: auto;
 }
 
 .quote-table {
-  page-break-inside: avoid;
-  break-inside: avoid;
+  page-break-inside: auto;
+  break-inside: auto;
   overflow: visible;
 }
 
