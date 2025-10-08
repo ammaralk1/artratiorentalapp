@@ -15,7 +15,7 @@ body,
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap');
 
 #quotation-pdf-root {
-  width: 100%;
+  width: 210mm;
   min-height: 100%;
   box-sizing: border-box;
   font-family: 'Tajawal', sans-serif;
@@ -23,6 +23,8 @@ body,
   background: #ffffff !important;
   direction: rtl;
   text-align: right;
+  margin: 0 auto;
+  padding: 0;
 }
 
 #quotation-pdf-root * {
@@ -35,7 +37,7 @@ body,
   display: flex;
   flex-direction: column;
   gap: 18px;
-  align-items: stretch;
+  align-items: center;
   justify-content: flex-start;
   padding: 0;
   margin: 0;
@@ -48,10 +50,10 @@ body,
   min-height: auto;
   height: auto;
   max-height: 297mm;
-  margin: 0;
+  margin: 0 auto;
   background: #ffffff;
   border-radius: 12px;
-  padding: 2mm 12mm 12mm;
+  padding: 4mm 14mm 12mm;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -68,7 +70,7 @@ body,
 }
 
 .quote-page--primary {
-  padding-top: 2mm;
+  padding-top: 6mm;
 }
 
 .quote-page + .quote-page::before {

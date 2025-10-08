@@ -627,6 +627,10 @@ async function exportQuoteAsPdf() {
     pdfRoot.classList.remove('dark', 'dark-mode');
     pdfRoot.style.margin = '0';
     pdfRoot.style.padding = '0';
+    pdfRoot.style.width = '210mm';
+    pdfRoot.style.maxWidth = '210mm';
+    pdfRoot.style.marginLeft = 'auto';
+    pdfRoot.style.marginRight = 'auto';
     pdfRoot.scrollTop = 0;
     pdfRoot.scrollLeft = 0;
   }
@@ -642,9 +646,7 @@ async function exportQuoteAsPdf() {
           scale: 2,
           useCORS: true,
           scrollX: 0,
-          scrollY: 0,
-          windowWidth: pdfRoot?.scrollWidth || undefined,
-          windowHeight: pdfRoot?.scrollHeight || undefined
+          scrollY: 0
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
