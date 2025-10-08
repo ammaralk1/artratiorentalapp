@@ -243,7 +243,7 @@ body,
 .quote-footer,
 .quote-placeholder {
   width: 100%;
-  margin: 0;
+  /* margin: 0; */
   padding-top: 0;
   page-break-inside: avoid;
   break-inside: avoid;
