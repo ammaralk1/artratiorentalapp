@@ -43,6 +43,7 @@ const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
+let previewZoom = 1;
 
 function loadExternalScript(src) {
   return new Promise((resolve, reject) => {
@@ -478,6 +479,7 @@ function renderQuotePreview() {
   });
 
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
+  applyPreviewZoom(previewZoom);
 }
 
 function handleToggleChange(event) {
@@ -563,8 +565,22 @@ function ensureQuoteModal() {
   previewFrame.setAttribute('title', t('reservations.quote.previewTitle', 'معاينة عرض السعر'));
   previewFrame.setAttribute('loading', 'lazy');
   previewFrame.setAttribute('frameborder', '0');
+  const zoomControls = document.createElement('div');
+  zoomControls.className = 'quote-preview-zoom-controls';
+  zoomControls.innerHTML = `
+    <button type="button" class="quote-preview-zoom-btn" data-zoom-out title="${escapeHtml(t('reservations.quote.zoom.out', 'تصغير'))}">−</button>
+    <span class="quote-preview-zoom-value" data-zoom-value>100%</span>
+    <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="${escapeHtml(t('reservations.quote.zoom.in', 'تكبير'))}">+</button>
+    <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="${escapeHtml(t('reservations.quote.zoom.reset', 'إعادة الضبط'))}">1:1</button>
+  `;
+
+  const frameWrapper = document.createElement('div');
+  frameWrapper.className = 'quote-preview-frame-wrapper';
+  frameWrapper.appendChild(previewFrame);
+
   preview.innerHTML = '';
-  preview.appendChild(previewFrame);
+  preview.appendChild(zoomControls);
+  preview.appendChild(frameWrapper);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
@@ -580,12 +596,46 @@ function ensureQuoteModal() {
     modal,
     toggles,
     preview,
+    previewFrameWrapper: frameWrapper,
+    zoomControls,
+    zoomValue: zoomControls.querySelector('[data-zoom-value]'),
     previewFrame,
     meta,
     downloadBtn
   };
 
+  const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
+  const zoomInBtn = zoomControls.querySelector('[data-zoom-in]');
+  const zoomResetBtn = zoomControls.querySelector('[data-zoom-reset]');
+
+  zoomOutBtn?.addEventListener('click', () => adjustPreviewZoom(-0.1));
+  zoomInBtn?.addEventListener('click', () => adjustPreviewZoom(0.1));
+  zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1));
+
+  setPreviewZoom(previewZoom);
+
   return quoteModalRefs;
+}
+
+function setPreviewZoom(value) {
+  previewZoom = Math.min(Math.max(value, 0.5), 2);
+  applyPreviewZoom(previewZoom);
+  if (quoteModalRefs?.zoomValue) {
+    quoteModalRefs.zoomValue.textContent = `${Math.round(previewZoom * 100)}%`;
+  }
+}
+
+function adjustPreviewZoom(delta) {
+  setPreviewZoom(previewZoom + delta);
+}
+
+function applyPreviewZoom(value) {
+  if (!quoteModalRefs?.previewFrame || !quoteModalRefs.previewFrameWrapper) return;
+  const frame = quoteModalRefs.previewFrame;
+  const wrapper = quoteModalRefs.previewFrameWrapper;
+  frame.style.transform = `scale(${value})`;
+  frame.style.transformOrigin = 'top center';
+  wrapper.style.width = `${100 / value}%`;
 }
 
 function updateQuoteMeta() {
@@ -673,6 +723,8 @@ async function exportQuoteAsPdf() {
 function openQuoteModal() {
   const refs = ensureQuoteModal();
   if (!refs?.modal) return;
+
+  setPreviewZoom(1);
 
   renderQuoteToggles();
   updateQuoteMeta();
