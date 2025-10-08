@@ -441,9 +441,9 @@ function buildQuotationHtml({
         .quote-preview-pages {
           display: flex;
           flex-direction: column;
-          gap: 36px;
+          gap: 32px;
           align-items: center;
-          padding: 12px 0 32px;
+          padding: 16px 0 32px;
         }
         .quote-page {
           position: relative;
@@ -451,27 +451,31 @@ function buildQuotationHtml({
           min-height: 297mm;
           margin: 0 auto;
           background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.35);
-          border-radius: 16px;
-          padding: 16mm 14mm;
+          border-radius: 12px;
+          padding: 18mm 16mm;
           display: flex;
           flex-direction: column;
-          gap: 18px;
-          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+          gap: 20px;
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+          page-break-after: always;
+          break-after: page;
+        }
+        .quote-page:last-of-type {
+          page-break-after: auto;
+          break-after: auto;
         }
         .quote-page--primary {
-          padding-top: 18mm;
+          padding-top: 20mm;
         }
         .quote-page + .quote-page::before {
           content: '';
           position: absolute;
-          top: -24px;
+          top: -18px;
           left: 50%;
           transform: translateX(-50%);
           width: 180px;
-          height: 4px;
-          border-radius: 999px;
-          background: linear-gradient(90deg, rgba(148, 163, 184, 0.35), rgba(148, 163, 184, 0.15));
+          height: 1px;
+          background: rgba(148, 163, 184, 0.5);
         }
         .quote-body {
           flex: 1;
@@ -533,6 +537,7 @@ function buildQuotationHtml({
           border: 1px dashed rgba(148, 163, 184, 0.4);
           border-radius: 14px;
           font-size: 0.9rem;
+          background: #ffffff;
         }
         .section-grid {
           display: grid;
