@@ -59,6 +59,9 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
       ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
       : '';
+    const confirmSectionHtml = confirmButtonHtml
+      ? `<div class="tile-actions">${confirmButtonHtml}</div>`
+      : '';
 
     const itemsCount = reservation.items?.length || 0;
     const techniciansAssigned = (reservation.technicians || [])
@@ -78,16 +81,21 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       projectNameText = project?.title ? normalizeNumbers(project.title) : projectMissingText;
     }
 
+    const wrapperClasses = confirmButtonHtml
+      ? 'reservation-tile-wrapper has-tile-action'
+      : 'reservation-tile-wrapper';
+
     return `
-      <div class="reservation-tile${stateClass}"${completedAttr} data-reservation-index="${index}" data-action="details">
-        <div class="tile-top">
+      <div class="${wrapperClasses}">
+        <div class="reservation-tile${stateClass}"${completedAttr} data-reservation-index="${index}" data-action="details">
+          <div class="tile-top">
           <div class="tile-id">${reservationIdDisplay}</div>
           <div class="tile-badges">
             ${statusBadge}
             ${paymentBadge}
           </div>
-        </div>
-        <div class="tile-body">
+          </div>
+          <div class="tile-body">
           <div class="tile-row">
             <span class="tile-label">${labels.client}</span>
             <span class="tile-value">${customer?.customerName || unknownCustomer}</span>
@@ -116,11 +124,12 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
             <span class="tile-label">${labels.crew}</span>
             <span class="tile-value">${techniciansAssigned.length ? techniciansNames : '—'}</span>
           </div>
-        </div>
-        <div class="tile-footer">
+          </div>
+          <div class="tile-footer">
           <span class="tile-notes">📝 ${notesDisplay}</span>
+          </div>
         </div>
-        ${confirmButtonHtml ? `<div class="tile-actions">${confirmButtonHtml}</div>` : ''}
+        ${confirmSectionHtml}
       </div>
     `;
   }).join('');

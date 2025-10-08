@@ -357,6 +357,16 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
   align-items: center;
 }
 
+.reservation-tile-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reservation-tile-wrapper.has-tile-action {
+  gap: 0;
+}
+
 .tile-badges .reservation-chip {
   font-size: 0.64rem;
   font-weight: 600;
@@ -495,13 +505,37 @@ body[dir="ltr"] .tile-value {
 }
 
 .tile-actions {
+  position: relative;
   display: flex;
-  justify-content: flex-end;
-  padding: clamp(0.2rem, 0.6vw, 0.35rem) clamp(0.2rem, 0.8vw, 0.4rem) 0;
+  justify-content: center;
+  padding: clamp(0.3rem, 0.9vw, 0.45rem) clamp(1rem, 3vw, 1.6rem) clamp(0.4rem, 1vw, 0.6rem);
+}
+
+.reservation-tile-wrapper.has-tile-action .tile-actions {
+  margin-top: -10px;
+}
+
+.reservation-tile-wrapper.has-tile-action .tile-actions::before {
+  content: '';
+  position: absolute;
+  inset-inline: clamp(0.8rem, 2.6vw, 1.8rem);
+  inset-block-start: 0;
+  inset-block-end: clamp(0.2rem, 0.8vw, 0.5rem);
+  background: rgba(248, 250, 255, 0.92);
+  border: 1px solid rgba(76, 110, 245, 0.1);
+  border-top: none;
+  border-radius: 0 0 18px 18px;
+  z-index: 0;
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tile-wrapper.has-tile-action .tile-actions::before {
+  background: rgba(30, 42, 68, 0.88);
+  border-color: rgba(93, 133, 255, 0.24);
 }
 
 .tile-actions .tile-confirm {
-  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .tile-confirm {
