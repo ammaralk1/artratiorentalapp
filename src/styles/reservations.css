@@ -351,18 +351,19 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 
 .tile-badges {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: nowrap;
   justify-content: flex-end;
   align-items: center;
 }
 
 .tile-badges .reservation-chip {
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 600;
-  padding: 0.28em 0.55em;
-  gap: 3px;
-  line-height: 1.1;
+  padding: 0.22em 0.45em;
+  gap: 2px;
+  line-height: 1.05;
+  flex: 0 0 auto;
 }
 
 .tile-body {
