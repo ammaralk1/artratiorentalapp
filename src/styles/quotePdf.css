@@ -47,9 +47,8 @@ body,
   position: relative;
   width: 100%;
   max-width: 210mm;
-  min-height: auto;
+  min-height: 297mm;
   height: auto;
-  max-height: 297mm;
   margin: 0 auto;
   background: #ffffff;
   border-radius: 12px;
@@ -60,6 +59,8 @@ body,
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
   page-break-after: always;
   break-after: page;
+  page-break-inside: avoid;
+  break-inside: avoid;
   align-items: stretch;
   justify-content: flex-start;
 }
@@ -243,6 +244,8 @@ body,
   width: 100%;
   margin: 0;
   padding-top: 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .quote-section {
