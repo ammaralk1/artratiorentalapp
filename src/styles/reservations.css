@@ -1441,6 +1441,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 .quote-preview-frame-wrapper {
   width: 100%;
   overflow: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .quote-preview-frame {

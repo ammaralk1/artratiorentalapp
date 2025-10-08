@@ -479,7 +479,10 @@ function renderQuotePreview() {
   });
 
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
-  applyPreviewZoom(previewZoom);
+  previewFrame.dataset.baseWidth = previewFrame.dataset.baseWidth || String(previewFrame.offsetWidth || 794);
+  previewFrame.addEventListener('load', () => {
+    applyPreviewZoom(previewZoom);
+  }, { once: true });
 }
 
 function handleToggleChange(event) {
@@ -633,9 +636,17 @@ function applyPreviewZoom(value) {
   if (!quoteModalRefs?.previewFrame || !quoteModalRefs.previewFrameWrapper) return;
   const frame = quoteModalRefs.previewFrame;
   const wrapper = quoteModalRefs.previewFrameWrapper;
+  const baseWidth = Number(frame.dataset.baseWidth) || frame.offsetWidth || 794;
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
-  wrapper.style.width = `${100 / value}%`;
+  wrapper.style.width = `${baseWidth}px`;
+  wrapper.style.maxWidth = '100%';
+  wrapper.style.display = 'flex';
+  wrapper.style.justifyContent = 'center';
+  const contentHeight = frame.contentDocument?.body?.scrollHeight;
+  if (contentHeight) {
+    wrapper.style.minHeight = `${contentHeight * value}px`;
+  }
 }
 
 function updateQuoteMeta() {
