@@ -107,15 +107,16 @@ body,
   display: flex;
   flex-direction: column;
   gap: 6px;
-  align-items: flex-end;
-  text-align: right;
+  align-items: flex-start;
+  text-align: left;
   font-size: 0.72rem;
   color: #475569;
+  justify-self: start;
 }
 
 .quote-header__meta-item {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: baseline;
 }
 
@@ -160,7 +161,7 @@ body,
 }
 
 .quote-header__logo {
-  justify-self: start;
+  justify-self: end;
   align-self: flex-start;
 }
 
@@ -185,7 +186,7 @@ body,
   margin: 0 0 8px;
   font-size: 0.9rem;
   font-weight: 600;
-  text-align: right;
+  text-align: left;
   color: #0f172a;
 }
 
@@ -235,25 +236,32 @@ body,
   display: flex;
   flex-direction: column;
   gap: 10px;
-  direction: rtl;
-  text-align: right;
+  text-align: left;
+  direction: ltr;
+}
+
+.totals-block {
+  font-size: 0.7rem;
+}
+
+.totals-block h3 {
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
 }
 
 .info-plain {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  align-items: flex-end;
-  text-align: right;
+  align-items: flex-start;
+  text-align: left;
   font-size: 0.68rem;
   color: #0f172a;
-  direction: rtl;
 }
 
 .info-plain__item {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 4px;
   align-items: baseline;
 }
@@ -289,7 +297,7 @@ body,
   margin: 0 0 6px;
   font-size: 14px;
   font-weight: 700;
-  text-align: right;
+  text-align: left;
 }
 
 .info-block__rows {
@@ -308,8 +316,7 @@ body,
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  direction: rtl;
-  text-align: right;
+  text-align: left;
 }
 
 .info-row span {
@@ -326,8 +333,7 @@ body,
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
-  direction: rtl;
-  text-align: right;
+  text-align: left;
   width: 100%;
 }
 
@@ -364,8 +370,7 @@ body,
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  direction: rtl;
-  text-align: right;
+  text-align: left;
 }
 
 .totals-item span {
@@ -387,8 +392,9 @@ body,
   font-size: 12px;
   border: 1px solid rgba(148, 163, 184, 0.5);
   background-color: #ffffff !important;
-  direction: rtl;
-  text-align: right;
+  direction: ltr;
+  text-align: center;
+  page-break-inside: auto;
 }
 
 .quote-table thead,
@@ -398,9 +404,8 @@ body,
 .quote-table td {
   background-color: #ffffff !important;
   color: #000000 !important;
-  direction: rtl;
-  text-align: right;
-
+  direction: ltr;
+  text-align: center;
 }
 
 .quote-table th {
