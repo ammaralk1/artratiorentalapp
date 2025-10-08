@@ -74,9 +74,49 @@ function loadExternalScript(src) {
   });
 }
 
+function patchHtml2CanvasColorParsing() {
+  const html2canvas = window.html2canvas;
+  if (!html2canvas?.Color || html2canvas.Color.__artRatioPatched) return;
+
+  const originalFromString = html2canvas.Color.fromString.bind(html2canvas.Color);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  function normalizeColor(rawValue) {
+    if (!rawValue || !ctx) return null;
+    try {
+      ctx.fillStyle = '#000';
+      ctx.fillStyle = rawValue;
+      return ctx.fillStyle || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  html2canvas.Color.fromString = (value) => {
+    try {
+      return originalFromString(value);
+    } catch (error) {
+      if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
+        const fallback = normalizeColor(value) || '#000';
+        try {
+          return originalFromString(fallback);
+        } catch (secondError) {
+          return originalFromString('#000');
+        }
+      }
+      throw error;
+    }
+  };
+
+  html2canvas.Color.__artRatioPatched = true;
+}
+
 async function ensureHtml2Pdf() {
-  if (window.html2pdf) return;
-  await loadExternalScript(HTML2PDF_SRC);
+  if (!window.html2pdf) {
+    await loadExternalScript(HTML2PDF_SRC);
+  }
+  patchHtml2CanvasColorParsing();
 }
 
 function escapeHtml(value = '') {
