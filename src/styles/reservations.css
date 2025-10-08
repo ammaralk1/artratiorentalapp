@@ -1389,10 +1389,13 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   overflow: auto;
   display: flex;
   justify-content: center;
+  max-height: calc(100vh - 220px);
+  min-height: 0;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-panel {
   background: rgba(15, 23, 42, 0.95);
+  max-height: calc(100vh - 220px);
 }
 
 .quote-preview {
@@ -1403,6 +1406,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
   max-width: 230mm;
   width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .quote-preview .quote-placeholder {
@@ -1455,6 +1460,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 
   .quote-preview-panel {
     padding: 18px;
+    max-height: calc(100vh - 260px);
   }
 }
 
