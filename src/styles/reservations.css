@@ -1305,8 +1305,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-sidebar {
-  background: rgba(248, 250, 255, 0.95);
-  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(59, 130, 246, 0.32);
 }
 
 .quote-preview-sidebar h6 {
@@ -1335,9 +1335,9 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-toggle {
-  background: rgba(248, 250, 255, 0.92);
-  border-color: rgba(148, 163, 184, 0.28);
-  color: inherit;
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(93, 133, 255, 0.32);
+  color: rgba(226, 232, 240, 0.92);
 }
 
 .quote-toggle input {
@@ -1369,13 +1369,13 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-meta-card div {
-  background: rgba(241, 245, 255, 0.9);
-  border-color: rgba(148, 163, 184, 0.25);
-  color: inherit;
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(93, 133, 255, 0.32);
+  color: rgba(226, 232, 240, 0.95);
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-meta-card span {
-  color: rgba(51, 65, 85, 0.85);
+  color: rgba(148, 191, 255, 0.92);
 }
 
 .quote-meta-card span {
@@ -1394,20 +1394,20 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-panel {
-  background: #ffffff;
+  background: rgba(15, 23, 42, 0.95);
   max-height: calc(100vh - 220px);
 }
 
 .quote-preview {
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 18px;
-  overflow: hidden;
-  background: #ffffff;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-  max-width: 210mm;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  max-width: 100%;
   width: 100%;
   max-height: 100%;
   overflow-y: auto;
+  padding: 24px;
 }
 
 .quote-preview .quote-placeholder {
@@ -1421,15 +1421,15 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview {
-  background: #ffffff;
-  border-color: rgba(148, 163, 184, 0.25);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview .quote-placeholder {
-  background: rgba(248, 250, 255, 0.9);
-  color: #6b7280;
-  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(17, 24, 45, 0.92);
+  color: rgba(226, 232, 240, 0.85);
+  border-color: rgba(93, 133, 255, 0.36);
 }
 
 .quote-preview::after {

@@ -441,7 +441,9 @@ function buildQuotationHtml({
         .quote-preview-pages {
           display: flex;
           flex-direction: column;
-          gap: 32px;
+          gap: 36px;
+          align-items: center;
+          padding: 12px 0 32px;
         }
         .quote-page {
           position: relative;
@@ -450,29 +452,26 @@ function buildQuotationHtml({
           margin: 0 auto;
           background: #ffffff;
           border: 1px solid rgba(148, 163, 184, 0.35);
-          border-radius: 18px;
-          padding: 18mm 16mm;
+          border-radius: 16px;
+          padding: 16mm 14mm;
           display: flex;
           flex-direction: column;
           gap: 18px;
-          page-break-after: always;
-          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+          box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
         }
-        .quote-page:last-of-type {
-          page-break-after: auto;
+        .quote-page--primary {
+          padding-top: 18mm;
         }
-        .quote-page:not(:first-child)::before {
+        .quote-page + .quote-page::before {
           content: '';
           position: absolute;
           top: -24px;
           left: 50%;
           transform: translateX(-50%);
-          width: 160px;
-          height: 2px;
-          background: rgba(148, 163, 184, 0.4);
-        }
-        .quote-page--primary {
-          padding-top: 20mm;
+          width: 180px;
+          height: 4px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(148, 163, 184, 0.35), rgba(148, 163, 184, 0.15));
         }
         .quote-body {
           flex: 1;
