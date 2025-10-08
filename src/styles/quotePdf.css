@@ -1,6 +1,15 @@
 @page {
+  margin: 0;
   size: A4;
-  margin: 10mm;
+}
+
+html,
+body,
+.page,
+.quote-wrapper {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap');

@@ -631,7 +631,8 @@ async function exportQuoteAsPdf() {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
     await window.html2pdf()
       .set({
-        margin: [10, 10, 10, 10],
+        margin: 0,
+        pagebreak: { mode: [] },
         filename,
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
