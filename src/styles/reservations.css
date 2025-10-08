@@ -1394,13 +1394,12 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview {
-  display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 12px;
   max-height: 100%;
   overflow: auto;
-  background: #f3f4f6;
+  background: #18203b;
 }
 
 .quote-preview-zoom-controls {
