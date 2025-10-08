@@ -41,6 +41,14 @@ const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
+// Render A4 pages at their physical size in the preview (96 DPI assumption).
+const CSS_DPI = 96;
+const MM_PER_INCH = 25.4;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
+const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
+
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
@@ -481,15 +489,34 @@ function renderQuotePreview() {
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', () => {
     const doc = previewFrame.contentDocument;
-    const firstPage = doc?.querySelector('.quote-page');
-    const computedWidth = firstPage ? firstPage.getBoundingClientRect().width : 794;
-    const computedHeight = doc?.body?.scrollHeight || firstPage?.getBoundingClientRect().height || 1123;
-    previewFrame.dataset.baseWidth = String(computedWidth || 794);
-    previewFrame.dataset.baseHeight = String(computedHeight || 1123);
-    previewFrame.style.width = `${computedWidth}px`;
-    previewFrame.style.minWidth = `${computedWidth}px`;
-    previewFrame.style.height = `${computedHeight}px`;
-    previewFrame.style.minHeight = `${computedHeight}px`;
+    const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
+    const pagesContainer = doc?.querySelector('.quote-preview-pages');
+    const baseWidth = pages.length
+      ? pages.reduce((max, page) => Math.max(max, Math.round(page.getBoundingClientRect().width || 0)), A4_WIDTH_PX)
+      : A4_WIDTH_PX;
+
+    let pageGap = 18;
+    if (pagesContainer && doc?.defaultView) {
+      const styles = doc.defaultView.getComputedStyle(pagesContainer);
+      const gapCandidate = parseFloat(styles.rowGap || styles.gap || `${pageGap}`);
+      if (Number.isFinite(gapCandidate) && gapCandidate >= 0) {
+        pageGap = gapCandidate;
+      }
+    }
+
+    const totalHeight = pages.reduce((sum, page, index) => {
+      const rect = page.getBoundingClientRect();
+      const pageHeight = Math.max(Math.round(rect.height || 0), A4_HEIGHT_PX);
+      const gapOffset = index === 0 ? 0 : pageGap;
+      return sum + pageHeight + gapOffset;
+    }, 0) || A4_HEIGHT_PX;
+
+    previewFrame.dataset.baseWidth = String(baseWidth);
+    previewFrame.dataset.baseHeight = String(totalHeight);
+    previewFrame.style.width = `${baseWidth}px`;
+    previewFrame.style.minWidth = `${baseWidth}px`;
+    previewFrame.style.height = `${totalHeight}px`;
+    previewFrame.style.minHeight = `${totalHeight}px`;
     applyPreviewZoom(previewZoom);
   }, { once: true });
 }
@@ -650,7 +677,8 @@ function applyPreviewZoom(value) {
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
   wrapper.style.width = `${baseWidth}px`;
-  wrapper.style.maxWidth = '100%';
+  wrapper.style.maxWidth = `${baseWidth}px`;
+  wrapper.style.minWidth = `${baseWidth}px`;
   wrapper.style.minHeight = `${baseHeight}px`;
   wrapper.style.height = `${baseHeight}px`;
 }
