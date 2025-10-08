@@ -119,18 +119,6 @@ function formatQuoteDate(date = new Date()) {
   }
 }
 
-function formatQuoteHijri(date = new Date()) {
-  try {
-    return date.toLocaleDateString('ar-SA-u-ca-islamic', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  } catch (error) {
-    return date.toISOString().slice(0, 10);
-  }
-}
-
 function resolveTechnicianDailyRate(technician = {}) {
   const candidates = [
     technician.dailyWage,
@@ -225,8 +213,7 @@ function buildQuotationHtml({
   currencyLabel,
   sections,
   quoteNumber,
-  quoteDate,
-  quoteDateHijri
+  quoteDate
 }) {
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -279,48 +266,56 @@ function buildQuotationHtml({
 
   const customerSection = includeSection('customerInfo')
     ? `<section class="quote-section">
-        <h3>${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        <div class="section-grid">
-          <div><span>${escapeHtml(t('reservations.details.labels.customer', 'العميل'))}</span><strong>${escapeHtml(customerName)}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.company', 'الشركة'))}</span><strong>${escapeHtml(customerCompany)}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.phone', 'الهاتف'))}</span><strong>${escapeHtml(customerPhone)}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.email', 'البريد'))}</span><strong>${escapeHtml(customerEmail)}</strong></div>
+        <div class="info-block">
+          <h4>${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h4>
+          <div class="info-block__rows">
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.customer', 'العميل'))}</span><strong>${escapeHtml(customerName)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.company', 'الشركة'))}</span><strong>${escapeHtml(customerCompany)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.phone', 'الهاتف'))}</span><strong>${escapeHtml(customerPhone)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.email', 'البريد'))}</span><strong>${escapeHtml(customerEmail)}</strong></div>
+          </div>
         </div>
       </section>`
     : '';
 
   const reservationSection = includeSection('reservationInfo')
     ? `<section class="quote-section">
-        <h3>${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-        <div class="section-grid">
-          <div><span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم الحجز'))}</span><strong>${reservationId || '-'}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.createdAt', 'تاريخ الإنشاء'))}</span><strong>${createdDisplay}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.start', 'تاريخ البداية'))}</span><strong>${startDisplay}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.end', 'تاريخ النهاية'))}</span><strong>${endDisplay}</strong></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.duration', 'عدد الأيام'))}</span><strong>${rentalDaysDisplay}</strong></div>
+        <div class="info-block">
+          <h4>${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h4>
+          <div class="info-block__rows">
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم الحجز'))}</span><strong>${escapeHtml(reservationId || '-')}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.createdAt', 'تاريخ الإنشاء'))}</span><strong>${escapeHtml(createdDisplay)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.start', 'بداية الحجز'))}</span><strong>${escapeHtml(startDisplay)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.end', 'نهاية الحجز'))}</span><strong>${escapeHtml(endDisplay)}</strong></div>
+            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.duration', 'عدد الأيام'))}</span><strong>${escapeHtml(rentalDaysDisplay)}</strong></div>
+          </div>
         </div>
       </section>`
     : '';
 
   const projectSection = includeSection('projectInfo')
     ? `<section class="quote-section">
-        <h3>${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
-        <div class="section-grid">
-          <div><span>${escapeHtml(t('reservations.details.labels.project', 'المشروع'))}</span><strong>${escapeHtml(projectTitle)}</strong></div>
-          ${projectCode ? `<div><span>${escapeHtml(t('reservations.details.labels.code', 'الرمز'))}</span><strong>${escapeHtml(projectCode)}</strong></div>` : ''}
+        <div class="info-block">
+          <h4>${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h4>
+          <div class="info-list">
+            <div class="info-item"><span>${escapeHtml(t('reservations.details.labels.project', 'المشروع'))}</span><strong>${escapeHtml(projectTitle)}</strong></div>
+            ${projectCode ? `<div class="info-item"><span>${escapeHtml(t('reservations.details.labels.code', 'الرمز'))}</span><strong>${escapeHtml(projectCode)}</strong></div>` : ''}
+          </div>
         </div>
       </section>`
     : '';
 
   const financialSection = includeSection('financialSummary')
     ? `<section class="quote-section">
-        <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
-        <div class="totals-grid">
-          <div><span>${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span><span>${totalsDisplay.equipmentTotal} ${currencyLabel}</span></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span><span>${totalsDisplay.crewTotal} ${currencyLabel}</span></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.discount', 'الخصم'))}</span><span>${totalsDisplay.discountAmount} ${currencyLabel}</span></div>
-          <div><span>${escapeHtml(t('reservations.details.labels.tax', 'الضريبة'))}</span><span>${totalsDisplay.taxAmount} ${currencyLabel}</span></div>
-          <div class="totals-grid__highlight"><span>${escapeHtml(t('reservations.details.labels.total', 'الإجمالي النهائي'))}</span><span>${totalsDisplay.finalTotal} ${currencyLabel}</span></div>
+        <div class="totals-block">
+          <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
+          <div class="totals-list">
+            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span><span>${totalsDisplay.equipmentTotal} ${currencyLabel}</span></div>
+            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span><span>${totalsDisplay.crewTotal} ${currencyLabel}</span></div>
+            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.discount', 'الخصم'))}</span><span>${totalsDisplay.discountAmount} ${currencyLabel}</span></div>
+            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.tax', 'الضريبة'))}</span><span>${totalsDisplay.taxAmount} ${currencyLabel}</span></div>
+            <div class="totals-item is-final"><span>${escapeHtml(t('reservations.details.labels.total', 'الإجمالي النهائي'))}</span><span>${totalsDisplay.finalTotal} ${currencyLabel}</span></div>
+          </div>
         </div>
       </section>`
     : '';
@@ -368,14 +363,16 @@ function buildQuotationHtml({
     : '';
 
   const paymentDetails = `<section class="quote-section">
-      <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
-      <div class="payment-details">
-        <div><span>${escapeHtml(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.beneficiaryName)}</strong></div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.bank', 'اسم البنك'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.bankName)}</strong></div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.account', 'رقم الحساب'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.accountNumber)}</strong></div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.iban', 'رقم الآيبان'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.iban)}</strong></div>
+      <div class="payment-block">
+        <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
+        <div class="payment-list info-block__rows">
+          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.beneficiaryName)}</strong></div>
+          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.bank', 'اسم البنك'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.bankName)}</strong></div>
+          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.account', 'رقم الحساب'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.accountNumber)}</strong></div>
+          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.iban', 'رقم الآيبان'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.iban)}</strong></div>
+        </div>
+        <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
       </div>
-      <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
 
   const termsSection = `<footer class="quote-footer">
@@ -404,18 +401,23 @@ function buildQuotationHtml({
 
   const headerHtml = `
     <header class="quote-header">
-      <div class="quote-header__left">
-        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
-        <div class="quote-company">
-          <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
-          <span>${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</span>
-          <span>${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</span>
+      <div class="quote-header__meta">
+        <div class="quote-header__meta-item">
+          <span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}</span>
+          <strong>${escapeHtml(quoteNumber)}</strong>
+        </div>
+        <div class="quote-header__meta-item">
+          <span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span>
+          <strong>${escapeHtml(quoteDate)}</strong>
         </div>
       </div>
-      <div class="quote-meta">
-        <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}:</span> ${escapeHtml(quoteNumber)}</div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}:</span> ${escapeHtml(quoteDate)}</div>
-        <div><span>${escapeHtml(t('reservations.quote.labels.dateHijri', 'التاريخ الهجري'))}:</span> ${escapeHtml(quoteDateHijri)}</div>
+      <div class="quote-header__title">
+        <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
+        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+        <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
+      </div>
+      <div class="quote-header__logo">
+        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
     </header>`;
 
@@ -484,51 +486,75 @@ function buildQuotationHtml({
           gap: 18px;
         }
         .quote-header {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: auto 1fr auto;
           align-items: center;
-          gap: 18px;
+          gap: 20px;
         }
-        .quote-header__left {
+        .quote-header__meta {
           display: flex;
-          align-items: center;
-          gap: 16px;
+          flex-direction: column;
+          gap: 8px;
+          align-items: flex-end;
+          text-align: right;
+          justify-self: start;
         }
-        .quote-logo {
-          width: 96px;
-          height: 96px;
-          object-fit: contain;
+        .quote-header__meta-item {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-size: 14px;
         }
-        .quote-company {
+        .quote-header__meta-item span {
+          font-weight: 600;
+          color: #1f2937;
+        }
+        .quote-header__meta-item strong {
+          color: #000000;
+        }
+        .quote-header__title {
           display: flex;
           flex-direction: column;
           gap: 6px;
+          text-align: center;
+          justify-self: center;
         }
-        .quote-company h1 {
+        .quote-header__title h1 {
           margin: 0;
-          font-size: 22px;
+          font-size: 28px;
           font-weight: 700;
         }
-        .quote-company span {
-          font-size: 14px;
-          color: #000000;
-        }
-        .quote-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          font-size: 14px;
-          text-align: right;
-        }
-        .quote-meta div span {
+        .quote-company-name {
+          margin: 0;
+          font-size: 16px;
           font-weight: 600;
-          color: #000000;
+          color: #1f2937;
+        }
+        .quote-company-cr {
+          margin: 0;
+          font-size: 14px;
+          color: #475569;
+        }
+        .quote-header__logo {
+          justify-self: end;
+        }
+        .quote-header__logo .quote-logo {
+          width: 90px;
+          height: 90px;
+        }
+        .quote-logo {
+          display: block;
+          object-fit: contain;
         }
         .quote-section h3 {
           margin-bottom: 10px;
           font-size: 16px;
           font-weight: 700;
           color: #000000;
+        }
+        .totals-block h3,
+        .payment-block h3 {
+          margin: 0;
         }
         .quote-placeholder {
           text-align: center;
@@ -539,74 +565,117 @@ function buildQuotationHtml({
           font-size: 0.9rem;
           background: #ffffff;
         }
-        .section-grid {
+        .info-block,
+        .payment-block,
+        .totals-block {
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          border-radius: 14px;
+          padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .info-block h4,
+        .payment-block h4,
+        .totals-block h4 {
+          margin: 0 0 6px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1e293b;
+        }
+        .info-block__rows {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          background: #f8fafc;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        .info-row span {
+          font-weight: 600;
+          color: #475569;
+          font-size: 13px;
+        }
+        .info-row strong {
+          font-weight: 700;
+          color: #111827;
+          font-size: 13.5px;
+        }
+        .info-list {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 12px;
         }
-        .section-grid div,
-        .payment-details div {
-          background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.38);
-          border-radius: 12px;
-          padding: 10px 12px;
+        .info-item {
           display: flex;
           flex-direction: column;
           gap: 4px;
+        }
+        .info-item span {
+          font-weight: 600;
+          color: #475569;
           font-size: 13px;
         }
-        .section-grid span,
-        .payment-details span {
+        .info-item strong {
+          font-weight: 700;
           color: #111827;
-          font-weight: 600;
+          font-size: 13.5px;
         }
-        .section-grid strong,
-        .payment-details strong {
-          color: #000000;
-        }
-        .totals-grid {
+        .totals-list {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
           gap: 12px;
         }
-        .totals-grid div {
-          background: #ffffff;
-          border: 1px solid rgba(148, 163, 184, 0.38);
-          border-radius: 12px;
-          padding: 10px 12px;
+        .totals-item {
           display: flex;
           justify-content: space-between;
+          align-items: center;
           gap: 12px;
-          font-size: 13px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: #f8fafc;
+          border: 1px solid rgba(148, 163, 184, 0.3);
         }
-        .totals-grid span:first-child {
-          color: #0f172a;
+        .totals-item span:first-child {
+          color: #1f2937;
           font-weight: 600;
         }
-        .totals-grid__highlight {
-          border: 1px solid rgba(59, 91, 220, 0.35);
-          background: rgba(59, 91, 220, 0.12);
+        .totals-item span:last-child {
           font-weight: 700;
+          color: #111827;
+        }
+        .totals-item.is-final {
+          background: rgba(59, 91, 220, 0.12);
+          border-color: rgba(59, 91, 220, 0.35);
         }
         .quote-table {
           width: 100%;
           border-collapse: collapse;
           font-size: 12px;
-          overflow: hidden;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.32);
+          border: 1px solid rgba(148, 163, 184, 0.5);
         }
         .quote-table th {
           background: rgba(148, 163, 184, 0.18);
-          padding: 8px;
+          padding: 9px 8px;
           text-align: center;
           color: #000000;
           font-weight: 700;
         }
+        .quote-table th,
         .quote-table td {
-          padding: 8px;
+          border: 1px solid rgba(148, 163, 184, 0.5);
+        }
+        .quote-table td {
+          padding: 9px 8px;
           text-align: center;
-          border-top: 1px solid rgba(148, 163, 184, 0.22);
           color: #000000;
         }
         .quote-table .empty {
@@ -699,8 +768,7 @@ function renderQuotePreview() {
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
     quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel,
-    quoteDateHijri: activeQuoteState.quoteDateHijriLabel
+    quoteDate: activeQuoteState.quoteDateLabel
   });
 
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
@@ -819,9 +887,8 @@ function updateQuoteMeta() {
   const { meta } = quoteModalRefs;
   meta.innerHTML = `
     <div class="quote-meta-card">
-      <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
-      <div><span>${escapeHtml(t('reservations.quote.labels.dateHijri', 'التاريخ الهجري'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateHijriLabel)}</strong></div>
       <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
+      <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
     </div>
   `;
 }
@@ -840,8 +907,7 @@ async function exportQuoteAsPdf() {
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
     quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel,
-    quoteDateHijri: activeQuoteState.quoteDateHijriLabel
+    quoteDate: activeQuoteState.quoteDateLabel
   });
 
   const container = document.createElement('div');
@@ -911,7 +977,6 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
-    quoteDateHijriLabel: formatQuoteHijri(now),
     sequenceCommitted: false
   };
 
