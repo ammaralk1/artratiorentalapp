@@ -94,42 +94,40 @@ body,
 }
 
 .quote-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 16px;
   width: 100%;
-  margin: 0 auto;
+  margin: 0 auto 12px;
   padding: 0;
 }
 
 .quote-header__meta {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   align-items: flex-end;
-  align-self: flex-end;
   text-align: right;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: #475569;
 }
 
 .quote-header__meta-item {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.quote-header__meta-item strong {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #0f172a;
+  gap: 6px;
+  align-items: baseline;
 }
 
 .quote-header__meta-item span {
-  font-weight: 500;
+  font-weight: 600;
+  color: #475569;
+}
+
+.quote-header__meta-item strong {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
 }
 
 .quote-header__title {
@@ -138,6 +136,7 @@ body,
   gap: 6px;
   text-align: center;
   align-items: center;
+  justify-self: center;
 }
 
 .quote-header__title h1 {
@@ -161,7 +160,8 @@ body,
 }
 
 .quote-header__logo {
-  margin-top: 6px;
+  justify-self: start;
+  align-self: flex-start;
 }
 
 .quote-header__logo .quote-logo {
@@ -242,25 +242,20 @@ body,
 .info-plain {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   align-items: flex-end;
   text-align: right;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #0f172a;
+  direction: rtl;
 }
 
 .info-plain__item {
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
-  gap: 6px;
-  align-items: baseline;
-}
-
-.info-plain__item--stack {
-  flex-direction: column;
   gap: 4px;
-  align-items: flex-end;
+  align-items: baseline;
 }
 
 .info-plain__label {
@@ -270,17 +265,22 @@ body,
 
 .info-plain__value {
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: #0f172a;
 }
 
 .info-plain--dense {
   gap: 4px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
 }
 
 .info-plain--dense .info-plain__value {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+}
+
+.info-plain__slash {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
 .info-block h4,
@@ -411,6 +411,16 @@ body,
 .quote-table th,
 .quote-table td {
   border: 1px solid rgba(148, 163, 184, 0.5);
+  text-align: center;
+}
+
+.quote-table {
+  page-break-inside: auto;
+}
+
+.quote-table tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
 }
 
 .quote-table td {

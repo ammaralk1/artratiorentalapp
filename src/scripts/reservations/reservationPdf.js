@@ -268,7 +268,7 @@ function buildQuotationHtml({
   const includeSection = (id) => sections?.has?.(id);
 
   const renderPlainItem = (label, value) => {
-    return `<div class="info-plain__item"><span class="info-plain__label">${escapeHtml(label)}</span><strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
+    return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">\\</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
   };
 
   const customerSection = includeSection('customerInfo')
@@ -401,23 +401,23 @@ function buildQuotationHtml({
 
   const headerHtml = `
     <header class="quote-header">
-      <div class="quote-header__meta">
-        <div class="quote-header__meta-item">
-          <span>رقم العرض</span>
-          <strong>${escapeHtml(quoteNumber)}</strong>
-        </div>
-        <div class="quote-header__meta-item">
-          <span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span>
-          <strong>${escapeHtml(quoteDate)}</strong>
-        </div>
+      <div class="quote-header__logo">
+        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
       <div class="quote-header__title">
         <h1>${escapeHtml(t('reservations.quote.title', 'عرض السعر'))}</h1>
         <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
       </div>
-      <div class="quote-header__logo">
-        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
+      <div class="quote-header__meta">
+        <div class="quote-header__meta-item">
+          <span>رقم العرض</span>
+          <strong>${escapeHtml(quoteNumber)}</strong>
+        </div>
+        <div class="quote-header__meta-item">
+          <span>التاريخ</span>
+          <strong>${escapeHtml(quoteDate)}</strong>
+        </div>
       </div>
     </header>`;
 
