@@ -329,8 +329,9 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 .tile-top {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .tile-id {
@@ -341,6 +342,7 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
   white-space: nowrap;
   word-break: normal;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 :is(html.dark-mode, body.dark-mode) .tile-id {
@@ -349,16 +351,18 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 
 .tile-badges {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .tile-badges .reservation-chip {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  padding: 0.32em 0.65em;
-  gap: 4px;
+  padding: 0.28em 0.55em;
+  gap: 3px;
+  line-height: 1.1;
 }
 
 .tile-body {
