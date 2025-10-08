@@ -463,9 +463,9 @@ body[dir="ltr"] .tile-value {
 
 .tile-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 4px 6px;
   border-radius: 10px;
   background: rgba(248, 250, 255, 0.75);
@@ -492,6 +492,16 @@ body[dir="ltr"] .tile-value {
 
 :is(html.dark-mode, body.dark-mode) .tile-notes {
   color: rgba(148, 163, 184, 0.85);
+}
+
+.tile-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: clamp(0.3rem, 0.9vw, 0.45rem) clamp(0.2rem, 0.8vw, 0.4rem) 0;
+}
+
+.tile-actions .tile-confirm {
+  min-width: 0;
 }
 
 .tile-confirm {

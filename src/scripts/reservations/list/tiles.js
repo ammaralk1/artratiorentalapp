@@ -119,8 +119,8 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
         </div>
         <div class="tile-footer">
           <span class="tile-notes">📝 ${notesDisplay}</span>
-          ${confirmButtonHtml}
         </div>
+        ${confirmButtonHtml ? `<div class="tile-actions">${confirmButtonHtml}</div>` : ''}
       </div>
     `;
   }).join('');
