@@ -686,8 +686,8 @@ function buildQuotationHtml({
 
 function renderQuotePreview() {
   if (!activeQuoteState || !quoteModalRefs) return;
-  const { preview } = quoteModalRefs;
-  if (!preview) return;
+  const { previewFrame } = quoteModalRefs;
+  if (!previewFrame) return;
 
   const html = buildQuotationHtml({
     reservation: activeQuoteState.reservation,
@@ -703,7 +703,7 @@ function renderQuotePreview() {
     quoteDateHijri: activeQuoteState.quoteDateHijriLabel
   });
 
-  preview.innerHTML = html;
+  previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
 }
 
 function handleToggleChange(event) {
@@ -784,6 +784,14 @@ function ensureQuoteModal() {
   const meta = modal.querySelector('[data-quote-meta]');
   const downloadBtn = modal.querySelector('[data-quote-download]');
 
+  const previewFrame = document.createElement('iframe');
+  previewFrame.className = 'quote-preview-frame';
+  previewFrame.setAttribute('title', t('reservations.quote.previewTitle', 'معاينة عرض السعر'));
+  previewFrame.setAttribute('loading', 'lazy');
+  previewFrame.setAttribute('frameborder', '0');
+  preview.innerHTML = '';
+  preview.appendChild(previewFrame);
+
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
     downloadBtn.disabled = true;
@@ -798,6 +806,7 @@ function ensureQuoteModal() {
     modal,
     toggles,
     preview,
+    previewFrame,
     meta,
     downloadBtn
   };

@@ -1406,6 +1406,14 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   overflow-y: auto;
 }
 
+.quote-preview-frame {
+  width: 100%;
+  min-height: calc(100vh - 260px);
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+}
+
 .quote-preview::after {
   content: '';
   display: block;
