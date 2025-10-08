@@ -1399,15 +1399,16 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview {
-  display: flex;
-  justify-content: center;
+  display: block;
   padding: 24px;
   max-height: 100%;
   overflow-y: auto;
+  overflow-x: auto;
 }
 
 .quote-preview-frame {
-  width: 100%;
+  width: 794px;
+  max-width: none;
   min-height: calc(100vh - 260px);
   border: none;
   border-radius: 16px;
