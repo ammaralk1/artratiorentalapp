@@ -48,6 +48,7 @@ const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
+const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
@@ -98,6 +99,7 @@ function patchHtml2CanvasColorParsing() {
       return originalFromString(value);
     } catch (error) {
       if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
+        console.warn('[quote/pdf] html2canvas color fallback', value);
         const fallback = normalizeColor(value) || '#000';
         try {
           return originalFromString(fallback);
@@ -110,6 +112,30 @@ function patchHtml2CanvasColorParsing() {
   };
 
   html2canvas.Color.__artRatioPatched = true;
+}
+
+function scrubUnsupportedColorFunctions(root) {
+  if (!root) return;
+
+  const replaceColorFunctions = (value = '') => (
+    value.includes('color(')
+      ? value.replace(COLOR_FUNCTION_REGEX, '#000')
+      : value
+  );
+
+  root.querySelectorAll?.('style')?.forEach?.((styleNode) => {
+    const text = styleNode.textContent;
+    if (typeof text === 'string' && text.includes('color(')) {
+      styleNode.textContent = replaceColorFunctions(text);
+    }
+  });
+
+  root.querySelectorAll?.('[style]')?.forEach?.((element) => {
+    const styleValue = element.getAttribute('style');
+    if (typeof styleValue === 'string' && styleValue.includes('color(')) {
+      element.setAttribute('style', replaceColorFunctions(styleValue));
+    }
+  });
 }
 
 async function ensureHtml2Pdf() {
@@ -775,6 +801,8 @@ async function exportQuoteAsPdf() {
     pdfRoot.scrollTop = 0;
     pdfRoot.scrollLeft = 0;
   }
+
+  scrubUnsupportedColorFunctions(container);
 
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
