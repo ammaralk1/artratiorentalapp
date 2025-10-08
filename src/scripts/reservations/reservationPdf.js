@@ -268,13 +268,13 @@ function buildQuotationHtml({
   const includeSection = (id) => sections?.has?.(id);
 
   const renderPlainItem = (label, value) => {
-    return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">\\</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
+    return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
   };
 
   const customerSection = includeSection('customerInfo')
-    ? `<section class="quote-section quote-section--plain">
+    ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        <div class="info-plain">
+        <div class="info-plain info-plain--right">
           ${renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName)}
           ${renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany)}
           ${renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay)}
@@ -284,7 +284,7 @@ function buildQuotationHtml({
     : '';
 
   const reservationSection = includeSection('reservationInfo')
-    ? `<section class="quote-section quote-section--plain">
+    ? `<section class="quote-section quote-section--plain quote-section--reservation">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
         <div class="info-plain">
           ${renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-')}
@@ -306,7 +306,7 @@ function buildQuotationHtml({
     : '';
 
   const financialSection = includeSection('financialSummary')
-    ? `<section class="quote-section">
+    ? `<section class="quote-section quote-section--financial">
         <div class="totals-block">
           <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
           <div class="totals-list">
@@ -321,7 +321,7 @@ function buildQuotationHtml({
     : '';
 
   const itemsSection = includeSection('items')
-    ? `<section class="quote-section">
+    ? `<section class="quote-section quote-section--table">
         <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
         <table class="quote-table">
           <thead>
@@ -339,7 +339,7 @@ function buildQuotationHtml({
     : '';
 
   const crewSection = includeSection('crew')
-    ? `<section class="quote-section">
+    ? `<section class="quote-section quote-section--table">
         <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
         <table class="quote-table">
           <thead>
@@ -365,7 +365,7 @@ function buildQuotationHtml({
   const paymentDetails = `<section class="quote-section">
       <div class="payment-block">
         <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
-        <div class="info-plain info-plain--dense">
+        <div class="info-plain info-plain--dense info-plain--right">
           ${renderPlainItem(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName)}
           ${renderPlainItem(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName)}
           ${renderPlainItem(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber))}
@@ -384,9 +384,18 @@ function buildQuotationHtml({
     ? content
     : `<section class="quote-section quote-placeholder">${escapeHtml(t(fallbackKey, 'لا توجد بيانات للعرض.'))}</section>`;
 
+  let infoPair = '';
+  let customerSectionFinal = customerSection;
+  let reservationSectionFinal = reservationSection;
+  if (customerSection && reservationSection) {
+    infoPair = `<div class="quote-section-row">${customerSection}${reservationSection}</div>`;
+    customerSectionFinal = '';
+    reservationSectionFinal = '';
+  }
+
   const pageOneContent = ensureContent([
-    customerSection,
-    reservationSection,
+    infoPair || customerSectionFinal,
+    reservationSectionFinal,
     projectSection,
     itemsSection,
     crewSection
