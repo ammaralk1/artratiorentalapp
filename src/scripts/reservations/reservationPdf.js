@@ -618,6 +618,15 @@ async function exportQuoteAsPdf() {
   container.style.zIndex = '-1';
   document.body.appendChild(container);
 
+  const pdfRoot = container.firstElementChild;
+  if (pdfRoot) {
+    pdfRoot.setAttribute('dir', 'rtl');
+    pdfRoot.style.direction = 'rtl';
+    pdfRoot.style.textAlign = 'right';
+    pdfRoot.setAttribute('data-theme', 'light');
+    pdfRoot.classList.remove('dark', 'dark-mode');
+  }
+
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
     await window.html2pdf()
