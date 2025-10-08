@@ -1283,6 +1283,12 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   padding: 0;
 }
 
+.quote-preview-modal .modal-dialog {
+  max-width: min(98vw, 1280px);
+  width: 100%;
+  margin: 1.5rem auto;
+}
+
 .quote-preview-layout {
   display: grid;
   grid-template-columns: minmax(240px, 280px) 1fr;
