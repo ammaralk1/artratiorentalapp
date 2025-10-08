@@ -3339,15 +3339,75 @@
   }
 
   .btn-close {
-    @apply relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent transition-colors duration-150 ease-in-out hover:bg-base-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
-    background: none;
-    color: hsl(var(--bc) / 0.6);
+    @apply relative inline-flex items-center justify-center rounded-full transition duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.94);
+    color: rgba(30, 41, 59, 0.92);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
   }
 
   .btn-close::before {
     content: '✕';
-    font-size: 1rem;
+    font-size: 1.05rem;
     line-height: 1;
+  }
+
+  .btn-close:hover,
+  .btn-close:focus-visible {
+    border-color: rgba(76, 110, 245, 0.5);
+    background: rgba(255, 255, 255, 0.98);
+    color: rgba(37, 99, 235, 0.95);
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.16);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn-close {
+    background: rgba(17, 28, 50, 0.9);
+    border-color: rgba(93, 133, 255, 0.4);
+    color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.7);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn-close:hover,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn-close:focus-visible {
+    background: rgba(24, 36, 64, 0.92);
+    border-color: rgba(125, 166, 255, 0.55);
+    color: rgba(191, 219, 254, 0.95);
+    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.78);
+  }
+
+  .btn.modal-close-btn {
+    @apply inline-flex items-center justify-center gap-2 font-semibold transition duration-150 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    padding: 0.6rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: rgba(248, 250, 255, 0.95);
+    color: #1f2937;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  }
+
+  .btn.modal-close-btn:hover,
+  .btn.modal-close-btn:focus-visible {
+    border-color: rgba(76, 110, 245, 0.5);
+    background: rgba(255, 255, 255, 0.98);
+    color: rgba(37, 99, 235, 0.95);
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn.modal-close-btn {
+    background: rgba(17, 28, 50, 0.88);
+    border-color: rgba(93, 133, 255, 0.45);
+    color: rgba(226, 232, 240, 0.92);
+    box-shadow: 0 18px 38px rgba(2, 6, 23, 0.7);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn.modal-close-btn:hover,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) .btn.modal-close-btn:focus-visible {
+    background: rgba(24, 36, 64, 0.92);
+    border-color: rgba(125, 166, 255, 0.6);
+    color: rgba(191, 219, 254, 0.96);
+    box-shadow: 0 22px 44px rgba(2, 6, 23, 0.78);
   }
 
   .modal {

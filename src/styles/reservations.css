@@ -901,17 +901,12 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   border-color: rgba(148, 163, 184, 0.2);
 }
 
-:is(html.dark-mode, body.dark-mode) .modal-title,
-:is(html.dark-mode, body.dark-mode) .modal-header .btn-close {
+:is(html.dark-mode, body.dark-mode) .modal-title {
   color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .modal-body {
   color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .btn-close {
-  filter: invert(1);
 }
 
 :is(html.dark-mode, body.dark-mode) .modal-content .form-label,
