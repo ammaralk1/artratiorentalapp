@@ -274,7 +274,7 @@ function buildQuotationHtml({
   const customerSection = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        <div class="info-plain">
+        <div class="info-plain info-plain--right">
           ${renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName)}
           ${renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany)}
           ${renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay)}
