@@ -1381,6 +1381,12 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   padding: 24px;
   background: #ffffff;
   overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-panel {
+  background: rgba(15, 23, 42, 0.95);
 }
 
 .quote-preview {
@@ -1389,6 +1395,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  max-width: 230mm;
+  width: 100%;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview {

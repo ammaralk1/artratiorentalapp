@@ -378,7 +378,7 @@ function buildQuotationHtml({
           box-sizing: border-box;
           padding: 16mm 18mm;
           font-family: 'Tajawal', sans-serif;
-          color: #0f172a;
+          color: #000000;
           background: #ffffff;
         }
         #quotation-pdf-root * {
@@ -413,7 +413,7 @@ function buildQuotationHtml({
         }
         .quote-company span {
           font-size: 14px;
-          color: #334155;
+          color: #000000;
         }
         .quote-meta {
           display: flex;
@@ -424,7 +424,7 @@ function buildQuotationHtml({
         }
         .quote-meta div span {
           font-weight: 600;
-          color: #0f172a;
+          color: #000000;
         }
         .quote-section {
           margin-bottom: 18px;
@@ -433,7 +433,7 @@ function buildQuotationHtml({
           margin-bottom: 10px;
           font-size: 16px;
           font-weight: 700;
-          color: #1e293b;
+          color: #000000;
         }
         .section-grid {
           display: grid;
@@ -442,8 +442,8 @@ function buildQuotationHtml({
         }
         .section-grid div,
         .payment-details div {
-          background: #f8fafc;
-          border: 1px solid rgba(148, 163, 184, 0.28);
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.38);
           border-radius: 12px;
           padding: 10px 12px;
           display: flex;
@@ -453,12 +453,12 @@ function buildQuotationHtml({
         }
         .section-grid span,
         .payment-details span {
-          color: #64748b;
+          color: #111827;
           font-weight: 600;
         }
         .section-grid strong,
         .payment-details strong {
-          color: #0f172a;
+          color: #000000;
         }
         .totals-grid {
           display: grid;
@@ -466,8 +466,8 @@ function buildQuotationHtml({
           gap: 12px;
         }
         .totals-grid div {
-          background: #f8fafc;
-          border: 1px solid rgba(148, 163, 184, 0.25);
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.38);
           border-radius: 12px;
           padding: 10px 12px;
           display: flex;
@@ -476,13 +476,13 @@ function buildQuotationHtml({
           font-size: 13px;
         }
         .totals-grid span:first-child {
-          color: #334155;
+          color: #0f172a;
           font-weight: 600;
         }
         .totals-grid__highlight {
-          background: linear-gradient(135deg, rgba(59, 91, 220, 0.12), rgba(37, 99, 235, 0.08));
-          border-color: rgba(59, 91, 220, 0.3);
+          border-color: rgba(59, 91, 220, 0.35);
           font-weight: 700;
+          background: rgba(59, 91, 220, 0.12);
         }
         .quote-table {
           width: 100%;
@@ -493,10 +493,10 @@ function buildQuotationHtml({
           border: 1px solid rgba(148, 163, 184, 0.32);
         }
         .quote-table th {
-          background: rgba(59, 91, 220, 0.1);
+          background: rgba(148, 163, 184, 0.18);
           padding: 8px;
           text-align: center;
-          color: #1e293b;
+          color: #000000;
           font-weight: 700;
         }
         .quote-table td {
@@ -507,26 +507,27 @@ function buildQuotationHtml({
         .quote-table .empty {
           padding: 14px;
           font-weight: 500;
-          color: #64748b;
+          color: #0f172a;
         }
         .quote-notes {
-          background: #f8fafc;
-          border: 1px solid rgba(148, 163, 184, 0.25);
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.38);
           border-radius: 12px;
           padding: 12px;
           min-height: 60px;
           font-size: 13px;
           line-height: 1.7;
           white-space: pre-wrap;
+          color: #000000;
         }
         .quote-approval-note {
           margin-top: 12px;
           font-size: 12px;
-          color: #1e293b;
-          background: rgba(255, 228, 196, 0.25);
+          color: #000000;
+          background: rgba(234, 179, 8, 0.15);
           border-radius: 10px;
           padding: 10px 12px;
-          border: 1px solid rgba(244, 114, 182, 0.2);
+          border: 1px solid rgba(234, 179, 8, 0.3);
         }
         .quote-footer {
           margin-top: 32px;
@@ -543,6 +544,11 @@ function buildQuotationHtml({
           padding-inline-start: 18px;
           font-size: 12px;
           line-height: 1.6;
+        }
+        .page-break {
+          page-break-before: always;
+          break-before: page;
+          margin-top: 24px;
         }
         @media print {
           #quotation-pdf-root {
@@ -578,10 +584,12 @@ function buildQuotationHtml({
       ${customerSection}
       ${reservationSection}
       ${projectSection}
-      ${financialSection}
       ${itemsSection}
       ${crewSection}
       ${notesSection}
+      ${financialSection}
+
+      <div class="page-break"></div>
       ${paymentDetails}
 
       <footer class="quote-footer">
