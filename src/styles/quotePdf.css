@@ -10,15 +10,15 @@
   min-height: 297mm;
   box-sizing: border-box;
   font-family: 'Tajawal', sans-serif;
-  color: #000000;
-  background: #ffffff;
+  color: #000000 !important;
+  background: #ffffff !important;
   direction: rtl;
   text-align: right;
 }
 
 #quotation-pdf-root * {
   box-sizing: border-box;
-  color: #000000;
+  color: #000000 !important;
 }
 
 .quote-preview-pages {
@@ -77,6 +77,8 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 20px;
+  justify-items: end;
+  text-align: right;
 }
 
 .quote-header__meta {
@@ -97,19 +99,19 @@
 
 .quote-header__meta-item span {
   font-weight: 600;
-  color: #1f2937;
 }
 
 .quote-header__meta-item strong {
-  color: #000000;
+  font-weight: 700;
 }
 
 .quote-header__title {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  text-align: center;
-  justify-self: center;
+  text-align: right;
+  justify-self: end;
+  align-items: flex-end;
 }
 
 .quote-header__title h1 {
@@ -122,13 +124,12 @@
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
 }
 
 .quote-company-cr {
   margin: 0;
   font-size: 14px;
-  color: #475569;
+  font-weight: 600;
 }
 
 .quote-header__logo {
@@ -149,22 +150,22 @@
   margin-bottom: 10px;
   font-size: 16px;
   font-weight: 700;
-  color: #000000;
+  text-align: right;
 }
 
 .totals-block h3,
 .payment-block h3 {
   margin: 0;
+  text-align: right;
 }
 
 .quote-placeholder {
-  text-align: center;
   padding: 24px 18px;
-  color: #6b7280;
   border: 1px dashed rgba(148, 163, 184, 0.4);
   border-radius: 14px;
   font-size: 0.9rem;
   background: #ffffff;
+  text-align: right;
 }
 
 .info-block,
@@ -177,6 +178,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  direction: rtl;
+  text-align: right;
 }
 
 .info-block h4,
@@ -185,13 +188,14 @@
   margin: 0 0 6px;
   font-size: 14px;
   font-weight: 700;
-  color: #1e293b;
+  text-align: right;
 }
 
 .info-block__rows {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  text-align: right;
 }
 
 .info-row {
@@ -203,17 +207,17 @@
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
+  direction: rtl;
+  text-align: right;
 }
 
 .info-row span {
   font-weight: 600;
-  color: #475569;
   font-size: 13px;
 }
 
 .info-row strong {
   font-weight: 700;
-  color: #111827;
   font-size: 13.5px;
 }
 
@@ -221,23 +225,24 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
+  direction: rtl;
+  text-align: right;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  text-align: right;
 }
 
 .info-item span {
   font-weight: 600;
-  color: #475569;
   font-size: 13px;
 }
 
 .info-item strong {
   font-weight: 700;
-  color: #111827;
   font-size: 13.5px;
 }
 
@@ -256,16 +261,16 @@
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
+  direction: rtl;
+  text-align: right;
 }
 
-.totals-item span:first-child {
-  color: #1f2937;
+.totals-item span {
   font-weight: 600;
 }
 
 .totals-item span:last-child {
   font-weight: 700;
-  color: #111827;
 }
 
 .totals-item.is-final {
@@ -312,7 +317,7 @@
 .quote-table .empty {
   padding: 14px;
   font-weight: 500;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .quote-notes {
@@ -324,36 +329,41 @@
   font-size: 13px;
   line-height: 1.7;
   white-space: pre-wrap;
-  color: #000000;
+  text-align: right;
 }
 
 .quote-approval-note {
   margin-top: 12px;
   font-size: 12px;
-  color: #000000;
   background: rgba(234, 179, 8, 0.15);
   border-radius: 10px;
   padding: 10px 12px;
   border: 1px solid rgba(234, 179, 8, 0.3);
+  text-align: right;
 }
 
 .quote-footer {
   margin-top: 32px;
   border-top: 1px solid rgba(148, 163, 184, 0.35);
   padding-top: 14px;
+  text-align: right;
 }
 
 .quote-footer h4 {
   margin: 0 0 10px;
   font-size: 14px;
   font-weight: 700;
+  text-align: right;
 }
 
 .quote-footer ul {
   margin: 0;
-  padding-inline-start: 18px;
   font-size: 12px;
   line-height: 1.6;
+  direction: rtl;
+  text-align: right;
+  padding-inline-start: 0;
+  padding-inline-end: 18px;
 }
 
 @media print {
