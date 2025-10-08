@@ -40,8 +40,8 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
     const paymentClass = paid ? 'status-paid' : 'status-unpaid';
 
-    let statusBadge = `<span class="reservation-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
-    let paymentBadge = `<span class="reservation-chip ${paymentClass}">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
+    let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
+    let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
 
     let stateClass = paid ? ' tile-paid' : ' tile-unpaid';
     if (completed) stateClass += ' tile-completed';
@@ -49,8 +49,8 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     let completedAttr = '';
 
     if (completed) {
-      statusBadge = `<span class="reservation-chip status-completed">${statusConfirmedText}</span>`;
-      paymentBadge = `<span class="reservation-chip status-completed">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
+      statusBadge = `<span class="reservation-chip status-chip status-completed">${statusConfirmedText}</span>`;
+      paymentBadge = `<span class="reservation-chip status-chip status-completed">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
       const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
       const ribbonTextAttr = ribbonTextRaw.replace(/"/g, '&quot;');
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
