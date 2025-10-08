@@ -355,8 +355,10 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 }
 
 .tile-badges .reservation-chip {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  padding: 0.32em 0.65em;
+  gap: 4px;
 }
 
 .tile-body {
