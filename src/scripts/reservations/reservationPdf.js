@@ -818,7 +818,15 @@ async function exportQuoteAsPdf() {
           scale: 2,
           useCORS: true,
           scrollX: 0,
-          scrollY: 0
+          scrollY: 0,
+          onclone: (clonedDoc) => {
+            try {
+              const root = clonedDoc?.querySelector?.('#quotation-pdf-root');
+              scrubUnsupportedColorFunctions(root || clonedDoc?.body || clonedDoc);
+            } catch (error) {
+              console.warn('[quote/pdf] failed to scrub cloned doc colors', error);
+            }
+          }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
