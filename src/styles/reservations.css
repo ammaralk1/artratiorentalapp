@@ -367,20 +367,27 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 }
 
 .tile-body {
+  --tile-body-gap: clamp(0.35rem, 1vw, 0.55rem);
+  --tile-body-padding: clamp(0.35rem, 1vw, 0.55rem);
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  justify-content: flex-start;
+  gap: var(--tile-body-gap);
   min-height: 0;
-  padding: 4px 6px 4px;
+  padding: var(--tile-body-padding);
+}
+
+.tile-body > * {
+  min-width: 0;
 }
 
 .tile-row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 6px 10px;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
   border-radius: 12px;
   background: rgba(248, 250, 255, 0.85);
   border: 1px solid rgba(76, 110, 245, 0.08);
