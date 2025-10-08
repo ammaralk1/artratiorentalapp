@@ -1,0 +1,352 @@
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap');
+
+#quotation-pdf-root {
+  width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  font-family: 'Tajawal', sans-serif;
+  color: #000000;
+  background: #ffffff;
+}
+
+#quotation-pdf-root * {
+  box-sizing: border-box;
+}
+
+.quote-preview-pages {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  align-items: center;
+  padding: 16px 0 32px;
+}
+
+.quote-page {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18mm 16mm;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  page-break-after: always;
+  break-after: page;
+}
+
+.quote-page:last-of-type {
+  page-break-after: auto;
+  break-after: auto;
+}
+
+.quote-page--primary {
+  padding-top: 20mm;
+}
+
+.quote-page + .quote-page::before {
+  content: '';
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.quote-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.quote-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 20px;
+}
+
+.quote-header__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  text-align: right;
+  justify-self: start;
+}
+
+.quote-header__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.quote-header__meta-item span {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.quote-header__meta-item strong {
+  color: #000000;
+}
+
+.quote-header__title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+  justify-self: center;
+}
+
+.quote-header__title h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.quote-company-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.quote-company-cr {
+  margin: 0;
+  font-size: 14px;
+  color: #475569;
+}
+
+.quote-header__logo {
+  justify-self: end;
+}
+
+.quote-header__logo .quote-logo {
+  width: 90px;
+  height: 90px;
+}
+
+.quote-logo {
+  display: block;
+  object-fit: contain;
+}
+
+.quote-section h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+}
+
+.totals-block h3,
+.payment-block h3 {
+  margin: 0;
+}
+
+.quote-placeholder {
+  text-align: center;
+  padding: 24px 18px;
+  color: #6b7280;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  border-radius: 14px;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+
+.info-block,
+.payment-block,
+.totals-block {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-block h4,
+.payment-block h4,
+.totals-block h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.info-block__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.info-row span {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+}
+
+.info-row strong {
+  font-weight: 700;
+  color: #111827;
+  font-size: 13.5px;
+}
+
+.info-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item span {
+  font-weight: 600;
+  color: #475569;
+  font-size: 13px;
+}
+
+.info-item strong {
+  font-weight: 700;
+  color: #111827;
+  font-size: 13.5px;
+}
+
+.totals-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.totals-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.totals-item span:first-child {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.totals-item span:last-child {
+  font-weight: 700;
+  color: #111827;
+}
+
+.totals-item.is-final {
+  background: rgba(59, 91, 220, 0.12);
+  border-color: rgba(59, 91, 220, 0.35);
+}
+
+.quote-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.quote-table th {
+  background: rgba(148, 163, 184, 0.18);
+  padding: 9px 8px;
+  text-align: center;
+  color: #000000;
+  font-weight: 700;
+}
+
+.quote-table th,
+.quote-table td {
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.quote-table td {
+  padding: 9px 8px;
+  text-align: center;
+  color: #000000;
+}
+
+.quote-table .empty {
+  padding: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.quote-notes {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 220px;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: #000000;
+}
+
+.quote-approval-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #000000;
+  background: rgba(234, 179, 8, 0.15);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.quote-footer {
+  margin-top: 32px;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  padding-top: 14px;
+}
+
+.quote-footer h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.quote-footer ul {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@media print {
+  #quotation-pdf-root {
+    width: auto;
+    min-height: auto;
+    padding: 0;
+  }
+}
