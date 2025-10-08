@@ -112,7 +112,7 @@ function commitQuoteSequence(sequence) {
 
 function formatQuoteDate(date = new Date()) {
   try {
-    return date.toLocaleDateString('ar-SA', {
+    return date.toLocaleDateString('en-GB', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
@@ -221,11 +221,11 @@ function buildQuotationHtml({
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
-  const createdDisplay = reservation.createdAt ? normalizeNumbers(formatDateTime(reservation.createdAt)) : '-';
   const customerName = customer?.customerName || customer?.full_name || customer?.name || '-';
   const customerPhone = customer?.phone || '-';
   const customerEmail = customer?.email || '-';
   const customerCompany = customer?.company || customer?.company_name || '-';
+  const customerPhoneDisplay = normalizeNumbers(customerPhone);
   const projectTitle = project?.title || project?.name || t('reservations.details.project.none', 'غير مرتبط بمشروع');
   const projectCode = project?.code || project?.projectCode || '';
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
@@ -267,43 +267,40 @@ function buildQuotationHtml({
 
   const includeSection = (id) => sections?.has?.(id);
 
+  const renderPlainItem = (label, value) => {
+    return `<div class="info-plain__item"><span class="info-plain__label">${escapeHtml(label)}</span><strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
+  };
+
   const customerSection = includeSection('customerInfo')
-    ? `<section class="quote-section">
-        <div class="info-block">
-          <h4>${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h4>
-          <div class="info-block__rows">
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.customer', 'العميل'))}</span><strong>${escapeHtml(customerName)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.company', 'الشركة'))}</span><strong>${escapeHtml(customerCompany)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.phone', 'الهاتف'))}</span><strong>${escapeHtml(customerPhone)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.email', 'البريد'))}</span><strong>${escapeHtml(customerEmail)}</strong></div>
-          </div>
+    ? `<section class="quote-section quote-section--plain">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
+        <div class="info-plain">
+          ${renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName)}
+          ${renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany)}
+          ${renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay)}
+          ${renderPlainItem(t('reservations.details.labels.email', 'البريد'), customerEmail)}
         </div>
       </section>`
     : '';
 
   const reservationSection = includeSection('reservationInfo')
-    ? `<section class="quote-section">
-        <div class="info-block">
-          <h4>${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h4>
-          <div class="info-block__rows">
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم الحجز'))}</span><strong>${escapeHtml(reservationId || '-')}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.createdAt', 'تاريخ الإنشاء'))}</span><strong>${escapeHtml(createdDisplay)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.start', 'بداية الحجز'))}</span><strong>${escapeHtml(startDisplay)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.end', 'نهاية الحجز'))}</span><strong>${escapeHtml(endDisplay)}</strong></div>
-            <div class="info-row"><span>${escapeHtml(t('reservations.details.labels.duration', 'عدد الأيام'))}</span><strong>${escapeHtml(rentalDaysDisplay)}</strong></div>
-          </div>
+    ? `<section class="quote-section quote-section--plain">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
+        <div class="info-plain">
+          ${renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-')}
+          ${renderPlainItem(t('reservations.details.labels.start', 'بداية الحجز'), startDisplay)}
+          ${renderPlainItem(t('reservations.details.labels.end', 'نهاية الحجز'), endDisplay)}
+          ${renderPlainItem(t('reservations.details.labels.duration', 'عدد الأيام'), rentalDaysDisplay)}
         </div>
       </section>`
     : '';
 
   const projectSection = includeSection('projectInfo')
-    ? `<section class="quote-section">
-        <div class="info-block">
-          <h4>${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h4>
-          <div class="info-list">
-            <div class="info-item"><span>${escapeHtml(t('reservations.details.labels.project', 'المشروع'))}</span><strong>${escapeHtml(projectTitle)}</strong></div>
-            ${projectCode ? `<div class="info-item"><span>${escapeHtml(t('reservations.details.labels.code', 'الرمز'))}</span><strong>${escapeHtml(projectCode)}</strong></div>` : ''}
-          </div>
+    ? `<section class="quote-section quote-section--plain">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
+        <div class="info-plain">
+          ${renderPlainItem(t('reservations.details.labels.project', 'المشروع'), projectTitle)}
+          ${projectCode ? renderPlainItem(t('reservations.details.labels.code', 'الرمز'), projectCode) : ''}
         </div>
       </section>`
     : '';
@@ -368,11 +365,11 @@ function buildQuotationHtml({
   const paymentDetails = `<section class="quote-section">
       <div class="payment-block">
         <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
-        <div class="payment-list info-block__rows">
-          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.beneficiaryName)}</strong></div>
-          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.bank', 'اسم البنك'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.bankName)}</strong></div>
-          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.account', 'رقم الحساب'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.accountNumber)}</strong></div>
-          <div class="info-row"><span>${escapeHtml(t('reservations.quote.labels.iban', 'رقم الآيبان'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.iban)}</strong></div>
+        <div class="info-plain info-plain--dense">
+          ${renderPlainItem(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName)}
+          ${renderPlainItem(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName)}
+          ${renderPlainItem(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber))}
+          ${renderPlainItem(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban))}
         </div>
         <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
       </div>
@@ -406,7 +403,7 @@ function buildQuotationHtml({
     <header class="quote-header">
       <div class="quote-header__meta">
         <div class="quote-header__meta-item">
-          <span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}</span>
+          <span>رقم العرض</span>
           <strong>${escapeHtml(quoteNumber)}</strong>
         </div>
         <div class="quote-header__meta-item">
@@ -415,7 +412,7 @@ function buildQuotationHtml({
         </div>
       </div>
       <div class="quote-header__title">
-        <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
+        <h1>${escapeHtml(t('reservations.quote.title', 'عرض السعر'))}</h1>
         <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
       </div>
