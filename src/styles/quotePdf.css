@@ -199,7 +199,7 @@ body,
   display: flex;
   gap: 16px;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .quote-section-row .quote-section {
@@ -208,14 +208,14 @@ body,
 }
 
 .quote-section--financial {
-  max-width: 70%;
+  max-width: 60%;
   margin: 0 auto;
 }
 
 .quote-section--customer {
   text-align: right;
   margin-left: auto;
-  max-width: 48%;
+  max-width: 46%;
 }
 
 .quote-section--customer .info-plain,
@@ -228,7 +228,7 @@ body,
 .quote-section--reservation {
   text-align: left;
   margin-right: auto;
-  max-width: 48%;
+  max-width: 46%;
 }
 
 
@@ -287,10 +287,11 @@ body,
   font-size: 0.6rem;
   align-items: center;
   text-align: center;
+  margin: 0 auto;
 }
 
 .totals-block h3 {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   letter-spacing: 0.01em;
 }
 
@@ -410,7 +411,7 @@ body,
 
 .totals-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 6px;
   width: 100%;
   justify-items: center;
@@ -492,7 +493,8 @@ body,
 }
 
 .quote-table {
-  page-break-inside: auto;
+  page-break-inside: avoid;
+  break-inside: avoid;
   overflow: visible;
 }
 

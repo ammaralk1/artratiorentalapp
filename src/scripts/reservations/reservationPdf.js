@@ -286,7 +286,7 @@ function buildQuotationHtml({
   const reservationSection = includeSection('reservationInfo')
     ? `<section class="quote-section quote-section--plain quote-section--reservation">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-        <div class="info-plain info-plain--right">
+        <div class="info-plain">
           ${renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-')}
           ${renderPlainItem(t('reservations.details.labels.start', 'بداية الحجز'), startDisplay)}
           ${renderPlainItem(t('reservations.details.labels.end', 'نهاية الحجز'), endDisplay)}
