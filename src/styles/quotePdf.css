@@ -479,6 +479,9 @@ body,
 }
 
 .quote-section--table {
+  display: block;
+  clear: both;
+  overflow: visible;
   break-inside: avoid;
   page-break-inside: avoid;
   page-break-after: always;
@@ -490,6 +493,7 @@ body,
 
 .quote-table {
   page-break-inside: auto;
+  overflow: visible;
 }
 
 .quote-table thead {
