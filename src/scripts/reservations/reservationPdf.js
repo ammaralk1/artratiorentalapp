@@ -438,15 +438,41 @@ function buildQuotationHtml({
         #quotation-pdf-root * {
           box-sizing: border-box;
         }
-        .quote-page {
-          min-height: 277mm;
+        .quote-preview-pages {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 32px;
+        }
+        .quote-page {
+          position: relative;
+          width: 210mm;
+          min-height: 297mm;
+          margin: 0 auto;
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          border-radius: 18px;
+          padding: 18mm 16mm;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
           page-break-after: always;
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
         }
         .quote-page:last-of-type {
           page-break-after: auto;
+        }
+        .quote-page:not(:first-child)::before {
+          content: '';
+          position: absolute;
+          top: -24px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 160px;
+          height: 2px;
+          background: rgba(148, 163, 184, 0.4);
+        }
+        .quote-page--primary {
+          padding-top: 20mm;
         }
         .quote-body {
           flex: 1;
@@ -629,25 +655,25 @@ function buildQuotationHtml({
         }
       </style>
 
-      <div class="quote-page">
-        ${headerHtml}
-        <main class="quote-body">
-          ${pageOneContent}
-        </main>
-      </div>
+      <div class="quote-preview-pages">
+        <div class="quote-page quote-page--primary">
+          ${headerHtml}
+          <main class="quote-body">
+            ${pageOneContent}
+          </main>
+        </div>
 
-      <div class="quote-page">
-        ${headerHtml}
-        <main class="quote-body">
-          ${pageTwoContent}
-        </main>
-      </div>
+        <div class="quote-page">
+          <main class="quote-body">
+            ${pageTwoContent}
+          </main>
+        </div>
 
-      <div class="quote-page">
-        ${headerHtml}
-        <main class="quote-body">
-          ${pageThreeContent}
-        </main>
+        <div class="quote-page">
+          <main class="quote-body">
+            ${pageThreeContent}
+          </main>
+        </div>
       </div>
     </div>
   `;
