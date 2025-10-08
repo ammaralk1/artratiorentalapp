@@ -209,10 +209,12 @@ body,
 
 .quote-section--financial {
   max-width: 75%;
+  margin: 0 auto;
 }
 
 .quote-section--customer {
   text-align: right;
+  margin-right: auto;
 }
 
 .quote-section--customer .info-plain,
@@ -224,6 +226,7 @@ body,
 
 .quote-section--reservation {
   text-align: left;
+  margin-left: auto;
 }
 
 
@@ -271,6 +274,12 @@ body,
   gap: 10px;
   text-align: left;
   direction: ltr;
+}
+
+.payment-block {
+  align-items: flex-end;
+  text-align: right;
+  direction: rtl;
 }
 
 .totals-block {
@@ -398,25 +407,30 @@ body,
 
 .totals-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
   width: 100%;
+  justify-items: center;
 }
 
 .totals-item {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  text-align: left;
+  text-align: right;
+  width: 100%;
+  max-width: 280px;
 }
 
 .totals-item span {
   font-weight: 600;
+  display: inline-block;
 }
 
 .totals-item span:last-child {
@@ -464,8 +478,12 @@ body,
 .quote-section--table {
   break-inside: avoid;
   page-break-inside: avoid;
+  page-break-after: always;
 }
 
+.quote-section--table:last-of-type {
+  page-break-after: auto;
+}
 
 .quote-table {
   page-break-inside: auto;

@@ -274,7 +274,7 @@ function buildQuotationHtml({
   const customerSection = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        <div class="info-plain info-plain--right">
+        <div class="info-plain">
           ${renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName)}
           ${renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany)}
           ${renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay)}
@@ -286,7 +286,7 @@ function buildQuotationHtml({
   const reservationSection = includeSection('reservationInfo')
     ? `<section class="quote-section quote-section--plain quote-section--reservation">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-        <div class="info-plain">
+        <div class="info-plain info-plain--right">
           ${renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-')}
           ${renderPlainItem(t('reservations.details.labels.start', 'بداية الحجز'), startDisplay)}
           ${renderPlainItem(t('reservations.details.labels.end', 'نهاية الحجز'), endDisplay)}
@@ -371,8 +371,8 @@ function buildQuotationHtml({
           ${renderPlainItem(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber))}
           ${renderPlainItem(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban))}
         </div>
-        <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
       </div>
+      <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
 
   const termsSection = `<footer class="quote-footer">
@@ -388,7 +388,7 @@ function buildQuotationHtml({
   let customerSectionFinal = customerSection;
   let reservationSectionFinal = reservationSection;
   if (customerSection && reservationSection) {
-    infoPair = `<div class="quote-section-row">${customerSection}${reservationSection}</div>`;
+    infoPair = `<div class="quote-section-row">${reservationSection}${customerSection}</div>`;
     customerSectionFinal = '';
     reservationSectionFinal = '';
   }
