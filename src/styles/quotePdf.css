@@ -51,7 +51,7 @@ body,
   margin: 0;
   background: #ffffff;
   border-radius: 12px;
-  padding: 4mm 14mm 12mm;
+  padding: 2mm 12mm 12mm;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -68,7 +68,7 @@ body,
 }
 
 .quote-page--primary {
-  padding-top: 4mm;
+  padding-top: 2mm;
 }
 
 .quote-page + .quote-page::before {

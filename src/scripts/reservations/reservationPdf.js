@@ -625,6 +625,10 @@ async function exportQuoteAsPdf() {
     pdfRoot.style.textAlign = 'right';
     pdfRoot.setAttribute('data-theme', 'light');
     pdfRoot.classList.remove('dark', 'dark-mode');
+    pdfRoot.style.margin = '0';
+    pdfRoot.style.padding = '0';
+    pdfRoot.scrollTop = 0;
+    pdfRoot.scrollLeft = 0;
   }
 
   try {
@@ -634,7 +638,14 @@ async function exportQuoteAsPdf() {
         margin: 0,
         pagebreak: { mode: [] },
         filename,
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: pdfRoot?.scrollWidth || undefined,
+          windowHeight: pdfRoot?.scrollHeight || undefined
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
       .from(container.firstElementChild)
