@@ -489,12 +489,18 @@ body,
   break-inside: auto;
   page-break-inside: auto;
   page-break-after: auto;
+  padding-top: 4mm;
+}
+
+.quote-page .quote-section--table:first-of-type {
+  padding-top: 0;
 }
 
 .quote-table {
   page-break-inside: auto;
   break-inside: auto;
   overflow: visible;
+  margin-top: 2mm;
 }
 
 .quote-table thead {
