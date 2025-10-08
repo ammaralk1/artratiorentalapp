@@ -479,8 +479,17 @@ function renderQuotePreview() {
   });
 
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
-  previewFrame.dataset.baseWidth = previewFrame.dataset.baseWidth || String(previewFrame.offsetWidth || 794);
   previewFrame.addEventListener('load', () => {
+    const doc = previewFrame.contentDocument;
+    const firstPage = doc?.querySelector('.quote-page');
+    const computedWidth = firstPage ? firstPage.getBoundingClientRect().width : 794;
+    const computedHeight = doc?.body?.scrollHeight || firstPage?.getBoundingClientRect().height || 1123;
+    previewFrame.dataset.baseWidth = String(computedWidth || 794);
+    previewFrame.dataset.baseHeight = String(computedHeight || 1123);
+    previewFrame.style.width = `${computedWidth}px`;
+    previewFrame.style.minWidth = `${computedWidth}px`;
+    previewFrame.style.height = `${computedHeight}px`;
+    previewFrame.style.minHeight = `${computedHeight}px`;
     applyPreviewZoom(previewZoom);
   }, { once: true });
 }
@@ -621,7 +630,7 @@ function ensureQuoteModal() {
 }
 
 function setPreviewZoom(value) {
-  previewZoom = Math.min(Math.max(value, 0.5), 2);
+  previewZoom = Math.min(Math.max(value, 0.2), 2);
   applyPreviewZoom(previewZoom);
   if (quoteModalRefs?.zoomValue) {
     quoteModalRefs.zoomValue.textContent = `${Math.round(previewZoom * 100)}%`;
@@ -636,17 +645,14 @@ function applyPreviewZoom(value) {
   if (!quoteModalRefs?.previewFrame || !quoteModalRefs.previewFrameWrapper) return;
   const frame = quoteModalRefs.previewFrame;
   const wrapper = quoteModalRefs.previewFrameWrapper;
-  const baseWidth = Number(frame.dataset.baseWidth) || frame.offsetWidth || 794;
+  const baseWidth = Number(frame.dataset.baseWidth) || 794;
+  const baseHeight = Number(frame.dataset.baseHeight) || frame.contentDocument?.body?.scrollHeight || 1123;
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
   wrapper.style.width = `${baseWidth}px`;
   wrapper.style.maxWidth = '100%';
-  wrapper.style.display = 'flex';
-  wrapper.style.justifyContent = 'center';
-  const contentHeight = frame.contentDocument?.body?.scrollHeight;
-  if (contentHeight) {
-    wrapper.style.minHeight = `${contentHeight * value}px`;
-  }
+  wrapper.style.minHeight = `${baseHeight}px`;
+  wrapper.style.height = `${baseHeight}px`;
 }
 
 function updateQuoteMeta() {

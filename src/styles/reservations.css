@@ -1394,11 +1394,13 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview {
-  display: block;
-  padding: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12px;
   max-height: 100%;
-  overflow-y: auto;
-  overflow-x: auto;
+  overflow: auto;
+  background: #f3f4f6;
 }
 
 .quote-preview-zoom-controls {
@@ -1443,12 +1445,14 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   overflow: auto;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
 }
 
 .quote-preview-frame {
   width: 794px;
+  min-width: 794px;
   max-width: none;
-  min-height: calc(100vh - 260px);
+  min-height: 1123px;
   border: none;
   border-radius: 16px;
   background: transparent;
