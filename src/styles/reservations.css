@@ -40,15 +40,15 @@
 }
 
 .reservations-search-input {
-  flex: 0 0 25% !important;
-  width: 25% !important;
-  max-width: 25% !important;
-  min-width: 200px;
+  flex: 0 0 45% !important;
+  width: 45% !important;
+  max-width: 520px !important;
+  min-width: 260px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 255, 0.28);
   padding-inline: 18px;
-  padding-block: 0.55rem;
-  min-height: 3rem;
+  padding-block: 0.42rem;
+  min-height: 2.6rem;
   box-shadow: 0 12px 24px rgba(59, 91, 220, 0.14);
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
   color: #1f2d52;
