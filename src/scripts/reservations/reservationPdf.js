@@ -646,7 +646,10 @@ async function exportQuoteAsPdf() {
     await window.html2pdf()
       .set({
         margin: 0,
-        pagebreak: { mode: ['css', 'legacy'] },
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          avoid: ['tr']
+        },
         filename,
         html2canvas: {
           scale: 2,
