@@ -612,13 +612,23 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   const reservationId = reservation.reservationId || reservation.id || `RES-${index + 1}`;
   const status = reservation.status || reservation.state || 'pending';
   const statusLabel = t(`reservations.status.${status}`, status);
-  const statusClass = `status-${status.toLowerCase()}`;
+  const normalizedStatus = String(status).toLowerCase();
+  const statusClassMap = {
+    confirmed: 'project-reservation-card__badge--confirmed',
+    pending: 'project-reservation-card__badge--pending',
+    completed: 'project-reservation-card__badge--completed',
+    in_progress: 'project-reservation-card__badge--info',
+    ongoing: 'project-reservation-card__badge--info'
+  };
+  const statusClass = statusClassMap[normalizedStatus] || 'project-reservation-card__badge--info';
   const paid = reservation.paid === true || reservation.paid === 'paid' || reservation.paidStatus === 'paid';
   const paidLabel = paid ? t('reservations.details.paid', 'مدفوع') : t('reservations.details.unpaid', 'غير مدفوع');
-  const paidClass = paid ? 'status-paid' : 'status-unpaid';
+  const paidClass = paid ? 'project-reservation-card__badge--paid' : 'project-reservation-card__badge--unpaid';
   const completed = reservation.completed === true || reservation.completed === 'true';
   const completedLabel = t('reservations.details.completed', 'مكتمل');
-  const completedBadge = completed ? `<span class="badge project-reservation-card__badge status-completed">${escapeHtml(completedLabel)}</span>` : '';
+  const completedBadge = completed
+    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(completedLabel)}</span>`
+    : '';
   const rangeLabel = combineProjectDateRange(reservation.start, reservation.end);
   const netTotal = resolveReservationNetTotal(reservation);
   const costLabel = formatCurrency(netTotal);
@@ -634,8 +644,8 @@ export function buildProjectReservationCard(reservation, index, project = null) 
       <div class="project-reservation-card__header">
         <span class="project-reservation-card__id">#${escapeHtml(reservationId)}</span>
         <div class="project-reservation-card__badges">
-          <span class="badge project-reservation-card__badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-          <span class="badge project-reservation-card__badge ${paidClass}">${escapeHtml(paidLabel)}</span>
+          <span class="project-reservation-card__badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+          <span class="project-reservation-card__badge ${paidClass}">${escapeHtml(paidLabel)}</span>
           ${completedBadge}
         </div>
       </div>

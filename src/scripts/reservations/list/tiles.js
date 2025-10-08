@@ -37,13 +37,11 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       projectLinked,
     } = resolveReservationProjectState(reservation, project);
 
-    let statusBadge = effectiveConfirmed
-      ? `<span class="badge bg-success reservation-chip">${statusConfirmedText}</span>`
-      : `<span class="badge bg-warning text-dark reservation-chip">${statusPendingText}</span>`;
+    const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
+    const paymentClass = paid ? 'status-paid' : 'status-unpaid';
 
-    let paymentBadge = paid
-      ? `<span class="badge bg-primary reservation-chip">${paymentPaidText}</span>`
-      : `<span class="badge bg-danger reservation-chip">${paymentUnpaidText}</span>`;
+    let statusBadge = `<span class="reservation-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
+    let paymentBadge = `<span class="reservation-chip ${paymentClass}">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
 
     let stateClass = paid ? ' tile-paid' : ' tile-unpaid';
     if (completed) stateClass += ' tile-completed';
@@ -51,15 +49,15 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     let completedAttr = '';
 
     if (completed) {
-      statusBadge = `<span class="badge reservation-chip chip-completed">${statusConfirmedText}</span>`;
-      paymentBadge = `<span class="badge reservation-chip chip-completed">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
+      statusBadge = `<span class="reservation-chip status-completed">${statusConfirmedText}</span>`;
+      paymentBadge = `<span class="reservation-chip status-completed">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
       const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
       const ribbonTextAttr = ribbonTextRaw.replace(/"/g, '&quot;');
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
     }
 
     const confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
-      ? `<button class="btn btn-sm btn-success tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
+      ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
       : '';
 
     const itemsCount = reservation.items?.length || 0;
