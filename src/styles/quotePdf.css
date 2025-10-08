@@ -214,16 +214,17 @@ body,
 }
 
 .quote-section--customer {
-  text-align: right;
-  margin-left: auto;
+  text-align: left;
+  margin-right: auto;
+  margin-left: 0;
   max-width: 46%;
 }
 
 .quote-section--customer .info-plain,
 .quote-section--customer .info-plain__item {
-  align-items: flex-end;
-  text-align: right;
-  justify-content: flex-end;
+  align-items: flex-start;
+  text-align: left;
+  justify-content: flex-start;
 }
 
 .quote-section--reservation {
