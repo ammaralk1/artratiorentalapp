@@ -1399,37 +1399,11 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  max-width: 100%;
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
   max-height: 100%;
   overflow-y: auto;
-  padding: 24px;
-}
-
-.quote-preview .quote-placeholder {
-  text-align: center;
-  padding: 24px 18px;
-  color: #6b7280;
-  border: 1px dashed rgba(148, 163, 184, 0.4);
-  border-radius: 14px;
-  font-size: 0.9rem;
-  background: rgba(248, 250, 255, 0.9);
-}
-
-:is(html.dark-mode, body.dark-mode) .quote-preview {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-
-:is(html.dark-mode, body.dark-mode) .quote-preview .quote-placeholder {
-  background: rgba(17, 24, 45, 0.92);
-  color: rgba(226, 232, 240, 0.85);
-  border-color: rgba(93, 133, 255, 0.36);
 }
 
 .quote-preview::after {
