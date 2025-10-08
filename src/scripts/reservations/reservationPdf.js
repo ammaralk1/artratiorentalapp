@@ -119,6 +119,18 @@ function formatQuoteDate(date = new Date()) {
   }
 }
 
+function formatQuoteHijri(date = new Date()) {
+  try {
+    return date.toLocaleDateString('ar-SA-u-ca-islamic', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (error) {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
 function resolveTechnicianDailyRate(technician = {}) {
   const candidates = [
     technician.dailyWage,
@@ -213,7 +225,8 @@ function buildQuotationHtml({
   currencyLabel,
   sections,
   quoteNumber,
-  quoteDate
+  quoteDate,
+  quoteDateHijri
 }) {
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -354,8 +367,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const paymentDetails = `
-    <section class="quote-section">
+  const paymentDetails = `<section class="quote-section">
       <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
       <div class="payment-details">
         <div><span>${escapeHtml(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'))}</span><strong>${escapeHtml(QUOTE_COMPANY_INFO.beneficiaryName)}</strong></div>
@@ -366,17 +378,59 @@ function buildQuotationHtml({
       <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
 
-  const termsList = QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('');
+  const termsSection = `<footer class="quote-footer">
+        <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
+        <ul>${QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
+      </footer>`;
+
+  const ensureContent = (content, fallbackKey) => content && content.trim().length
+    ? content
+    : `<section class="quote-section quote-placeholder">${escapeHtml(t(fallbackKey, 'لا توجد بيانات للعرض.'))}</section>`;
+
+  const pageOneContent = ensureContent([
+    customerSection,
+    reservationSection,
+    projectSection,
+    itemsSection,
+    crewSection
+  ].filter(Boolean).join(''), 'reservations.quote.placeholder.page1');
+
+  const pageTwoContent = ensureContent([
+    notesSection,
+    financialSection
+  ].filter(Boolean).join(''), 'reservations.quote.placeholder.page2');
+
+  const pageThreeContent = [paymentDetails, termsSection].join('');
+
+  const headerHtml = `
+    <header class="quote-header">
+      <div class="quote-header__left">
+        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
+        <div class="quote-company">
+          <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
+          <span>${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</span>
+          <span>${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</span>
+        </div>
+      </div>
+      <div class="quote-meta">
+        <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}:</span> ${escapeHtml(quoteNumber)}</div>
+        <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}:</span> ${escapeHtml(quoteDate)}</div>
+        <div><span>${escapeHtml(t('reservations.quote.labels.dateHijri', 'التاريخ الهجري'))}:</span> ${escapeHtml(quoteDateHijri)}</div>
+      </div>
+    </header>`;
 
   return `
     <div id="quotation-pdf-root" dir="rtl">
       <style>
+        @page {
+          size: A4;
+          margin: 10mm;
+        }
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap');
         #quotation-pdf-root {
           width: 210mm;
           min-height: 297mm;
           box-sizing: border-box;
-          padding: 16mm 18mm;
           font-family: 'Tajawal', sans-serif;
           color: #000000;
           background: #ffffff;
@@ -384,12 +438,27 @@ function buildQuotationHtml({
         #quotation-pdf-root * {
           box-sizing: border-box;
         }
+        .quote-page {
+          min-height: 277mm;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          page-break-after: always;
+        }
+        .quote-page:last-of-type {
+          page-break-after: auto;
+        }
+        .quote-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
         .quote-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 18px;
-          margin-bottom: 18px;
         }
         .quote-header__left {
           display: flex;
@@ -426,14 +495,19 @@ function buildQuotationHtml({
           font-weight: 600;
           color: #000000;
         }
-        .quote-section {
-          margin-bottom: 18px;
-        }
         .quote-section h3 {
           margin-bottom: 10px;
           font-size: 16px;
           font-weight: 700;
           color: #000000;
+        }
+        .quote-placeholder {
+          text-align: center;
+          padding: 24px 18px;
+          color: #6b7280;
+          border: 1px dashed rgba(148, 163, 184, 0.4);
+          border-radius: 14px;
+          font-size: 0.9rem;
         }
         .section-grid {
           display: grid;
@@ -480,9 +554,9 @@ function buildQuotationHtml({
           font-weight: 600;
         }
         .totals-grid__highlight {
-          border-color: rgba(59, 91, 220, 0.35);
-          font-weight: 700;
+          border: 1px solid rgba(59, 91, 220, 0.35);
           background: rgba(59, 91, 220, 0.12);
+          font-weight: 700;
         }
         .quote-table {
           width: 100%;
@@ -503,6 +577,7 @@ function buildQuotationHtml({
           padding: 8px;
           text-align: center;
           border-top: 1px solid rgba(148, 163, 184, 0.22);
+          color: #000000;
         }
         .quote-table .empty {
           padding: 14px;
@@ -514,7 +589,7 @@ function buildQuotationHtml({
           border: 1px solid rgba(148, 163, 184, 0.38);
           border-radius: 12px;
           padding: 12px;
-          min-height: 60px;
+          min-height: 220px;
           font-size: 13px;
           line-height: 1.7;
           white-space: pre-wrap;
@@ -545,60 +620,39 @@ function buildQuotationHtml({
           font-size: 12px;
           line-height: 1.6;
         }
-        .page-break {
-          page-break-before: always;
-          break-before: page;
-          margin-top: 24px;
-        }
         @media print {
           #quotation-pdf-root {
             width: auto;
             min-height: auto;
-            padding: 10mm 12mm;
-          }
-          .quote-meta {
-            text-align: left;
-          }
-          .quote-table th,
-          .quote-table td {
-            border-color: rgba(148, 163, 184, 0.28);
+            padding: 0;
           }
         }
       </style>
 
-      <header class="quote-header">
-        <div class="quote-header__left">
-          <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
-          <div class="quote-company">
-            <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
-            <span>${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</span>
-            <span>${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</span>
-          </div>
-        </div>
-        <div class="quote-meta">
-          <div><span>${escapeHtml(t('reservations.quote.labels.date', 'التاريخ'))}:</span> ${escapeHtml(quoteDate)}</div>
-          <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}:</span> ${escapeHtml(quoteNumber)}</div>
-        </div>
-      </header>
+      <div class="quote-page">
+        ${headerHtml}
+        <main class="quote-body">
+          ${pageOneContent}
+        </main>
+      </div>
 
-      ${customerSection}
-      ${reservationSection}
-      ${projectSection}
-      ${itemsSection}
-      ${crewSection}
-      ${notesSection}
-      ${financialSection}
+      <div class="quote-page">
+        ${headerHtml}
+        <main class="quote-body">
+          ${pageTwoContent}
+        </main>
+      </div>
 
-      <div class="page-break"></div>
-      ${paymentDetails}
-
-      <footer class="quote-footer">
-        <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
-        <ul>${termsList}</ul>
-      </footer>
+      <div class="quote-page">
+        ${headerHtml}
+        <main class="quote-body">
+          ${pageThreeContent}
+        </main>
+      </div>
     </div>
   `;
 }
+
 
 function renderQuotePreview() {
   if (!activeQuoteState || !quoteModalRefs) return;
@@ -615,7 +669,8 @@ function renderQuotePreview() {
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
     quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel
+    quoteDate: activeQuoteState.quoteDateLabel,
+    quoteDateHijri: activeQuoteState.quoteDateHijriLabel
   });
 
   preview.innerHTML = html;
@@ -725,8 +780,9 @@ function updateQuoteMeta() {
   const { meta } = quoteModalRefs;
   meta.innerHTML = `
     <div class="quote-meta-card">
+      <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
+      <div><span>${escapeHtml(t('reservations.quote.labels.dateHijri', 'التاريخ الهجري'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateHijriLabel)}</strong></div>
       <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
-      <div><span>${escapeHtml(t('reservations.quote.labels.date', 'تاريخ الإنشاء'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
     </div>
   `;
 }
@@ -745,7 +801,8 @@ async function exportQuoteAsPdf() {
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
     quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel
+    quoteDate: activeQuoteState.quoteDateLabel,
+    quoteDateHijri: activeQuoteState.quoteDateHijriLabel
   });
 
   const container = document.createElement('div');
@@ -815,6 +872,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
+    quoteDateHijriLabel: formatQuoteHijri(now),
     sequenceCommitted: false
   };
 
