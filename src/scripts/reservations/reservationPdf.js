@@ -79,6 +79,13 @@ function scrubUnsupportedColorFunctions(root) {
   });
 }
 
+function scrubCloneColors(doc) {
+  if (!doc) return;
+  scrubUnsupportedColorFunctions(doc);
+  scrubUnsupportedColorFunctions(doc?.documentElement);
+  scrubUnsupportedColorFunctions(doc?.body);
+}
+
 function loadExternalScript(src) {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -778,7 +785,8 @@ async function exportQuoteAsPdf() {
           scale: 2,
           useCORS: true,
           scrollX: 0,
-          scrollY: 0
+          scrollY: 0,
+          onclone: (clonedDoc) => scrubCloneColors(clonedDoc)
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
