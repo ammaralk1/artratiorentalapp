@@ -160,6 +160,7 @@ export function renderReservationDetails(index, {
           modalEl.removeEventListener('hidden.bs.modal', handleHidden);
           openPreview();
         };
+        exportBtn.blur();
         modalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
         modalInstance.hide();
       } else {

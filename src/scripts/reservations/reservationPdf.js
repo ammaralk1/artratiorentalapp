@@ -210,6 +210,11 @@ function isSectionExpanded(state, sectionId) {
   return expansions?.[sectionId] !== false;
 }
 
+function isMobileViewport() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
 function isIosDevice() {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || navigator.platform || '';
