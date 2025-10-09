@@ -154,7 +154,7 @@ body[dir="ltr"] .reports-refresh-btn {
   gap: 16px;
   padding: 22px;
   border-radius: 18px;
-  background: var(--reports-surface);
+  background-color: var(--reports-surface);
   border: 1px solid var(--reports-border);
   box-shadow: var(--reports-shadow);
   backdrop-filter: blur(12px);
@@ -167,7 +167,7 @@ body[dir="ltr"] .reports-refresh-btn {
   display: grid;
   place-items: center;
   font-size: 1.6rem;
-  background: var(--reports-accent-soft);
+  background-color: var(--reports-accent-soft);
   color: var(--reports-accent);
 }
 
@@ -204,7 +204,7 @@ body[dir="ltr"] .reports-refresh-btn {
 .reports-chart-card {
   border-radius: 18px;
   border: 1px solid var(--reports-border);
-  background: var(--reports-surface);
+  background-color: var(--reports-surface);
   box-shadow: var(--reports-shadow);
   padding: 24px;
   display: flex;
@@ -238,7 +238,7 @@ body[dir="ltr"] .reports-refresh-btn {
   flex-direction: column;
   gap: 10px;
   border-radius: inherit;
-  background: hsla(var(--b1) / 0.92);
+  background-color: hsla(var(--b1) / 0.92);
   color: var(--reports-muted);
   text-align: center;
   padding: 24px;
@@ -284,7 +284,7 @@ body[dir="ltr"] .reports-refresh-btn {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: var(--reports-accent-soft);
+  background-color: var(--reports-accent-soft);
   color: var(--reports-accent);
   flex-shrink: 0;
 }
@@ -430,7 +430,7 @@ body[dir="ltr"] .reports-card-text {
 .reports-table-card {
   border-radius: 18px;
   border: 1px solid var(--reports-border);
-  background: var(--reports-surface);
+  background-color: var(--reports-surface);
   box-shadow: var(--reports-shadow);
   padding: 0;
   overflow: hidden;
@@ -447,7 +447,7 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table thead {
-  background: var(--reports-surface-soft);
+  background-color: var(--reports-surface-soft);
 }
 
 .reports-table th,
@@ -463,7 +463,7 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table tbody tr:hover {
-  background: var(--reports-accent-soft);
+  background-color: var(--reports-accent-soft);
 }
 
 .reports-empty-state {
@@ -476,7 +476,7 @@ body[dir="ltr"] .reports-card-text {
   border-radius: 18px;
   text-align: center;
   color: var(--reports-muted);
-  background: var(--reports-surface);
+  background-color: var(--reports-surface);
 }
 
 .reports-empty-state.active {

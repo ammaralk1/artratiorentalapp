@@ -1558,6 +1558,15 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   }
 }
 
+function enforceQuoteTextColor(root, color = '#000000') {
+  if (!root) return;
+  const nodes = root.querySelectorAll('[style*="color"], [class*="text"], h1, h2, h3, h4, h5, h6, p, span, th, td, li, strong, em, label, dt, dd, caption, div');
+  nodes.forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    node.style.setProperty('color', color, 'important');
+  });
+}
+
 async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, mobileWindowRef = null }) {
   if (!root) return;
   const pages = Array.from(root.querySelectorAll('.quote-page'));
@@ -1627,6 +1636,7 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       pageClone.style.minHeight = `${A4_HEIGHT_PX}px`;
       pageClone.style.position = 'relative';
       pageClone.style.background = '#ffffff';
+      enforceQuoteTextColor(pageClone);
       captureWrapper.appendChild(pageClone);
       doc.body.appendChild(captureWrapper);
 
@@ -1748,6 +1758,7 @@ function renderQuotePreview() {
     try {
       if (pdfRoot) {
         await layoutQuoteDocument(pdfRoot, { context: 'preview' });
+        enforceQuoteTextColor(pdfRoot);
       }
     } catch (error) {
       console.error('[reservations/pdf] failed to layout preview document', error);
@@ -2103,13 +2114,14 @@ async function exportQuoteAsPdf() {
       pdfRoot.style.marginRight = 'auto';
       pdfRoot.scrollTop = 0;
       pdfRoot.scrollLeft = 0;
-      try {
-        await layoutQuoteDocument(pdfRoot, { context: 'export' });
-        await waitForQuoteAssets(pdfRoot);
-        logPdfDebug('layout complete for export document');
-      } catch (layoutError) {
-        handlePdfError(layoutError, 'layoutQuoteDocument', { suppressToast: true });
-      }
+    try {
+      await layoutQuoteDocument(pdfRoot, { context: 'export' });
+      await waitForQuoteAssets(pdfRoot);
+      enforceQuoteTextColor(pdfRoot);
+      logPdfDebug('layout complete for export document');
+    } catch (layoutError) {
+      handlePdfError(layoutError, 'layoutQuoteDocument', { suppressToast: true });
+    }
     }
 
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
