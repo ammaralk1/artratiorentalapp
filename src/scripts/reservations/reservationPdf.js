@@ -195,6 +195,21 @@ function isFieldEnabledInSelections(selections = {}, sectionId, fieldId) {
   return Boolean(set?.[fieldId]);
 }
 
+function ensureSectionExpansionState(state, sectionId) {
+  if (!state.sectionExpansions) {
+    state.sectionExpansions = Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, true]));
+  }
+  if (sectionId && typeof state.sectionExpansions[sectionId] !== 'boolean') {
+    state.sectionExpansions[sectionId] = true;
+  }
+  return state.sectionExpansions;
+}
+
+function isSectionExpanded(state, sectionId) {
+  const expansions = ensureSectionExpansionState(state, sectionId);
+  return expansions?.[sectionId] !== false;
+}
+
 function isIosDevice() {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || navigator.platform || '';
@@ -1335,14 +1350,25 @@ function handleFieldToggleChange(event) {
   renderQuotePreview();
 }
 
+function handleSectionExpansionToggle(event) {
+  if (!activeQuoteState) return;
+  const details = event.currentTarget;
+  const sectionId = details?.dataset?.sectionId;
+  if (!sectionId) return;
+  ensureSectionExpansionState(activeQuoteState, sectionId);
+  activeQuoteState.sectionExpansions[sectionId] = details.open;
+}
+
 function renderQuoteToggles() {
   if (!quoteModalRefs?.toggles || !activeQuoteState) return;
   const { toggles } = quoteModalRefs;
   const selections = activeQuoteState.fields || {};
+  const expansions = ensureSectionExpansionState(activeQuoteState);
   const items = QUOTE_SECTION_DEFS.map(({ id, labelKey, fallback }) => {
     const sectionLabel = t(labelKey, fallback);
     const sectionChecked = activeQuoteState.sections.has(id);
     const fields = QUOTE_FIELD_DEFS[id] || [];
+    const sectionExpanded = isSectionExpanded(activeQuoteState, id);
     const fieldList = fields.length
       ? `<div class="quote-toggle-sublist">
           ${fields.map((field) => {
@@ -1359,13 +1385,16 @@ function renderQuoteToggles() {
         </div>`
       : '';
     return `
-      <div class="quote-toggle-group">
-        <label class="quote-toggle quote-toggle--section">
-          <input type="checkbox" data-section-toggle data-section-id="${id}" ${sectionChecked ? 'checked' : ''}>
-          <span>${escapeHtml(sectionLabel)}</span>
-        </label>
+      <details class="quote-toggle-group" data-section-group data-section-id="${id}" ${sectionExpanded ? 'open' : ''}>
+        <summary class="quote-toggle-summary">
+          <label class="quote-toggle quote-toggle--section">
+            <input type="checkbox" data-section-toggle data-section-id="${id}" ${sectionChecked ? 'checked' : ''}>
+            <span>${escapeHtml(sectionLabel)}</span>
+          </label>
+          ${fields.length ? '<span class="quote-toggle-caret" aria-hidden="true"></span>' : ''}
+        </summary>
         ${fieldList}
-      </div>
+      </details>
     `;
   }).join('');
 
@@ -1375,6 +1404,9 @@ function renderQuoteToggles() {
   });
   toggles.querySelectorAll('input[data-field-toggle]').forEach((input) => {
     input.addEventListener('change', handleFieldToggleChange);
+  });
+  toggles.querySelectorAll('details[data-section-group]').forEach((details) => {
+    details.addEventListener('toggle', handleSectionExpansionToggle);
   });
 }
 
@@ -1629,6 +1661,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     rentalDays,
     currencyLabel,
     sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
+    sectionExpansions: Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, true])),
     fields: buildDefaultFieldSelections(),
     quoteSequence: sequence,
     quoteNumber,

@@ -1281,13 +1281,26 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 .quote-preview-modal .modal-dialog {
   max-width: min(98vw, 1280px);
   width: 100%;
-  margin: 1.5rem auto;
+  margin: 1.25rem auto;
+}
+
+.quote-preview-modal .modal-content {
+  max-height: calc(100vh - 2.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.quote-preview-modal .modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 .quote-preview-layout {
   display: grid;
   grid-template-columns: minmax(240px, 280px) 1fr;
-  min-height: 480px;
+  min-height: 0;
+  width: 100%;
 }
 
 .quote-preview-sidebar {
@@ -1297,6 +1310,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   flex-direction: column;
   gap: 18px;
   background: rgba(248, 250, 255, 0.9);
+  overflow: auto;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-sidebar {
@@ -1319,7 +1333,49 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 .quote-toggle-group {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 6px 10px;
+  background: rgba(248, 250, 255, 0.7);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-toggle-group {
+  border-color: rgba(93, 133, 255, 0.25);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.quote-toggle-group summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.quote-toggle-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.quote-toggle-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+}
+
+.quote-toggle-caret {
+  width: 12px;
+  height: 12px;
+  border-inline-end: 2px solid rgba(59, 76, 144, 0.8);
+  border-block-end: 2px solid rgba(59, 76, 144, 0.8);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-toggle-caret {
+  border-color: rgba(148, 191, 255, 0.85);
+}
+
+details[open] > .quote-toggle-summary .quote-toggle-caret {
+  transform: rotate(-135deg);
 }
 
 .quote-toggle {
@@ -1333,6 +1389,10 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   font-size: 0.85rem;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quote-toggle--section {
+  width: 100%;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-toggle {
@@ -1420,28 +1480,28 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   font-weight: 600;
 }
 
+
 .quote-preview-panel {
   padding: 24px;
   background: #ffffff;
-  overflow: auto;
   display: flex;
-  justify-content: center;
-  max-height: calc(100vh - 220px);
+  flex-direction: column;
+  overflow: hidden;
   min-height: 0;
 }
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-panel {
   background: rgba(15, 23, 42, 0.95);
-  max-height: calc(100vh - 220px);
 }
 
 .quote-preview {
   justify-content: center;
   align-items: flex-start;
   padding: 12px;
-  max-height: 100%;
+  flex: 1;
   overflow: auto;
   background: #18203b;
+  min-height: 0;
 }
 
 .quote-preview-header-actions {
@@ -1515,6 +1575,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  flex: 1;
 }
 
 .quote-preview-frame {
@@ -1555,7 +1616,6 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 
   .quote-preview-panel {
     padding: 18px;
-    max-height: calc(100vh - 260px);
   }
 }
 
