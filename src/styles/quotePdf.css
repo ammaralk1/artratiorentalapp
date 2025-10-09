@@ -34,6 +34,13 @@ body,
   color: #000000 !important;
 }
 
+#quotation-pdf-root [style*="color"],
+#quotation-pdf-root [class*="text"],
+#quotation-pdf-root [class*="-text"],
+#quotation-pdf-root [class*="text-"] {
+  color: #000000 !important;
+}
+
 .quote-preview-pages {
   width: 210mm;
   max-width: 210mm;
