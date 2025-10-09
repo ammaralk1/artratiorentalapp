@@ -157,6 +157,10 @@ const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 const PAGE_OVERFLOW_TOLERANCE_PX = 2;
 const SAFARI_USER_AGENT_REGEX = /safari/i;
 const IOS_PLATFORM_REGEX = /(iphone|ipad|ipod)/i;
+const IOS_SAFARI_REGEX = /(iphone|ipad|ipod)/i;
+const IOS_SAFARI_EXCLUDED_BROWSERS_REGEX = /(crios|fxios|edgios|opios)/i;
+const PAGE_SEGMENT_MAX_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
+const PDF_LOG_PREFIX = '[reservations/pdf]';
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
@@ -237,6 +241,40 @@ function isSafariBrowser() {
 
 function isIosSafari() {
   return isIosDevice() && isSafariBrowser();
+}
+
+function isMobileSafariBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  return IOS_SAFARI_REGEX.test(ua) && SAFARI_USER_AGENT_REGEX.test(ua) && !IOS_SAFARI_EXCLUDED_BROWSERS_REGEX.test(ua);
+}
+
+function logPdfDebug(message, ...args) {
+  try {
+    console.log(`${PDF_LOG_PREFIX} ${message}`, ...args);
+  } catch (error) {
+    // Ignore logging failures
+  }
+}
+
+function logPdfWarn(message, ...args) {
+  try {
+    console.warn(`${PDF_LOG_PREFIX} ${message}`, ...args);
+  } catch (error) {
+    // Ignore logging failures
+  }
+}
+
+function logPdfError(message, error, ...args) {
+  try {
+    if (error) {
+      console.error(`${PDF_LOG_PREFIX} ${message}`, error, ...args);
+    } else {
+      console.error(`${PDF_LOG_PREFIX} ${message}`, ...args);
+    }
+  } catch (loggingError) {
+    // Ignore logging failures
+  }
 }
 
 function withBlockAttributes(markup, { blockType = 'section', extraAttributes = '' } = {}) {
@@ -579,9 +617,105 @@ async function rasterizeQuoteImages(root) {
   }
 }
 
-function handlePdfError(error, context = 'export') {
-  console.error(`[reservations/pdf] ${context} failed`, error);
-  showToast(t('reservations.quote.errors.exportFailed', '⚠️ تعذر إنشاء ملف PDF، يرجى المحاولة مرة أخرى.'));
+async function capturePageSegments(page, html2canvasFn, {
+  baseOptions = {},
+  segmentHeightPx = PAGE_SEGMENT_MAX_HEIGHT_PX
+} = {}) {
+  if (!page || typeof html2canvasFn !== 'function') return [];
+
+  const doc = page.ownerDocument || document;
+  const view = doc.defaultView || window;
+  const totalHeight = Math.ceil(page.scrollHeight || page.offsetHeight || PAGE_SEGMENT_MAX_HEIGHT_PX);
+  const totalWidth = Math.ceil(page.scrollWidth || page.offsetWidth || A4_WIDTH_PX);
+  const effectiveSegmentHeight = Math.max(1, Math.min(segmentHeightPx, PAGE_SEGMENT_MAX_HEIGHT_PX));
+  const segments = [];
+
+  for (let offset = 0; offset < totalHeight; offset += effectiveSegmentHeight) {
+    const sliceHeight = Math.min(effectiveSegmentHeight, totalHeight - offset);
+    const segmentContainer = doc.createElement('div');
+    segmentContainer.style.position = 'fixed';
+    segmentContainer.style.left = '-10000px';
+    segmentContainer.style.top = '0';
+    segmentContainer.style.width = `${totalWidth}px`;
+    segmentContainer.style.height = `${sliceHeight}px`;
+    segmentContainer.style.overflow = 'hidden';
+    segmentContainer.style.pointerEvents = 'none';
+    segmentContainer.style.backgroundColor = '#ffffff';
+    segmentContainer.style.opacity = '0';
+    segmentContainer.style.zIndex = '-1';
+
+    const clone = page.cloneNode(true);
+    clone.style.width = `${totalWidth}px`;
+    clone.style.transform = `translateY(-${offset}px)`;
+    clone.style.transformOrigin = 'top left';
+    clone.style.margin = '0';
+    clone.style.position = 'relative';
+    segmentContainer.appendChild(clone);
+    doc.body.appendChild(segmentContainer);
+
+    try {
+      await waitForQuoteAssets(segmentContainer);
+      const canvas = await html2canvasFn(segmentContainer, {
+        ...baseOptions,
+        height: sliceHeight,
+        windowHeight: sliceHeight,
+        width: totalWidth,
+        windowWidth: totalWidth,
+        scrollX: 0,
+        scrollY: 0
+      });
+      segments.push({ canvas, sliceHeight });
+      logPdfDebug(`captured segment`, { offset, sliceHeight });
+    } finally {
+      segmentContainer.parentNode?.removeChild(segmentContainer);
+      await new Promise((resolve) => view.requestAnimationFrame(resolve));
+    }
+  }
+
+  return segments;
+}
+
+function handlePdfError(error, context = 'export', { toastMessage, suppressToast = false } = {}) {
+  logPdfError(`${context} failed`, error);
+  const alreadyNotified = Boolean(error && error.__artRatioPdfNotified);
+  if (!suppressToast && !alreadyNotified) {
+    const message = toastMessage || t('reservations.quote.errors.exportFailed', '⚠️ تعذر إنشاء ملف PDF، يرجى المحاولة مرة أخرى.');
+    showToast(message);
+    if (error && typeof error === 'object') {
+      try {
+        Object.defineProperty(error, '__artRatioPdfNotified', {
+          value: true,
+          writable: false,
+          enumerable: false,
+          configurable: true
+        });
+      } catch (defineError) {
+        // Ignore decorate failure
+      }
+    }
+  }
+}
+
+function cleanupPdfArtifacts({ container, safariWindowRef, mobileWindowRef } = {}) {
+  try {
+    if (mobileWindowRef && !mobileWindowRef.closed) {
+      mobileWindowRef.close();
+    }
+  } catch (error) {
+    logPdfWarn('failed to close mobile window', error);
+  }
+
+  try {
+    if (safariWindowRef && !safariWindowRef.closed) {
+      safariWindowRef.close();
+    }
+  } catch (error) {
+    logPdfWarn('failed to close safari window', error);
+  }
+
+  if (container && container.parentNode) {
+    container.parentNode.removeChild(container);
+  }
 }
 
 function loadExternalScript(src) {
@@ -674,7 +808,7 @@ async function ensureHtml2Pdf() {
     const html2canvasDefaults = { ...(defaults.html2canvas || {}) };
     html2canvasDefaults.useCORS = true;
     html2canvasDefaults.allowTaint = false;
-    html2canvasDefaults.logging = false;
+    html2canvasDefaults.logging = true;
 
     const jsPdfDefaults = { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true, ...(defaults.jsPDF || {}) };
 
@@ -1167,11 +1301,16 @@ async function waitForQuoteAssets(root) {
   const doc = root.ownerDocument || document;
   const view = doc.defaultView || window;
   const images = Array.from(root.querySelectorAll?.('img') || []);
-  const fontPromise = doc.fonts?.ready ? doc.fonts.ready.catch(() => {}) : Promise.resolve();
-  await Promise.allSettled([
-    fontPromise,
-    ...images.map((img) => waitForImage(img))
-  ]);
+  const fontPromise = doc.fonts?.ready ? doc.fonts.ready : Promise.resolve();
+  const imagePromises = images.map((img) => waitForImage(img));
+  const assetPromises = [fontPromise, ...imagePromises].map((promise) => (
+    promise.catch((error) => {
+      logPdfWarn('asset load failed', error);
+      return null;
+    })
+  ));
+
+  await Promise.all(assetPromises);
   await new Promise((resolve) => view.requestAnimationFrame(() => resolve()));
 }
 
@@ -1431,46 +1570,103 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     ensureHtml2Canvas()
   ]);
 
-  const safariMode = isIosSafari();
   const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const mobileViewport = isMobileViewport();
-  const captureScale = safariMode
-    ? Math.min(1.6, Math.max(1.25, devicePixelRatio * 1.05))
-    : mobileViewport
-      ? Math.min(1.8, Math.max(1.2, devicePixelRatio * 1.2))
-      : Math.min(2.2, Math.max(1.8, devicePixelRatio * 1.5));
-  const jpegQuality = safariMode ? 0.88 : mobileViewport ? 0.92 : 0.95;
+  const safariMode = isIosSafari();
+  const mobileSafari = isMobileSafariBrowser();
+
+  let captureScale;
+  if (mobileSafari) {
+    captureScale = 1.5;
+  } else if (safariMode) {
+    captureScale = Math.min(1.7, Math.max(1.2, devicePixelRatio * 1.1));
+  } else if (mobileViewport) {
+    captureScale = Math.min(1.8, Math.max(1.25, devicePixelRatio * 1.2));
+  } else {
+    captureScale = Math.min(2.0, Math.max(1.6, devicePixelRatio * 1.4));
+  }
+
+  const jpegQuality = mobileSafari ? 0.9 : safariMode ? 0.9 : mobileViewport ? 0.92 : 0.95;
   const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+  const html2canvasBaseOptions = {
+    scale: captureScale,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: '#ffffff',
+    letterRendering: true,
+    removeContainer: false,
+    logging: true
+  };
+
+  let pdfPageIndex = 0;
+  const browserLimitMessage = t('reservations.quote.errors.browserLimit', 'تعذر إتمام عملية التحويل بسبب قيود المتصفح، يرجى إعادة المحاولة أو تقليل حجم المحتوى.');
 
   try {
-    for (let index = 0; index < pages.length; index += 1) {
-      const page = pages[index];
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+      const page = pages[pageIndex];
       await rasterizeQuoteImages(page);
       await waitForQuoteAssets(page);
-      const canvas = await html2canvasFn(page, {
-        scale: captureScale,
-        useCORS: true,
-        allowTaint: false,
-        scrollX: 0,
-        scrollY: 0,
-        backgroundColor: '#ffffff',
-        letterRendering: true,
-        removeContainer: safariMode
-      });
-      const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
-      if (index > 0) {
-        pdf.addPage();
-      }
-      pdf.addImage(imageData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, `page-${index + 1}`, 'FAST');
 
-      // Yield to keep UI responsive, important for mobile devices
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      let segments = [];
+      try {
+        segments = await capturePageSegments(page, html2canvasFn, {
+          baseOptions: html2canvasBaseOptions,
+          segmentHeightPx: PAGE_SEGMENT_MAX_HEIGHT_PX
+        });
+      } catch (segmentError) {
+        handlePdfError(segmentError, 'segmentCapture', { toastMessage: browserLimitMessage });
+        throw segmentError;
+      }
+
+      if (!segments.length) {
+        logPdfWarn('no segments captured, attempting fallback rendering', { pageIndex });
+        try {
+          const fallbackCanvas = await html2canvasFn(page, {
+            ...html2canvasBaseOptions,
+            removeContainer: safariMode
+          });
+          segments.push({ canvas: fallbackCanvas, sliceHeight: page.scrollHeight || PAGE_SEGMENT_MAX_HEIGHT_PX });
+        } catch (fallbackError) {
+          handlePdfError(fallbackError, 'fallbackCapture', { toastMessage: browserLimitMessage });
+          throw fallbackError;
+        }
+      }
+
+      for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex += 1) {
+        const { canvas } = segments[segmentIndex] || {};
+        if (!canvas) {
+          continue;
+        }
+        const canvasWidth = canvas.width || 1;
+        const canvasHeight = canvas.height || 1;
+        const aspectRatio = canvasHeight / canvasWidth;
+        let targetWidthMm = A4_WIDTH_MM;
+        let targetHeightMm = targetWidthMm * aspectRatio;
+        let horizontalOffsetMm = 0;
+
+        if (targetHeightMm > A4_HEIGHT_MM) {
+          const scaleFactor = A4_HEIGHT_MM / targetHeightMm;
+          targetHeightMm = A4_HEIGHT_MM;
+          targetWidthMm = targetWidthMm * scaleFactor;
+          horizontalOffsetMm = Math.max(0, (A4_WIDTH_MM - targetWidthMm) / 2);
+        }
+
+        const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
+
+        if (pdfPageIndex > 0) {
+          pdf.addPage();
+        }
+
+        pdf.addImage(imageData, 'JPEG', horizontalOffsetMm, 0, targetWidthMm, targetHeightMm, `page-${pdfPageIndex + 1}`, 'FAST');
+        pdfPageIndex += 1;
+
+        // Yield to keep UI responsive, important for mobile devices
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      }
     }
   } catch (error) {
-    if (safariWindowRef && !safariWindowRef.closed) {
-      safariWindowRef.close();
-    }
+    cleanupPdfArtifacts({ safariWindowRef, mobileWindowRef });
     throw error;
   }
 
@@ -1835,9 +2031,11 @@ async function exportQuoteAsPdf() {
     : null;
 
   let container = null;
+  const browserLimitMessage = t('reservations.quote.errors.browserLimit', 'تعذر إتمام عملية التحويل بسبب قيود المتصفح، يرجى إعادة المحاولة أو تقليل حجم المحتوى.');
 
   try {
     await ensureHtml2Pdf();
+    logPdfDebug('html2pdf ensured');
 
     const html = buildQuotationHtml({
       reservation: activeQuoteState.reservation,
@@ -1864,6 +2062,7 @@ async function exportQuoteAsPdf() {
     scrubUnsupportedColorFunctions(container);
     sanitizeComputedColorFunctions(container);
     enforceLegacyColorFallback(container);
+    logPdfDebug('export container prepared');
 
     const pdfRoot = container.firstElementChild;
 
@@ -1883,8 +2082,10 @@ async function exportQuoteAsPdf() {
       pdfRoot.scrollLeft = 0;
       try {
         await layoutQuoteDocument(pdfRoot, { context: 'export' });
+        await waitForQuoteAssets(pdfRoot);
+        logPdfDebug('layout complete for export document');
       } catch (layoutError) {
-        console.error('[reservations/pdf] failed to layout export document', layoutError);
+        handlePdfError(layoutError, 'layoutQuoteDocument', { suppressToast: true });
       }
     }
 
@@ -1900,13 +2101,13 @@ async function exportQuoteAsPdf() {
       activeQuoteState.sequenceCommitted = true;
     }
   } catch (error) {
-    if (mobileDownloadWindow && !mobileDownloadWindow.closed) {
-      mobileDownloadWindow.close();
-    }
-    if (safariDownloadWindow && !safariDownloadWindow.closed) {
-      safariDownloadWindow.close();
-    }
-    handlePdfError(error, 'exportQuoteAsPdf');
+    cleanupPdfArtifacts({
+      container,
+      safariWindowRef: safariDownloadWindow,
+      mobileWindowRef: mobileDownloadWindow
+    });
+    container = null;
+    handlePdfError(error, 'exportQuoteAsPdf', { toastMessage: browserLimitMessage });
   } finally {
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
