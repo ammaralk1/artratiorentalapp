@@ -178,15 +178,15 @@
       min-height: 2.1rem;
     }
 
-    .dashboard-header-end .language-toggle-btn,
-    .dashboard-header-end .theme-toggle-btn {
-      padding: 0.3rem 0.6rem;
-      font-size: 0.7rem;
-      border-radius: 9999px;
-      white-space: nowrap;
-      line-height: 1.1;
-      min-width: 5.2rem;
-    }
+  .dashboard-header-end .language-toggle-btn,
+  .dashboard-header-end .theme-toggle-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    border-radius: 0.75rem;
+    white-space: nowrap;
+    line-height: 1.1;
+    min-width: 5.2rem;
+  }
 
     .dashboard-header-end .language-toggle-btn {
       grid-column: 1;
@@ -196,18 +196,19 @@
     .dashboard-header-end .theme-toggle-btn {
       grid-column: 2;
       grid-row: 1;
-      width: 2.4rem;
-      min-width: 2.4rem;
-      padding: 0.3rem;
-    }
+    width: 2.4rem;
+    min-width: 2.4rem;
+    padding: 0.3rem;
+    border-radius: 0.75rem;
+  }
 
-    .dashboard-header-end #logout-btn {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      justify-self: stretch;
-      padding: 0.35rem 0.7rem;
-      font-size: 0.74rem;
-      border-radius: 9999px;
+  .dashboard-header-end #logout-btn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.74rem;
+    border-radius: 0.9rem;
       min-width: 5.2rem;
     }
 
@@ -858,7 +859,8 @@
 
   .dashboard-tabbar {
     @apply mx-auto;
-    max-width: min(100%, 60rem);
+    max-width: min(100%, 72rem);
+    width: min(100%, 96vw);
     background: linear-gradient(135deg, rgba(248, 250, 255, 0.9), rgba(232, 240, 255, 0.82));
     border: 1px solid rgba(76, 110, 245, 0.18);
     box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
@@ -871,18 +873,25 @@
   }
 
   .dashboard-tabbar .tab-buttons-horizontal {
-    @apply justify-center;
-    gap: 0.6rem;
+    @apply justify-between;
+    gap: clamp(0.6rem, 2vw, 1rem);
   }
 
   .dashboard-tabbar .tab-buttons {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(236, 243, 255, 0.82));
     border: 1px solid rgba(76, 110, 245, 0.12);
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 12px 24px rgba(76, 110, 245, 0.08);
-    padding: 0.35rem 0.5rem;
+    padding: 0.35rem 0.8rem;
     border-radius: 999px;
     width: 100%;
     max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .dashboard-tabbar .tab-buttons::-webkit-scrollbar {
+    display: none;
   }
 
   .dashboard-tabbar .tab-button {
@@ -946,13 +955,13 @@
 
   @media (min-width: 1536px) {
     .dashboard-tabbar {
-      max-width: 52rem;
+      max-width: min(100%, 78rem);
     }
   }
 
   @media (min-width: 1024px) {
     .dashboard-tabbar {
-      max-width: min(100%, 56rem);
+      max-width: min(100%, 72rem);
       padding: 1.25rem 1.5rem;
       border-radius: 2.25rem;
     }
@@ -2779,24 +2788,50 @@
 
   .language-toggle-btn,
   .theme-toggle-btn {
-    @apply btn btn-xs sm:btn-sm md:btn-md btn-ghost rounded-full border border-base-300;
-    border-color: hsl(var(--bc) / 0.35);
+    @apply btn btn-xs sm:btn-sm md:btn-md font-semibold;
+    border-radius: 0.85rem;
+    border: 1px solid hsl(var(--bc) / 0.2);
+    background-color: hsl(var(--b1) / 0.92);
+    color: hsl(var(--bc));
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
 
   .language-toggle-btn {
     white-space: nowrap;
     line-height: 1.2;
-    font-size: clamp(0.72rem, 2vw, 0.85rem);
-    padding-inline: 0.85rem;
+    font-size: clamp(0.75rem, 2vw, 0.92rem);
+    padding-inline: 1rem;
+  }
+
+  .theme-toggle-btn {
+    @apply px-3;
   }
 
   .language-toggle-btn:hover,
   .theme-toggle-btn:hover {
     border-color: hsl(var(--p) / 0.45);
+    box-shadow: 0 16px 34px rgba(76, 110, 245, 0.18);
+    transform: translateY(-1px);
+  }
+
+  :where(html.dark, body.dark) .language-toggle-btn,
+  :where(html.dark, body.dark) .theme-toggle-btn {
+    border-color: rgba(99, 102, 241, 0.45);
+    background-color: rgba(16, 26, 46, 0.85);
+    color: rgba(226, 232, 240, 0.95);
+    box-shadow: 0 20px 40px rgba(5, 12, 28, 0.45);
+  }
+
+  :where(html.dark, body.dark) .language-toggle-btn:hover,
+  :where(html.dark, body.dark) .theme-toggle-btn:hover {
+    border-color: rgba(129, 140, 248, 0.65);
+    color: #f8fafc;
   }
 
   #logout-btn {
-    @apply btn btn-xs sm:btn-sm md:btn-md rounded-full font-semibold;
+    @apply btn btn-xs sm:btn-sm md:btn-md font-semibold;
+    border-radius: 0.9rem;
     background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(244, 63, 94, 0.2));
     color: #b91c1c;
     border: 2px solid rgba(239, 68, 68, 0.55);
@@ -2825,7 +2860,7 @@
   }
 
   .theme-toggle-btn {
-    @apply btn-ghost swap swap-rotate px-3;
+    @apply swap swap-rotate px-3;
   }
 
   .theme-toggle-btn svg {
@@ -2838,10 +2873,6 @@
 
   .theme-toggle-btn .swap-off {
     @apply text-warning;
-  }
-
-  .language-toggle-btn {
-    @apply btn-ghost;
   }
 
   .add-project-btn {
