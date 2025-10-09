@@ -204,12 +204,16 @@ function isFieldEnabledInSelections(selections = {}, sectionId, fieldId) {
   return Boolean(set?.[fieldId]);
 }
 
+function buildDefaultSectionExpansions() {
+  return Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, false]));
+}
+
 function ensureSectionExpansionState(state, sectionId) {
   if (!state.sectionExpansions) {
-    state.sectionExpansions = Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, true]));
+    state.sectionExpansions = buildDefaultSectionExpansions();
   }
   if (sectionId && typeof state.sectionExpansions[sectionId] !== 'boolean') {
-    state.sectionExpansions[sectionId] = true;
+    state.sectionExpansions[sectionId] = false;
   }
   return state.sectionExpansions;
 }
@@ -2191,7 +2195,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     rentalDays,
     currencyLabel,
     sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
-    sectionExpansions: Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, true])),
+    sectionExpansions: buildDefaultSectionExpansions(),
     fields: buildDefaultFieldSelections(),
     quoteSequence: sequence,
     quoteNumber,
