@@ -1199,7 +1199,7 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   }
 }
 
-async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null }) {
+async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, mobileWindowRef = null }) {
   if (!root) return;
   const pages = Array.from(root.querySelectorAll('.quote-page'));
   if (!pages.length) {
@@ -1252,21 +1252,25 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null })
     throw error;
   }
 
-  if (safariMode) {
-    const blobUrl = pdf.output('bloburl');
-    if (safariWindowRef && !safariWindowRef.closed) {
-      safariWindowRef.location.href = blobUrl;
-    } else {
-      const tempLink = document.createElement('a');
-      tempLink.href = blobUrl;
-      tempLink.download = filename;
-      tempLink.rel = 'noopener';
-      tempLink.target = '_blank';
-      document.body.appendChild(tempLink);
-      tempLink.click();
-      document.body.removeChild(tempLink);
+  const needsBlobDelivery = safariMode || (mobileWindowRef && !mobileWindowRef.closed);
+
+  if (needsBlobDelivery) {
+    const blob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (safariMode) {
+      if (safariWindowRef && !safariWindowRef.closed) {
+        safariWindowRef.location.href = blobUrl;
+        safariWindowRef.focus?.();
+      } else {
+        window.open(blobUrl, '_blank');
+      }
+    } else if (mobileWindowRef && !mobileWindowRef.closed) {
+      mobileWindowRef.location.href = blobUrl;
+      mobileWindowRef.focus?.();
     }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   } else {
     pdf.save(filename);
   }
@@ -1632,6 +1636,7 @@ async function exportQuoteAsPdf() {
   const pdfRoot = container.firstElementChild;
 
   const useHtml2PdfOnMobile = isMobileViewport();
+  const mobileDownloadWindow = useHtml2PdfOnMobile ? window.open('about:blank', '_blank') : null;
   const safariDownloadWindow = (!useHtml2PdfOnMobile && isIosSafari())
     ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
     : null;
@@ -1658,15 +1663,20 @@ async function exportQuoteAsPdf() {
 
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    if (useHtml2PdfOnMobile) {
-      await renderQuotePagesAsPdf(pdfRoot, { filename });
-    } else {
-      await renderQuotePagesAsPdf(pdfRoot, { filename, safariWindowRef: safariDownloadWindow });
-    }
+    await renderQuotePagesAsPdf(pdfRoot, {
+      filename,
+      safariWindowRef: safariDownloadWindow,
+      mobileWindowRef: mobileDownloadWindow
+    });
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
     }
+  } catch (error) {
+    if (mobileDownloadWindow && !mobileDownloadWindow.closed) {
+      mobileDownloadWindow.close();
+    }
+    throw error;
   } finally {
     document.body.removeChild(container);
   }
