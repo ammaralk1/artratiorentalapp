@@ -142,6 +142,11 @@ const MODERN_COLOR_REGEX = /(color\(|color-mix\()/i;
 const colorCanvas = document.createElement('canvas');
 const colorCtx = colorCanvas.getContext('2d');
 
+const SVG_DATA_URI_REGEX = /^data:image\/svg\+xml/i;
+const SVG_EXTENSION_REGEX = /\.svg($|[?#])/i;
+const SVG_FALLBACK_DIMENSION = 512;
+const TRANSPARENT_PIXEL_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/B8AAusB9YwpClgAAAAASUVORK5CYII=';
+
 // Render A4 pages at their physical size in the preview (96 DPI assumption).
 const CSS_DPI = 96;
 const MM_PER_INCH = 25.4;
@@ -386,6 +391,199 @@ function enforceLegacyColorFallback(root, view = window) {
   });
 }
 
+function parseSvgDimension(value, fallback = SVG_FALLBACK_DIMENSION) {
+  if (typeof value !== 'string' && typeof value !== 'number') return fallback;
+  const numeric = parseFloat(String(value).replace(/[^0-9.+-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function resolveSvgElementDimensions(svgElement) {
+  if (!svgElement) {
+    return { width: SVG_FALLBACK_DIMENSION, height: SVG_FALLBACK_DIMENSION };
+  }
+
+  const widthAttr = svgElement.getAttribute?.('width');
+  const heightAttr = svgElement.getAttribute?.('height');
+  let width = widthAttr ? parseSvgDimension(widthAttr, 0) : 0;
+  let height = heightAttr ? parseSvgDimension(heightAttr, 0) : 0;
+
+  if (width > 0 && height > 0) {
+    return { width, height };
+  }
+
+  const viewBox = svgElement.getAttribute?.('viewBox');
+  if (viewBox) {
+    const parts = viewBox.trim().split(/[\s,]+/).map((part) => parseFloat(part || '0'));
+    if (parts.length >= 4) {
+      const [, , vbWidth, vbHeight] = parts;
+      width = width || (Number.isFinite(vbWidth) && vbWidth > 0 ? vbWidth : 0);
+      height = height || (Number.isFinite(vbHeight) && vbHeight > 0 ? vbHeight : 0);
+    }
+  }
+
+  return {
+    width: width || SVG_FALLBACK_DIMENSION,
+    height: height || SVG_FALLBACK_DIMENSION
+  };
+}
+
+function isSvgImageSource(src = '') {
+  if (typeof src !== 'string') return false;
+  return SVG_DATA_URI_REGEX.test(src) || SVG_EXTENSION_REGEX.test(src);
+}
+
+function decodeSvgDataUri(dataUri = '') {
+  const commaIndex = dataUri.indexOf(',');
+  if (commaIndex === -1) return '';
+  const metadata = dataUri.slice(0, commaIndex);
+  const payload = dataUri.slice(commaIndex + 1);
+  try {
+    if (/;base64/i.test(metadata)) {
+      return typeof atob === 'function' ? atob(payload) : '';
+    }
+    return decodeURIComponent(payload);
+  } catch (error) {
+    console.warn('[reservations/pdf] failed to decode SVG data URI', error);
+    return '';
+  }
+}
+
+function loadImageElement(src, { crossOrigin } = {}) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    if (crossOrigin) {
+      image.crossOrigin = crossOrigin;
+    }
+    image.onload = () => resolve(image);
+    image.onerror = (event) => {
+      const message = event?.message || `Unable to load image from ${src}`;
+      reject(new Error(message));
+    };
+    image.src = src;
+  });
+}
+
+async function rasterizeSvgContent(svgMarkup, dimensions = {}) {
+  if (!svgMarkup) return null;
+  const doc = document;
+  const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = await loadImageElement(url);
+    const canvas = doc.createElement('canvas');
+    const width = Math.max(dimensions.width || image.naturalWidth || image.width || 0, 1);
+    const height = Math.max(dimensions.height || image.naturalHeight || image.height || width, 1);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL('image/png');
+  } catch (error) {
+    console.warn('[reservations/pdf] failed to rasterize SVG content', error);
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function fetchSvgMarkup(src) {
+  if (!src) return null;
+  if (SVG_DATA_URI_REGEX.test(src)) {
+    return decodeSvgDataUri(src);
+  }
+
+  try {
+    const response = await fetch(src, {
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'default'
+    });
+    if (!response.ok) {
+      console.warn('[reservations/pdf] failed to fetch SVG image', src, response.status);
+      return null;
+    }
+    return await response.text();
+  } catch (error) {
+    console.warn('[reservations/pdf] error fetching SVG image', src, error);
+    return null;
+  }
+}
+
+async function convertSvgImageElement(img) {
+  if (!img) return false;
+  const src = img.getAttribute?.('src') || '';
+  if (!isSvgImageSource(src)) return false;
+  const svgMarkup = await fetchSvgMarkup(src);
+  if (!svgMarkup) {
+    img.dataset.svgRasterization = 'failed';
+    img.setAttribute('src', TRANSPARENT_PIXEL_DATA_URL);
+    return false;
+  }
+  const dataUrl = await rasterizeSvgContent(svgMarkup);
+  if (!dataUrl) {
+    img.dataset.svgRasterization = 'failed';
+    img.setAttribute('src', TRANSPARENT_PIXEL_DATA_URL);
+    return false;
+  }
+  img.dataset.svgOriginalSrc = src;
+  img.setAttribute('src', dataUrl);
+  img.setAttribute('data-rasterized', 'true');
+  return true;
+}
+
+async function convertInlineSvgElement(svgElement) {
+  if (!svgElement || svgElement.tagName?.toLowerCase() !== 'svg') return false;
+  const serializer = new XMLSerializer();
+  const markup = serializer.serializeToString(svgElement);
+  const dimensions = resolveSvgElementDimensions(svgElement);
+  const dataUrl = await rasterizeSvgContent(markup, dimensions);
+  const doc = svgElement.ownerDocument || document;
+  const replacement = doc.createElement('img');
+  replacement.setAttribute('src', dataUrl || TRANSPARENT_PIXEL_DATA_URL);
+  replacement.setAttribute('alt', svgElement.getAttribute('aria-label') || svgElement.getAttribute('title') || '');
+  replacement.setAttribute('data-svg-replaced', 'true');
+  if (svgElement.hasAttribute('class')) {
+    replacement.setAttribute('class', svgElement.getAttribute('class'));
+  }
+  if (svgElement.hasAttribute('style')) {
+    replacement.setAttribute('style', svgElement.getAttribute('style'));
+  }
+  const widthAttr = svgElement.getAttribute('width');
+  const heightAttr = svgElement.getAttribute('height');
+  if (widthAttr) replacement.setAttribute('width', widthAttr);
+  if (heightAttr) replacement.setAttribute('height', heightAttr);
+
+  svgElement.parentNode?.replaceChild(replacement, svgElement);
+  return Boolean(dataUrl);
+}
+
+async function rasterizeQuoteImages(root) {
+  if (!root) return;
+  const images = Array.from(root.querySelectorAll?.('img') || []);
+  const inlinedSvgs = Array.from(root.querySelectorAll?.('svg') || []);
+
+  const tasks = [];
+  images.forEach((img) => {
+    if (isSvgImageSource(img.getAttribute?.('src'))) {
+      tasks.push(convertSvgImageElement(img));
+    }
+  });
+
+  inlinedSvgs.forEach((svg) => {
+    tasks.push(convertInlineSvgElement(svg));
+  });
+
+  if (tasks.length) {
+    await Promise.allSettled(tasks);
+  }
+}
+
+function handlePdfError(error, context = 'export') {
+  console.error(`[reservations/pdf] ${context} failed`, error);
+  showToast(t('reservations.quote.errors.exportFailed', '⚠️ تعذر إنشاء ملف PDF، يرجى المحاولة مرة أخرى.'));
+}
+
 function loadExternalScript(src) {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -470,6 +668,27 @@ async function ensureJsPdf() {
 async function ensureHtml2Pdf() {
   if (!window.html2pdf) {
     await loadExternalScript(HTML2PDF_SRC);
+  }
+  if (window.html2pdf && !window.html2pdf.__artRatioConfigured) {
+    const defaults = window.html2pdf.defaultOptions || window.html2pdf.defaultOpt || {};
+    const html2canvasDefaults = { ...(defaults.html2canvas || {}) };
+    html2canvasDefaults.useCORS = true;
+    html2canvasDefaults.allowTaint = false;
+    html2canvasDefaults.logging = false;
+
+    const jsPdfDefaults = { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true, ...(defaults.jsPDF || {}) };
+
+    const mergedDefaults = {
+      image: { type: 'jpeg', quality: 0.95, ...(defaults.image || {}) },
+      margin: defaults.margin ?? [0, 0, 0, 0],
+      filename: defaults.filename || 'document.pdf',
+      html2canvas: html2canvasDefaults,
+      jsPDF: jsPdfDefaults
+    };
+
+    window.html2pdf.defaultOptions = mergedDefaults;
+    window.html2pdf.defaultOpt = mergedDefaults;
+    window.html2pdf.__artRatioConfigured = true;
   }
   patchHtml2CanvasColorParsing();
 }
@@ -975,6 +1194,7 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   pagesContainer.style.alignItems = 'stretch';
   pagesContainer.style.justifyContent = 'flex-start';
 
+  await rasterizeQuoteImages(sourceContainer);
   await waitForQuoteAssets(sourceContainer);
 
   pagesContainer.innerHTML = '';
@@ -1225,10 +1445,12 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
   try {
     for (let index = 0; index < pages.length; index += 1) {
       const page = pages[index];
+      await rasterizeQuoteImages(page);
       await waitForQuoteAssets(page);
       const canvas = await html2canvasFn(page, {
         scale: captureScale,
         useCORS: true,
+        allowTaint: false,
         scrollX: 0,
         scrollY: 0,
         backgroundColor: '#ffffff',
@@ -1605,69 +1827,74 @@ function updateQuoteMeta() {
 
 async function exportQuoteAsPdf() {
   if (!activeQuoteState) return;
-  await ensureHtml2Pdf();
-
-  const html = buildQuotationHtml({
-    reservation: activeQuoteState.reservation,
-    customer: activeQuoteState.customer,
-    project: activeQuoteState.project,
-    technicians: activeQuoteState.technicians,
-    totalsDisplay: activeQuoteState.totalsDisplay,
-    rentalDays: activeQuoteState.rentalDays,
-    currencyLabel: activeQuoteState.currencyLabel,
-    sections: activeQuoteState.sections,
-    fieldSelections: activeQuoteState.fields,
-    quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel
-  });
-
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  container.style.position = 'fixed';
-  container.style.top = '-10000px';
-  container.style.left = '0';
-  container.style.zIndex = '-1';
-  document.body.appendChild(container);
-
-  scrubUnsupportedColorFunctions(container);
-  sanitizeComputedColorFunctions(container);
-  enforceLegacyColorFallback(container);
-
-  const pdfRoot = container.firstElementChild;
-
-  const useHtml2PdfOnMobile = isMobileViewport();
-  const mobileDownloadWindow = useHtml2PdfOnMobile ? window.open('', '_blank') : null;
-  const safariDownloadWindow = (!useHtml2PdfOnMobile && isIosSafari())
+  const mobileViewport = isMobileViewport();
+  const safariPopupRequired = !mobileViewport && isIosSafari();
+  const mobileDownloadWindow = mobileViewport ? window.open('', '_blank') : null;
+  const safariDownloadWindow = safariPopupRequired
     ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
     : null;
-  if (pdfRoot) {
-    pdfRoot.setAttribute('dir', 'rtl');
-    pdfRoot.style.direction = 'rtl';
-    pdfRoot.style.textAlign = 'right';
-    pdfRoot.setAttribute('data-theme', 'light');
-    pdfRoot.classList.remove('dark', 'dark-mode');
-    pdfRoot.style.margin = '0';
-    pdfRoot.style.padding = '0';
-    pdfRoot.style.width = '210mm';
-    pdfRoot.style.maxWidth = '210mm';
-    pdfRoot.style.marginLeft = 'auto';
-    pdfRoot.style.marginRight = 'auto';
-    pdfRoot.scrollTop = 0;
-    pdfRoot.scrollLeft = 0;
-    try {
-      await layoutQuoteDocument(pdfRoot, { context: 'export' });
-    } catch (error) {
-      console.error('[reservations/pdf] failed to layout export document', error);
-    }
-  }
+
+  let container = null;
 
   try {
+    await ensureHtml2Pdf();
+
+    const html = buildQuotationHtml({
+      reservation: activeQuoteState.reservation,
+      customer: activeQuoteState.customer,
+      project: activeQuoteState.project,
+      technicians: activeQuoteState.technicians,
+      totalsDisplay: activeQuoteState.totalsDisplay,
+      rentalDays: activeQuoteState.rentalDays,
+      currencyLabel: activeQuoteState.currencyLabel,
+      sections: activeQuoteState.sections,
+      fieldSelections: activeQuoteState.fields,
+      quoteNumber: activeQuoteState.quoteNumber,
+      quoteDate: activeQuoteState.quoteDateLabel
+    });
+
+    container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'fixed';
+    container.style.top = '-10000px';
+    container.style.left = '0';
+    container.style.zIndex = '-1';
+    document.body.appendChild(container);
+
+    scrubUnsupportedColorFunctions(container);
+    sanitizeComputedColorFunctions(container);
+    enforceLegacyColorFallback(container);
+
+    const pdfRoot = container.firstElementChild;
+
+    if (pdfRoot) {
+      pdfRoot.setAttribute('dir', 'rtl');
+      pdfRoot.style.direction = 'rtl';
+      pdfRoot.style.textAlign = 'right';
+      pdfRoot.setAttribute('data-theme', 'light');
+      pdfRoot.classList.remove('dark', 'dark-mode');
+      pdfRoot.style.margin = '0';
+      pdfRoot.style.padding = '0';
+      pdfRoot.style.width = '210mm';
+      pdfRoot.style.maxWidth = '210mm';
+      pdfRoot.style.marginLeft = 'auto';
+      pdfRoot.style.marginRight = 'auto';
+      pdfRoot.scrollTop = 0;
+      pdfRoot.scrollLeft = 0;
+      try {
+        await layoutQuoteDocument(pdfRoot, { context: 'export' });
+      } catch (layoutError) {
+        console.error('[reservations/pdf] failed to layout export document', layoutError);
+      }
+    }
+
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
     await renderQuotePagesAsPdf(pdfRoot, {
       filename,
       safariWindowRef: safariDownloadWindow,
       mobileWindowRef: mobileDownloadWindow
     });
+
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
@@ -1676,9 +1903,14 @@ async function exportQuoteAsPdf() {
     if (mobileDownloadWindow && !mobileDownloadWindow.closed) {
       mobileDownloadWindow.close();
     }
-    throw error;
+    if (safariDownloadWindow && !safariDownloadWindow.closed) {
+      safariDownloadWindow.close();
+    }
+    handlePdfError(error, 'exportQuoteAsPdf');
   } finally {
-    document.body.removeChild(container);
+    if (container && container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
   }
 }
 
