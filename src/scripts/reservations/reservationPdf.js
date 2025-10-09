@@ -1620,12 +1620,7 @@ async function exportQuoteAsPdf() {
 
   const pdfRoot = container.firstElementChild;
 
-  const safariDownloadWindow = isIosSafari() ? window.open('about:blank', '_blank') : null;
-  if (safariDownloadWindow) {
-    safariDownloadWindow.document.open();
-    safariDownloadWindow.document.write('<html dir="rtl"><head><title>جاري تجهيز ملف PDF</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family: \"Tajawal\", sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#0f172a; color:#e2e8f0; margin:0;">جاري تجهيز ملف الـPDF...</body></html>');
-    safariDownloadWindow.document.close();
-  }
+  const safariDownloadWindow = isIosSafari() ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank') : null;
   if (pdfRoot) {
     pdfRoot.setAttribute('dir', 'rtl');
     pdfRoot.style.direction = 'rtl';
