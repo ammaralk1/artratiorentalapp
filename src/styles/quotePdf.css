@@ -46,6 +46,16 @@ body,
   margin: 0;
 }
 
+[data-quote-source] {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  width: 210mm;
+  max-width: 210mm;
+  top: -99999px;
+  left: -99999px;
+}
+
 .quote-page {
   position: relative;
   width: 210mm;
@@ -91,7 +101,7 @@ body,
 }
 
 .quote-body {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -499,8 +509,28 @@ body,
   padding-top: 4mm;
 }
 
+.quote-section--table-fragment {
+  padding-top: 4mm;
+}
+
+.quote-section--table-fragment--continued {
+  padding-top: 2mm;
+  margin-top: 6px;
+}
+
+.quote-section--table-fragment--continued h3 {
+  margin-top: 0;
+}
+
+.quote-section--table-fragment--overflow {
+  overflow: visible;
+}
+
 .quote-page .quote-section--table:first-of-type {
   padding-top: 0;
+}
+.quote-page .quote-section--table.quote-section--table-fragment--continued:first-of-type {
+  padding-top: 2mm;
 }
 
 .quote-table {
@@ -581,8 +611,11 @@ body,
 
 @media print {
   #quotation-pdf-root {
-    width: auto;
+    width: 210mm;
+    min-width: 210mm;
+    max-width: 210mm;
     min-height: auto;
     padding: 0;
+    margin: 0 auto;
   }
 }

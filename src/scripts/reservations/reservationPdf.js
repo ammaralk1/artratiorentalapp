@@ -53,10 +53,31 @@ const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
+const PAGE_OVERFLOW_TOLERANCE_PX = 2;
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
+
+function withBlockAttributes(markup, { blockType = 'section', extraAttributes = '' } = {}) {
+  if (!markup) return '';
+  const extra = extraAttributes ? ` ${extraAttributes.trim()}` : '';
+  return markup.replace(/^(<\w+)/, `$1 data-quote-block data-block-type="${blockType}"${extra}`);
+}
+
+function buildPlaceholderBlock(messageKey, fallback = 'لا توجد بيانات للعرض.') {
+  const message = escapeHtml(t(messageKey, fallback));
+  return withBlockAttributes(
+    `<section class="quote-section quote-placeholder">${message}</section>`,
+    { blockType: 'placeholder' }
+  );
+}
+
+function ensureBlocks(blocks, placeholderKey) {
+  return Array.isArray(blocks) && blocks.length
+    ? blocks
+    : [buildPlaceholderBlock(placeholderKey)];
+}
 
 function normalizeColorValue(rawValue, fallback = '#000') {
   if (!colorCtx || !rawValue) return fallback;
@@ -419,7 +440,7 @@ function buildQuotationHtml({
     return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
   };
 
-  const customerSection = includeSection('customerInfo')
+  const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
         <div class="info-plain">
@@ -431,7 +452,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const reservationSection = includeSection('reservationInfo')
+  const reservationSectionMarkup = includeSection('reservationInfo')
     ? `<section class="quote-section quote-section--plain quote-section--reservation">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
         <div class="info-plain">
@@ -443,7 +464,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const projectSection = includeSection('projectInfo')
+  const projectSectionMarkup = includeSection('projectInfo')
     ? `<section class="quote-section quote-section--plain">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
         <div class="info-plain">
@@ -453,7 +474,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const financialSection = includeSection('financialSummary')
+  const financialSectionMarkup = includeSection('financialSummary')
     ? `<section class="quote-section quote-section--financial">
         <div class="totals-block">
           <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
@@ -468,7 +489,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const itemsSection = includeSection('items')
+  const itemsSectionMarkup = includeSection('items')
     ? `<section class="quote-section quote-section--table">
         <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
         <table class="quote-table">
@@ -486,7 +507,7 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const crewSection = includeSection('crew')
+  const crewSectionMarkup = includeSection('crew')
     ? `<section class="quote-section quote-section--table">
         <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
         <table class="quote-table">
@@ -503,14 +524,14 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const notesSection = includeSection('notes')
+  const notesSectionMarkup = includeSection('notes')
     ? `<section class="quote-section">
         <h3>${escapeHtml(t('reservations.details.labels.notes', 'ملاحظات الحجز'))}</h3>
         <div class="quote-notes">${notes ? escapeHtml(notes) : escapeHtml(t('reservations.quote.emptyNotes', 'لا توجد ملاحظات إضافية.'))}</div>
       </section>`
     : '';
 
-  const paymentDetails = `<section class="quote-section">
+  const paymentSectionMarkup = `<section class="quote-section">
       <div class="payment-block">
         <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
         <div class="info-plain info-plain--dense info-plain--right">
@@ -523,46 +544,61 @@ function buildQuotationHtml({
       <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
 
-  const termsSection = `<footer class="quote-footer">
+  const termsSectionMarkup = `<footer class="quote-footer">
         <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
         <ul>${QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
       </footer>`;
 
-  const ensureContent = (content, fallbackKey) => content && content.trim().length
-    ? content
-    : `<section class="quote-section quote-placeholder">${escapeHtml(t(fallbackKey, 'لا توجد بيانات للعرض.'))}</section>`;
+  const primaryBlocks = [];
 
-  let infoPair = '';
-  let customerSectionFinal = customerSection;
-  let reservationSectionFinal = reservationSection;
-  if (customerSection && reservationSection) {
-    infoPair = `<div class="quote-section-row">${reservationSection}${customerSection}</div>`;
-    customerSectionFinal = '';
-    reservationSectionFinal = '';
+  if (customerSectionMarkup && reservationSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(
+      `<div class="quote-section-row">${reservationSectionMarkup}${customerSectionMarkup}</div>`,
+      { blockType: 'group' }
+    ));
+  } else {
+    if (reservationSectionMarkup) {
+      primaryBlocks.push(withBlockAttributes(reservationSectionMarkup));
+    }
+    if (customerSectionMarkup) {
+      primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
+    }
   }
 
-  const tableSections = [itemsSection, crewSection].filter(Boolean);
-  const tableContent = tableSections.join('');
+  if (projectSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+  }
 
-  const pageOneContent = ensureContent([
-    infoPair || customerSectionFinal,
-    reservationSectionFinal,
-    projectSection
-  ].filter(Boolean).join(''), 'reservations.quote.placeholder.page1');
+  const tableBlocks = [];
+  if (itemsSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(itemsSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="items"' }));
+  }
+  if (crewSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(crewSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="crew"' }));
+  }
 
-  const tablesPageContent = tableContent
-    ? ensureContent(tableContent, 'reservations.quote.placeholder.tables')
-    : '';
+  const summaryBlocks = [];
+  if (notesSectionMarkup) {
+    summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
+  }
+  if (financialSectionMarkup) {
+    summaryBlocks.push(withBlockAttributes(financialSectionMarkup, { blockType: 'summary' }));
+  }
 
-  const pageTwoContent = ensureContent([
-    notesSection,
-    financialSection
-  ].filter(Boolean).join(''), 'reservations.quote.placeholder.page2');
+  const footerBlocks = [
+    withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' }),
+    withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
+  ];
 
-  const pageThreeContent = [paymentDetails, termsSection].join('');
+  const orderedBlocks = [
+    ...ensureBlocks(primaryBlocks, 'reservations.quote.placeholder.page1'),
+    ...tableBlocks,
+    ...ensureBlocks(summaryBlocks, 'reservations.quote.placeholder.page2'),
+    ...footerBlocks
+  ];
 
-  const headerHtml = `
-    <header class="quote-header">
+  const headerTemplateHtml = `
+    <header class="quote-header" data-quote-header-template>
       <div class="quote-header__logo">
         <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
@@ -581,42 +617,212 @@ function buildQuotationHtml({
           <strong>${escapeHtml(quoteDate)}</strong>
         </div>
       </div>
-    </header>`;
+    </header>
+  `.trim();
 
   return `
     <div id="quotation-pdf-root" dir="rtl">
       <style>${QUOTE_PDF_STYLES}</style>
-
-      <div class="quote-preview-pages">
-        <div class="quote-page quote-page--primary">
-          ${headerHtml}
-          <main class="quote-body">
-            ${pageOneContent}
-          </main>
-        </div>
-
-        ${tableContent ? `
-        <div class="quote-page quote-page--tables">
-          <main class="quote-body">
-            ${tablesPageContent}
-          </main>
-        </div>
-        ` : ''}
-
-        <div class="quote-page">
-          <main class="quote-body">
-            ${pageTwoContent}
-          </main>
-        </div>
-
-        <div class="quote-page">
-          <main class="quote-body">
-            ${pageThreeContent}
-          </main>
+      <div class="quote-document" data-quote-document>
+        <div class="quote-preview-pages" data-quote-pages></div>
+        <div class="quote-content-source" data-quote-source>
+          ${headerTemplateHtml}
+          ${orderedBlocks.join('')}
         </div>
       </div>
     </div>
   `;
+}
+
+function waitForImage(image) {
+  if (!image) return Promise.resolve();
+  if (image.complete && image.naturalHeight !== 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    const finalize = () => resolve();
+    image.addEventListener('load', finalize, { once: true });
+    image.addEventListener('error', finalize, { once: true });
+  });
+}
+
+async function waitForQuoteAssets(root) {
+  if (!root) return;
+  const doc = root.ownerDocument || document;
+  const view = doc.defaultView || window;
+  const images = Array.from(root.querySelectorAll?.('img') || []);
+  const fontPromise = doc.fonts?.ready ? doc.fonts.ready.catch(() => {}) : Promise.resolve();
+  await Promise.allSettled([
+    fontPromise,
+    ...images.map((img) => waitForImage(img))
+  ]);
+  await new Promise((resolve) => view.requestAnimationFrame(() => resolve()));
+}
+
+async function layoutQuoteDocument(root) {
+  if (!root) return;
+  const doc = root.ownerDocument || document;
+  const pagesContainer = root.querySelector('[data-quote-pages]');
+  const sourceContainer = root.querySelector('[data-quote-source]');
+  const headerTemplate = sourceContainer?.querySelector('[data-quote-header-template]');
+  if (!pagesContainer || !sourceContainer || !headerTemplate) return;
+
+  await waitForQuoteAssets(sourceContainer);
+
+  pagesContainer.innerHTML = '';
+
+  const blockNodes = Array.from(sourceContainer.querySelectorAll(':scope > [data-quote-block]'));
+
+  let pageIndex = 0;
+  let currentPage = null;
+  let currentBody = null;
+
+  const createPage = () => {
+    const page = doc.createElement('div');
+    page.className = 'quote-page';
+    if (pageIndex === 0) {
+      page.classList.add('quote-page--primary');
+    }
+    const headerClone = headerTemplate.cloneNode(true);
+    headerClone.removeAttribute('data-quote-header-template');
+    const body = doc.createElement('main');
+    body.className = 'quote-body';
+    page.appendChild(headerClone);
+    page.appendChild(body);
+    pagesContainer.appendChild(page);
+    currentPage = page;
+    currentBody = body;
+    pageIndex += 1;
+  };
+
+  const ensurePage = () => {
+    if (!currentPage || !currentBody) {
+      createPage();
+    }
+  };
+
+  const moveToNextPage = () => {
+    createPage();
+  };
+
+  const isOverflowing = () => {
+    if (!currentPage) return false;
+    return (currentPage.scrollHeight - currentPage.clientHeight) > PAGE_OVERFLOW_TOLERANCE_PX;
+  };
+
+  const appendBlock = (node, { allowOverflow = false } = {}) => {
+    currentBody.appendChild(node);
+    if (isOverflowing() && !allowOverflow) {
+      currentBody.removeChild(node);
+      return false;
+    }
+    return true;
+  };
+
+  const placeBlock = (node) => {
+    const clone = node.cloneNode(true);
+    clone.removeAttribute?.('data-quote-block');
+    clone.removeAttribute?.('data-block-type');
+    clone.removeAttribute?.('data-table-id');
+    if (appendBlock(clone)) return;
+    moveToNextPage();
+    if (appendBlock(clone)) return;
+    appendBlock(clone, { allowOverflow: true });
+  };
+
+  const paginateTableBlock = (node) => {
+    const table = node.querySelector('table');
+    if (!table) {
+      placeBlock(node);
+      return;
+    }
+
+    const heading = node.querySelector('h3');
+    const tableHead = table.querySelector('thead');
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    if (!rows.length) {
+      placeBlock(node);
+      return;
+    }
+
+    let fragment = null;
+    let renderedRowCount = 0;
+
+    const createFragment = (isContinuation = false) => {
+      const section = node.cloneNode(false);
+      section.removeAttribute('data-quote-block');
+      section.removeAttribute('data-block-type');
+      section.removeAttribute('data-table-id');
+      section.classList.add('quote-section--table-fragment');
+      if (isContinuation) {
+        section.classList.add('quote-section--table-fragment--continued');
+      }
+      const headingClone = heading ? heading.cloneNode(true) : null;
+      if (headingClone) {
+        section.appendChild(headingClone);
+      }
+      const tableClone = table.cloneNode(false);
+      tableClone.classList.add('quote-table--fragment');
+      if (tableHead) {
+        tableClone.appendChild(tableHead.cloneNode(true));
+      }
+      const body = doc.createElement('tbody');
+      tableClone.appendChild(body);
+      section.appendChild(tableClone);
+      return { section, body };
+    };
+
+    const ensureFragment = (isContinuation = false) => {
+      if (fragment) return fragment;
+      fragment = createFragment(isContinuation);
+      if (!appendBlock(fragment.section)) {
+        moveToNextPage();
+        if (!appendBlock(fragment.section)) {
+          appendBlock(fragment.section, { allowOverflow: true });
+        }
+      }
+      return fragment;
+    };
+
+    rows.forEach((row) => {
+      ensureFragment(renderedRowCount > 0);
+      const rowClone = row.cloneNode(true);
+      fragment.body.appendChild(rowClone);
+      if (isOverflowing()) {
+        fragment.body.removeChild(rowClone);
+        if (!fragment.body.childElementCount) {
+          currentBody.removeChild(fragment.section);
+          fragment = null;
+        }
+        moveToNextPage();
+        fragment = null;
+        ensureFragment(renderedRowCount > 0);
+        fragment.body.appendChild(rowClone);
+        if (isOverflowing()) {
+          fragment.section.classList.add('quote-section--table-fragment--overflow');
+          renderedRowCount += 1;
+          return;
+        }
+      }
+      renderedRowCount += 1;
+    });
+
+    fragment = null;
+  };
+
+  ensurePage();
+
+  if (!blockNodes.length) {
+    return;
+  }
+
+  blockNodes.forEach((blockNode) => {
+    const type = blockNode.getAttribute('data-block-type');
+    if (type === 'table') {
+      paginateTableBlock(blockNode);
+    } else {
+      placeBlock(blockNode);
+    }
+  });
 }
 
 
@@ -639,7 +845,7 @@ function renderQuotePreview() {
   });
 
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
-  previewFrame.addEventListener('load', () => {
+  previewFrame.addEventListener('load', async () => {
     const doc = previewFrame.contentDocument;
     const view = doc?.defaultView || window;
     const rootNode = doc?.documentElement || doc;
@@ -647,6 +853,14 @@ function renderQuotePreview() {
       scrubUnsupportedColorFunctions(rootNode);
       sanitizeComputedColorFunctions(rootNode, view);
       enforceLegacyColorFallback(rootNode, view);
+    }
+    const pdfRoot = doc?.getElementById('quotation-pdf-root');
+    try {
+      if (pdfRoot) {
+        await layoutQuoteDocument(pdfRoot);
+      }
+    } catch (error) {
+      console.error('[reservations/pdf] failed to layout preview document', error);
     }
     const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
     const pagesContainer = doc?.querySelector('.quote-preview-pages');
@@ -893,6 +1107,11 @@ async function exportQuoteAsPdf() {
     pdfRoot.style.marginRight = 'auto';
     pdfRoot.scrollTop = 0;
     pdfRoot.scrollLeft = 0;
+    try {
+      await layoutQuoteDocument(pdfRoot);
+    } catch (error) {
+      console.error('[reservations/pdf] failed to layout export document', error);
+    }
   }
 
   try {
