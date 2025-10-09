@@ -14,8 +14,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="page-shell" data-theme="light">
-  <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-base-200 dark:via-base-200 dark:to-base-200">
+<body class="page-shell theme-loading" data-theme="light">
+  <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-slate-900/80 dark:via-slate-950/90 dark:to-slate-950">
     <header class="flex items-center justify-between px-6 pt-6">
       <a href="home.html" class="flex items-center gap-3 text-base-content transition hover:text-primary">
         <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-soft">
@@ -32,26 +32,29 @@
           <span class="text-lg font-semibold">Rental Hub</span>
         </span>
       </a>
-      <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
-        <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-        <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M12 4v-1"></path>
-          <path d="M12 21v-1"></path>
-          <path d="M4 12h-1"></path>
-          <path d="M21 12h-1"></path>
-          <path d="M5.6 5.6l-.7 -.7"></path>
-          <path d="M18.4 18.4l-.7 -.7"></path>
-          <path d="M5.6 18.4l-.7 .7"></path>
-          <path d="M18.4 5.6l-.7 .7"></path>
-          <path d="M16 12a4 4 0 1 0 -4 4"></path>
-        </svg>
-        <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
-        </svg>
-        <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
-      </label>
+      <div class="flex items-center gap-3">
+        <button type="button" class="btn btn-ghost border border-base-300 bg-base-100/60 text-sm font-medium language-toggle-btn transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+          <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+          <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 4v-1"></path>
+            <path d="M12 21v-1"></path>
+            <path d="M4 12h-1"></path>
+            <path d="M21 12h-1"></path>
+            <path d="M5.6 5.6l-.7 -.7"></path>
+            <path d="M18.4 18.4l-.7 -.7"></path>
+            <path d="M5.6 18.4l-.7 .7"></path>
+            <path d="M18.4 5.6l-.7 .7"></path>
+            <path d="M16 12a4 4 0 1 0 -4 4"></path>
+          </svg>
+          <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+          </svg>
+          <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+        </label>
+      </div>
     </header>
 
     <main class="flex flex-1 items-center justify-center px-4 py-12">
@@ -68,10 +71,7 @@
           </div>
           <div class="form-field">
             <label for="password" class="form-label">كلمة المرور</label>
-            <div class="relative">
-              <input type="password" class="form-control pe-12" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
-              <span class="absolute inset-y-0 end-4 flex items-center text-base-content/40">•••</span>
-            </div>
+            <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
           </div>
           <button type="submit" class="btn btn-primary w-full">دخول</button>
         </form>
