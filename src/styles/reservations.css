@@ -1623,6 +1623,35 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   .quote-preview-panel {
     padding: 18px;
   }
+
+  .quote-preview-frame-wrapper {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .quote-preview-frame {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .quote-preview-zoom-controls {
+    padding: 5px 10px;
+    gap: 6px;
+  }
+
+  .quote-preview-zoom-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.88rem;
+  }
+
+  .quote-preview-zoom-value {
+    min-width: 40px;
+    font-size: 0.85rem;
+  }
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-modal .reservation-info-card .res-info-row .value {

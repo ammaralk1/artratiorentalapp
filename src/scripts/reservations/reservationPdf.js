@@ -1318,6 +1318,16 @@ function renderQuotePreview() {
     previewFrame.style.minWidth = `${baseWidth}px`;
     previewFrame.style.height = `${totalHeight}px`;
     previewFrame.style.minHeight = `${totalHeight}px`;
+
+    if (quoteModalRefs?.previewFrameWrapper && !quoteModalRefs?.userAdjustedZoom) {
+      const availableWidth = quoteModalRefs.previewFrameWrapper.clientWidth - 24;
+      if (availableWidth > 0 && availableWidth < baseWidth) {
+        previewZoom = Math.max(availableWidth / baseWidth, 0.3);
+      } else {
+        previewZoom = 1;
+      }
+    }
+
     applyPreviewZoom(previewZoom);
   }, { once: true });
 }
@@ -1509,7 +1519,8 @@ function ensureQuoteModal() {
     zoomValue: zoomControls.querySelector('[data-zoom-value]'),
     previewFrame,
     meta,
-    downloadBtn
+    downloadBtn,
+    userAdjustedZoom: false
   };
 
   const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
@@ -1518,23 +1529,26 @@ function ensureQuoteModal() {
 
   zoomOutBtn?.addEventListener('click', () => adjustPreviewZoom(-0.1));
   zoomInBtn?.addEventListener('click', () => adjustPreviewZoom(0.1));
-  zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1));
+  zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1, { markManual: true }));
 
   setPreviewZoom(previewZoom);
 
   return quoteModalRefs;
 }
 
-function setPreviewZoom(value) {
-  previewZoom = Math.min(Math.max(value, 0.2), 2);
+function setPreviewZoom(value, { silent = false, markManual = false } = {}) {
+  previewZoom = Math.min(Math.max(value, 0.25), 2.2);
+  if (markManual && quoteModalRefs) {
+    quoteModalRefs.userAdjustedZoom = true;
+  }
   applyPreviewZoom(previewZoom);
-  if (quoteModalRefs?.zoomValue) {
+  if (!silent && quoteModalRefs?.zoomValue) {
     quoteModalRefs.zoomValue.textContent = `${Math.round(previewZoom * 100)}%`;
   }
 }
 
 function adjustPreviewZoom(delta) {
-  setPreviewZoom(previewZoom + delta);
+  setPreviewZoom(previewZoom + delta, { markManual: true });
 }
 
 function applyPreviewZoom(value) {
@@ -1545,9 +1559,15 @@ function applyPreviewZoom(value) {
   const baseHeight = Number(frame.dataset.baseHeight) || frame.contentDocument?.body?.scrollHeight || 1123;
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
-  wrapper.style.width = `${baseWidth}px`;
-  wrapper.style.maxWidth = `${baseWidth}px`;
-  wrapper.style.minWidth = `${baseWidth}px`;
+  if (isMobileViewport()) {
+    wrapper.style.width = '100%';
+    wrapper.style.maxWidth = '100%';
+    wrapper.style.minWidth = '0';
+  } else {
+    wrapper.style.width = `${baseWidth}px`;
+    wrapper.style.maxWidth = `${baseWidth}px`;
+    wrapper.style.minWidth = `${baseWidth}px`;
+  }
   wrapper.style.minHeight = `${baseHeight}px`;
   wrapper.style.height = `${baseHeight}px`;
 }
@@ -1595,7 +1615,12 @@ async function exportQuoteAsPdf() {
 
   const pdfRoot = container.firstElementChild;
 
-  const safariDownloadWindow = isIosSafari() ? window.open('', '_blank') : null;
+  const safariDownloadWindow = isIosSafari() ? window.open('about:blank', '_blank') : null;
+  if (safariDownloadWindow) {
+    safariDownloadWindow.document.open();
+    safariDownloadWindow.document.write('<html dir="rtl"><head><title>جاري تجهيز ملف PDF</title><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family: \"Tajawal\", sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#0f172a; color:#e2e8f0; margin:0;">جاري تجهيز ملف الـPDF...</body></html>');
+    safariDownloadWindow.document.close();
+  }
   if (pdfRoot) {
     pdfRoot.setAttribute('dir', 'rtl');
     pdfRoot.style.direction = 'rtl';
@@ -1633,7 +1658,11 @@ function openQuoteModal() {
   const refs = ensureQuoteModal();
   if (!refs?.modal) return;
 
-  setPreviewZoom(1);
+  previewZoom = 1;
+  if (quoteModalRefs) {
+    quoteModalRefs.userAdjustedZoom = false;
+  }
+  setPreviewZoom(previewZoom, { silent: true });
 
   renderQuoteToggles();
   updateQuoteMeta();
