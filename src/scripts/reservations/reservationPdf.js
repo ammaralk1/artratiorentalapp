@@ -541,13 +541,18 @@ function buildQuotationHtml({
     reservationSectionFinal = '';
   }
 
+  const tableSections = [itemsSection, crewSection].filter(Boolean);
+  const tableContent = tableSections.join('');
+
   const pageOneContent = ensureContent([
     infoPair || customerSectionFinal,
     reservationSectionFinal,
-    projectSection,
-    itemsSection,
-    crewSection
+    projectSection
   ].filter(Boolean).join(''), 'reservations.quote.placeholder.page1');
+
+  const tablesPageContent = tableContent
+    ? ensureContent(tableContent, 'reservations.quote.placeholder.tables')
+    : '';
 
   const pageTwoContent = ensureContent([
     notesSection,
@@ -589,6 +594,14 @@ function buildQuotationHtml({
             ${pageOneContent}
           </main>
         </div>
+
+        ${tableContent ? `
+        <div class="quote-page quote-page--tables">
+          <main class="quote-body">
+            ${tablesPageContent}
+          </main>
+        </div>
+        ` : ''}
 
         <div class="quote-page">
           <main class="quote-body">
