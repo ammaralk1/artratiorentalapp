@@ -117,7 +117,8 @@ async function requestPlaywrightPdf({ html, filename, browsers = ['webkit', 'chr
             // Ignore JSON parsing error and fallback to text response.
           }
           const message = errorPayload?.error || t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.');
-          throw new Error(message);
+          const details = typeof errorPayload?.details === 'string' ? errorPayload.details : '';
+          throw new Error(details ? `${message} (${details})` : message);
         }
 
         const text = await response.text();

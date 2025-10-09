@@ -25,16 +25,25 @@ try {
         throw new InvalidArgumentException('Missing HTML payload for PDF export.');
     }
 
+    if (!function_exists('exec')) {
+        throw new RuntimeException('PHP exec() function is disabled on this server.');
+    }
+
     $safeFilename = normaliseFilename($filename);
 
     [$htmlPath, $pdfPath] = createWorkingFiles($html);
 
     $command = buildCommand($htmlPath, $pdfPath, $browser, $baseUrl);
 
+    putenv('PLAYWRIGHT_BROWSERS_PATH=0');
+
     exec($command, $output, $exitCode);
 
     if ($exitCode !== 0 || !file_exists($pdfPath)) {
-        throw new RuntimeException('Playwright PDF generation failed: ' . implode(PHP_EOL, $output));
+        $snippet = implode(PHP_EOL, array_slice((array) $output, 0, 10));
+        throw new RuntimeException(
+            sprintf('Playwright PDF generation failed (browser: %s, exit code %d). %s', $browser, $exitCode, $snippet ?: 'No output was produced.')
+        );
     }
 
     $pdfContent = file_get_contents($pdfPath);
@@ -123,6 +132,28 @@ function createWorkingFiles(string $html): array
     return [$htmlPath, $pdfPath];
 }
 
+function resolveNodeBinary(): string
+{
+    $configured = getAppConfig('pdf', 'node_path');
+    if (is_string($configured) && $configured !== '') {
+        return $configured;
+    }
+
+    $envBinary = getenv('NODE_BINARY');
+    if (is_string($envBinary) && trim($envBinary) !== '') {
+        return trim($envBinary);
+    }
+
+    if (function_exists('shell_exec')) {
+        $whichNode = shell_exec('which node');
+        if (is_string($whichNode) && trim($whichNode) !== '') {
+            return trim($whichNode);
+        }
+    }
+
+    return 'node';
+}
+
 function normalizeBrowser(string $candidate): string
 {
     $candidate = strtolower(trim((string) $candidate));
@@ -133,7 +164,7 @@ function normalizeBrowser(string $candidate): string
 
 function buildCommand(string $htmlPath, string $pdfPath, string $browser, ?string $baseUrl): string
 {
-    $nodeBinary = getenv('NODE_BINARY') ?: 'node';
+    $nodeBinary = resolveNodeBinary();
     $scriptPath = realpath(__DIR__ . '/../../services/pdf/renderQuotePdf.js');
 
     if (!$scriptPath) {
@@ -141,7 +172,7 @@ function buildCommand(string $htmlPath, string $pdfPath, string $browser, ?strin
     }
 
     $parts = [
-        escapeshellcmd($nodeBinary),
+        escapeshellarg($nodeBinary),
         escapeshellarg($scriptPath),
         '--input=' . escapeshellarg($htmlPath),
         '--output=' . escapeshellarg($pdfPath),

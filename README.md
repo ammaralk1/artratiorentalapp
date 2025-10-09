@@ -22,6 +22,8 @@ npm run dev
 
 - يعتمد تصدير عروض الأسعار الآن على Playwright مع متصفحي Chromium وWebKit عبر نقطة نهاية `POST /backend/api/reservations/pdf.php`.
 - بعد تثبيت الحزم (`npm install`) شغّل `npx playwright install chromium webkit` لتنزيل كِلا المتصفحين قبل تشغيل الخادم أو مهام CI/CD.
+- إذا لم يكن أمر `node` متاحاً في PATH على الخادم، عيّن المسار الكامل داخل `backend/config.php` تحت القسم `pdf.node_path` (مثال: `/usr/local/bin/node`).
+- تأكد من أن الاستضافة تسمح باستدعاء `exec()` وتشغيل Playwright (بما في ذلك المتطلبات النظامية لمتصفح Chromium/WebKit).
 - تأكد من توفر بيئة Node.js 18+ على الخادم، مع إمكانية تشغيل الأمر `node backend/services/pdf/renderQuotePdf.js`.
 - عند طلب الـPDF من الواجهة يتم إرسال الـHTML للقالب الحالي إلى الخادم؛ تتم المحاولة أولاً باستخدام WebKit، وإن فشلت يُعاد المحاولة تلقائياً باستخدام Chromium مع الحفاظ على الطباعة الخلفية وتنسيق A4.
 

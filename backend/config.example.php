@@ -26,4 +26,8 @@ return [
         'cdn_base' => 'https://your-bucket.sirv.com',
         'upload_folder' => '/art-ratio/uploads',
     ],
+    'pdf' => [
+        // Override Node.js binary path if "node" is not on the PATH in production
+        // 'node_path' => '/usr/local/bin/node'
+    ],
 ];
