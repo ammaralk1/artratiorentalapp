@@ -43,6 +43,43 @@ const reportsEmptyDefaults = {
 
 let reportsDataListenersAttached = false;
 
+const loadedScripts = new Map();
+let apexChartsReady = null;
+let html2PdfReady = null;
+let xlsxReady = null;
+
+const charts = {
+  trend: null,
+  status: null,
+  payment: null
+};
+
+const lastReportSnapshot = {
+  filtered: [],
+  metrics: null,
+  trend: [],
+  statusBreakdown: [],
+  paymentBreakdown: [],
+  tableRows: []
+};
+
+const columnPreferences = {
+  code: true,
+  customer: true,
+  date: true,
+  status: true,
+  payment: true,
+  total: true
+};
+
+let exportHandlersBound = false;
+let columnControlsBound = false;
+let drilldownBound = false;
+let lastTrendData = [];
+let lastStatusData = [];
+let lastPaymentData = [];
+let themeListenerAttached = false;
+
 function translate(key, arFallback, enFallback = arFallback) {
   const fallback = getCurrentLanguage() === 'en' ? (enFallback ?? arFallback) : arFallback;
   return t(key, fallback);
@@ -97,6 +134,87 @@ function getFormatters() {
 function getMonthLabel(date) {
   const locale = getActiveLocale();
   return new Intl.DateTimeFormat(locale, { month: 'short' }).format(date);
+}
+
+function formatDateInput(date) {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function loadExternalScript(src) {
+  if (loadedScripts.has(src)) {
+    return loadedScripts.get(src);
+  }
+
+  const existing = document.querySelector(`script[src="${src}"]`);
+
+  const promise = new Promise((resolve, reject) => {
+    const handleResolve = () => {
+      if (existing) {
+        existing.dataset.loaded = 'true';
+      }
+      resolve();
+    };
+    const handleReject = (error) => reject(error);
+
+    if (existing) {
+      if (existing.dataset.loaded === 'true') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', handleResolve, { once: true });
+      existing.addEventListener('error', handleReject, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = (error) => reject(error);
+    document.head.appendChild(script);
+  });
+
+  loadedScripts.set(src, promise);
+  return promise;
+}
+
+function ensureApexCharts() {
+  if (window.ApexCharts) return Promise.resolve(window.ApexCharts);
+  if (!apexChartsReady) {
+    apexChartsReady = loadExternalScript('https://cdn.jsdelivr.net/npm/apexcharts').then(() => window.ApexCharts);
+  }
+  return apexChartsReady;
+}
+
+function ensureHtml2Pdf() {
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  if (!html2PdfReady) {
+    html2PdfReady = loadExternalScript('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js')
+      .then(() => window.html2pdf);
+  }
+  return html2PdfReady;
+}
+
+function ensureXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!xlsxReady) {
+    xlsxReady = loadExternalScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js')
+      .then(() => window.XLSX);
+  }
+  return xlsxReady;
+}
+
+function getThemeMode() {
+  const root = document.documentElement;
+  return root.classList.contains('dark') || root.dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
 function mapCustomerFromApi(raw = {}) {
@@ -312,6 +430,7 @@ function setReportsEmptyState({ active, icon, title, subtitle }) {
   }
 
   emptyState.classList.toggle('active', Boolean(active));
+  emptyState.classList.toggle('hidden', !active);
 
   if (!iconEl || !titleEl || !subtitleEl) {
     return;
@@ -414,14 +533,58 @@ export function initReports() {
     document.addEventListener('reservations:changed', handleReportsDataMutation);
     document.addEventListener('customers:changed', handleReportsDataMutation);
     document.addEventListener('equipment:changed', handleReportsDataMutation);
+    document.addEventListener('projects:changed', handleReportsDataMutation);
     document.addEventListener('technicians:updated', handleReportsDataMutation);
     reportsDataListenersAttached = true;
+  }
+
+  setupColumnControls();
+  setupExportButtons();
+  setupDrilldownInteractions();
+
+  if (!themeListenerAttached) {
+    document.addEventListener('theme:changed', () => {
+      setTimeout(() => renderReports(), 0);
+    });
+    themeListenerAttached = true;
   }
 
   loadReportsData();
 }
 
+function syncFilterControls() {
+  const rangeSelect = document.getElementById('reports-range');
+  const statusSelect = document.getElementById('reports-status-filter');
+  const paymentSelect = document.getElementById('reports-payment-filter');
+  const searchInput = document.getElementById('reports-search');
+  const startInput = document.getElementById('reports-start');
+  const endInput = document.getElementById('reports-end');
+  const customRangeWrapper = document.getElementById('reports-custom-range');
+
+  if (rangeSelect && rangeSelect.value !== state.range) {
+    rangeSelect.value = state.range;
+  }
+  if (statusSelect && statusSelect.value !== state.status) {
+    statusSelect.value = state.status;
+  }
+  if (paymentSelect && paymentSelect.value !== state.payment) {
+    paymentSelect.value = state.payment;
+  }
+  if (searchInput && searchInput.value !== state.search) {
+    searchInput.value = state.search || '';
+  }
+  if (startInput && startInput.value !== (state.start || '')) {
+    startInput.value = state.start || '';
+  }
+  if (endInput && endInput.value !== (state.end || '')) {
+    endInput.value = state.end || '';
+  }
+
+  toggleCustomRange(customRangeWrapper, state.range === 'custom');
+}
+
 export function renderReports() {
+  syncFilterControls();
   if (reportsLoading) {
     setReportsEmptyState({
       active: true,
@@ -453,12 +616,20 @@ export function renderReports() {
 
   updateKpiCards(metrics);
   renderTrendChart(trend);
-  renderProgressSection('reports-status-breakdown', statusBreakdown);
-  renderProgressSection('reports-payment-breakdown', paymentBreakdown);
+  renderStatusChart(statusBreakdown);
+  renderPaymentChart(paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
-  renderReservationsTable(filtered, customers, technicians);
+  const tableRows = renderReservationsTable(filtered, customers, technicians);
+  applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
+
+  lastReportSnapshot.filtered = filtered;
+  lastReportSnapshot.metrics = metrics;
+  lastReportSnapshot.trend = trend;
+  lastReportSnapshot.statusBreakdown = statusBreakdown;
+  lastReportSnapshot.paymentBreakdown = paymentBreakdown;
+  lastReportSnapshot.tableRows = tableRows;
 }
 
 function setupCustomRangePickers(startInput, endInput) {
@@ -533,6 +704,7 @@ function setupCustomRangePickers(startInput, endInput) {
 function toggleCustomRange(wrapper, isActive) {
   if (!wrapper) return;
   wrapper.classList.toggle('active', Boolean(isActive));
+  wrapper.classList.toggle('hidden', !isActive);
 }
 
 function normalizeSearchText(value) {
@@ -807,8 +979,18 @@ function calculateMonthlyTrend(reservations) {
     const revenue = monthReservations.reduce((sum, res) => sum + (Number(res?.cost) || 0), 0);
 
     const label = getMonthLabel(date);
+    const periodStart = new Date(date.getFullYear(), date.getMonth(), 1);
+    const periodEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-    result.push({ label, count, revenue });
+    result.push({
+      label,
+      count,
+      revenue,
+      periodStart,
+      periodEnd,
+      startInput: formatDateInput(periodStart),
+      endInput: formatDateInput(periodEnd)
+    });
   }
 
   return result;
@@ -843,21 +1025,24 @@ function calculateStatusBreakdown(reservations) {
       value: confirmedCount,
       percent: Math.round((confirmedCount / total) * 100) || 0,
       rawCount: confirmedCount,
-      className: 'status-confirmed'
+      className: 'status-confirmed',
+      filterKey: 'confirmed'
     },
     {
       label: translate('reservations.reports.status.pendingLabel', 'قيد التأكيد', 'Pending confirmation'),
       value: pending,
       percent: Math.round((pending / total) * 100) || 0,
       rawCount: pending,
-      className: 'status-pending'
+      className: 'status-pending',
+      filterKey: 'pending'
     },
     {
       label: translate('reservations.reports.status.completedLabel', 'منتهية', 'Completed'),
       value: completed,
       percent: Math.round((completed / total) * 100) || 0,
       rawCount: completed,
-      className: 'status-completed'
+      className: 'status-completed',
+      filterKey: 'completed'
     }
   ];
 }
@@ -873,14 +1058,16 @@ function calculatePaymentBreakdown(reservations) {
       value: paid,
       percent: Math.round((paid / total) * 100) || 0,
       rawCount: paid,
-      className: 'status-paid'
+      className: 'status-paid',
+      filterKey: 'paid'
     },
     {
       label: translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid'),
       value: unpaid,
       percent: Math.round((unpaid / total) * 100) || 0,
       rawCount: unpaid,
-      className: 'status-unpaid'
+      className: 'status-unpaid',
+      filterKey: 'unpaid'
     }
   ];
 }
@@ -940,11 +1127,11 @@ function calculateTopEquipment(reservations, equipment) {
 
 function renderReservationsTable(reservations, customers, technicians) {
   const tbody = document.getElementById('reports-reservations-body');
-  if (!tbody) return;
+  if (!tbody) return [];
 
   if (!reservations || reservations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-muted">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
-    return;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return [];
   }
 
   const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
@@ -953,45 +1140,567 @@ function renderReservationsTable(reservations, customers, technicians) {
   const rows = [...reservations]
     .sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0))
     .slice(0, 20)
-    .map((reservation) => formatReservationRow(reservation, customerMap, technicianMap));
+    .map((reservation) => {
+      const formatted = formatReservationRow(reservation, customerMap, technicianMap);
+      const exportRow = {
+        Reservation: formatted.code.text,
+        Customer: formatted.customer.text,
+        Date: formatted.date.text,
+        Status: formatted.status.text,
+        Payment: formatted.payment.text,
+        Total: formatted.total.text
+      };
+      return { formatted, exportRow };
+    });
 
   tbody.innerHTML = rows
-    .map((row) => `
-      <tr>
-        <td>${row.code}</td>
-        <td>${row.customer}</td>
-        <td>${row.date}</td>
-        <td>${row.status}</td>
-        <td>${row.payment}</td>
-        <td>${row.total}</td>
+    .map(({ formatted }) => `
+      <tr data-drilldown="reservation" data-search="${escapeAttribute(formatted.code.text)}">
+        <td data-report-column="code">${formatted.code.html}</td>
+        <td data-report-column="customer">${formatted.customer.html}</td>
+        <td data-report-column="date">${formatted.date.html}</td>
+        <td data-report-column="status">${formatted.status.html}</td>
+        <td data-report-column="payment">${formatted.payment.html}</td>
+        <td data-report-column="total">${formatted.total.html}</td>
       </tr>
     `)
     .join('');
+
+  return rows.map(({ exportRow }) => exportRow);
 }
 
-function renderTrendChart(data) {
-  const container = document.getElementById('reports-volume-chart');
+function handleTrendDrilldown(index) {
+  const item = lastTrendData?.[index];
+  if (!item) return;
+
+  state.range = 'custom';
+  state.start = item.startInput || null;
+  state.end = item.endInput || null;
+  syncFilterControls();
+  renderReports();
+}
+
+function handleStatusDrilldown(filterKey) {
+  if (!filterKey) return;
+  state.status = state.status === filterKey ? 'all' : filterKey;
+  syncFilterControls();
+  renderReports();
+}
+
+function handlePaymentDrilldown(filterKey) {
+  if (!filterKey) return;
+  state.payment = state.payment === filterKey ? 'all' : filterKey;
+  syncFilterControls();
+  renderReports();
+}
+
+function applySearchFilter(value) {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+  state.search = value || '';
+  const searchInput = document.getElementById('reports-search');
+  if (searchInput && searchInput.value !== state.search) {
+    searchInput.value = state.search;
+  }
+  renderReports();
+}
+
+function setupColumnControls() {
+  if (columnControlsBound) return;
+  const container = document.getElementById('reports-column-controls');
   if (!container) return;
 
-  if (!data || data.length === 0) {
-    container.innerHTML = `<p class="text-muted">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+  container.querySelectorAll('input[data-column-toggle]').forEach((input) => {
+    const key = input.dataset.columnToggle;
+    if (!key) return;
+    input.checked = columnPreferences[key] !== false;
+    input.addEventListener('change', () => {
+      columnPreferences[key] = input.checked;
+      applyColumnVisibility();
+    });
+  });
+
+  columnControlsBound = true;
+  applyColumnVisibility();
+}
+
+function applyColumnVisibility() {
+  Object.entries(columnPreferences).forEach(([column, visible]) => {
+    document.querySelectorAll(`[data-report-column="${column}"]`).forEach((element) => {
+      if (visible) {
+        element.classList.remove('hidden');
+      } else {
+        element.classList.add('hidden');
+      }
+    });
+  });
+}
+
+function setupExportButtons() {
+  if (exportHandlersBound) return;
+  const buttons = document.querySelectorAll('[data-export]');
+  if (!buttons.length) return;
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', async () => {
+      const { export: type = '' } = button.dataset;
+      if (!type) return;
+      button.disabled = true;
+      try {
+        await exportReport(type);
+      } catch (error) {
+        console.error('⚠️ [reports] export failed', error);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+
+  exportHandlersBound = true;
+}
+
+async function exportReport(type) {
+  const rows = lastReportSnapshot.tableRows || [];
+  if (!rows.length) {
+    console.warn('[reports] No reservation data to export');
     return;
   }
 
-  const max = Math.max(1, ...data.map((item) => item.count));
+  switch (type) {
+    case 'pdf':
+      await exportAsPdf();
+      break;
+    case 'excel':
+      await exportAsExcel(rows);
+      break;
+    case 'csv':
+    default:
+      exportAsCsv(rows);
+      break;
+  }
+}
 
-  container.innerHTML = data
-    .map((item) => {
-      const height = Math.max(8, Math.round((item.count / max) * 100));
-      return `
-        <div class="reports-chart-bar">
-          <div class="bar" style="height: ${height}%"></div>
-          <span class="value">${formatNumber(item.count)}</span>
-          <span class="label">${item.label}</span>
-        </div>
-      `;
-    })
-    .join('');
+function getExportFileName(extension) {
+  const stamp = formatDateInput(new Date()).replace(/-/g, '');
+  return `reservations-report-${stamp}.${extension}`;
+}
+
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function exportAsCsv(rows) {
+  if (!rows || !rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(',')];
+
+  rows.forEach((row) => {
+    const values = headers.map((header) => {
+      const cell = String(row[header] ?? '').replace(/"/g, '""');
+      return `"${cell}"`;
+    });
+    lines.push(values.join(','));
+  });
+
+  const csvContent = `\ufeff${lines.join('\r\n')}\r\n`;
+  downloadBlob(csvContent, getExportFileName('csv'), 'text/csv;charset=utf-8;');
+}
+
+async function exportAsExcel(rows) {
+  try {
+    const XLSX = await ensureXlsx();
+    if (!XLSX) {
+      exportAsCsv(rows);
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reservations');
+    XLSX.writeFile(workbook, getExportFileName('xlsx'));
+  } catch (error) {
+    console.error('⚠️ [reports] Excel export failed, falling back to CSV', error);
+    exportAsCsv(rows);
+  }
+}
+
+async function exportAsPdf() {
+  const container = document.getElementById('reservations-report-printable');
+  if (!container) return;
+
+  const html2pdf = await ensureHtml2Pdf();
+  if (typeof html2pdf !== 'function') {
+    console.warn('[reports] html2pdf unavailable, skipping PDF export');
+    return;
+  }
+
+  const filename = getExportFileName('pdf');
+
+  await html2pdf().set({
+    margin: 10,
+    filename,
+    html2canvas: {
+      scale: 1.2,
+      useCORS: true,
+      allowTaint: false
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    }
+  }).from(container).save();
+}
+
+function setupDrilldownInteractions() {
+  if (drilldownBound) return;
+  const customerTable = document.getElementById('reports-top-customers');
+  const equipmentTable = document.getElementById('reports-top-equipment');
+  const reservationsBody = document.getElementById('reports-reservations-body');
+
+  const handler = (event) => {
+    const target = event.target?.closest('[data-drilldown]');
+    if (!target) return;
+    const value = target.dataset.search || '';
+    applySearchFilter(value);
+  };
+
+  customerTable?.addEventListener('click', handler);
+  equipmentTable?.addEventListener('click', handler);
+  reservationsBody?.addEventListener('click', handler);
+
+  drilldownBound = true;
+}
+
+async function renderTrendChart(data) {
+  const container = document.getElementById('reports-volume-chart');
+  if (!container) return;
+
+  lastTrendData = Array.isArray(data) ? data : [];
+
+  if (!data || data.length === 0) {
+    if (charts.trend) {
+      charts.trend.destroy();
+      charts.trend = null;
+    }
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    return;
+  }
+
+  try {
+    const ApexCharts = await ensureApexCharts();
+    if (!ApexCharts) {
+      container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      return;
+    }
+
+    const categories = data.map((item) => item.label);
+    const reservationsSeries = data.map((item) => Math.round(item.count || 0));
+    const revenueSeries = data.map((item) => Math.round(item.revenue || 0));
+
+    const series = [
+      {
+        name: translate('reservations.reports.chart.volume.series.reservations', 'عدد الحجوزات', 'Reservations'),
+        type: 'column',
+        data: reservationsSeries
+      },
+      {
+        name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+        type: 'line',
+        data: revenueSeries
+      }
+    ];
+
+    const options = {
+      chart: {
+        type: 'line',
+        height: 320,
+        stacked: false,
+        toolbar: { show: false },
+        fontFamily: 'Tajawal, sans-serif',
+        animations: { enabled: true },
+        events: {
+          dataPointSelection: (event, _chartContext, config) => {
+            if (config?.dataPointIndex != null) {
+              handleTrendDrilldown(config.dataPointIndex);
+            }
+          }
+        }
+      },
+      theme: { mode: getThemeMode() },
+      stroke: {
+        width: [0, 4],
+        curve: 'smooth'
+      },
+      markers: {
+        size: [0, 5]
+      },
+      colors: ['#6366f1', '#22c55e'],
+      dataLabels: {
+        enabled: false
+      },
+      fill: {
+        type: ['solid', 'gradient'],
+        gradient: {
+          shadeIntensity: 0.6,
+          opacityFrom: 0.65,
+          opacityTo: 0.1
+        }
+      },
+      xaxis: {
+        categories,
+        labels: {
+          style: { colors: getThemeMode() === 'dark' ? '#cbd5f5' : '#475569' }
+        }
+      },
+      yaxis: [
+        {
+          seriesName: translate('reservations.reports.chart.volume.series.reservations', 'عدد الحجوزات', 'Reservations'),
+          axisTicks: { show: true },
+          axisBorder: { show: true, color: '#6366f1' },
+          labels: {
+            style: { colors: '#6366f1' },
+            formatter: (value) => formatNumber(value)
+          },
+          title: {
+            text: translate('reservations.reports.chart.volume.series.reservations', 'عدد الحجوزات', 'Reservations'),
+            style: { color: '#6366f1' }
+          }
+        },
+        {
+          opposite: true,
+          seriesName: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+          axisTicks: { show: true },
+          axisBorder: { show: true, color: '#22c55e' },
+          labels: {
+            style: { colors: '#22c55e' },
+            formatter: (value) => formatCurrency(value)
+          },
+          title: {
+            text: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+            style: { color: '#22c55e' }
+          }
+        }
+      ],
+      legend: {
+        position: 'bottom'
+      },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        y: {
+          formatter: (value, { seriesIndex }) => (
+            seriesIndex === 0 ? formatNumber(value) : formatCurrency(value)
+          )
+        }
+      }
+    };
+
+    if (charts.trend) {
+      charts.trend.updateOptions({ ...options }, true, true);
+      charts.trend.updateSeries(series, true);
+    } else {
+      container.innerHTML = '';
+      charts.trend = new ApexCharts(container, { ...options, series });
+      charts.trend.render();
+    }
+  } catch (error) {
+    console.error('⚠️ [reports] Failed to render trend chart', error);
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+  }
+}
+
+async function renderStatusChart(data) {
+  const container = document.getElementById('reports-status-chart');
+  const listContainerId = 'reports-status-breakdown';
+  if (!container) return;
+
+  lastStatusData = Array.isArray(data) ? data : [];
+
+  if (!data || data.length === 0) {
+    if (charts.status) {
+      charts.status.destroy();
+      charts.status = null;
+    }
+    renderProgressSection(listContainerId, []);
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    return;
+  }
+
+  try {
+    const ApexCharts = await ensureApexCharts();
+    if (!ApexCharts) {
+      renderProgressSection(listContainerId, []);
+      container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      return;
+    }
+
+    const series = data.map((item) => Math.max(0, item.value || 0));
+    const labels = data.map((item) => item.label);
+
+    const options = {
+      chart: {
+        type: 'donut',
+        height: 300,
+        fontFamily: 'Tajawal, sans-serif',
+        toolbar: { show: false },
+        events: {
+          dataPointSelection: (_event, _chartContext, config) => {
+            if (config?.dataPointIndex != null) {
+              const item = lastStatusData[config.dataPointIndex];
+              if (item?.filterKey) {
+                handleStatusDrilldown(item.filterKey);
+              }
+            }
+          }
+        }
+      },
+      theme: { mode: getThemeMode() },
+      labels,
+      series,
+      colors: ['#22c55e', '#f97316', '#6366f1'],
+      legend: {
+        position: 'bottom'
+      },
+      dataLabels: {
+        formatter: (val) => `${Math.round(val)}%`
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '68%',
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: translate('reservations.reports.chart.status.title', '🧾 توزيع الحالات', 'Status distribution'),
+                formatter: () => formatNumber(series.reduce((sum, value) => sum + value, 0))
+              }
+            }
+          }
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: (val, opts) => {
+            const item = lastStatusData?.[opts?.seriesIndex || 0];
+            const percent = item ? `${formatNumber(item.percent)}%` : `${formatNumber(val)}%`;
+            const raw = item ? formatNumber(item.rawCount ?? item.value ?? 0) : formatNumber(val);
+            return `${raw} / ${percent}`;
+          }
+        }
+      }
+    };
+
+    if (charts.status) {
+      charts.status.updateOptions({ ...options }, true, true);
+      charts.status.updateSeries(series, true);
+    } else {
+      container.innerHTML = '';
+      charts.status = new ApexCharts(container, { ...options, series });
+      charts.status.render();
+    }
+
+    renderProgressSection(listContainerId, data);
+  } catch (error) {
+    console.error('⚠️ [reports] Failed to render status chart', error);
+    renderProgressSection(listContainerId, []);
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+  }
+}
+
+async function renderPaymentChart(data) {
+  const container = document.getElementById('reports-payment-chart');
+  const listContainerId = 'reports-payment-breakdown';
+  if (!container) return;
+
+  lastPaymentData = Array.isArray(data) ? data : [];
+
+  if (!data || data.length === 0) {
+    if (charts.payment) {
+      charts.payment.destroy();
+      charts.payment = null;
+    }
+    renderProgressSection(listContainerId, []);
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    return;
+  }
+
+  try {
+    const ApexCharts = await ensureApexCharts();
+    if (!ApexCharts) {
+      renderProgressSection(listContainerId, []);
+      container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      return;
+    }
+
+    const series = data.map((item) => Math.max(0, item.value || 0));
+    const labels = data.map((item) => item.label);
+
+    const options = {
+      chart: {
+        type: 'pie',
+        height: 300,
+        fontFamily: 'Tajawal, sans-serif',
+        toolbar: { show: false },
+        events: {
+          dataPointSelection: (_event, _chartContext, config) => {
+            if (config?.dataPointIndex != null) {
+              const item = lastPaymentData[config.dataPointIndex];
+              if (item?.filterKey) {
+                handlePaymentDrilldown(item.filterKey);
+              }
+            }
+          }
+        }
+      },
+      theme: { mode: getThemeMode() },
+      labels,
+      series,
+      colors: ['#00ac69', '#f43f5e'],
+      legend: {
+        position: 'bottom'
+      },
+      dataLabels: {
+        formatter: (val) => `${Math.round(val)}%`
+      },
+      tooltip: {
+        y: {
+          formatter: (val, opts) => {
+            const item = lastPaymentData?.[opts?.seriesIndex || 0];
+            const percent = item ? `${formatNumber(item.percent)}%` : `${formatNumber(val)}%`;
+            const raw = item ? formatNumber(item.rawCount ?? item.value ?? 0) : formatNumber(val);
+            return `${raw} / ${percent}`;
+          }
+        }
+      }
+    };
+
+    if (charts.payment) {
+      charts.payment.updateOptions({ ...options }, true, true);
+      charts.payment.updateSeries(series, true);
+    } else {
+      container.innerHTML = '';
+      charts.payment = new ApexCharts(container, { ...options, series });
+      charts.payment.render();
+    }
+
+    renderProgressSection(listContainerId, data);
+  } catch (error) {
+    console.error('⚠️ [reports] Failed to render payment chart', error);
+    renderProgressSection(listContainerId, []);
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+  }
 }
 
 function renderProgressSection(containerId, data) {
@@ -999,23 +1708,25 @@ function renderProgressSection(containerId, data) {
   if (!container) return;
 
   if (!data || data.length === 0) {
-    container.innerHTML = `<p class="text-muted">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    container.innerHTML = `<div class="text-sm text-base-content/60">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</div>`;
     return;
   }
 
   container.innerHTML = data
-    .map((item) => `
-      <div class="reports-progress-row">
-        <div class="reports-progress-top">
-          <span>${item.label}</span>
-          <span>${formatNumber(item.percent)}%</span>
+    .map((item) => {
+      const percent = Math.min(item.percent ?? 0, 100);
+      const meta = translate('reservations.reports.progress.meta', '{count} حجز', '{count} reservations').replace('{count}', formatNumber(item.rawCount ?? item.value ?? 0));
+      return `
+        <div class="flex flex-col gap-2 rounded-2xl border border-base-200 bg-base-100 p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-semibold">${item.label}</span>
+            <span class="text-sm font-bold text-primary">${formatNumber(item.percent ?? 0)}%</span>
+          </div>
+          <progress class="progress progress-primary w-full" value="${percent}" max="100"></progress>
+          <div class="text-xs text-base-content/60">${meta}</div>
         </div>
-        <div class="reports-progress-bar">
-          <div class="reports-progress-fill ${item.className}" style="width: ${Math.min(item.percent, 100)}%"></div>
-        </div>
-        <div class="reports-progress-meta">${translate('reservations.reports.progress.meta', '{count} حجز', '{count} reservations').replace('{count}', formatNumber(item.rawCount ?? item.value))}</div>
-      </div>
-    `)
+      `;
+    })
     .join('');
 }
 
@@ -1024,14 +1735,14 @@ function renderTopCustomers(rows) {
   if (!tbody) return;
 
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="text-muted">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return;
   }
 
   tbody.innerHTML = rows
     .map((row) => `
-      <tr>
-        <td>${row.name}</td>
+      <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="customer" data-search="${escapeAttribute(row.name)}">
+        <td>${escapeHtml(row.name)}</td>
         <td>${formatNumber(row.count)}</td>
         <td>${formatCurrency(row.revenue)}</td>
       </tr>
@@ -1044,14 +1755,14 @@ function renderTopEquipment(rows) {
   if (!tbody) return;
 
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" class="text-muted">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="3" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return;
   }
 
   tbody.innerHTML = rows
     .map((row) => `
-      <tr>
-        <td>${row.name}</td>
+      <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="equipment" data-search="${escapeAttribute(row.name)}">
+        <td>${escapeHtml(row.name)}</td>
         <td>${formatNumber(row.count)}</td>
         <td>${formatCurrency(row.revenue)}</td>
       </tr>
@@ -1060,7 +1771,8 @@ function renderTopEquipment(rows) {
 }
 
 function formatReservationRow(reservation, customerMap, technicianMap) {
-  const code = reservation?.reservationId || reservation?.id || '—';
+  const rawCode = reservation?.reservationId || reservation?.id || '—';
+  const codeText = normalizeNumbers(String(rawCode));
   const customer = customerMap.get(String(reservation?.customerId));
   const customerName = customer?.customerName
     || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
@@ -1074,22 +1786,26 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     .map((id) => technicianMap.get(String(id))?.name)
     .filter(Boolean);
 
-  const separator = translate('reservations.list.crew.separator', '، ', ', ');
+  const plainSeparator = translate('reservations.list.crew.separator', '، ', ', ');
   const techniciansDisplay = technicians
     .map((name) => escapeHtml(name))
-    .join(escapeHtml(separator));
+    .join(escapeHtml(plainSeparator));
 
-  const customerDisplay = technicians.length
-    ? `${escapeHtml(customerName)}<br><small class="text-muted">${techniciansDisplay}</small>`
+  const customerHtml = technicians.length
+    ? `${escapeHtml(customerName)}<br><small class="text-base-content/60">${techniciansDisplay}</small>`
     : escapeHtml(customerName);
 
+  const customerPlain = technicians.length
+    ? `${customerName}${plainSeparator}${technicians.join(plainSeparator)}`
+    : customerName;
+
   return {
-    code: escapeHtml(code),
-    customer: customerDisplay,
-    date: escapeHtml(dateLabel),
-    status: escapeHtml(statusLabel),
-    payment: escapeHtml(paymentLabel),
-    total: escapeHtml(totalLabel)
+    code: { html: escapeHtml(codeText), text: codeText },
+    customer: { html: customerHtml, text: customerPlain },
+    date: { html: escapeHtml(dateLabel), text: dateLabel },
+    status: { html: escapeHtml(statusLabel), text: statusLabel },
+    payment: { html: escapeHtml(paymentLabel), text: paymentLabel },
+    total: { html: escapeHtml(totalLabel), text: totalLabel }
   };
 }
 
@@ -1187,6 +1903,14 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function formatNumber(value) {

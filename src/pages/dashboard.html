@@ -1070,186 +1070,257 @@
 
         <!-- ✅ تبويب فرعي: التقارير -->
         <div class="sub-tab tab-content" id="reports-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-reports-tab">
-          <div class="reports-wrapper">
-            <div class="box reports-header-card">
-              <div class="reports-header-text">
-                <h3 data-i18n data-i18n-key="reservations.reports.title">📊 تقارير الأداء</h3>
-                <p class="reports-subtitle" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
-              </div>
-              <div class="reports-filters" id="reports-filters">
-                <div class="reports-filter-group">
-                  <label for="reports-range" data-i18n data-i18n-key="reservations.reports.filters.rangeLabel">الفترة</label>
-                  <select id="reports-range" class="form-select">
-                    <option value="last30" data-i18n data-i18n-key="reservations.reports.filters.range.last30">آخر 30 يوم</option>
-                    <option value="thisWeek" data-i18n data-i18n-key="reservations.reports.filters.range.thisWeek">هذا الأسبوع</option>
-                    <option value="thisMonth" data-i18n data-i18n-key="reservations.reports.filters.range.thisMonth">هذا الشهر</option>
-                    <option value="thisQuarter" data-i18n data-i18n-key="reservations.reports.filters.range.thisQuarter">هذا الربع</option>
-                    <option value="thisYear" data-i18n data-i18n-key="reservations.reports.filters.range.thisYear">هذا العام</option>
-                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.range.all">كل الوقت</option>
-                    <option value="custom" data-i18n data-i18n-key="reservations.reports.filters.range.custom">مخصص</option>
-                  </select>
+          <div id="reservations-report-printable" class="reports-wrapper gap-6">
+            <div class="card bg-base-100 shadow-xl border border-base-200">
+              <div class="card-body gap-6">
+                <div class="flex flex-col gap-2 text-start">
+                  <h2 class="text-2xl font-bold" data-i18n data-i18n-key="reservations.reports.title">📊 تقارير الأداء</h2>
+                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
                 </div>
-                <div class="reports-filter-group reports-custom-range" id="reports-custom-range">
-                  <label for="reports-start" data-i18n data-i18n-key="reservations.reports.filters.startLabel">من</label>
-                  <input type="date" id="reports-start" class="form-control" placeholder="yyyy-mm-dd">
-                  <label for="reports-end" data-i18n data-i18n-key="reservations.reports.filters.endLabel">إلى</label>
-                  <input type="date" id="reports-end" class="form-control" placeholder="yyyy-mm-dd">
+                <div class="grid gap-4 w-full xl:grid-cols-5">
+                  <label class="form-control w-full">
+                    <div class="label">
+                      <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.rangeLabel">الفترة</span>
+                    </div>
+                    <select id="reports-range" class="select select-bordered">
+                      <option value="last30" data-i18n data-i18n-key="reservations.reports.filters.range.last30">آخر 30 يوم</option>
+                      <option value="thisWeek" data-i18n data-i18n-key="reservations.reports.filters.range.thisWeek">هذا الأسبوع</option>
+                      <option value="thisMonth" data-i18n data-i18n-key="reservations.reports.filters.range.thisMonth">هذا الشهر</option>
+                      <option value="thisQuarter" data-i18n data-i18n-key="reservations.reports.filters.range.thisQuarter">هذا الربع</option>
+                      <option value="thisYear" data-i18n data-i18n-key="reservations.reports.filters.range.thisYear">هذا العام</option>
+                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.range.all">كل الوقت</option>
+                      <option value="custom" data-i18n data-i18n-key="reservations.reports.filters.range.custom">مخصص</option>
+                    </select>
+                  </label>
+
+                  <div id="reports-custom-range" class="hidden xl:col-span-2">
+                    <div class="grid gap-4 md:grid-cols-2">
+                      <label class="form-control">
+                        <div class="label">
+                          <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.startLabel">من</span>
+                        </div>
+                        <input type="date" id="reports-start" class="input input-bordered" placeholder="yyyy-mm-dd">
+                      </label>
+                      <label class="form-control">
+                        <div class="label">
+                          <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.endLabel">إلى</span>
+                        </div>
+                        <input type="date" id="reports-end" class="input input-bordered" placeholder="yyyy-mm-dd">
+                      </label>
+                    </div>
+                  </div>
+
+                  <label class="form-control w-full">
+                    <div class="label">
+                      <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.statusLabel">الحالة</span>
+                    </div>
+                    <select id="reports-status-filter" class="select select-bordered">
+                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.status.all">كل الحالات</option>
+                      <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
+                      <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
+                      <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
+                    </select>
+                  </label>
+
+                  <label class="form-control w-full">
+                    <div class="label">
+                      <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.paymentLabel">الدفع</span>
+                    </div>
+                    <select id="reports-payment-filter" class="select select-bordered">
+                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.payment.all">الكل</option>
+                      <option value="paid" data-i18n data-i18n-key="reservations.reports.filters.payment.paid">مدفوعة</option>
+                      <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
+                    </select>
+                  </label>
+
+                  <label class="form-control w-full xl:col-span-2">
+                    <div class="label">
+                      <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</span>
+                    </div>
+                    <input type="text" id="reports-search" class="input input-bordered" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
+                  </label>
                 </div>
-                <div class="reports-filter-group">
-                  <label for="reports-status-filter" data-i18n data-i18n-key="reservations.reports.filters.statusLabel">الحالة</label>
-                  <select id="reports-status-filter" class="form-select">
-                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.status.all">كل الحالات</option>
-                    <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
-                    <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
-                    <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
-                  </select>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-200 pt-4">
+                  <div class="flex flex-wrap items-center gap-3 text-sm" id="reports-column-controls">
+                    <span class="font-semibold text-base-content/80" data-i18n data-i18n-key="reservations.reports.actions.customizeColumns">تخصيص الأعمدة</span>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-code">
+                      <input id="reports-toggle-code" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="code" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-customer">
+                      <input id="reports-toggle-customer" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="customer" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-date">
+                      <input id="reports-toggle-date" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="date" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-status">
+                      <input id="reports-toggle-status" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="status" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-payment">
+                      <input id="reports-toggle-payment" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="payment" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-total">
+                      <input id="reports-toggle-total" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="total" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</span>
+                    </label>
+                  </div>
+
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button class="btn btn-primary btn-sm gap-2" id="reports-refresh" type="button" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
+                    <button type="button" class="btn btn-outline btn-sm gap-2" data-export="pdf" data-i18n data-i18n-key="reservations.reports.actions.exportPdf">🖨️ PDF</button>
+                    <button type="button" class="btn btn-outline btn-sm gap-2" data-export="excel" data-i18n data-i18n-key="reservations.reports.actions.exportExcel">📊 Excel</button>
+                    <button type="button" class="btn btn-outline btn-sm gap-2" data-export="csv" data-i18n data-i18n-key="reservations.reports.actions.exportCsv">🧾 CSV</button>
+                  </div>
                 </div>
-                <div class="reports-filter-group">
-                  <label for="reports-payment-filter" data-i18n data-i18n-key="reservations.reports.filters.paymentLabel">الدفع</label>
-                  <select id="reports-payment-filter" class="form-select">
-                    <option value="all" data-i18n data-i18n-key="reservations.reports.filters.payment.all">الكل</option>
-                    <option value="paid" data-i18n data-i18n-key="reservations.reports.filters.payment.paid">مدفوعة</option>
-                    <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
-                  </select>
-                </div>
-                <div class="reports-filter-group reports-search-group">
-                  <label for="reports-search" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</label>
-                  <input type="text" id="reports-search" class="form-control" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
-                </div>
-                <button type="button" id="reports-refresh" class="btn btn-outline btn-secondary reports-refresh-btn" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
               </div>
             </div>
 
-            <div class="reports-kpi-grid" id="reports-kpi-grid">
-              <div class="box reports-kpi-card" data-kpi="total">
-                <div class="reports-kpi-icon">🗂️</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.total.label">إجمالي الحجوزات</p>
-                  <h4 class="reports-kpi-value" id="reports-kpi-total">—</h4>
-                  <span class="reports-kpi-meta" id="reports-kpi-total-meta" data-i18n data-i18n-key="reservations.reports.kpi.total.meta">لم يتم تسجيل بيانات بعد</span>
+            <div class="stats stats-vertical lg:stats-horizontal shadow-xl bg-base-100 border border-base-200">
+              <div class="stat">
+                <div class="stat-figure text-primary text-3xl">📦</div>
+                <div class="stat-title" data-i18n data-i18n-key="reservations.reports.kpi.total.label">إجمالي الحجوزات</div>
+                <div class="stat-value text-primary" id="reports-kpi-total">0</div>
+                <div class="stat-desc" id="reports-kpi-total-meta" data-i18n data-i18n-key="reservations.reports.kpi.total.meta">لم يتم تسجيل بيانات بعد</div>
+              </div>
+              <div class="stat">
+                <div class="stat-figure text-success text-3xl">💰</div>
+                <div class="stat-title" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</div>
+                <div class="stat-value text-success" id="reports-kpi-revenue">SAR 0</div>
+                <div class="stat-desc" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</div>
+              </div>
+              <div class="stat">
+                <div class="stat-figure text-info text-3xl">✅</div>
+                <div class="stat-title" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.label">معدل التأكيد</div>
+                <div class="stat-value text-info" id="reports-kpi-confirmed">0%</div>
+                <div class="stat-desc" id="reports-kpi-confirmed-meta" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.meta">الحجوزات المؤكدة —</div>
+              </div>
+              <div class="stat">
+                <div class="stat-figure text-warning text-3xl">💳</div>
+                <div class="stat-title" data-i18n data-i18n-key="reservations.reports.kpi.paid.label">نسبة المدفوع</div>
+                <div class="stat-value text-warning" id="reports-kpi-paid">0%</div>
+                <div class="stat-desc" id="reports-kpi-paid-meta" data-i18n data-i18n-key="reservations.reports.kpi.paid.meta">الحجوزات المدفوعة —</div>
+              </div>
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-12">
+              <div class="card bg-base-100 shadow-xl border border-base-200 xl:col-span-7">
+                <div class="card-body gap-4">
+                  <div class="flex flex-col gap-2">
+                    <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.chart.volume.title">📈 حجم الحجوزات الشهري</h4>
+                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.chart.volume.hint">عدد الحجوزات والإيرادات خلال الأشهر الماضية</p>
+                  </div>
+                  <div id="reports-volume-chart" class="min-h-[320px] w-full"></div>
                 </div>
               </div>
-              <div class="box reports-kpi-card" data-kpi="revenue">
-                <div class="reports-kpi-icon">💰</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</p>
-                  <h4 class="reports-kpi-value" id="reports-kpi-revenue">—</h4>
-                  <span class="reports-kpi-meta" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</span>
+              <div class="grid gap-6 xl:col-span-5">
+                <div class="card bg-base-100 shadow-xl border border-base-200">
+                  <div class="card-body gap-4">
+                    <div class="flex flex-col gap-2">
+                      <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.chart.status.title">🧾 توزيع الحالات</h4>
+                      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمنتهية</p>
+                    </div>
+                    <div id="reports-status-chart" class="min-h-[260px] w-full"></div>
+                    <div id="reports-status-breakdown" class="space-y-3"></div>
+                  </div>
                 </div>
-              </div>
-              <div class="box reports-kpi-card" data-kpi="confirmation">
-                <div class="reports-kpi-icon">✅</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.label">معدل التأكيد</p>
-                  <h4 class="reports-kpi-value" id="reports-kpi-confirmed">—</h4>
-                  <span class="reports-kpi-meta" id="reports-kpi-confirmed-meta" data-i18n data-i18n-key="reservations.reports.kpi.confirmation.meta">الحجوزات المؤكدة —</span>
-                </div>
-              </div>
-              <div class="box reports-kpi-card" data-kpi="paid">
-                <div class="reports-kpi-icon">💳</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.paid.label">نسبة المدفوع</p>
-                  <h4 class="reports-kpi-value" id="reports-kpi-paid">—</h4>
-                  <span class="reports-kpi-meta" id="reports-kpi-paid-meta" data-i18n data-i18n-key="reservations.reports.kpi.paid.meta">الحجوزات المدفوعة —</span>
+                <div class="card bg-base-100 shadow-xl border border-base-200">
+                  <div class="card-body gap-4">
+                    <div class="flex flex-col gap-2">
+                      <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.chart.payment.title">💳 حالة الدفع</h4>
+                      <p class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.chart.payment.hint">مقارنة الحجوزات المدفوعة وغير المدفوعة</p>
+                    </div>
+                    <div id="reports-payment-chart" class="min-h-[260px] w-full"></div>
+                    <div id="reports-payment-breakdown" class="space-y-3"></div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="reports-analytics-grid">
-              <div class="box reports-chart-card">
-                <div class="reports-card-header">
-                  <h4 data-i18n data-i18n-key="reservations.reports.chart.volume.title">📈 تطور الحجوزات</h4>
-                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.volume.hint">آخر 6 أشهر</span>
+            <div class="grid gap-6 lg:grid-cols-2" id="reports-top-sections">
+              <div class="card bg-base-100 shadow-xl border border-base-200">
+                <div class="card-body gap-4">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.topCustomers.title">👥 أفضل العملاء</h4>
+                    <span class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.topCustomers.hint">حسب إجمالي الإيراد</span>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                      <thead>
+                        <tr>
+                          <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.customer">العميل</th>
+                          <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.count">عدد الحجوزات</th>
+                          <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.revenue">الإيراد الكلي</th>
+                        </tr>
+                      </thead>
+                      <tbody id="reports-top-customers">
+                        <tr><td colspan="3" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div class="reports-chart-bars" id="reports-volume-chart"></div>
               </div>
-              <div class="box reports-chart-card">
-                <div class="reports-card-header">
-                  <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">📊 توزيع الحالات والدفع</h4>
-                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسب مئوية</span>
+              <div class="card bg-base-100 shadow-xl border border-base-200">
+                <div class="card-body gap-4">
+                  <div class="flex items-baseline justify-between gap-2">
+                    <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.topEquipment.title">🎥 المعدات الأكثر استخدامًا</h4>
+                    <span class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.topEquipment.hint">عدد مرات الحجز</span>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                      <thead>
+                        <tr>
+                          <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.item">المعدة</th>
+                          <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.usage">عدد مرات الاستخدام</th>
+                          <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.revenue">الإيراد المرتبط</th>
+                        </tr>
+                      </thead>
+                      <tbody id="reports-top-equipment">
+                        <tr><td colspan="3" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div class="reports-status-section">
-                  <h5 data-i18n data-i18n-key="reservations.reports.chart.status.statusLabel">الحالات</h5>
-                  <div class="reports-status-progress" id="reports-status-breakdown"></div>
+              </div>
+            </div>
+
+            <div class="card bg-base-100 shadow-xl border border-base-200" id="reservations-report-table-card">
+              <div class="card-body gap-4">
+                <div class="flex items-baseline justify-between gap-2">
+                  <h4 class="card-title" data-i18n data-i18n-key="reservations.reports.results.title">📄 تفاصيل الحجوزات</h4>
+                  <span class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.reports.results.hint">أحدث الحجوزات المطابقة لعوامل التصفية</span>
                 </div>
-                <div class="reports-status-section">
-                  <h5 data-i18n data-i18n-key="reservations.reports.chart.status.paymentLabel">الدفع</h5>
-                  <div class="reports-status-progress" id="reports-payment-breakdown"></div>
+                <div class="overflow-x-auto">
+                  <table class="table table-zebra" id="reports-reservations-table">
+                    <thead>
+                      <tr>
+                        <th data-report-column="code" data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
+                        <th data-report-column="customer" data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
+                        <th data-report-column="date" data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
+                        <th data-report-column="status" data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
+                        <th data-report-column="payment" data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
+                        <th data-report-column="total" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reports-reservations-body">
+                      <tr><td colspan="6" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
-            <div class="reports-detail-grid">
-              <div class="box reports-table-card">
-                <div class="reports-card-header">
-                  <h4 data-i18n data-i18n-key="reservations.reports.topCustomers.title">👥 أفضل العملاء</h4>
-                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topCustomers.hint">حسب إجمالي الإيراد</span>
-                </div>
-                <table class="reports-table">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.customer">العميل</th>
-                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.count">عدد الحجوزات</th>
-                      <th data-i18n data-i18n-key="reservations.reports.topCustomers.headers.revenue">الإيراد الكلي</th>
-                    </tr>
-                  </thead>
-                  <tbody id="reports-top-customers">
-                    <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="box reports-table-card">
-                <div class="reports-card-header">
-                  <h4 data-i18n data-i18n-key="reservations.reports.topEquipment.title">🎥 المعدات الأكثر استخدامًا</h4>
-                  <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topEquipment.hint">عدد مرات الحجز</span>
-                </div>
-                <table class="reports-table">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.item">المعدة</th>
-                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.usage">عدد مرات الاستخدام</th>
-                      <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.revenue">الإيراد المرتبط</th>
-                    </tr>
-                  </thead>
-                  <tbody id="reports-top-equipment">
-                    <tr><td colspan="3" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="box reports-table-card">
-              <div class="reports-card-header">
-                <h4 data-i18n data-i18n-key="reservations.reports.results.title">📄 تفاصيل الحجوزات</h4>
-                <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.results.hint">أحدث الحجوزات المطابقة لعوامل التصفية</span>
-              </div>
-              <div class="table-responsive">
-                <table class="reports-table reports-results-table">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
-                      <th data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
-                    </tr>
-                  </thead>
-                  <tbody id="reports-reservations-body">
-                    <tr><td colspan="6" class="text-muted" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="reports-empty-state" id="reports-empty-state">
-              <div class="reports-empty-icon">📭</div>
-              <h4 data-i18n data-i18n-key="reservations.reports.empty.title">لا توجد بيانات ضمن المعايير الحالية</h4>
-              <p data-i18n data-i18n-key="reservations.reports.empty.subtitle">جرّب تغيير الفترة الزمنية أو إزالة عوامل التصفية لعرض نتائج أخرى.</p>
+            <div class="hidden rounded-2xl border border-dashed border-base-300 bg-base-100 p-10 text-center items-center justify-center gap-3" id="reports-empty-state">
+              <div class="reports-empty-icon text-4xl">📭</div>
+              <h4 class="font-semibold text-lg" data-i18n data-i18n-key="reservations.reports.empty.title">لا توجد بيانات ضمن المعايير الحالية</h4>
+              <p class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.empty.subtitle">جرّب تغيير الفترة الزمنية أو إزالة عوامل التصفية لعرض نتائج أخرى.</p>
             </div>
           </div>
         </div>
-
         <!-- ✅ تبويب فرعي: التقويم -->
         <div class="sub-tab tab-content" id="calendar-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-calendar-tab">
           <h4 data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
