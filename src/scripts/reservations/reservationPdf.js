@@ -124,7 +124,8 @@ function scrubCloneColors(doc) {
   scrubUnsupportedColorFunctions(doc);
   scrubUnsupportedColorFunctions(doc?.documentElement);
   scrubUnsupportedColorFunctions(doc?.body);
-  sanitizeComputedColorFunctions(doc?.documentElement || doc);
+  const view = doc?.defaultView || window;
+  sanitizeComputedColorFunctions(doc?.documentElement || doc, view);
 }
 
 const COLOR_PROPERTIES = [
@@ -140,11 +141,11 @@ const COLOR_PROPERTIES = [
   'stroke'
 ];
 
-function sanitizeComputedColorFunctions(root) {
-  if (!root || typeof window.getComputedStyle !== 'function') return;
+function sanitizeComputedColorFunctions(root, view = window) {
+  if (!root || !view || typeof view.getComputedStyle !== 'function') return;
   const elements = root.querySelectorAll('*');
   elements.forEach((element) => {
-    const computed = window.getComputedStyle(element);
+    const computed = view.getComputedStyle(element);
     if (!computed) return;
 
     COLOR_PROPERTIES.forEach((prop) => {
@@ -166,10 +167,10 @@ function sanitizeComputedColorFunctions(root) {
   });
 }
 
-function enforceLegacyColorFallback(root) {
-  if (!root || typeof window.getComputedStyle !== 'function') return;
+function enforceLegacyColorFallback(root, view = window) {
+  if (!root || !view || typeof view.getComputedStyle !== 'function') return;
   root.querySelectorAll('*').forEach((element) => {
-    const styles = window.getComputedStyle(element);
+    const styles = view.getComputedStyle(element);
     if (!styles) return;
 
     ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach((prop) => {
@@ -627,6 +628,13 @@ function renderQuotePreview() {
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', () => {
     const doc = previewFrame.contentDocument;
+    const view = doc?.defaultView || window;
+    const rootNode = doc?.documentElement || doc;
+    if (rootNode) {
+      scrubUnsupportedColorFunctions(rootNode);
+      sanitizeComputedColorFunctions(rootNode, view);
+      enforceLegacyColorFallback(rootNode, view);
+    }
     const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
     const pagesContainer = doc?.querySelector('.quote-preview-pages');
     const baseWidth = pages.length
@@ -894,8 +902,9 @@ async function exportQuoteAsPdf() {
           scrollX: 0,
           scrollY: 0,
           onclone: (clonedDoc) => {
+            const view = clonedDoc?.defaultView || window;
             scrubCloneColors(clonedDoc);
-            enforceLegacyColorFallback(clonedDoc?.documentElement || clonedDoc);
+            enforceLegacyColorFallback(clonedDoc?.documentElement || clonedDoc, view);
           }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
