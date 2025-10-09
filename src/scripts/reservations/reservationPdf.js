@@ -641,7 +641,7 @@ async function capturePageSegments(page, html2canvasFn, {
     segmentContainer.style.overflow = 'hidden';
     segmentContainer.style.pointerEvents = 'none';
     segmentContainer.style.backgroundColor = '#ffffff';
-    segmentContainer.style.opacity = '0';
+    segmentContainer.style.opacity = '1';
     segmentContainer.style.zIndex = '-1';
 
     const clone = page.cloneNode(true);
