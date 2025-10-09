@@ -1298,7 +1298,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 
 .quote-preview-layout {
   display: grid;
-  grid-template-columns: minmax(240px, 280px) 1fr;
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
   min-height: 0;
   width: 100%;
 }
@@ -1499,9 +1499,15 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   align-items: flex-start;
   padding: 12px;
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   background: #18203b;
   min-height: 0;
+}
+
+.quote-preview-scroll {
+  overflow: auto;
+  width: 100%;
+  height: 100%;
 }
 
 .quote-preview-header-actions {

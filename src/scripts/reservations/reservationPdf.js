@@ -1482,7 +1482,10 @@ function ensureQuoteModal() {
   frameWrapper.appendChild(previewFrame);
 
   preview.innerHTML = '';
-  preview.appendChild(frameWrapper);
+  const previewScroll = document.createElement('div');
+  previewScroll.className = 'quote-preview-scroll';
+  previewScroll.appendChild(frameWrapper);
+  preview.appendChild(previewScroll);
   headerActions.appendChild(zoomControls);
 
   downloadBtn?.addEventListener('click', async () => {
