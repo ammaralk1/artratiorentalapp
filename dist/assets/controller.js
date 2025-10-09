@@ -403,9 +403,9 @@ body,
 
 .quote-section--customer {
   text-align: left;
-  margin-right: auto;
-  margin-left: 0;
-  max-width: fit-content;
+  margin-left: auto;
+  margin-right: 0;
+  max-width: 46%;
 }
 
 .quote-section--customer .info-plain,
@@ -418,7 +418,8 @@ body,
 .quote-section--reservation {
   text-align: left;
   margin-right: auto;
-  max-width: 46%;
+  margin-left: 0;
+  max-width: fit-content;
 }
 
 
@@ -672,22 +673,24 @@ body,
   width: 100%;
   justify-content: center;
   align-items: stretch;
-  gap: 10px;
+  gap: 8px;
 }
 
 .totals-inline__item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border-radius: 10px;
+  gap: 3px;
+  padding: 4px 8px;
+  border-radius: 9px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-family: 'Tajawal', sans-serif;
-  flex: 1 1 180px;
+  flex: 0 1 auto;
+  min-width: 150px;
+  max-width: 220px;
 }
 
 .totals-inline__label {
@@ -715,8 +718,8 @@ body,
 .totals-item--final {
   background: rgba(59, 91, 220, 0.12);
   border-color: rgba(59, 91, 220, 0.35);
-  padding: 10px 18px;
-  min-width: 220px;
+  padding: 8px 16px;
+  min-width: 200px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -727,17 +730,19 @@ body,
 .totals-item__label {
   font-weight: 600;
   color: #0f172a;
+  font-size: 0.7rem;
 }
 
 .totals-item__slash {
   font-weight: 600;
   color: #1d4ed8;
+  font-size: 0.7rem;
 }
 
 .totals-item__value {
   font-weight: 700;
   color: #0f172a;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 .quote-table {
@@ -993,7 +998,7 @@ body,
     </section>`})(),oe=`<footer class="quote-footer">
         <h4>${w(o("reservations.quote.labels.terms","الشروط العامة"))}</h4>
         <ul>${cs.map(R=>`<li>${w(R)}</li>`).join("")}</ul>
-      </footer>`,P=[];j&&O?P.push(te(`<div class="quote-section-row">${O}${j}</div>`,{blockType:"group"})):(O&&P.push(te(O)),j&&P.push(te(j))),U&&P.push(te(U));const Y=[];B&&Y.push(te(B,{blockType:"table",extraAttributes:'data-table-id="items"'})),ee&&Y.push(te(ee,{blockType:"table",extraAttributes:'data-table-id="crew"'}));const ie=[];C&&ie.push(te(C,{blockType:"summary"})),J&&ie.push(te(J));const Ce=[te(H,{blockType:"payment"}),te(oe,{blockType:"footer"})],Ie=[...Lt(P,"reservations.quote.placeholder.page1"),...Y,...Lt(ie,"reservations.quote.placeholder.page2"),...Ce],ke=`
+      </footer>`,P=[];j&&O?P.push(te(`<div class="quote-section-row">${j}${O}</div>`,{blockType:"group"})):(O&&P.push(te(O)),j&&P.push(te(j))),U&&P.push(te(U));const Y=[];B&&Y.push(te(B,{blockType:"table",extraAttributes:'data-table-id="items"'})),ee&&Y.push(te(ee,{blockType:"table",extraAttributes:'data-table-id="crew"'}));const ie=[];C&&ie.push(te(C,{blockType:"summary"})),J&&ie.push(te(J));const Ce=[te(H,{blockType:"payment"}),te(oe,{blockType:"footer"})],Ie=[...Lt(P,"reservations.quote.placeholder.page1"),...Y,...Lt(ie,"reservations.quote.placeholder.page2"),...Ce],ke=`
     <header class="quote-header" data-quote-header-template>
       <div class="quote-header__logo">
         <img class="quote-logo" src="${w(ae.logoUrl)}" alt="${w(ae.companyName)}" crossorigin="anonymous"/>

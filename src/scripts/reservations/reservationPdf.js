@@ -651,7 +651,7 @@ function buildQuotationHtml({
 
   if (customerSectionMarkup && reservationSectionMarkup) {
     primaryBlocks.push(withBlockAttributes(
-      `<div class="quote-section-row">${reservationSectionMarkup}${customerSectionMarkup}</div>`,
+      `<div class="quote-section-row">${customerSectionMarkup}${reservationSectionMarkup}</div>`,
       { blockType: 'group' }
     ));
   } else {
