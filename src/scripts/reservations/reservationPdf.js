@@ -1607,16 +1607,37 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       await rasterizeQuoteImages(page);
       await waitForQuoteAssets(page);
 
+      const doc = page.ownerDocument || document;
+      const captureWrapper = doc.createElement('div');
+      Object.assign(captureWrapper.style, {
+        position: 'fixed',
+        top: '0',
+        left: '-12000px',
+        pointerEvents: 'none',
+        zIndex: '-1',
+        backgroundColor: '#ffffff'
+      });
+
+      const pageClone = page.cloneNode(true);
+      pageClone.style.width = `${A4_WIDTH_PX}px`;
+      pageClone.style.maxWidth = `${A4_WIDTH_PX}px`;
+      pageClone.style.minWidth = `${A4_WIDTH_PX}px`;
+      pageClone.style.height = `${A4_HEIGHT_PX}px`;
+      pageClone.style.maxHeight = `${A4_HEIGHT_PX}px`;
+      pageClone.style.minHeight = `${A4_HEIGHT_PX}px`;
+      pageClone.style.position = 'relative';
+      pageClone.style.background = '#ffffff';
+      captureWrapper.appendChild(pageClone);
+      doc.body.appendChild(captureWrapper);
+
       let canvas;
       try {
-        const rect = page.getBoundingClientRect();
-        const captureWidth = Math.max(1, Math.ceil(rect.width || page.offsetWidth || A4_WIDTH_PX));
-        const captureHeight = Math.max(1, Math.ceil(rect.height || page.offsetHeight || A4_HEIGHT_PX));
-        canvas = await html2canvasFn(page, {
+        await waitForQuoteAssets(pageClone);
+        canvas = await html2canvasFn(pageClone, {
           ...html2canvasBaseOptions,
           scale: captureScale,
-          width: captureWidth,
-          height: captureHeight,
+          width: A4_WIDTH_PX,
+          height: A4_HEIGHT_PX,
           backgroundColor: '#ffffff',
           scrollX: 0,
           scrollY: 0
@@ -1624,6 +1645,8 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       } catch (captureError) {
         handlePdfError(captureError, 'pageCapture', { toastMessage: browserLimitMessage });
         throw captureError;
+      } finally {
+        captureWrapper.parentNode?.removeChild(captureWrapper);
       }
 
       if (!canvas) {
