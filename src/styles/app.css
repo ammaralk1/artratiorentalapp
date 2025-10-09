@@ -1248,6 +1248,14 @@
   :is(.customer-table, .technician-table) tbody .table-notes-cell {
     width: 38%;
     min-width: 18rem;
+    text-align: center;
+  }
+
+  :is(.customer-table, .technician-table) tbody .table-notes-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
   }
 
   .technician-table thead th:nth-child(1),
