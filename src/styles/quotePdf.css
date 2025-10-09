@@ -511,11 +511,12 @@ body,
 
 .totals-inline {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   justify-content: center;
   align-items: stretch;
   gap: 8px;
+  overflow: hidden;
 }
 
 .totals-inline__item {
@@ -523,16 +524,14 @@ body,
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 9px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
   white-space: nowrap;
   font-size: 0.64rem;
   font-family: 'Tajawal', sans-serif;
-  flex: 0 1 auto;
-  min-width: 150px;
-  max-width: 220px;
+  flex: 0 0 auto;
 }
 
 .totals-inline__label {
