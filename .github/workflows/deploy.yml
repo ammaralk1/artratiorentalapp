@@ -45,10 +45,13 @@ jobs:
             --exclude "/.git/**" \
             --exclude "/.github/**" \
             --exclude "/node_modules/**" \
+            --exclude "/art-ratio.com/node_modules/**" \
             --exclude "/tests/**" \
             --exclude "/README.md" \
             --exclude "/package-lock.json" \
             --exclude "/package.json" \
+            --exclude "/art-ratio.com/package-lock.json" \
+            --exclude "/art-ratio.com/package.json" \
             --exclude "/deploy-test*.txt" \
             --exclude "/vite.config.js" \
             --exclude "/vitest.config.js" \

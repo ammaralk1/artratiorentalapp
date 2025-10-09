@@ -4,7 +4,6 @@ import { t } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast } from '../utils.js';
 import { calculateReservationDays } from '../reservationsSummary.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
-import { getApiBase } from '../apiClient.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
@@ -38,11 +37,48 @@ const QUOTE_SECTION_DEFS = [
   { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true }
 ];
 
+const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
+
+// Render A4 pages at their physical size in the preview (96 DPI assumption).
+const CSS_DPI = 96;
+const MM_PER_INCH = 25.4;
+const A4_WIDTH_MM = 210;
+const A4_HEIGHT_MM = 297;
+const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
+const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
+
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', (error) => reject(error));
+      if (existing.readyState === 'complete') {
+        resolve();
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = (error) => reject(error);
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureHtml2Pdf() {
+  if (window.html2pdf) return;
+  await loadExternalScript(HTML2PDF_SRC);
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -81,75 +117,6 @@ function commitQuoteSequence(sequence) {
   } catch (error) {
     console.warn('⚠️ [reservations/pdf] failed to persist quote sequence', error);
   }
-}
-
-async function requestPlaywrightPdf({ html, filename, browsers = ['webkit', 'chromium'] }) {
-  const endpoint = `${getApiBase()}/reservations/pdf.php`;
-  let lastError = null;
-
-  for (const browser of browsers) {
-    try {
-      const payload = {
-        html,
-        filename,
-        browser,
-        baseUrl: window.location?.origin || undefined
-      };
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/pdf, application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!response.ok) {
-        if (contentType.includes('application/json')) {
-          let errorPayload = null;
-          try {
-            errorPayload = await response.json();
-          } catch (error) {
-            // Ignore JSON parsing error and fallback to text response.
-          }
-          const message = errorPayload?.error || t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.');
-          const details = typeof errorPayload?.details === 'string' ? errorPayload.details : '';
-          throw new Error(details ? `${message} (${details})` : message);
-        }
-
-        const text = await response.text();
-        throw new Error(text || t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
-      }
-
-      if (!contentType.includes('application/pdf')) {
-        const text = await response.text();
-        throw new Error(text || t('reservations.quote.errors.invalidPdfResponse', 'الخادم لم يرجع ملف PDF صالح.'));
-      }
-
-      const blob = await response.blob();
-      return { blob, browserUsed: browser };
-    } catch (error) {
-      console.warn(`[reservations/pdf] ${browser} generation failed, trying next browser`, error);
-      lastError = error;
-    }
-  }
-
-  throw lastError || new Error(t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 function formatQuoteDate(date = new Date()) {
@@ -522,15 +489,34 @@ function renderQuotePreview() {
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', () => {
     const doc = previewFrame.contentDocument;
-    const firstPage = doc?.querySelector('.quote-page');
-    const computedWidth = firstPage ? firstPage.getBoundingClientRect().width : 794;
-    const computedHeight = doc?.body?.scrollHeight || firstPage?.getBoundingClientRect().height || 1123;
-    previewFrame.dataset.baseWidth = String(computedWidth || 794);
-    previewFrame.dataset.baseHeight = String(computedHeight || 1123);
-    previewFrame.style.width = `${computedWidth}px`;
-    previewFrame.style.minWidth = `${computedWidth}px`;
-    previewFrame.style.height = `${computedHeight}px`;
-    previewFrame.style.minHeight = `${computedHeight}px`;
+    const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
+    const pagesContainer = doc?.querySelector('.quote-preview-pages');
+    const baseWidth = pages.length
+      ? pages.reduce((max, page) => Math.max(max, Math.round(page.getBoundingClientRect().width || 0)), A4_WIDTH_PX)
+      : A4_WIDTH_PX;
+
+    let pageGap = 18;
+    if (pagesContainer && doc?.defaultView) {
+      const styles = doc.defaultView.getComputedStyle(pagesContainer);
+      const gapCandidate = parseFloat(styles.rowGap || styles.gap || `${pageGap}`);
+      if (Number.isFinite(gapCandidate) && gapCandidate >= 0) {
+        pageGap = gapCandidate;
+      }
+    }
+
+    const totalHeight = pages.reduce((sum, page, index) => {
+      const rect = page.getBoundingClientRect();
+      const pageHeight = Math.max(Math.round(rect.height || 0), A4_HEIGHT_PX);
+      const gapOffset = index === 0 ? 0 : pageGap;
+      return sum + pageHeight + gapOffset;
+    }, 0) || A4_HEIGHT_PX;
+
+    previewFrame.dataset.baseWidth = String(baseWidth);
+    previewFrame.dataset.baseHeight = String(totalHeight);
+    previewFrame.style.width = `${baseWidth}px`;
+    previewFrame.style.minWidth = `${baseWidth}px`;
+    previewFrame.style.height = `${totalHeight}px`;
+    previewFrame.style.minHeight = `${totalHeight}px`;
     applyPreviewZoom(previewZoom);
   }, { once: true });
 }
@@ -691,7 +677,8 @@ function applyPreviewZoom(value) {
   frame.style.transform = `scale(${value})`;
   frame.style.transformOrigin = 'top center';
   wrapper.style.width = `${baseWidth}px`;
-  wrapper.style.maxWidth = '100%';
+  wrapper.style.maxWidth = `${baseWidth}px`;
+  wrapper.style.minWidth = `${baseWidth}px`;
   wrapper.style.minHeight = `${baseHeight}px`;
   wrapper.style.height = `${baseHeight}px`;
 }
@@ -709,6 +696,7 @@ function updateQuoteMeta() {
 
 async function exportQuoteAsPdf() {
   if (!activeQuoteState) return;
+  await ensureHtml2Pdf();
 
   const html = buildQuotationHtml({
     reservation: activeQuoteState.reservation,
@@ -723,18 +711,57 @@ async function exportQuoteAsPdf() {
     quoteDate: activeQuoteState.quoteDateLabel
   });
 
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'fixed';
+  container.style.top = '-10000px';
+  container.style.left = '0';
+  container.style.zIndex = '-1';
+  document.body.appendChild(container);
+
+  const pdfRoot = container.firstElementChild;
+  if (pdfRoot) {
+    pdfRoot.setAttribute('dir', 'rtl');
+    pdfRoot.style.direction = 'rtl';
+    pdfRoot.style.textAlign = 'right';
+    pdfRoot.setAttribute('data-theme', 'light');
+    pdfRoot.classList.remove('dark', 'dark-mode');
+    pdfRoot.style.margin = '0';
+    pdfRoot.style.padding = '0';
+    pdfRoot.style.width = '210mm';
+    pdfRoot.style.maxWidth = '210mm';
+    pdfRoot.style.marginLeft = 'auto';
+    pdfRoot.style.marginRight = 'auto';
+    pdfRoot.scrollTop = 0;
+    pdfRoot.scrollLeft = 0;
+  }
+
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    const { blob, browserUsed } = await requestPlaywrightPdf({ html, filename });
-    downloadBlob(blob, filename);
-    console.info('[reservations/pdf] exported using', browserUsed);
+    await window.html2pdf()
+      .set({
+        margin: 0,
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          avoid: ['tr']
+        },
+        filename,
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      })
+      .from(container.firstElementChild)
+      .save();
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
     }
-  } catch (error) {
-    console.error('⚠️ [reservations/pdf] failed to export quote using Playwright', error);
-    showToast(t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
+  } finally {
+    document.body.removeChild(container);
   }
 }
 
