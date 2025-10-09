@@ -17,7 +17,7 @@
 <body class="page-shell theme-loading" data-theme="light">
   <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-slate-900/80 dark:via-slate-950/90 dark:to-slate-950">
     <header class="flex items-center justify-between px-6 pt-6">
-      <a href="home.html" class="flex items-center gap-3 text-base-content transition hover:text-primary">
+      <div class="flex items-center gap-3 text-base-content cursor-default select-none">
         <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-soft">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -31,7 +31,7 @@
           <span class="text-xs text-base-content/60">Art Ratio</span>
           <span class="text-lg font-semibold">Rental Hub</span>
         </span>
-      </a>
+      </div>
       <div class="flex items-center gap-3">
         <button type="button" class="btn btn-ghost border border-base-300 bg-base-100/60 text-sm font-medium language-toggle-btn transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
         <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
@@ -60,23 +60,23 @@
     <main class="flex flex-1 items-center justify-center px-4 py-12">
       <section class="glass-card w-full max-w-md space-y-8">
         <div class="space-y-2 text-center">
-          <h1 class="text-2xl font-bold text-base-content">🔐 تسجيل الدخول</h1>
-          <p class="text-sm text-base-content/60">أدخل بيانات الحساب للوصول إلى لوحة التحكم.</p>
+          <h1 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="login.header.title">🔐 تسجيل الدخول</h1>
+          <p class="text-sm text-base-content/60" data-i18n data-i18n-key="login.header.subtitle">أدخل بيانات الحساب للوصول إلى لوحة التحكم.</p>
         </div>
 
         <form id="login-form" class="space-y-5">
           <div class="form-field">
-            <label for="username" class="form-label">اسم المستخدم</label>
-            <input type="text" class="form-control" id="username" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
+            <label for="username" class="form-label" data-i18n data-i18n-key="login.form.username">اسم المستخدم</label>
+            <input type="text" class="form-control" id="username" data-i18n-placeholder="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
           </div>
           <div class="form-field">
-            <label for="password" class="form-label">كلمة المرور</label>
-            <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+            <label for="password" class="form-label" data-i18n data-i18n-key="login.form.password">كلمة المرور</label>
+            <input type="password" class="form-control" id="password" data-i18n-placeholder="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
           </div>
-          <button type="submit" class="btn btn-primary w-full">دخول</button>
+          <button type="submit" class="btn btn-primary w-full" data-i18n data-i18n-key="login.form.submit">دخول</button>
         </form>
 
-        <p class="text-center text-xs text-base-content/50">
+        <p class="text-center text-xs text-base-content/50" data-i18n data-i18n-key="login.footer.note">
           محمي لأعضاء فريق Art Ratio. تواصل معنا إذا واجهت مشكلة في تسجيل الدخول.
         </p>
       </section>
