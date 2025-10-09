@@ -637,9 +637,7 @@ function renderQuotePreview() {
     }
     const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
     const pagesContainer = doc?.querySelector('.quote-preview-pages');
-    const baseWidth = pages.length
-      ? pages.reduce((max, page) => Math.max(max, Math.round(page.getBoundingClientRect().width || 0)), A4_WIDTH_PX)
-      : A4_WIDTH_PX;
+    const baseWidth = A4_WIDTH_PX;
 
     let pageGap = 18;
     if (pagesContainer && doc?.defaultView) {
@@ -650,12 +648,10 @@ function renderQuotePreview() {
       }
     }
 
-    const totalHeight = pages.reduce((sum, page, index) => {
-      const rect = page.getBoundingClientRect();
-      const pageHeight = Math.max(Math.round(rect.height || 0), A4_HEIGHT_PX);
-      const gapOffset = index === 0 ? 0 : pageGap;
-      return sum + pageHeight + gapOffset;
-    }, 0) || A4_HEIGHT_PX;
+    const singlePageHeight = A4_HEIGHT_PX;
+    const totalHeight = pages.length
+      ? (pages.length * singlePageHeight) + Math.max(0, (pages.length - 1) * pageGap)
+      : singlePageHeight;
 
     previewFrame.dataset.baseWidth = String(baseWidth);
     previewFrame.dataset.baseHeight = String(totalHeight);

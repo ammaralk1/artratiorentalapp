@@ -1440,7 +1440,9 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview-frame-wrapper {
-  width: 100%;
+  width: 210mm;
+  max-width: 210mm;
+  min-width: 210mm;
   overflow: auto;
   display: flex;
   justify-content: center;
