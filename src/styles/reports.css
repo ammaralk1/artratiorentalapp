@@ -23,7 +23,7 @@
 }
 
 .reports-surface-card {
-  background: var(--reports-surface);
+  background-color: var(--reports-surface);
   border-radius: 20px;
   border: 1px solid var(--reports-border);
   padding: 28px;
@@ -93,7 +93,7 @@ body[dir="ltr"] .reports-filters {
 
 .reports-status-chip {
   border: 1px solid var(--reports-border);
-  background: var(--reports-accent-soft);
+  background-color: var(--reports-accent-soft);
   color: var(--reports-accent);
   border-radius: 999px;
   padding: 6px 14px;

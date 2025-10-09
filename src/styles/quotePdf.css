@@ -148,7 +148,7 @@ body,
   align-items: flex-start;
   text-align: left;
   font-size: 0.72rem;
-  color: #475569;
+  color: #000000 !important;
   justify-self: start;
 }
 
@@ -160,13 +160,13 @@ body,
 
 .quote-header__meta-item span {
   font-weight: 600;
-  color: #475569;
+  color: #000000 !important;
 }
 
 .quote-header__meta-item strong {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .quote-header__title {
@@ -188,14 +188,14 @@ body,
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: #111827;
+  color: #000000 !important;
 }
 
 .quote-company-cr {
   margin: 0;
   font-size: 13px;
   font-weight: 500;
-  color: #475569;
+  color: #000000 !important;
 }
 
 .quote-header__logo {
@@ -218,6 +218,7 @@ body,
   font-size: 16px;
   font-weight: 700;
   text-align: right;
+  color: #000000 !important;
 }
 
 .quote-section__title {
@@ -225,7 +226,7 @@ body,
   font-size: 0.7rem;
   font-weight: 600;
   text-align: right;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .quote-section--plain {
@@ -361,18 +362,18 @@ body,
 
 .payment-row__label {
   font-weight: 600;
-  color: #475569;
+  color: #000000 !important;
   text-align: right;
 }
 
 .payment-row__slash {
   font-weight: 600;
-  color: #94a3b8;
+  color: #000000 !important;
 }
 
 .payment-row__value {
   font-weight: 700;
-  color: #0f172a;
+  color: #000000 !important;
   text-align: left;
   direction: ltr;
   white-space: nowrap;
@@ -401,7 +402,7 @@ body,
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0;
-  color: #0f172a;
+  color: #000000 !important;
   margin-bottom: 4px;
   text-align: center;
   width: 100%;
@@ -414,7 +415,7 @@ body,
   align-items: flex-start;
   text-align: left;
   font-size: 0.68rem;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .info-plain__item {
@@ -435,13 +436,13 @@ body,
 
 .info-plain__label {
   font-weight: 600;
-  color: #475569;
+  color: #000000 !important;
 }
 
 .info-plain__value {
   font-weight: 600;
   font-size: 0.8rem;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .info-plain--dense {
@@ -454,7 +455,7 @@ body,
 }
 
 .info-plain__slash {
-  color: #94a3b8;
+  color: #000000 !important;
   font-weight: 400;
 }
 
@@ -489,11 +490,13 @@ body,
 .info-row span {
   font-weight: 600;
   font-size: 13px;
+  color: #000000 !important;
 }
 
 .info-row strong {
   font-weight: 700;
   font-size: 13.5px;
+  color: #000000 !important;
 }
 
 .info-list {
@@ -514,11 +517,13 @@ body,
 .info-item span {
   font-weight: 600;
   font-size: 13px;
+  color: #000000 !important;
 }
 
 .info-item strong {
   font-weight: 700;
   font-size: 13.5px;
+  color: #000000 !important;
 }
 
 .totals-list {
@@ -556,17 +561,17 @@ body,
 
 .totals-inline__label {
   font-weight: 600;
-  color: #475569;
+  color: #000000 !important;
 }
 
 .totals-inline__slash {
   font-weight: 600;
-  color: #94a3b8;
+  color: #000000 !important;
 }
 
 .totals-inline__value {
   font-weight: 700;
-  color: #0f172a;
+  color: #000000 !important;
 }
 
 .totals-final {
@@ -590,19 +595,19 @@ body,
 
 .totals-item__label {
   font-weight: 600;
-  color: #0f172a;
+  color: #000000 !important;
   font-size: 0.7rem;
 }
 
 .totals-item__slash {
   font-weight: 600;
-  color: #1d4ed8;
+  color: #000000 !important;
   font-size: 0.7rem;
 }
 
 .totals-item__value {
   font-weight: 700;
-  color: #0f172a;
+  color: #000000 !important;
   font-size: 0.78rem;
 }
 
