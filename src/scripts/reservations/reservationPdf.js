@@ -1213,32 +1213,43 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null })
 
   const safariMode = isIosSafari();
   const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const mobileViewport = isMobileViewport();
   const captureScale = safariMode
-    ? Math.min(1.8, Math.max(1.4, devicePixelRatio * 1.25))
-    : Math.min(2.2, Math.max(1.8, devicePixelRatio * 1.5));
+    ? Math.min(1.6, Math.max(1.25, devicePixelRatio * 1.05))
+    : mobileViewport
+      ? Math.min(1.8, Math.max(1.2, devicePixelRatio * 1.2))
+      : Math.min(2.2, Math.max(1.8, devicePixelRatio * 1.5));
+  const jpegQuality = safariMode ? 0.88 : mobileViewport ? 0.92 : 0.95;
   const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 
-  for (let index = 0; index < pages.length; index += 1) {
-    const page = pages[index];
-    await waitForQuoteAssets(page);
-    const canvas = await html2canvasFn(page, {
-      scale: captureScale,
-      useCORS: true,
-      scrollX: 0,
-      scrollY: 0,
-      backgroundColor: '#ffffff',
-      letterRendering: true,
-      removeContainer: safariMode
-    });
-    const imageData = canvas.toDataURL('image/jpeg', safariMode ? 0.9 : 0.95);
-    if (index > 0) {
-      pdf.addPage();
-    }
-    pdf.addImage(imageData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, `page-${index + 1}`, 'FAST');
+  try {
+    for (let index = 0; index < pages.length; index += 1) {
+      const page = pages[index];
+      await waitForQuoteAssets(page);
+      const canvas = await html2canvasFn(page, {
+        scale: captureScale,
+        useCORS: true,
+        scrollX: 0,
+        scrollY: 0,
+        backgroundColor: '#ffffff',
+        letterRendering: true,
+        removeContainer: safariMode
+      });
+      const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
+      if (index > 0) {
+        pdf.addPage();
+      }
+      pdf.addImage(imageData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, `page-${index + 1}`, 'FAST');
 
-    // Yield to keep UI responsive, important for mobile devices
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      // Yield to keep UI responsive, important for mobile devices
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+    }
+  } catch (error) {
+    if (safariWindowRef && !safariWindowRef.closed) {
+      safariWindowRef.close();
+    }
+    throw error;
   }
 
   if (safariMode) {
