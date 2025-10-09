@@ -2896,9 +2896,9 @@
     @apply btn btn-circle btn-ghost;
     position: relative;
     overflow: hidden;
-    border: 1.5px solid rgba(255, 255, 255, 0.45);
-    background-color: rgba(15, 23, 42, 0.6);
-    color: #f8fafc;
+    border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+    background-color: rgba(15, 23, 42, 0.65) !important;
+    color: #f8fafc !important;
     box-shadow: 0 12px 26px rgba(15, 23, 42, 0.2);
     transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
@@ -2911,10 +2911,20 @@
 
   .mobile-sidebar-toggle svg path {
     stroke: currentColor;
+    stroke-width: 1.9;
+  }
+
+  .mobile-sidebar-toggle::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.18), transparent 60%);
+    opacity: 0.7;
+    pointer-events: none;
   }
 
   .mobile-sidebar-toggle.text-base-content {
-    color: #f8fafc;
+    color: #f8fafc !important;
   }
 
   .mobile-sidebar-toggle:hover {
@@ -2923,22 +2933,33 @@
     border-color: rgba(255, 255, 255, 0.65);
   }
 
+  .mobile-sidebar-toggle svg,
+  .mobile-sidebar-toggle svg path {
+    stroke: rgba(248, 250, 252, 0.98) !important;
+    fill: none !important;
+  }
+
   @media (min-width: 1024px) {
     :where(html:not(.dark), body:not(.dark)) .mobile-sidebar-toggle {
-      background-color: rgba(30, 41, 59, 0.72);
-      border-color: rgba(255, 255, 255, 0.52);
-      color: rgba(248, 250, 252, 0.98);
+      background-color: rgba(30, 41, 59, 0.78) !important;
+      border-color: rgba(255, 255, 255, 0.6) !important;
+      color: rgba(248, 250, 252, 0.98) !important;
     }
   }
 
   :where(html.dark, body.dark) .mobile-sidebar-toggle {
-    border-color: rgba(255, 255, 255, 0.48);
-    background-color: rgba(10, 17, 32, 0.82);
-    color: rgba(248, 250, 252, 0.98);
+    border-color: rgba(255, 255, 255, 0.55) !important;
+    background-color: rgba(10, 17, 32, 0.85) !important;
+    color: rgba(248, 250, 252, 0.98) !important;
   }
 
   :where(html.dark, body.dark) .mobile-sidebar-toggle:hover {
-    border-color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.78);
+  }
+
+  :where(html.dark, body.dark) .mobile-sidebar-toggle svg,
+  :where(html.dark, body.dark) .mobile-sidebar-toggle svg path {
+    stroke: rgba(240, 249, 255, 0.95) !important;
   }
 
   .sidebar-backdrop {
