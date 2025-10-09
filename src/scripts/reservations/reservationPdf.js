@@ -900,6 +900,40 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   }
 }
 
+async function renderQuotePagesAsPdf(root, { filename }) {
+  if (!root) return;
+  const pages = Array.from(root.querySelectorAll('.quote-page'));
+  if (!pages.length) {
+    throw new Error('لا توجد صفحات لتصديرها.');
+  }
+
+  const jsPDF = window.jspdf?.jsPDF || window.jsPDF?.jsPDF;
+  if (typeof jsPDF !== 'function') {
+    throw new Error('تعذر العثور على jsPDF في السياق الحالي.');
+  }
+
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+  for (let index = 0; index < pages.length; index += 1) {
+    const page = pages[index];
+    await waitForQuoteAssets(page);
+    const canvas = await window.html2canvas(page, {
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      backgroundColor: '#ffffff'
+    });
+    const imageData = canvas.toDataURL('image/jpeg', 0.95);
+    if (index > 0) {
+      pdf.addPage();
+    }
+    pdf.addImage(imageData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, `page-${index + 1}`, 'FAST');
+  }
+
+  pdf.save(filename);
+}
+
 
 function renderQuotePreview() {
   if (!activeQuoteState || !quoteModalRefs) return;
@@ -1191,28 +1225,7 @@ async function exportQuoteAsPdf() {
 
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    await window.html2pdf()
-      .set({
-        margin: 0,
-        pagebreak: {
-          mode: ['css']
-        },
-        filename,
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          scrollX: 0,
-          scrollY: 0,
-          onclone: (clonedDoc) => {
-            const view = clonedDoc?.defaultView || window;
-            scrubCloneColors(clonedDoc);
-            enforceLegacyColorFallback(clonedDoc?.documentElement || clonedDoc, view);
-          }
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      })
-      .from(container.firstElementChild)
-      .save();
+    await renderQuotePagesAsPdf(pdfRoot, { filename });
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
