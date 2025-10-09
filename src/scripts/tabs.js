@@ -13,6 +13,24 @@ const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
 const DEFAULT_RESERVATION_SUB_TAB = "create-tab";
 const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
 
+function scrollTabButtonIntoView(button) {
+  if (!button || typeof button.scrollIntoView !== 'function') return;
+  try {
+    const track = button.closest('[data-tab-scroll-track]');
+    if (!track) return;
+    const scrollOptions = { behavior: 'smooth', block: 'nearest', inline: 'center' };
+    button.scrollIntoView(scrollOptions);
+    const root = track.closest('[data-tab-scroll]');
+    if (root) {
+      window.requestAnimationFrame(() => {
+        root.dispatchEvent(new CustomEvent('tabScroll:update', { bubbles: true }));
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ [tabs.js] Failed to keep tab visible', error);
+  }
+}
+
 function readStoredTab(key) {
   try {
     if (typeof window === "undefined" || !window.localStorage) {
@@ -88,6 +106,7 @@ export function setupTabs() {
       if (isActive) {
         button.setAttribute('aria-selected', 'true');
         button.setAttribute('tabindex', '0');
+        scrollTabButtonIntoView(button);
       } else {
         button.setAttribute('aria-selected', 'false');
         button.setAttribute('tabindex', '-1');
@@ -328,6 +347,8 @@ function setupSubTabs() {
       subTabContent.setAttribute('aria-hidden', 'false');
       currentSubTab = targetToActivate;
 
+      scrollTabButtonIntoView(subTabButton);
+
       if (!skipStore) {
         writeStoredTab(DASHBOARD_SUB_TAB_STORAGE_KEY, targetToActivate);
         updatePreferences({ dashboardSubTab: targetToActivate }).catch((error) => {
@@ -352,6 +373,7 @@ function setupSubTabs() {
     }
     subTabButton.setAttribute('aria-selected', 'true');
     subTabButton.setAttribute('tabindex', '0');
+    scrollTabButtonIntoView(subTabButton);
 
     subTabContents.forEach((subContent) => {
       const isActive = subContent.id === targetToActivate;

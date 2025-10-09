@@ -7,6 +7,7 @@ import { setupTabs } from "./tabs.js";
 import { migrateOldData } from "./storage.js";
 import { initReports } from "./reports.js";
 import { initMaintenance } from "./maintenance.js";
+import { initTabScrollers } from "./ui/tabScroller.js";
 
 console.log("🚀 [main.js] Script loaded");
 
@@ -35,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupTabs();
   console.log("✅ [main.js] setupTabs() called");
+
+  initTabScrollers();
+  console.log("✅ [main.js] initTabScrollers() called");
 
   initThemeToggle();
   initMaintenance();
