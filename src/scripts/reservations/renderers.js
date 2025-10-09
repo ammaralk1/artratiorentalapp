@@ -143,6 +143,7 @@ export function renderReservationDetails(index, {
   if (exportBtn) {
     exportBtn.onclick = async () => {
       try {
+        closeModal();
         await exportReservationPdf({ reservation, customer, project });
       } catch (error) {
         console.error('❌ [reservations] export to PDF failed', error);
