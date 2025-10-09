@@ -38,6 +38,7 @@ const QUOTE_SECTION_DEFS = [
 ];
 
 const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
@@ -58,6 +59,7 @@ const PAGE_OVERFLOW_TOLERANCE_PX = 2;
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
+let ensureJsPdfPromise = null;
 
 function withBlockAttributes(markup, { blockType = 'section', extraAttributes = '' } = {}) {
   if (!markup) return '';
@@ -230,6 +232,39 @@ function loadExternalScript(src) {
     script.onerror = (error) => reject(error);
     document.head.appendChild(script);
   });
+}
+
+function resolveJsPdfConstructor() {
+  const candidates = [
+    window.jspdf?.jsPDF,
+    typeof window.jspdf === 'function' ? window.jspdf : null,
+    window.jsPDF?.jsPDF,
+    typeof window.jsPDF === 'function' ? window.jsPDF : null
+  ].filter((candidate) => typeof candidate === 'function');
+  return candidates.length ? candidates[0] : null;
+}
+
+async function ensureJsPdf() {
+  const existing = resolveJsPdfConstructor();
+  if (existing) return existing;
+
+  if (!ensureJsPdfPromise) {
+    ensureJsPdfPromise = loadExternalScript(JSPDF_SRC)
+      .catch((error) => {
+        ensureJsPdfPromise = null;
+        throw error;
+      })
+      .then(() => {
+        const ctor = resolveJsPdfConstructor();
+        if (!ctor) {
+          ensureJsPdfPromise = null;
+          throw new Error('تعذر تحميل مكتبة jsPDF المطلوبة.');
+        }
+        return ctor;
+      });
+  }
+
+  return ensureJsPdfPromise;
 }
 
 async function ensureHtml2Pdf() {
@@ -907,12 +942,8 @@ async function renderQuotePagesAsPdf(root, { filename }) {
     throw new Error('لا توجد صفحات لتصديرها.');
   }
 
-  const jsPDF = window.jspdf?.jsPDF || window.jsPDF?.jsPDF;
-  if (typeof jsPDF !== 'function') {
-    throw new Error('تعذر العثور على jsPDF في السياق الحالي.');
-  }
-
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const JsPdfConstructor = await ensureJsPdf();
+  const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   for (let index = 0; index < pages.length; index += 1) {
     const page = pages[index];
