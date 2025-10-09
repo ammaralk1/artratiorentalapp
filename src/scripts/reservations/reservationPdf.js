@@ -42,6 +42,8 @@ const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
 const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
+const colorCanvas = document.createElement('canvas');
+const colorCtx = colorCanvas.getContext('2d');
 
 // Render A4 pages at their physical size in the preview (96 DPI assumption).
 const CSS_DPI = 96;
@@ -55,31 +57,29 @@ let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
 
+function normalizeColorValue(rawValue, fallback = '#000') {
+  if (!colorCtx || !rawValue) return fallback;
+  try {
+    colorCtx.fillStyle = '#000';
+    colorCtx.fillStyle = rawValue;
+    return colorCtx.fillStyle || fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
 function patchHtml2CanvasColorParsing() {
   const html2canvas = window.html2canvas;
   if (!html2canvas?.Color || html2canvas.Color.__artRatioPatched) return;
 
   const originalFromString = html2canvas.Color.fromString.bind(html2canvas.Color);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  const normalizeColor = (rawValue) => {
-    if (!ctx || !rawValue) return null;
-    try {
-      ctx.fillStyle = '#000';
-      ctx.fillStyle = rawValue;
-      return ctx.fillStyle || null;
-    } catch (error) {
-      return null;
-    }
-  };
 
   html2canvas.Color.fromString = (value) => {
     try {
       return originalFromString(value);
     } catch (error) {
       if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
-        const fallback = normalizeColor(value) || '#000';
+        const fallback = normalizeColorValue(value) || '#000';
         try {
           return originalFromString(fallback);
         } catch (secondError) {
@@ -122,6 +122,45 @@ function scrubCloneColors(doc) {
   scrubUnsupportedColorFunctions(doc);
   scrubUnsupportedColorFunctions(doc?.documentElement);
   scrubUnsupportedColorFunctions(doc?.body);
+  sanitizeComputedColorFunctions(doc?.documentElement || doc);
+}
+
+const COLOR_PROPERTIES = [
+  'color',
+  'backgroundColor',
+  'borderColor',
+  'borderTopColor',
+  'borderRightColor',
+  'borderBottomColor',
+  'borderLeftColor',
+  'outlineColor',
+  'fill',
+  'stroke'
+];
+
+function sanitizeComputedColorFunctions(root) {
+  if (!root || typeof window.getComputedStyle !== 'function') return;
+  const elements = root.querySelectorAll('*');
+  elements.forEach((element) => {
+    const computed = window.getComputedStyle(element);
+    if (!computed) return;
+
+    COLOR_PROPERTIES.forEach((prop) => {
+      const value = computed[prop];
+      if (value && value.includes('color(')) {
+        const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+        const fallback = normalizeColorValue(value, prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000');
+        element.style.setProperty(hyphenProp, fallback);
+      }
+    });
+
+    const backgroundImage = computed.backgroundImage;
+    if (backgroundImage && backgroundImage.includes('color(')) {
+      const fallbackBackground = normalizeColorValue(computed.backgroundColor || '#ffffff', '#ffffff');
+      element.style.setProperty('background-image', 'none');
+      element.style.setProperty('background-color', fallbackBackground);
+    }
+  });
 }
 
 function loadExternalScript(src) {
@@ -793,6 +832,7 @@ async function exportQuoteAsPdf() {
   document.body.appendChild(container);
 
   scrubUnsupportedColorFunctions(container);
+  sanitizeComputedColorFunctions(container);
 
   const pdfRoot = container.firstElementChild;
   if (pdfRoot) {
