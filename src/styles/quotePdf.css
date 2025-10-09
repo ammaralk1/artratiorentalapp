@@ -46,6 +46,12 @@ body,
   margin: 0;
 }
 
+#quotation-pdf-root[data-quote-render-context="export"] .quote-preview-pages {
+  gap: 0 !important;
+  row-gap: 0 !important;
+  column-gap: 0 !important;
+}
+
 [data-quote-source] {
   display: none;
 }
@@ -73,6 +79,14 @@ body,
   align-items: stretch;
   justify-content: flex-start;
   overflow: hidden;
+}
+
+#quotation-pdf-root[data-quote-render-context="export"] .quote-page {
+  box-shadow: none !important;
+}
+
+#quotation-pdf-root[data-quote-render-context="export"] .quote-page + .quote-page::before {
+  display: none !important;
 }
 
 .quote-page:last-of-type {

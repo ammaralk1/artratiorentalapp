@@ -657,13 +657,24 @@ async function waitForQuoteAssets(root) {
   await new Promise((resolve) => view.requestAnimationFrame(() => resolve()));
 }
 
-async function layoutQuoteDocument(root) {
+async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   if (!root) return;
+  const isPreview = context === 'preview';
   const doc = root.ownerDocument || document;
+  root.setAttribute('data-quote-render-context', context);
   const pagesContainer = root.querySelector('[data-quote-pages]');
   const sourceContainer = root.querySelector('[data-quote-source]');
   const headerTemplate = sourceContainer?.querySelector('[data-quote-header-template]');
   if (!pagesContainer || !sourceContainer || !headerTemplate) return;
+
+  pagesContainer.style.display = 'block';
+  pagesContainer.style.margin = '0';
+  pagesContainer.style.padding = '0';
+  pagesContainer.style.gap = '0px';
+  pagesContainer.style.rowGap = '0px';
+  pagesContainer.style.columnGap = '0px';
+  pagesContainer.style.alignItems = 'stretch';
+  pagesContainer.style.justifyContent = 'flex-start';
 
   await waitForQuoteAssets(sourceContainer);
 
@@ -673,6 +684,14 @@ async function layoutQuoteDocument(root) {
 
   let currentPage = null;
   let currentBody = null;
+
+  const applyPageBaseStyles = (page) => {
+    page.style.margin = '0 auto';
+    page.style.breakInside = 'avoid';
+    page.style.pageBreakInside = 'avoid';
+    page.style.pageBreakAfter = 'auto';
+    page.style.breakAfter = 'auto';
+  };
 
   const createPage = () => {
     const page = doc.createElement('div');
@@ -691,6 +710,7 @@ async function layoutQuoteDocument(root) {
     body.className = 'quote-body';
     page.appendChild(body);
     pagesContainer.appendChild(page);
+    applyPageBaseStyles(page);
     currentPage = page;
     currentBody = body;
   };
@@ -854,6 +874,11 @@ async function layoutQuoteDocument(root) {
     const isLast = index === filteredPages.length - 1;
     page.style.pageBreakAfter = isLast ? 'auto' : 'always';
     page.style.breakAfter = isLast ? 'auto' : 'page';
+    if (!isPreview) {
+      page.style.boxShadow = 'none';
+    } else {
+      page.style.boxShadow = '';
+    }
   });
 
   const lastPage = filteredPages[filteredPages.length - 1] || null;
@@ -861,6 +886,16 @@ async function layoutQuoteDocument(root) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
+
+  if (isPreview) {
+    pagesContainer.style.display = 'flex';
+    pagesContainer.style.flexDirection = 'column';
+    pagesContainer.style.alignItems = 'center';
+    pagesContainer.style.justifyContent = 'flex-start';
+    pagesContainer.style.rowGap = '18px';
+    pagesContainer.style.columnGap = '0px';
+    pagesContainer.style.gap = '18px';
+  }
 }
 
 
@@ -895,7 +930,7 @@ function renderQuotePreview() {
     const pdfRoot = doc?.getElementById('quotation-pdf-root');
     try {
       if (pdfRoot) {
-        await layoutQuoteDocument(pdfRoot);
+        await layoutQuoteDocument(pdfRoot, { context: 'preview' });
       }
     } catch (error) {
       console.error('[reservations/pdf] failed to layout preview document', error);
@@ -1146,7 +1181,7 @@ async function exportQuoteAsPdf() {
     pdfRoot.scrollTop = 0;
     pdfRoot.scrollLeft = 0;
     try {
-      await layoutQuoteDocument(pdfRoot);
+      await layoutQuoteDocument(pdfRoot, { context: 'export' });
     } catch (error) {
       console.error('[reservations/pdf] failed to layout export document', error);
     }
