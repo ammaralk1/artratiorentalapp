@@ -209,8 +209,9 @@ body,
   width: 210mm;
   max-width: 210mm;
   min-width: 210mm;
+  height: 297mm;
   min-height: 297mm;
-  height: auto;
+  max-height: 297mm;
   margin: 0 auto;
   background: #ffffff;
   border-radius: 12px;
@@ -225,6 +226,7 @@ body,
   break-inside: avoid;
   align-items: stretch;
   justify-content: flex-start;
+  overflow: hidden;
 }
 
 .quote-page:last-of-type {
