@@ -2,7 +2,9 @@
 
 :root {
   --reports-surface: rgba(248, 250, 255, 0.96);
-  --reports-surface-soft: rgba(235, 243, 255, 0.88);
+  --reports-surface-soft: rgba(235, 243, 255, 0.9);
+  --reports-surface-gradient: linear-gradient(140deg, rgba(246, 249, 255, 0.98), rgba(231, 240, 255, 0.92));
+  --reports-surface-soft-gradient: linear-gradient(140deg, rgba(240, 245, 255, 0.95), rgba(225, 236, 255, 0.9));
   --reports-border: rgba(99, 102, 241, 0.18);
   --reports-border-strong: rgba(59, 73, 240, 0.25);
   --reports-text: rgba(15, 23, 42, 0.92);
@@ -16,9 +18,11 @@
 }
 
 :where(html.dark, body.dark) {
-  --reports-surface: rgba(12, 19, 35, 0.92);
-  --reports-surface-soft: rgba(16, 26, 46, 0.82);
-  --reports-border: rgba(88, 101, 160, 0.55);
+  --reports-surface: rgba(18, 26, 46, 0.9);
+  --reports-surface-soft: rgba(23, 33, 58, 0.85);
+  --reports-surface-gradient: linear-gradient(145deg, rgba(21, 31, 55, 0.94), rgba(13, 22, 42, 0.9));
+  --reports-surface-soft-gradient: linear-gradient(145deg, rgba(26, 37, 63, 0.92), rgba(16, 26, 48, 0.88));
+  --reports-border: rgba(118, 130, 206, 0.45);
   --reports-border-strong: rgba(129, 140, 248, 0.55);
   --reports-text: rgba(226, 232, 240, 0.95);
   --reports-muted: rgba(148, 163, 184, 0.78);
@@ -38,9 +42,10 @@
 }
 
 .reports-surface-card {
-  background-color: var(--reports-surface);
+  background: var(--reports-surface-gradient) !important;
+  background-color: var(--reports-surface) !important;
   border-radius: 20px;
-  border: 1px solid var(--reports-border);
+  border: 1px solid var(--reports-border) !important;
   padding: 28px;
   box-shadow: var(--reports-shadow);
   backdrop-filter: blur(12px);
@@ -169,8 +174,9 @@ body[dir="ltr"] .reports-refresh-btn {
   gap: 16px;
   padding: 22px;
   border-radius: 18px;
-  background-color: var(--reports-surface);
-  border: 1px solid var(--reports-border);
+  background: var(--reports-surface-gradient) !important;
+  background-color: var(--reports-surface) !important;
+  border: 1px solid var(--reports-border) !important;
   box-shadow: var(--reports-shadow);
   backdrop-filter: blur(12px);
 }
@@ -218,8 +224,9 @@ body[dir="ltr"] .reports-refresh-btn {
 
 .reports-chart-card {
   border-radius: 18px;
-  border: 1px solid var(--reports-border);
-  background-color: var(--reports-surface);
+  border: 1px solid var(--reports-border) !important;
+  background: var(--reports-surface-gradient) !important;
+  background-color: var(--reports-surface) !important;
   box-shadow: var(--reports-shadow);
   padding: 24px;
   display: flex;
@@ -253,7 +260,7 @@ body[dir="ltr"] .reports-refresh-btn {
   flex-direction: column;
   gap: 10px;
   border-radius: inherit;
-  background-color: hsla(var(--b1) / 0.92);
+  background: var(--reports-surface-soft-gradient);
   color: var(--reports-muted);
   text-align: center;
   padding: 24px;
@@ -444,8 +451,9 @@ body[dir="ltr"] .reports-card-text {
 
 .reports-table-card {
   border-radius: 18px;
-  border: 1px solid var(--reports-border);
-  background-color: var(--reports-surface);
+  border: 1px solid var(--reports-border) !important;
+  background: var(--reports-surface-gradient) !important;
+  background-color: var(--reports-surface) !important;
   box-shadow: var(--reports-shadow);
   padding: 0;
   overflow: hidden;
@@ -462,7 +470,8 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table thead {
-  background-color: var(--reports-surface-soft);
+  background: var(--reports-surface-soft-gradient) !important;
+  background-color: var(--reports-surface-soft) !important;
 }
 
 .reports-table th,
@@ -478,7 +487,7 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table tbody tr:hover {
-  background-color: var(--reports-accent-soft);
+  background-color: rgba(79, 70, 229, 0.14);
 }
 
 .reports-empty-state {
@@ -491,7 +500,8 @@ body[dir="ltr"] .reports-card-text {
   border-radius: 18px;
   text-align: center;
   color: var(--reports-muted);
-  background-color: var(--reports-surface);
+  background: var(--reports-surface-gradient) !important;
+  background-color: var(--reports-surface) !important;
 }
 
 .reports-empty-state.active {

@@ -225,13 +225,12 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle text-base-content" aria-label="فتح القائمة">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M4 6h16"></path>
-              <path d="M4 12h16"></path>
-              <path d="M4 18h16"></path>
-            </svg>
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+            </span>
           </button>
           <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
             <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
