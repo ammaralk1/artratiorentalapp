@@ -1282,12 +1282,14 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   max-width: min(98vw, 1280px);
   width: 100%;
   margin: 1.25rem auto;
+  pointer-events: none;
 }
 
 .quote-preview-modal .modal-content {
   max-height: calc(100vh - 2.5rem);
   display: flex;
   flex-direction: column;
+  pointer-events: auto;
 }
 
 .quote-preview-modal .modal-body {
@@ -3938,4 +3940,14 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 
 :is(html.dark-mode, body.dark-mode) .fc-reservation-event .fc-reservation-id {
   color: #f8fafc;
+}
+.quote-preview-modal .modal {
+  pointer-events: none;
+}
+
+.quote-preview-modal .modal-content,
+.quote-preview-modal .modal-header,
+.quote-preview-modal .modal-body,
+.quote-preview-modal .modal-footer {
+  pointer-events: auto;
 }
