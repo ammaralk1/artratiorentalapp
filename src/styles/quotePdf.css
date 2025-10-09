@@ -317,22 +317,24 @@ body,
   text-align: right;
   direction: rtl;
   font-family: 'Tajawal', sans-serif;
+  padding: 10px 12px;
+  gap: 10px;
 }
 
 .payment-rows {
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: 8px;
+  gap: 6px;
 }
 
 .payment-row {
-  display: flex;
+  display: inline-flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
+  align-items: center;
+  gap: 4px;
   direction: rtl;
+  font-size: 0.7rem;
 }
 
 .payment-row__label {
@@ -341,11 +343,17 @@ body,
   text-align: right;
 }
 
+.payment-row__slash {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
 .payment-row__value {
   font-weight: 700;
   color: #0f172a;
   text-align: left;
   direction: ltr;
+  white-space: nowrap;
 }
 
 .totals-block {
@@ -354,8 +362,9 @@ body,
   text-align: center;
   margin: 0 auto;
   direction: rtl;
-  gap: 14px;
+  gap: 10px;
   font-family: 'Tajawal', sans-serif;
+  padding: 10px 12px;
 }
 
 .totals-block h3 {
@@ -363,6 +372,7 @@ body,
   font-weight: 700;
   letter-spacing: 0;
   color: #0f172a;
+  margin-bottom: 4px;
 }
 
 .info-plain {
@@ -490,56 +500,74 @@ body,
 .totals-inline {
   display: flex;
   flex-wrap: nowrap;
-  gap: 12px;
   width: 100%;
   justify-content: space-between;
-  align-items: stretch;
+  align-items: center;
+  gap: 12px;
 }
 
-.totals-item {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.totals-inline__item {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 6px 8px;
+  border-radius: 10px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
-  text-align: center;
-  min-width: 0;
+  white-space: nowrap;
+  font-size: 0.7rem;
   font-family: 'Tajawal', sans-serif;
-}
-
-.totals-inline .totals-item {
   flex: 1 1 0;
 }
 
-.totals-item__label {
+.totals-inline__label {
   font-weight: 600;
   color: #475569;
 }
 
-.totals-item__value {
+.totals-inline__slash {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.totals-inline__value {
   font-weight: 700;
   color: #0f172a;
-  font-size: 0.78rem;
 }
 
 .totals-final {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .totals-item--final {
   background: rgba(59, 91, 220, 0.12);
   border-color: rgba(59, 91, 220, 0.35);
-  padding: 12px 18px;
-  min-width: 220px;
+  padding: 10px 16px;
+  min-width: 200px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 12px;
 }
 
-.totals-item--final .totals-item__value {
-  font-size: 0.9rem;
+.totals-item__label {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.totals-item__slash {
+  font-weight: 600;
+  color: #1d4ed8;
+}
+
+.totals-item__value {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.82rem;
 }
 
 .quote-table {

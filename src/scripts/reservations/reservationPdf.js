@@ -505,19 +505,25 @@ function buildQuotationHtml({
   };
 
   const renderTotalsItem = (label, value, { variant = 'inline' } = {}) => {
-    const classes = ['totals-item'];
     if (variant === 'final') {
-      classes.push('totals-item--final');
+      return `<div class="totals-item totals-item--final">
+        <span class="totals-item__label">${escapeHtml(label)}</span>
+        <span class="totals-item__slash">/</span>
+        <span class="totals-item__value">${escapeHtml(value)}</span>
+      </div>`;
     }
-    return `<div class="${classes.join(' ')}">
-      <span class="totals-item__label">${escapeHtml(label)}</span>
-      <span class="totals-item__value">${escapeHtml(value)}</span>
-    </div>`;
+
+    return `<span class="totals-inline__item">
+      <span class="totals-inline__label">${escapeHtml(label)}</span>
+      <span class="totals-inline__slash">/</span>
+      <span class="totals-inline__value">${escapeHtml(value)}</span>
+    </span>`;
   };
 
   const renderPaymentRow = (label, value) => {
     return `<div class="payment-row">
       <span class="payment-row__label">${escapeHtml(label)}</span>
+      <span class="payment-row__slash">/</span>
       <span class="payment-row__value">${escapeHtml(value)}</span>
     </div>`;
   };
@@ -670,11 +676,11 @@ function buildQuotationHtml({
   }
 
   const summaryBlocks = [];
-  if (notesSectionMarkup) {
-    summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
-  }
   if (financialSectionMarkup) {
     summaryBlocks.push(withBlockAttributes(financialSectionMarkup, { blockType: 'summary' }));
+  }
+  if (notesSectionMarkup) {
+    summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
   }
 
   const footerBlocks = [
