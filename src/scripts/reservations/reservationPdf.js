@@ -41,6 +41,8 @@ const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
+const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
+
 // Render A4 pages at their physical size in the preview (96 DPI assumption).
 const CSS_DPI = 96;
 const MM_PER_INCH = 25.4;
@@ -52,6 +54,30 @@ const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
+
+function scrubUnsupportedColorFunctions(root) {
+  if (!root) return;
+
+  const replaceColorFunctions = (value = '') => (
+    typeof value === 'string' && value.includes('color(')
+      ? value.replace(COLOR_FUNCTION_REGEX, '#000')
+      : value
+  );
+
+  root.querySelectorAll?.('style')?.forEach?.((styleNode) => {
+    const text = styleNode.textContent;
+    if (typeof text === 'string' && text.includes('color(')) {
+      styleNode.textContent = replaceColorFunctions(text);
+    }
+  });
+
+  root.querySelectorAll?.('[style]')?.forEach?.((element) => {
+    const styleAttr = element.getAttribute('style');
+    if (typeof styleAttr === 'string' && styleAttr.includes('color(')) {
+      element.setAttribute('style', replaceColorFunctions(styleAttr));
+    }
+  });
+}
 
 function loadExternalScript(src) {
   return new Promise((resolve, reject) => {
@@ -718,6 +744,8 @@ async function exportQuoteAsPdf() {
   container.style.left = '0';
   container.style.zIndex = '-1';
   document.body.appendChild(container);
+
+  scrubUnsupportedColorFunctions(container);
 
   const pdfRoot = container.firstElementChild;
   if (pdfRoot) {
