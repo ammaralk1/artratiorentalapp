@@ -42,6 +42,7 @@ const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
 const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
+const MODERN_COLOR_REGEX = /(color\(|color-mix\()/i;
 const colorCanvas = document.createElement('canvas');
 const colorCtx = colorCanvas.getContext('2d');
 
@@ -148,7 +149,7 @@ function sanitizeComputedColorFunctions(root) {
 
     COLOR_PROPERTIES.forEach((prop) => {
       const value = computed[prop];
-      if (value && value.includes('color(')) {
+      if (value && MODERN_COLOR_REGEX.test(value)) {
         const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
         const defaultFallback = prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000';
         const fallback = normalizeColorValue(value, defaultFallback);
@@ -157,10 +158,33 @@ function sanitizeComputedColorFunctions(root) {
     });
 
     const backgroundImage = computed.backgroundImage;
-    if (backgroundImage && backgroundImage.includes('color(')) {
+    if (backgroundImage && MODERN_COLOR_REGEX.test(backgroundImage)) {
       const fallbackBackground = normalizeColorValue(computed.backgroundColor || '#ffffff', '#ffffff');
       element.style.setProperty('background-image', 'none', 'important');
       element.style.setProperty('background-color', fallbackBackground, 'important');
+    }
+  });
+}
+
+function enforceLegacyColorFallback(root) {
+  if (!root || typeof window.getComputedStyle !== 'function') return;
+  root.querySelectorAll('*').forEach((element) => {
+    const styles = window.getComputedStyle(element);
+    if (!styles) return;
+
+    ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach((prop) => {
+      const value = styles[prop];
+      if (value && MODERN_COLOR_REGEX.test(value)) {
+        const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+        const fallback = prop === 'backgroundColor' ? '#ffffff' : '#000000';
+        element.style.setProperty(hyphenProp, fallback, 'important');
+      }
+    });
+
+    const bgImage = styles.backgroundImage;
+    if (bgImage && MODERN_COLOR_REGEX.test(bgImage)) {
+      element.style.setProperty('background-image', 'none', 'important');
+      element.style.setProperty('background-color', '#ffffff', 'important');
     }
   });
 }
@@ -835,6 +859,7 @@ async function exportQuoteAsPdf() {
 
   scrubUnsupportedColorFunctions(container);
   sanitizeComputedColorFunctions(container);
+  enforceLegacyColorFallback(container);
 
   const pdfRoot = container.firstElementChild;
   if (pdfRoot) {
@@ -868,7 +893,10 @@ async function exportQuoteAsPdf() {
           useCORS: true,
           scrollX: 0,
           scrollY: 0,
-          onclone: (clonedDoc) => scrubCloneColors(clonedDoc)
+          onclone: (clonedDoc) => {
+            scrubCloneColors(clonedDoc);
+            enforceLegacyColorFallback(clonedDoc?.documentElement || clonedDoc);
+          }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       })
