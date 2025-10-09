@@ -1022,22 +1022,6 @@ function buildQuotationHtml({
     </div>`;
   };
 
-  const buildCollapsibleSection = (title, innerHtml, { classes = '', defaultOpen = false } = {}) => {
-    const openAttr = defaultOpen ? ' open' : '';
-    const safeContent = innerHtml ?? '';
-    const safeTitle = escapeHtml(title ?? '');
-    const extraClasses = classes ? ` ${classes}` : '';
-    return `
-      <details class="quote-section${extraClasses}" data-collapsible${openAttr}>
-        <summary class="quote-section__summary">
-          <span class="quote-section__title">${safeTitle}</span>
-          <span class="quote-section__toggle" aria-hidden="true">▸</span>
-        </summary>
-        <div class="quote-section__content">${safeContent}</div>
-      </details>
-    `.trim();
-  };
-
   const customerFieldItems = [];
   if (isFieldEnabled('customerInfo', 'customerName')) {
     customerFieldItems.push(renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName));
@@ -1053,11 +1037,10 @@ function buildQuotationHtml({
   }
 
   const customerSectionMarkup = includeSection('customerInfo')
-    ? buildCollapsibleSection(
-        t('reservations.quote.sections.customer', 'بيانات العميل'),
-        customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage,
-        { classes: 'quote-section--plain quote-section--customer' }
-      )
+    ? `<section class="quote-section quote-section--plain quote-section--customer">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
+        ${customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage}
+      </section>`
     : '';
 
   const reservationFieldItems = [];
@@ -1075,11 +1058,10 @@ function buildQuotationHtml({
   }
 
   const reservationSectionMarkup = includeSection('reservationInfo')
-    ? buildCollapsibleSection(
-        t('reservations.quote.sections.reservation', 'تفاصيل الحجز'),
-        reservationFieldItems.length ? `<div class="info-plain">${reservationFieldItems.join('')}</div>` : noFieldsMessage,
-        { classes: 'quote-section--plain quote-section--reservation' }
-      )
+    ? `<section class="quote-section quote-section--plain quote-section--reservation">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
+        ${reservationFieldItems.length ? `<div class="info-plain">${reservationFieldItems.join('')}</div>` : noFieldsMessage}
+      </section>`
     : '';
 
   const projectFieldItems = [];
@@ -1091,11 +1073,10 @@ function buildQuotationHtml({
   }
 
   const projectSectionMarkup = includeSection('projectInfo')
-    ? buildCollapsibleSection(
-        t('reservations.quote.sections.project', 'بيانات المشروع'),
-        projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage,
-        { classes: 'quote-section--plain' }
-      )
+    ? `<section class="quote-section quote-section--plain">
+        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
+        ${projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage}
+      </section>`
     : '';
 
   const financialInlineItems = [];
@@ -1120,23 +1101,15 @@ function buildQuotationHtml({
   const financialSectionMarkup = includeSection('financialSummary')
     ? (() => {
         if (!financialInlineItems.length && !showFinalTotal) {
-          return buildCollapsibleSection(
-            t('reservations.details.labels.summary', 'الملخص المالي'),
-            noFieldsMessage,
-            { classes: 'quote-section--financial' }
-          );
+          return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
         }
-        const financialContent = `
+        return `<section class="quote-section quote-section--financial">
           <div class="totals-block">
+            <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
             ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
             ${financialFinalHtml}
           </div>
-        `;
-        return buildCollapsibleSection(
-          t('reservations.details.labels.summary', 'الملخص المالي'),
-          financialContent,
-          { classes: 'quote-section--financial' }
-        );
+        </section>`;
       })()
     : '';
 
@@ -1151,18 +1124,20 @@ function buildQuotationHtml({
     : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td></tr>`;
 
   const itemsSectionMarkup = includeSection('items')
-    ? buildCollapsibleSection(
-        t('reservations.details.items.title', 'المعدات'),
-        hasItemColumns
-          ? `<table class="quote-table">
+    ? (hasItemColumns
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
+            <table class="quote-table">
               <thead>
                 <tr>${itemTableHeader}</tr>
               </thead>
               <tbody>${itemsBodyRows}</tbody>
-            </table>`
-          : noFieldsMessage,
-        { classes: 'quote-section--table' }
-      )
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
     : '';
 
   const crewColumns = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
@@ -1175,25 +1150,27 @@ function buildQuotationHtml({
     : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
 
   const crewSectionMarkup = includeSection('crew')
-    ? buildCollapsibleSection(
-        t('reservations.details.technicians.title', 'طاقم العمل'),
-        hasCrewColumns
-          ? `<table class="quote-table">
+    ? (hasCrewColumns
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
+            <table class="quote-table">
               <thead>
                 <tr>${crewHeader}</tr>
               </thead>
               <tbody>${crewBodyRows}</tbody>
-            </table>`
-          : noFieldsMessage,
-        { classes: 'quote-section--table' }
-      )
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
     : '';
 
   const notesSectionMarkup = includeSection('notes')
-    ? buildCollapsibleSection(
-        t('reservations.details.labels.notes', 'ملاحظات الحجز'),
-        `<div class="quote-notes">${notes ? escapeHtml(notes) : escapeHtml(t('reservations.quote.emptyNotes', 'لا توجد ملاحظات إضافية.'))}</div>`
-      )
+    ? `<section class="quote-section">
+        <h3>${escapeHtml(t('reservations.details.labels.notes', 'ملاحظات الحجز'))}</h3>
+        <div class="quote-notes">${notes ? escapeHtml(notes) : escapeHtml(t('reservations.quote.emptyNotes', 'لا توجد ملاحظات إضافية.'))}</div>
+      </section>`
     : '';
 
   const paymentRows = [];
@@ -1210,20 +1187,19 @@ function buildQuotationHtml({
     paymentRows.push(renderPaymentRow(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban)));
   }
 
-  const paymentSectionMarkup = buildCollapsibleSection(
-    t('reservations.quote.sections.payment', 'بيانات الدفع'),
-    `
+  const paymentSectionMarkup = `<section class="quote-section">
       <div class="payment-block">
+        <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
         <div class="payment-rows">${paymentRows.length ? paymentRows.join('') : noFieldsMessage}</div>
       </div>
       <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
-    `
-  );
+    </section>`;
 
-  const termsSectionMarkup = buildCollapsibleSection(
-    t('reservations.quote.labels.terms', 'الشروط العامة'),
-    `<div class="quote-footer"><ul>${QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul></div>`
-  );
+
+  const termsSectionMarkup = `<footer class="quote-footer">
+        <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
+        <ul>${QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
+      </footer>`;
 
   const primaryBlocks = [];
 
@@ -1364,14 +1340,6 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
 
   const blockNodes = Array.from(sourceContainer.querySelectorAll(':scope > [data-quote-block]'));
 
-  if (context === 'export') {
-    blockNodes.forEach((node) => {
-      if (node instanceof HTMLElement && node.matches('[data-collapsible]')) {
-        node.setAttribute('open', '');
-      }
-    });
-  }
-
   let currentPage = null;
   let currentBody = null;
 
@@ -1461,8 +1429,7 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
       return;
     }
 
-    const summary = node.querySelector('.quote-section__summary');
-    const heading = summary ? summary.cloneNode(true) : null;
+    const heading = node.querySelector('h3');
     const tableHead = table.querySelector('thead');
     const rows = Array.from(table.querySelectorAll('tbody tr'));
 
@@ -1483,14 +1450,10 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
       if (isContinuation) {
         section.classList.add('quote-section--table-fragment--continued');
       }
-      section.setAttribute('open', '');
       const headingClone = heading ? heading.cloneNode(true) : null;
       if (headingClone) {
         section.appendChild(headingClone);
       }
-      const contentWrapper = doc.createElement('div');
-      contentWrapper.className = 'quote-section__content';
-      section.appendChild(contentWrapper);
       const tableClone = table.cloneNode(false);
       tableClone.classList.add('quote-table--fragment');
       if (tableHead) {
@@ -1498,7 +1461,7 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
       }
       const body = doc.createElement('tbody');
       tableClone.appendChild(body);
-      contentWrapper.appendChild(tableClone);
+      section.appendChild(tableClone);
       return { section, body };
     };
 
@@ -1597,19 +1560,10 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
 
 function enforceQuoteTextColor(root, color = '#000000') {
   if (!root) return;
-  const nodes = root.querySelectorAll('[style*="color"], [class*="text"], h1, h2, h3, h4, h5, h6, p, span, th, td, li, strong, em, label, dt, dd, caption, div, summary');
+  const nodes = root.querySelectorAll('[style*="color"], [class*="text"], h1, h2, h3, h4, h5, h6, p, span, th, td, li, strong, em, label, dt, dd, caption, div');
   nodes.forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
     node.style.setProperty('color', color, 'important');
-  });
-}
-
-function expandQuoteSections(root) {
-  if (!root) return;
-  root.querySelectorAll('[data-collapsible]').forEach((element) => {
-    if (element instanceof HTMLElement && element.tagName.toLowerCase() === 'details') {
-      element.setAttribute('open', '');
-    }
   });
 }
 
@@ -1682,7 +1636,6 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       pageClone.style.minHeight = `${A4_HEIGHT_PX}px`;
       pageClone.style.position = 'relative';
       pageClone.style.background = '#ffffff';
-      expandQuoteSections(pageClone);
       enforceQuoteTextColor(pageClone);
       captureWrapper.appendChild(pageClone);
       doc.body.appendChild(captureWrapper);
@@ -2163,7 +2116,6 @@ async function exportQuoteAsPdf() {
       pdfRoot.scrollLeft = 0;
     try {
       await layoutQuoteDocument(pdfRoot, { context: 'export' });
-      expandQuoteSections(pdfRoot);
       await waitForQuoteAssets(pdfRoot);
       enforceQuoteTextColor(pdfRoot);
       logPdfDebug('layout complete for export document');
