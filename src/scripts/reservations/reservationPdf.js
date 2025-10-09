@@ -1208,7 +1208,9 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null })
 
   const safariMode = isIosSafari();
   const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const captureScale = safariMode ? Math.min(1.2, Math.max(1, devicePixelRatio)) : Math.min(1.6, Math.max(1.2, devicePixelRatio));
+  const captureScale = safariMode
+    ? Math.min(1.8, Math.max(1.4, devicePixelRatio * 1.25))
+    : Math.min(2.2, Math.max(1.8, devicePixelRatio * 1.5));
   const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 
   for (let index = 0; index < pages.length; index += 1) {
@@ -1223,7 +1225,7 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null })
       letterRendering: true,
       removeContainer: safariMode
     });
-    const imageData = canvas.toDataURL('image/jpeg', safariMode ? 0.82 : 0.9);
+    const imageData = canvas.toDataURL('image/jpeg', safariMode ? 0.9 : 0.95);
     if (index > 0) {
       pdf.addPage();
     }
