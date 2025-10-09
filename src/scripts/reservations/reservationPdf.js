@@ -1635,6 +1635,7 @@ async function exportQuoteAsPdf() {
   const safariDownloadWindow = (!useHtml2PdfOnMobile && isIosSafari())
     ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
     : null;
+  let mobileDownloadWindow = null;
   if (pdfRoot) {
     pdfRoot.setAttribute('dir', 'rtl');
     pdfRoot.style.direction = 'rtl';
@@ -1660,21 +1661,32 @@ async function exportQuoteAsPdf() {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
     if (useHtml2PdfOnMobile) {
       await ensureHtml2Pdf();
-      await window.html2pdf()
-        .set({
-          margin: 0,
-          filename,
-          html2canvas: {
-            scale: Math.min(Math.max((window.devicePixelRatio || 1) * 1.1, 1.2), 1.6),
-            useCORS: true,
-            scrollX: 0,
-            scrollY: 0,
-            backgroundColor: '#ffffff'
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(pdfRoot)
-        .save();
+
+      mobileDownloadWindow = window.open('about:blank', '_blank');
+      const opt = {
+        margin: 0,
+        filename,
+        html2canvas: {
+          scale: Math.min(Math.max((window.devicePixelRatio || 1) * 1.05, 1.1), 1.4),
+          useCORS: true,
+          scrollX: 0,
+          scrollY: 0,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      const worker = window.html2pdf().set(opt).from(pdfRoot);
+      await worker.toPdf().get('pdf').then((pdfInstance) => {
+        const blob = pdfInstance.output('blob');
+        const blobUrl = URL.createObjectURL(blob);
+        if (mobileDownloadWindow && !mobileDownloadWindow.closed) {
+          mobileDownloadWindow.location.href = blobUrl;
+        } else {
+          window.open(blobUrl, '_blank');
+        }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      });
     } else {
       await renderQuotePagesAsPdf(pdfRoot, { filename, safariWindowRef: safariDownloadWindow });
     }
@@ -1682,6 +1694,11 @@ async function exportQuoteAsPdf() {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
     }
+  } catch (error) {
+    if (mobileDownloadWindow && !mobileDownloadWindow.closed) {
+      mobileDownloadWindow.close();
+    }
+    throw error;
   } finally {
     document.body.removeChild(container);
   }
