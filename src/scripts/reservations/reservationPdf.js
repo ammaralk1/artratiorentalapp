@@ -38,6 +38,7 @@ const QUOTE_SECTION_DEFS = [
 ];
 
 const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+const HTML2CANVAS_SRC = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
@@ -60,6 +61,7 @@ let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
 let ensureJsPdfPromise = null;
+let ensureHtml2CanvasPromise = null;
 
 function withBlockAttributes(markup, { blockType = 'section', extraAttributes = '' } = {}) {
   if (!markup) return '';
@@ -242,6 +244,33 @@ function resolveJsPdfConstructor() {
     typeof window.jsPDF === 'function' ? window.jsPDF : null
   ].filter((candidate) => typeof candidate === 'function');
   return candidates.length ? candidates[0] : null;
+}
+
+function resolveHtml2Canvas() {
+  return typeof window.html2canvas === 'function' ? window.html2canvas : null;
+}
+
+async function ensureHtml2Canvas() {
+  const existing = resolveHtml2Canvas();
+  if (existing) return existing;
+
+  if (!ensureHtml2CanvasPromise) {
+    ensureHtml2CanvasPromise = loadExternalScript(HTML2CANVAS_SRC)
+      .catch((error) => {
+        ensureHtml2CanvasPromise = null;
+        throw error;
+      })
+      .then(() => {
+        const fn = resolveHtml2Canvas();
+        if (!fn) {
+          ensureHtml2CanvasPromise = null;
+          throw new Error('تعذر تحميل مكتبة html2canvas المطلوبة.');
+        }
+        return fn;
+      });
+  }
+
+  return ensureHtml2CanvasPromise;
 }
 
 async function ensureJsPdf() {
@@ -942,13 +971,17 @@ async function renderQuotePagesAsPdf(root, { filename }) {
     throw new Error('لا توجد صفحات لتصديرها.');
   }
 
-  const JsPdfConstructor = await ensureJsPdf();
+  const [JsPdfConstructor, html2canvasFn] = await Promise.all([
+    ensureJsPdf(),
+    ensureHtml2Canvas()
+  ]);
+
   const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
   for (let index = 0; index < pages.length; index += 1) {
     const page = pages[index];
     await waitForQuoteAssets(page);
-    const canvas = await window.html2canvas(page, {
+    const canvas = await html2canvasFn(page, {
       scale: 2,
       useCORS: true,
       scrollX: 0,
