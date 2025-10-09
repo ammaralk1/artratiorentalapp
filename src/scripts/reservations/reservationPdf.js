@@ -79,6 +79,7 @@ function patchHtml2CanvasColorParsing() {
       return originalFromString(value);
     } catch (error) {
       if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
+        console.warn('[quote/pdf] html2canvas color fallback', value);
         const fallback = normalizeColorValue(value) || '#000';
         try {
           return originalFromString(fallback);
@@ -149,16 +150,17 @@ function sanitizeComputedColorFunctions(root) {
       const value = computed[prop];
       if (value && value.includes('color(')) {
         const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
-        const fallback = normalizeColorValue(value, prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000');
-        element.style.setProperty(hyphenProp, fallback);
+        const defaultFallback = prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000';
+        const fallback = normalizeColorValue(value, defaultFallback);
+        element.style.setProperty(hyphenProp, fallback, 'important');
       }
     });
 
     const backgroundImage = computed.backgroundImage;
     if (backgroundImage && backgroundImage.includes('color(')) {
       const fallbackBackground = normalizeColorValue(computed.backgroundColor || '#ffffff', '#ffffff');
-      element.style.setProperty('background-image', 'none');
-      element.style.setProperty('background-color', fallbackBackground);
+      element.style.setProperty('background-image', 'none', 'important');
+      element.style.setProperty('background-color', fallbackBackground, 'important');
     }
   });
 }
