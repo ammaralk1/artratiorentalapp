@@ -1631,7 +1631,10 @@ async function exportQuoteAsPdf() {
 
   const pdfRoot = container.firstElementChild;
 
-  const safariDownloadWindow = isIosSafari() ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank') : null;
+  const useHtml2PdfOnMobile = isMobileViewport();
+  const safariDownloadWindow = (!useHtml2PdfOnMobile && isIosSafari())
+    ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
+    : null;
   if (pdfRoot) {
     pdfRoot.setAttribute('dir', 'rtl');
     pdfRoot.style.direction = 'rtl';
@@ -1655,7 +1658,26 @@ async function exportQuoteAsPdf() {
 
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    await renderQuotePagesAsPdf(pdfRoot, { filename, safariWindowRef: safariDownloadWindow });
+    if (useHtml2PdfOnMobile) {
+      await ensureHtml2Pdf();
+      await window.html2pdf()
+        .set({
+          margin: 0,
+          filename,
+          html2canvas: {
+            scale: Math.min(Math.max((window.devicePixelRatio || 1) * 1.1, 1.2), 1.6),
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+            backgroundColor: '#ffffff'
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        })
+        .from(pdfRoot)
+        .save();
+    } else {
+      await renderQuotePagesAsPdf(pdfRoot, { filename, safariWindowRef: safariDownloadWindow });
+    }
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
