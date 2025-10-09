@@ -114,6 +114,14 @@
     justify-content: flex-end;
   }
 
+  .dashboard-logo-img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+  }
+
   @media (max-width: 767px) {
     .dashboard-header-nav {
       display: flex;
@@ -2743,13 +2751,32 @@
   }
 
   .mobile-sidebar-toggle {
-    @apply btn btn-circle btn-ghost border border-base-300;
+    @apply btn btn-circle btn-ghost;
+    border: 1.5px solid rgba(255, 255, 255, 0.45);
+    background-color: rgba(15, 23, 42, 0.55);
+    color: #f8fafc;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.2);
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .mobile-sidebar-toggle svg {
+    stroke: #f8fafc;
+  }
+
+  .mobile-sidebar-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.28);
+    border-color: rgba(255, 255, 255, 0.6);
   }
 
   :where(html.dark, body.dark) .mobile-sidebar-toggle {
-    border-color: rgba(99, 102, 241, 0.45);
-    color: #dbeafe;
-    background-color: rgba(17, 26, 46, 0.75);
+    border-color: rgba(255, 255, 255, 0.45);
+    background-color: rgba(10, 17, 32, 0.8);
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .mobile-sidebar-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.65);
   }
 
   .sidebar-backdrop {
@@ -2790,10 +2817,10 @@
   .theme-toggle-btn {
     @apply btn btn-xs sm:btn-sm md:btn-md font-semibold;
     border-radius: 0.85rem;
-    border: 1px solid hsl(var(--bc) / 0.2);
-    background-color: hsl(var(--b1) / 0.92);
-    color: hsl(var(--bc));
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.38);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.75), rgba(30, 41, 59, 0.55));
+    color: #f8fafc;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.22);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
 
@@ -2810,23 +2837,22 @@
 
   .language-toggle-btn:hover,
   .theme-toggle-btn:hover {
-    border-color: hsl(var(--p) / 0.45);
-    box-shadow: 0 16px 34px rgba(76, 110, 245, 0.18);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.32);
     transform: translateY(-1px);
   }
 
   :where(html.dark, body.dark) .language-toggle-btn,
   :where(html.dark, body.dark) .theme-toggle-btn {
-    border-color: rgba(99, 102, 241, 0.45);
-    background-color: rgba(16, 26, 46, 0.85);
-    color: rgba(226, 232, 240, 0.95);
+    border-color: rgba(255, 255, 255, 0.45);
+    background: linear-gradient(145deg, rgba(9, 15, 30, 0.92), rgba(18, 28, 48, 0.72));
+    color: #f8fafc;
     box-shadow: 0 20px 40px rgba(5, 12, 28, 0.45);
   }
 
   :where(html.dark, body.dark) .language-toggle-btn:hover,
   :where(html.dark, body.dark) .theme-toggle-btn:hover {
-    border-color: rgba(129, 140, 248, 0.65);
-    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.65);
   }
 
   #logout-btn {
