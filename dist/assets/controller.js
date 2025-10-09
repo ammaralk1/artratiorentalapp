@@ -477,6 +477,7 @@ body,
   font-family: 'Tajawal', sans-serif;
   padding: 10px 12px;
   gap: 10px;
+  width: 100%;
 }
 
 .payment-rows {
@@ -492,7 +493,7 @@ body,
   align-items: center;
   gap: 4px;
   direction: rtl;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
 .payment-row__label {
@@ -514,6 +515,11 @@ body,
   white-space: nowrap;
 }
 
+.payment-block h3 {
+  text-align: right;
+  margin: 0;
+}
+
 .totals-block {
   font-size: 0.62rem;
   align-items: stretch;
@@ -522,7 +528,10 @@ body,
   direction: rtl;
   gap: 10px;
   font-family: 'Tajawal', sans-serif;
-  padding: 10px 12px;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .totals-block h3 {
@@ -531,6 +540,8 @@ body,
   letter-spacing: 0;
   color: #0f172a;
   margin-bottom: 4px;
+  text-align: center;
+  width: 100%;
 }
 
 .info-plain {
@@ -657,11 +668,11 @@ body,
 
 .totals-inline {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
 }
 
 .totals-inline__item {
@@ -669,14 +680,14 @@ body,
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   border-radius: 10px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
   white-space: nowrap;
   font-size: 0.7rem;
   font-family: 'Tajawal', sans-serif;
-  flex: 1 1 0;
+  flex: 1 1 180px;
 }
 
 .totals-inline__label {
@@ -698,13 +709,14 @@ body,
   display: flex;
   justify-content: center;
   width: 100%;
+  margin-top: 6px;
 }
 
 .totals-item--final {
   background: rgba(59, 91, 220, 0.12);
   border-color: rgba(59, 91, 220, 0.35);
-  padding: 10px 16px;
-  min-width: 200px;
+  padding: 10px 18px;
+  min-width: 220px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
