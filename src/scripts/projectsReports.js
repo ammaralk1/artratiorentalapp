@@ -13,6 +13,7 @@ import { getReservationsState, refreshReservationsFromApi } from './reservations
 
 const PROJECT_TAX_RATE = 0.15;
 const charts = {};
+let chartLoadingRequests = 0;
 
 const state = {
   projects: [],
@@ -39,23 +40,60 @@ const dom = {
   refreshBtn: null,
   kpiGrid: null,
   statusChips: null,
-  statusChart: null,
-  timelineChart: null,
-  expenseChart: null,
-  clientsChart: null,
   table: null,
   tableBody: null,
   tableMeta: null,
-  tableEmpty: null
+  tableEmpty: null,
+  chartCards: {},
+  chartLoaders: {}
 };
+
+const KPI_ICONS = Object.freeze({
+  projects: `
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M4 4h6v8h-6z"></path>
+      <path d="M14 4h6v5h-6z"></path>
+      <path d="M4 16h6v4h-6z"></path>
+      <path d="M14 11h6v9h-6z"></path>
+    </svg>
+  `,
+  value: `
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M12 8c-4.418 0 -8 1.79 -8 4s3.582 4 8 4s8 -1.79 8 -4s-3.582 -4 -8 -4"></path>
+      <path d="M12 8v8"></path>
+      <path d="M8 12h8"></path>
+    </svg>
+  `,
+  outstanding: `
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M7 18v-11a2 2 0 0 1 4 0v11"></path>
+      <path d="M7 8h4"></path>
+      <path d="M15 18v-7a2 2 0 0 1 4 0v7"></path>
+      <path d="M15 13h4"></path>
+    </svg>
+  `,
+  expenses: `
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M3 12l3 3l3 -3"></path>
+      <path d="M6 6v9"></path>
+      <path d="M13 6h5"></path>
+      <path d="M15.5 6v12"></path>
+      <path d="M21 18h-5"></path>
+    </svg>
+  `
+});
 
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
 
-async function bootstrapReportsData() {
+async function loadReportsData({ forceProjects = false } = {}) {
   try {
     await ensureReservationsLoaded({ suppressError: true });
-    await ensureProjectsLoaded({ force: true });
+    await ensureProjectsLoaded({ force: forceProjects });
   } catch (error) {
     console.error('❌ [projectsReports] Failed to load initial data', error);
     if (isProjectApiError(error)) {
@@ -63,16 +101,22 @@ async function bootstrapReportsData() {
       console.warn('Projects API error:', error.message);
     }
   }
+  loadAllData();
 }
 
 async function initReports() {
-  await ensureChartLibrary();
   cacheDom();
-  await bootstrapReportsData();
-  loadAllData();
-  renderStatusChips();
-  setupFilters();
-  renderAll();
+  beginChartsLoading();
+
+  await ensureChartLibrary();
+  try {
+    await loadReportsData({ forceProjects: true });
+    renderStatusChips();
+    setupFilters();
+    renderAll();
+  } finally {
+    endChartsLoading();
+  }
 
   document.addEventListener('language:changed', handleLanguageChanged);
   document.addEventListener('projects:changed', () => {
@@ -116,6 +160,45 @@ function cacheDom() {
   dom.tableBody = dom.table?.querySelector('tbody');
   dom.tableMeta = document.getElementById('reports-table-meta');
   dom.tableEmpty = document.getElementById('reports-empty');
+  dom.chartCards = {};
+  dom.chartLoaders = {};
+
+  document.querySelectorAll('[data-chart-card]').forEach((card) => {
+    const key = card.dataset.chartCard;
+    if (!key) return;
+    dom.chartCards[key] = card;
+    const loader = card.querySelector('[data-chart-loading]');
+    if (loader) {
+      dom.chartLoaders[key] = loader;
+    }
+  });
+}
+
+function setChartsLoading(isLoading) {
+  const shouldShow = Boolean(isLoading);
+  Object.entries(dom.chartCards || {}).forEach(([key, card]) => {
+    if (!card) return;
+    card.classList.toggle('is-loading', shouldShow);
+    card.setAttribute('aria-busy', shouldShow ? 'true' : 'false');
+    const loader = dom.chartLoaders?.[key];
+    if (loader) {
+      loader.hidden = !shouldShow;
+    }
+  });
+}
+
+function beginChartsLoading() {
+  chartLoadingRequests += 1;
+  if (chartLoadingRequests === 1) {
+    setChartsLoading(true);
+  }
+}
+
+function endChartsLoading() {
+  chartLoadingRequests = Math.max(0, chartLoadingRequests - 1);
+  if (chartLoadingRequests === 0) {
+    setChartsLoading(false);
+  }
 }
 
 function loadAllData() {
@@ -304,6 +387,7 @@ function handleDateRangeChange(event) {
 }
 
 async function handleDataMutation() {
+  beginChartsLoading();
   try {
     await Promise.all([
       refreshProjectsFromApi(),
@@ -317,6 +401,7 @@ async function handleDataMutation() {
   } finally {
     loadAllData();
     renderAll();
+    endChartsLoading();
   }
 }
 
@@ -430,25 +515,25 @@ function renderKpis(projects) {
 
   const cards = [
     {
-      icon: '📊',
+      icon: KPI_ICONS.projects,
       label: t('projects.reports.kpi.totalProjects', 'Total projects'),
       value: formatNumber(totalCount),
       meta: t('projects.reports.kpi.totalProjectsMeta', 'After applying the current filters')
     },
     {
-      icon: '💰',
+      icon: KPI_ICONS.value,
       label: t('projects.reports.kpi.totalValue', 'Total value'),
       value: formatCurrency(totalValue),
       meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects and linked reservations')
     },
     {
-      icon: '🧾',
+      icon: KPI_ICONS.outstanding,
       label: t('projects.reports.kpi.unpaidValue', 'Outstanding value'),
       value: formatCurrency(unpaidValue),
       meta: t('projects.reports.kpi.unpaidValueMeta', 'Projects not fully paid yet')
     },
     {
-      icon: '💸',
+      icon: KPI_ICONS.expenses,
       label: t('projects.reports.kpi.expenses', 'Total expenses'),
       value: formatCurrency(expensesTotal),
       meta: t('projects.reports.kpi.expensesMeta', 'Expenses for included projects')
@@ -576,8 +661,9 @@ function renderTimelineChart(projects) {
     return aYear - bYear;
   });
 
-  const labels = sortedKeys.map((key) => monthBuckets.get(key)?.label || key);
-  const values = sortedKeys.map((key) => Math.round(monthBuckets.get(key)?.total || 0));
+  const limitedKeys = sortedKeys.slice(-12);
+  const labels = limitedKeys.map((key) => monthBuckets.get(key)?.label || key);
+  const values = limitedKeys.map((key) => Math.round(monthBuckets.get(key)?.total || 0));
 
   const data = {
     labels,
@@ -723,10 +809,8 @@ function renderClientsChart(projects) {
 function updateChartInstance(key, ctx, type, data, options) {
   if (!ChartLib || !ctx) return;
   if (charts[key]) {
-    charts[key].data = data;
-    charts[key].options = options;
-    charts[key].update();
-    return;
+    charts[key].destroy();
+    delete charts[key];
   }
   charts[key] = new ChartLib(ctx, { type, data, options });
 }
