@@ -1636,7 +1636,7 @@ async function exportQuoteAsPdf() {
   const pdfRoot = container.firstElementChild;
 
   const useHtml2PdfOnMobile = isMobileViewport();
-  const mobileDownloadWindow = useHtml2PdfOnMobile ? window.open('about:blank', '_blank') : null;
+  const mobileDownloadWindow = useHtml2PdfOnMobile ? window.open('', '_blank') : null;
   const safariDownloadWindow = (!useHtml2PdfOnMobile && isIosSafari())
     ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
     : null;
