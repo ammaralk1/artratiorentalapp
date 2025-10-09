@@ -56,12 +56,33 @@ const A4_HEIGHT_MM = 297;
 const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 const PAGE_OVERFLOW_TOLERANCE_PX = 2;
+const SAFARI_USER_AGENT_REGEX = /safari/i;
+const IOS_PLATFORM_REGEX = /(iphone|ipad|ipod)/i;
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
 let ensureJsPdfPromise = null;
 let ensureHtml2CanvasPromise = null;
+
+function isIosDevice() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.platform || '';
+  return IOS_PLATFORM_REGEX.test(ua);
+}
+
+function isSafariBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isSafari = SAFARI_USER_AGENT_REGEX.test(ua);
+  const isChrome = ua.includes('Chrome') || ua.includes('CriOS') || ua.includes('Chromium');
+  const isEdge = ua.includes('Edg');
+  return isSafari && !isChrome && !isEdge;
+}
+
+function isIosSafari() {
+  return isIosDevice() && isSafariBrowser();
+}
 
 function withBlockAttributes(markup, { blockType = 'section', extraAttributes = '' } = {}) {
   if (!markup) return '';
@@ -1010,26 +1031,51 @@ async function renderQuotePagesAsPdf(root, { filename }) {
     ensureHtml2Canvas()
   ]);
 
-  const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const safariMode = isIosSafari();
+  const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+  const captureScale = safariMode ? Math.min(1.2, Math.max(1, devicePixelRatio)) : Math.min(1.6, Math.max(1.2, devicePixelRatio));
+  const pdf = new JsPdfConstructor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 
   for (let index = 0; index < pages.length; index += 1) {
     const page = pages[index];
     await waitForQuoteAssets(page);
     const canvas = await html2canvasFn(page, {
-      scale: 2,
+      scale: captureScale,
       useCORS: true,
       scrollX: 0,
       scrollY: 0,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      letterRendering: true,
+      removeContainer: safariMode
     });
-    const imageData = canvas.toDataURL('image/jpeg', 0.95);
+    const imageData = canvas.toDataURL('image/jpeg', safariMode ? 0.82 : 0.9);
     if (index > 0) {
       pdf.addPage();
     }
     pdf.addImage(imageData, 'JPEG', 0, 0, A4_WIDTH_MM, A4_HEIGHT_MM, `page-${index + 1}`, 'FAST');
+
+    // Yield to keep UI responsive, important for mobile devices
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
   }
 
-  pdf.save(filename);
+  if (safariMode) {
+    const blob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+    const popup = window.open(blobUrl, '_blank');
+    if (!popup) {
+      const tempLink = document.createElement('a');
+      tempLink.href = blobUrl;
+      tempLink.download = filename;
+      tempLink.rel = 'noopener';
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+  } else {
+    pdf.save(filename);
+  }
 }
 
 
