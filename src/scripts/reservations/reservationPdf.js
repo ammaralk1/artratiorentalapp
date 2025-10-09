@@ -504,6 +504,24 @@ function buildQuotationHtml({
     return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
   };
 
+  const renderTotalsItem = (label, value, { variant = 'inline' } = {}) => {
+    const classes = ['totals-item'];
+    if (variant === 'final') {
+      classes.push('totals-item--final');
+    }
+    return `<div class="${classes.join(' ')}">
+      <span class="totals-item__label">${escapeHtml(label)}</span>
+      <span class="totals-item__value">${escapeHtml(value)}</span>
+    </div>`;
+  };
+
+  const renderPaymentRow = (label, value) => {
+    return `<div class="payment-row">
+      <span class="payment-row__label">${escapeHtml(label)}</span>
+      <span class="payment-row__value">${escapeHtml(value)}</span>
+    </div>`;
+  };
+
   const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
@@ -539,18 +557,24 @@ function buildQuotationHtml({
     : '';
 
   const financialSectionMarkup = includeSection('financialSummary')
-    ? `<section class="quote-section quote-section--financial">
-        <div class="totals-block">
-          <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
-          <div class="totals-list">
-            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span><span>${totalsDisplay.equipmentTotal} ${currencyLabel}</span></div>
-            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span><span>${totalsDisplay.crewTotal} ${currencyLabel}</span></div>
-            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.discount', 'الخصم'))}</span><span>${totalsDisplay.discountAmount} ${currencyLabel}</span></div>
-            <div class="totals-item"><span>${escapeHtml(t('reservations.details.labels.tax', 'الضريبة'))}</span><span>${totalsDisplay.taxAmount} ${currencyLabel}</span></div>
-            <div class="totals-item is-final"><span>${escapeHtml(t('reservations.details.labels.total', 'الإجمالي النهائي'))}</span><span>${totalsDisplay.finalTotal} ${currencyLabel}</span></div>
+    ? (() => {
+        const inlineItems = [
+          renderTotalsItem(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'), `${totalsDisplay.equipmentTotal} ${currencyLabel}`),
+          renderTotalsItem(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'), `${totalsDisplay.crewTotal} ${currencyLabel}`),
+          renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`),
+          renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`)
+        ].join('');
+
+        const finalItem = renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' });
+
+        return `<section class="quote-section quote-section--financial">
+          <div class="totals-block">
+            <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
+            <div class="totals-inline">${inlineItems}</div>
+            <div class="totals-final">${finalItem}</div>
           </div>
-        </div>
-      </section>`
+        </section>`;
+      })()
     : '';
 
   const itemsSectionMarkup = includeSection('items')
@@ -595,18 +619,22 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const paymentSectionMarkup = `<section class="quote-section">
+  const paymentSectionMarkup = (() => {
+    const paymentRows = [
+      renderPaymentRow(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName),
+      renderPaymentRow(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName),
+      renderPaymentRow(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber)),
+      renderPaymentRow(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban))
+    ].join('');
+
+    return `<section class="quote-section">
       <div class="payment-block">
         <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
-        <div class="info-plain info-plain--dense info-plain--right">
-          ${renderPlainItem(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName)}
-          ${renderPlainItem(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName)}
-          ${renderPlainItem(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber))}
-          ${renderPlainItem(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban))}
-        </div>
+        <div class="payment-rows">${paymentRows}</div>
       </div>
       <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
+  })();
 
   const termsSectionMarkup = `<footer class="quote-footer">
         <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>

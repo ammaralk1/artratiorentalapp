@@ -313,20 +313,56 @@ body,
 }
 
 .payment-block {
-  align-items: flex-end;
+  align-items: stretch;
+  text-align: right;
+  direction: rtl;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.payment-rows {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+}
+
+.payment-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  direction: rtl;
+}
+
+.payment-row__label {
+  font-weight: 600;
+  color: #475569;
   text-align: right;
 }
 
+.payment-row__value {
+  font-weight: 700;
+  color: #0f172a;
+  text-align: left;
+  direction: ltr;
+}
+
 .totals-block {
-  font-size: 0.6rem;
-  align-items: center;
+  font-size: 0.62rem;
+  align-items: stretch;
   text-align: center;
   margin: 0 auto;
+  direction: rtl;
+  gap: 14px;
+  font-family: 'Tajawal', sans-serif;
 }
 
 .totals-block h3 {
-  font-size: 0.68rem;
-  letter-spacing: 0.01em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #0f172a;
 }
 
 .info-plain {
@@ -451,33 +487,59 @@ body,
   justify-items: center;
 }
 
+.totals-inline {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: stretch;
+}
+
 .totals-item {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 12px;
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.3);
   text-align: center;
-  width: 100%;
-  max-width: 220px;
+  min-width: 0;
+  font-family: 'Tajawal', sans-serif;
 }
 
-.totals-item span {
+.totals-inline .totals-item {
+  flex: 1 1 0;
+}
+
+.totals-item__label {
   font-weight: 600;
-  display: inline-block;
+  color: #475569;
 }
 
-.totals-item span:last-child {
+.totals-item__value {
   font-weight: 700;
+  color: #0f172a;
+  font-size: 0.78rem;
 }
 
-.totals-item.is-final {
+.totals-final {
+  display: flex;
+  justify-content: center;
+}
+
+.totals-item--final {
   background: rgba(59, 91, 220, 0.12);
   border-color: rgba(59, 91, 220, 0.35);
+  padding: 12px 18px;
+  min-width: 220px;
+}
+
+.totals-item--final .totals-item__value {
+  font-size: 0.9rem;
 }
 
 .quote-table {
@@ -486,7 +548,7 @@ body,
   font-size: 12px;
   border: 1px solid rgba(148, 163, 184, 0.5);
   background-color: #ffffff !important;
-  direction: ltr;
+  direction: rtl;
   text-align: center;
   page-break-inside: auto;
 }
@@ -498,7 +560,7 @@ body,
 .quote-table td {
   background-color: #ffffff !important;
   color: #000000 !important;
-  direction: ltr;
+  direction: rtl;
   text-align: center;
 }
 
