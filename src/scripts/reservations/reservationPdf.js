@@ -1607,67 +1607,64 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       await rasterizeQuoteImages(page);
       await waitForQuoteAssets(page);
 
-      let segments = [];
+      let canvas;
       try {
-        segments = await capturePageSegments(page, html2canvasFn, {
-          baseOptions: html2canvasBaseOptions,
-          segmentHeightPx: PAGE_SEGMENT_MAX_HEIGHT_PX
+        const rect = page.getBoundingClientRect();
+        const captureWidth = Math.max(1, Math.ceil(rect.width || page.offsetWidth || A4_WIDTH_PX));
+        const captureHeight = Math.max(1, Math.ceil(rect.height || page.offsetHeight || A4_HEIGHT_PX));
+        canvas = await html2canvasFn(page, {
+          ...html2canvasBaseOptions,
+          scale: captureScale,
+          width: captureWidth,
+          height: captureHeight,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0
         });
-      } catch (segmentError) {
-        handlePdfError(segmentError, 'segmentCapture', { toastMessage: browserLimitMessage });
-        throw segmentError;
+      } catch (captureError) {
+        handlePdfError(captureError, 'pageCapture', { toastMessage: browserLimitMessage });
+        throw captureError;
       }
 
-      if (!segments.length) {
-        logPdfWarn('no segments captured, attempting fallback rendering', { pageIndex });
-        try {
-          const fallbackCanvas = await html2canvasFn(page, {
-            ...html2canvasBaseOptions,
-            removeContainer: safariMode
-          });
-          segments.push({ canvas: fallbackCanvas, sliceHeight: page.scrollHeight || PAGE_SEGMENT_MAX_HEIGHT_PX });
-        } catch (fallbackError) {
-          handlePdfError(fallbackError, 'fallbackCapture', { toastMessage: browserLimitMessage });
-          throw fallbackError;
-        }
+      if (!canvas) {
+        continue;
       }
 
-      for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex += 1) {
-        const { canvas } = segments[segmentIndex] || {};
-        if (!canvas) {
-          continue;
-        }
-        const canvasWidth = canvas.width || 1;
-        const canvasHeight = canvas.height || 1;
-        const aspectRatio = canvasHeight / canvasWidth;
-        let targetWidthMm = A4_WIDTH_MM;
-        let targetHeightMm = targetWidthMm * aspectRatio;
-        let horizontalOffsetMm = 0;
+      const canvasWidth = canvas.width || 1;
+      const canvasHeight = canvas.height || 1;
+      const aspectRatio = canvasHeight / canvasWidth;
+      let targetWidthMm = A4_WIDTH_MM;
+      let targetHeightMm = targetWidthMm * aspectRatio;
+      let horizontalOffsetMm = 0;
 
-        if (targetHeightMm > A4_HEIGHT_MM) {
-          const scaleFactor = A4_HEIGHT_MM / targetHeightMm;
-          targetHeightMm = A4_HEIGHT_MM;
-          targetWidthMm = targetWidthMm * scaleFactor;
-          horizontalOffsetMm = Math.max(0, (A4_WIDTH_MM - targetWidthMm) / 2);
-        }
-
-        const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
-
-        if (pdfPageIndex > 0) {
-          pdf.addPage();
-        }
-
-        pdf.addImage(imageData, 'JPEG', horizontalOffsetMm, 0, targetWidthMm, targetHeightMm, `page-${pdfPageIndex + 1}`, 'FAST');
-        pdfPageIndex += 1;
-
-        // Yield to keep UI responsive, important for mobile devices
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      if (targetHeightMm > A4_HEIGHT_MM) {
+        const scaleFactor = A4_HEIGHT_MM / targetHeightMm;
+        targetHeightMm = A4_HEIGHT_MM;
+        targetWidthMm = targetWidthMm * scaleFactor;
+        horizontalOffsetMm = Math.max(0, (A4_WIDTH_MM - targetWidthMm) / 2);
       }
+
+      const imageData = canvas.toDataURL('image/jpeg', jpegQuality);
+
+      if (pdfPageIndex > 0) {
+        pdf.addPage();
+      }
+
+      pdf.addImage(imageData, 'JPEG', horizontalOffsetMm, 0, targetWidthMm, targetHeightMm, `page-${pdfPageIndex + 1}`, 'FAST');
+      pdfPageIndex += 1;
+
+      // Yield to keep UI responsive, important for mobile devices
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
     }
   } catch (error) {
     cleanupPdfArtifacts({ safariWindowRef, mobileWindowRef });
     throw error;
+  }
+
+  if (pdfPageIndex === 0) {
+    cleanupPdfArtifacts({ safariWindowRef, mobileWindowRef });
+    throw new Error('PDF generation produced no pages.');
   }
 
   const needsBlobDelivery = safariMode || (mobileWindowRef && !mobileWindowRef.closed);
@@ -2053,10 +2050,13 @@ async function exportQuoteAsPdf() {
 
     container = document.createElement('div');
     container.innerHTML = html;
-    container.style.position = 'fixed';
-    container.style.top = '-10000px';
-    container.style.left = '0';
-    container.style.zIndex = '-1';
+    Object.assign(container.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      pointerEvents: 'none',
+      zIndex: '-1'
+    });
     document.body.appendChild(container);
 
     scrubUnsupportedColorFunctions(container);

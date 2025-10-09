@@ -53,7 +53,11 @@ function applyThemeInternal(theme, { persist = true } = {}) {
     root.classList.remove(DARK_CLASS, 'dark');
     if (body) body.classList.remove(DARK_CLASS, 'dark');
   }
-  root.setAttribute('data-theme', normalizedTheme === 'dark' ? 'dark' : 'light');
+  const dataThemeValue = normalizedTheme === 'dark' ? 'dark' : 'light';
+  root.setAttribute('data-theme', dataThemeValue);
+  if (body) {
+    body.setAttribute('data-theme', dataThemeValue);
+  }
   storeSessionTheme(normalizedTheme);
   updateAllToggleButtons(normalizedTheme);
 
