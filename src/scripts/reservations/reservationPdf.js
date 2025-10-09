@@ -840,16 +840,24 @@ async function layoutQuoteDocument(root) {
   });
 
   const pages = Array.from(pagesContainer.children);
+  const filteredPages = [];
   pages.forEach((page, index) => {
-    if (index === 0) return;
     const body = page.querySelector('.quote-body');
-    if (!body) return;
-    if (body.childElementCount > 0) return;
-    page.remove();
+    if (index !== 0 && (!body || body.childElementCount === 0)) {
+      page.remove();
+      return;
+    }
+    filteredPages.push(page);
   });
 
-  const lastPage = pagesContainer.lastElementChild;
-  currentPage = lastPage || null;
+  filteredPages.forEach((page, index) => {
+    const isLast = index === filteredPages.length - 1;
+    page.style.pageBreakAfter = isLast ? 'auto' : 'always';
+    page.style.breakAfter = isLast ? 'auto' : 'page';
+  });
+
+  const lastPage = filteredPages[filteredPages.length - 1] || null;
+  currentPage = lastPage;
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
@@ -1150,8 +1158,7 @@ async function exportQuoteAsPdf() {
       .set({
         margin: 0,
         pagebreak: {
-          mode: ['css', 'legacy'],
-          avoid: ['tr']
+          mode: ['css']
         },
         filename,
         html2canvas: {
