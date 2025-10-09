@@ -4,6 +4,7 @@ import { t } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast } from '../utils.js';
 import { calculateReservationDays } from '../reservationsSummary.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
+import { getApiBase } from '../apiClient.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
@@ -37,40 +38,11 @@ const QUOTE_SECTION_DEFS = [
   { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true }
 ];
 
-const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
-
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
 let quoteModalRefs = null;
 let activeQuoteState = null;
 let previewZoom = 1;
-
-function loadExternalScript(src) {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`);
-    if (existing) {
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', (error) => reject(error));
-      if (existing.readyState === 'complete') {
-        resolve();
-      }
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = (error) => reject(error);
-    document.head.appendChild(script);
-  });
-}
-
-async function ensureHtml2Pdf() {
-  if (window.html2pdf) return;
-  await loadExternalScript(HTML2PDF_SRC);
-}
-
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -109,6 +81,74 @@ function commitQuoteSequence(sequence) {
   } catch (error) {
     console.warn('⚠️ [reservations/pdf] failed to persist quote sequence', error);
   }
+}
+
+async function requestPlaywrightPdf({ html, filename, browsers = ['webkit', 'chromium'] }) {
+  const endpoint = `${getApiBase()}/reservations/pdf.php`;
+  let lastError = null;
+
+  for (const browser of browsers) {
+    try {
+      const payload = {
+        html,
+        filename,
+        browser,
+        baseUrl: window.location?.origin || undefined
+      };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/pdf, application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok) {
+        if (contentType.includes('application/json')) {
+          let errorPayload = null;
+          try {
+            errorPayload = await response.json();
+          } catch (error) {
+            // Ignore JSON parsing error and fallback to text response.
+          }
+          const message = errorPayload?.error || t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.');
+          throw new Error(message);
+        }
+
+        const text = await response.text();
+        throw new Error(text || t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
+      }
+
+      if (!contentType.includes('application/pdf')) {
+        const text = await response.text();
+        throw new Error(text || t('reservations.quote.errors.invalidPdfResponse', 'الخادم لم يرجع ملف PDF صالح.'));
+      }
+
+      const blob = await response.blob();
+      return { blob, browserUsed: browser };
+    } catch (error) {
+      console.warn(`[reservations/pdf] ${browser} generation failed, trying next browser`, error);
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error(t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function formatQuoteDate(date = new Date()) {
@@ -668,7 +708,6 @@ function updateQuoteMeta() {
 
 async function exportQuoteAsPdf() {
   if (!activeQuoteState) return;
-  await ensureHtml2Pdf();
 
   const html = buildQuotationHtml({
     reservation: activeQuoteState.reservation,
@@ -683,57 +722,18 @@ async function exportQuoteAsPdf() {
     quoteDate: activeQuoteState.quoteDateLabel
   });
 
-  const container = document.createElement('div');
-  container.innerHTML = html;
-  container.style.position = 'fixed';
-  container.style.top = '-10000px';
-  container.style.left = '0';
-  container.style.zIndex = '-1';
-  document.body.appendChild(container);
-
-  const pdfRoot = container.firstElementChild;
-  if (pdfRoot) {
-    pdfRoot.setAttribute('dir', 'rtl');
-    pdfRoot.style.direction = 'rtl';
-    pdfRoot.style.textAlign = 'right';
-    pdfRoot.setAttribute('data-theme', 'light');
-    pdfRoot.classList.remove('dark', 'dark-mode');
-    pdfRoot.style.margin = '0';
-    pdfRoot.style.padding = '0';
-    pdfRoot.style.width = '210mm';
-    pdfRoot.style.maxWidth = '210mm';
-    pdfRoot.style.marginLeft = 'auto';
-    pdfRoot.style.marginRight = 'auto';
-    pdfRoot.scrollTop = 0;
-    pdfRoot.scrollLeft = 0;
-  }
-
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    await window.html2pdf()
-      .set({
-        margin: 0,
-        pagebreak: {
-          mode: ['css', 'legacy'],
-          avoid: ['tr']
-        },
-        filename,
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          scrollX: 0,
-          scrollY: 0
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      })
-      .from(container.firstElementChild)
-      .save();
+    const { blob, browserUsed } = await requestPlaywrightPdf({ html, filename });
+    downloadBlob(blob, filename);
+    console.info('[reservations/pdf] exported using', browserUsed);
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
     }
-  } finally {
-    document.body.removeChild(container);
+  } catch (error) {
+    console.error('⚠️ [reservations/pdf] failed to export quote using Playwright', error);
+    showToast(t('reservations.quote.errors.pdfFailed', 'تعذر إنشاء ملف PDF، حاول مرة أخرى.'));
   }
 }
 
