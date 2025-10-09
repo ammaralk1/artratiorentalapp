@@ -189,7 +189,8 @@ function loadExternalScript(src) {
 function ensureApexCharts() {
   if (window.ApexCharts) return Promise.resolve(window.ApexCharts);
   if (!apexChartsReady) {
-    apexChartsReady = loadExternalScript('https://cdn.jsdelivr.net/npm/apexcharts').then(() => window.ApexCharts);
+    const apexchartsCdnUrl = 'https://cdn.jsdelivr.net/npm/apexcharts@3.53.0';
+    apexChartsReady = loadExternalScript(apexchartsCdnUrl).then(() => window.ApexCharts);
   }
   return apexChartsReady;
 }
