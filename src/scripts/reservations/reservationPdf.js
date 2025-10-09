@@ -671,36 +671,50 @@ async function layoutQuoteDocument(root) {
 
   const blockNodes = Array.from(sourceContainer.querySelectorAll(':scope > [data-quote-block]'));
 
-  let pageIndex = 0;
   let currentPage = null;
   let currentBody = null;
 
   const createPage = () => {
     const page = doc.createElement('div');
+    const isFirstPage = pagesContainer.childElementCount === 0;
     page.className = 'quote-page';
-    if (pageIndex === 0) {
+    page.dataset.pageIndex = String(pagesContainer.childElementCount);
+    if (isFirstPage) {
       page.classList.add('quote-page--primary');
+      const headerClone = headerTemplate.cloneNode(true);
+      headerClone.removeAttribute('data-quote-header-template');
+      page.appendChild(headerClone);
+    } else {
+      page.classList.add('quote-page--continuation');
     }
-    const headerClone = headerTemplate.cloneNode(true);
-    headerClone.removeAttribute('data-quote-header-template');
     const body = doc.createElement('main');
     body.className = 'quote-body';
-    page.appendChild(headerClone);
     page.appendChild(body);
     pagesContainer.appendChild(page);
     currentPage = page;
     currentBody = body;
-    pageIndex += 1;
   };
 
-  const ensurePage = () => {
-    if (!currentPage || !currentBody) {
+  const ensureActivePage = () => {
+    if (!currentPage || !currentBody || !currentBody.isConnected) {
       createPage();
     }
   };
 
+  const removeCurrentPageIfEmpty = () => {
+    if (!currentPage || !currentBody) return;
+    if (currentBody.childElementCount > 0) return;
+    const pageToRemove = currentPage;
+    currentPage = null;
+    currentBody = null;
+    if (pageToRemove.parentNode) {
+      pageToRemove.parentNode.removeChild(pageToRemove);
+    }
+  };
+
   const moveToNextPage = () => {
-    createPage();
+    currentPage = null;
+    currentBody = null;
   };
 
   const isOverflowing = () => {
@@ -709,9 +723,11 @@ async function layoutQuoteDocument(root) {
   };
 
   const appendBlock = (node, { allowOverflow = false } = {}) => {
+    ensureActivePage();
     currentBody.appendChild(node);
     if (isOverflowing() && !allowOverflow) {
       currentBody.removeChild(node);
+      removeCurrentPageIfEmpty();
       return false;
     }
     return true;
@@ -792,6 +808,7 @@ async function layoutQuoteDocument(root) {
         if (!fragment.body.childElementCount) {
           currentBody.removeChild(fragment.section);
           fragment = null;
+          removeCurrentPageIfEmpty();
         }
         moveToNextPage();
         fragment = null;
@@ -809,8 +826,6 @@ async function layoutQuoteDocument(root) {
     fragment = null;
   };
 
-  ensurePage();
-
   if (!blockNodes.length) {
     return;
   }
@@ -823,6 +838,21 @@ async function layoutQuoteDocument(root) {
       placeBlock(blockNode);
     }
   });
+
+  const pages = Array.from(pagesContainer.children);
+  pages.forEach((page, index) => {
+    if (index === 0) return;
+    const body = page.querySelector('.quote-body');
+    if (!body) return;
+    if (body.childElementCount > 0) return;
+    page.remove();
+  });
+
+  const lastPage = pagesContainer.lastElementChild;
+  currentPage = lastPage || null;
+  currentBody = lastPage?.querySelector('.quote-body') || null;
+
+  await waitForQuoteAssets(pagesContainer);
 }
 
 

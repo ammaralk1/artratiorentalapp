@@ -47,13 +47,7 @@ body,
 }
 
 [data-quote-source] {
-  position: absolute;
-  visibility: hidden;
-  pointer-events: none;
-  width: 210mm;
-  max-width: 210mm;
-  top: -99999px;
-  left: -99999px;
+  display: none;
 }
 
 .quote-page {
@@ -88,6 +82,10 @@ body,
 
 .quote-page--primary {
   padding-top: 6mm;
+}
+
+.quote-page--continuation {
+  padding-top: 12mm;
 }
 
 .quote-page + .quote-page::before {
