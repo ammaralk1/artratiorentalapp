@@ -1316,6 +1316,12 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   gap: 10px;
 }
 
+.quote-toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .quote-toggle {
   display: flex;
   align-items: center;
@@ -1344,6 +1350,42 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 .quote-toggle:hover {
   border-color: rgba(59, 91, 220, 0.45);
   box-shadow: 0 6px 16px rgba(59, 91, 220, 0.18);
+}
+
+.quote-toggle-sublist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-inline-start: 12px;
+  padding-inline-start: 12px;
+  border-inline-start: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-toggle-sublist {
+  border-color: rgba(93, 133, 255, 0.35);
+}
+
+.quote-toggle--field {
+  font-size: 0.78rem;
+  padding: 8px 10px;
+  gap: 8px;
+  background: rgba(241, 245, 255, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-toggle--field {
+  background: rgba(30, 41, 59, 0.82);
+  border-color: rgba(93, 133, 255, 0.28);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.quote-toggle--field input {
+  width: 16px;
+  height: 16px;
+}
+
+.quote-toggle--field input:disabled + span {
+  opacity: 0.45;
 }
 
 .quote-meta-card {
@@ -1402,14 +1444,26 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   background: #18203b;
 }
 
+.quote-preview-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-start: auto;
+}
+
 .quote-preview-zoom-controls {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  background: rgba(15, 23, 42, 0.04);
+  margin-bottom: 0;
+  background: rgba(15, 23, 42, 0.06);
   border-radius: 999px;
   padding: 6px 12px;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-controls {
+  background: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(93, 133, 255, 0.32);
 }
 
 .quote-preview-zoom-btn {
@@ -1427,9 +1481,19 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn {
+  background: rgba(51, 65, 85, 0.9);
+  color: rgba(226, 232, 240, 0.92);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+}
+
 .quote-preview-zoom-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn:hover {
+  box-shadow: 0 4px 12px rgba(8, 47, 73, 0.45);
 }
 
 .quote-preview-zoom-value {
@@ -1437,6 +1501,10 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   text-align: center;
   font-weight: 600;
   color: #1f2937;
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-preview-zoom-value {
+  color: rgba(226, 232, 240, 0.9);
 }
 
 .quote-preview-frame-wrapper {

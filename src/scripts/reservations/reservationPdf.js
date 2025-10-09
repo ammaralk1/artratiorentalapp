@@ -37,6 +37,100 @@ const QUOTE_SECTION_DEFS = [
   { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true }
 ];
 
+const QUOTE_ITEMS_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_item, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'code',
+    labelKey: 'reservations.details.table.headers.code',
+    fallback: 'الكود',
+    render: (item) => escapeHtml(item?.barcode || '-')
+  },
+  {
+    id: 'description',
+    labelKey: 'reservations.details.table.headers.description',
+    fallback: 'الوصف',
+    render: (item) => escapeHtml(item?.desc || item?.description || '-')
+  },
+  {
+    id: 'quantity',
+    labelKey: 'reservations.details.table.headers.quantity',
+    fallback: 'الكمية',
+    render: (item) => escapeHtml(normalizeNumbers(String(item?.qty || 1)))
+  },
+  {
+    id: 'price',
+    labelKey: 'reservations.details.table.headers.price',
+    fallback: 'السعر',
+    render: (item) => escapeHtml(normalizeNumbers((Number(item?.price || 0)).toFixed(2)))
+  }
+];
+
+const QUOTE_CREW_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_tech, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'name',
+    labelKey: 'reservations.details.technicians.name',
+    fallback: 'الاسم',
+    render: (tech) => escapeHtml(tech?.name || tech?.full_name || '-')
+  },
+  {
+    id: 'role',
+    labelKey: 'reservations.details.technicians.role',
+    fallback: 'الدور',
+    render: (tech) => escapeHtml(tech?.role || t('reservations.details.technicians.roleUnknown', 'غير محدد'))
+  },
+  {
+    id: 'phone',
+    labelKey: 'reservations.details.technicians.phone',
+    fallback: 'الهاتف',
+    render: (tech) => escapeHtml(tech?.phone || t('reservations.details.technicians.phoneUnknown', 'غير متوفر'))
+  }
+];
+
+const QUOTE_FIELD_DEFS = {
+  customerInfo: [
+    { id: 'customerName', labelKey: 'reservations.details.labels.customer', fallback: 'العميل' },
+    { id: 'customerCompany', labelKey: 'reservations.details.labels.company', fallback: 'الشركة' },
+    { id: 'customerPhone', labelKey: 'reservations.details.labels.phone', fallback: 'الهاتف' },
+    { id: 'customerEmail', labelKey: 'reservations.details.labels.email', fallback: 'البريد' }
+  ],
+  reservationInfo: [
+    { id: 'reservationId', labelKey: 'reservations.details.labels.reservationId', fallback: 'رقم الحجز' },
+    { id: 'reservationStart', labelKey: 'reservations.details.labels.start', fallback: 'بداية الحجز' },
+    { id: 'reservationEnd', labelKey: 'reservations.details.labels.end', fallback: 'نهاية الحجز' },
+    { id: 'reservationDuration', labelKey: 'reservations.details.labels.duration', fallback: 'عدد الأيام' }
+  ],
+  projectInfo: [
+    { id: 'projectTitle', labelKey: 'reservations.details.labels.project', fallback: 'المشروع' },
+    { id: 'projectCode', labelKey: 'reservations.details.labels.code', fallback: 'الرمز' }
+  ],
+  financialSummary: [
+    { id: 'equipmentTotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' },
+    { id: 'crewTotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' },
+    { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
+    { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
+    { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
+  ],
+  payment: [
+    { id: 'beneficiary', labelKey: 'reservations.quote.labels.beneficiary', fallback: 'اسم المستفيد' },
+    { id: 'bank', labelKey: 'reservations.quote.labels.bank', fallback: 'اسم البنك' },
+    { id: 'account', labelKey: 'reservations.quote.labels.account', fallback: 'رقم الحساب' },
+    { id: 'iban', labelKey: 'reservations.quote.labels.iban', fallback: 'رقم الآيبان' }
+  ],
+  items: QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
+};
+
 const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
 const HTML2CANVAS_SRC = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
@@ -64,6 +158,42 @@ let activeQuoteState = null;
 let previewZoom = 1;
 let ensureJsPdfPromise = null;
 let ensureHtml2CanvasPromise = null;
+
+function buildDefaultFieldSelections() {
+  const selections = {};
+  Object.entries(QUOTE_FIELD_DEFS).forEach(([sectionId, fields = []]) => {
+    selections[sectionId] = new Set(fields.filter((field) => field?.default !== false).map((field) => field.id));
+  });
+  return selections;
+}
+
+function cloneFieldSelections(originalSelections = {}) {
+  const clone = {};
+  Object.entries(originalSelections).forEach(([sectionId, set]) => {
+    clone[sectionId] = new Set(Array.from(set || []));
+  });
+  return clone;
+}
+
+function getFieldSelectionSet(selections = {}, sectionId) {
+  if (!sectionId) return undefined;
+  if (!selections[sectionId]) {
+    selections[sectionId] = new Set();
+  }
+  return selections[sectionId];
+}
+
+function isFieldEnabledInSelections(selections = {}, sectionId, fieldId) {
+  const set = selections?.[sectionId];
+  if (!set) return true;
+  if (set instanceof Set) {
+    return set.has(fieldId);
+  }
+  if (Array.isArray(set)) {
+    return set.includes(fieldId);
+  }
+  return Boolean(set?.[fieldId]);
+}
 
 function isIosDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -469,6 +599,7 @@ function buildQuotationHtml({
   rentalDays,
   currencyLabel,
   sections,
+  fieldSelections = {},
   quoteNumber,
   quoteDate
 }) {
@@ -485,41 +616,10 @@ function buildQuotationHtml({
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
   const notes = reservation?.notes || '';
 
-  const techniciansHtml = technicians.length
-    ? technicians.map((tech, index) => {
-        const idx = normalizeNumbers(String(index + 1));
-        const name = escapeHtml(tech?.name || tech?.full_name || '-');
-        const role = escapeHtml(tech?.role || t('reservations.details.technicians.roleUnknown', 'غير محدد'));
-        const phone = escapeHtml(tech?.phone || t('reservations.details.technicians.phoneUnknown', 'غير متوفر'));
-        return `<tr>
-          <td>${idx}</td>
-          <td>${name}</td>
-          <td>${role}</td>
-          <td>${phone}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="4" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
-
-  const itemsRows = Array.isArray(reservation.items) && reservation.items.length
-    ? reservation.items.map((item, index) => {
-        const rowNumber = normalizeNumbers(String(index + 1));
-        const code = escapeHtml(item?.barcode || '-');
-        const description = escapeHtml(item?.desc || item?.description || '-');
-        const quantity = normalizeNumbers(String(item?.qty || 1));
-        const price = normalizeNumbers((Number(item?.price || 0)).toFixed(2));
-        return `<tr>
-          <td>${rowNumber}</td>
-          <td>${code}</td>
-          <td>${description}</td>
-          <td>${quantity}</td>
-          <td>${price}</td>
-        </tr>`;
-      }).join('')
-    : `<tr>
-        <td colspan="5" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td>
-      </tr>`;
-
+  const fieldsSelection = cloneFieldSelections(fieldSelections);
+  const isFieldEnabled = (sectionId, fieldId) => isFieldEnabledInSelections(fieldsSelection, sectionId, fieldId);
   const includeSection = (id) => sections?.has?.(id);
+  const noFieldsMessage = `<div class="quote-placeholder">${escapeHtml(t('reservations.quote.placeholder.noFields', 'لم يتم اختيار أي معلومات للعرض في هذا القسم.'))}</div>`;
 
   const renderPlainItem = (label, value) => {
     return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
@@ -549,94 +649,148 @@ function buildQuotationHtml({
     </div>`;
   };
 
+  const customerFieldItems = [];
+  if (isFieldEnabled('customerInfo', 'customerName')) {
+    customerFieldItems.push(renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName));
+  }
+  if (isFieldEnabled('customerInfo', 'customerCompany')) {
+    customerFieldItems.push(renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany));
+  }
+  if (isFieldEnabled('customerInfo', 'customerPhone')) {
+    customerFieldItems.push(renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay));
+  }
+  if (isFieldEnabled('customerInfo', 'customerEmail')) {
+    customerFieldItems.push(renderPlainItem(t('reservations.details.labels.email', 'البريد'), customerEmail));
+  }
+
   const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        <div class="info-plain">
-          ${renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName)}
-          ${renderPlainItem(t('reservations.details.labels.company', 'الشركة'), customerCompany)}
-          ${renderPlainItem(t('reservations.details.labels.phone', 'الهاتف'), customerPhoneDisplay)}
-          ${renderPlainItem(t('reservations.details.labels.email', 'البريد'), customerEmail)}
-        </div>
+        ${customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage}
       </section>`
     : '';
+
+  const reservationFieldItems = [];
+  if (isFieldEnabled('reservationInfo', 'reservationId')) {
+    reservationFieldItems.push(renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-'));
+  }
+  if (isFieldEnabled('reservationInfo', 'reservationStart')) {
+    reservationFieldItems.push(renderPlainItem(t('reservations.details.labels.start', 'بداية الحجز'), startDisplay));
+  }
+  if (isFieldEnabled('reservationInfo', 'reservationEnd')) {
+    reservationFieldItems.push(renderPlainItem(t('reservations.details.labels.end', 'نهاية الحجز'), endDisplay));
+  }
+  if (isFieldEnabled('reservationInfo', 'reservationDuration')) {
+    reservationFieldItems.push(renderPlainItem(t('reservations.details.labels.duration', 'عدد الأيام'), rentalDaysDisplay));
+  }
 
   const reservationSectionMarkup = includeSection('reservationInfo')
     ? `<section class="quote-section quote-section--plain quote-section--reservation">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-        <div class="info-plain">
-          ${renderPlainItem(t('reservations.details.labels.reservationId', 'رقم الحجز'), reservationId || '-')}
-          ${renderPlainItem(t('reservations.details.labels.start', 'بداية الحجز'), startDisplay)}
-          ${renderPlainItem(t('reservations.details.labels.end', 'نهاية الحجز'), endDisplay)}
-          ${renderPlainItem(t('reservations.details.labels.duration', 'عدد الأيام'), rentalDaysDisplay)}
-        </div>
+        ${reservationFieldItems.length ? `<div class="info-plain">${reservationFieldItems.join('')}</div>` : noFieldsMessage}
       </section>`
     : '';
+
+  const projectFieldItems = [];
+  if (isFieldEnabled('projectInfo', 'projectTitle')) {
+    projectFieldItems.push(renderPlainItem(t('reservations.details.labels.project', 'المشروع'), projectTitle));
+  }
+  if (isFieldEnabled('projectInfo', 'projectCode')) {
+    projectFieldItems.push(renderPlainItem(t('reservations.details.labels.code', 'الرمز'), projectCode || '-'));
+  }
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? `<section class="quote-section quote-section--plain">
         <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
-        <div class="info-plain">
-          ${renderPlainItem(t('reservations.details.labels.project', 'المشروع'), projectTitle)}
-          ${projectCode ? renderPlainItem(t('reservations.details.labels.code', 'الرمز'), projectCode) : ''}
-        </div>
+        ${projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage}
       </section>`
+    : '';
+
+  const financialInlineItems = [];
+  if (isFieldEnabled('financialSummary', 'equipmentTotal')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'), `${totalsDisplay.equipmentTotal} ${currencyLabel}`));
+  }
+  if (isFieldEnabled('financialSummary', 'crewTotal')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'), `${totalsDisplay.crewTotal} ${currencyLabel}`));
+  }
+  if (isFieldEnabled('financialSummary', 'discountAmount')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
+  }
+  if (isFieldEnabled('financialSummary', 'taxAmount')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
+  }
+
+  const showFinalTotal = isFieldEnabled('financialSummary', 'finalTotal');
+  const financialFinalHtml = showFinalTotal
+    ? `<div class="totals-final">${renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' })}</div>`
     : '';
 
   const financialSectionMarkup = includeSection('financialSummary')
     ? (() => {
-        const inlineItems = [
-          renderTotalsItem(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'), `${totalsDisplay.equipmentTotal} ${currencyLabel}`),
-          renderTotalsItem(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'), `${totalsDisplay.crewTotal} ${currencyLabel}`),
-          renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`),
-          renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`)
-        ].join('');
-
-        const finalItem = renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' });
-
+        if (!financialInlineItems.length && !showFinalTotal) {
+          return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
+        }
         return `<section class="quote-section quote-section--financial">
           <div class="totals-block">
             <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
-            <div class="totals-inline">${inlineItems}</div>
-            <div class="totals-final">${finalItem}</div>
+            ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
+            ${financialFinalHtml}
           </div>
         </section>`;
       })()
     : '';
 
+  const itemColumns = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const hasItemColumns = itemColumns.length > 0;
+  const itemTableHeader = hasItemColumns
+    ? itemColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
+    : '';
+  const hasItems = Array.isArray(reservation.items) && reservation.items.length > 0;
+  const itemsBodyRows = hasItems
+    ? reservation.items.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td></tr>`;
+
   const itemsSectionMarkup = includeSection('items')
-    ? `<section class="quote-section quote-section--table">
-        <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
-        <table class="quote-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>${escapeHtml(t('reservations.details.table.headers.code', 'الكود'))}</th>
-              <th>${escapeHtml(t('reservations.details.table.headers.description', 'الوصف'))}</th>
-              <th>${escapeHtml(t('reservations.details.table.headers.quantity', 'الكمية'))}</th>
-              <th>${escapeHtml(t('reservations.details.table.headers.price', 'السعر'))}</th>
-            </tr>
-          </thead>
-          <tbody>${itemsRows}</tbody>
-        </table>
-      </section>`
+    ? (hasItemColumns
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${itemTableHeader}</tr>
+              </thead>
+              <tbody>${itemsBodyRows}</tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
     : '';
 
+  const crewColumns = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
+  const hasCrewColumns = crewColumns.length > 0;
+  const crewHeader = hasCrewColumns
+    ? crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
+    : '';
+  const crewBodyRows = technicians.length
+    ? technicians.map((tech, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(tech, index)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
+
   const crewSectionMarkup = includeSection('crew')
-    ? `<section class="quote-section quote-section--table">
-        <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
-        <table class="quote-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>${escapeHtml(t('reservations.details.technicians.name', 'الاسم'))}</th>
-              <th>${escapeHtml(t('reservations.details.technicians.role', 'الدور'))}</th>
-              <th>${escapeHtml(t('reservations.details.technicians.phone', 'الهاتف'))}</th>
-            </tr>
-          </thead>
-          <tbody>${techniciansHtml}</tbody>
-        </table>
-      </section>`
+    ? (hasCrewColumns
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${crewHeader}</tr>
+              </thead>
+              <tbody>${crewBodyRows}</tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
     : '';
 
   const notesSectionMarkup = includeSection('notes')
@@ -646,22 +800,28 @@ function buildQuotationHtml({
       </section>`
     : '';
 
-  const paymentSectionMarkup = (() => {
-    const paymentRows = [
-      renderPaymentRow(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName),
-      renderPaymentRow(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName),
-      renderPaymentRow(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber)),
-      renderPaymentRow(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban))
-    ].join('');
+  const paymentRows = [];
+  if (isFieldEnabled('payment', 'beneficiary')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName));
+  }
+  if (isFieldEnabled('payment', 'bank')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName));
+  }
+  if (isFieldEnabled('payment', 'account')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber)));
+  }
+  if (isFieldEnabled('payment', 'iban')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban)));
+  }
 
-    return `<section class="quote-section">
+  const paymentSectionMarkup = `<section class="quote-section">
       <div class="payment-block">
         <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
-        <div class="payment-rows">${paymentRows}</div>
+        <div class="payment-rows">${paymentRows.length ? paymentRows.join('') : noFieldsMessage}</div>
       </div>
       <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
     </section>`;
-  })();
+
 
   const termsSectionMarkup = `<footer class="quote-footer">
         <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
@@ -1019,7 +1179,7 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   }
 }
 
-async function renderQuotePagesAsPdf(root, { filename }) {
+async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null }) {
   if (!root) return;
   const pages = Array.from(root.querySelectorAll('.quote-page'));
   if (!pages.length) {
@@ -1060,14 +1220,15 @@ async function renderQuotePagesAsPdf(root, { filename }) {
   }
 
   if (safariMode) {
-    const blob = pdf.output('blob');
-    const blobUrl = URL.createObjectURL(blob);
-    const popup = window.open(blobUrl, '_blank');
-    if (!popup) {
+    const blobUrl = pdf.output('bloburl');
+    if (safariWindowRef && !safariWindowRef.closed) {
+      safariWindowRef.location.href = blobUrl;
+    } else {
       const tempLink = document.createElement('a');
       tempLink.href = blobUrl;
       tempLink.download = filename;
       tempLink.rel = 'noopener';
+      tempLink.target = '_blank';
       document.body.appendChild(tempLink);
       tempLink.click();
       document.body.removeChild(tempLink);
@@ -1093,6 +1254,7 @@ function renderQuotePreview() {
     rentalDays: activeQuoteState.rentalDays,
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
+    fieldSelections: activeQuoteState.fields,
     quoteNumber: activeQuoteState.quoteNumber,
     quoteDate: activeQuoteState.quoteDateLabel
   });
@@ -1153,26 +1315,66 @@ function handleToggleChange(event) {
   } else {
     activeQuoteState.sections.delete(sectionId);
   }
+  renderQuoteToggles();
+  renderQuotePreview();
+}
+
+function handleFieldToggleChange(event) {
+  if (!activeQuoteState) return;
+  const checkbox = event.currentTarget;
+  const sectionId = checkbox?.dataset?.sectionId;
+  const fieldId = checkbox?.dataset?.fieldId;
+  if (!sectionId || !fieldId) return;
+  const selections = activeQuoteState.fields || (activeQuoteState.fields = buildDefaultFieldSelections());
+  const set = getFieldSelectionSet(selections, sectionId);
+  if (checkbox.checked) {
+    set.add(fieldId);
+  } else {
+    set.delete(fieldId);
+  }
   renderQuotePreview();
 }
 
 function renderQuoteToggles() {
   if (!quoteModalRefs?.toggles || !activeQuoteState) return;
   const { toggles } = quoteModalRefs;
+  const selections = activeQuoteState.fields || {};
   const items = QUOTE_SECTION_DEFS.map(({ id, labelKey, fallback }) => {
-    const label = t(labelKey, fallback);
-    const checked = activeQuoteState.sections.has(id) ? 'checked' : '';
+    const sectionLabel = t(labelKey, fallback);
+    const sectionChecked = activeQuoteState.sections.has(id);
+    const fields = QUOTE_FIELD_DEFS[id] || [];
+    const fieldList = fields.length
+      ? `<div class="quote-toggle-sublist">
+          ${fields.map((field) => {
+            const fieldChecked = isFieldEnabledInSelections(selections, id, field.id);
+            const disabledAttr = sectionChecked ? '' : 'disabled';
+            const fieldLabel = field.labelKey ? t(field.labelKey, field.fallback) : field.fallback;
+            return `
+              <label class="quote-toggle quote-toggle--field">
+                <input type="checkbox" data-field-toggle data-section-id="${id}" data-field-id="${field.id}" ${fieldChecked ? 'checked' : ''} ${disabledAttr}>
+                <span>${escapeHtml(fieldLabel)}</span>
+              </label>
+            `;
+          }).join('')}
+        </div>`
+      : '';
     return `
-      <label class="quote-toggle">
-        <input type="checkbox" class="form-check-input" data-section-id="${id}" ${checked}>
-        <span>${escapeHtml(label)}</span>
-      </label>
+      <div class="quote-toggle-group">
+        <label class="quote-toggle quote-toggle--section">
+          <input type="checkbox" data-section-toggle data-section-id="${id}" ${sectionChecked ? 'checked' : ''}>
+          <span>${escapeHtml(sectionLabel)}</span>
+        </label>
+        ${fieldList}
+      </div>
     `;
   }).join('');
 
   toggles.innerHTML = items;
-  toggles.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+  toggles.querySelectorAll('input[data-section-toggle]').forEach((input) => {
     input.addEventListener('change', handleToggleChange);
+  });
+  toggles.querySelectorAll('input[data-field-toggle]').forEach((input) => {
+    input.addEventListener('change', handleFieldToggleChange);
   });
 }
 
@@ -1220,6 +1422,14 @@ function ensureQuoteModal() {
   const preview = modal.querySelector('[data-quote-preview]');
   const meta = modal.querySelector('[data-quote-meta]');
   const downloadBtn = modal.querySelector('[data-quote-download]');
+  const modalHeader = modal.querySelector('.modal-header');
+  const headerCloseButton = modalHeader?.querySelector('.btn-close');
+
+  const headerActions = document.createElement('div');
+  headerActions.className = 'quote-preview-header-actions';
+  if (modalHeader) {
+    modalHeader.insertBefore(headerActions, headerCloseButton || null);
+  }
 
   const previewFrame = document.createElement('iframe');
   previewFrame.className = 'quote-preview-frame';
@@ -1240,8 +1450,8 @@ function ensureQuoteModal() {
   frameWrapper.appendChild(previewFrame);
 
   preview.innerHTML = '';
-  preview.appendChild(zoomControls);
   preview.appendChild(frameWrapper);
+  headerActions.appendChild(zoomControls);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
@@ -1329,6 +1539,7 @@ async function exportQuoteAsPdf() {
     rentalDays: activeQuoteState.rentalDays,
     currencyLabel: activeQuoteState.currencyLabel,
     sections: activeQuoteState.sections,
+    fieldSelections: activeQuoteState.fields,
     quoteNumber: activeQuoteState.quoteNumber,
     quoteDate: activeQuoteState.quoteDateLabel
   });
@@ -1346,6 +1557,8 @@ async function exportQuoteAsPdf() {
   enforceLegacyColorFallback(container);
 
   const pdfRoot = container.firstElementChild;
+
+  const safariDownloadWindow = isIosSafari() ? window.open('', '_blank') : null;
   if (pdfRoot) {
     pdfRoot.setAttribute('dir', 'rtl');
     pdfRoot.style.direction = 'rtl';
@@ -1369,7 +1582,7 @@ async function exportQuoteAsPdf() {
 
   try {
     const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
-    await renderQuotePagesAsPdf(pdfRoot, { filename });
+    await renderQuotePagesAsPdf(pdfRoot, { filename, safariWindowRef: safariDownloadWindow });
     if (!activeQuoteState.sequenceCommitted) {
       commitQuoteSequence(activeQuoteState.quoteSequence);
       activeQuoteState.sequenceCommitted = true;
@@ -1416,6 +1629,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     rentalDays,
     currencyLabel,
     sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
+    fields: buildDefaultFieldSelections(),
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,
