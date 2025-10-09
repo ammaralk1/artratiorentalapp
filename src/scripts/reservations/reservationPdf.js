@@ -871,9 +871,11 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   });
 
   filteredPages.forEach((page, index) => {
-    const isLast = index === filteredPages.length - 1;
-    page.style.pageBreakAfter = isLast ? 'auto' : 'always';
-    page.style.breakAfter = isLast ? 'auto' : 'page';
+    const isFirst = index === 0;
+    page.style.pageBreakAfter = 'auto';
+    page.style.breakAfter = 'auto';
+    page.style.pageBreakBefore = isFirst ? 'auto' : 'always';
+    page.style.breakBefore = isFirst ? 'auto' : 'page';
     if (!isPreview) {
       page.style.boxShadow = 'none';
     } else {
