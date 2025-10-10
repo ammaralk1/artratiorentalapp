@@ -1,6 +1,6 @@
 /* ===================== التقارير ===================== */
 
-.reports-page {
+:root {
   --reports-radius-lg: var(--radius-lg, 18px);
   --reports-radius-md: var(--radius-md, 14px);
   --reports-shadow: var(--shadow-sm, 0 10px 24px rgba(15, 23, 42, 0.08));
@@ -22,8 +22,8 @@
   --reports-error-rgb: 224, 49, 49;
 }
 
-html.dark-mode .reports-page,
-body.dark-mode .reports-page {
+html.dark-mode,
+body.dark-mode {
   --reports-surface: rgba(24, 33, 59, 0.92);
   --reports-surface-soft: rgba(30, 41, 59, 0.78);
   --reports-surface-contrast: rgba(37, 51, 82, 0.88);
@@ -40,6 +40,10 @@ body.dark-mode .reports-page {
   --reports-warning-rgb: 251, 191, 36;
   --reports-error: #f87171;
   --reports-error-rgb: 248, 113, 113;
+}
+
+.reports-page {
+  color: var(--reports-text);
 }
 
 .reports-wrapper {
@@ -63,8 +67,9 @@ body.dark-mode.reports-page {
 .reports-chart-card,
 .reports-table-card,
 .reports-empty-state {
-  background: var(--reports-surface);
-  border: 1px solid var(--reports-border);
+  background: var(--reports-surface) !important;
+  background-color: var(--reports-surface) !important;
+  border: 1px solid var(--reports-border) !important;
   border-radius: var(--reports-radius-lg);
   box-shadow: var(--reports-shadow);
   backdrop-filter: blur(10px);
@@ -148,7 +153,7 @@ body[dir="ltr"] .reports-filters {
 
 .reports-status-chip {
   border: 1px solid var(--reports-border);
-  background-color: rgba(var(--reports-accent-rgb), 0.12);
+  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.12);
   color: var(--reports-accent);
   border-radius: 999px;
   padding: 6px 14px;
@@ -159,15 +164,15 @@ body[dir="ltr"] .reports-filters {
 }
 
 .reports-status-chip:hover {
-  border-color: rgba(var(--reports-accent-rgb), 0.32);
-  background-color: rgba(var(--reports-accent-rgb), 0.18);
+  border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.32);
+  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.18);
 }
 
 .reports-status-chip.is-active {
   background: var(--reports-accent);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 10px 24px rgba(var(--reports-accent-rgb), 0.35);
+  box-shadow: 0 10px 24px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.35);
 }
 
 .reports-custom-range {
@@ -212,7 +217,7 @@ body[dir="ltr"] .reports-refresh-btn {
   display: grid;
   place-items: center;
   font-size: 1.6rem;
-  background-color: rgba(var(--reports-accent-rgb), 0.16);
+  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.16);
   color: var(--reports-accent);
 }
 
@@ -274,7 +279,7 @@ body[dir="ltr"] .reports-refresh-btn {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background-color: rgba(var(--reports-accent-rgb), 0.14);
+  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.14);
   color: var(--reports-accent);
   flex-shrink: 0;
 }
@@ -331,7 +336,7 @@ body[dir="ltr"] .reports-card-text {
   flex-direction: column;
   gap: 10px;
   border-radius: inherit;
-  background: rgba(var(--reports-accent-rgb), 0.05);
+  background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.05);
   color: var(--reports-muted);
   text-align: center;
   padding: 24px;
@@ -375,7 +380,7 @@ body[dir="ltr"] .reports-card-text {
 .reports-chart-bar .bar {
   width: 100%;
   border-radius: 12px 12px 6px 6px;
-  background: linear-gradient(180deg, rgba(var(--reports-accent-rgb), 0.92), rgba(var(--reports-accent-rgb), 0.65));
+  background: linear-gradient(180deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.92), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.65));
   transition: height 0.3s ease;
 }
 
@@ -424,28 +429,28 @@ body[dir="ltr"] .reports-card-text {
 .reports-progress-bar {
   height: 10px;
   border-radius: 999px;
-  background: rgba(var(--reports-accent-rgb), 0.08);
+  background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08);
   overflow: hidden;
 }
 
 .reports-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(var(--reports-accent-rgb), 0.95), rgba(var(--reports-accent-rgb), 0.65));
+  background: linear-gradient(90deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.95), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.65));
   transition: width 0.3s ease;
 }
 
 .reports-progress-fill.status-confirmed,
 .reports-progress-fill.status-paid {
-  background: linear-gradient(90deg, rgba(var(--reports-success-rgb), 0.98), rgba(var(--reports-success-rgb), 0.7));
+  background: linear-gradient(90deg, rgba(var(--reports-success-rgb, 47, 158, 68), 0.98), rgba(var(--reports-success-rgb, 47, 158, 68), 0.7));
 }
 
 .reports-progress-fill.status-pending {
-  background: linear-gradient(90deg, rgba(var(--reports-warning-rgb), 0.95), rgba(var(--reports-warning-rgb), 0.68));
+  background: linear-gradient(90deg, rgba(var(--reports-warning-rgb, 240, 140, 0), 0.95), rgba(var(--reports-warning-rgb, 240, 140, 0), 0.68));
 }
 
 .reports-progress-fill.status-unpaid {
-  background: linear-gradient(90deg, rgba(var(--reports-error-rgb), 0.9), rgba(var(--reports-error-rgb), 0.65));
+  background: linear-gradient(90deg, rgba(var(--reports-error-rgb, 224, 49, 49), 0.9), rgba(var(--reports-error-rgb, 224, 49, 49), 0.65));
 }
 
 .reports-detail-grid {
@@ -486,7 +491,7 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table tbody tr:hover {
-  background-color: rgba(var(--reports-accent-rgb), 0.08);
+  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08);
 }
 
 .reports-empty-state {
@@ -495,7 +500,7 @@ body[dir="ltr"] .reports-card-text {
   align-items: center;
   gap: 12px;
   padding: 32px;
-  border: 1px dashed rgba(var(--reports-accent-rgb), 0.28);
+  border: 1px dashed rgba(var(--reports-accent-rgb, 76, 110, 245), 0.28);
   text-align: center;
   color: var(--reports-muted);
 }
