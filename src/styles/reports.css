@@ -220,8 +220,8 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
 html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   flex-direction: row-reverse;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 12px;
 }
 
 html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
