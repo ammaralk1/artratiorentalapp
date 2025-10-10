@@ -1077,9 +1077,13 @@
 
         <!-- ✅ تبويب فرعي: التقارير -->
         <div class="sub-tab tab-content" id="reports-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-reports-tab">
-          <div id="reservations-report-printable" class="reports-wrapper gap-6">
+          <div id="reservations-report-printable" class="reports-wrapper gap-6 reports-wrapper--reservations">
             <div class="reports-surface-card reports-header-card box">
-              <div class="reports-card-title reports-header-leading">
+              <div class="reports-card-title reports-header-leading" dir="rtl">
+                <div class="reports-card-text">
+                  <h1 class="fw-bold mb-2" data-i18n data-i18n-key="reservations.reports.title">تقارير الأداء</h1>
+                  <p class="reports-subtitle" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
+                </div>
                 <span class="reports-card-icon" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -1087,13 +1091,9 @@
                     <path d="M7 14l3 -3l4 4l3 -6l4 3"></path>
                   </svg>
                 </span>
-                <div class="reports-card-text">
-                  <h1 class="fw-bold mb-2" data-i18n data-i18n-key="reservations.reports.title">📊 تقارير الأداء</h1>
-                  <p class="reports-subtitle" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
-                </div>
               </div>
-              <div class="reports-filters" id="reservations-reports-filters">
-                <div class="reports-filters-grid">
+              <div class="reports-filters reports-filters--reservations" id="reservations-reports-filters">
+                <div class="reports-filters-grid reports-filters-grid--primary">
                   <label class="reports-filter-field">
                     <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.filters.rangeLabel">الفترة</span>
                     <select id="reports-range" class="form-select reports-filter-control">
@@ -1131,6 +1131,8 @@
                       <option value="without" data-i18n data-i18n-key="reservations.reports.filters.share.without">بدون نسبة الشركة</option>
                     </select>
                   </label>
+                </div>
+                <div class="reports-filter-search-row">
                   <label class="reports-filter-field reports-filter-search">
                     <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</span>
                     <input type="text" id="reports-search" class="form-control reports-filter-control" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
@@ -1241,7 +1243,7 @@
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.chart.volume.title">📈 حجم الحجوزات الشهري</h4>
+                      <h4 data-i18n data-i18n-key="reservations.reports.chart.volume.title">حجم الحجوزات الشهري</h4>
                       <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.volume.hint">عدد الحجوزات والإيرادات خلال الأشهر الماضية</span>
                     </div>
                   </div>
@@ -1261,7 +1263,7 @@
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">🧾 توزيع الحالات</h4>
+                      <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">توزيع الحالات</h4>
                       <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمنتهية</span>
                     </div>
                   </div>
@@ -1282,7 +1284,7 @@
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.chart.payment.title">💳 حالة الدفع</h4>
+                      <h4 data-i18n data-i18n-key="reservations.reports.chart.payment.title">حالة الدفع</h4>
                       <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.payment.hint">مقارنة الحجوزات المدفوعة وغير المدفوعة</span>
                     </div>
                   </div>
@@ -1295,7 +1297,7 @@
             </div>
 
             <div class="reports-detail-grid" id="reports-top-sections">
-              <div class="reports-table-card">
+              <div class="reports-table-card reports-rtl-card">
                 <div class="reports-card-header">
                   <div class="reports-card-title">
                     <span class="reports-card-icon" aria-hidden="true">
@@ -1307,7 +1309,7 @@
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.topCustomers.title">👥 أفضل العملاء</h4>
+                      <h4 data-i18n data-i18n-key="reservations.reports.topCustomers.title">أفضل العملاء</h4>
                       <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topCustomers.hint">حسب إجمالي الإيراد</span>
                     </div>
                   </div>
@@ -1327,7 +1329,7 @@
                   </table>
                 </div>
               </div>
-              <div class="reports-table-card">
+              <div class="reports-table-card reports-rtl-card">
                 <div class="reports-card-header">
                   <div class="reports-card-title">
                     <span class="reports-card-icon" aria-hidden="true">
@@ -1338,7 +1340,7 @@
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.topEquipment.title">🎥 المعدات الأكثر استخدامًا</h4>
+                      <h4 data-i18n data-i18n-key="reservations.reports.topEquipment.title">المعدات الأكثر استخدامًا</h4>
                       <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topEquipment.hint">عدد مرات الحجز</span>
                     </div>
                   </div>
@@ -1360,7 +1362,7 @@
               </div>
             </div>
 
-            <div class="reports-table-card" id="reservations-report-table-card">
+            <div class="reports-table-card reports-rtl-card" id="reservations-report-table-card">
               <div class="reports-card-header">
                 <div class="reports-card-title">
                   <span class="reports-card-icon" aria-hidden="true">
@@ -1373,7 +1375,7 @@
                     </svg>
                   </span>
                   <div class="reports-card-text">
-                    <h4 data-i18n data-i18n-key="reservations.reports.results.title">📄 تفاصيل الحجوزات</h4>
+                    <h4 data-i18n data-i18n-key="reservations.reports.results.title">تفاصيل الحجوزات</h4>
                     <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.results.hint">أحدث الحجوزات المطابقة لعوامل التصفية</span>
                   </div>
                 </div>

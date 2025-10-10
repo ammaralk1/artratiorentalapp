@@ -139,6 +139,30 @@ body.dark-mode.reports-page {
   font-size: 0.95rem;
 }
 
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-title,
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
+  display: flex;
+}
+
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  text-align: right;
+}
+
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+}
+
 .reports-filters {
   display: flex;
   flex-wrap: wrap;
@@ -148,6 +172,7 @@ body.dark-mode.reports-page {
   border: 1px solid var(--reports-border);
   border-radius: var(--reports-radius-md);
   padding: 16px 18px;
+  position: relative;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -218,10 +243,36 @@ body[dir="rtl"] .reports-filters {
   min-width: 170px;
 }
 
+.reports-wrapper--reservations .reports-filter-search-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.reports-wrapper--reservations .reports-filter-search-row .reports-filter-field {
+  width: min(420px, 100%);
+  align-items: center;
+  text-align: center;
+}
+
+.reports-wrapper--reservations .reports-filter-search-row .reports-filter-control {
+  width: 100%;
+}
+
+.reports-wrapper--reservations .reports-custom-range {
+  justify-content: flex-start;
+  gap: 16px;
+}
+
 .reports-filters-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
+}
+
+.reports-filters-grid--primary {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: flex-end;
 }
 
 .reports-filter-field {
@@ -231,8 +282,8 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-filter-label {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--reports-muted);
 }
 
@@ -339,6 +390,25 @@ body[dir="rtl"] .reports-filters {
 .reports-actions .btn-primary {
   border-radius: 999px;
   padding-inline: 20px;
+}
+
+body[dir="rtl"] .reports-rtl-card .reports-card-title,
+body[dir="rtl"] .reports-rtl-card .reports-card-text {
+  display: flex;
+}
+
+body[dir="rtl"] .reports-rtl-card .reports-card-title {
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+body[dir="rtl"] .reports-rtl-card .reports-card-text {
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 6px;
 }
 
 .reports-refresh-btn {
