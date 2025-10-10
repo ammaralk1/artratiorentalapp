@@ -74,6 +74,8 @@
   grid-column: 1 / -1;
   align-items: center;
   text-align: center;
+  width: min(100%, 520px);
+  margin-inline: auto;
 }
 
 .management-form .form-label {
@@ -432,12 +434,13 @@ select.form-select option {
 .management-form-grid .form-field-notes textarea.form-control {
   max-width: 440px;
   width: 100%;
+  margin-inline: auto;
   border-radius: 18px;
   min-height: 120px;
   padding: 16px 18px;
   resize: vertical;
   border: 1px solid rgba(76, 110, 245, 0.18);
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.94), rgba(232, 238, 255, 0.86));
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.94), rgba(232, 238, 255, 0.86)) !important;
   box-shadow:
     0 12px 28px rgba(76, 110, 245, 0.08),
     0 3px 10px rgba(15, 23, 42, 0.08);
@@ -448,7 +451,7 @@ select.form-select option {
 }
 
 :is(html.dark, body.dark) .management-form-grid .form-field-notes textarea.form-control {
-  background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9));
+  background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9)) !important;
   border-color: rgba(148, 163, 255, 0.25);
   color: rgba(226, 232, 240, 0.94);
   box-shadow:
