@@ -85,6 +85,10 @@ let lastTrendData = [];
 let lastStatusData = [];
 let lastPaymentData = [];
 let themeListenerAttached = false;
+let startDatePicker = null;
+let endDatePicker = null;
+let startDateInputRef = null;
+let endDateInputRef = null;
 
 function translate(key, arFallback, enFallback = arFallback) {
   const fallback = getCurrentLanguage() === 'en' ? (enFallback ?? arFallback) : arFallback;
@@ -98,11 +102,14 @@ function handleLanguageChange() {
   setTimeout(() => {
     resetFormatters();
     renderReports();
+    setupCustomRangePickers();
   }, 0);
   setTimeout(() => {
     resetFormatters();
     renderReports();
+    setupCustomRangePickers();
   }, 60);
+  setupCustomRangePickers();
 }
 
 function renderIfCustomRange() {
@@ -811,7 +818,15 @@ export function renderReports() {
 function setupCustomRangePickers(startInput, endInput) {
   if (!window.flatpickr) return;
 
-  const locale = window.flatpickr?.l10ns?.ar ? window.flatpickr.l10ns.ar : null;
+  if (startInput) startDateInputRef = startInput;
+  if (endInput) endDateInputRef = endInput;
+
+  const startEl = startDateInputRef;
+  const endEl = endDateInputRef;
+
+  if (!startEl && !endEl) return;
+
+  const localeOption = resolveFlatpickrLocaleOption();
   const baseOptions = (handlers) => {
     const options = {
       dateFormat: 'Y-m-d',
@@ -819,24 +834,31 @@ function setupCustomRangePickers(startInput, endInput) {
       disableMobile: true,
       ...handlers
     };
-    if (locale) {
-      options.locale = locale;
+    if (localeOption) {
+      options.locale = localeOption;
     }
     return options;
   };
 
-  let startPickerInstance = null;
-  let endPickerInstance = null;
+  if (startDatePicker) {
+    startDatePicker.destroy();
+    startDatePicker = null;
+  }
+  if (endDatePicker) {
+    endDatePicker.destroy();
+    endDatePicker = null;
+  }
 
-  if (startInput) {
-    startPickerInstance = window.flatpickr(startInput, baseOptions({
+  if (startEl) {
+    startDatePicker = window.flatpickr(startEl, baseOptions({
       onChange(selectedDates, dateStr) {
         state.start = dateStr || null;
-        if (!endPickerInstance) return;
-        if (selectedDates?.length) {
-          endPickerInstance.set('minDate', selectedDates[0]);
-        } else {
-          endPickerInstance.set('minDate', null);
+        if (endDatePicker) {
+          if (selectedDates?.length) {
+            endDatePicker.set('minDate', selectedDates[0]);
+          } else {
+            endDatePicker.set('minDate', null);
+          }
         }
         renderIfCustomRange();
       },
@@ -847,15 +869,16 @@ function setupCustomRangePickers(startInput, endInput) {
     }));
   }
 
-  if (endInput) {
-    endPickerInstance = window.flatpickr(endInput, baseOptions({
+  if (endEl) {
+    endDatePicker = window.flatpickr(endEl, baseOptions({
       onChange(selectedDates, dateStr) {
         state.end = dateStr || null;
-        if (!startPickerInstance) return;
-        if (selectedDates?.length) {
-          startPickerInstance.set('maxDate', selectedDates[0]);
-        } else {
-          startPickerInstance.set('maxDate', null);
+        if (startDatePicker) {
+          if (selectedDates?.length) {
+            startDatePicker.set('maxDate', selectedDates[0]);
+          } else {
+            startDatePicker.set('maxDate', null);
+          }
         }
         renderIfCustomRange();
       },
@@ -866,15 +889,32 @@ function setupCustomRangePickers(startInput, endInput) {
     }));
   }
 
-  if (startPickerInstance && endInput?.value) {
-    startPickerInstance.setDate(startInput.value, false);
-    startPickerInstance.set('maxDate', endPickerInstance?.selectedDates?.[0] || endInput.value);
+  if (startDatePicker && startEl) {
+    startDatePicker.setDate(startEl.value, false);
+    const linkedDate = endDatePicker?.selectedDates?.[0] || endEl?.value;
+    if (linkedDate) {
+      startDatePicker.set('maxDate', linkedDate);
+    }
   }
 
-  if (endPickerInstance && startInput?.value) {
-    endPickerInstance.setDate(endInput.value, false);
-    endPickerInstance.set('minDate', startPickerInstance?.selectedDates?.[0] || startInput.value);
+  if (endDatePicker && endEl) {
+    endDatePicker.setDate(endEl.value, false);
+    const linkedDate = startDatePicker?.selectedDates?.[0] || startEl?.value;
+    if (linkedDate) {
+      endDatePicker.set('minDate', linkedDate);
+    }
   }
+}
+
+function resolveFlatpickrLocaleOption() {
+  const language = (getCurrentLanguage() || 'ar').toLowerCase();
+  if (language.startsWith('ar')) {
+    return window.flatpickr?.l10ns?.ar ? 'ar' : null;
+  }
+  if (window.flatpickr?.l10ns?.en) {
+    return 'en';
+  }
+  return null;
 }
 
 function toggleCustomRange(wrapper, isActive) {
