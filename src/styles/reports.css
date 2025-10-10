@@ -104,9 +104,9 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations .reports-surface-card {
-  width: min(100%, 1120px);
+  width: min(100%, 1040px);
   margin-inline: auto;
-  padding: 20px 28px;
+  padding: 18px 24px;
   box-sizing: border-box;
 }
 
@@ -192,10 +192,10 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
 .reports-wrapper--reservations .reports-filters {
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  width: min(100%, 1240px);
+  gap: 16px;
+  width: min(100%, 1120px);
   margin-inline: auto;
-  padding: 18px 22px;
+  padding: 16px 20px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -281,7 +281,7 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-field {
-  width: min(760px, 100%);
+  width: min(820px, 100%);
   align-items: center;
   text-align: center;
 }
@@ -302,19 +302,19 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
-  width: min(100%, 1240px);
+  width: min(100%, 1120px);
   margin-inline: auto;
-  gap: 22px;
+  gap: 14px;
   justify-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .reports-wrapper--reservations .reports-filter-control {
-  min-width: 260px;
-  min-height: 56px;
+  min-width: 320px;
+  min-height: 54px;
   padding: 14px 18px;
   width: 100%;
 }
