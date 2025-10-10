@@ -91,7 +91,7 @@ body.dark-mode.reports-page {
 
 .reports-wrapper--reservations {
   gap: 12px;
-  align-items: stretch;
+  align-items: flex-end;
 }
 
 .reports-surface-card,
@@ -109,12 +109,14 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations .reports-surface-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
   width: fit-content;
   max-width: min(100%, 960px);
-  align-self: flex-end;
   padding: 6px 14px;
   box-sizing: border-box;
-  gap: 8px;
+  gap: 6px;
 }
 
 .reports-surface-card {
