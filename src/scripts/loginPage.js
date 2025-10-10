@@ -3,6 +3,7 @@ import '../styles/app.css';
 import { login } from './auth.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { initLanguageToggle } from './language.js';
+import './translations/common.js';
 
 window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
 
