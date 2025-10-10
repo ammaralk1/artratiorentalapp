@@ -359,33 +359,36 @@ body[dir="rtl"] .reports-filters {
   width: 100%;
 }
 
+
 .reports-filters-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(230px, 1fr));
-  gap: 4px;
-  justify-items: center;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  column-gap: 2px;
+  row-gap: 0;
+  justify-items: stretch;
 }
 
 .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(230px, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   align-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
   width: min(100%, 960px);
   margin-inline: auto;
-  gap: 4px;
-  justify-items: center;
+  column-gap: 2px;
+  row-gap: 0;
+  justify-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(230px, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
 }
 
 .reports-wrapper--reservations .reports-filter-control {
-  min-width: 230px;
+  min-width: 220px;
   min-height: 46px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   width: 100%;
 }
 
