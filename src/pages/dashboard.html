@@ -1149,8 +1149,11 @@
                   </label>
                 </div>
                 <div class="reports-filters-footer">
-                  <div class="reports-column-toggles" id="reports-column-controls">
-                    <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.actions.customizeColumns">تخصيص الأعمدة</span>
+                  <details class="reports-column-toggles" id="reports-column-controls">
+                    <summary class="reports-column-summary">
+                      <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.actions.customizeColumns">تخصيص الأعمدة</span>
+                      <span class="reports-column-caret" aria-hidden="true"></span>
+                    </summary>
                     <div class="reports-column-toggle-grid">
                       <label class="reports-column-toggle" for="reports-toggle-code">
                         <input id="reports-toggle-code" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="code" checked>
@@ -1185,7 +1188,7 @@
                         <span class="reports-column-toggle-label" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</span>
                       </label>
                     </div>
-                  </div>
+                  </details>
                   <div class="reports-actions">
                     <button class="btn btn-primary reports-refresh-btn" id="reports-refresh" type="button" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
                     <button type="button" class="btn btn-outline btn-sm reports-action-btn" data-export="pdf" data-i18n data-i18n-key="reservations.reports.actions.exportPdf">🖨️ PDF</button>
