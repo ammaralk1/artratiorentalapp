@@ -3,6 +3,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { mapReservationFromApi, mapLegacyReservation } from './reservationsService.js';
+import { DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
 import { loadData } from './storage.js';
 
@@ -14,6 +15,7 @@ const state = {
   range: 'all',
   status: 'all',
   payment: 'all',
+  share: 'all',
   search: '',
   start: null,
   end: null
@@ -48,6 +50,8 @@ let apexChartsReady = null;
 let html2PdfReady = null;
 let xlsxReady = null;
 
+let techniciansIndex = null;
+
 const charts = {
   trend: null,
   status: null,
@@ -69,7 +73,9 @@ const columnPreferences = {
   date: true,
   status: true,
   payment: true,
-  total: true
+  total: true,
+  share: true,
+  net: true
 };
 
 let exportHandlersBound = false;
@@ -304,8 +310,165 @@ function hydrateReportsFromCache() {
     ? projects.map(mapProjectFromApi)
     : [];
   reportsData.projectsMap = new Map(reportsData.projects.map((project) => [project.id, project]));
+  techniciansIndex = new Map((reportsData.technicians || []).map((tech) => [String(tech.id), tech]));
 
   return true;
+}
+
+const REPORT_MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function calculateReservationDaysForReports(start, end) {
+  if (!start || !end) return 1;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 1;
+  const diffMs = endDate.getTime() - startDate.getTime();
+  if (diffMs <= 0) return 1;
+  return Math.max(1, Math.ceil(diffMs / REPORT_MS_PER_DAY));
+}
+
+function getTechnicianRecordById(id) {
+  if (!id) return null;
+  if (!techniciansIndex) {
+    techniciansIndex = new Map((reportsData.technicians || []).map((tech) => [String(tech.id), tech]));
+  }
+  return techniciansIndex.get(String(id)) || null;
+}
+
+function resolveTechnicianDailyRateForReports(technician = {}) {
+  const candidates = [
+    technician.dailyWage,
+    technician.daily_rate,
+    technician.dailyRate,
+    technician.wage,
+    technician.rate
+  ];
+
+  for (const value of candidates) {
+    if (value == null) continue;
+    const parsed = Number.parseFloat(normalizeNumbers(String(value)));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return 0;
+}
+
+function computeReservationFinancials(reservation) {
+  if (!reservation) {
+    return {
+      rentalDays: 1,
+      equipmentTotal: 0,
+      crewTotal: 0,
+      discountAmount: 0,
+      taxableAmount: 0,
+      taxAmount: 0,
+      finalTotal: 0,
+      companySharePercent: 0,
+      companyShareAmount: 0,
+      netProfit: 0
+    };
+  }
+
+  if (reservation.__financials) {
+    return reservation.__financials;
+  }
+
+  const rentalDays = calculateReservationDaysForReports(reservation.start, reservation.end);
+
+  const equipmentDailyTotal = (reservation.items || []).reduce((sum, item) => {
+    const qty = Number(item?.qty) || Number(item?.quantity) || 1;
+    const price = Number(item?.price) || Number(item?.unit_price) || 0;
+    return sum + (qty * price);
+  }, 0);
+  const equipmentTotal = equipmentDailyTotal * rentalDays;
+
+  const crewDailyTotal = (reservation.technicians || []).reduce((sum, technicianId) => {
+    const technician = getTechnicianRecordById(technicianId);
+    return sum + resolveTechnicianDailyRateForReports(technician);
+  }, 0);
+  const crewTotal = crewDailyTotal * rentalDays;
+
+  const discountBase = equipmentTotal + crewTotal;
+  const discountValue = Number(reservation.discount) || 0;
+  const discountType = reservation.discountType || reservation.discount_type || 'percent';
+  let discountAmount = discountType === 'amount'
+    ? discountValue
+    : discountBase * (discountValue / 100);
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > discountBase) {
+    discountAmount = discountBase;
+  }
+
+  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  const applyTaxFlag = reservation.applyTax === true
+    || reservation.apply_tax === true
+    || reservation.apply_tax === 1
+    || reservation.apply_tax === '1';
+  let taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+
+  const storedCost = Number(reservation.cost);
+  const computedTotal = taxableAmount + taxAmount;
+  let finalTotal = Math.max(0, Math.round(computedTotal));
+  if (Number.isFinite(storedCost) && storedCost > 0) {
+    finalTotal = storedCost;
+    if (applyTaxFlag) {
+      const adjustedTax = finalTotal - taxableAmount;
+      if (Number.isFinite(adjustedTax) && adjustedTax >= 0) {
+        taxAmount = adjustedTax;
+      }
+    }
+  }
+
+  const rawCompanySharePercent = reservation.companySharePercent
+    ?? reservation.company_share_percent
+    ?? reservation.companyShare
+    ?? reservation.company_share
+    ?? null;
+  const parsedCompanySharePercent = rawCompanySharePercent != null
+    ? Number.parseFloat(normalizeNumbers(String(rawCompanySharePercent).replace('%', '').trim()))
+    : NaN;
+  const shareEnabledRaw = reservation.companyShareEnabled
+    ?? reservation.company_share_enabled
+    ?? reservation.companyShareApplied
+    ?? reservation.company_share_applied
+    ?? null;
+  let companyShareEnabled = shareEnabledRaw != null
+    ? (shareEnabledRaw === true || shareEnabledRaw === 1 || shareEnabledRaw === '1' || String(shareEnabledRaw).toLowerCase() === 'true')
+    : (Number.isFinite(parsedCompanySharePercent) && parsedCompanySharePercent > 0);
+  let companySharePercent = companyShareEnabled && Number.isFinite(parsedCompanySharePercent)
+    ? Number(parsedCompanySharePercent)
+    : 0;
+  if (applyTaxFlag && companySharePercent <= 0) {
+    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+    companyShareEnabled = true;
+  }
+  const companyShareAmount = companySharePercent > 0
+    ? Math.max(0, finalTotal * (companySharePercent / 100))
+    : 0;
+
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount);
+
+  const breakdown = {
+    rentalDays,
+    equipmentTotal,
+    crewTotal,
+    discountAmount,
+    taxableAmount,
+    taxAmount,
+    finalTotal,
+    companySharePercent,
+    companyShareAmount,
+    netProfit
+  };
+
+  reservation.__financials = breakdown;
+  return breakdown;
 }
 
 function getProjectForReservation(reservation) {
@@ -389,6 +552,7 @@ async function loadReportsData({ silent = false } = {}) {
       ? projectsRes.data.map(mapProjectFromApi)
       : [];
     reportsData.projectsMap = new Map(reportsData.projects.map((project) => [project.id, project]));
+    techniciansIndex = new Map((reportsData.technicians || []).map((tech) => [String(tech.id), tech]));
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
     reportsErrorMessage = error instanceof ApiError
@@ -400,6 +564,7 @@ async function loadReportsData({ silent = false } = {}) {
     reportsData.technicians = [];
     reportsData.projects = [];
     reportsData.projectsMap = new Map();
+    techniciansIndex = null;
   } finally {
     reportsLoading = false;
     renderReports();
@@ -455,6 +620,7 @@ export function initReports() {
   const rangeSelect = document.getElementById('reports-range');
   const statusSelect = document.getElementById('reports-status-filter');
   const paymentSelect = document.getElementById('reports-payment-filter');
+  const shareSelect = document.getElementById('reports-share-filter');
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
   const refreshBtn = document.getElementById('reports-refresh');
@@ -489,6 +655,11 @@ export function initReports() {
 
   paymentSelect?.addEventListener('change', () => {
     state.payment = paymentSelect.value;
+    renderReports();
+  });
+
+  shareSelect?.addEventListener('change', () => {
+    state.share = shareSelect.value;
     renderReports();
   });
 
@@ -557,6 +728,7 @@ function syncFilterControls() {
   const rangeSelect = document.getElementById('reports-range');
   const statusSelect = document.getElementById('reports-status-filter');
   const paymentSelect = document.getElementById('reports-payment-filter');
+  const shareSelect = document.getElementById('reports-share-filter');
   const searchInput = document.getElementById('reports-search');
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
@@ -570,6 +742,9 @@ function syncFilterControls() {
   }
   if (paymentSelect && paymentSelect.value !== state.payment) {
     paymentSelect.value = state.payment;
+  }
+  if (shareSelect && shareSelect.value !== state.share) {
+    shareSelect.value = state.share;
   }
   if (searchInput && searchInput.value !== state.search) {
     searchInput.value = state.search || '';
@@ -736,6 +911,13 @@ function filterReservations(reservations, filters, customers, equipment, technic
 
     if (filters.payment === 'paid' && !paid) return false;
     if (filters.payment === 'unpaid' && paid) return false;
+
+    if (filters.share && filters.share !== 'all') {
+      const financials = computeReservationFinancials(reservation);
+      const hasCompanyShare = financials.companySharePercent > 0;
+      if (filters.share === 'with' && !hasCompanyShare) return false;
+      if (filters.share === 'without' && hasCompanyShare) return false;
+    }
 
     if (hasSearch && !matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, technicianMap)) {
       return false;
@@ -935,6 +1117,9 @@ function calculateMetrics(reservations) {
   let completed = 0;
   let paidCount = 0;
   let revenue = 0;
+  let companyShareTotal = 0;
+  let taxTotal = 0;
+  let netProfit = 0;
 
   reservations.forEach((reservation) => {
     const { statusValue, confirmed: isConfirmed, paid } = computeReportStatus(reservation);
@@ -947,7 +1132,12 @@ function calculateMetrics(reservations) {
     if (paid) {
       paidCount += 1;
     }
-    revenue += Number(reservation?.cost) || 0;
+
+    const financials = computeReservationFinancials(reservation);
+    revenue += financials.finalTotal;
+    companyShareTotal += financials.companyShareAmount;
+    taxTotal += financials.taxAmount;
+    netProfit += financials.netProfit;
   });
 
   const average = total ? revenue / total : 0;
@@ -958,7 +1148,10 @@ function calculateMetrics(reservations) {
     completed,
     paidCount,
     revenue,
-    average
+    average,
+    companyShareTotal,
+    taxTotal,
+    netProfit
   };
 }
 
@@ -977,7 +1170,16 @@ function calculateMonthlyTrend(reservations) {
     });
 
     const count = monthReservations.length;
-    const revenue = monthReservations.reduce((sum, res) => sum + (Number(res?.cost) || 0), 0);
+    let revenue = 0;
+    let netProfitTotal = 0;
+    let companyShareTotal = 0;
+
+    monthReservations.forEach((reservation) => {
+      const financials = computeReservationFinancials(reservation);
+      revenue += financials.finalTotal;
+      netProfitTotal += financials.netProfit;
+      companyShareTotal += financials.companyShareAmount;
+    });
 
     const label = getMonthLabel(date);
     const periodStart = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -987,6 +1189,8 @@ function calculateMonthlyTrend(reservations) {
       label,
       count,
       revenue,
+      netProfit: netProfitTotal,
+      companyShare: companyShareTotal,
       periodStart,
       periodEnd,
       startInput: formatDateInput(periodStart),
@@ -1080,8 +1284,9 @@ function calculateTopCustomers(reservations, customers) {
   reservations.forEach((res) => {
     const key = String(res?.customerId ?? 'unknown');
     const entry = totals.get(key) || { count: 0, revenue: 0 };
+    const financials = computeReservationFinancials(res);
     entry.count += 1;
-    entry.revenue += Number(res?.cost) || 0;
+    entry.revenue += financials.finalTotal;
     totals.set(key, entry);
   });
 
@@ -1131,7 +1336,7 @@ function renderReservationsTable(reservations, customers, technicians) {
   if (!tbody) return [];
 
   if (!reservations || reservations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return [];
   }
 
@@ -1149,7 +1354,9 @@ function renderReservationsTable(reservations, customers, technicians) {
         Date: formatted.date.text,
         Status: formatted.status.text,
         Payment: formatted.payment.text,
-        Total: formatted.total.text
+        Total: formatted.total.text,
+        'Company Share': formatted.share.text,
+        'Net Profit': formatted.net.text
       };
       return { formatted, exportRow };
     });
@@ -1163,6 +1370,8 @@ function renderReservationsTable(reservations, customers, technicians) {
         <td data-report-column="status">${formatted.status.html}</td>
         <td data-report-column="payment">${formatted.payment.html}</td>
         <td data-report-column="total">${formatted.total.html}</td>
+        <td data-report-column="share">${formatted.share.html}</td>
+        <td data-report-column="net">${formatted.net.html}</td>
       </tr>
     `)
     .join('');
@@ -1408,6 +1617,7 @@ async function renderTrendChart(data) {
     const categories = data.map((item) => item.label);
     const reservationsSeries = data.map((item) => Math.round(item.count || 0));
     const revenueSeries = data.map((item) => Math.round(item.revenue || 0));
+    const netSeries = data.map((item) => Math.round(item.netProfit || 0));
 
     const series = [
       {
@@ -1419,6 +1629,12 @@ async function renderTrendChart(data) {
         name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
         type: 'line',
         data: revenueSeries
+      },
+      {
+        name: translate('reservations.reports.chart.volume.series.net', 'صافي الربح (ر.س)', 'Net profit (SAR)'),
+        type: 'line',
+        data: netSeries,
+        yAxisIndex: 1
       }
     ];
 
@@ -1440,18 +1656,18 @@ async function renderTrendChart(data) {
       },
       theme: { mode: getThemeMode() },
       stroke: {
-        width: [0, 4],
+        width: [0, 4, 4],
         curve: 'smooth'
       },
       markers: {
-        size: [0, 5]
+        size: [0, 5, 5]
       },
-      colors: ['#6366f1', '#22c55e'],
+      colors: ['#6366f1', '#22c55e', '#f97316'],
       dataLabels: {
         enabled: false
       },
       fill: {
-        type: ['solid', 'gradient'],
+        type: ['solid', 'gradient', 'gradient'],
         gradient: {
           shadeIntensity: 0.6,
           opacityFrom: 0.65,
@@ -1781,7 +1997,12 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const dateLabel = formatDateTime(reservation?.start);
   const statusLabel = formatReservationStatus(reservation);
   const paymentLabel = paymentLabelText(reservation);
-  const totalLabel = formatCurrency(reservation?.cost || 0);
+  const financials = computeReservationFinancials(reservation);
+  const totalLabel = formatCurrency(financials.finalTotal);
+  const shareLabel = financials.companySharePercent > 0
+    ? `${formatNumber(financials.companySharePercent)}% (${formatCurrency(financials.companyShareAmount)})`
+    : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
+  const netLabel = formatCurrency(financials.netProfit);
 
   const technicians = (reservation?.technicians || [])
     .map((id) => technicianMap.get(String(id))?.name)
@@ -1806,7 +2027,9 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     date: { html: escapeHtml(dateLabel), text: dateLabel },
     status: { html: escapeHtml(statusLabel), text: statusLabel },
     payment: { html: escapeHtml(paymentLabel), text: paymentLabel },
-    total: { html: escapeHtml(totalLabel), text: totalLabel }
+    total: { html: escapeHtml(totalLabel), text: totalLabel },
+    share: { html: escapeHtml(shareLabel), text: shareLabel },
+    net: { html: escapeHtml(netLabel), text: netLabel }
   };
 }
 
@@ -1861,6 +2084,8 @@ function updateKpiCards(metrics) {
   const confirmed = metrics.confirmed || 0;
   const paid = metrics.paidCount || 0;
   const avg = metrics.average || 0;
+  const companyShareTotal = metrics.companyShareTotal || 0;
+  const net = metrics.netProfit || 0;
   const confirmedRate = total ? Math.round((confirmed / total) * 100) : 0;
   const paidRate = total ? Math.round((paid / total) * 100) : 0;
 
@@ -1873,9 +2098,15 @@ function updateKpiCards(metrics) {
 
   if (revenueEl) revenueEl.textContent = formatCurrency(revenue);
   if (revenueMetaEl) {
-    const averageText = translate('reservations.reports.kpi.revenue.average', 'متوسط قيمة الحجز {value}', 'Average reservation value {value}')
-      .replace('{value}', formatCurrency(avg));
-    revenueMetaEl.textContent = averageText;
+    const template = translate(
+      'reservations.reports.kpi.revenue.meta',
+      'صافي الربح {net} • نسبة الشركة {share} • متوسط الحجز {average}',
+      'Net profit {net} • Company share {share} • Average reservation {average}'
+    );
+    revenueMetaEl.textContent = template
+      .replace('{net}', formatCurrency(net))
+      .replace('{share}', formatCurrency(companyShareTotal))
+      .replace('{average}', formatCurrency(avg));
   }
 
   if (confirmedEl) confirmedEl.textContent = `${confirmedRate}%`;

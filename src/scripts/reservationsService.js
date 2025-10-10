@@ -1,6 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
 
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
@@ -37,6 +38,13 @@ export async function createReservationApi(payload) {
     body: payload,
   });
   const created = mapReservationFromApi(response?.data ?? {});
+  if (!Number.isFinite(created.companySharePercent) && payload?.company_share_percent != null) {
+    created.companySharePercent = Number(payload.company_share_percent) || 0;
+  }
+  if (created.companySharePercent > 0 && !Number.isFinite(created.companyShareAmount) && Number.isFinite(created.cost)) {
+    created.companyShareAmount = Math.max(0, created.cost * (created.companySharePercent / 100));
+  }
+  created.companyShareEnabled = payload?.company_share_enabled ? true : created.companySharePercent > 0;
   setReservationsState([...reservationsState, created]);
   return created;
 }
@@ -47,6 +55,13 @@ export async function updateReservationApi(id, payload) {
     body: payload,
   });
   const updated = mapReservationFromApi(response?.data ?? {});
+  if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
+    updated.companySharePercent = Number(payload.company_share_percent) || 0;
+  }
+  if (updated.companySharePercent > 0 && !Number.isFinite(updated.companyShareAmount) && Number.isFinite(updated.cost)) {
+    updated.companyShareAmount = Math.max(0, updated.cost * (updated.companySharePercent / 100));
+  }
+  updated.companyShareEnabled = payload?.company_share_enabled ? true : updated.companySharePercent > 0;
   const next = reservationsState.map((reservation) =>
     String(reservation.id) === String(id) ? updated : reservation
   );
@@ -90,6 +105,9 @@ export function mapReservationFromApi(raw = {}) {
     paid_status: raw.paid_status,
     items: raw.items,
     technicians: raw.technicians,
+    company_share_percent: raw.company_share_percent ?? raw.companySharePercent ?? raw.company_share ?? raw.companyShare,
+    company_share_enabled: raw.company_share_enabled ?? raw.companyShareEnabled ?? raw.company_share_applied ?? raw.companyShareApplied,
+    company_share_amount: raw.company_share_amount ?? raw.companyShareAmount,
   });
 }
 
@@ -126,6 +144,38 @@ export function toInternalReservation(raw = {}) {
     ? Boolean(raw.confirmed)
     : ['confirmed', 'in_progress', 'completed'].includes(String(raw.status ?? '').toLowerCase());
 
+  const rawCompanySharePercent = raw.company_share_percent
+    ?? raw.companySharePercent
+    ?? raw.company_share
+    ?? raw.companyShare
+    ?? null;
+  const parsedCompanySharePercent = rawCompanySharePercent != null
+    ? Number.parseFloat(normalizeNumbers(String(rawCompanySharePercent).replace('%', '').trim()))
+    : NaN;
+  const shareEnabledRaw = raw.company_share_enabled
+    ?? raw.companyShareEnabled
+    ?? raw.company_share_applied
+    ?? raw.companyShareApplied
+    ?? null;
+  let companyShareEnabled = shareEnabledRaw != null
+    ? (shareEnabledRaw === true || shareEnabledRaw === 1 || shareEnabledRaw === '1' || String(shareEnabledRaw).toLowerCase() === 'true')
+    : Number.isFinite(parsedCompanySharePercent) && parsedCompanySharePercent > 0;
+  let companySharePercent = companyShareEnabled && Number.isFinite(parsedCompanySharePercent)
+    ? Number(parsedCompanySharePercent)
+    : 0;
+  const companyShareAmountRaw = raw.company_share_amount ?? raw.companyShareAmount;
+  let companyShareAmount = Number.isFinite(Number(companyShareAmountRaw))
+    ? Number(companyShareAmountRaw)
+    : (companySharePercent > 0 ? Math.max(0, totalAmount * (companySharePercent / 100)) : 0);
+  if (applyTax && companySharePercent <= 0) {
+    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+    companyShareAmount = Math.max(0, totalAmount * (companySharePercent / 100));
+    companyShareEnabled = true;
+  }
+  if (!companyShareEnabled && companySharePercent > 0) {
+    companyShareEnabled = true;
+  }
+
   return {
     id: idValue != null ? String(idValue) : '',
     reservationId: reservationCode ?? (idValue != null ? String(idValue) : ''),
@@ -153,6 +203,9 @@ export function toInternalReservation(raw = {}) {
     startDatetime: start,
     endDatetime: end,
     customerPhone: raw.customer_phone ?? raw.customerPhone ?? null,
+    companySharePercent,
+    companyShareAmount,
+    companyShareEnabled,
   };
 }
 
@@ -191,6 +244,8 @@ export function buildReservationPayload({
   confirmed,
   items,
   technicians,
+  companySharePercent,
+  companyShareEnabled,
 }) {
   return {
     reservation_code: reservationCode ?? null,
@@ -216,6 +271,10 @@ export function buildReservationPayload({
           notes: item.notes ?? null,
         }))
       : [],
+    company_share_percent: companyShareEnabled && Number.isFinite(companySharePercent)
+      ? Number(companySharePercent)
+      : null,
+    company_share_enabled: companyShareEnabled ? 1 : 0,
     technicians: Array.isArray(technicians)
       ? technicians.map((tech) => {
           if (typeof tech === 'object' && tech !== null) {

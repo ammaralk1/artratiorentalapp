@@ -2,7 +2,7 @@ import { loadData } from '../storage.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { t } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast } from '../utils.js';
-import { calculateReservationDays } from '../reservationsSummary.js';
+import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
@@ -119,6 +119,8 @@ const QUOTE_FIELD_DEFS = {
     { id: 'crewTotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' },
     { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
+    { id: 'companyShare', labelKey: 'reservations.details.labels.companyShare', fallback: '🏦 نسبة الشركة' },
+    { id: 'netProfit', labelKey: 'reservations.details.labels.netProfit', fallback: 'صافي الربح' },
     { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
   ],
   payment: [
@@ -944,12 +946,42 @@ function collectReservationFinancials(reservation, technicians, project) {
   const computedTotal = taxableAmount + taxAmount;
   const finalTotal = projectLinked ? Math.round(computedTotal) : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
+  const rawCompanySharePercent = reservation.companySharePercent
+    ?? reservation.company_share_percent
+    ?? reservation.companyShare
+    ?? reservation.company_share
+    ?? null;
+  const parsedCompanySharePercent = rawCompanySharePercent != null
+    ? parseFloat(normalizeNumbers(String(rawCompanySharePercent).replace('%', '').trim()))
+    : NaN;
+  const shareEnabledRaw = reservation.companyShareEnabled
+    ?? reservation.company_share_enabled
+    ?? reservation.companyShareApplied
+    ?? reservation.company_share_applied
+    ?? null;
+  const companyShareEnabled = shareEnabledRaw != null
+    ? (shareEnabledRaw === true || shareEnabledRaw === 1 || shareEnabledRaw === '1' || String(shareEnabledRaw).toLowerCase() === 'true')
+    : (Number.isFinite(parsedCompanySharePercent) && parsedCompanySharePercent > 0);
+  let companySharePercent = companyShareEnabled && Number.isFinite(parsedCompanySharePercent)
+    ? Number(parsedCompanySharePercent)
+    : 0;
+  if (applyTaxFlag && companySharePercent <= 0) {
+    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+  const companyShareAmount = companySharePercent > 0
+    ? Math.max(0, (finalTotal ?? 0) * (companySharePercent / 100))
+    : 0;
+  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount);
+
   const totals = {
     equipmentTotal,
     crewTotal,
     discountAmount,
     taxAmount,
-    finalTotal: finalTotal ?? 0
+    finalTotal: finalTotal ?? 0,
+    companySharePercent,
+    companyShareAmount,
+    netProfit
   };
 
   const totalsDisplay = {
@@ -957,7 +989,10 @@ function collectReservationFinancials(reservation, technicians, project) {
     crewTotal: normalizeNumbers(crewTotal.toFixed(2)),
     discountAmount: normalizeNumbers(discountAmount.toFixed(2)),
     taxAmount: normalizeNumbers(taxAmount.toFixed(2)),
-    finalTotal: normalizeNumbers((finalTotal ?? 0).toFixed(2))
+    finalTotal: normalizeNumbers((finalTotal ?? 0).toFixed(2)),
+    companySharePercent: normalizeNumbers(companySharePercent.toFixed(2)),
+    companyShareAmount: normalizeNumbers(companyShareAmount.toFixed(2)),
+    netProfit: normalizeNumbers(netProfit.toFixed(2))
   };
 
   return {
@@ -972,6 +1007,7 @@ function buildQuotationHtml({
   customer,
   project,
   technicians,
+  totals,
   totalsDisplay,
   rentalDays,
   currencyLabel,
@@ -1096,10 +1132,26 @@ function buildQuotationHtml({
   if (isFieldEnabled('financialSummary', 'taxAmount')) {
     financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
   }
+  if (companySharePercent > 0 && isFieldEnabled('financialSummary', 'companyShare')) {
+    const sharePercentDisplay = totalsDisplay.companySharePercent ?? normalizeNumbers(companySharePercent.toFixed(2));
+    const shareAmountDisplay = totalsDisplay.companyShareAmount ?? normalizeNumbers(companyShareAmount.toFixed(2));
+    const shareValue = `${sharePercentDisplay}% (${shareAmountDisplay} ${currencyLabel})`;
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.companyShare', '🏦 نسبة الشركة'), shareValue));
+  }
 
   const showFinalTotal = isFieldEnabled('financialSummary', 'finalTotal');
-  const financialFinalHtml = showFinalTotal
-    ? `<div class="totals-final">${renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' })}</div>`
+  const showNetProfit = isFieldEnabled('financialSummary', 'netProfit')
+    && Number.isFinite(netProfit)
+    && Math.abs((netProfit ?? 0) - (totals?.finalTotal ?? 0)) > 0.009;
+  const financialFinalItems = [];
+  if (showFinalTotal) {
+    financialFinalItems.push(renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' }));
+  }
+  if (showNetProfit) {
+    financialFinalItems.push(renderTotalsItem(t('reservations.details.labels.netProfit', '💵 صافي الربح'), `${totalsDisplay.netProfit} ${currencyLabel}`, { variant: 'final' }));
+  }
+  const financialFinalHtml = financialFinalItems.length
+    ? `<div class="totals-final">${financialFinalItems.join('')}</div>`
     : '';
 
   const financialSectionMarkup = includeSection('financialSummary')
@@ -1739,6 +1791,7 @@ function renderQuotePreview() {
     customer: activeQuoteState.customer,
     project: activeQuoteState.project,
     technicians: activeQuoteState.technicians,
+    totals: activeQuoteState.totals,
     totalsDisplay: activeQuoteState.totalsDisplay,
     rentalDays: activeQuoteState.rentalDays,
     currencyLabel: activeQuoteState.currencyLabel,
@@ -2076,8 +2129,9 @@ async function exportQuoteAsPdf() {
       reservation: activeQuoteState.reservation,
       customer: activeQuoteState.customer,
       project: activeQuoteState.project,
-      technicians: activeQuoteState.technicians,
-      totalsDisplay: activeQuoteState.totalsDisplay,
+    technicians: activeQuoteState.technicians,
+    totals: activeQuoteState.totals,
+    totalsDisplay: activeQuoteState.totalsDisplay,
       rentalDays: activeQuoteState.rentalDays,
       currencyLabel: activeQuoteState.currencyLabel,
       sections: activeQuoteState.sections,

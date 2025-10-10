@@ -6,7 +6,7 @@ import {
   findEquipmentByBarcode,
   isEquipmentInMaintenance
 } from '../reservationsEquipment.js';
-import { renderEditSummary } from '../reservationsSummary.js';
+import { renderEditSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import {
   editReservation,
   setupEditReservationModalEvents,
@@ -16,7 +16,7 @@ import {
   saveReservationChanges
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
-import { findEquipmentByDescription, hasExactEquipmentDescription, updatePaymentStatusAppearance } from './createForm.js';
+import { findEquipmentByDescription, hasExactEquipmentDescription, updatePaymentStatusAppearance, getCompanySharePercent, ensureCompanyShareEnabled } from './createForm.js';
 
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
@@ -115,6 +115,14 @@ export function updateEditReservationSummary() {
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = paidSelect?.value || 'unpaid';
   updatePaymentStatusAppearance(paidSelect, paidStatus);
+  if (applyTax) {
+    ensureCompanyShareEnabled('edit-res-company-share');
+  }
+  let companySharePercent = getCompanySharePercent('edit-res-company-share');
+  if (applyTax && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
+    ensureCompanyShareEnabled('edit-res-company-share');
+    companySharePercent = getCompanySharePercent('edit-res-company-share');
+  }
 
   const { items: editingItems = [] } = getEditingState();
   const { start, end } = getEditReservationDateRange();
@@ -126,7 +134,8 @@ export function updateEditReservationSummary() {
     applyTax,
     paidStatus,
     start,
-    end
+    end,
+    companySharePercent
   });
 }
 

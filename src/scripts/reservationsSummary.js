@@ -66,6 +66,77 @@ export function calculateReservationDays(start, end) {
   return Math.max(1, Math.ceil(diffDays));
 }
 
+function calculateDraftFinancialBreakdown({
+  items = [],
+  technicianIds = [],
+  discount = 0,
+  discountType = 'percent',
+  applyTax = false,
+  start = null,
+  end = null,
+  companySharePercent = null
+} = {}) {
+  const rentalDays = calculateReservationDays(start, end);
+  const equipmentDailyTotal = (items || []).reduce(
+    (sum, item) => sum + ((Number(item?.qty) || 1) * (Number(item?.price) || 0)),
+    0
+  );
+  const equipmentTotal = equipmentDailyTotal * rentalDays;
+
+  const techniciansCostPerDay = calculateTechniciansCost(technicianIds);
+  const crewTotal = techniciansCostPerDay * rentalDays;
+
+  const discountBase = equipmentTotal + crewTotal;
+  const discountValue = Number(discount) || 0;
+  let discountAmount = discountType === 'amount'
+    ? discountValue
+    : discountBase * (discountValue / 100);
+
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > discountBase) {
+    discountAmount = discountBase;
+  }
+
+  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  let taxAmount = applyTax ? taxableAmount * 0.15 : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+
+  const interimTotal = taxableAmount + taxAmount;
+  const finalTotal = Math.max(0, Math.round(interimTotal));
+
+  let normalizedSharePercent = Number.isFinite(companySharePercent)
+    ? Number(companySharePercent)
+    : null;
+  if (applyTax && (!Number.isFinite(normalizedSharePercent) || normalizedSharePercent <= 0)) {
+    normalizedSharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+  const sharePercent = normalizedSharePercent && normalizedSharePercent > 0
+    ? normalizedSharePercent
+    : 0;
+  const companyShareAmount = sharePercent > 0
+    ? Math.max(0, finalTotal * (sharePercent / 100))
+    : 0;
+
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount);
+
+  return {
+    rentalDays,
+    equipmentTotal,
+    crewTotal,
+    discountAmount,
+    taxableAmount,
+    taxAmount,
+    finalTotal,
+    companySharePercent: sharePercent,
+    companyShareAmount,
+    netProfit
+  };
+}
+
 export function calculateReservationTotal(
   items = [],
   discount = 0,
@@ -74,27 +145,16 @@ export function calculateReservationTotal(
   technicianIds = [],
   { start = null, end = null } = {}
 ) {
-  const rentalDays = calculateReservationDays(start, end);
-
-  const equipmentSubtotal = items.reduce(
-    (sum, item) => sum + (item.qty || 1) * (item.price || 0),
-    0
-  ) * rentalDays;
-
-  const techniciansCostPerDay = calculateTechniciansCost(technicianIds);
-  let total = equipmentSubtotal + (techniciansCostPerDay * rentalDays);
-
-  if (discount) {
-    if (discountType === 'percent') {
-      total -= total * (discount / 100);
-    } else if (discountType === 'amount') {
-      total -= discount;
-    }
-  }
-
-  if (applyTax) total += total * 0.15;
-
-  return Math.max(0, Math.round(total));
+  const breakdown = calculateDraftFinancialBreakdown({
+    items,
+    technicianIds,
+    discount,
+    discountType,
+    applyTax,
+    start,
+    end
+  });
+  return breakdown.finalTotal;
 }
 
 export function buildSummaryHtml({
@@ -106,6 +166,8 @@ export function buildSummaryHtml({
   paidStatus,
   companySharePercent = null,
   companyShareAmount = null,
+  taxAmount = null,
+  netProfit = null,
   totalKey = 'reservations.summary.total'
 }) {
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
@@ -124,7 +186,9 @@ export function buildSummaryHtml({
   const paymentLabel = t('reservations.summary.paymentLabelShort', '💳 حالة الدفع');
   const totalLabel = t(totalKey.replace('.total', '.totalLabel'), '💰 التكلفة الإجمالية');
   const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
-  
+  const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
+  const netProfitValue = Number.isFinite(netProfit) ? Math.max(0, Number(netProfit)) : null;
+
   const summaryRows = [
     { label: itemsLabel, value: itemsCountDisplay },
     { label: daysLabel, value: rentalDaysDisplay },
@@ -132,7 +196,11 @@ export function buildSummaryHtml({
   ];
 
   if (applyTax) {
-    const taxValue = t('reservations.summary.taxIncludedValue', 'شامل 15%');
+    let taxValue = t('reservations.summary.taxIncludedValue', 'شامل 15%');
+    if (Number.isFinite(taxAmount) && taxAmount > 0) {
+      const taxDisplay = normalizeNumbers(Number(taxAmount).toFixed(2));
+      taxValue = `${taxDisplay} ${currencyLabel}`;
+    }
     summaryRows.push({ label: taxLabelShort, value: taxValue });
   }
 
@@ -150,6 +218,11 @@ export function buildSummaryHtml({
     );
     const shareValue = `${sharePercentDisplay}% (${shareAmountDisplay} ${currencyLabel})`;
     summaryRows.push({ label: companyShareLabel, value: shareValue });
+  }
+
+  if (netProfitValue !== null && Math.abs(netProfitValue - Number(total)) > 0.009) {
+    const netDisplay = normalizeNumbers(netProfitValue.toFixed(2));
+    summaryRows.push({ label: netProfitLabel, value: `${netDisplay} ${currencyLabel}` });
   }
 
   summaryRows.push({ label: paymentLabel, value: paidText });
@@ -186,21 +259,28 @@ export function renderDraftSummary({
 }) {
   const technicianIds = getSelectedTechnicians();
   const techniciansCount = technicianIds.length;
-  const rentalDays = calculateReservationDays(start, end);
-  const total = calculateReservationTotal(selectedItems, discount, discountType, applyTax, technicianIds, { start, end });
-  const sharePercent = Number.isFinite(companySharePercent) ? companySharePercent : null;
-  const companyShareAmount = sharePercent && sharePercent > 0
-    ? Math.max(0, total * (sharePercent / 100))
-    : null;
+  const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
+  const breakdown = calculateDraftFinancialBreakdown({
+    items: selectedItems,
+    technicianIds,
+    discount,
+    discountType,
+    applyTax,
+    start,
+    end,
+    companySharePercent: sharePercent
+  });
   const summaryHtml = buildSummaryHtml({
-    total,
+    total: breakdown.finalTotal,
     itemsCount: selectedItems.length,
-    rentalDays,
+    rentalDays: breakdown.rentalDays,
     techniciansCount,
     applyTax,
     paidStatus,
-    companySharePercent: sharePercent,
-    companyShareAmount
+    companySharePercent: breakdown.companySharePercent,
+    companyShareAmount: breakdown.companyShareAmount,
+    taxAmount: breakdown.taxAmount,
+    netProfit: breakdown.netProfit
   });
 
   setSummaryHtml(summaryHtml);
@@ -218,21 +298,28 @@ export function renderEditSummary({
 }) {
   const technicianIds = getEditingTechnicians();
   const techniciansCount = technicianIds.length;
-  const rentalDays = calculateReservationDays(start, end);
-  const total = calculateReservationTotal(items, discount, discountType, applyTax, technicianIds, { start, end });
-  const sharePercent = Number.isFinite(companySharePercent) ? companySharePercent : null;
-  const companyShareAmount = sharePercent && sharePercent > 0
-    ? Math.max(0, total * (sharePercent / 100))
-    : null;
+  const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
+  const breakdown = calculateDraftFinancialBreakdown({
+    items,
+    technicianIds,
+    discount,
+    discountType,
+    applyTax,
+    start,
+    end,
+    companySharePercent: sharePercent
+  });
   return buildSummaryHtml({
-    total,
+    total: breakdown.finalTotal,
     itemsCount: items.length,
-    rentalDays,
+    rentalDays: breakdown.rentalDays,
     techniciansCount,
     applyTax,
     paidStatus,
-    companySharePercent: sharePercent,
-    companyShareAmount,
+    companySharePercent: breakdown.companySharePercent,
+    companyShareAmount: breakdown.companyShareAmount,
+    taxAmount: breakdown.taxAmount,
+    netProfit: breakdown.netProfit,
     totalKey: 'reservations.summary.totalAfterEdit'
   });
 }

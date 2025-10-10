@@ -122,8 +122,8 @@ function getProjectDisplayName(project) {
   return t('projects.fallback.untitled', 'مشروع بدون اسم');
 }
 
-function getCompanySharePercent() {
-  const shareInput = document.getElementById('res-company-share');
+export function getCompanySharePercent(elementId = 'res-company-share') {
+  const shareInput = document.getElementById(elementId);
   if (!shareInput || !shareInput.checked) {
     return null;
   }
@@ -135,6 +135,19 @@ function getCompanySharePercent() {
     return DEFAULT_COMPANY_SHARE_PERCENT;
   }
   return parsed;
+}
+
+export function ensureCompanyShareEnabled(elementId = 'res-company-share') {
+  const shareInput = document.getElementById(elementId);
+  if (!shareInput) return;
+  let raw = shareInput.dataset.companyShare ?? shareInput.value ?? DEFAULT_COMPANY_SHARE_PERCENT;
+  let normalized = normalizeNumbers(String(raw).replace('%', '').trim());
+  let parsed = parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    parsed = DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+  shareInput.dataset.companyShare = String(parsed);
+  shareInput.checked = true;
 }
 
 function isProjectConfirmed(project) {
@@ -789,6 +802,9 @@ function renderDraftReservationSummary() {
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
   const { start, end } = getCreateReservationDateRange();
+  if (applyTax) {
+    ensureCompanyShareEnabled();
+  }
   const companySharePercent = getCompanySharePercent();
 
   const paymentSelect = document.getElementById('res-payment-status');
@@ -824,13 +840,27 @@ function setupSummaryEvents() {
 
   const taxCheckbox = document.getElementById('res-tax');
   if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
-    taxCheckbox.addEventListener('change', renderDraftReservationSummary);
+    taxCheckbox.addEventListener('change', () => {
+      if (taxCheckbox.checked) {
+        ensureCompanyShareEnabled();
+      }
+      renderDraftReservationSummary();
+    });
     taxCheckbox.dataset.listenerAttached = 'true';
   }
 
   const shareCheckbox = document.getElementById('res-company-share');
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
-    shareCheckbox.addEventListener('change', renderDraftReservationSummary);
+    shareCheckbox.addEventListener('change', () => {
+      if (shareCheckbox.checked) {
+        if (!shareCheckbox.dataset.companyShare) {
+          shareCheckbox.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
+        }
+      } else if (taxCheckbox?.checked) {
+        ensureCompanyShareEnabled();
+      }
+      renderDraftReservationSummary();
+    });
     shareCheckbox.dataset.listenerAttached = 'true';
   }
 
@@ -1014,6 +1044,15 @@ async function handleReservationSubmit() {
     technicianIds,
     { start, end }
   );
+  if (applyTax) {
+    ensureCompanyShareEnabled();
+  }
+  let companySharePercent = getCompanySharePercent();
+  if (applyTax && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
+    ensureCompanyShareEnabled();
+    companySharePercent = getCompanySharePercent();
+  }
+  const companyShareEnabled = applyTax || (Number.isFinite(companySharePercent) && companySharePercent > 0);
 
   const reservationCode = generateReservationId();
 
@@ -1038,6 +1077,8 @@ async function handleReservationSubmit() {
       equipmentId: item.equipmentId ?? item.id,
     })),
     technicians: technicianIds,
+    companySharePercent: companyShareEnabled ? companySharePercent : null,
+    companyShareEnabled,
   });
 
   try {

@@ -1140,6 +1140,17 @@
                     </select>
                   </label>
 
+                  <label class="form-control w-full">
+                    <div class="label">
+                      <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.shareLabel">نسبة الشركة</span>
+                    </div>
+                    <select id="reports-share-filter" class="select select-bordered">
+                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.share.all">الكل</option>
+                      <option value="with" data-i18n data-i18n-key="reservations.reports.filters.share.with">مع نسبة الشركة</option>
+                      <option value="without" data-i18n data-i18n-key="reservations.reports.filters.share.without">بدون نسبة الشركة</option>
+                    </select>
+                  </label>
+
                   <label class="form-control w-full xl:col-span-2">
                     <div class="label">
                       <span class="label-text font-semibold" data-i18n data-i18n-key="reservations.reports.filters.searchLabel">البحث</span>
@@ -1174,6 +1185,14 @@
                     <label class="label cursor-pointer gap-2" for="reports-toggle-total">
                       <input id="reports-toggle-total" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="total" checked>
                       <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-share">
+                      <input id="reports-toggle-share" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="share" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.share">نسبة الشركة</span>
+                    </label>
+                    <label class="label cursor-pointer gap-2" for="reports-toggle-net">
+                      <input id="reports-toggle-net" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="net" checked>
+                      <span class="label-text" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</span>
                     </label>
                   </div>
 
@@ -1311,10 +1330,12 @@
                         <th data-report-column="status" data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
                         <th data-report-column="payment" data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
                         <th data-report-column="total" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
+                        <th data-report-column="share" data-i18n data-i18n-key="reservations.reports.results.headers.share">نسبة الشركة</th>
+                        <th data-report-column="net" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</th>
                       </tr>
                     </thead>
                     <tbody id="reports-reservations-body">
-                      <tr><td colspan="6" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                      <tr><td colspan="8" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -1485,6 +1506,10 @@
             </div>
             <div class="col-md-6">
               <div class="d-flex flex-wrap align-items-center gap-3 mt-4 mt-md-0">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-company-share" data-company-share="10">
+                  <label class="form-check-label" for="edit-res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
+                </div>
                 <div class="form-check">
                   <input type="checkbox" class="form-check-input" id="edit-res-tax">
                   <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>

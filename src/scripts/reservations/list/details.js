@@ -3,7 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
-import { calculateReservationDays } from '../../reservationsSummary.js';
+import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
@@ -97,12 +97,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ?? reservation.companyShareApplied;
   const hasCompanyShare = (companyShareEnabledFlag === true)
     || (Number.isFinite(normalizedCompanyShare) && normalizedCompanyShare > 0);
-  const companySharePercent = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
+  let companySharePercent = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
     ? normalizedCompanyShare
     : 0;
-  const companyShareAmount = companySharePercent > 0
+  let companyShareAmount = companySharePercent > 0
     ? Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100))
     : 0;
+  if (applyTaxFlag && companySharePercent <= 0) {
+    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+    companyShareAmount = Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100));
+  }
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -122,6 +126,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const subtotalAfterDiscountLabel = t('reservations.details.labels.subtotalAfterDiscount', 'الإجمالي');
   const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
   const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 نسبة الشركة');
+  const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
   const tableHeaders = {
     index: '#',
     code: t('reservations.details.table.headers.code', 'الكود'),
@@ -176,6 +181,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
+  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount);
+  const netProfitDisplay = normalizeNumbers(netProfit.toFixed(2));
 
   const summaryDetails = [
     { icon: '💳', label: paymentStatusLabel, value: paymentStatusText },
@@ -198,6 +205,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   if (companySharePercent > 0) {
     summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
+  }
+
+  if (Math.abs(netProfit - (finalTotal ?? 0)) > 0.009) {
+    summaryDetails.push({ icon: '💵', label: netProfitLabel, value: `${netProfitDisplay} ${currencyLabel}` });
   }
 
   summaryDetails.push({ icon: '💰', label: finalTotalLabel, value: `${finalTotalDisplay} ${currencyLabel}` });
