@@ -1085,6 +1085,12 @@ function buildQuotationHtml({
   quoteNumber,
   quoteDate
 }) {
+  const {
+    companySharePercent = 0,
+    companyShareAmount = 0,
+    netProfit = 0
+  } = totals || {};
+
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
