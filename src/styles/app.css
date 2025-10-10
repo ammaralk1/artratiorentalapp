@@ -2,6 +2,7 @@
 @import './maintenance.css';
 @import './reservations.css';
 @import './tabs.css';
+@import './reports.css';
 
 @tailwind base;
 @tailwind components;

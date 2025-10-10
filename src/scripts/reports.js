@@ -1931,16 +1931,19 @@ function renderProgressSection(containerId, data) {
 
   container.innerHTML = data
     .map((item) => {
-      const percent = Math.min(item.percent ?? 0, 100);
+      const percent = Math.min(Math.max(item.percent ?? 0, 0), 100);
       const meta = translate('reservations.reports.progress.meta', '{count} حجز', '{count} reservations').replace('{count}', formatNumber(item.rawCount ?? item.value ?? 0));
+      const fillClass = item.className ? `reports-progress-fill ${item.className}` : 'reports-progress-fill';
       return `
-        <div class="flex flex-col gap-2 rounded-2xl border border-base-200 bg-base-100 p-4 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <span class="font-semibold">${item.label}</span>
-            <span class="text-sm font-bold text-primary">${formatNumber(item.percent ?? 0)}%</span>
+        <div class="reports-progress-row">
+          <div class="reports-progress-top">
+            <span>${escapeHtml(item.label)}</span>
+            <span class="reports-progress-value">${formatNumber(item.percent ?? 0)}%</span>
           </div>
-          <progress class="progress progress-primary w-full" value="${percent}" max="100"></progress>
-          <div class="text-xs text-base-content/60">${meta}</div>
+          <div class="reports-progress-bar">
+            <div class="${fillClass}" style="width: ${percent}%;"></div>
+          </div>
+          <div class="reports-progress-meta">${meta}</div>
         </div>
       `;
     })
