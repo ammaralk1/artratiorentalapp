@@ -1767,6 +1767,7 @@ async function renderStatusChart(data) {
         height: 300,
         fontFamily: 'Tajawal, sans-serif',
         toolbar: { show: false },
+        background: 'transparent'
         events: {
           dataPointSelection: (_event, _chartContext, config) => {
             if (config?.dataPointIndex != null) {
