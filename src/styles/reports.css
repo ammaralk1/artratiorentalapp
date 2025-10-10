@@ -712,12 +712,19 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 }
 
 body[dir="rtl"] .reports-card-title {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 body[dir="rtl"] .reports-card-text {
-  align-items: flex-end;
   text-align: right;
+}
+
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
+  flex-direction: row;
+}
+
+body[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
+  align-items: flex-start;
 }
 
 body[dir="ltr"] .reports-card-text {
