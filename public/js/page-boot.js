@@ -1,5 +1,28 @@
 (function () {
   const root = document.documentElement;
+  const FAVICON_PATH = '/favicon_io/favicon.ico';
+
+  function ensureFavicon() {
+    const head = document.head;
+    if (!head) {
+      return;
+    }
+
+    const existing = head.querySelector('link[rel~="icon"]');
+    if (existing) {
+      existing.setAttribute('href', FAVICON_PATH);
+      existing.setAttribute('type', 'image/x-icon');
+      return;
+    }
+
+    const link = document.createElement('link');
+    link.setAttribute('rel', 'icon');
+    link.setAttribute('type', 'image/x-icon');
+    link.setAttribute('href', FAVICON_PATH);
+    head.appendChild(link);
+  }
+
+  ensureFavicon();
 
   if (!root) {
     return;
