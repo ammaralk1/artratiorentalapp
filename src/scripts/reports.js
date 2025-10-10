@@ -1667,12 +1667,8 @@ async function renderTrendChart(data) {
         enabled: false
       },
       fill: {
-        type: ['solid', 'gradient', 'gradient'],
-        gradient: {
-          shadeIntensity: 0.6,
-          opacityFrom: 0.65,
-          opacityTo: 0.1
-        }
+        type: 'solid',
+        opacity: 1
       },
       xaxis: {
         categories,
