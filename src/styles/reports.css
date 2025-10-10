@@ -207,7 +207,7 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations .reports-kpi-card {
-  flex-direction: row;
+  flex-direction: row-reverse;
   justify-content: flex-end;
   gap: 12px;
 }
@@ -215,10 +215,6 @@ body.dark-mode.reports-page {
 .reports-wrapper--reservations .reports-kpi-content {
   align-items: flex-end;
   text-align: right;
-}
-
-.reports-wrapper--reservations .reports-kpi-icon {
-  order: -1;
 }
 
 .reports-subtitle {
@@ -233,14 +229,14 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
 }
 
 .reports-wrapper--reservations .reports-card-title {
-  flex-direction: row;
+  flex-direction: row-reverse;
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
 }
 
 html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
-  flex-direction: row;
+  flex-direction: row-reverse;
 }
 
 html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
@@ -251,7 +247,6 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
 }
 
 .reports-wrapper--reservations .reports-card-icon {
-  order: -1;
   margin-inline-start: 0;
   margin-inline-end: 0;
 }
