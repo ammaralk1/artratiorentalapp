@@ -26,9 +26,24 @@ export async function refreshProjectsFromApi(params = {}) {
 
   const query = searchParams.toString();
   const response = await apiRequest(`/projects/${query ? `?${query}` : ''}`);
-  const records = Array.isArray(response?.data)
-    ? response.data.map(mapProjectFromApi)
-    : [];
+  const payload = response?.data;
+
+  let rawItems = [];
+  if (Array.isArray(payload)) {
+    rawItems = payload;
+  } else if (payload && typeof payload === 'object') {
+    if (Array.isArray(payload.items)) {
+      rawItems = payload.items;
+    } else if (Array.isArray(payload.results)) {
+      rawItems = payload.results;
+    } else if (Array.isArray(payload.data)) {
+      rawItems = payload.data;
+    } else if (Array.isArray(payload.records)) {
+      rawItems = payload.records;
+    }
+  }
+
+  const records = rawItems.map(mapProjectFromApi);
   setProjectsState(records);
   hasFetchedProjects = true;
   return projectsState;
