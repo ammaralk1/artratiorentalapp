@@ -42,8 +42,19 @@ body.dark-mode {
   --reports-error-rgb: 248, 113, 113;
 }
 
+
 .reports-page {
   color: var(--reports-text);
+}
+
+.reports-page .bg-base-100,
+.reports-wrapper .bg-base-100 {
+  background-color: var(--reports-surface) !important;
+}
+
+.reports-page .border-base-200,
+.reports-wrapper .border-base-200 {
+  border-color: var(--reports-border) !important;
 }
 
 .reports-wrapper {

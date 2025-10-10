@@ -141,30 +141,15 @@ export function renderReservationDetails(index, {
 
   const exportBtn = document.getElementById('reservation-details-export-btn');
   if (exportBtn) {
-    exportBtn.onclick = () => {
-      const modalInstance = modalEl && window.bootstrap?.Modal
-        ? window.bootstrap.Modal.getInstance(modalEl) || window.bootstrap.Modal.getOrCreateInstance(modalEl)
-        : null;
-
-      const openPreview = async () => {
-        try {
-          await exportReservationPdf({ reservation, customer, project });
-        } catch (error) {
-          console.error('❌ [reservations] export to PDF failed', error);
-          showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
-        }
-      };
-
-      if (modalEl && modalInstance) {
-        const handleHidden = () => {
-          modalEl.removeEventListener('hidden.bs.modal', handleHidden);
-          openPreview();
-        };
-        exportBtn.blur();
-        modalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
-        modalInstance.hide();
-      } else {
-        openPreview();
+    exportBtn.onclick = async (event) => {
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      exportBtn.blur();
+      try {
+        await exportReservationPdf({ reservation, customer, project });
+      } catch (error) {
+        console.error('❌ [reservations] export to PDF failed', error);
+        showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
       }
     };
   }
