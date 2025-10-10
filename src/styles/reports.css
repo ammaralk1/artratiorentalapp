@@ -211,7 +211,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
   gap: 6px;
   width: min(100%, 960px);
   margin-inline: auto;
-  padding: 12px 16px;
+  padding: 12px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -308,31 +308,31 @@ body[dir="rtl"] .reports-filters {
 
 .reports-filters-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(240px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
+  gap: 6px;
   justify-items: center;
 }
 
 .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
   align-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
   width: min(100%, 960px);
   margin-inline: auto;
-  gap: 8px;
+  gap: 6px;
   justify-items: center;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
 }
 
 .reports-wrapper--reservations .reports-filter-control {
-  min-width: 240px;
+  min-width: 210px;
   min-height: 46px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   width: 100%;
 }
 
@@ -542,17 +542,19 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   margin-right: auto;
 }
 
+
 .reports-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 12px;
+  justify-items: stretch;
 }
 
 .reports-kpi-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 22px;
+  gap: 12px;
+  padding: 18px;
 }
 
 .reports-kpi-icon {
