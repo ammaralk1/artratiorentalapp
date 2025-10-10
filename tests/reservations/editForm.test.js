@@ -22,6 +22,8 @@ const findEquipmentByDescriptionMock = vi.fn();
 const updatePaymentStatusAppearanceMock = vi.fn();
 const ensureCustomerChoicesMock = vi.fn();
 const ensureProjectChoicesMock = vi.fn();
+const ensureCompanyShareEnabledMock = vi.fn();
+const getCompanySharePercentMock = vi.fn(() => 0);
 
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
@@ -58,7 +60,9 @@ vi.mock('../../src/scripts/reservations/createForm.js', () => ({
   populateEquipmentDescriptionLists: vi.fn(),
   updatePaymentStatusAppearance: updatePaymentStatusAppearanceMock,
   ensureCustomerChoices: ensureCustomerChoicesMock,
-  ensureProjectChoices: ensureProjectChoicesMock
+  ensureProjectChoices: ensureProjectChoicesMock,
+  ensureCompanyShareEnabled: ensureCompanyShareEnabledMock,
+  getCompanySharePercent: getCompanySharePercentMock
 }));
 vi.mock('../../src/scripts/reservations/controller.js', () => ({
   renderReservations: vi.fn(),
@@ -94,6 +98,8 @@ describe('reservations/editForm module', () => {
     updatePaymentStatusAppearanceMock.mockReset();
     ensureCustomerChoicesMock.mockReset();
     ensureProjectChoicesMock.mockReset();
+    ensureCompanyShareEnabledMock.mockReset();
+    getCompanySharePercentMock.mockReset().mockReturnValue(0);
     tMock.mockImplementation((key, fallback) => fallback ?? key);
     loadDataMock.mockReturnValue({ reservations: [], technicians: [] });
   });

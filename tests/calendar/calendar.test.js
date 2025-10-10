@@ -4,13 +4,20 @@ const calendarMocks = vi.hoisted(() => {
   const renderMock = vi.fn();
   const destroyMock = vi.fn();
   const changeViewMock = vi.fn();
+  const setOptionMock = vi.fn();
   const constructorMock = vi.fn(() => ({
     render: renderMock,
     destroy: destroyMock,
     changeView: changeViewMock,
-    updateSize: vi.fn()
+    updateSize: vi.fn(),
+    setOption: setOptionMock,
+    removeAllEvents: vi.fn(),
+    addEventSource: vi.fn(),
+    batchRendering: (fn) => {
+      if (typeof fn === 'function') fn();
+    }
   }));
-  return { renderMock, destroyMock, changeViewMock, constructorMock };
+  return { renderMock, destroyMock, changeViewMock, setOptionMock, constructorMock };
 });
 
 const loadDataMock = vi.hoisted(() => vi.fn());
@@ -57,6 +64,7 @@ describe('calendar module', () => {
     calendarMocks.renderMock.mockClear();
     calendarMocks.destroyMock.mockClear();
     calendarMocks.changeViewMock.mockClear();
+    calendarMocks.setOptionMock.mockClear();
     calendarMocks.constructorMock.mockClear();
   });
 
