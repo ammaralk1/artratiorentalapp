@@ -988,6 +988,11 @@ body[dir="ltr"] .reports-card-text {
   font-weight: 500;
 }
 
+.reports-table-card .reports-table tbody td .reservation-chip {
+  display: inline-flex;
+  justify-content: flex-start;
+}
+
 .reports-table-card [dir='rtl'] .reports-table thead th:first-child,
 .reports-table-card [dir='rtl'] .reports-table tbody tr:last-child td:first-child {
   border-top-right-radius: 1.25rem;

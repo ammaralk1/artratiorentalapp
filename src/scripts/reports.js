@@ -935,7 +935,7 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
 
   if (reservation?.notes) parts.push(reservation.notes);
 
-  const { statusValue } = computeReportStatus(reservation);
+  const { statusValue, paid } = computeReportStatus(reservation);
   if (statusValue) parts.push(statusValue);
 
   const paymentStatus = reservation?.paymentStatus || reservation?.payment_status;
@@ -954,7 +954,7 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
     parts.push(project.title, project.code, project.status);
   }
 
-  parts.push(paymentLabelText(reservation));
+  parts.push(paymentLabelText(paid));
 
   (reservation?.items || []).forEach((item) => {
     if (item?.desc) parts.push(item.desc);
@@ -1996,9 +1996,11 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const customerName = customer?.customerName
     || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
 
+  const statusInfo = computeReportStatus(reservation);
+  const statusLabel = getReservationStatusLabel(statusInfo.statusValue);
+  const statusChip = createStatusChip(statusInfo.statusValue, statusLabel);
+  const paymentChip = createPaymentChip(statusInfo.paid);
   const dateLabel = formatDateTime(reservation?.start);
-  const statusLabel = formatReservationStatus(reservation);
-  const paymentLabel = paymentLabelText(reservation);
   const financials = computeReservationFinancials(reservation);
   const totalLabel = formatCurrency(financials.finalTotal);
   const shareLabel = financials.companySharePercent > 0
@@ -2013,33 +2015,49 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     code: { html: escapeHtml(codeText), text: codeText },
     customer: { html: customerHtml, text: customerPlain },
     date: { html: escapeHtml(dateLabel), text: dateLabel },
-    status: { html: escapeHtml(statusLabel), text: statusLabel },
-    payment: { html: escapeHtml(paymentLabel), text: paymentLabel },
+    status: statusChip,
+    payment: paymentChip,
     total: { html: escapeHtml(totalLabel), text: totalLabel },
     share: { html: escapeHtml(shareLabel), text: shareLabel },
     net: { html: escapeHtml(netLabel), text: netLabel }
   };
 }
 
-function paymentLabelText(reservation) {
-  const { paid } = computeReportStatus(reservation);
+function paymentLabelText(paid) {
   return paid
     ? translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid')
     : translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid');
 }
 
-function formatReservationStatus(reservation) {
-  const { statusValue } = computeReportStatus(reservation);
-  if (statusValue === 'completed') {
-    return translate('reservations.list.status.completed', '📁 منتهي', 'Completed');
+function getReservationStatusLabel(statusValue) {
+  switch (statusValue) {
+    case 'completed':
+      return stripLeadingSymbols(translate('reservations.list.status.completed', '📁 منتهي', 'Completed'));
+    case 'confirmed':
+      return stripLeadingSymbols(translate('reservations.list.status.confirmed', '✅ مؤكد', 'Confirmed'));
+    case 'pending':
+      return stripLeadingSymbols(translate('reservations.list.status.pending', '⏳ غير مؤكد', 'Pending'));
+    default:
+      return normalizeNumbers(statusValue || '—');
   }
-  if (statusValue === 'confirmed') {
-    return translate('reservations.list.status.confirmed', '✅ مؤكد', 'Confirmed');
-  }
-  if (statusValue === 'pending') {
-    return translate('reservations.list.status.pending', '⏳ غير مؤكد', 'Pending');
-  }
-  return escapeHtml(statusValue);
+}
+
+function createStatusChip(statusValue, label) {
+  const safeLabel = stripLeadingSymbols(label);
+  const slug = ['completed', 'confirmed', 'pending'].includes(statusValue) ? statusValue : 'info';
+  const chipHtml = `<span class="reservation-chip status-${slug}">${escapeHtml(safeLabel)}</span>`;
+  return { html: chipHtml, text: safeLabel };
+}
+
+function createPaymentChip(paid) {
+  const label = paymentLabelText(paid);
+  const slug = paid ? 'paid' : 'unpaid';
+  const chipHtml = `<span class="reservation-chip status-${slug}">${escapeHtml(label)}</span>`;
+  return { html: chipHtml, text: label };
+}
+
+function stripLeadingSymbols(label) {
+  return normalizeNumbers(String(label ?? '')).replace(/^[^A-Za-z0-9\u0600-\u06FF]+/, '').trim() || '—';
 }
 
 function formatDateTime(value) {
