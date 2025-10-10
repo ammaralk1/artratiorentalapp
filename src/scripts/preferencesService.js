@@ -130,7 +130,8 @@ export function subscribePreferences(listener) {
 
 export function getPreferences({ refresh = false } = {}) {
   if (shouldSkipRemotePreferences()) {
-    return Promise.resolve({ ...DEFAULT_PREFERENCES });
+    const snapshot = getCachedPreferences() || { ...DEFAULT_PREFERENCES };
+    return Promise.resolve(snapshot);
   }
 
   if (!refresh && cachedPreferences) {
@@ -175,7 +176,8 @@ function getNormalizedPreferencesSnapshot(source = null) {
 
 export async function updatePreferences(preferencePatch = {}) {
   if (shouldSkipRemotePreferences()) {
-    return { ...DEFAULT_PREFERENCES, ...preferencePatch };
+    setPreferences(preferencePatch);
+    return getCachedPreferences() || { ...DEFAULT_PREFERENCES };
   }
 
   const body = {};
