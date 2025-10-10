@@ -72,20 +72,21 @@ body.dark-mode {
   border-color: var(--reports-border-strong) !important;
 }
 
+body.reports-page {
+  background: linear-gradient(180deg, rgba(240, 246, 255, 0.88) 0%, rgba(247, 249, 255, 1) 35%, rgba(236, 242, 255, 1) 100%);
+}
+
+html.dark-mode body.reports-page,
+body.dark-mode.reports-page {
+  background: linear-gradient(180deg, rgba(12, 19, 42, 0.96) 0%, rgba(20, 31, 58, 0.96) 40%, rgba(28, 40, 69, 0.94) 100%);
+}
+
 .reports-wrapper {
   display: flex;
   flex-direction: column;
   gap: 24px;
   color: var(--reports-text);
-}
-
-body.reports-page {
-  background: var(--clr-bg, #f4f6fb);
-}
-
-html.dark-mode body.reports-page,
-body.dark-mode.reports-page {
-  background: linear-gradient(180deg, rgba(10, 15, 40, 0.92) 0%, rgba(15, 23, 42, 1) 45%);
+  background: transparent;
 }
 
 .reports-surface-card,

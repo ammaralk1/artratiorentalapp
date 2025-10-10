@@ -2004,22 +2004,8 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
   const netLabel = formatCurrency(financials.netProfit);
 
-  const technicians = (reservation?.technicians || [])
-    .map((id) => technicianMap.get(String(id))?.name)
-    .filter(Boolean);
-
-  const plainSeparator = translate('reservations.list.crew.separator', '، ', ', ');
-  const techniciansDisplay = technicians
-    .map((name) => escapeHtml(name))
-    .join(escapeHtml(plainSeparator));
-
-  const customerHtml = technicians.length
-    ? `${escapeHtml(customerName)}<br><small class="text-base-content/60">${techniciansDisplay}</small>`
-    : escapeHtml(customerName);
-
-  const customerPlain = technicians.length
-    ? `${customerName}${plainSeparator}${technicians.join(plainSeparator)}`
-    : customerName;
+  const customerHtml = escapeHtml(customerName);
+  const customerPlain = customerName;
 
   return {
     code: { html: escapeHtml(codeText), text: codeText },
