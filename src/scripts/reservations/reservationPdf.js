@@ -169,6 +169,75 @@ let activeQuoteState = null;
 let previewZoom = 1;
 let ensureJsPdfPromise = null;
 let ensureHtml2CanvasPromise = null;
+let manualQuoteBackdrop = null;
+let manualQuoteEscapeHandler = null;
+
+function hasBootstrapModalSupport() {
+  return Boolean(window?.bootstrap?.Modal);
+}
+
+function showModalFallback(modalEl) {
+  if (!modalEl) return;
+  if (modalEl.classList.contains('show')) return;
+  modalEl.classList.add('show');
+  modalEl.style.display = 'block';
+  modalEl.removeAttribute('aria-hidden');
+  modalEl.setAttribute('aria-modal', 'true');
+  if (!modalEl.getAttribute('role')) {
+    modalEl.setAttribute('role', 'dialog');
+  }
+  document.body.classList.add('modal-open');
+
+  if (!manualQuoteBackdrop) {
+    manualQuoteBackdrop = document.createElement('div');
+    manualQuoteBackdrop.className = 'modal-backdrop fade show';
+    manualQuoteBackdrop.dataset.quotePdfFallbackBackdrop = 'true';
+    document.body.appendChild(manualQuoteBackdrop);
+  }
+
+  if (!manualQuoteEscapeHandler) {
+    manualQuoteEscapeHandler = (event) => {
+      if (event.key === 'Escape') {
+        hideModalFallback(modalEl);
+      }
+    };
+    document.addEventListener('keydown', manualQuoteEscapeHandler);
+  }
+
+  try {
+    modalEl.focus({ preventScroll: true });
+  } catch (_focusError) {
+    // ignore focus issues on older browsers
+  }
+}
+
+function hideModalFallback(modalEl) {
+  if (!modalEl || !modalEl.classList.contains('show')) return;
+  modalEl.classList.remove('show');
+  modalEl.style.display = 'none';
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.removeAttribute('aria-modal');
+  document.body.classList.remove('modal-open');
+
+  if (manualQuoteBackdrop) {
+    manualQuoteBackdrop.remove();
+    manualQuoteBackdrop = null;
+  }
+
+  if (manualQuoteEscapeHandler) {
+    document.removeEventListener('keydown', manualQuoteEscapeHandler);
+    manualQuoteEscapeHandler = null;
+  }
+}
+
+function showQuoteModalElement(modalEl) {
+  if (!modalEl) return;
+  if (hasBootstrapModalSupport()) {
+    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    return;
+  }
+  showModalFallback(modalEl);
+}
 
 function buildDefaultFieldSelections() {
   const selections = {};
@@ -1957,6 +2026,7 @@ function ensureQuoteModal() {
   modal.tabIndex = -1;
   modal.setAttribute('aria-labelledby', 'reservationQuoteModalLabel');
   modal.setAttribute('aria-hidden', 'true');
+  modal.style.display = 'none';
   modal.innerHTML = `
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
@@ -1994,6 +2064,7 @@ function ensureQuoteModal() {
   const downloadBtn = modal.querySelector('[data-quote-download]');
   const modalHeader = modal.querySelector('.modal-header');
   const headerCloseButton = modalHeader?.querySelector('.btn-close');
+  const dismissButtons = Array.from(modal.querySelectorAll('[data-bs-dismiss="modal"]'));
 
   const headerActions = document.createElement('div');
   headerActions.className = 'quote-preview-header-actions';
@@ -2033,6 +2104,26 @@ function ensureQuoteModal() {
       await exportQuoteAsPdf();
     } finally {
       downloadBtn.disabled = false;
+    }
+  });
+
+  const handleFallbackDismiss = () => {
+    if (!hasBootstrapModalSupport()) {
+      hideModalFallback(modal);
+    }
+  };
+
+  dismissButtons.forEach((button) => {
+    button?.addEventListener('click', handleFallbackDismiss);
+  });
+  if (headerCloseButton && !dismissButtons.includes(headerCloseButton)) {
+    headerCloseButton.addEventListener('click', handleFallbackDismiss);
+  }
+
+  modal.addEventListener('click', (event) => {
+    if (hasBootstrapModalSupport()) return;
+    if (event.target === modal) {
+      hideModalFallback(modal);
     }
   });
 
@@ -2222,9 +2313,7 @@ function openQuoteModal() {
   updateQuoteMeta();
   renderQuotePreview();
 
-  if (window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(refs.modal).show();
-  }
+  showQuoteModalElement(refs.modal);
 }
 
 export async function exportReservationPdf({ reservation, customer, project }) {
