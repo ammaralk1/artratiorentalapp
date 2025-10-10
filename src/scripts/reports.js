@@ -1343,20 +1343,31 @@ function renderReservationsTable(reservations, customers, technicians) {
   const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
   const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
 
+  const exportHeaders = {
+    code: translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
+    customer: translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
+    date: translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
+    status: translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
+    payment: translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
+    total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
+    share: translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+    net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit')
+  };
+
   const rows = [...reservations]
     .sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0))
     .slice(0, 20)
     .map((reservation) => {
       const formatted = formatReservationRow(reservation, customerMap, technicianMap);
       const exportRow = {
-        Reservation: formatted.code.text,
-        Customer: formatted.customer.text,
-        Date: formatted.date.text,
-        Status: formatted.status.text,
-        Payment: formatted.payment.text,
-        Total: formatted.total.text,
-        'Company Share': formatted.share.text,
-        'Net Profit': formatted.net.text
+        [exportHeaders.code]: formatted.code.text,
+        [exportHeaders.customer]: formatted.customer.text,
+        [exportHeaders.date]: formatted.date.text,
+        [exportHeaders.status]: formatted.status.text,
+        [exportHeaders.payment]: formatted.payment.text,
+        [exportHeaders.total]: formatted.total.text,
+        [exportHeaders.share]: formatted.share.text,
+        [exportHeaders.net]: formatted.net.text
       };
       return { formatted, exportRow };
     });
@@ -1494,7 +1505,8 @@ async function exportReport(type) {
 
 function getExportFileName(extension) {
   const stamp = formatDateInput(new Date()).replace(/-/g, '');
-  return `reservations-report-${stamp}.${extension}`;
+  const prefix = translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report');
+  return `${prefix}-${stamp}.${extension}`;
 }
 
 function downloadBlob(content, filename, mime) {
@@ -1536,7 +1548,8 @@ async function exportAsExcel(rows) {
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reservations');
+    const sheetName = translate('reservations.reports.export.sheetName', 'الحجوزات', 'Reservations');
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
     XLSX.writeFile(workbook, getExportFileName('xlsx'));
   } catch (error) {
     console.error('⚠️ [reports] Excel export failed, falling back to CSV', error);
