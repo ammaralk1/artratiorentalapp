@@ -623,8 +623,12 @@ body[dir="ltr"] .reports-card-text {
   margin: 0;
 }
 
+.reports-wrapper--reservations .management-form-header-text {
+  gap: 2px;
+}
+
 .reports-wrapper--reservations .management-form-hint {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-size: 1rem;
 }
 
