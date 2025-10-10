@@ -90,7 +90,7 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations {
-  gap: 18px;
+  gap: 14px;
   align-items: center;
 }
 
@@ -109,11 +109,11 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations .reports-surface-card {
-  width: min(100%, 980px);
+  width: min(100%, 960px);
   margin-inline: auto;
-  padding: 12px 20px;
+  padding: 8px 16px;
   box-sizing: border-box;
-  gap: 14px;
+  gap: 10px;
 }
 
 .reports-surface-card {
@@ -131,7 +131,7 @@ body.dark-mode.reports-page {
 .reports-wrapper--reservations .reports-header-card {
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
 }
 
@@ -198,10 +198,10 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
 .reports-wrapper--reservations .reports-filters {
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  width: min(100%, 980px);
+  gap: 12px;
+  width: min(100%, 960px);
   margin-inline: auto;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -287,7 +287,7 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-field {
-  width: min(700px, 100%);
+  width: min(660px, 100%);
   align-items: center;
   text-align: center;
 }
@@ -308,20 +308,20 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
-  width: min(100%, 980px);
+  width: min(100%, 960px);
   margin-inline: auto;
   gap: 12px;
   justify-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .reports-wrapper--reservations .reports-filter-control {
-  min-width: 300px;
-  min-height: 50px;
-  padding: 12px 16px;
+  min-width: 280px;
+  min-height: 48px;
+  padding: 10px 14px;
   width: 100%;
 }
 
@@ -605,14 +605,26 @@ body[dir="ltr"] .reports-card-text {
   width: fit-content;
   max-width: 100%;
   margin-inline: auto;
-  padding: 10px 16px;
-  border-radius: 16px;
+  padding: 8px 14px;
+  border-radius: 14px;
   align-self: center;
+  gap: 12px;
 }
 
 .reports-wrapper--reservations .reports-header-leading svg {
   width: 32px;
   height: 32px;
+}
+
+.reports-wrapper--reservations .reports-header-leading h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.reports-wrapper--reservations .management-form-hint {
+  margin: 4px 0 0;
+  font-size: 1rem;
 }
 
 .reports-card-header h4 {
