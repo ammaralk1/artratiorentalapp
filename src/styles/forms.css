@@ -72,6 +72,8 @@
 
 .management-form-grid .form-field-notes {
   grid-column: 1 / -1;
+  align-items: center;
+  text-align: center;
 }
 
 .management-form .form-label {
@@ -416,4 +418,44 @@ select.form-select option {
   .management-form-actions {
     gap: 12px;
   }
+}
+:is(html.dark-mode, body.dark-mode) .management-form-grid .form-field-notes {
+  color: inherit;
+}
+
+.management-form-grid .form-field-notes .form-label {
+  width: 100%;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.management-form-grid .form-field-notes textarea.form-control {
+  max-width: 440px;
+  width: 100%;
+  border-radius: 18px;
+  min-height: 120px;
+  padding: 16px 18px;
+  resize: vertical;
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.94), rgba(232, 238, 255, 0.86));
+  box-shadow:
+    0 12px 28px rgba(76, 110, 245, 0.08),
+    0 3px 10px rgba(15, 23, 42, 0.08);
+}
+
+.management-form-grid .form-field-notes textarea.form-control::placeholder {
+  color: rgba(76, 110, 245, 0.7);
+}
+
+:is(html.dark, body.dark) .management-form-grid .form-field-notes textarea.form-control {
+  background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9));
+  border-color: rgba(148, 163, 255, 0.25);
+  color: rgba(226, 232, 240, 0.94);
+  box-shadow:
+    0 14px 32px rgba(8, 14, 32, 0.55),
+    0 0 0 1px rgba(147, 197, 253, 0.12);
+}
+
+:is(html.dark, body.dark) .management-form-grid .form-field-notes textarea.form-control::placeholder {
+  color: rgba(147, 197, 253, 0.78);
 }
