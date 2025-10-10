@@ -576,9 +576,9 @@ html.dark-mode .projects-hero-text {
 .status-chip.status-confirmed,
 .project-reservation-card__badge--confirmed {
   --chip-bg: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.92));
-  --chip-color: #f1fdf6;
-  --chip-shadow: 0 12px 24px rgba(22, 163, 74, 0.32), 0 0 0 2px rgba(250, 255, 250, 0.75);
-  border-color: rgba(15, 44, 27, 0.5);
+  --chip-color: #0d3018;
+  --chip-shadow: 0 12px 24px rgba(22, 163, 74, 0.32), 0 0 0 2px rgba(250, 255, 250, 0.24);
+  text-shadow: 0 0 2px rgba(8, 32, 18, 0.55);
 }
 
 .reservation-chip.status-pending,
