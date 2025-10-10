@@ -139,26 +139,26 @@ body.dark-mode.reports-page {
   font-size: 0.95rem;
 }
 
-body[dir="rtl"] .reports-wrapper--reservations .reports-card-title,
-body[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
+html[dir="rtl"] .reports-wrapper--reservations .reports-card-title,
+html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
   display: flex;
 }
 
-body[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
+html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   flex-direction: row-reverse;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-body[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
+html[dir="rtl"] .reports-wrapper--reservations .reports-card-text {
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
   text-align: right;
 }
 
-body[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
+html[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
   margin-inline-start: 0;
   margin-inline-end: 0;
 }
@@ -173,6 +173,12 @@ body[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
   border-radius: var(--reports-radius-md);
   padding: 16px 18px;
   position: relative;
+}
+
+.reports-wrapper--reservations .reports-filters {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -243,6 +249,11 @@ body[dir="rtl"] .reports-filters {
   min-width: 170px;
 }
 
+.reports-wrapper--reservations .reports-custom-range {
+  justify-content: flex-start;
+  gap: 16px;
+}
+
 .reports-wrapper--reservations .reports-filter-search-row {
   display: flex;
   justify-content: center;
@@ -257,11 +268,6 @@ body[dir="rtl"] .reports-filters {
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-control {
   width: 100%;
-}
-
-.reports-wrapper--reservations .reports-custom-range {
-  justify-content: flex-start;
-  gap: 16px;
 }
 
 .reports-filters-grid {
@@ -392,19 +398,19 @@ body[dir="rtl"] .reports-filters {
   padding-inline: 20px;
 }
 
-body[dir="rtl"] .reports-rtl-card .reports-card-title,
-body[dir="rtl"] .reports-rtl-card .reports-card-text {
+html[dir="rtl"] .reports-rtl-card .reports-card-title,
+html[dir="rtl"] .reports-rtl-card .reports-card-text {
   display: flex;
 }
 
-body[dir="rtl"] .reports-rtl-card .reports-card-title {
+html[dir="rtl"] .reports-rtl-card .reports-card-title {
   flex-direction: row-reverse;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
 }
 
-body[dir="rtl"] .reports-rtl-card .reports-card-text {
+html[dir="rtl"] .reports-rtl-card .reports-card-text {
   flex-direction: column;
   align-items: flex-end;
   text-align: right;
