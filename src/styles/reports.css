@@ -596,10 +596,12 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-wrapper--reservations .reports-header-leading {
-  width: min(100%, 1080px);
+  width: fit-content;
+  max-width: 100%;
   margin-inline: auto;
-  padding: 18px 22px;
+  padding: 16px 22px;
   border-radius: 20px;
+  align-self: center;
 }
 
 .reports-wrapper--reservations .reports-header-leading svg {
