@@ -163,6 +163,49 @@ body.dark-mode.reports-page {
   color: var(--reports-text);
 }
 
+.reports-wrapper--reservations :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-weight: 700;
+  color: var(--reports-text);
+  letter-spacing: 0.01em;
+}
+
+.reports-wrapper--reservations .reports-card-title h4 {
+  font-size: 1.2rem;
+}
+
+.reports-wrapper--reservations :where(p, span, label) {
+  color: var(--reports-muted);
+}
+
+.reports-wrapper--reservations .reports-filter-label,
+.reports-wrapper--reservations .reports-column-summary .reports-filter-label {
+  color: var(--reports-text);
+  font-weight: 700;
+}
+
+.reports-wrapper--reservations .reports-filter-control,
+.reports-wrapper--reservations .reports-column-toggle-label,
+.reports-wrapper--reservations .reports-card-hint {
+  color: var(--reports-text);
+}
+
+.reports-wrapper--reservations .reports-kpi-label {
+  color: var(--reports-muted);
+  font-weight: 600;
+}
+
+.reports-wrapper--reservations .reports-kpi-value {
+  color: var(--reports-text);
+  font-weight: 700;
+}
+
+.reports-wrapper--reservations .reports-card-icon,
+.reports-wrapper--reservations .reports-kpi-icon {
+  background: linear-gradient(135deg, rgba(var(--reports-accent-rgb, 76, 110, 245), 0.18), rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08));
+  color: var(--reports-accent);
+}
+
 .reports-subtitle {
   margin: 0;
   color: var(--reports-muted);
