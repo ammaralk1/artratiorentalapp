@@ -140,34 +140,40 @@ body.dark-mode.reports-page {
 
 .reports-filters {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  background: var(--reports-surface-contrast);
+  border: 1px solid var(--reports-border);
+  border-radius: var(--reports-radius-md);
+  padding: 16px 18px;
 }
 
 body[dir="rtl"] .reports-filters {
-  flex-direction: row-reverse;
   justify-content: flex-end;
 }
 
-body[dir="ltr"] .reports-filters {
-  flex-direction: row;
-  justify-content: flex-start;
+.reports-filters .form-control,
+.reports-filters .form-select {
+  min-width: 190px;
+  border-radius: 14px;
+  border: 1px solid var(--reports-border);
+  box-shadow: none;
 }
 
-.reports-filter-group {
+.reports-filters .filters-search {
+  min-width: min(260px, 100%);
+}
+
+.reports-status-filter {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.reports-filter-group--status {
-  min-width: 220px;
-}
-
-.reports-filter-group label {
-  font-weight: 600;
+.reports-status-label {
+  font-size: 0.85rem;
   color: var(--reports-muted);
 }
 
@@ -178,49 +184,50 @@ body[dir="ltr"] .reports-filters {
 }
 
 .reports-status-chip {
-  border: 1px solid var(--reports-border);
-  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.12);
-  color: var(--reports-accent);
   border-radius: 999px;
-  padding: 6px 14px;
+  padding: 6px 16px;
   font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
   transition: var(--reports-transition);
 }
 
-.reports-status-chip:hover {
-  border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.32);
-  background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.18);
+.reports-status-chip.is-active,
+.reports-status-chip.is-active:hover {
+  background-color: var(--reports-accent);
+  border-color: var(--reports-accent);
+  color: #ffffff;
+  box-shadow: 0 12px 28px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.28);
 }
 
-.reports-status-chip.is-active {
-  background: var(--reports-accent);
-  color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 10px 24px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.35);
+.reports-status-chip:hover {
+  border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.55);
+  color: var(--reports-accent);
 }
 
 .reports-custom-range {
   display: none;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
 }
 
 .reports-custom-range.active {
   display: flex;
 }
 
+.reports-custom-range .form-control {
+  min-width: 170px;
+}
+
 .reports-refresh-btn {
   height: fit-content;
+  min-width: 150px;
 }
 
-body[dir="rtl"] .reports-refresh-btn {
-  margin-right: auto;
-}
-
-body[dir="ltr"] .reports-refresh-btn {
+body[dir="ltr"] .reports-filters .reports-refresh-btn {
   margin-left: auto;
+}
+
+body[dir="rtl"] .reports-filters .reports-refresh-btn {
+  margin-right: auto;
 }
 
 .reports-kpi-grid {

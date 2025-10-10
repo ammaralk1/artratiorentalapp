@@ -51,7 +51,7 @@
     </div>
 
     <section class="reports-wrapper">
-    <div class="reports-surface-card reports-header-card">
+    <div class="reports-surface-card reports-header-card box">
       <div class="reports-card-title reports-header-leading">
         <span class="reports-card-icon" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -67,43 +67,33 @@
           <p class="reports-subtitle" data-i18n data-i18n-key="projects.reports.subtitle">تحليلات تفصيلية لأداء المشاريع، المواعيد النهائية، ونسب التنفيذ.</p>
         </div>
       </div>
-      <div class="reports-filters" id="reports-filters">
-          <div class="reports-filter-group">
-            <label for="reports-search" data-i18n data-i18n-key="projects.reports.filters.search">بحث</label>
-            <input type="search" id="reports-search" class="form-control" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
+      <div class="reports-filters filters-bar d-flex flex-wrap align-items-center gap-2" id="reports-filters">
+          <input type="search" id="reports-search" class="form-control filters-search" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
+
+          <div class="reports-status-filter d-flex flex-wrap align-items-center gap-2">
+            <span class="reports-status-label text-muted fw-semibold" data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</span>
+            <div class="reports-status-chips d-flex flex-wrap gap-2" id="reports-status-chips"></div>
           </div>
-          <div class="reports-filter-group reports-filter-group--status">
-            <label data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</label>
-            <div class="reports-status-chips" id="reports-status-chips"></div>
+
+          <select id="reports-payment" class="form-select">
+            <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
+            <option value="paid" data-i18n data-i18n-key="projects.paymentStatus.paid">مدفوع</option>
+            <option value="unpaid" data-i18n data-i18n-key="projects.paymentStatus.unpaid">غير مدفوع</option>
+          </select>
+
+          <select id="reports-date-range" class="form-select">
+            <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
+            <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
+            <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
+            <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
+            <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
+          </select>
+
+          <div class="reports-custom-range d-flex flex-wrap align-items-center gap-2" id="reports-custom-range">
+            <input type="date" id="reports-start-date" class="form-control" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+            <input type="date" id="reports-end-date" class="form-control" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
           </div>
-          <div class="reports-filter-group">
-            <label for="reports-payment" data-i18n data-i18n-key="projects.reports.filters.payment">حالة الدفع</label>
-            <select id="reports-payment" class="form-select">
-              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
-              <option value="paid" data-i18n data-i18n-key="projects.paymentStatus.paid">مدفوع</option>
-              <option value="unpaid" data-i18n data-i18n-key="projects.paymentStatus.unpaid">غير مدفوع</option>
-            </select>
-          </div>
-          <div class="reports-filter-group">
-            <label for="reports-date-range" data-i18n data-i18n-key="projects.reports.filters.dateRange">نطاق التاريخ</label>
-            <select id="reports-date-range" class="form-select">
-              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
-              <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
-              <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
-              <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
-              <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
-            </select>
-          </div>
-          <div class="reports-custom-range" id="reports-custom-range">
-            <div class="reports-filter-group">
-              <label for="reports-start-date" data-i18n data-i18n-key="projects.reports.filters.start">من</label>
-              <input type="date" id="reports-start-date" class="form-control">
-            </div>
-            <div class="reports-filter-group">
-              <label for="reports-end-date" data-i18n data-i18n-key="projects.reports.filters.end">إلى</label>
-              <input type="date" id="reports-end-date" class="form-control">
-            </div>
-          </div>
+
           <button type="button" class="btn btn-outline-primary reports-refresh-btn" id="reports-refresh" data-i18n data-i18n-key="projects.reports.filters.refresh">تحديث</button>
         </div>
       </div>

@@ -556,7 +556,7 @@ function renderStatusChips() {
   if (!dom.statusChips) return;
   const chipsHtml = STATUS_OPTIONS.map((status) => {
     const label = t(`projects.status.${status}`, status);
-    return `<button type="button" class="reports-status-chip" data-status="${status}">${escapeHtml(label)}</button>`;
+    return `<button type="button" class="btn btn-outline-primary reports-status-chip" data-status="${status}">${escapeHtml(label)}</button>`;
   }).join('');
   dom.statusChips.innerHTML = chipsHtml;
   if (!dom.statusChips.dataset.listenerAttached) {
