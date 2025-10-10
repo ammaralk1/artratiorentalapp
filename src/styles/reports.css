@@ -106,7 +106,7 @@ body.dark-mode.reports-page {
 .reports-wrapper--reservations .reports-surface-card {
   width: min(100%, 1120px);
   margin-inline: auto;
-  padding: 32px 36px;
+  padding: 20px 28px;
   box-sizing: border-box;
 }
 
@@ -192,10 +192,10 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-icon {
 .reports-wrapper--reservations .reports-filters {
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  width: min(100%, 1100px);
+  gap: 18px;
+  width: min(100%, 1240px);
   margin-inline: auto;
-  padding: 20px 24px;
+  padding: 18px 22px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -281,7 +281,7 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filter-search-row .reports-filter-field {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
   align-items: center;
   text-align: center;
 }
@@ -302,9 +302,9 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
-  width: min(100%, 1100px);
+  width: min(100%, 1240px);
   margin-inline: auto;
-  gap: 24px;
+  gap: 22px;
   justify-items: stretch;
 }
 
@@ -316,6 +316,7 @@ body[dir="rtl"] .reports-filters {
   min-width: 260px;
   min-height: 56px;
   padding: 14px 18px;
+  width: 100%;
 }
 
 .reports-filter-field {
@@ -595,26 +596,15 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-wrapper--reservations .reports-header-leading {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
-  text-align: right;
-  width: min(100%, 860px);
+  width: min(100%, 1080px);
   margin-inline: auto;
+  padding: 18px 22px;
+  border-radius: 20px;
 }
 
-.reports-wrapper--reservations .reports-header-leading .reports-card-text {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.reports-wrapper--reservations .reports-card-title {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
-}
-
-.reports-wrapper--reservations .reports-card-text {
-  align-items: flex-end;
-  text-align: right;
+.reports-wrapper--reservations .reports-header-leading svg {
+  width: 32px;
+  height: 32px;
 }
 
 .reports-card-header h4 {
