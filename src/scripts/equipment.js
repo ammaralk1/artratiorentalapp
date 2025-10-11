@@ -170,6 +170,20 @@ function getVariantsForItem(item) {
   return getAllEquipment().filter((entry) => resolveEquipmentGroupKey(entry) === key);
 }
 
+function updateEquipmentHeaderMedia(item) {
+  const cover = document.getElementById('equipment-details-cover');
+  if (!cover) return;
+  const imageUrl = getEquipmentImage(item);
+  if (imageUrl) {
+    const alt = escapeHtml(item.desc || item.description || item.name || '');
+    cover.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="${alt}">`;
+    cover.classList.add('has-image');
+  } else {
+    cover.innerHTML = '<span class="equipment-details-header__placeholder" aria-hidden="true">📦</span>';
+    cover.classList.remove('has-image');
+  }
+}
+
 function getEquipmentFormElements() {
   return {
     category: document.getElementById('edit-equipment-category'),
@@ -212,7 +226,6 @@ function applyEquipmentFormValues(values = {}) {
 function setEquipmentEditMode(isEditing) {
   isEquipmentEditMode = isEditing;
   const elements = getEquipmentFormElements();
-  const toggleBtn = document.getElementById('equipment-edit-toggle');
   const cancelBtn = document.getElementById('equipment-edit-cancel');
   const saveBtn = document.getElementById('save-equipment-changes');
 
@@ -234,16 +247,28 @@ function setEquipmentEditMode(isEditing) {
     }
   });
 
-  if (toggleBtn) {
-    toggleBtn.hidden = isEditing;
-  }
   if (cancelBtn) {
     cancelBtn.hidden = !isEditing;
     cancelBtn.disabled = !isEditing;
   }
   if (saveBtn) {
-    saveBtn.hidden = !isEditing;
-    saveBtn.disabled = !isEditing;
+    saveBtn.disabled = false;
+    const labelKey = isEditing ? 'equipment.modal.actions.save' : 'equipment.modal.actions.edit';
+    const fallback = isEditing ? '💾 حفظ التعديلات' : '✏️ تعديل';
+    saveBtn.textContent = t(labelKey, fallback);
+    saveBtn.dataset.mode = isEditing ? 'save' : 'view';
+  }
+
+  if (isEditing) {
+    const focusTarget = elements.description || elements.category || elements.subcategory;
+    if (focusTarget) {
+      setTimeout(() => {
+        focusTarget.focus();
+        if (typeof focusTarget.select === 'function') {
+          focusTarget.select();
+        }
+      }, 0);
+    }
   }
 }
 
@@ -571,10 +596,12 @@ function renderEquipmentVariantsSection(baseItem) {
         : '';
       const qtyDisplay = normalizeNumbers(String(Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0));
       const variantIndex = allItems.indexOf(variant);
+      const editLabel = escapeHtml(t('equipment.item.actions.edit', '✏️ تعديل'));
+      const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
         ? `<div class="equipment-variant-actions">
-            <button type="button" class="btn btn-outline btn-sm" data-variant-action="edit" data-variant-index="${variantIndex}">${escapeHtml(t('equipment.item.actions.edit', '✏️ تعديل'))}</button>
-            <button type="button" class="btn btn-outline btn-sm" data-variant-action="delete" data-variant-index="${variantIndex}">${escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'))}</button>
+            <button type="button" class="btn btn-sm btn-primary equipment-variant-action" data-variant-action="edit" data-variant-index="${variantIndex}">${editLabel}</button>
+            <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
         : '';
       return `
@@ -1159,11 +1186,12 @@ function openEditEquipmentModal(index) {
     price: primary.price != null ? String(primary.price) : '0',
     image: getEquipmentImage(primary) || '',
     barcode: primary.barcode || '',
-    status: aggregatedStatus,
+    status: primary.status || aggregatedStatus,
   });
 
   setEquipmentEditMode(false);
   currentEquipmentSnapshot = captureEquipmentFormValues();
+  updateEquipmentHeaderMedia(primary);
 
   renderEquipmentVariantsSection(primary);
   currentVariantsContext = {
@@ -1266,6 +1294,7 @@ function refreshVariantsIfNeeded() {
     if (indexField) {
       indexField.value = String(newIndex);
     }
+    activeEquipmentIndex = newIndex;
   }
 
   renderEquipmentVariantsSection(activeItem);
@@ -1287,11 +1316,13 @@ function refreshVariantsIfNeeded() {
       price: primary.price != null ? String(primary.price) : '0',
       image: getEquipmentImage(primary) || '',
       barcode: primary.barcode || '',
-      status: aggregatedStatus,
+      status: primary.status || aggregatedStatus,
     });
 
     currentEquipmentSnapshot = captureEquipmentFormValues();
   }
+
+  updateEquipmentHeaderMedia(primary);
 }
 
 function wireUpEquipmentUI() {
@@ -1328,6 +1359,8 @@ function wireUpEquipmentUI() {
 
 document.getElementById("save-equipment-changes")?.addEventListener("click", async () => {
   if (!isEquipmentEditMode) {
+    currentEquipmentSnapshot = captureEquipmentFormValues();
+    setEquipmentEditMode(true);
     return;
   }
   const indexValue = document.getElementById("edit-equipment-index").value;
@@ -1363,31 +1396,47 @@ document.addEventListener("DOMContentLoaded", () => {
   renderEquipment();
   refreshEquipmentFromApi();
 
-  const editToggle = document.getElementById('equipment-edit-toggle');
-  if (editToggle && !editToggle.dataset.listenerAttached) {
-    editToggle.addEventListener('click', () => {
-      currentEquipmentSnapshot = captureEquipmentFormValues();
-      setEquipmentEditMode(true);
-      const descriptionInput = document.getElementById('edit-equipment-description');
-      descriptionInput?.focus();
-    });
-    editToggle.dataset.listenerAttached = 'true';
-  }
-
   const cancelEditBtn = document.getElementById('equipment-edit-cancel');
   if (cancelEditBtn && !cancelEditBtn.dataset.listenerAttached) {
     cancelEditBtn.addEventListener('click', () => {
       if (currentEquipmentSnapshot) {
         applyEquipmentFormValues(currentEquipmentSnapshot);
       }
+      if (activeEquipmentIndex != null) {
+        const items = getAllEquipment();
+        const baseItem = items[activeEquipmentIndex];
+        if (baseItem) {
+          const variants = getVariantsForItem(baseItem);
+          const primary = variants[0] || baseItem;
+          updateEquipmentHeaderMedia(primary);
+        }
+      }
       setEquipmentEditMode(false);
     });
     cancelEditBtn.dataset.listenerAttached = 'true';
+  }
+
+  const saveButton = document.getElementById('save-equipment-changes');
+  if (saveButton && !saveButton.dataset.listenerAttached) {
+    saveButton.dataset.listenerAttached = 'true';
+    if (!saveButton.dataset.mode) {
+      saveButton.dataset.mode = 'view';
+    }
   }
 });
 
 document.addEventListener("language:changed", () => {
   renderEquipment();
+  setEquipmentEditMode(isEquipmentEditMode);
+  if (activeEquipmentIndex != null) {
+    const items = getAllEquipment();
+    const baseItem = items[activeEquipmentIndex];
+    if (baseItem) {
+      const variants = getVariantsForItem(baseItem);
+      const primary = variants[0] || baseItem;
+      updateEquipmentHeaderMedia(primary);
+    }
+  }
 });
 
 document.addEventListener("equipment:refreshRequested", () => {

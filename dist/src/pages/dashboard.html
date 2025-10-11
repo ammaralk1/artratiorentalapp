@@ -537,13 +537,6 @@
                 <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
                 <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
               </div>
-              <div class="form-field">
-                <label for="technician-status" class="form-label" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
-                <select id="technician-status" class="form-select" required>
-                  <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
-                  <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
-                </select>
-              </div>
               <div class="form-field form-field-notes">
                 <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
                 <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
@@ -576,10 +569,8 @@
             <thead>
               <tr>
                 <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
-                <th data-i18n data-i18n-key="technicians.table.headers.phone">📞 الجوال</th>
                 <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
                 <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
-                <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
                 <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
                 <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
                 <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
@@ -727,9 +718,9 @@
             </div>
             <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
             <input type="hidden" id="maintenance-selected-barcode">
-            <div class="form-field maintenance-issue-field">
-              <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
-              <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
+            <div class="maintenance-issue-wrapper">
+              <label for="maintenance-issue" class="maintenance-issue-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
+              <textarea id="maintenance-issue" class="maintenance-issue-textarea" rows="4" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
             <div class="management-form-actions maintenance-form-actions">
               <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
@@ -964,11 +955,17 @@
             </div>
 
             <div class="row mb-3">
-              <div class="col-12">
-                <div class="reservation-stack">
-                  <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
-                  <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
-                </div>
+              <div class="col-12 reservation-notes-wrapper">
+                <h5 class="reservation-notes__title" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</h5>
+                <p class="reservation-notes__hint" data-i18n data-i18n-key="reservations.create.notes.hint">أضف تفاصيل إضافية لتنسيق الفريق والمعدات.</p>
+                <textarea
+                  id="res-notes"
+                  class="reservation-notes__textarea"
+                  rows="4"
+                  placeholder="اكتب أي ملاحظات إضافية..."
+                  data-i18n
+                  data-i18n-placeholder-key="reservations.create.placeholders.notes"
+                ></textarea>
               </div>
             </div>
 
@@ -990,7 +987,7 @@
                   <div class="reservation-equipment-field">
                     <input type="text" class="form-control" id="equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.barcode">
                   </div>
-                  <div class="reservation-equipment-field">
+                  <div class="reservation-equipment-field reservation-equipment-field--search">
                     <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
                     <datalist id="equipment-description-options"></datalist>
                   </div>
@@ -1440,64 +1437,84 @@
   <div class="modal fade" id="editEquipmentModal" tabindex="-1" aria-labelledby="editEquipmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-i18n data-i18n-key="equipment.modal.title">✏️ تعديل بيانات المعدة</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+        <div class="modal-header equipment-details-header">
+          <h5 class="modal-title equipment-details-header__title" data-i18n data-i18n-key="equipment.modal.title.details">📇 تفاصيل بطاقة المعدة</h5>
+          <div class="equipment-details-header__actions">
+            <div class="equipment-details-header__media" id="equipment-details-cover">
+              <span class="equipment-details-header__placeholder" aria-hidden="true">📦</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          </div>
         </div>
         <div class="modal-body">
-          <form id="edit-equipment-form">
+          <form id="edit-equipment-form" class="equipment-details-form">
             <input type="hidden" id="edit-equipment-index">
+            <input type="hidden" id="edit-equipment-barcode">
+            <input type="hidden" id="edit-equipment-status">
 
-            <div class="mb-3">
-              <label for="edit-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
-              <input type="text" class="form-control" id="edit-equipment-category">
-            </div>
+            <div class="equipment-details-grid">
+              <div class="equipment-details-field">
+                <label for="edit-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
+                <input type="text" class="form-control" id="edit-equipment-category" disabled>
+              </div>
 
-            <div class="mb-3">
-              <label for="edit-equipment-subcategory" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
-              <input type="text" class="form-control" id="edit-equipment-subcategory">
-            </div>
+              <div class="equipment-details-field">
+                <label for="edit-equipment-subcategory" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
+                <input type="text" class="form-control" id="edit-equipment-subcategory" disabled>
+              </div>
 
-            <div class="mb-3">
-              <label for="edit-equipment-description" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
-              <input type="text" class="form-control" id="edit-equipment-description" required>
-            </div>
+              <div class="equipment-details-field equipment-details-field--wide">
+                <label for="edit-equipment-description" class="form-label" data-i18n data-i18n-key="equipment.form.labels.description">📝 الوصف</label>
+                <input type="text" class="form-control" id="edit-equipment-description" required disabled>
+              </div>
 
-            <div class="row">
-              <div class="col-md-6 mb-3">
+              <div class="equipment-details-field">
                 <label for="edit-equipment-quantity" class="form-label" data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</label>
-                <input type="number" class="form-control" id="edit-equipment-quantity" min="1">
+                <input type="number" class="form-control" id="edit-equipment-quantity" min="1" disabled>
               </div>
-              <div class="col-md-6 mb-3">
+
+              <div class="equipment-details-field">
                 <label for="edit-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
-                <input type="number" class="form-control" id="edit-equipment-price" min="0" step="0.01">
+                <input type="number" class="form-control" id="edit-equipment-price" min="0" step="0.01" disabled>
+              </div>
+
+              <div class="equipment-details-field equipment-details-field--wide">
+                <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
+                <input type="text" class="form-control" id="edit-equipment-image" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image" disabled>
               </div>
             </div>
 
-            <div class="mb-3">
-              <label for="edit-equipment-barcode" class="form-label" data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</label>
-              <input type="text" class="form-control" id="edit-equipment-barcode" required>
-            </div>
-
-            <div class="mb-3 equipment-status-field">
-              <label for="edit-equipment-status" class="form-label" data-i18n data-i18n-key="equipment.form.labels.status">⚙️ الحالة</label>
-              <select class="form-select equipment-status-select" id="edit-equipment-status">
-                <option value="متاح" data-i18n data-i18n-key="equipment.form.options.available">✅ متاح</option>
-                <option value="محجوز" data-i18n data-i18n-key="equipment.form.options.booked">📌 محجوز</option>
-                <option value="صيانة" data-i18n data-i18n-key="equipment.form.options.maintenance">🛠️ صيانة</option>
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
-              <input type="text" class="form-control" id="edit-equipment-image" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image">
-            </div>
-
+            <section class="equipment-variants-section" id="equipment-variants-section" hidden>
+              <div class="equipment-variants-section__header">
+                <h6 class="equipment-variants-section__title" data-i18n data-i18n-key="equipment.modal.variants.title">📦 القطع المرتبطة</h6>
+                <span class="badge-soft equipment-variants-count" id="equipment-variants-count">0</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle equipment-variants-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.barcode">الباركود</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.status">الحالة</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.quantity">الكمية</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="equipment-variants-table-body">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted" data-i18n data-i18n-key="equipment.modal.variants.empty">لا توجد قطع مرتبطة أخرى.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="equipment.modal.actions.cancel">❌ إلغاء</button>
-          <button type="button" class="btn btn-primary" id="save-equipment-changes" data-i18n data-i18n-key="equipment.modal.actions.save">💾 حفظ التعديلات</button>
+          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="equipment.modal.actions.close">❌ إغلاق</button>
+          <div class="equipment-details-actions">
+            <button type="button" class="btn btn-secondary" id="equipment-edit-cancel" hidden data-i18n data-i18n-key="equipment.modal.actions.cancelEdit">↩️ إلغاء التعديل</button>
+            <button type="button" class="btn btn-primary" id="save-equipment-changes" data-mode="view" data-i18n data-i18n-key="equipment.modal.actions.edit">✏️ تعديل</button>
+          </div>
         </div>
       </div>
     </div>
