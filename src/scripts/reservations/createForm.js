@@ -1471,13 +1471,21 @@ function setupBarcodeInput() {
   const input = document.getElementById('equipment-barcode');
   if (!input || input.dataset.listenerAttached) return;
 
+  let autoAddTimer = null;
+  const triggerAdd = () => {
+    const raw = input.value;
+    if (!raw?.trim()) return;
+    clearTimeout(autoAddTimer);
+    autoAddTimer = null;
+    addDraftEquipmentByBarcode(raw, input);
+  };
+
   input.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
     event.preventDefault();
-    addDraftEquipmentByBarcode(input.value, input);
+    triggerAdd();
   });
 
-  let autoAddTimer = null;
   const scheduleAutoAdd = () => {
     clearTimeout(autoAddTimer);
     const raw = input.value;
@@ -1485,12 +1493,12 @@ function setupBarcodeInput() {
     const { start, end } = getCreateReservationDateRange();
     if (!start || !end) return;
     autoAddTimer = setTimeout(() => {
-      addDraftEquipmentByBarcode(raw, input);
+      triggerAdd();
     }, 150);
   };
 
   input.addEventListener('input', scheduleAutoAdd);
-  input.addEventListener('change', () => addDraftEquipmentByBarcode(input.value, input));
+  input.addEventListener('change', triggerAdd);
 
   input.dataset.listenerAttached = 'true';
 }

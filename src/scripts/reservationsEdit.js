@@ -501,24 +501,31 @@ export function setupEditReservationModalEvents(context = {}) {
 
   const barcodeInput = document.getElementById('edit-res-equipment-barcode');
   if (barcodeInput && !barcodeInput.dataset.listenerAttached) {
+    let barcodeTimer = null;
+    const triggerBarcodeAdd = () => {
+      if (!barcodeInput.value?.trim()) return;
+      clearTimeout(barcodeTimer);
+      barcodeTimer = null;
+      addEquipmentToEditingReservation?.(barcodeInput);
+    };
+
     barcodeInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
-        addEquipmentToEditingReservation?.(barcodeInput);
+        triggerBarcodeAdd();
       }
     });
-    let barcodeTimer = null;
     const scheduleAutoAdd = () => {
       clearTimeout(barcodeTimer);
       if (!barcodeInput.value?.trim()) return;
       const { start, end } = getEditReservationDateRange();
       if (!start || !end) return;
       barcodeTimer = setTimeout(() => {
-        addEquipmentToEditingReservation?.(barcodeInput);
+        triggerBarcodeAdd();
       }, 150);
     };
     barcodeInput.addEventListener('input', scheduleAutoAdd);
-    barcodeInput.addEventListener('change', () => addEquipmentToEditingReservation?.(barcodeInput));
+    barcodeInput.addEventListener('change', triggerBarcodeAdd);
     barcodeInput.dataset.listenerAttached = 'true';
   }
 
@@ -532,6 +539,8 @@ export function setupEditReservationModalEvents(context = {}) {
     });
     descriptionInput.dataset.listenerAttached = 'true';
   }
+
+  setupEditEquipmentDescriptionInput?.();
 
   const modalElement = document.getElementById('editReservationModal');
   if (modalElement && !modalElement.dataset.cleanupAttached) {
