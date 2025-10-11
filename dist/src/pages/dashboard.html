@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon_io/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="../../favicon_io/favicon.ico">
   <title>لوحة التحكم - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
@@ -30,7 +30,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" crossorigin src="../../assets/dashboard.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService.js">
   <link rel="modulepreload" crossorigin href="../../assets/controller.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.js">
@@ -717,7 +716,7 @@
                 <input type="text" id="maintenance-equipment-search" class="form-control" list="maintenance-equipment-options" placeholder="اكتب اسم المعدة..." data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.search">
                 <datalist id="maintenance-equipment-options"></datalist>
               </div>
-              <div class="form-field">
+              <div class="form-field maintenance-priority-field">
                 <label for="maintenance-priority" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.priority">⚠️ الأولوية</label>
                 <select id="maintenance-priority" class="form-select">
                   <option value="high" data-i18n data-i18n-key="maintenance.form.options.priority.high">مرتفعة</option>
@@ -728,7 +727,7 @@
             </div>
             <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
             <input type="hidden" id="maintenance-selected-barcode">
-            <div class="form-field">
+            <div class="form-field maintenance-issue-field">
               <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
               <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
@@ -746,7 +745,7 @@
             </div>
             <div class="maintenance-stats" id="maintenance-stats"></div>
           </div>
-          <div class="maintenance-filters filters-bar">
+          <div class="maintenance-filters filters-bar maintenance-status-filter">
             <label for="maintenance-status-filter" class="form-label" data-i18n data-i18n-key="maintenance.filters.status.label">الحالة</label>
             <select id="maintenance-status-filter" class="form-select">
               <option value="all" data-i18n data-i18n-key="maintenance.filters.status.all">كل الحالات</option>
@@ -1086,19 +1085,19 @@
         <!-- ✅ تبويب فرعي: التقارير -->
         <div class="sub-tab tab-content" id="reports-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-reports-tab">
           <div id="reservations-report-printable" class="reports-wrapper gap-6 reports-wrapper--reservations">
-            <div class="reports-surface-card reports-header-card box">
-              <div class="reports-card-title reports-header-leading" dir="rtl">
-                <div class="reports-card-text">
-                  <h1 class="fw-bold mb-2" data-i18n data-i18n-key="reservations.reports.title">تقارير الأداء</h1>
-                  <p class="reports-subtitle" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
-                </div>
-                <span class="reports-card-icon" aria-hidden="true">
+            <div class="reports-surface-card reports-header-card box management-form-box">
+              <div class="reports-header-leading management-form-header" dir="rtl">
+                <div class="management-form-icon" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                     <path d="M3 3v18h18"></path>
                     <path d="M7 14l3 -3l4 4l3 -6l4 3"></path>
                   </svg>
-                </span>
+                </div>
+                <div class="management-form-header-text">
+                  <h1 class="fw-bold mb-2" data-i18n data-i18n-key="reservations.reports.title">تقارير الأداء</h1>
+                  <p class="reports-subtitle management-form-hint" data-i18n data-i18n-key="reservations.reports.subtitle">نظرة شاملة على الحجوزات والإيرادات ونسب الإشغال خلال الفترة المحددة.</p>
+                </div>
               </div>
               <div class="reports-filters reports-filters--reservations" id="reservations-reports-filters">
                 <div class="reports-filters-grid reports-filters-grid--primary">
@@ -1157,8 +1156,11 @@
                   </label>
                 </div>
                 <div class="reports-filters-footer">
-                  <div class="reports-column-toggles" id="reports-column-controls">
-                    <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.actions.customizeColumns">تخصيص الأعمدة</span>
+                  <details class="reports-column-toggles" id="reports-column-controls">
+                    <summary class="reports-column-summary">
+                      <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.actions.customizeColumns">تخصيص الأعمدة</span>
+                      <span class="reports-column-caret" aria-hidden="true"></span>
+                    </summary>
                     <div class="reports-column-toggle-grid">
                       <label class="reports-column-toggle" for="reports-toggle-code">
                         <input id="reports-toggle-code" type="checkbox" class="checkbox checkbox-sm" data-column-toggle="code" checked>
@@ -1193,7 +1195,7 @@
                         <span class="reports-column-toggle-label" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</span>
                       </label>
                     </div>
-                  </div>
+                  </details>
                   <div class="reports-actions">
                     <button class="btn btn-primary reports-refresh-btn" id="reports-refresh" type="button" data-i18n data-i18n-key="reservations.reports.actions.refresh">🔄 تحديث</button>
                     <button type="button" class="btn btn-outline btn-sm reports-action-btn" data-export="pdf" data-i18n data-i18n-key="reservations.reports.actions.exportPdf">🖨️ PDF</button>
@@ -1217,7 +1219,7 @@
                 <div class="reports-kpi-icon" aria-hidden="true">💰</div>
                 <div class="reports-kpi-content">
                   <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</p>
-                  <p class="reports-kpi-value" id="reports-kpi-revenue">SAR 0</p>
+                  <p class="reports-kpi-value" id="reports-kpi-revenue">0 ر.س</p>
                   <span class="reports-kpi-meta" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</span>
                 </div>
               </div>
