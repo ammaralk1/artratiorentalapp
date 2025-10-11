@@ -2300,6 +2300,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
   resize: vertical;
   caret-color: var(--clr-text, #1f2d52);
+  width: min(100%, 840px);
+  max-width: min(100%, 840px);
 }
 
 .reservation-notes:focus {
