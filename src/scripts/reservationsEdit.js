@@ -20,6 +20,36 @@ let editingItems = [];
 let modalInstance = null;
 let modalEventsContext = {};
 
+function updateConfirmedControls(value, { disable = false } = {}) {
+  const hiddenInput = document.getElementById('edit-res-confirmed');
+  const toggleBtn = document.getElementById('edit-res-confirmed-btn');
+  const wrapper = document.getElementById('edit-res-confirmed-wrapper');
+  const isConfirmed = Boolean(value);
+
+  if (hiddenInput) {
+    hiddenInput.value = isConfirmed ? 'true' : 'false';
+  }
+
+  if (toggleBtn) {
+    const confirmLabel = toggleBtn.dataset.confirmLabel || '✅ تم التأكيد';
+    const pendingLabel = toggleBtn.dataset.pendingLabel || '⏳ بانتظار التأكيد';
+    toggleBtn.innerHTML = isConfirmed ? confirmLabel : pendingLabel;
+    toggleBtn.dataset.state = isConfirmed ? 'confirmed' : 'pending';
+    toggleBtn.classList.toggle('btn-success', isConfirmed && !disable);
+    toggleBtn.classList.toggle('btn-outline-secondary', !isConfirmed || disable);
+    toggleBtn.disabled = disable;
+    toggleBtn.setAttribute('aria-pressed', isConfirmed ? 'true' : 'false');
+  }
+
+  if (wrapper) {
+    wrapper.classList.toggle('is-disabled', disable);
+  }
+}
+
+function isReservationConfirmed() {
+  return document.getElementById('edit-res-confirmed')?.value === 'true';
+}
+
 export function getEditingState() {
   return { index: editingIndex, items: editingItems };
 }
@@ -212,13 +242,7 @@ export function editReservation(index, {
     shareCheckbox.dataset.companyShare = String(effectiveShare);
   }
 
-  const confirmedCheckbox = document.getElementById('edit-res-confirmed');
-  if (confirmedCheckbox) {
-    confirmedCheckbox.checked = initialConfirmed;
-    confirmedCheckbox.disabled = projectLinked;
-    confirmedCheckbox.classList.toggle('disabled', projectLinked);
-    confirmedCheckbox.closest('.form-check')?.classList.toggle('disabled', projectLinked);
-  }
+  updateConfirmedControls(initialConfirmed, { disable: projectLinked });
 
   const paidSelect = document.getElementById('edit-res-paid');
   if (paidSelect) paidSelect.value = reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid';
@@ -256,7 +280,7 @@ export async function saveReservationChanges({
   const discountRaw = normalizeNumbers(document.getElementById('edit-res-discount')?.value || '0');
   const discount = parseFloat(discountRaw) || 0;
   const discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
-  const confirmed = document.getElementById('edit-res-confirmed')?.checked || false;
+  const confirmed = isReservationConfirmed();
   const paidStatus = document.getElementById('edit-res-paid')?.value || 'unpaid';
   const projectIdValue = document.getElementById('edit-res-project')?.value || '';
   const technicianIds = getEditingTechnicians();
@@ -465,29 +489,34 @@ export function setupEditReservationModalEvents(context = {}) {
   if (projectSelect && !projectSelect.dataset.listenerAttached) {
     projectSelect.addEventListener('change', () => {
       updateEditProjectTaxState();
-      const confirmedCheckbox = document.getElementById('edit-res-confirmed');
-      if (confirmedCheckbox) {
-        const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length
-          ? modalEventsContext.projects
-          : (loadData().projects || []);
-        const selectedProject = projectSelect.value
-          ? projectsList.find((project) => String(project.id) === String(projectSelect.value)) || null
-          : null;
-        const baseReservation = modalEventsContext?.reservation ?? {};
-        const reservationState = {
-          ...baseReservation,
-          projectId: projectSelect.value || null,
-          confirmed: confirmedCheckbox.checked,
-        };
-        const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservationState, selectedProject);
-        confirmedCheckbox.checked = effectiveConfirmed;
-        confirmedCheckbox.disabled = projectLinked;
-        confirmedCheckbox.classList.toggle('disabled', projectLinked);
-        confirmedCheckbox.closest('.form-check')?.classList.toggle('disabled', projectLinked);
-      }
+      const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length
+        ? modalEventsContext.projects
+        : (loadData().projects || []);
+      const selectedProject = projectSelect.value
+        ? projectsList.find((project) => String(project.id) === String(projectSelect.value)) || null
+        : null;
+      const baseReservation = modalEventsContext?.reservation ?? {};
+      const reservationState = {
+        ...baseReservation,
+        projectId: projectSelect.value || null,
+        confirmed: isReservationConfirmed(),
+      };
+      const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservationState, selectedProject);
+      updateConfirmedControls(effectiveConfirmed, { disable: projectLinked });
       updateEditReservationSummary?.();
     });
     projectSelect.dataset.listenerAttached = 'true';
+  }
+
+  const confirmedToggleBtn = document.getElementById('edit-res-confirmed-btn');
+  if (confirmedToggleBtn && !confirmedToggleBtn.dataset.listenerAttached) {
+    confirmedToggleBtn.addEventListener('click', () => {
+      if (confirmedToggleBtn.disabled) return;
+      const nextValue = !isReservationConfirmed();
+      updateConfirmedControls(nextValue);
+      updateEditReservationSummary?.();
+    });
+    confirmedToggleBtn.dataset.listenerAttached = 'true';
   }
 
   const saveBtn = document.getElementById('save-reservation-changes');

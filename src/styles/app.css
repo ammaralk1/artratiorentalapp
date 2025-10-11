@@ -4452,3 +4452,90 @@
     left: auto;
     right: -6px;
   }
+
+.reservation-payment-card {
+  background: linear-gradient(135deg, rgba(247, 249, 255, 0.96), rgba(232, 239, 255, 0.92));
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 1.25rem;
+  padding: clamp(1rem, 1.8vw, 1.6rem);
+  box-shadow:
+    0 18px 38px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.reservation-payment-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: clamp(0.85rem, 1.4vw, 1.2rem);
+}
+
+.reservation-payment-card__title {
+  font-weight: 700;
+  font-size: clamp(1rem, 1.3vw, 1.1rem);
+  color: hsl(var(--bc));
+}
+
+.reservation-payment-card__body {
+  display: grid;
+  gap: clamp(0.85rem, 1.5vw, 1.3rem);
+}
+
+.reservation-payment-card__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.reservation-payment-card__field .form-label {
+  margin-bottom: 0.45rem;
+}
+
+.btn-confirm-toggle {
+  min-height: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-confirm-toggle.btn-success {
+  box-shadow: 0 14px 28px rgba(34, 197, 94, 0.25);
+}
+
+.btn-confirm-toggle:hover:not(:disabled),
+.btn-confirm-toggle:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(59, 130, 246, 0.18);
+}
+
+#edit-res-confirmed-wrapper.is-disabled .btn-confirm-toggle {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+:is(html.dark, body.dark) .reservation-payment-card {
+  background: linear-gradient(135deg, rgba(17, 27, 53, 0.92), rgba(27, 38, 72, 0.88));
+  border-color: rgba(99, 102, 241, 0.32);
+  box-shadow:
+    0 22px 44px rgba(7, 12, 27, 0.6),
+    inset 0 1px 0 rgba(148, 163, 255, 0.08);
+}
+
+:is(html.dark, body.dark) .reservation-payment-card__title {
+  color: rgba(226, 232, 240, 0.94);
+}
+
+:is(html.dark, body.dark) .btn-confirm-toggle {
+  border-color: rgba(148, 163, 255, 0.35);
+  color: rgba(226, 232, 240, 0.9);
+  background: rgba(30, 64, 175, 0.22);
+}
+
+:is(html.dark, body.dark) .btn-confirm-toggle.btn-success {
+  background: rgba(22, 163, 74, 0.28);
+  border-color: rgba(34, 197, 94, 0.5);
+  color: rgba(226, 232, 240, 0.95);
+}
