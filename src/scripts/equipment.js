@@ -678,7 +678,7 @@ function renderEquipmentVariantsSection(baseItem) {
       const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
         ? `<div class="table-action-buttons equipment-variant-actions">
-            <button type="button" class="btn btn-sm equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
+            <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
         : '';
       return `
