@@ -1398,6 +1398,12 @@
     text-align: center;
   }
 
+  :is(.customer-table) thead th:first-child,
+  :is(.customer-table) tbody td:first-child {
+    width: 24rem;
+    min-width: 24rem;
+  }
+
   :is(.customer-table, .technician-table) .table-actions-cell .table-action-buttons {
     display: flex;
     justify-content: center;
