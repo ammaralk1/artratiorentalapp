@@ -763,9 +763,7 @@ function renderEquipmentItem({ item, index }) {
   }
 
   const availabilityHtml = `<span class="equipment-card__availability equipment-card__availability--${availabilityClassModifier}">${availabilityText}</span>`;
-  const statusDisplay = statusToFormValue(item.status);
-  const statusText = `${escapeHtml(labels.status)}: ${escapeHtml(statusDisplay)}`;
-  const statusHtml = `<span class="equipment-card__status-text">${statusText}</span>`;
+  const statusHtml = '';
   const title = item.desc || item.name || "—";
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 

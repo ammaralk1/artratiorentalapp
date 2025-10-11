@@ -56,9 +56,9 @@ describe('reservations/list helpers', () => {
     const { filterReservationEntries } = await import('../../../src/scripts/reservations/list/index.js');
 
     const reservations = [
-      { id: 1, reservationId: 'RSV1', customerId: 1, technicians: ['t1'], confirmed: true, start: '2024-04-02T08:00:00Z', items: [{ barcode: 'A1', desc: 'Camera' }], notes: 'Outdoor shoot', projectId: 1 },
-      { id: 2, reservationId: 'RSV2', customerId: 2, technicians: ['t2'], confirmed: false, start: '2024-05-01T10:00:00Z', items: [{ barcode: 'B1', desc: 'Lights' }], notes: 'Studio', projectId: 2 },
-      { id: 3, reservationId: 'RSV3', customerId: 1, technicians: ['t1', 't3'], confirmed: true, start: '2024-06-05T13:00:00Z', items: [{ barcode: 'C1', desc: 'Drone' }], notes: 'Event', projectId: 3, done: true }
+      { id: 1, reservationId: 'RSV1', customerId: 1, technicians: ['t1'], confirmed: true, createdAt: '2024-04-02T07:00:00Z', start: '2024-04-02T08:00:00Z', items: [{ barcode: 'A1', desc: 'Camera' }], notes: 'Outdoor shoot', projectId: 1 },
+      { id: 2, reservationId: 'RSV2', customerId: 2, technicians: ['t2'], confirmed: false, createdAt: '2024-05-01T09:00:00Z', start: '2024-05-01T10:00:00Z', items: [{ barcode: 'B1', desc: 'Lights' }], notes: 'Studio', projectId: 2 },
+      { id: 3, reservationId: 'RSV3', customerId: 1, technicians: ['t1', 't3'], confirmed: true, createdAt: '2024-06-05T12:00:00Z', start: '2024-06-05T13:00:00Z', items: [{ barcode: 'C1', desc: 'Drone' }], notes: 'Event', projectId: 3, done: true }
     ];
 
     const customersMap = new Map([
@@ -91,7 +91,7 @@ describe('reservations/list helpers', () => {
     expect(result[0]).toMatchObject({ reservation: { id: 3 }, index: 2 });
 
     const sorted = filterReservationEntries({ reservations, filters: {}, customersMap, techniciansMap, projectsMap });
-    expect(sorted.map((entry) => entry.reservation.id)).toEqual([2, 1, 3]);
+    expect(sorted.map((entry) => entry.reservation.id)).toEqual([3, 2, 1]);
   });
 
   it('buildReservationTilesHtml reflects reservation state and formatting', async () => {

@@ -1,5 +1,31 @@
 import { normalizeText, isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 
+function parseIsoDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  const timestamp = date.getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function resolveReservationSortKey(reservation, fallbackIndex = 0) {
+  const created = parseIsoDate(reservation.createdAt ?? reservation.created_at);
+  if (created != null) return created;
+
+  const updated = parseIsoDate(reservation.updatedAt ?? reservation.updated_at);
+  if (updated != null) return updated;
+
+  const start = parseIsoDate(reservation.start);
+  if (start != null) return start;
+
+  const end = parseIsoDate(reservation.end);
+  if (end != null) return end;
+
+  const numericId = Number(reservation.id ?? reservation.reservationId);
+  if (Number.isFinite(numericId)) return numericId;
+
+  return Number.isFinite(fallbackIndex) ? fallbackIndex : 0;
+}
+
 export function filterReservationEntries({ reservations = [], filters = {}, customersMap, techniciansMap, projectsMap }) {
   const entries = reservations.map((reservation, index) => ({ reservation, index }));
 
@@ -78,15 +104,12 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
   });
 
   filtered.sort((a, b) => {
-    const aCompleted = isReservationCompleted(a.reservation);
-    const bCompleted = isReservationCompleted(b.reservation);
-    if (aCompleted !== bCompleted) {
-      return aCompleted ? 1 : -1;
+    const aKey = resolveReservationSortKey(a.reservation, a.index);
+    const bKey = resolveReservationSortKey(b.reservation, b.index);
+    if (aKey !== bKey) {
+      return bKey - aKey;
     }
-
-    const aStart = a.reservation.start ? new Date(a.reservation.start).getTime() : 0;
-    const bStart = b.reservation.start ? new Date(b.reservation.start).getTime() : 0;
-    return bStart - aStart;
+    return b.index - a.index;
   });
 
   return filtered;

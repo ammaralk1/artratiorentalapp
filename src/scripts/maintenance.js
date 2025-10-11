@@ -364,28 +364,10 @@ function populateEquipmentInputs() {
   const { map: openCounts } = getOpenTicketsSummary();
 
   if (datalist) {
-    const blockedSuffix = t('maintenance.form.blockedSuffix', '(صيانة)');
     datalist.innerHTML = options
       .map((option) => {
-        const totalQuantity = Number.isFinite(option.quantity) ? option.quantity : 0;
-        const normalizedBarcode = option.barcode;
-        const openCount = openCounts.get(normalizedBarcode) || 0;
-        const remaining = totalQuantity > 0 ? Math.max(totalQuantity - openCount, 0) : 0;
-        const blocked = isOptionBlocked(option, openCounts);
-        const parts = [option.desc];
-        if (option.displayBarcode) {
-          parts.push(`#${normalizeNumbers(option.displayBarcode)}`);
-        }
-        if (totalQuantity > 0) {
-          parts.push(`(${remaining}/${totalQuantity})`);
-        }
-        if (blocked) {
-          parts.push(blockedSuffix);
-        }
-        const label = parts.join(' ');
         const valueAttr = escapeHtml(option.searchValue || option.desc);
-        const labelAttr = escapeHtml(label);
-        return `<option value="${valueAttr}" label="${labelAttr}"></option>`;
+        return `<option value="${valueAttr}"></option>`;
       })
       .join('');
   }
