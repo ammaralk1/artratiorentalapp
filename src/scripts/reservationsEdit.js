@@ -3,9 +3,9 @@ import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
 import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
-import { normalizeBarcodeValue, isEquipmentInMaintenance } from './reservationsEquipment.js';
+import { normalizeBarcodeValue, getEquipmentAvailabilityStatus } from './reservationsEquipment.js';
 import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
-import { ensureCompanyShareEnabled } from './reservations/createForm.js';
+import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import {
   getReservationsState,
   updateReservationApi,
@@ -300,8 +300,9 @@ export async function saveReservationChanges({
   }
 
   for (const item of editingItems) {
-    if (isEquipmentInMaintenance(item.barcode)) {
-      showToast(t('reservations.toast.updateEquipmentMaintenance', '⚠️ لا يمكن حفظ التعديلات لأن إحدى المعدات قيد الصيانة'));
+    const status = getEquipmentAvailabilityStatus(item.barcode);
+    if (status !== 'available') {
+      showToast(getEquipmentUnavailableMessage(status));
       return;
     }
   }

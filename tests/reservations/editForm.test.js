@@ -6,7 +6,9 @@ const showToastMock = vi.fn();
 const normalizeNumbersMock = vi.fn();
 const resolveItemImageMock = vi.fn();
 const findEquipmentByBarcodeMock = vi.fn();
-const isEquipmentInMaintenanceMock = vi.fn();
+const getEquipmentAvailabilityStatusMock = vi.fn();
+const isEquipmentAvailableMock = vi.fn();
+const isEquipmentUnavailableMock = vi.fn();
 const renderEditSummaryMock = vi.fn();
 const editReservationMock = vi.fn();
 const setupEditReservationModalEventsMock = vi.fn();
@@ -34,7 +36,9 @@ vi.mock('../../src/scripts/utils.js', () => ({
 vi.mock('../../src/scripts/reservationsEquipment.js', () => ({
   resolveItemImage: resolveItemImageMock,
   findEquipmentByBarcode: findEquipmentByBarcodeMock,
-  isEquipmentInMaintenance: isEquipmentInMaintenanceMock
+  getEquipmentAvailabilityStatus: getEquipmentAvailabilityStatusMock,
+  isEquipmentAvailable: isEquipmentAvailableMock,
+  isEquipmentUnavailable: isEquipmentUnavailableMock
 }));
 vi.mock('../../src/scripts/reservationsSummary.js', () => ({
   renderEditSummary: renderEditSummaryMock
@@ -55,6 +59,8 @@ vi.mock('../../src/scripts/reservations/state.js', () => ({
   hasTechnicianConflict: hasTechnicianConflictMock,
   splitDateTime: vi.fn()
 }));
+const getEquipmentUnavailableMessageMock = vi.fn((status) => `غير متاح (${status})`);
+
 vi.mock('../../src/scripts/reservations/createForm.js', () => ({
   findEquipmentByDescription: findEquipmentByDescriptionMock,
   populateEquipmentDescriptionLists: vi.fn(),
@@ -62,7 +68,8 @@ vi.mock('../../src/scripts/reservations/createForm.js', () => ({
   ensureCustomerChoices: ensureCustomerChoicesMock,
   ensureProjectChoices: ensureProjectChoicesMock,
   ensureCompanyShareEnabled: ensureCompanyShareEnabledMock,
-  getCompanySharePercent: getCompanySharePercentMock
+  getCompanySharePercent: getCompanySharePercentMock,
+  getEquipmentUnavailableMessage: getEquipmentUnavailableMessageMock
 }));
 vi.mock('../../src/scripts/reservations/controller.js', () => ({
   renderReservations: vi.fn(),
@@ -87,7 +94,9 @@ describe('reservations/editForm module', () => {
     normalizeNumbersMock.mockReset().mockImplementation((value) => String(value));
     resolveItemImageMock.mockReset().mockReturnValue('img.png');
     findEquipmentByBarcodeMock.mockReset();
-    isEquipmentInMaintenanceMock.mockReset().mockReturnValue(false);
+    getEquipmentAvailabilityStatusMock.mockReset().mockReturnValue('available');
+    isEquipmentAvailableMock.mockReset().mockReturnValue(true);
+    isEquipmentUnavailableMock.mockReset().mockReturnValue(false);
     renderEditSummaryMock.mockReset().mockReturnValue('<div>summary</div>');
     getEditingStateMock.mockReset().mockReturnValue({ index: 0, items: [] });
     setEditingStateMock.mockReset();
@@ -100,6 +109,7 @@ describe('reservations/editForm module', () => {
     ensureProjectChoicesMock.mockReset();
     ensureCompanyShareEnabledMock.mockReset();
     getCompanySharePercentMock.mockReset().mockReturnValue(0);
+    getEquipmentUnavailableMessageMock.mockReset().mockImplementation((status) => `غير متاح (${status})`);
     tMock.mockImplementation((key, fallback) => fallback ?? key);
     loadDataMock.mockReturnValue({ reservations: [], technicians: [] });
   });
@@ -277,6 +287,27 @@ describe('reservations/editForm module', () => {
     expect(showToastMock).toHaveBeenCalled();
   });
 
+  it('addEquipmentToEditingReservation prevents unavailable items', async () => {
+    const barcodeInput = { value: 'b1' };
+    findEquipmentByBarcodeMock.mockReturnValue({ id: 1, barcode: 'B1', desc: 'Cam' });
+    getEquipmentAvailabilityStatusMock.mockReturnValueOnce('maintenance');
+
+    const start = document.createElement('input');
+    start.id = 'edit-res-start';
+    start.value = '2024-06-01';
+    const end = document.createElement('input');
+    end.id = 'edit-res-end';
+    end.value = '2024-06-02';
+    document.body.append(start, end);
+
+    const module = await import('../../src/scripts/reservations/editForm.js');
+    module.addEquipmentToEditingReservation(barcodeInput);
+
+    expect(getEquipmentUnavailableMessageMock).toHaveBeenCalledWith('maintenance');
+    expect(showToastMock).toHaveBeenCalledWith('غير متاح (maintenance)');
+    expect(setEditingStateMock).not.toHaveBeenCalled();
+  });
+
   it('addEquipmentToEditingByDescription adds equipment when available', async () => {
     const input = { value: 'Camera' };
     findEquipmentByDescriptionMock.mockReturnValue({ id: 9, barcode: 'C9', desc: 'Camera', price: 120 });
@@ -298,6 +329,28 @@ describe('reservations/editForm module', () => {
     expect(setEditingStateMock).toHaveBeenCalledWith(0, expect.arrayContaining([expect.objectContaining({ barcode: 'C9' })]));
     expect(input.value).toBe('');
     expect(container.innerHTML).toContain('Camera');
+  });
+
+  it('addEquipmentToEditingByDescription blocks unavailable equipment', async () => {
+    const input = { value: 'Lens' };
+    findEquipmentByDescriptionMock.mockReturnValue({ id: 3, barcode: 'L3', desc: 'Lens', price: 50 });
+    getEquipmentAvailabilityStatusMock.mockReturnValueOnce('reserved');
+
+    const start = document.createElement('input');
+    start.id = 'edit-res-start';
+    start.value = '2024-07-01';
+    const end = document.createElement('input');
+    end.id = 'edit-res-end';
+    end.value = '2024-07-02';
+    document.body.append(start, end);
+
+    const module = await import('../../src/scripts/reservations/editForm.js');
+
+    module.addEquipmentToEditingByDescription(input);
+
+    expect(getEquipmentUnavailableMessageMock).toHaveBeenCalledWith('reserved');
+    expect(showToastMock).toHaveBeenCalledWith('غير متاح (reserved)');
+    expect(setEditingStateMock).not.toHaveBeenCalled();
   });
 
   it('setupEditEquipmentDescriptionInput attaches key handler once', async () => {

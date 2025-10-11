@@ -1,7 +1,14 @@
 import { loadData } from '../storage.js';
 import { showToast, generateReservationId, normalizeNumbers } from '../utils.js';
 import { t } from '../language.js';
-import { resolveItemImage, getEquipmentRecordByBarcode, isEquipmentInMaintenance, findEquipmentByBarcode } from '../reservationsEquipment.js';
+import {
+  resolveItemImage,
+  getEquipmentRecordByBarcode,
+  findEquipmentByBarcode,
+  getEquipmentAvailabilityStatus,
+  isEquipmentUnavailable,
+  isEquipmentAvailable
+} from '../reservationsEquipment.js';
 import { getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
 import { calculateReservationTotal, renderDraftSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import { normalizeText, groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
@@ -67,6 +74,19 @@ function parseEquipmentSearchValue(value) {
     description: first.trim(),
     barcode: rest.join('|').trim(),
   };
+}
+
+export function getEquipmentUnavailableMessage(status) {
+  switch (status) {
+    case 'maintenance':
+      return t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً');
+    case 'reserved':
+      return t('reservations.toast.equipmentReserved', '⚠️ هذه المعدة محجوزة حالياً ولا يمكن إضافتها');
+    case 'retired':
+      return t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً');
+    default:
+      return t('reservations.toast.equipmentUnavailable', '⚠️ هذه المعدة غير متاحة حالياً');
+  }
 }
 
 function getCustomerElements() {
@@ -659,31 +679,113 @@ export function hasExactEquipmentDescription(value, listId = 'equipment-descript
   return equipment.some((item) => normalizeText(item?.desc || item?.description || '') === normalizedDescription);
 }
 
+const STATUS_PRIORITY = {
+  available: 0,
+  reserved: 1,
+  maintenance: 2,
+  retired: 3,
+};
+
+function getStatusPriority(status) {
+  return STATUS_PRIORITY[status] ?? 5;
+}
+
+function describeEquipmentStatus(status) {
+  switch (status) {
+    case 'available':
+      return t('reservations.equipment.status.available', 'متاح');
+    case 'reserved':
+      return t('reservations.equipment.status.reserved', 'محجوز');
+    case 'maintenance':
+      return t('reservations.equipment.status.maintenance', 'صيانة');
+    case 'retired':
+      return t('reservations.equipment.status.retired', 'خارج الخدمة');
+    default:
+      return t('reservations.equipment.status.unknown', 'الحالة غير معروفة');
+  }
+}
+
+function buildEquipmentOptionLabel(entry) {
+  const baseValue = entry.value;
+  if (entry.bestStatus === 'available' && entry.statuses.size === 1) {
+    return baseValue;
+  }
+
+  const statusToDisplay = entry.bestStatus !== 'available'
+    ? entry.bestStatus
+    : [...entry.statuses].find((status) => status !== 'available') || entry.bestStatus;
+
+  if (statusToDisplay === 'available') {
+    return `${baseValue} — ${describeEquipmentStatus(statusToDisplay)}`;
+  }
+
+  const unavailableLabel = t('reservations.equipment.status.unavailable', 'غير متاح');
+  return `${baseValue} — ${unavailableLabel} (${describeEquipmentStatus(statusToDisplay)})`;
+}
+
 function populateEquipmentDescriptionLists() {
   const createList = document.getElementById('equipment-description-options');
   const editList = document.getElementById('edit-res-equipment-description-options');
 
-  const { equipment = [] } = loadData();
-  const equipmentList = Array.isArray(equipment) ? equipment : [];
+  const syncedEquipment = syncEquipmentStatuses();
+  const snapshot = loadData();
+  const rawEquipment = Array.isArray(syncedEquipment) && syncedEquipment.length
+    ? syncedEquipment
+    : (snapshot?.equipment || []);
+
+  const equipmentList = Array.isArray(rawEquipment) ? rawEquipment : [];
   setCachedEquipment(equipmentList);
+
+  const entriesMap = new Map();
+
+  equipmentList.forEach((item) => {
+    const searchValue = buildEquipmentSearchValue(item);
+    const normalizedValue = normalizeEquipmentSearchValue(searchValue);
+    if (!normalizedValue || !searchValue) {
+      return;
+    }
+
+    const status = getEquipmentAvailabilityStatus(item);
+    const priority = getStatusPriority(status);
+    const existing = entriesMap.get(normalizedValue);
+
+    if (!existing) {
+      entriesMap.set(normalizedValue, {
+        normalized: normalizedValue,
+        value: searchValue,
+        bestItem: item,
+        bestStatus: status,
+        bestPriority: priority,
+        statuses: new Set([status]),
+      });
+      return;
+    }
+
+    existing.statuses.add(status);
+    if (priority < existing.bestPriority) {
+      existing.bestItem = item;
+      existing.bestStatus = status;
+      existing.bestPriority = priority;
+      existing.value = searchValue;
+    }
+  });
+
   equipmentDescriptionOptionMap = new Map();
 
-  const optionEntries = Array.from(new Set(
-    equipmentList
-    .map((item) => {
-      const searchValue = buildEquipmentSearchValue(item);
-      const normalizedValue = normalizeEquipmentSearchValue(searchValue);
-      if (normalizedValue) {
-        equipmentDescriptionOptionMap.set(normalizedValue, item);
+  const optionEntries = Array.from(entriesMap.values())
+    .sort((a, b) => a.value.localeCompare(b.value, 'ar', { sensitivity: 'base' }))
+    .map((entry) => {
+      equipmentDescriptionOptionMap.set(entry.normalized, entry.bestItem);
+      const label = buildEquipmentOptionLabel(entry);
+      const valueHtml = escapeHtml(entry.value);
+      if (label === entry.value) {
+        return `<option value="${valueHtml}"></option>`;
       }
-      return searchValue;
-    })
-    .filter(Boolean)
-  )).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
+      const labelHtml = escapeHtml(label);
+      return `<option value="${valueHtml}" label="${labelHtml}"></option>`;
+    });
 
-  const optionsHtml = optionEntries
-    .map((value) => `<option value="${escapeHtml(value)}"></option>`)
-    .join('');
+  const optionsHtml = optionEntries.join('');
 
   if (createList) createList.innerHTML = optionsHtml;
   if (editList) editList.innerHTML = optionsHtml;
@@ -716,8 +818,9 @@ function addDraftEquipmentByBarcode(rawCode, inputElement) {
     return false;
   }
 
-  if (isEquipmentInMaintenance(item.barcode)) {
-    showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
+  const availability = getEquipmentAvailabilityStatus(item);
+  if (availability !== 'available') {
+    showToast(getEquipmentUnavailableMessage(availability));
     return false;
   }
 
@@ -756,8 +859,9 @@ function addDraftEquipmentByDescription(inputElement) {
   }
 
   const latestRecord = getEquipmentRecordByBarcode(equipmentItem.barcode);
-  if (latestRecord?.status === 'صيانة') {
-    showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
+  const availability = getEquipmentAvailabilityStatus(latestRecord || equipmentItem);
+  if (availability !== 'available') {
+    showToast(getEquipmentUnavailableMessage(availability));
     return;
   }
 
@@ -798,11 +902,6 @@ function addDraftEquipmentByDescription(inputElement) {
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
     showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
-    return;
-  }
-
-  if (isEquipmentInMaintenance(normalizedCode)) {
-    showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
     return;
   }
 
@@ -954,7 +1053,7 @@ function increaseReservationGroup(groupKey) {
       price: Number(record?.price) || 0,
     });
     if (candidateKey !== groupKey) return false;
-    if (isEquipmentInMaintenance(barcodeNormalized)) return false;
+    if (!isEquipmentAvailable(record)) return false;
     return !hasEquipmentConflict(barcodeNormalized, start, end);
   });
 
@@ -1199,8 +1298,9 @@ async function handleReservationSubmit() {
   }
 
   for (const item of draftItems) {
-    if (isEquipmentInMaintenance(item.barcode)) {
-      showToast(t('reservations.toast.cannotCreateEquipmentMaintenance', '⚠️ لا يمكن إتمام الحجز لأن إحدى المعدات قيد الصيانة'));
+    const status = getEquipmentAvailabilityStatus(item.barcode);
+    if (status !== 'available') {
+      showToast(getEquipmentUnavailableMessage(status));
       return;
     }
   }

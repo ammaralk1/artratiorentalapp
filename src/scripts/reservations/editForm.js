@@ -5,7 +5,9 @@ import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipment
 import {
   resolveItemImage,
   findEquipmentByBarcode,
-  isEquipmentInMaintenance
+  getEquipmentAvailabilityStatus,
+  isEquipmentUnavailable,
+  isEquipmentAvailable
 } from '../reservationsEquipment.js';
 import { renderEditSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import {
@@ -17,7 +19,14 @@ import {
   saveReservationChanges
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
-import { findEquipmentByDescription, hasExactEquipmentDescription, updatePaymentStatusAppearance, getCompanySharePercent, ensureCompanyShareEnabled } from './createForm.js';
+import {
+  findEquipmentByDescription,
+  hasExactEquipmentDescription,
+  updatePaymentStatusAppearance,
+  getCompanySharePercent,
+  ensureCompanyShareEnabled,
+  getEquipmentUnavailableMessage
+} from './createForm.js';
 
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
@@ -159,7 +168,7 @@ function increaseEditReservationGroup(groupKey) {
       price: Number(record?.price) || 0,
     });
     if (candidateKey !== groupKey) return false;
-    if (isEquipmentInMaintenance(barcodeNormalized)) return false;
+    if (!isEquipmentAvailable(record)) return false;
     return !hasEquipmentConflict(barcodeNormalized, start, end, ignoreId);
   });
 
@@ -298,8 +307,9 @@ export function addEquipmentToEditingReservation(barcodeInput) {
     return;
   }
 
-  if (isEquipmentInMaintenance(code)) {
-    showToast(t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'));
+  const availability = getEquipmentAvailabilityStatus(equipmentItem);
+  if (availability !== 'available') {
+    showToast(getEquipmentUnavailableMessage(availability));
     return;
   }
 
@@ -365,8 +375,9 @@ export function addEquipmentToEditingByDescription(inputElement) {
     return;
   }
 
-  if (isEquipmentInMaintenance(normalizedCode)) {
-    showToast(t('reservations.toast.equipmentMaintenanceStrict', '⚠️ لا يمكن إضافة معدة قيد الصيانة إلى الحجز'));
+  const availability = getEquipmentAvailabilityStatus(equipmentItem);
+  if (availability !== 'available') {
+    showToast(getEquipmentUnavailableMessage(availability));
     return;
   }
 

@@ -57,4 +57,20 @@ describe('reservationsEquipment', () => {
     expect(module.isEquipmentInMaintenance('EQ2')).toBe(true);
     expect(module.isEquipmentInMaintenance('EQ1')).toBe(false);
   });
+
+  it('getEquipmentAvailabilityStatus normalizes various labels', async () => {
+    const module = await import('../../src/scripts/reservationsEquipment.js');
+    loadDataMock.mockReturnValue({ equipment: [
+      { barcode: 'EQ1', status: 'محجوز' },
+      { barcode: 'EQ2', status: 'متاح' },
+      { barcode: 'EQ3', status: 'maintenance' }
+    ] });
+
+    expect(module.getEquipmentAvailabilityStatus('EQ1')).toBe('reserved');
+    expect(module.isEquipmentUnavailable('EQ1')).toBe(true);
+    expect(module.isEquipmentAvailable('EQ1')).toBe(false);
+    expect(module.getEquipmentAvailabilityStatus('EQ2')).toBe('available');
+    expect(module.isEquipmentAvailable('EQ2')).toBe(true);
+    expect(module.getEquipmentAvailabilityStatus('EQ3')).toBe('maintenance');
+  });
 });
