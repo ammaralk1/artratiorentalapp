@@ -107,25 +107,64 @@ function getTicketById(id) {
   return tickets.find((item) => Number(item.id) === Number(id)) || null;
 }
 
+function normalizeEquipmentStatus(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return 'available';
+  if (['maintenance', 'صيانة'].includes(normalized)) return 'maintenance';
+  if (['reserved', 'محجوز'].includes(normalized)) return 'reserved';
+  if (['retired', 'متوقف', 'خارج الخدمة'].includes(normalized)) return 'retired';
+  return 'available';
+}
+
 function getEquipmentOptions() {
   const { equipment = [] } = loadData();
   const fallbackName = t('maintenance.table.noName', 'بدون اسم');
-  equipmentOptions = (equipment || []).map((item) => ({
-    barcode: normalizeBarcodeValue(item?.barcode),
-    desc: item?.desc || item?.description || item?.name || fallbackName,
-    status: item?.status || 'متاح',
-    price: Number(item?.price) || 0,
-    category: item?.category || ''
-  }));
+  equipmentOptions = (equipment || []).map((item) => {
+    const rawBarcode = String(item?.barcode ?? '').trim();
+    const normalizedBarcode = normalizeBarcodeValue(rawBarcode);
+    const quantityValue = Number.parseInt(item?.qty ?? item?.quantity ?? 0, 10);
+    const safeQuantity = Number.isFinite(quantityValue) ? Math.max(quantityValue, 0) : 1;
+    const imageUrl = item?.image || item?.imageUrl || item?.image_url || '';
+    const statusLabel = item?.status || 'متاح';
+    return {
+      id: item?.id ?? item?.equipment_id ?? item?.equipmentId ?? null,
+      barcode: normalizedBarcode,
+      displayBarcode: rawBarcode,
+      desc: item?.desc || item?.description || item?.name || fallbackName,
+      status: statusLabel,
+      statusNormalized: normalizeEquipmentStatus(statusLabel),
+      price: Number(item?.price || item?.unit_price) || 0,
+      category: item?.category || '',
+      quantity: safeQuantity,
+      image: imageUrl,
+    };
+  });
 
   equipmentOptions.sort((a, b) => a.desc.localeCompare(b.desc, 'ar', { sensitivity: 'base' }));
   return equipmentOptions;
 }
 
-function getOpenTicketsSet() {
-  return new Set(loadTickets()
+function getOpenTicketsSummary() {
+  const set = new Set();
+  const map = new Map();
+
+  loadTickets()
     .filter((ticket) => ticket.status === 'open')
-    .map((ticket) => normalizeBarcodeValue(ticket.equipmentBarcode)));
+    .forEach((ticket) => {
+      const normalized = normalizeBarcodeValue(ticket.equipmentBarcode);
+      if (!normalized) return;
+      set.add(normalized);
+      map.set(normalized, (map.get(normalized) || 0) + 1);
+    });
+
+  return { set, map };
+}
+
+function getOpenTicketCount(barcode) {
+  const normalized = normalizeBarcodeValue(barcode);
+  if (!normalized) return 0;
+  const { map } = getOpenTicketsSummary();
+  return map.get(normalized) || 0;
 }
 
 function findEquipmentOptionByBarcode(barcode) {
@@ -142,10 +181,23 @@ function findEquipmentOptionByDescription(term) {
   return options.find((option) => normalizeText(option.desc).includes(normalized)) || null;
 }
 
-function isOptionBlocked(option) {
+function isOptionBlocked(option, openCountsMap = null) {
   if (!option) return true;
-  const openSet = getOpenTicketsSet();
-  return option.status === 'صيانة' || openSet.has(option.barcode);
+
+  const normalizedBarcode = option.barcode;
+  const quantity = Number.isFinite(option.quantity) ? option.quantity : 0;
+  const countsMap = openCountsMap || getOpenTicketsSummary().map;
+  const openCount = countsMap.get(normalizedBarcode) || 0;
+
+  if (quantity <= 0) {
+    return true;
+  }
+
+  if (quantity === 1) {
+    return option.statusNormalized === 'maintenance' || openCount >= 1;
+  }
+
+  return openCount >= quantity;
 }
 
 function clearSelectedEquipment({ keepInputs = false, silent = false } = {}) {
@@ -162,6 +214,7 @@ function clearSelectedEquipment({ keepInputs = false, silent = false } = {}) {
 
   if (info) {
     info.textContent = getDefaultSelectionText();
+    info.classList.remove('maintenance-selected-info--has-selection');
   }
 
   if (!silent) {
@@ -176,10 +229,35 @@ function updateSelectedInfo(option) {
   if (!info) return;
   const barcodeLabel = t('maintenance.info.barcodeLabel', 'باركود');
   const notAvailable = t('maintenance.report.notAvailable', 'غير متوفر');
+  const unitsLabel = t('maintenance.info.unitsAvailable', 'الوحدات المتاحة الآن');
+  const categoryLabel = t('maintenance.info.categoryLabel', 'القسم');
+  const displayBarcode = option.displayBarcode || option.barcode || notAvailable;
+  const normalizedBarcode = option.barcode;
+  const totalQuantity = Number.isFinite(option.quantity) ? option.quantity : 0;
+  const openCount = getOpenTicketCount(normalizedBarcode);
+  const availableQuantity = Math.max(totalQuantity - openCount, 0);
+  const categoryLine = option.category ? `
+    <div class="maintenance-selected-info__meta">${categoryLabel}: <strong>${escapeHtml(option.category)}</strong></div>
+  ` : '';
+  const quantityLine = totalQuantity > 0 ? `
+    <div class="maintenance-selected-info__meta">
+      ${unitsLabel}: <strong>${availableQuantity}</strong> / ${totalQuantity}
+    </div>
+  ` : '';
+  const imageMarkup = option.image
+    ? `<img class="maintenance-selected-info__image" src="${escapeHtml(option.image)}" alt="${escapeHtml(option.desc)}">`
+    : `<div class="maintenance-selected-info__placeholder" aria-hidden="true">🎥</div>`;
+
   info.innerHTML = `
-    <strong>${option.desc}</strong><br>
-    <span class="text-muted">${barcodeLabel}: ${option.barcode || notAvailable}</span>
+    <div class="maintenance-selected-info__media">${imageMarkup}</div>
+    <div class="maintenance-selected-info__body">
+      <div class="maintenance-selected-info__name">${escapeHtml(option.desc)}</div>
+      <div class="maintenance-selected-info__meta">${barcodeLabel}: <strong>${escapeHtml(displayBarcode)}</strong></div>
+      ${quantityLine}
+      ${categoryLine}
+    </div>
   `;
+  info.classList.add('maintenance-selected-info--has-selection');
 }
 
 function selectEquipment(option, { silent = false } = {}) {
@@ -196,7 +274,7 @@ function selectEquipment(option, { silent = false } = {}) {
   const searchInput = document.getElementById('maintenance-equipment-search');
 
   if (hidden) hidden.value = option.barcode;
-  if (barcodeInput) barcodeInput.value = option.barcode;
+  if (barcodeInput) barcodeInput.value = option.displayBarcode || option.barcode;
   if (searchInput) searchInput.value = option.desc;
   updateSelectedInfo(option);
   currentSelection = option;
@@ -227,14 +305,25 @@ function populateEquipmentInputs() {
   const searchInput = document.getElementById('maintenance-equipment-search');
 
   const options = getEquipmentOptions();
-  const openSet = getOpenTicketsSet();
+  const { map: openCounts } = getOpenTicketsSummary();
 
   if (datalist) {
     const blockedSuffix = t('maintenance.form.blockedSuffix', '(صيانة)');
     datalist.innerHTML = options
       .map((option) => {
-        const blocked = option.status === 'صيانة' || openSet.has(option.barcode);
-        const label = blocked ? `${option.desc} ${blockedSuffix}` : option.desc;
+        const totalQuantity = Number.isFinite(option.quantity) ? option.quantity : 0;
+        const normalizedBarcode = option.barcode;
+        const openCount = openCounts.get(normalizedBarcode) || 0;
+        const remaining = totalQuantity > 0 ? Math.max(totalQuantity - openCount, 0) : 0;
+        const blocked = isOptionBlocked(option, openCounts);
+        const parts = [option.desc];
+        if (totalQuantity > 0) {
+          parts.push(`(${remaining}/${totalQuantity})`);
+        }
+        if (blocked) {
+          parts.push(blockedSuffix);
+        }
+        const label = parts.join(' ');
         const value = option.desc.replace(/"/g, '&quot;');
         const labelAttr = label.replace(/"/g, '&quot;');
         return `<option value="${value}" label="${labelAttr}"></option>`;
@@ -245,9 +334,9 @@ function populateEquipmentInputs() {
   const hidden = document.getElementById('maintenance-selected-barcode');
   if (hidden && hidden.value) {
     const current = findEquipmentOptionByBarcode(hidden.value);
-    if (!current || isOptionBlocked(current)) {
+    if (!current || isOptionBlocked(current, openCounts)) {
       clearSelectedEquipment({ keepInputs: true, silent: true });
-      if (current && isOptionBlocked(current)) {
+      if (current && isOptionBlocked(current, openCounts)) {
         showToast(t('maintenance.toast.equipmentBecameBlocked', '⚠️ هذه المعدة أصبحت قيد الصيانة ولا يمكن اختيارها'));
       }
     } else {
@@ -911,7 +1000,9 @@ async function handleFormSubmit(event) {
         barcode: selectedOption.barcode,
         desc: selectedOption.desc,
         name: selectedOption.desc,
-        status: selectedOption.status || 'متاح'
+        status: selectedOption.status || 'متاح',
+        quantity: selectedOption.quantity,
+        qty: selectedOption.quantity,
       };
     }
 
@@ -921,15 +1012,16 @@ async function handleFormSubmit(event) {
       return;
     }
 
-    if (equipmentItem.status === 'صيانة') {
+    const totalQuantityRaw = Number.parseInt(equipmentItem.qty ?? equipmentItem.quantity ?? selectedOption?.quantity ?? 1, 10);
+    const totalQuantity = Number.isFinite(totalQuantityRaw) && totalQuantityRaw > 0 ? totalQuantityRaw : 1;
+    const openCount = getOpenTicketCount(equipmentCode);
+    const normalizedStatus = normalizeEquipmentStatus(equipmentItem.status || selectedOption?.status);
+    if (normalizedStatus === 'maintenance' && totalQuantity <= 1) {
       showToast(t('maintenance.toast.equipmentAlreadyMaintenance', '⚠️ هذه المعدة بالفعل في حالة صيانة'));
       return;
     }
-
-    const openTickets = loadTickets().filter((ticket) => ticket.status === 'open');
-    const duplicate = openTickets.some((ticket) => normalizeBarcodeValue(ticket.equipmentBarcode) === equipmentCode);
-    if (duplicate) {
-      showToast(t('maintenance.toast.ticketExists', '⚠️ توجد تذكرة صيانة مفتوحة لهذه المعدة'));
+    if (openCount >= totalQuantity) {
+      showToast(t('maintenance.toast.noUnitsAvailable', '⚠️ لا توجد وحدات متاحة للصيانة لهذه المعدة حالياً'));
       return;
     }
 
