@@ -142,9 +142,23 @@ function setEquipment(list) {
 }
 
 function normalizeDescriptionValue(value) {
-  return String(value ?? '')
+  const raw = String(value ?? '')
     .trim()
     .toLowerCase();
+  return raw;
+}
+
+function resolveEquipmentGroupKey(item) {
+  if (!item) return '';
+  const descriptionSource = item.desc || item.description || item.name || '';
+  let key = normalizeDescriptionValue(descriptionSource);
+  if (!key) {
+    key = normalizeDescriptionValue(item.category || '');
+  }
+  if (!key) {
+    key = normalizeNumbers(String(item.barcode || '')).trim().toLowerCase();
+  }
+  return key;
 }
 
 export async function uploadEquipmentFromExcel(file) {
@@ -426,14 +440,15 @@ function renderEquipmentVariantsSection(baseItem) {
     return;
   }
 
-  const baseDescription = normalizeDescriptionValue(baseItem.desc || baseItem.description || '');
-  if (!baseDescription) {
+  const contextKey = currentVariantsContext?.groupKey;
+  const baseKey = contextKey || resolveEquipmentGroupKey(baseItem);
+  if (!baseKey) {
     clearEquipmentVariants();
     return;
   }
 
   const variants = getAllEquipment()
-    .filter((entry) => normalizeDescriptionValue(entry.desc || entry.description || '') === baseDescription)
+    .filter((entry) => resolveEquipmentGroupKey(entry) === baseKey)
     .sort((a, b) => {
       const aBarcode = String(a.barcode || '').trim();
       const bBarcode = String(b.barcode || '').trim();
@@ -748,7 +763,34 @@ export function renderEquipment() {
 
   const synced = syncEquipmentStatuses();
   const data = Array.isArray(synced) ? synced : getAllEquipment();
-  const entries = data.map((item, index) => ({ item, index }));
+  const groupedMap = new Map();
+
+  data.forEach((item) => {
+    if (!item) return;
+    const key = resolveEquipmentGroupKey(item);
+    if (!key) return;
+    if (!groupedMap.has(key)) {
+      groupedMap.set(key, []);
+    }
+    groupedMap.get(key).push(item);
+  });
+
+  const entries = Array.from(groupedMap.values()).map((variants) => {
+    const primary = variants[0];
+    const totalQty = variants.reduce((sum, variant) => sum + (Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0), 0);
+    const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
+    const aggregatedStatus = variants
+      .map((variant) => normalizeStatusValue(variant.status))
+      .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || 'available';
+    const aggregatedItem = {
+      ...primary,
+      qty: totalQty,
+      status: aggregatedStatus,
+      variants,
+      groupKey: resolveEquipmentGroupKey(primary),
+    };
+    return { item: aggregatedItem, index: data.indexOf(primary) };
+  });
 
   const rawSearch = document.getElementById("search-equipment")?.value || "";
   const search = normalizeNumbers(rawSearch).toLowerCase().trim();
@@ -774,11 +816,19 @@ export function renderEquipment() {
 
   const filteredEntries = entries.filter(({ item }) => {
     const barcode = normalizeNumbers(String(item.barcode ?? "")).toLowerCase().trim();
+    const variantBarcodes = Array.isArray(item.variants)
+      ? item.variants
+          .map((variant) => normalizeNumbers(String(variant.barcode ?? ''))
+            .toLowerCase()
+            .trim())
+          .filter(Boolean)
+      : [];
     const matchesSearch =
       !search ||
       (item.name && item.name.toLowerCase().includes(search)) ||
       (item.desc && item.desc.toLowerCase().includes(search)) ||
       (barcode && barcode.includes(search)) ||
+      variantBarcodes.some((code) => code.includes(search)) ||
       (item.category && item.category.toLowerCase().includes(search)) ||
       (item.sub && item.sub.toLowerCase().includes(search));
 
@@ -790,20 +840,10 @@ export function renderEquipment() {
   });
 
   const sortedEntries = filteredEntries.sort((a, b) => {
-    const aCode = normalizeNumbers(String(a.item.barcode ?? "")).trim().toLowerCase();
-    const bCode = normalizeNumbers(String(b.item.barcode ?? "")).trim().toLowerCase();
+    const aKey = a.item.groupKey || resolveEquipmentGroupKey(a.item);
+    const bKey = b.item.groupKey || resolveEquipmentGroupKey(b.item);
 
-    const aNum = Number.parseInt(aCode, 10);
-    const bNum = Number.parseInt(bCode, 10);
-
-    const aIsNum = Number.isFinite(aNum);
-    const bIsNum = Number.isFinite(bNum);
-
-    if (aIsNum && bIsNum && aNum !== bNum) {
-      return aNum - bNum;
-    }
-
-    return aCode.localeCompare(bCode, "ar", { numeric: true, sensitivity: "base" });
+    return aKey.localeCompare(bKey, 'ar', { numeric: true, sensitivity: 'base' });
   });
 
   const emptyMessage = search
@@ -1019,7 +1059,7 @@ function openEditEquipmentModal(index) {
 
   renderEquipmentVariantsSection(item);
   currentVariantsContext = {
-    description: normalizeDescriptionValue(item.desc || item.description || ''),
+    groupKey: resolveEquipmentGroupKey(item),
     barcode: String(item.barcode || ''),
     id: item.id || null,
   };
@@ -1080,8 +1120,10 @@ function refreshVariantsIfNeeded() {
   const matchById = currentVariantsContext.id
     ? items.find((entry) => String(entry.id) === String(currentVariantsContext.id))
     : null;
-  const normalizedDescription = currentVariantsContext.description;
-  const fallback = items.find((entry) => normalizeDescriptionValue(entry.desc || entry.description || '') === normalizedDescription);
+  const groupKey = currentVariantsContext.groupKey;
+  const fallback = groupKey
+    ? items.find((entry) => resolveEquipmentGroupKey(entry) === groupKey)
+    : null;
   const activeItem = matchById || fallback;
 
   if (!activeItem) {
