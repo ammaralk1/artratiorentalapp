@@ -81,6 +81,31 @@ function normalizeText(value = '') {
   return normalizeNumbers(String(value)).trim().toLowerCase();
 }
 
+function buildEquipmentSearchValue(option = {}) {
+  const desc = String(option?.desc ?? '').trim();
+  const barcode = normalizeNumbers(String(option?.displayBarcode ?? option?.barcode ?? '')).trim();
+  if (barcode) {
+    return `${desc} | ${barcode}`;
+  }
+  return desc;
+}
+
+function parseEquipmentSearchInput(value) {
+  const raw = normalizeNumbers(String(value || ''));
+  if (!raw.trim()) {
+    return { description: '', barcode: '' };
+  }
+  const [first, ...rest] = raw.split('|');
+  return {
+    description: first.trim(),
+    barcode: rest.join('|').trim(),
+  };
+}
+
+function normalizeSearchValue(value) {
+  return normalizeNumbers(String(value || '')).trim().toLowerCase();
+}
+
 function escapeHtml(value = '') {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -126,17 +151,26 @@ function getEquipmentOptions() {
     const safeQuantity = Number.isFinite(quantityValue) ? Math.max(quantityValue, 0) : 1;
     const imageUrl = item?.image || item?.imageUrl || item?.image_url || '';
     const statusLabel = item?.status || 'متاح';
+    const description = item?.desc || item?.description || item?.name || fallbackName;
+    const searchValue = buildEquipmentSearchValue({
+      desc: description,
+      displayBarcode: rawBarcode,
+      barcode: normalizedBarcode,
+    });
     return {
       id: item?.id ?? item?.equipment_id ?? item?.equipmentId ?? null,
       barcode: normalizedBarcode,
       displayBarcode: rawBarcode,
-      desc: item?.desc || item?.description || item?.name || fallbackName,
+      desc: description,
       status: statusLabel,
       statusNormalized: normalizeEquipmentStatus(statusLabel),
       price: Number(item?.price || item?.unit_price) || 0,
       category: item?.category || '',
       quantity: safeQuantity,
       image: imageUrl,
+      searchValue,
+      searchValueNormalized: normalizeSearchValue(searchValue),
+      descriptionNormalized: normalizeText(description),
     };
   });
 
@@ -175,10 +209,32 @@ function findEquipmentOptionByBarcode(barcode) {
 }
 
 function findEquipmentOptionByDescription(term) {
-  const normalized = normalizeText(term);
-  if (!normalized) return null;
   const options = equipmentOptions.length ? equipmentOptions : getEquipmentOptions();
-  return options.find((option) => normalizeText(option.desc).includes(normalized)) || null;
+  if (!options.length) return null;
+
+  const normalizedSearch = normalizeSearchValue(term);
+  if (normalizedSearch) {
+    const exactSearchMatch = options.find((option) => option.searchValueNormalized === normalizedSearch);
+    if (exactSearchMatch) return exactSearchMatch;
+  }
+
+  const { description, barcode } = parseEquipmentSearchInput(term);
+
+  if (barcode) {
+    const normalizedBarcode = normalizeBarcodeValue(barcode);
+    if (normalizedBarcode) {
+      const barcodeMatch = options.find((option) => option.barcode === normalizedBarcode);
+      if (barcodeMatch) return barcodeMatch;
+    }
+  }
+
+  const normalizedDescription = normalizeText(description || term);
+  if (!normalizedDescription) return null;
+
+  const exactDescription = options.find((option) => option.descriptionNormalized === normalizedDescription);
+  if (exactDescription) return exactDescription;
+
+  return options.find((option) => option.descriptionNormalized.includes(normalizedDescription)) || null;
 }
 
 function isOptionBlocked(option, openCountsMap = null) {
@@ -275,7 +331,7 @@ function selectEquipment(option, { silent = false } = {}) {
 
   if (hidden) hidden.value = option.barcode;
   if (barcodeInput) barcodeInput.value = option.displayBarcode || option.barcode;
-  if (searchInput) searchInput.value = option.desc;
+  if (searchInput) searchInput.value = option.searchValue || option.desc;
   updateSelectedInfo(option);
   currentSelection = option;
   return true;
@@ -317,6 +373,9 @@ function populateEquipmentInputs() {
         const remaining = totalQuantity > 0 ? Math.max(totalQuantity - openCount, 0) : 0;
         const blocked = isOptionBlocked(option, openCounts);
         const parts = [option.desc];
+        if (option.displayBarcode) {
+          parts.push(`#${normalizeNumbers(option.displayBarcode)}`);
+        }
         if (totalQuantity > 0) {
           parts.push(`(${remaining}/${totalQuantity})`);
         }
@@ -324,9 +383,9 @@ function populateEquipmentInputs() {
           parts.push(blockedSuffix);
         }
         const label = parts.join(' ');
-        const value = option.desc.replace(/"/g, '&quot;');
-        const labelAttr = label.replace(/"/g, '&quot;');
-        return `<option value="${value}" label="${labelAttr}"></option>`;
+        const valueAttr = escapeHtml(option.searchValue || option.desc);
+        const labelAttr = escapeHtml(label);
+        return `<option value="${valueAttr}" label="${labelAttr}"></option>`;
       })
       .join('');
   }

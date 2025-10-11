@@ -33,6 +33,7 @@ let cachedProjects = [];
 
 let customerOptionMap = new Map();
 let projectOptionMap = new Map();
+let equipmentDescriptionOptionMap = new Map();
 
 function escapeHtml(value = '') {
   return String(value)
@@ -41,6 +42,31 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function normalizeEquipmentSearchValue(value) {
+  return normalizeNumbers(String(value || '')).trim().toLowerCase();
+}
+
+function buildEquipmentSearchValue(item = {}) {
+  const description = String(item?.desc || item?.description || '')?.trim();
+  const barcode = normalizeNumbers(String(item?.barcode || '')).trim();
+  if (barcode) {
+    return `${description} | ${barcode}`;
+  }
+  return description;
+}
+
+function parseEquipmentSearchValue(value) {
+  const raw = normalizeNumbers(String(value || ''));
+  if (!raw.trim()) {
+    return { description: '', barcode: '' };
+  }
+  const [first, ...rest] = raw.split('|');
+  return {
+    description: first.trim(),
+    barcode: rest.join('|').trim(),
+  };
 }
 
 function getCustomerElements() {
@@ -572,34 +598,65 @@ function getCreateReservationDateRange() {
 }
 
 export function findEquipmentByDescription(term) {
-  const normalizedTerm = normalizeText(term);
-  if (!normalizedTerm) return null;
-  const equipment = getCachedEquipment() || [];
+  const normalizedSearch = normalizeEquipmentSearchValue(term);
+  if (normalizedSearch) {
+    const bySearchValue = equipmentDescriptionOptionMap.get(normalizedSearch);
+    if (bySearchValue) return bySearchValue;
+  }
+
+  const { description, barcode } = parseEquipmentSearchValue(term);
+
+  if (barcode) {
+    const byBarcode = findEquipmentByBarcode(barcode);
+    if (byBarcode) return byBarcode;
+  }
+
+  const normalizedDescription = normalizeText(description || term);
+  if (!normalizedDescription) return null;
+
+  let equipment = getCachedEquipment();
+  if (!equipment?.length) {
+    const snapshot = loadData();
+    equipment = Array.isArray(snapshot?.equipment) ? snapshot.equipment : [];
+    if (equipment.length) {
+      setCachedEquipment(equipment);
+    }
+  }
 
   const exactMatch = equipment.find((item) => {
     const descriptionText = normalizeText(item?.desc || item?.description || '');
-    return descriptionText === normalizedTerm;
+    return descriptionText === normalizedDescription;
   });
   if (exactMatch) return exactMatch;
 
   return equipment.find((item) => {
     const descriptionText = normalizeText(item?.desc || item?.description || '');
-    return descriptionText.includes(normalizedTerm);
+    return descriptionText.includes(normalizedDescription);
   }) || null;
 }
 
 export function hasExactEquipmentDescription(value, listId = 'equipment-description-options') {
-  const normalizedValue = normalizeText(value);
+  const normalizedValue = normalizeEquipmentSearchValue(value);
   if (!normalizedValue) return false;
 
   const list = document.getElementById(listId);
   if (list && list.options) {
-    const match = Array.from(list.options).some((option) => normalizeText(option.value) === normalizedValue);
+    const match = Array.from(list.options).some((option) => normalizeEquipmentSearchValue(option.value) === normalizedValue);
     if (match) return true;
   }
 
+  if (equipmentDescriptionOptionMap.has(normalizedValue)) {
+    return true;
+  }
+
+  const { description } = parseEquipmentSearchValue(value);
+  if (!description) return false;
+
+  const normalizedDescription = normalizeText(description);
+  if (!normalizedDescription) return false;
+
   const equipment = getCachedEquipment() || [];
-  return equipment.some((item) => normalizeText(item?.desc || item?.description || '') === normalizedValue);
+  return equipment.some((item) => normalizeText(item?.desc || item?.description || '') === normalizedDescription);
 }
 
 function populateEquipmentDescriptionLists() {
@@ -609,16 +666,31 @@ function populateEquipmentDescriptionLists() {
   const { equipment = [] } = loadData();
   const equipmentList = Array.isArray(equipment) ? equipment : [];
   setCachedEquipment(equipmentList);
+  equipmentDescriptionOptionMap = new Map();
 
-  const uniqueDescriptions = Array.from(
-    new Set(
-      equipmentList
-        .map((item) => item?.desc || item?.description || '')
-        .filter(Boolean)
-    )
-  ).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
+  const optionEntries = equipmentList
+    .map((item) => {
+      const searchValue = buildEquipmentSearchValue(item);
+      const normalizedValue = normalizeEquipmentSearchValue(searchValue);
+      if (normalizedValue) {
+        equipmentDescriptionOptionMap.set(normalizedValue, item);
+      }
+      const labelParts = [item?.desc || item?.description || ''];
+      if (item?.barcode) {
+        labelParts.push(`#${normalizeNumbers(item.barcode)}`);
+      }
+      const label = labelParts.filter(Boolean).join(' ');
+      return {
+        value: searchValue,
+        label,
+      };
+    })
+    .filter((entry) => entry.value)
+    .sort((a, b) => a.value.localeCompare(b.value, 'ar', { sensitivity: 'base' }));
 
-  const optionsHtml = uniqueDescriptions.map((desc) => `<option value="${desc}"></option>`).join('');
+  const optionsHtml = optionEntries
+    .map((entry) => `<option value="${escapeHtml(entry.value)}" label="${escapeHtml(entry.label)}"></option>`)
+    .join('');
 
   if (createList) createList.innerHTML = optionsHtml;
   if (editList) editList.innerHTML = optionsHtml;
