@@ -2309,6 +2309,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
+  margin-inline: auto;
+  text-align: center;
 }
 
 .reservation-notes__title {
