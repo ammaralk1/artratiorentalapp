@@ -25,6 +25,7 @@ import { updateEditReservationSummary } from './editForm.js';
 import { loadData } from '../storage.js';
 import { ensureReservationsLoaded } from '../reservationsActions.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
+import { initTimePickers } from '../ui/timePicker.js';
 
 let reservationEventsInitialized = false;
 
@@ -48,7 +49,6 @@ function getFlatpickrInstance() {
 
 function initializeReservationPickers() {
   const fp = getFlatpickrInstance();
-  if (!fp) return;
 
   const baseDateConfig = {
     dateFormat: 'Y-m-d',
@@ -68,33 +68,24 @@ function initializeReservationPickers() {
     ['#edit-res-end', {}]
   ];
 
-  const baseTimeConfig = {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: 'H:i',
-    altInput: true,
-    altFormat: 'h:iK',
-    time_24hr: false,
-    defaultHour: 9,
-    defaultMinute: 0,
-    disableMobile: true,
-    minuteIncrement: 5,
-    altInputClass: 'flatpickr-alt-input form-control'
-  };
-
   const timePickers = ['#res-start-time', '#res-end-time', '#edit-res-start-time', '#edit-res-end-time'];
 
-  datePickers.forEach(([selector, config]) => {
-    if (document.querySelector(selector)) {
-      fp(selector, { ...baseDateConfig, ...config });
-    }
-  });
+  if (fp) {
+    datePickers.forEach(([selector, config]) => {
+      if (document.querySelector(selector)) {
+        fp(selector, { ...baseDateConfig, ...config });
+      }
+    });
+  }
 
-  timePickers.forEach((selector) => {
-    if (document.querySelector(selector)) {
-      fp(selector, { ...baseTimeConfig });
+  initTimePickers(
+    timePickers.map((selector) => document.querySelector(selector)).filter(Boolean),
+    {
+      minuteStep: 5,
+      defaultHour: 9,
+      defaultMinute: 0,
     }
-  });
+  );
 
   const startTimeInput = document.querySelector('#res-start-time');
   if (startTimeInput) {

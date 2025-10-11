@@ -1,5 +1,6 @@
 import { logout } from '../auth.js';
 import { dom } from './state.js';
+import { initTimePickers } from '../ui/timePicker.js';
 
 function getFlatpickrForProjects() {
   if (typeof window !== 'undefined' && typeof window.flatpickr === 'function') {
@@ -65,41 +66,30 @@ export function cacheDom() {
 
 export function initProjectDatePickers() {
   const fp = getFlatpickrForProjects();
-  if (!fp) return;
 
   const datePickers = [
     ['#project-start-date', { dateFormat: 'Y-m-d' }],
     ['#project-end-date', { dateFormat: 'Y-m-d' }]
   ];
 
-  const timePickers = [
-    ['#project-start-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0
-    }],
-    ['#project-end-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0
-    }]
-  ];
+  if (fp) {
+    datePickers.forEach(([selector, config]) => {
+      if (document.querySelector(selector)) {
+        fp(selector, config);
+      }
+    });
+  }
 
-  [...datePickers, ...timePickers].forEach(([selector, config]) => {
-    if (document.querySelector(selector)) {
-      fp(selector, config);
+  initTimePickers(
+    ['#project-start-time', '#project-end-time']
+      .map((selector) => document.querySelector(selector))
+      .filter(Boolean),
+    {
+      minuteStep: 5,
+      defaultHour: 9,
+      defaultMinute: 0,
     }
-  });
+  );
 }
 
 export function clearProjectDateInputs() {
