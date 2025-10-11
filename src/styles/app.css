@@ -2073,10 +2073,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: flex-end;
+    justify-content: flex-start;
     align-content: flex-start;
     padding: clamp(1.25rem, 1.65vw + 1rem, 2.05rem) clamp(1.25rem, 2vw, 2.25rem);
     padding-inline-start: clamp(2.75rem, 5vw, 3.75rem);
+    padding-inline-end: clamp(1.5rem, 3vw, 2.75rem);
     row-gap: clamp(0.75rem, 1.4vw, 1.5rem);
     column-gap: clamp(0.75rem, 1.2vw, 1.25rem);
     background: linear-gradient(135deg, hsl(var(--b2) / 0.92), hsl(var(--b1)));
@@ -2114,15 +2115,15 @@
   .equipment-details-header__content {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: clamp(0.65rem, 1vw, 1rem);
     flex: 1 1 100%;
     width: min(100%, clamp(240px, 70vw, 360px));
-    text-align: end;
+    text-align: start;
   }
 
   .equipment-details-header__media {
-    align-self: flex-end;
+    align-self: flex-start;
     width: clamp(120px, 45vw, 220px);
     height: clamp(120px, 45vw, 220px);
     max-width: 100%;
@@ -2167,20 +2168,21 @@
 
   @media (max-width: 768px) {
     .equipment-details-header {
-      justify-content: center;
-      align-items: center;
-      padding-inline-start: clamp(2.5rem, 10vw, 3.5rem);
+      justify-content: flex-start;
+      align-items: flex-start;
+      padding-inline-start: clamp(2.25rem, 9vw, 3.25rem);
+      padding-inline-end: clamp(1.25rem, 6vw, 2.5rem);
       row-gap: 1.25rem;
     }
 
     .equipment-details-header__content {
-      align-items: center;
-      text-align: center;
+      align-items: flex-start;
+      text-align: start;
       width: 100%;
     }
 
     .equipment-details-header__media {
-      align-self: center;
+      align-self: flex-start;
       width: clamp(110px, 60vw, 180px);
       height: clamp(110px, 60vw, 180px);
     }
