@@ -1613,21 +1613,14 @@
                 </div>
                 <div class="reservation-payment-card__body">
                   <div class="reservation-payment-card__toggles">
-                    <div class="form-check">
-                      <input type="checkbox" class="form-check-input" id="edit-res-company-share" data-company-share="10">
-                      <label class="form-check-label" for="edit-res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
+                    <div class="reservation-toggle">
+                      <input type="checkbox" class="reservation-toggle__input" id="edit-res-company-share" data-company-share="10" role="switch">
+                      <label class="reservation-toggle__label" for="edit-res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
                     </div>
-                    <div class="form-check">
-                      <input type="checkbox" class="form-check-input" id="edit-res-tax">
-                      <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+                    <div class="reservation-toggle">
+                      <input type="checkbox" class="reservation-toggle__input" id="edit-res-tax" role="switch">
+                      <label class="reservation-toggle__label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
                     </div>
-                  </div>
-                  <div class="reservation-payment-card__field">
-                    <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-                    <select id="edit-res-paid" class="form-select payment-status-select">
-                      <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
-                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
-                    </select>
                   </div>
                   <div class="reservation-payment-card__field">
                     <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
@@ -1638,6 +1631,13 @@
                       </select>
                       <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
                     </div>
+                  </div>
+                  <div class="reservation-payment-card__field">
+                    <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
+                    <select id="edit-res-paid" class="form-select payment-status-select">
+                      <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
+                    </select>
                   </div>
                 </div>
               </div>

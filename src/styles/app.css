@@ -4487,6 +4487,141 @@
   gap: 0.75rem 1.25rem;
 }
 
+.reservation-toggle {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: min(100%, 220px);
+}
+
+.reservation-toggle__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.reservation-toggle__label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 1.35rem 0.65rem 3.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(99, 102, 241, 0.24);
+  background: rgba(99, 102, 241, 0.08);
+  color: hsl(220deg 27% 30%);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reservation-toggle__label::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 1.1rem;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(203, 213, 255, 0.9), rgba(167, 199, 255, 0.85));
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  transform: translateY(-50%);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.reservation-toggle__label::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  inset-inline-start: calc(1.1rem + 3px);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+  transform: translateY(-50%) translateX(0);
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reservation-toggle__input:checked + .reservation-toggle__label {
+  background: rgba(79, 70, 229, 0.15);
+  border-color: rgba(79, 70, 229, 0.45);
+  color: hsl(226deg 35% 28%);
+}
+
+.reservation-toggle__input:checked + .reservation-toggle__label::before {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.85), rgba(59, 130, 246, 0.85));
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.reservation-toggle__input:checked + .reservation-toggle__label::after {
+  transform: translateY(-50%) translateX(20px);
+  background: #f8fafc;
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.35);
+}
+
+.reservation-toggle__input:focus-visible + .reservation-toggle__label {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.reservation-toggle__label:hover {
+  border-color: rgba(79, 70, 229, 0.4);
+}
+
+body[dir='rtl'] .reservation-toggle__label {
+  padding: 0.65rem 3.6rem 0.65rem 1.35rem;
+  justify-content: flex-end;
+}
+
+body[dir='rtl'] .reservation-toggle__label::before {
+  inset-inline-start: auto;
+  inset-inline-end: 1.1rem;
+}
+
+body[dir='rtl'] .reservation-toggle__label::after {
+  inset-inline-start: auto;
+  inset-inline-end: calc(1.1rem + 3px);
+}
+
+body[dir='rtl'] .reservation-toggle__input:checked + .reservation-toggle__label::after {
+  transform: translateY(-50%) translateX(-20px);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__label {
+  background: rgba(59, 73, 138, 0.28);
+  border-color: rgba(129, 140, 248, 0.32);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__label::before {
+  background: linear-gradient(135deg, rgba(37, 56, 115, 0.85), rgba(56, 78, 146, 0.82));
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__label::after {
+  background: rgba(226, 232, 240, 0.96);
+  box-shadow: 0 4px 10px rgba(8, 11, 22, 0.5);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label {
+  background: rgba(129, 140, 248, 0.32);
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label::before {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.82), rgba(129, 140, 248, 0.82));
+  border-color: rgba(96, 165, 250, 0.6);
+}
+
+:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label::after {
+  background: rgba(15, 23, 42, 0.92);
+  box-shadow: 0 6px 16px rgba(96, 165, 250, 0.45);
+}
+
 .reservation-payment-card__field .form-label {
   margin-bottom: 0.45rem;
 }
@@ -4547,4 +4682,3 @@
   width: 100%;
   max-width: none;
 }
-
