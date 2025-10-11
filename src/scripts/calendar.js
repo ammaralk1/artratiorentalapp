@@ -20,6 +20,15 @@ let calendarThemeDebounce = null;
 let isCalendarLoading = false;
 let calendarErrorMessage = '';
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getCalendarElements() {
   const calendarEl = document.getElementById('calendar');
   const panelEl = document.getElementById('calendar-panel') || calendarEl?.parentElement || null;
@@ -398,41 +407,59 @@ function showReservationModal(reservation) {
   const finalTotal = reservation.cost ?? Math.round(taxableAmount + taxAmount);
 
   const currencySuffix = t('calendar.labels.currencySuffix', 'ريال');
+  const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const itemsHtml = groupedItems.length
-    ? groupedItems.map((group, index) => {
+    ? groupedItems.map((group) => {
         const representative = group.items[0] || {};
-        const image = resolveItemImage(representative) || group.image || representative.image || representative.imageUrl || '';
-        const barcodeDisplay = group.barcodes.length
-          ? group.barcodes
-              .map((code) => normalizeNumbers(String(code || '-')))
-              .filter(Boolean)
-              .join('<br>')
-          : '-';
-        const quantityValue = Number(group.quantity) || 0;
+        const imageSource = resolveItemImage(representative) || group.image || representative.image || representative.imageUrl || '';
+        const imageCell = imageSource
+          ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
+          : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+        const quantityValue = Number(group.quantity) || Number(group.count) || 0;
         const quantityDisplay = normalizeNumbers(String(quantityValue));
         const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
-        const totalPriceNumber = Number.isFinite(Number(group.totalPrice))
-          ? Number(group.totalPrice)
-          : unitPriceNumber * quantityValue;
+        const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * quantityValue;
+        const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencySuffix}`;
         const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencySuffix}`;
-        const priceMeta = quantityValue > 1 && unitPriceNumber > 0
-          ? `<div class="reservation-modal-price-meta text-muted">(${normalizeNumbers(unitPriceNumber.toFixed(2))} × ${quantityDisplay})</div>`
+        const normalizedBarcodes = group.barcodes
+          .map((code) => normalizeNumbers(String(code || '')))
+          .filter(Boolean);
+        const barcodesMeta = normalizedBarcodes.length
+          ? `<details class="reservation-item-barcodes">
+              <summary>${t('reservations.equipment.barcodes.summary', 'عرض الباركودات')}</summary>
+              <ul class="reservation-barcode-list">
+                ${normalizedBarcodes.map((code) => `<li>${code}</li>`).join('')}
+              </ul>
+            </details>`
           : '';
-        const imageCell = image
-          ? `<img src="${image}" alt="${representative.desc || representative.description || representative.name || ''}" class="reservation-modal-item-thumb">`
-          : '-';
+
         return `
           <tr>
-            <td>${normalizeNumbers(String(index + 1))}</td>
-            <td>${barcodeDisplay || '-'}</td>
-            <td>${representative.desc || representative.description || representative.name || '-'}</td>
-            <td>${quantityDisplay}</td>
-            <td>${totalPriceDisplay}${priceMeta}</td>
-            <td>${imageCell}</td>
+            <td>
+              <div class="reservation-item-info">
+                <div class="reservation-item-thumb-wrapper">${imageCell}</div>
+                <div class="reservation-item-copy">
+                  <div class="reservation-item-title">${escapeHtml(representative.desc || representative.description || representative.name || group.description || '-')}</div>
+                  ${barcodesMeta}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="reservation-quantity-control reservation-quantity-control--static">
+                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">−</button>
+                <span class="reservation-qty-value">${quantityDisplay}</span>
+                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">+</button>
+              </div>
+            </td>
+            <td>${unitPriceDisplay}</td>
+            <td>${totalPriceDisplay}</td>
+            <td>
+              <button type="button" class="reservation-remove-button" disabled aria-disabled="true" tabindex="-1">🗑️</button>
+            </td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="6" class="text-center">${t('calendar.labels.noEquipment', 'لا توجد معدات')}</td></tr>`;
+    : `<tr><td colspan="5" class="text-center">${t('calendar.labels.noEquipment', 'لا توجد معدات')}</td></tr>`;
 
   const summaryRows = [
     `<div>${t('calendar.summary.baseCost', '💵 إجمالي المعدات: <strong>{value} ريال</strong>').replace('{value}', equipmentTotal.toFixed(2))}</div>`,
@@ -494,12 +521,11 @@ function showReservationModal(reservation) {
       <table class="table table-sm table-hover align-middle reservation-modal-items-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>${t('calendar.table.headers.barcode', 'الباركود')}</th>
-            <th>${t('calendar.table.headers.description', 'الوصف')}</th>
-            <th>${t('calendar.table.headers.quantity', 'الكمية')}</th>
-            <th>${t('calendar.table.headers.price', 'السعر')}</th>
-            <th>${t('calendar.table.headers.image', 'الصورة')}</th>
+            <th>${t('reservations.equipment.table.item', 'المعدة')}</th>
+            <th>${t('reservations.equipment.table.quantity', 'الكمية')}</th>
+            <th>${t('reservations.equipment.table.unitPrice', 'سعر الوحدة')}</th>
+            <th>${t('reservations.equipment.table.total', 'الإجمالي')}</th>
+            <th>${t('reservations.equipment.table.actions', 'الإجراءات')}</th>
           </tr>
         </thead>
         <tbody>${itemsHtml}</tbody>

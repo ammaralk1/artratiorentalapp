@@ -1902,6 +1902,16 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.reservation-quantity-control--static {
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.reservation-quantity-control--static .reservation-qty-btn {
+  background: rgba(148, 163, 184, 0.35);
+  color: rgba(71, 85, 105, 0.85);
+}
+
 .reservation-qty-btn:hover,
 .reservation-qty-btn:focus-visible {
   transform: translateY(-1px);

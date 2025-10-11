@@ -128,13 +128,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
   const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 نسبة الشركة');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
+  const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const tableHeaders = {
-    index: '#',
-    code: t('reservations.details.table.headers.code', 'الكود'),
-    description: t('reservations.details.table.headers.description', 'الوصف'),
-    quantity: t('reservations.details.table.headers.quantity', 'الكمية'),
-    price: t('reservations.details.table.headers.price', 'السعر'),
-    image: t('reservations.details.table.headers.image', 'الصورة')
+    item: t('reservations.equipment.table.item', 'المعدة'),
+    quantity: t('reservations.equipment.table.quantity', 'الكمية'),
+    unitPrice: t('reservations.equipment.table.unitPrice', 'سعر الوحدة'),
+    total: t('reservations.equipment.table.total', 'الإجمالي'),
+    actions: t('reservations.equipment.table.actions', 'الإجراءات')
   };
   const noItemsText = t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.');
   const noCrewText = t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.');
@@ -277,52 +277,68 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
 
   const itemsTableBody = groupedItems.length
-    ? groupedItems.map((group, groupIndex) => {
+    ? groupedItems.map((group) => {
         const representative = group.items[0] || {};
-        const image = resolveItemImage(representative) || group.image;
-        const barcodeDisplay = group.barcodes.length
-          ? group.barcodes
-              .map((code) => normalizeNumbers(String(code || '-')))
-              .filter(Boolean)
-              .join('<br>')
-          : '-';
-        const quantityValue = Number(group.quantity) || 0;
+        const imageSource = resolveItemImage(representative) || group.image;
+        const imageCell = imageSource
+          ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
+          : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+        const quantityValue = Number(group.quantity) || Number(group.count) || 0;
         const quantityDisplay = normalizeNumbers(String(quantityValue));
         const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
-        const totalPriceNumber = Number.isFinite(Number(group.totalPrice))
-          ? Number(group.totalPrice)
-          : unitPriceNumber * quantityValue;
+        const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * quantityValue;
+        const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
         const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
-        const priceMeta = quantityValue > 1 && unitPriceNumber > 0
-          ? `<div class="reservation-modal-price-meta text-muted">(${normalizeNumbers(unitPriceNumber.toFixed(2))} × ${quantityDisplay})</div>`
+        const normalizedBarcodes = group.barcodes
+          .map((code) => normalizeNumbers(String(code || '')))
+          .filter(Boolean);
+        const barcodesMeta = normalizedBarcodes.length
+          ? `<details class="reservation-item-barcodes">
+              <summary>${t('reservations.equipment.barcodes.summary', 'عرض الباركودات')}</summary>
+              <ul class="reservation-barcode-list">
+                ${normalizedBarcodes.map((code) => `<li>${code}</li>`).join('')}
+              </ul>
+            </details>`
           : '';
-        const imageCell = image
-          ? `<img src="${image}" alt="${escapeHtml(representative.desc || representative.description || representative.name || '')}" class="reservation-modal-item-thumb">`
-          : '-';
+
         return `
           <tr>
-            <td>${normalizeNumbers(String(groupIndex + 1))}</td>
-            <td>${barcodeDisplay || '-'}</td>
-            <td>${representative.desc || representative.description || representative.name || '-'}</td>
-            <td>${quantityDisplay}</td>
-            <td>${totalPriceDisplay}${priceMeta}</td>
-            <td>${imageCell}</td>
+            <td>
+              <div class="reservation-item-info">
+                <div class="reservation-item-thumb-wrapper">${imageCell}</div>
+                <div class="reservation-item-copy">
+                  <div class="reservation-item-title">${escapeHtml(representative.desc || representative.description || representative.name || group.description || '-')}</div>
+                  ${barcodesMeta}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="reservation-quantity-control reservation-quantity-control--static">
+                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">−</button>
+                <span class="reservation-qty-value">${quantityDisplay}</span>
+                <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">+</button>
+              </div>
+            </td>
+            <td>${unitPriceDisplay}</td>
+            <td>${totalPriceDisplay}</td>
+            <td>
+              <button type="button" class="reservation-remove-button" disabled aria-disabled="true" tabindex="-1">🗑️</button>
+            </td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="6" class="text-center">${noItemsText}</td></tr>`;
+    : `<tr><td colspan="5" class="text-center">${noItemsText}</td></tr>`;
 
   const itemsTable = `
     <div class="table-responsive reservation-modal-items-wrapper">
       <table class="table table-sm table-hover align-middle reservation-modal-items-table">
         <thead>
           <tr>
-            <th>${tableHeaders.index}</th>
-            <th>${tableHeaders.code}</th>
-            <th>${tableHeaders.description}</th>
+            <th>${tableHeaders.item}</th>
             <th>${tableHeaders.quantity}</th>
-            <th>${tableHeaders.price}</th>
-            <th>${tableHeaders.image}</th>
+            <th>${tableHeaders.unitPrice}</th>
+            <th>${tableHeaders.total}</th>
+            <th>${tableHeaders.actions}</th>
           </tr>
         </thead>
         <tbody>${itemsTableBody}</tbody>
