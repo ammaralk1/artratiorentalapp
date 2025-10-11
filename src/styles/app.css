@@ -2113,7 +2113,8 @@
   }
 
   .equipment-details-header__media {
-    align-self: flex-end;
+    align-self: flex-start;
+    margin-inline-end: auto;
     width: clamp(120px, 18vw, 180px);
     height: clamp(120px, 18vw, 180px);
     border-radius: 22px;
