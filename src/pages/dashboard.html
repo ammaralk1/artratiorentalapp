@@ -709,7 +709,7 @@
                 <input type="text" id="maintenance-equipment-search" class="form-control" list="maintenance-equipment-options" placeholder="اكتب اسم المعدة..." data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.search">
                 <datalist id="maintenance-equipment-options"></datalist>
               </div>
-              <div class="form-field">
+              <div class="form-field maintenance-priority-field">
                 <label for="maintenance-priority" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.priority">⚠️ الأولوية</label>
                 <select id="maintenance-priority" class="form-select">
                   <option value="high" data-i18n data-i18n-key="maintenance.form.options.priority.high">مرتفعة</option>
@@ -720,7 +720,7 @@
             </div>
             <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
             <input type="hidden" id="maintenance-selected-barcode">
-            <div class="form-field">
+            <div class="form-field maintenance-issue-field">
               <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
               <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
