@@ -948,21 +948,17 @@
             </div>
 
             <div class="row mb-3">
-              <div class="col-12">
-                <div class="box reservation-notes-box">
-                  <div class="reservation-notes-box__header">
-                    <h5 class="reservation-notes-box__title" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</h5>
-                    <p class="reservation-notes-box__hint" data-i18n data-i18n-key="reservations.create.notes.hint">أضف تفاصيل إضافية لتنسيق الفريق والمعدات.</p>
-                  </div>
-                  <textarea
-                    id="res-notes"
-                    class="reservation-notes-box__textarea"
-                    rows="3"
-                    placeholder="اكتب أي ملاحظات إضافية..."
-                    data-i18n
-                    data-i18n-placeholder-key="reservations.create.placeholders.notes"
-                  ></textarea>
-                </div>
+              <div class="col-12 reservation-notes-wrapper">
+                <h5 class="reservation-notes__title" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</h5>
+                <p class="reservation-notes__hint" data-i18n data-i18n-key="reservations.create.notes.hint">أضف تفاصيل إضافية لتنسيق الفريق والمعدات.</p>
+                <textarea
+                  id="res-notes"
+                  class="reservation-notes__textarea"
+                  rows="4"
+                  placeholder="اكتب أي ملاحظات إضافية..."
+                  data-i18n
+                  data-i18n-placeholder-key="reservations.create.placeholders.notes"
+                ></textarea>
               </div>
             </div>
 
@@ -984,7 +980,7 @@
                   <div class="reservation-equipment-field">
                     <input type="text" class="form-control" id="equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.barcode">
                   </div>
-                  <div class="reservation-equipment-field">
+                  <div class="reservation-equipment-field reservation-equipment-field--search">
                     <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
                     <datalist id="equipment-description-options"></datalist>
                   </div>
