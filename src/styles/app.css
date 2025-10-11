@@ -1723,12 +1723,54 @@
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 600;
+    border: 1px solid transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: all 0.2s ease;
+  }
+
+  .equipment-card__availability--available {
     background: rgba(34, 197, 94, 0.18);
     color: rgba(16, 185, 129, 0.96);
     box-shadow:
       inset 0 0 0 1px rgba(16, 185, 129, 0.35),
       0 6px 18px rgba(16, 185, 129, 0.28),
       0 0 18px rgba(16, 185, 129, 0.35);
+  }
+
+  .equipment-card__availability--reserved {
+    background: rgba(248, 113, 113, 0.2);
+    color: rgba(220, 38, 38, 0.92);
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 113, 113, 0.35),
+      0 6px 18px rgba(248, 113, 113, 0.25),
+      0 0 18px rgba(220, 38, 38, 0.32);
+  }
+
+  .equipment-card__availability--maintenance {
+    background: rgba(249, 115, 22, 0.2);
+    color: rgba(194, 65, 12, 0.9);
+    box-shadow:
+      inset 0 0 0 1px rgba(250, 204, 21, 0.35),
+      0 6px 18px rgba(249, 115, 22, 0.25),
+      0 0 18px rgba(249, 115, 22, 0.3);
+  }
+
+  .equipment-card__availability--retired {
+    background: rgba(148, 163, 184, 0.2);
+    color: rgba(71, 85, 105, 0.9);
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 6px 18px rgba(148, 163, 184, 0.22),
+      0 0 18px rgba(100, 116, 139, 0.3);
+  }
+
+  .equipment-card__availability--unavailable {
+    background: rgba(148, 163, 184, 0.18);
+    color: rgba(71, 85, 105, 0.9);
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 6px 18px rgba(148, 163, 184, 0.22),
+      0 0 18px rgba(100, 116, 139, 0.28);
   }
 
   .equipment-card__media {
@@ -1980,12 +2022,45 @@
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability {
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.25);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability--available {
     background: rgba(22, 101, 52, 0.45);
     color: rgba(209, 250, 229, 0.94);
     box-shadow:
       inset 0 0 0 1px rgba(16, 185, 129, 0.45),
       0 8px 22px rgba(16, 185, 129, 0.32),
       0 0 18px rgba(16, 185, 129, 0.38);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability--reserved {
+    background: rgba(185, 28, 28, 0.5);
+    color: rgba(254, 226, 226, 0.95);
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 113, 113, 0.45),
+      0 8px 22px rgba(248, 113, 113, 0.35),
+      0 0 18px rgba(248, 113, 113, 0.45);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability--maintenance {
+    background: rgba(202, 138, 4, 0.55);
+    color: rgba(255, 237, 213, 0.95);
+    box-shadow:
+      inset 0 0 0 1px rgba(250, 204, 21, 0.45),
+      0 8px 22px rgba(245, 158, 11, 0.35),
+      0 0 18px rgba(250, 204, 21, 0.45);
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability--retired,
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability--unavailable {
+    background: rgba(71, 85, 105, 0.45);
+    color: rgba(226, 232, 240, 0.9);
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.45),
+      0 8px 22px rgba(148, 163, 184, 0.35),
+      0 0 18px rgba(148, 163, 184, 0.45);
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__media {

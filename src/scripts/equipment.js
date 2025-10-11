@@ -731,8 +731,35 @@ function renderEquipmentItem({ item, index }) {
     : Math.max(qtyNumber - reservedQtyNumber - maintenanceQtyNumber, 0);
   const availableDisplay = availableQtyNumber.toLocaleString('en-US');
   const availableOfTotal = t('equipment.card.labels.availableOfTotal', 'من أصل');
-  const availabilityText = `${escapeHtml(labels.available)}: ${escapeHtml(availableDisplay)} ${escapeHtml(availableOfTotal)} ${escapeHtml(qtyDisplay)}`;
-  const availabilityHtml = `<span class="equipment-card__availability">${availabilityText}</span>`;
+  const availabilityState = normalizeStatusValue(item.status);
+  let availabilityText = `${escapeHtml(labels.available)}: ${escapeHtml(availableDisplay)} ${escapeHtml(availableOfTotal)} ${escapeHtml(qtyDisplay)}`;
+  let availabilityClassModifier = 'available';
+
+  if (availableQtyNumber === 0) {
+    const zeroStateMap = {
+      reserved: {
+        text: t('equipment.card.availability.reserved', 'مؤجرة بالكامل'),
+        modifier: 'reserved',
+      },
+      maintenance: {
+        text: t('equipment.card.availability.maintenance', 'تحت الصيانة'),
+        modifier: 'maintenance',
+      },
+      retired: {
+        text: t('equipment.card.availability.retired', 'غير متاحة'),
+        modifier: 'retired',
+      },
+      default: {
+        text: t('equipment.card.availability.unavailable', 'غير متاحة حالياً'),
+        modifier: 'unavailable',
+      },
+    };
+    const stateConfig = zeroStateMap[availabilityState] || zeroStateMap.default;
+    availabilityText = escapeHtml(stateConfig.text);
+    availabilityClassModifier = stateConfig.modifier;
+  }
+
+  const availabilityHtml = `<span class="equipment-card__availability equipment-card__availability--${availabilityClassModifier}">${availabilityText}</span>`;
   const statusDisplay = statusToFormValue(item.status);
   const statusText = `${escapeHtml(labels.status)}: ${escapeHtml(statusDisplay)}`;
   const statusHtml = `<span class="equipment-card__status-text">${statusText}</span>`;
