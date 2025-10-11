@@ -1708,6 +1708,20 @@
     width: auto;
   }
 
+  .equipment-card__availability {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 2px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(34, 197, 94, 0.12);
+    color: rgba(16, 185, 129, 0.92);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
   .equipment-card__media {
     width: 160px;
     height: 160px;
@@ -1950,6 +1964,12 @@
     align-items: center;
     text-align: center;
     align-self: flex-start;
+  }
+
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability {
+    background: rgba(22, 101, 52, 0.35);
+    color: rgba(209, 250, 229, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.35);
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__media {

@@ -109,6 +109,55 @@ function attachEnglishDigitNormalizer(input) {
   input.dataset.englishDigitsAttached = 'true';
 }
 
+function resolveComparableBarcode(item) {
+  if (!item) return '';
+  const primary = normalizeNumbers(String(item.barcode ?? '')).trim();
+  if (primary) return primary;
+
+  if (Array.isArray(item.variants)) {
+    for (const variant of item.variants) {
+      const variantCode = normalizeNumbers(String(variant?.barcode ?? '')).trim();
+      if (variantCode) return variantCode;
+    }
+  }
+
+  return '';
+}
+
+function compareEquipmentItemsByBarcode(a, b) {
+  const codeA = resolveComparableBarcode(a);
+  const codeB = resolveComparableBarcode(b);
+
+  if (!codeA && !codeB) return 0;
+  if (!codeA) return 1;
+  if (!codeB) return -1;
+
+  const numericPattern = /^[0-9]+$/;
+  const isANumeric = numericPattern.test(codeA);
+  const isBNumeric = numericPattern.test(codeB);
+
+  if (isANumeric && isBNumeric) {
+    if (codeA.length !== codeB.length) {
+      return codeA.length - codeB.length;
+    }
+    const numericCompare = codeA.localeCompare(codeB, 'ar', { numeric: true, sensitivity: 'base' });
+    if (numericCompare !== 0) {
+      return numericCompare;
+    }
+  } else if (isANumeric !== isBNumeric) {
+    return isANumeric ? -1 : 1;
+  } else {
+    const codeCompare = codeA.localeCompare(codeB, 'ar', { numeric: true, sensitivity: 'base' });
+    if (codeCompare !== 0) {
+      return codeCompare;
+    }
+  }
+
+  const descA = normalizeDescriptionValue(a?.desc || a?.description || a?.name || '');
+  const descB = normalizeDescriptionValue(b?.desc || b?.description || b?.name || '');
+  return descA.localeCompare(descB, 'ar', { sensitivity: 'base' });
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -666,6 +715,7 @@ function renderEquipmentItem({ item, index }) {
     category: t("equipment.card.labels.category", "القسم"),
     subcategory: t("equipment.card.labels.subcategory", "القسم الثانوي"),
     barcode: t("equipment.card.labels.barcode", "الباركود"),
+    available: t("equipment.card.labels.available", "متاح"),
   };
   const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
   const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
@@ -674,6 +724,15 @@ function renderEquipmentItem({ item, index }) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+  const reservedQtyNumber = Number.isFinite(Number(item.reservedQty)) ? Number(item.reservedQty) : 0;
+  const maintenanceQtyNumber = Number.isFinite(Number(item.maintenanceQty)) ? Number(item.maintenanceQty) : 0;
+  const availableQtyNumber = Number.isFinite(Number(item.availableQty))
+    ? Number(item.availableQty)
+    : Math.max(qtyNumber - reservedQtyNumber - maintenanceQtyNumber, 0);
+  const availableDisplay = availableQtyNumber.toLocaleString('en-US');
+  const availableOfTotal = t('equipment.card.labels.availableOfTotal', 'من أصل');
+  const availabilityText = `${escapeHtml(labels.available)}: ${escapeHtml(availableDisplay)} ${escapeHtml(availableOfTotal)} ${escapeHtml(qtyDisplay)}`;
+  const availabilityHtml = `<span class="equipment-card__availability">${availabilityText}</span>`;
   const title = item.desc || item.name || "—";
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
@@ -757,10 +816,11 @@ function renderEquipmentItem({ item, index }) {
       aria-label="${cardLabel}"
     >
       <div class="equipment-card__header">
-        <div class="equipment-card__status-block">
-          <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
-          ${renderStatus(item.status)}
-        </div>
+      <div class="equipment-card__status-block">
+        <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
+        ${renderStatus(item.status)}
+        ${availabilityHtml}
+      </div>
         <div class="equipment-card__media-wrapper">
           <div class="equipment-card__media" aria-hidden="true">
             ${
@@ -933,15 +993,34 @@ export function renderEquipment() {
     const aggregatedStatus = variants
       .map((variant) => normalizeStatusValue(variant.status))
       .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || 'available';
+    const statusTotals = variants.reduce(
+      (totals, variant) => {
+        const qty = parseInteger(variant?.qty ?? 0) || 0;
+        const variantStatus = normalizeStatusValue(variant?.status);
+        if (variantStatus === 'reserved') {
+          totals.reserved += qty;
+        } else if (variantStatus === 'maintenance') {
+          totals.maintenance += qty;
+        }
+        return totals;
+      },
+      { reserved: 0, maintenance: 0 }
+    );
+    const availableQty = Math.max(totalQty - statusTotals.reserved - statusTotals.maintenance, 0);
     const aggregatedItem = {
       ...primary,
       qty: totalQty,
       status: aggregatedStatus,
       variants,
       groupKey: resolveEquipmentGroupKey(primary),
+      reservedQty: statusTotals.reserved,
+      maintenanceQty: statusTotals.maintenance,
+      availableQty,
     };
     return { item: aggregatedItem, index: data.indexOf(primary) };
   });
+
+  entries.sort((a, b) => compareEquipmentItemsByBarcode(a.item, b.item));
 
   const rawSearch = document.getElementById("search-equipment")?.value || "";
   const search = normalizeNumbers(rawSearch).toLowerCase().trim();
