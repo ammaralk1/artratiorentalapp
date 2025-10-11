@@ -2039,6 +2039,103 @@
     filter: brightness(0.97);
   }
 
+  .equipment-variants-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .equipment-variants-section[hidden] {
+    display: none !important;
+  }
+
+  .equipment-variants-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .equipment-variants-section__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--clr-text, #1f2d52);
+  }
+
+  .equipment-variants-count {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .equipment-variants-table {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .equipment-variants-table thead {
+    background: rgba(76, 110, 245, 0.08);
+  }
+
+  .equipment-variants-table th {
+    font-weight: 600;
+    color: var(--clr-text, #1f2d52);
+  }
+
+  .equipment-variants-table td {
+    vertical-align: middle;
+  }
+
+  .equipment-variants-table__row--current {
+    background: rgba(76, 110, 245, 0.08);
+  }
+
+  .equipment-variants-current-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-inline-start: 0.5rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: rgba(76, 110, 245, 0.12);
+    color: rgba(76, 110, 245, 0.95);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-section {
+    border-top-color: rgba(148, 163, 184, 0.24);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-section__title {
+    color: rgba(226, 232, 240, 0.94);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-table {
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-table thead {
+    background: rgba(37, 56, 99, 0.65);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-table th,
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-table td {
+    color: rgba(226, 232, 240, 0.92);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-table__row--current {
+    background: rgba(76, 110, 245, 0.18);
+  }
+
+:is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-current-badge {
+    background: rgba(59, 130, 246, 0.22);
+    color: rgba(191, 219, 254, 0.98);
+  }
+
   .equipment-status-badge {
     display: inline-flex;
     align-items: center;

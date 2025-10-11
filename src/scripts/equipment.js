@@ -9,6 +9,7 @@ const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
 let isEquipmentLoading = false;
 let equipmentErrorMessage = "";
+let currentVariantsContext = null;
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -80,6 +81,15 @@ function parseFloatSafe(value) {
   return Math.round(num * 100) / 100;
 }
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function normalizeStatusValue(value) {
   const normalized = String(value ?? "").trim().toLowerCase();
   switch (normalized) {
@@ -129,6 +139,12 @@ function setEquipment(list) {
   equipmentState = Array.isArray(list) ? list.map(toInternalEquipment) : [];
   saveData({ equipment: equipmentState });
   emitEquipmentChanged();
+}
+
+function normalizeDescriptionValue(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
 }
 
 export async function uploadEquipmentFromExcel(file) {
@@ -384,6 +400,89 @@ function renderStatus(status) {
   };
 
   return `<span class="${className}">${label}</span>`;
+}
+
+function clearEquipmentVariants() {
+  const section = document.getElementById('equipment-variants-section');
+  const tableBody = document.getElementById('equipment-variants-table-body');
+  const countEl = document.getElementById('equipment-variants-count');
+  if (section) {
+    section.hidden = true;
+  }
+  if (tableBody) {
+    const emptyMessage = t('equipment.modal.variants.empty', 'لا توجد قطع مرتبطة أخرى.');
+    tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${escapeHtml(emptyMessage)}</td></tr>`;
+  }
+  if (countEl) {
+    countEl.textContent = '0';
+  }
+}
+
+function renderEquipmentVariantsSection(baseItem) {
+  const section = document.getElementById('equipment-variants-section');
+  const tableBody = document.getElementById('equipment-variants-table-body');
+  const countEl = document.getElementById('equipment-variants-count');
+  if (!section || !tableBody || !baseItem) {
+    return;
+  }
+
+  const baseDescription = normalizeDescriptionValue(baseItem.desc || baseItem.description || '');
+  if (!baseDescription) {
+    clearEquipmentVariants();
+    return;
+  }
+
+  const variants = getAllEquipment()
+    .filter((entry) => normalizeDescriptionValue(entry.desc || entry.description || '') === baseDescription)
+    .sort((a, b) => {
+      const aBarcode = String(a.barcode || '').trim();
+      const bBarcode = String(b.barcode || '').trim();
+      if (!aBarcode && !bBarcode) return 0;
+      if (!aBarcode) return 1;
+      if (!bBarcode) return -1;
+      return aBarcode.localeCompare(bBarcode, 'ar', { numeric: true, sensitivity: 'base' });
+    });
+
+  if (!variants.length) {
+    clearEquipmentVariants();
+    return;
+  }
+
+  section.hidden = false;
+  if (countEl) {
+    countEl.textContent = String(variants.length);
+  }
+
+  const currentBadgeLabel = t('equipment.modal.variants.current', 'الحالي');
+  const qtyLabel = t('equipment.form.labels.quantity', 'الكمية');
+
+  const rows = variants
+    .map((variant) => {
+      const isCurrent = variant.id && baseItem.id
+        ? String(variant.id) === String(baseItem.id)
+        : String(variant.barcode || '') === String(baseItem.barcode || '');
+      const rowClass = isCurrent ? 'equipment-variants-table__row--current' : '';
+      const barcodeCell = escapeHtml(String(variant.barcode || '-'));
+      const currentBadge = isCurrent
+        ? `<span class="equipment-variants-current-badge">${escapeHtml(currentBadgeLabel)}</span>`
+        : '';
+      const qtyDisplay = normalizeNumbers(String(Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0));
+      return `
+        <tr class="${rowClass}">
+          <td>
+            ${barcodeCell}
+            ${currentBadge}
+          </td>
+          <td>${renderStatus(variant.status)}</td>
+          <td>
+            <span class="equipment-variants-qty" title="${escapeHtml(qtyLabel)}">${qtyDisplay}</span>
+          </td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  tableBody.innerHTML = rows;
 }
 
 function renderEquipmentItem({ item, index }) {
@@ -915,6 +1014,13 @@ function openEditEquipmentModal(index) {
   document.getElementById("edit-equipment-status").value = statusToFormValue(item.status);
   document.getElementById("edit-equipment-image").value = getEquipmentImage(item) || "";
 
+  renderEquipmentVariantsSection(item);
+  currentVariantsContext = {
+    description: normalizeDescriptionValue(item.desc || item.description || ''),
+    barcode: String(item.barcode || ''),
+    id: item.id || null,
+  };
+
   getBootstrapModal(document.getElementById("editEquipmentModal"))?.show();
 }
 
@@ -939,6 +1045,41 @@ function handleEquipmentListClick(event) {
       console.error('❌ [equipment.js] deleteEquipment', error);
     });
   }
+}
+
+function refreshVariantsIfNeeded() {
+  if (!currentVariantsContext) {
+    return;
+  }
+
+  const modalElement = document.getElementById('editEquipmentModal');
+  const isModalVisible = modalElement?.classList.contains('show');
+  if (!isModalVisible) {
+    return;
+  }
+
+  const items = getAllEquipment();
+  const matchById = currentVariantsContext.id
+    ? items.find((entry) => String(entry.id) === String(currentVariantsContext.id))
+    : null;
+  const normalizedDescription = currentVariantsContext.description;
+  const fallback = items.find((entry) => normalizeDescriptionValue(entry.desc || entry.description || '') === normalizedDescription);
+  const activeItem = matchById || fallback;
+
+  if (!activeItem) {
+    clearEquipmentVariants();
+    return;
+  }
+
+  const newIndex = items.findIndex((entry) => entry === activeItem);
+  if (newIndex >= 0) {
+    const indexField = document.getElementById('edit-equipment-index');
+    if (indexField) {
+      indexField.value = String(newIndex);
+    }
+  }
+
+  renderEquipmentVariantsSection(activeItem);
 }
 
 function wireUpEquipmentUI() {
@@ -1009,4 +1150,19 @@ document.addEventListener("equipment:refreshRequested", () => {
 
 document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
   renderEquipment();
+});
+
+document.addEventListener('equipment:changed', () => {
+  refreshVariantsIfNeeded();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const modalElement = document.getElementById('editEquipmentModal');
+  if (modalElement && !modalElement.dataset.variantsListenerAttached) {
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      currentVariantsContext = null;
+      clearEquipmentVariants();
+    });
+    modalElement.dataset.variantsListenerAttached = 'true';
+  }
 });

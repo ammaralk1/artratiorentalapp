@@ -1483,6 +1483,29 @@
               <input type="text" class="form-control" id="edit-equipment-image" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image">
             </div>
 
+            <section class="equipment-variants-section" id="equipment-variants-section" hidden>
+              <div class="equipment-variants-section__header">
+                <h6 class="equipment-variants-section__title" data-i18n data-i18n-key="equipment.modal.variants.title">📦 القطع المرتبطة</h6>
+                <span class="badge-soft equipment-variants-count" id="equipment-variants-count">0</span>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle equipment-variants-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.barcode">الباركود</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.status">الحالة</th>
+                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.quantity">الكمية</th>
+                    </tr>
+                  </thead>
+                  <tbody id="equipment-variants-table-body">
+                    <tr>
+                      <td colspan="3" class="text-center text-muted" data-i18n data-i18n-key="equipment.modal.variants.empty">لا توجد قطع مرتبطة أخرى.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
           </form>
         </div>
         <div class="modal-footer">
