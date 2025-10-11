@@ -2069,10 +2069,12 @@
   }
 
   .equipment-details-header {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: clamp(0.75rem, 1.5vw, 1.5rem);
-    padding: clamp(1.1rem, 1.6vw + 1rem, 1.9rem);
+    justify-content: flex-end;
+    padding: clamp(1.2rem, 1.6vw + 1rem, 2rem) clamp(1.25rem, 2vw, 2.25rem);
+    padding-inline-start: clamp(3.5rem, 5vw, 5rem);
+    gap: clamp(0.75rem, 1.4vw, 1.5rem);
     background: linear-gradient(135deg, hsl(var(--b2) / 0.92), hsl(var(--b1)));
     border-bottom: 1px solid hsl(var(--p) / 0.14);
   }
@@ -2083,26 +2085,19 @@
     border-bottom-color: hsl(var(--p) / 0.3);
   }
 
-  .equipment-details-header__main {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-
   .equipment-details-header__title {
     margin: 0;
     font-weight: 700;
     color: hsl(var(--bc));
-    flex: 1 1 auto;
-    min-width: 0;
   }
-
   .equipment-details-header__close {
-    flex: 0 0 auto;
+    position: absolute;
+    top: clamp(1rem, 2vw, 1.4rem);
+    left: clamp(1.1rem, 2.8vw, 1.9rem);
+    right: auto;
     border-radius: 999px;
-    padding: 0.45rem;
+    padding: 0.5rem;
     opacity: 0.85;
-    margin-inline-start: auto;
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
@@ -2112,9 +2107,14 @@
     transform: translateY(-1px);
   }
 
+  .equipment-details-header__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: clamp(0.65rem, 1vw, 1rem);
+  }
+
   .equipment-details-header__media {
-    align-self: flex-start;
-    margin-inline-end: auto;
     width: clamp(120px, 18vw, 180px);
     height: clamp(120px, 18vw, 180px);
     border-radius: 22px;
@@ -2158,16 +2158,8 @@
 
   @media (max-width: 768px) {
     .equipment-details-header {
-      align-items: stretch;
-    }
-
-    .equipment-details-header__main {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .equipment-details-header__close {
-      align-self: flex-end;
+      justify-content: center;
+      padding-inline-start: clamp(3rem, 8vw, 4.25rem);
     }
 
     .equipment-details-header__media {
@@ -2176,9 +2168,8 @@
     }
   }
 
-  :where(html[dir='rtl'], body[dir='rtl']) .equipment-details-header__close {
-    margin-inline-start: 0;
-    margin-inline-end: auto;
+  .equipment-details-header__content > * {
+    max-width: clamp(200px, 64vw, 320px);
   }
 
   .equipment-details-grid {
