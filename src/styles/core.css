@@ -1965,7 +1965,7 @@ input.flatpickr-alt-input:focus {
 .flatpickr-time .numInputWrapper {
   width: 72px;
   height: 44px;
-  padding: 4px 30px 4px 12px;
+  padding: 4px 28px 4px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2001,20 +2001,19 @@ input.flatpickr-alt-input:focus {
 
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   font-size: 0;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.82), rgba(37, 99, 235, 0.78));
-  box-shadow: 0 6px 18px -10px rgba(59, 130, 246, 0.9);
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.16);
   position: absolute;
-  left: 50%;
-  display: inline-flex;
+  inset-inline-end: 6px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  transform: translate(-50%, 0);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
+  color: rgba(21, 30, 55, 0.88);
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp {
@@ -2030,19 +2029,17 @@ input.flatpickr-alt-input:focus {
   content: '';
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
   transition: border-color 0.2s ease;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::after {
-  border-bottom: 8px solid rgba(255, 255, 255, 0.92);
+  border-bottom: 7px solid currentColor;
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown::after {
-  border-top: 8px solid rgba(255, 255, 255, 0.92);
-  border-left-color: transparent;
-  border-right-color: transparent;
+  border-top: 7px solid currentColor;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::before,
@@ -2051,24 +2048,42 @@ input.flatpickr-alt-input:focus {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp:hover,
 .flatpickr-time .numInputWrapper span.arrowUp:focus-visible {
-  transform: translate(-50%, -2px);
-  box-shadow: 0 10px 24px -12px rgba(37, 99, 235, 0.9);
+  transform: translateY(-1px);
+  background: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.24);
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown:hover,
 .flatpickr-time .numInputWrapper span.arrowDown:focus-visible {
-  transform: translate(-50%, 2px);
-  box-shadow: 0 10px 24px -12px rgba(37, 99, 235, 0.9);
+  transform: translateY(1px);
+  background: rgba(59, 130, 246, 0.28);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.24);
 }
 
 .flatpickr-time .numInputWrapper span:hover::after,
 .flatpickr-time .numInputWrapper span:focus-visible::after {
-  border-color: rgba(255, 255, 255, 1);
+  border-bottom-color: currentColor;
+  border-top-color: currentColor;
+}
+
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp,
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown {
+  background: rgba(96, 165, 250, 0.18);
+  color: rgba(226, 232, 240, 0.92);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.35);
+}
+
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp:hover,
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp:focus-visible,
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown:hover,
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown:focus-visible {
+  background: rgba(96, 165, 250, 0.32);
+  box-shadow: 0 14px 26px rgba(8, 13, 27, 0.48);
 }
 
 .flatpickr-time .flatpickr-am-pm {
