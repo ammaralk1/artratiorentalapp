@@ -137,8 +137,6 @@ function resetTechnicianForm() {
   if (!form) return;
 
   form.reset();
-  const statusSelect = document.getElementById("technician-status");
-  if (statusSelect) statusSelect.value = "available";
 
   editingTechnicianId = null;
   setTechnicianSubmitState("add");
@@ -151,17 +149,15 @@ function populateTechnicianForm(technician) {
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const wageInput = document.getElementById("technician-wage");
-  const statusSelect = document.getElementById("technician-status");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput || !statusSelect) return;
+  if (!nameInput || !phoneInput || !roleInput || !wageInput) return;
 
   nameInput.value = technician.name || "";
   phoneInput.value = normalizePhoneValue(technician.phone || "");
   roleInput.value = technician.role || "";
   if (departmentInput) departmentInput.value = technician.department || "";
   wageInput.value = normalizeMoneyValue(technician.dailyWage != null ? technician.dailyWage : "");
-  statusSelect.value = technician.baseStatus || technician.status || "available";
   if (notesInput) notesInput.value = technician.notes || "";
 
   editingTechnicianId = String(technician.id);
@@ -175,10 +171,9 @@ function collectTechnicianForm() {
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const wageInput = document.getElementById("technician-wage");
-  const statusSelect = document.getElementById("technician-status");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput || !statusSelect) return null;
+  if (!nameInput || !phoneInput || !roleInput || !wageInput) return null;
 
   const name = nameInput.value.trim();
   const phone = normalizePhoneValue(phoneInput.value.trim());
@@ -188,7 +183,7 @@ function collectTechnicianForm() {
   const wageValue = normalizeMoneyValue(wageInput.value.trim());
   wageInput.value = wageValue;
   const wage = wageValue === "" ? 0 : parseFloat(wageValue);
-  const status = statusSelect.value || "available";
+  const status = 'available';
   const notes = notesInput?.value.trim() || "";
 
   if (!name) {
@@ -408,12 +403,12 @@ function renderTechniciansTable() {
 
   if (techniciansLoading && !techniciansHasLoaded) {
     const loadingMessage = t("technicians.table.loading", "جاري التحميل...");
-    tableBody.innerHTML = `<tr><td colspan='8'>${loadingMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='6'>${loadingMessage}</td></tr>`;
     return;
   }
 
   if (techniciansErrorMessage && !techniciansHasLoaded) {
-    tableBody.innerHTML = `<tr><td colspan='8' class='text-danger'>${techniciansErrorMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='6' class='text-danger'>${techniciansErrorMessage}</td></tr>`;
     return;
   }
 
@@ -443,7 +438,7 @@ function renderTechniciansTable() {
 
   if (filtered.length === 0) {
     const emptyMessage = t("technicians.table.empty", "لا يوجد أعضاء في الطاقم بعد.");
-    tableBody.innerHTML = `<tr><td colspan='8'>${emptyMessage}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan='6'>${emptyMessage}</td></tr>`;
     return;
   }
 
@@ -460,11 +455,6 @@ function renderTechniciansTable() {
           label: t("technicians.status.available", "✅ متاح"),
           className: "technician-status-badge technician-status-badge--available"
         };
-    const wageNumberRaw = Number(tech.dailyWage);
-    const wageNumber = Number.isFinite(wageNumberRaw) ? wageNumberRaw : 0;
-    const wageDisplay = wageNumber.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-    const phoneDisplay = normalizePhoneValue(tech.phone || "");
-    const wageSuffix = t("technicians.table.wageSuffix", "ريال");
     const editLabel = t("technicians.actions.edit", "✏️ تعديل");
     const deleteLabel = t("technicians.actions.delete", "🗑️ حذف");
     const canDelete = userCanManageDestructiveActions();
@@ -481,10 +471,8 @@ function renderTechniciansTable() {
     return `
       <tr${rowClass}>
         <td><a href="technician.html?id=${tech.id}" class="text-decoration-none">${tech.name}</a></td>
-        <td>${phoneDisplay}</td>
         <td>${tech.role || ""}</td>
         <td>${tech.department || "—"}</td>
-        <td>${wageDisplay} ${wageSuffix}</td>
         <td><span class="${statusInfo.className}"><span class="technician-status-badge__text">${statusInfo.label}</span></span></td>
         <td class="table-notes-cell">${tech.notes || "—"}</td>
         <td class="table-actions-cell">
