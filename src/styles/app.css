@@ -2220,6 +2220,11 @@
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
+  [dir='ltr'] .equipment-details-header__close {
+    left: auto;
+    right: clamp(0.95rem, 2.6vw, 1.6rem);
+  }
+
   .equipment-details-header__close:hover,
   .equipment-details-header__close:focus-visible {
     opacity: 1;

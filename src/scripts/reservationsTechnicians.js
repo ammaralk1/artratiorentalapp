@@ -196,10 +196,10 @@ function updateTechnicianPickerInfo() {
   if (!info) return;
   const count = getContextTechnicianIds().length;
   if (count) {
-    const message = t('reservations.crew.selectedCount', 'تم اختيار {count} عضو').replace('{count}', normalizeNumbers(String(count)));
+    const message = t('technicians.picker.selectedCount', 'Selected {count} member(s)').replace('{count}', normalizeNumbers(String(count)));
     info.textContent = message;
   } else {
-    info.textContent = t('reservations.crew.noneShort', 'لم يتم اختيار أي عضو بعد');
+    info.textContent = t('technicians.picker.selectionInfo', 'No crew selected yet');
   }
 }
 
