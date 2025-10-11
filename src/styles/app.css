@@ -1708,6 +1708,12 @@
     width: auto;
   }
 
+  .equipment-card__status-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(17, 24, 39, 0.72);
+  }
+
   .equipment-card__availability {
     display: inline-flex;
     align-items: center;
@@ -1717,9 +1723,12 @@
     border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 600;
-    background: rgba(34, 197, 94, 0.12);
-    color: rgba(16, 185, 129, 0.92);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: rgba(34, 197, 94, 0.18);
+    color: rgba(16, 185, 129, 0.96);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.35),
+      0 6px 18px rgba(16, 185, 129, 0.28),
+      0 0 18px rgba(16, 185, 129, 0.35);
   }
 
   .equipment-card__media {
@@ -1966,10 +1975,17 @@
     align-self: flex-start;
   }
 
+  :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__status-text {
+    color: rgba(203, 213, 225, 0.8);
+  }
+
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__availability {
-    background: rgba(22, 101, 52, 0.35);
-    color: rgba(209, 250, 229, 0.92);
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.35);
+    background: rgba(22, 101, 52, 0.45);
+    color: rgba(209, 250, 229, 0.94);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.45),
+      0 8px 22px rgba(16, 185, 129, 0.32),
+      0 0 18px rgba(16, 185, 129, 0.38);
   }
 
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card__media {
@@ -2385,6 +2401,12 @@
 
   .equipment-variants-table-wrapper {
     border-radius: 1.25rem;
+  }
+
+  .equipment-variants-table thead th,
+  .equipment-variants-table tbody td {
+    text-align: center;
+    vertical-align: middle;
   }
 
   .equipment-variants-table__row--current {

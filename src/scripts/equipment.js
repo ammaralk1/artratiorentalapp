@@ -733,6 +733,9 @@ function renderEquipmentItem({ item, index }) {
   const availableOfTotal = t('equipment.card.labels.availableOfTotal', 'من أصل');
   const availabilityText = `${escapeHtml(labels.available)}: ${escapeHtml(availableDisplay)} ${escapeHtml(availableOfTotal)} ${escapeHtml(qtyDisplay)}`;
   const availabilityHtml = `<span class="equipment-card__availability">${availabilityText}</span>`;
+  const statusDisplay = statusToFormValue(item.status);
+  const statusText = `${escapeHtml(labels.status)}: ${escapeHtml(statusDisplay)}`;
+  const statusHtml = `<span class="equipment-card__status-text">${statusText}</span>`;
   const title = item.desc || item.name || "—";
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
@@ -817,8 +820,7 @@ function renderEquipmentItem({ item, index }) {
     >
       <div class="equipment-card__header">
       <div class="equipment-card__status-block">
-        <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
-        ${renderStatus(item.status)}
+        ${statusHtml}
         ${availabilityHtml}
       </div>
         <div class="equipment-card__media-wrapper">
