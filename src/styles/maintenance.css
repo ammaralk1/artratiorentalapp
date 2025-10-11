@@ -45,26 +45,30 @@
 
 .maintenance-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  grid-template-columns: 1fr;
+}
+
+.maintenance-search-row {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-
-.maintenance-form-grid .maintenance-priority-field {
+.maintenance-search-row__field,
+.maintenance-search-row__priority {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
   gap: 6px;
 }
 
-.maintenance-form-grid .maintenance-priority-field .form-label {
+.maintenance-search-row__priority .form-label {
   width: 100%;
   font-size: 0.95rem;
 }
 
-.maintenance-form-grid .maintenance-priority-field #maintenance-priority {
-  width: 100% !important;
+.maintenance-search-row__priority #maintenance-priority {
+  width: 100%;
   border-radius: 12px;
   padding-inline: 1rem;
   min-height: 3.1rem;
@@ -76,17 +80,17 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.maintenance-form-grid .maintenance-priority-field #maintenance-priority:focus {
+.maintenance-search-row__priority #maintenance-priority:focus {
   border-color: rgba(76, 110, 245, 0.55);
   box-shadow: 0 0 0 0.2rem rgba(76, 110, 245, 0.18);
 }
 
-.maintenance-form-grid .maintenance-priority-field #maintenance-priority option {
+.maintenance-search-row__priority #maintenance-priority option {
   background-color: rgba(248, 250, 255, 0.95);
   color: #1f2d52;
 }
 
-:is(html.dark, body.dark) .maintenance-form-grid .maintenance-priority-field #maintenance-priority {
+:is(html.dark, body.dark) .maintenance-search-row__priority #maintenance-priority {
   background: linear-gradient(135deg, rgba(17, 27, 53, 0.94), rgba(31, 46, 84, 0.9));
   border-color: rgba(148, 163, 255, 0.26);
   color: rgba(226, 232, 240, 0.94);
@@ -95,9 +99,35 @@
     0 0 0 1px rgba(147, 197, 253, 0.12);
 }
 
-:is(html.dark, body.dark) .maintenance-form-grid .maintenance-priority-field #maintenance-priority option {
+:is(html.dark, body.dark) .maintenance-search-row__priority #maintenance-priority option {
   background-color: rgba(17, 27, 53, 0.95);
   color: rgba(226, 232, 240, 0.94);
+}
+
+@media (min-width: 768px) {
+  .maintenance-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .maintenance-form-grid .form-field:first-child {
+    grid-column: span 2;
+  }
+
+  .maintenance-search-row {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 20px;
+  }
+
+  .maintenance-search-row__field {
+    flex: 1 1 320px;
+  }
+
+  .maintenance-search-row__priority {
+    flex: 0 1 440px;
+    min-width: 320px;
+  }
 }
 
 .maintenance-status-filter {
