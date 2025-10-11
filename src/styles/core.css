@@ -2001,18 +2001,19 @@ input.flatpickr-alt-input:focus {
 
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   font-size: 0;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.82), rgba(37, 99, 235, 0.78));
   box-shadow: 0 6px 18px -10px rgba(59, 130, 246, 0.9);
   position: absolute;
-  right: 6px;
+  left: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transform: translate(-50%, 0);
   cursor: pointer;
 }
 
@@ -2027,17 +2028,21 @@ input.flatpickr-alt-input:focus {
 .flatpickr-time .numInputWrapper span.arrowUp::after,
 .flatpickr-time .numInputWrapper span.arrowDown::after {
   content: '';
-  width: 8px;
-  height: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  border-left: transparent;
-  border-bottom: transparent;
-  transform: rotate(45deg) translateY(-1px);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
   transition: border-color 0.2s ease;
 }
 
+.flatpickr-time .numInputWrapper span.arrowUp::after {
+  border-bottom: 8px solid rgba(255, 255, 255, 0.92);
+}
+
 .flatpickr-time .numInputWrapper span.arrowDown::after {
-  transform: rotate(225deg) translateY(1px);
+  border-top: 8px solid rgba(255, 255, 255, 0.92);
+  border-left-color: transparent;
+  border-right-color: transparent;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::before,
@@ -2051,13 +2056,13 @@ input.flatpickr-alt-input:focus {
 
 .flatpickr-time .numInputWrapper span.arrowUp:hover,
 .flatpickr-time .numInputWrapper span.arrowUp:focus-visible {
-  transform: translateY(-2px);
+  transform: translate(-50%, -2px);
   box-shadow: 0 10px 24px -12px rgba(37, 99, 235, 0.9);
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown:hover,
 .flatpickr-time .numInputWrapper span.arrowDown:focus-visible {
-  transform: translateY(2px);
+  transform: translate(-50%, 2px);
   box-shadow: 0 10px 24px -12px rgba(37, 99, 235, 0.9);
 }
 
