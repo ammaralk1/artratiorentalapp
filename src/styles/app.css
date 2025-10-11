@@ -1398,10 +1398,16 @@
     text-align: center;
   }
 
-  :is(.customer-table) thead th:first-child,
-  :is(.customer-table) tbody td:first-child {
-    width: 24rem;
-    min-width: 24rem;
+  :is(.customer-table):not(.maintenance-table) thead th:first-child,
+  :is(.customer-table):not(.maintenance-table) tbody td:first-child {
+    width: 20rem;
+    min-width: 20rem;
+  }
+
+  .maintenance-table thead th:first-child,
+  .maintenance-table tbody td:first-child {
+    width: auto;
+    min-width: initial;
   }
 
   :is(.customer-table, .technician-table) .table-actions-cell .table-action-buttons {
