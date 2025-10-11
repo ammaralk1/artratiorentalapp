@@ -75,56 +75,35 @@ function initializeReservationPickers() {
     ['#edit-res-end', {}]
   ];
 
-  const timePickers = [
-    ['#res-start-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0,
-      disableMobile: true,
-      altInputClass: 'flatpickr-alt-input form-control'
-    }],
-    ['#res-end-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0,
-      disableMobile: true,
-      altInputClass: 'flatpickr-alt-input form-control'
-    }],
-    ['#edit-res-start-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0,
-      disableMobile: true,
-      altInputClass: 'flatpickr-alt-input form-control'
-    }],
-    ['#edit-res-end-time', {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: 'H:i',
-      altInput: true,
-      altFormat: 'h:iK',
-      time_24hr: false,
-      defaultHour: 9,
-      defaultMinute: 0,
-      disableMobile: true,
-      altInputClass: 'flatpickr-alt-input form-control'
-    }]
-  ];
+  const enforceTopOfHour = (selectedDates, _dateStr, instance) => {
+    if (!Array.isArray(selectedDates) || selectedDates.length === 0) return;
+    const original = selectedDates[0];
+    if (!(original instanceof Date)) return;
+    if (original.getMinutes() !== 0 || original.getSeconds() !== 0 || original.getMilliseconds() !== 0) {
+      const corrected = new Date(original.getTime());
+      corrected.setMinutes(0, 0, 0);
+      instance.setDate(corrected, false);
+    }
+  };
+
+  const baseTimeConfig = {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    altInput: true,
+    altFormat: 'h:iK',
+    time_24hr: false,
+    defaultHour: 9,
+    defaultMinute: 0,
+    disableMobile: true,
+    minuteIncrement: 60,
+    altInputClass: 'flatpickr-alt-input form-control',
+    onChange: enforceTopOfHour,
+    onClose: enforceTopOfHour,
+    onReady: enforceTopOfHour
+  };
+
+  const timePickers = ['#res-start-time', '#res-end-time', '#edit-res-start-time', '#edit-res-end-time'];
 
   datePickers.forEach(([selector, config]) => {
     if (document.querySelector(selector)) {
@@ -132,9 +111,9 @@ function initializeReservationPickers() {
     }
   });
 
-  timePickers.forEach(([selector, config]) => {
+  timePickers.forEach((selector) => {
     if (document.querySelector(selector)) {
-      fp(selector, config);
+      fp(selector, { ...baseTimeConfig });
     }
   });
 
