@@ -1552,31 +1552,42 @@
             <input type="hidden" id="edit-res-confirmed" value="false">
 
             <div class="col-12">
-              <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
-              <input type="text" class="form-control" id="edit-res-id" disabled>
+              <div class="reservation-field-row">
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-id" disabled>
+                </div>
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-customer" disabled>
+                </div>
+              </div>
             </div>
 
             <div class="col-12">
-              <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
-              <input type="text" class="form-control" id="edit-res-customer" disabled>
+              <div class="reservation-field-row">
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-start">
+                </div>
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-end">
+                </div>
+              </div>
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
-              <input type="text" class="form-control reservation-date-field" id="edit-res-start">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
-              <input type="text" class="form-control reservation-date-field" id="edit-res-end">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
-              <input type="text" class="form-control reservation-time-field" id="edit-res-start-time">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
-              <input type="text" class="form-control reservation-time-field" id="edit-res-end-time">
+            <div class="col-12">
+              <div class="reservation-field-row">
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-start-time">
+                </div>
+                <div class="reservation-field">
+                  <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+                  <input type="text" class="form-control reservation-field-control" id="edit-res-end-time">
+                </div>
+              </div>
             </div>
 
             <div class="col-12">
@@ -1586,7 +1597,7 @@
 
             <div class="col-12">
               <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
-              <select id="edit-res-project" class="form-select">
+              <select id="edit-res-project" class="form-select reservation-field-control">
                 <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
               </select>
             </div>

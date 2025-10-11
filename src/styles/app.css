@@ -4540,12 +4540,28 @@
   color: rgba(226, 232, 240, 0.95);
 }
 
-.reservation-date-field,
-.reservation-time-field {
+
+.reservation-field-row {
+  display: grid;
+  gap: clamp(0.85rem, 1.5vw, 1.4rem);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.reservation-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.reservation-field-control {
   width: 100%;
+  max-width: none;
 }
 
 .reservation-notes--compact {
   min-height: 120px;
   resize: vertical;
+  width: 100%;
+  max-width: none;
 }
+
