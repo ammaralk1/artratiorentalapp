@@ -4484,142 +4484,122 @@
 .reservation-payment-card__toggles {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
+  gap: 0.8rem 1.2rem;
 }
 
-.reservation-toggle {
+.reservation-option-card {
   position: relative;
   flex: 1 1 220px;
-  min-width: min(100%, 220px);
+  min-width: min(100%, 240px);
 }
 
-.reservation-toggle__input {
+.reservation-option-card__input {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  overflow: hidden;
 }
 
-.reservation-toggle__label {
+.reservation-option-card__label {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.65rem 1.35rem 0.65rem 3.6rem;
-  border-radius: 999px;
-  border: 1px solid rgba(99, 102, 241, 0.24);
-  background: rgba(99, 102, 241, 0.08);
-  color: hsl(220deg 27% 30%);
+  gap: 0.9rem;
+  padding: 0.95rem 1.2rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  background: rgba(248, 250, 255, 0.72);
+  color: hsl(221deg 39% 26%);
   font-weight: 600;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
   transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.reservation-toggle__label::before {
-  content: '';
+.reservation-option-card__label::after {
+  content: '●';
   position: absolute;
-  top: 50%;
-  inset-inline-start: 1.1rem;
-  width: 46px;
-  height: 26px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(203, 213, 255, 0.9), rgba(167, 199, 255, 0.85));
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  transform: translateY(-50%);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  top: 0.9rem;
+  inset-inline-end: 1rem;
+  font-size: 0.75rem;
+  color: rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
-.reservation-toggle__label::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  inset-inline-start: calc(1.1rem + 3px);
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
-  transform: translateY(-50%) translateX(0);
-  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+.reservation-option-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.8rem;
+  background: rgba(99, 102, 241, 0.12);
+  font-size: 1.2rem;
 }
 
-.reservation-toggle__input:checked + .reservation-toggle__label {
-  background: rgba(79, 70, 229, 0.15);
-  border-color: rgba(79, 70, 229, 0.45);
-  color: hsl(226deg 35% 28%);
+.reservation-option-card__text {
+  flex: 1 1 auto;
+  line-height: 1.4;
 }
 
-.reservation-toggle__input:checked + .reservation-toggle__label::before {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.85), rgba(59, 130, 246, 0.85));
-  border-color: rgba(59, 130, 246, 0.6);
-}
-
-.reservation-toggle__input:checked + .reservation-toggle__label::after {
-  transform: translateY(-50%) translateX(20px);
-  background: #f8fafc;
-  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.35);
-}
-
-.reservation-toggle__input:focus-visible + .reservation-toggle__label {
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-}
-
-.reservation-toggle__label:hover {
+.reservation-option-card__input:checked + .reservation-option-card__label {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(59, 130, 246, 0.08));
   border-color: rgba(79, 70, 229, 0.4);
+  color: hsl(226deg 42% 28%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 10px 24px rgba(79, 70, 229, 0.12);
 }
 
-body[dir='rtl'] .reservation-toggle__label {
-  padding: 0.65rem 3.6rem 0.65rem 1.35rem;
+.reservation-option-card__input:checked + .reservation-option-card__label::after {
+  content: '✔';
+  color: rgba(79, 70, 229, 0.8);
+  transform: translateY(-2px);
+}
+
+.reservation-option-card__input:focus-visible + .reservation-option-card__label {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+}
+
+.reservation-option-card__label:hover {
+  border-color: rgba(79, 70, 229, 0.35);
+}
+
+body[dir='rtl'] .reservation-option-card__label::after {
+  inset-inline-end: auto;
+  inset-inline-start: 1rem;
+}
+
+body[dir='rtl'] .reservation-option-card__label {
   justify-content: flex-end;
 }
 
-body[dir='rtl'] .reservation-toggle__label::before {
-  inset-inline-start: auto;
-  inset-inline-end: 1.1rem;
-}
-
-body[dir='rtl'] .reservation-toggle__label::after {
-  inset-inline-start: auto;
-  inset-inline-end: calc(1.1rem + 3px);
-}
-
-body[dir='rtl'] .reservation-toggle__input:checked + .reservation-toggle__label::after {
-  transform: translateY(-50%) translateX(-20px);
-}
-
-:is(html.dark, body.dark) .reservation-toggle__label {
-  background: rgba(59, 73, 138, 0.28);
-  border-color: rgba(129, 140, 248, 0.32);
+:is(html.dark, body.dark) .reservation-option-card__label {
+  background: rgba(36, 52, 96, 0.5);
+  border-color: rgba(148, 163, 255, 0.32);
   color: rgba(226, 232, 240, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(148, 163, 255, 0.08),
+    0 12px 26px rgba(15, 23, 42, 0.32);
 }
 
-:is(html.dark, body.dark) .reservation-toggle__label::before {
-  background: linear-gradient(135deg, rgba(37, 56, 115, 0.85), rgba(56, 78, 146, 0.82));
-  border-color: rgba(129, 140, 248, 0.4);
+:is(html.dark, body.dark) .reservation-option-card__icon {
+  background: rgba(96, 165, 250, 0.18);
 }
 
-:is(html.dark, body.dark) .reservation-toggle__label::after {
-  background: rgba(226, 232, 240, 0.96);
-  box-shadow: 0 4px 10px rgba(8, 11, 22, 0.5);
-}
-
-:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label {
-  background: rgba(129, 140, 248, 0.32);
+:is(html.dark, body.dark) .reservation-option-card__input:checked + .reservation-option-card__label {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(79, 70, 229, 0.28));
   border-color: rgba(96, 165, 250, 0.55);
+  color: rgba(226, 232, 240, 0.94);
 }
 
-:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label::before {
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.82), rgba(129, 140, 248, 0.82));
-  border-color: rgba(96, 165, 250, 0.6);
-}
-
-:is(html.dark, body.dark) .reservation-toggle__input:checked + .reservation-toggle__label::after {
-  background: rgba(15, 23, 42, 0.92);
-  box-shadow: 0 6px 16px rgba(96, 165, 250, 0.45);
+:is(html.dark, body.dark) .reservation-option-card__input:checked + .reservation-option-card__label::after {
+  color: rgba(147, 197, 253, 0.92);
 }
 
 .reservation-payment-card__field .form-label {

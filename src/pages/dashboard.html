@@ -1613,13 +1613,19 @@
                 </div>
                 <div class="reservation-payment-card__body">
                   <div class="reservation-payment-card__toggles">
-                    <div class="reservation-toggle">
-                      <input type="checkbox" class="reservation-toggle__input" id="edit-res-company-share" data-company-share="10" role="switch">
-                      <label class="reservation-toggle__label" for="edit-res-company-share" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</label>
+                    <div class="reservation-option-card">
+                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-company-share" data-company-share="10">
+                      <label class="reservation-option-card__label" for="edit-res-company-share">
+                        <span class="reservation-option-card__icon" aria-hidden="true">🏢</span>
+                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</span>
+                      </label>
                     </div>
-                    <div class="reservation-toggle">
-                      <input type="checkbox" class="reservation-toggle__input" id="edit-res-tax" role="switch">
-                      <label class="reservation-toggle__label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+                    <div class="reservation-option-card">
+                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-tax">
+                      <label class="reservation-option-card__label" for="edit-res-tax">
+                        <span class="reservation-option-card__icon" aria-hidden="true">🧾</span>
+                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</span>
+                      </label>
                     </div>
                   </div>
                   <div class="reservation-payment-card__field">
