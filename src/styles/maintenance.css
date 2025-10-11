@@ -160,6 +160,7 @@
   text-align: center;
   gap: 8px;
   width: min(100%, 820px);
+  justify-self: center;
   margin-inline: auto;
 }
 
@@ -169,9 +170,9 @@
 }
 
 .maintenance-form-grid .maintenance-issue-field #maintenance-issue {
+  display: block;
   width: 100% !important;
   max-width: 100% !important;
-  margin-inline: auto;
   border-radius: 18px;
   min-height: 160px;
   padding: 20px 22px;
