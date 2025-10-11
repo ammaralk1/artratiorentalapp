@@ -235,6 +235,9 @@
 }
 
 .maintenance-selected-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 12px 16px;
   border-radius: 14px;
   background: var(--clr-card);
@@ -242,6 +245,11 @@
   font-size: 0.9rem;
   color: var(--clr-muted);
   box-shadow: var(--shadow-xs);
+  width: fit-content;
+  max-width: min(100%, 420px);
+  margin: 0 auto;
+  text-align: center;
+  gap: 8px;
 }
 
 .maintenance-stats {
