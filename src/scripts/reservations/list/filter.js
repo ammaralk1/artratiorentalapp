@@ -7,7 +7,39 @@ function parseIsoDate(value) {
   return Number.isNaN(timestamp) ? null : timestamp;
 }
 
+function extractNumericIdentifier(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const raw = String(value).trim();
+  if (!raw) return null;
+  const matches = raw.match(/(\d+)/g);
+  if (!matches || matches.length === 0) return null;
+  const lastMatch = matches[matches.length - 1];
+  const parsed = Number.parseInt(lastMatch, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolveReservationSequence(reservation) {
+  const candidates = [
+    reservation?.reservationId,
+    reservation?.reservation_id,
+    reservation?.id,
+  ];
+  for (const candidate of candidates) {
+    const numeric = extractNumericIdentifier(candidate);
+    if (numeric !== null) {
+      return numeric;
+    }
+  }
+  return null;
+}
+
 function resolveReservationSortKey(reservation, fallbackIndex = 0) {
+  const sequence = resolveReservationSequence(reservation);
+  if (sequence != null) return sequence;
+
   const created = parseIsoDate(reservation.createdAt ?? reservation.created_at);
   if (created != null) return created;
 
