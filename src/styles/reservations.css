@@ -997,12 +997,21 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   align-items: flex-end;
 }
 
+.edit-reservation-field-row--single {
+  justify-content: center;
+}
+
 .edit-reservation-field {
   flex: 1 1 220px;
   min-width: min(100%, 220px);
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.edit-reservation-field--wide {
+  flex: 2 1 360px;
+  min-width: min(100%, 320px);
 }
 
 .edit-reservation-notes-label {
@@ -1013,6 +1022,8 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 #edit-res-summary {
   display: flex;
   justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
   padding: 0;
   margin: 12px 0 0;
   background-color: transparent;
@@ -1021,6 +1032,12 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 
 #edit-res-summary .reservation-summary-card {
   margin-inline: auto;
+}
+
+.reservation-notes--short {
+  min-height: 80px;
+  line-height: 1.35;
+  resize: vertical;
 }
 
 .reservation-info-card {
