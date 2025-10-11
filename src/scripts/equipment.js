@@ -84,6 +84,31 @@ function parseFloatSafe(value) {
   return Math.round(num * 100) / 100;
 }
 
+function attachEnglishDigitNormalizer(input) {
+  if (!input || input.dataset.englishDigitsAttached) {
+    return;
+  }
+
+  input.addEventListener('input', () => {
+    const { selectionStart, selectionEnd, value } = input;
+    const normalized = normalizeNumbers(value);
+    if (normalized === value) {
+      return;
+    }
+
+    input.value = normalized;
+
+    if (selectionStart != null && selectionEnd != null) {
+      const lengthDelta = normalized.length - value.length;
+      const start = selectionStart + lengthDelta;
+      const end = selectionEnd + lengthDelta;
+      input.setSelectionRange(start, end);
+    }
+  });
+
+  input.dataset.englishDigitsAttached = 'true';
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -228,6 +253,11 @@ function setEquipmentEditMode(isEditing) {
   const elements = getEquipmentFormElements();
   const cancelBtn = document.getElementById('equipment-edit-cancel');
   const saveBtn = document.getElementById('save-equipment-changes');
+  const form = document.getElementById('edit-equipment-form');
+
+  if (form) {
+    form.classList.toggle('equipment-details-form--editing', isEditing);
+  }
 
   const inputs = [
     elements.category,
@@ -596,11 +626,9 @@ function renderEquipmentVariantsSection(baseItem) {
         : '';
       const qtyDisplay = normalizeNumbers(String(Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0));
       const variantIndex = allItems.indexOf(variant);
-      const editLabel = escapeHtml(t('equipment.item.actions.edit', '✏️ تعديل'));
       const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
         ? `<div class="table-action-buttons equipment-variant-actions">
-            <button type="button" class="btn btn-sm btn-primary equipment-variant-action" data-variant-action="edit" data-variant-index="${variantIndex}">${editLabel}</button>
             <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
         : '';
@@ -1252,14 +1280,6 @@ function handleVariantTableClick(event) {
     }
     return;
   }
-
-  const editButton = event.target.closest('[data-variant-action="edit"]');
-  if (editButton) {
-    const variantIndex = Number(editButton.dataset.variantIndex);
-    if (!Number.isNaN(variantIndex)) {
-      openEditEquipmentModal(variantIndex);
-    }
-  }
 }
 
 function refreshVariantsIfNeeded() {
@@ -1355,6 +1375,15 @@ function wireUpEquipmentUI() {
     variantsTable.addEventListener('click', handleVariantTableClick);
     variantsTable.dataset.listenerAttached = 'true';
   }
+
+  [
+    'edit-equipment-quantity',
+    'edit-equipment-price',
+    'edit-equipment-barcode',
+  ].forEach((id) => {
+    const input = document.getElementById(id);
+    attachEnglishDigitNormalizer(input);
+  });
 }
 
 document.getElementById("save-equipment-changes")?.addEventListener("click", async () => {
