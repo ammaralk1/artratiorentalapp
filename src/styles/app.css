@@ -2071,10 +2071,14 @@
   .equipment-details-header {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
     justify-content: flex-end;
-    padding: clamp(1.2rem, 1.6vw + 1rem, 2rem) clamp(1.25rem, 2vw, 2.25rem);
-    padding-inline-start: clamp(3.5rem, 5vw, 5rem);
-    gap: clamp(0.75rem, 1.4vw, 1.5rem);
+    align-content: flex-start;
+    padding: clamp(1.25rem, 1.65vw + 1rem, 2.05rem) clamp(1.25rem, 2vw, 2.25rem);
+    padding-inline-start: clamp(2.75rem, 5vw, 3.75rem);
+    row-gap: clamp(0.75rem, 1.4vw, 1.5rem);
+    column-gap: clamp(0.75rem, 1.2vw, 1.25rem);
     background: linear-gradient(135deg, hsl(var(--b2) / 0.92), hsl(var(--b1)));
     border-bottom: 1px solid hsl(var(--p) / 0.14);
   }
@@ -2112,11 +2116,16 @@
     flex-direction: column;
     align-items: flex-end;
     gap: clamp(0.65rem, 1vw, 1rem);
+    flex: 1 1 100%;
+    width: min(100%, clamp(240px, 70vw, 360px));
+    text-align: end;
   }
 
   .equipment-details-header__media {
-    width: clamp(120px, 18vw, 180px);
-    height: clamp(120px, 18vw, 180px);
+    align-self: flex-end;
+    width: clamp(120px, 45vw, 220px);
+    height: clamp(120px, 45vw, 220px);
+    max-width: 100%;
     border-radius: 22px;
     overflow: hidden;
     display: flex;
@@ -2159,17 +2168,26 @@
   @media (max-width: 768px) {
     .equipment-details-header {
       justify-content: center;
-      padding-inline-start: clamp(3rem, 8vw, 4.25rem);
+      align-items: center;
+      padding-inline-start: clamp(2.5rem, 10vw, 3.5rem);
+      row-gap: 1.25rem;
+    }
+
+    .equipment-details-header__content {
+      align-items: center;
+      text-align: center;
+      width: 100%;
     }
 
     .equipment-details-header__media {
-      width: clamp(110px, 36vw, 150px);
-      height: clamp(110px, 36vw, 150px);
+      align-self: center;
+      width: clamp(110px, 60vw, 180px);
+      height: clamp(110px, 60vw, 180px);
     }
   }
 
   .equipment-details-header__content > * {
-    max-width: clamp(200px, 64vw, 320px);
+    max-width: 100%;
   }
 
   .equipment-details-grid {
@@ -2396,11 +2414,32 @@
     box-shadow: 0 18px 32px rgba(239, 68, 68, 0.3);
   }
 
+  #editEquipmentModal .modal-footer {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 576px) {
+    #editEquipmentModal .modal-footer {
+      justify-content: center;
+    }
+
+    .equipment-details-actions {
+      margin-inline-start: 0;
+      justify-content: center;
+    }
+  }
+
   .equipment-details-actions {
-    display: inline-flex;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.75rem;
     margin-inline-start: auto;
+    width: 100%;
+    max-width: 100%;
   }
 
   .equipment-status-badge {
