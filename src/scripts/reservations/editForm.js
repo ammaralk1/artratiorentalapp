@@ -1,6 +1,7 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers } from '../utils.js';
+import { groupReservationItems, resolveReservationItemGroupKey } from '../reservationsShared.js';
 import {
   resolveItemImage,
   findEquipmentByBarcode,
@@ -39,56 +40,184 @@ export function renderEditReservationItems(items = []) {
   const noItemsMessage = t('reservations.create.equipment.none', 'لا توجد معدات');
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
+  const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
+  const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');
+  const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (!items || items.length === 0) {
-    container.innerHTML = `<tr><td colspan="6" class="text-center">${noItemsMessage}</td></tr>`;
-    ensureRemoveHandler(container);
+    container.innerHTML = `<tr><td colspan="5" class="text-center">${noItemsMessage}</td></tr>`;
+    ensureGroupHandler(container);
     return;
   }
 
-  container.innerHTML = items
-    .map((item, index) => {
-      const image = resolveItemImage(item);
-      const priceDisplay = `${normalizeNumbers(String(item.price ?? 0))} ${currencyLabel}`;
-      const qtyDisplay = normalizeNumbers(String(item.qty || 1));
-      const imageCell = image
-        ? `<img src="${image}" alt="${imageAlt}" class="reservation-item-thumb">`
-        : '-';
+  const groups = groupReservationItems(items);
+
+  container.innerHTML = groups
+    .map((group) => {
+      const representative = group.items[0] || {};
+      const imageSource = resolveItemImage(representative) || group.image;
+      const imageCell = imageSource
+        ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
+        : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+      const quantityDisplay = normalizeNumbers(String(group.count));
+      const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
+      const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * group.count;
+      const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
+
+      const normalizedBarcodes = group.barcodes
+        .map((code) => normalizeNumbers(String(code || '')))
+        .filter(Boolean);
+      const baseBarcodes = normalizedBarcodes.slice(0, 3).join(', ');
+      const remaining = normalizedBarcodes.length - 3;
+      const barcodesMeta = normalizedBarcodes.length
+        ? `<div class="reservation-item-meta">${baseBarcodes}${remaining > 0 ? ` +${normalizeNumbers(String(remaining))}` : ''}</div>`
+        : '';
+
       return `
-        <tr>
-          <td>${item.barcode || '-'}</td>
-          <td>${item.desc || '-'}</td>
-          <td>${priceDisplay}</td>
-          <td>${qtyDisplay}</td>
-          <td>${imageCell}</td>
-          <td><button type="button" class="reservation-remove-button" data-action="remove-edit-item" data-item-index="${index}">🗑️</button></td>
+        <tr data-group-key="${group.key}">
+          <td>
+            <div class="reservation-item-info">
+              <div class="reservation-item-thumb-wrapper">${imageCell}</div>
+              <div class="reservation-item-copy">
+                <div class="reservation-item-title">${group.description || '-'}</div>
+                ${barcodesMeta}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="reservation-quantity-control" data-group-key="${group.key}">
+              <button type="button" class="reservation-qty-btn" data-action="decrease-edit-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+              <span class="reservation-qty-value">${quantityDisplay}</span>
+              <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+            </div>
+          </td>
+          <td>${unitPriceDisplay}</td>
+          <td>${totalPriceDisplay}</td>
+          <td>
+            <button type="button" class="reservation-remove-button" data-action="remove-edit-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
+          </td>
         </tr>
       `;
     })
     .join('');
 
-  ensureRemoveHandler(container);
+  ensureGroupHandler(container);
 }
 
-function ensureRemoveHandler(container) {
-  if (!container || container.dataset.removeListenerAttached) {
+function decreaseEditReservationGroup(groupKey) {
+  const { index: editingIndex, items } = getEditingState();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+
+  const removeIndex = target.itemIndices[target.itemIndices.length - 1];
+  if (removeIndex == null) return;
+
+  const nextItems = items.filter((_, idx) => idx !== removeIndex);
+  setEditingState(editingIndex, nextItems);
+  renderEditReservationItems(nextItems);
+  updateEditReservationSummary();
+}
+
+function removeEditReservationGroup(groupKey) {
+  const { index: editingIndex, items } = getEditingState();
+  const filtered = items.filter((item) => resolveReservationItemGroupKey(item) !== groupKey);
+  if (filtered.length === items.length) return;
+  setEditingState(editingIndex, filtered);
+  renderEditReservationItems(filtered);
+  updateEditReservationSummary();
+}
+
+function increaseEditReservationGroup(groupKey) {
+  const { index: editingIndex, items } = getEditingState();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+
+  const { start, end } = getEditReservationDateRange();
+  if (!start || !end) {
+    showToast(t('reservations.toast.requireOverallDates', '⚠️ يرجى تحديد تواريخ الحجز قبل إضافة المعدات'));
+    return;
+  }
+
+  const { reservations = [] } = loadData();
+  const currentReservation = editingIndex != null ? reservations[editingIndex] || null : null;
+  const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
+
+  const normalizedSelected = new Set(items.map((item) => normalizeBarcodeValue(item.barcode)));
+  const { equipment = [] } = loadData();
+
+  const candidate = (equipment || []).find((record) => {
+    const barcodeNormalized = normalizeBarcodeValue(record?.barcode);
+    if (!barcodeNormalized || normalizedSelected.has(barcodeNormalized)) return false;
+    const candidateKey = resolveReservationItemGroupKey({
+      desc: record?.desc || record?.description || record?.name || '',
+      price: Number(record?.price) || 0,
+    });
+    if (candidateKey !== groupKey) return false;
+    if (isEquipmentInMaintenance(barcodeNormalized)) return false;
+    return !hasEquipmentConflict(barcodeNormalized, start, end, ignoreId);
+  });
+
+  if (!candidate) {
+    showToast(t('reservations.toast.noAdditionalUnits', '⚠️ لا توجد وحدات إضافية متاحة حالياً'));
+    return;
+  }
+
+  const normalizedCode = normalizeBarcodeValue(candidate.barcode);
+  const nextItems = [
+    ...items,
+    {
+      id: candidate.id,
+      equipmentId: candidate.id,
+      barcode: normalizedCode,
+      desc: candidate.desc || candidate.description || candidate.name || target.description || '',
+      qty: 1,
+      price: Number.isFinite(Number(candidate.price)) ? Number(candidate.price) : target.unitPrice,
+      image: resolveItemImage(candidate)
+    }
+  ];
+
+  setEditingState(editingIndex, nextItems);
+  renderEditReservationItems(nextItems);
+  updateEditReservationSummary();
+}
+
+function ensureGroupHandler(container) {
+  if (!container || container.dataset.groupListenerAttached) {
     return;
   }
 
   container.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-action="remove-edit-item"]');
-    if (!trigger) {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const { action, groupKey, itemIndex } = button.dataset;
+
+    if (action === 'decrease-edit-group' && groupKey) {
+      decreaseEditReservationGroup(groupKey);
       return;
     }
 
-    event.preventDefault();
-    const index = Number(trigger.dataset.itemIndex);
-    if (!Number.isNaN(index)) {
-      removeEditReservationItem(index);
+    if (action === 'increase-edit-group' && groupKey) {
+      increaseEditReservationGroup(groupKey);
+      return;
+    }
+
+    if (action === 'remove-edit-group' && groupKey) {
+      removeEditReservationGroup(groupKey);
+      return;
+    }
+
+    if (action === 'remove-edit-item') {
+      const index = Number(itemIndex);
+      if (!Number.isNaN(index)) {
+        removeEditReservationItem(index);
+      }
     }
   });
 
-  container.dataset.removeListenerAttached = 'true';
+  container.dataset.groupListenerAttached = 'true';
 }
 
 export function updateEditReservationSummary() {

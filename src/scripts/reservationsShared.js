@@ -4,6 +4,60 @@ export function normalizeText(value = '') {
   return normalizeNumbers(String(value)).trim().toLowerCase();
 }
 
+const GROUP_PRICE_PRECISION = 2;
+
+function normalizePrice(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0.00';
+  return number.toFixed(GROUP_PRICE_PRECISION);
+}
+
+export function resolveReservationItemGroupKey(item = {}) {
+  const description = item?.desc || item?.description || item?.name || '';
+  const normalizedDescription = normalizeText(description);
+  const priceKey = normalizePrice(item?.price ?? item?.unitPrice ?? item?.unit_price ?? 0);
+  return `${normalizedDescription}::${priceKey}`;
+}
+
+export function groupReservationItems(items = []) {
+  const map = new Map();
+
+  items.forEach((item, index) => {
+    const key = resolveReservationItemGroupKey(item);
+    if (!key) return;
+    if (!map.has(key)) {
+      const description = item?.desc || item?.description || item?.name || '';
+      const normalizedDescription = normalizeText(description);
+      const unitPrice = Number(item?.price) || 0;
+      const image = item?.image || item?.imageUrl || item?.img || '';
+
+      map.set(key, {
+        key,
+        description,
+        normalizedDescription,
+        unitPrice,
+        image,
+        items: [],
+        itemIndices: [],
+        barcodes: [],
+      });
+    }
+
+    const group = map.get(key);
+    group.items.push(item);
+    group.itemIndices.push(index);
+    if (item?.barcode) {
+      group.barcodes.push(String(item.barcode));
+    }
+  });
+
+  return Array.from(map.values()).map((group) => ({
+    ...group,
+    count: group.items.length,
+    totalPrice: group.items.reduce((sum, entry) => sum + (Number(entry?.price) || 0), 0),
+  }));
+}
+
 export function isReservationCompleted(reservation) {
   if (!reservation?.end) return false;
   const end = new Date(reservation.end);

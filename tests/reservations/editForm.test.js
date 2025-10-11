@@ -142,10 +142,11 @@ describe('reservations/editForm module', () => {
     expect(container.innerHTML).toContain('لا توجد معدات');
 
     module.renderEditReservationItems([
-      { barcode: 'B1', desc: 'Camera', price: 120, qty: 2, image: 'local.png' }
+      { barcode: 'B1', desc: 'Camera', price: 120, image: 'local.png' },
+      { barcode: 'B2', desc: 'Camera', price: 120, image: 'local.png' }
     ]);
-    expect(container.innerHTML).toContain('Camera');
-    expect(container.innerHTML).toContain('🗑️');
+    expect(container.querySelector('.reservation-item-title')?.textContent).toContain('Camera');
+    expect(container.querySelector('[data-action="increase-edit-group"]')).toBeTruthy();
   });
 
   it('renderEditReservationItems binds remove buttons to handler', async () => {
@@ -154,12 +155,21 @@ describe('reservations/editForm module', () => {
     document.body.appendChild(container);
     const module = await import('../../src/scripts/reservations/editForm.js');
 
-    getEditingStateMock.mockReturnValue({ index: 1, items: [{ barcode: 'B1', desc: 'Camera' }, { barcode: 'B2', desc: 'Light' }] });
+    getEditingStateMock.mockReturnValue({
+      index: 1,
+      items: [
+        { barcode: 'B1', desc: 'Camera', price: 120 },
+        { barcode: 'B2', desc: 'Camera', price: 120 }
+      ]
+    });
     setEditingStateMock.mockClear();
 
-    module.renderEditReservationItems([{ barcode: 'B1', desc: 'Camera', price: 120, qty: 2 }]);
+    module.renderEditReservationItems([
+      { barcode: 'B1', desc: 'Camera', price: 120 },
+      { barcode: 'B2', desc: 'Camera', price: 120 }
+    ]);
 
-    const button = container.querySelector('[data-action="remove-edit-item"]');
+    const button = container.querySelector('[data-action="remove-edit-group"]');
     expect(button).toBeTruthy();
 
     button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));

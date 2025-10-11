@@ -4,7 +4,7 @@ import { t } from '../language.js';
 import { resolveItemImage, getEquipmentRecordByBarcode, isEquipmentInMaintenance, findEquipmentByBarcode } from '../reservationsEquipment.js';
 import { getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
 import { calculateReservationTotal, renderDraftSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
-import { normalizeText } from '../reservationsShared.js';
+import { normalizeText, groupReservationItems, resolveReservationItemGroupKey } from '../reservationsShared.js';
 import {
   getSelectedItems,
   addSelectedItem,
@@ -831,30 +831,136 @@ function renderReservationItems(containerId = 'reservation-items') {
   const noItemsMessage = t('reservations.create.equipment.noneAdded', 'لا توجد معدات مضافة');
   const currencyLabel = t('reservations.create.summary.currency', 'ريال');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
+  const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
+  const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');
+  const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (items.length === 0) {
-    container.innerHTML = `<tr><td colspan="5">${noItemsMessage}</td></tr>`;
+    container.innerHTML = `<tr><td colspan="5" class="text-center">${noItemsMessage}</td></tr>`;
     return;
   }
 
-  container.innerHTML = items
-    .map((item, index) => {
-      const image = resolveItemImage(item);
-      const priceDisplay = `${normalizeNumbers(String(item.price ?? 0))} ${currencyLabel}`;
-      const imageCell = image
-        ? `<img src="${image}" alt="${imageAlt}" class="reservation-item-thumb">`
-        : '-';
+  const groups = groupReservationItems(items);
+
+  container.innerHTML = groups
+    .map((group) => {
+      const representative = group.items[0] || {};
+      const imageSource = resolveItemImage(representative) || group.image;
+      const imageCell = imageSource
+        ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
+        : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+      const quantityDisplay = normalizeNumbers(String(group.count));
+      const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
+      const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * group.count;
+      const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
+
+      const normalizedBarcodes = group.barcodes
+        .map((code) => normalizeNumbers(String(code || '')))
+        .filter(Boolean);
+      const baseBarcodes = normalizedBarcodes.slice(0, 3).join(', ');
+      const remaining = normalizedBarcodes.length - 3;
+      const barcodesMeta = normalizedBarcodes.length
+        ? `<div class="reservation-item-meta">${baseBarcodes}${remaining > 0 ? ` +${normalizeNumbers(String(remaining))}` : ''}</div>`
+        : '';
+
       return `
-        <tr>
-          <td>${item.barcode || '-'}</td>
-          <td>${item.desc}</td>
-          <td>${priceDisplay}</td>
-          <td>${imageCell}</td>
-          <td><button type="button" class="reservation-remove-button" data-action="remove-item" data-index="${index}">🗑️</button></td>
+        <tr data-group-key="${group.key}">
+          <td>
+            <div class="reservation-item-info">
+              <div class="reservation-item-thumb-wrapper">${imageCell}</div>
+              <div class="reservation-item-copy">
+                <div class="reservation-item-title">${group.description || '-'}</div>
+                ${barcodesMeta}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="reservation-quantity-control" data-group-key="${group.key}">
+              <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+              <span class="reservation-qty-value">${quantityDisplay}</span>
+              <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+            </div>
+          </td>
+          <td>${unitPriceDisplay}</td>
+          <td>${totalPriceDisplay}</td>
+          <td>
+            <button type="button" class="reservation-remove-button" data-action="remove-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
+          </td>
         </tr>
       `;
     })
     .join('');
+}
+
+function decreaseReservationGroup(groupKey) {
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+
+  const removeIndex = target.itemIndices[target.itemIndices.length - 1];
+  if (removeIndex == null) return;
+
+  removeSelectedItem(removeIndex);
+  renderReservationItems();
+  renderDraftReservationSummary();
+}
+
+function removeReservationGroup(groupKey) {
+  const items = getSelectedItems();
+  const filtered = items.filter((item) => resolveReservationItemGroupKey(item) !== groupKey);
+  if (filtered.length === items.length) return;
+  setSelectedItems(filtered);
+  renderReservationItems();
+  renderDraftReservationSummary();
+}
+
+function increaseReservationGroup(groupKey) {
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+
+  const { start, end } = getCreateReservationDateRange();
+  if (!start || !end) {
+    showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
+    return;
+  }
+
+  const normalizedSelected = new Set(items.map((item) => normalizeBarcodeValue(item.barcode)));
+  const { equipment = [] } = loadData();
+
+  const candidate = (equipment || []).find((record) => {
+    const barcodeNormalized = normalizeBarcodeValue(record?.barcode);
+    if (!barcodeNormalized || normalizedSelected.has(barcodeNormalized)) return false;
+    const candidateKey = resolveReservationItemGroupKey({
+      desc: record?.desc || record?.description || record?.name || '',
+      price: Number(record?.price) || 0,
+    });
+    if (candidateKey !== groupKey) return false;
+    if (isEquipmentInMaintenance(barcodeNormalized)) return false;
+    return !hasEquipmentConflict(barcodeNormalized, start, end);
+  });
+
+  if (!candidate) {
+    showToast(t('reservations.toast.noAdditionalUnits', '⚠️ لا توجد وحدات إضافية متاحة حالياً'));
+    return;
+  }
+
+  const normalizedCode = normalizeBarcodeValue(candidate.barcode);
+  addSelectedItem({
+    id: candidate.id,
+    equipmentId: candidate.id,
+    barcode: normalizedCode,
+    desc: candidate.desc || candidate.description || candidate.name || target.description || '',
+    qty: 1,
+    price: Number.isFinite(Number(candidate.price)) ? Number(candidate.price) : target.unitPrice,
+    image: resolveItemImage(candidate)
+  });
+
+  renderReservationItems();
+  renderDraftReservationSummary();
 }
 
 function renderDraftReservationSummary() {
@@ -1217,12 +1323,24 @@ function setupReservationButtons() {
   if (!container || container.dataset.listenerAttached) return;
 
   container.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-action="remove-item"]');
+    const button = event.target.closest('button[data-action]');
     if (!button) return;
-    const index = Number(button.dataset.index);
-    removeSelectedItem(index);
-    renderReservationItems();
-    renderDraftReservationSummary();
+    const { action, groupKey } = button.dataset;
+
+    if (action === 'decrease-group' && groupKey) {
+      decreaseReservationGroup(groupKey);
+      return;
+    }
+
+    if (action === 'increase-group' && groupKey) {
+      increaseReservationGroup(groupKey);
+      return;
+    }
+
+    if (action === 'remove-group' && groupKey) {
+      removeReservationGroup(groupKey);
+      return;
+    }
   });
 
   container.dataset.listenerAttached = 'true';
