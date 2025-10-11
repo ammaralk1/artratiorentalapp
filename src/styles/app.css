@@ -2097,8 +2097,8 @@
   }
   .equipment-details-header__close {
     position: absolute;
-    top: clamp(1rem, 2vw, 1.4rem);
-    left: clamp(1.1rem, 2.8vw, 1.9rem);
+    top: clamp(0.6rem, 1.4vw, 1rem);
+    left: clamp(0.95rem, 2.6vw, 1.6rem);
     right: auto;
     border-radius: 999px;
     padding: 0.5rem;
