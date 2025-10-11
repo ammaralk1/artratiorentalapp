@@ -990,6 +990,39 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   gap: 18px;
 }
 
+.edit-reservation-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.edit-reservation-field {
+  flex: 1 1 220px;
+  min-width: min(100%, 220px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-reservation-notes-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+#edit-res-summary {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  margin: 12px 0 0;
+  background-color: transparent;
+  border: 0;
+}
+
+#edit-res-summary .reservation-summary-card {
+  margin-inline: auto;
+}
+
 .reservation-info-card {
   display: flex;
   flex-direction: column;
