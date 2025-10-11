@@ -678,7 +678,7 @@ function renderEquipmentVariantsSection(baseItem) {
       const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
         ? `<div class="table-action-buttons equipment-variant-actions">
-            <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
+            <button type="button" class="btn btn-sm equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
         : '';
       return `
@@ -738,7 +738,10 @@ function renderEquipmentItem({ item, index }) {
   if (availableQtyNumber === 0) {
     const zeroStateMap = {
       reserved: {
-        text: t('equipment.card.availability.reserved', 'مؤجرة بالكامل'),
+        text:
+          qtyNumber === 1
+            ? t('equipment.card.availability.reservedSingle', 'مؤجرة')
+            : t('equipment.card.availability.reserved', 'مؤجرة بالكامل'),
         modifier: 'reserved',
       },
       maintenance: {

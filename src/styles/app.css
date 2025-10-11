@@ -2512,6 +2512,91 @@
     color: rgba(191, 219, 254, 0.95);
   }
 
+  .equipment-variants-table td .equipment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    border: 1px solid transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  }
+
+  .equipment-variants-table td .equipment-status-badge--available {
+    background: rgba(34, 197, 94, 0.18);
+    color: rgba(16, 185, 129, 0.96);
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.35),
+      0 6px 18px rgba(16, 185, 129, 0.25);
+  }
+
+  .equipment-variants-table td .equipment-status-badge--reserved {
+    background: rgba(248, 113, 113, 0.18);
+    color: rgba(220, 38, 38, 0.92);
+    border-color: rgba(248, 113, 113, 0.35);
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 113, 113, 0.35),
+      0 6px 18px rgba(248, 113, 113, 0.25);
+  }
+
+  .equipment-variants-table td .equipment-status-badge--maintenance {
+    background: rgba(249, 115, 22, 0.18);
+    color: rgba(194, 65, 12, 0.9);
+    border-color: rgba(249, 115, 22, 0.35);
+    box-shadow:
+      inset 0 0 0 1px rgba(249, 115, 22, 0.35),
+      0 6px 18px rgba(249, 115, 22, 0.25);
+  }
+
+  .equipment-variants-table td .equipment-status-badge--retired {
+    background: rgba(148, 163, 184, 0.18);
+    color: rgba(71, 85, 105, 0.92);
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.35),
+      0 6px 18px rgba(148, 163, 184, 0.22);
+  }
+
+  html.dark .equipment-variants-table td .equipment-status-badge--available {
+    background: rgba(22, 101, 52, 0.45);
+    color: rgba(209, 250, 229, 0.94);
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow:
+      inset 0 0 0 1px rgba(16, 185, 129, 0.45),
+      0 8px 20px rgba(16, 185, 129, 0.32);
+  }
+
+  html.dark .equipment-variants-table td .equipment-status-badge--reserved {
+    background: rgba(185, 28, 28, 0.5);
+    color: rgba(254, 226, 226, 0.95);
+    border-color: rgba(248, 113, 113, 0.45);
+    box-shadow:
+      inset 0 0 0 1px rgba(248, 113, 113, 0.45),
+      0 8px 20px rgba(248, 113, 113, 0.35);
+  }
+
+  html.dark .equipment-variants-table td .equipment-status-badge--maintenance {
+    background: rgba(202, 138, 4, 0.55);
+    color: rgba(255, 237, 213, 0.95);
+    border-color: rgba(250, 204, 21, 0.45);
+    box-shadow:
+      inset 0 0 0 1px rgba(250, 204, 21, 0.45),
+      0 8px 20px rgba(245, 158, 11, 0.35);
+  }
+
+  html.dark .equipment-variants-table td .equipment-status-badge--retired {
+    background: rgba(71, 85, 105, 0.45);
+    color: rgba(226, 232, 240, 0.9);
+    border-color: rgba(148, 163, 184, 0.45);
+    box-shadow:
+      inset 0 0 0 1px rgba(148, 163, 184, 0.45),
+      0 8px 20px rgba(148, 163, 184, 0.35);
+  }
+
   .equipment-variant-actions {
     flex-wrap: wrap;
     gap: 0.65rem;
