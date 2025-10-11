@@ -50,36 +50,31 @@
 }
 
 .maintenance-form-grid .maintenance-priority-field {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
   gap: 6px;
 }
 
 .maintenance-form-grid .maintenance-priority-field .form-label {
-  width: 100%;
   font-size: 0.95rem;
 }
 
 .maintenance-form-grid .maintenance-priority-field #maintenance-priority {
-  width: min(100%, 360px) !important;
-  max-width: min(100%, 360px) !important;
-  border-radius: 999px;
-  padding-inline: 1.1rem;
-  min-height: 3.2rem;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(232, 238, 255, 0.88)) !important;
+  width: 100%;
+  border-radius: 12px;
+  padding-inline: 1rem;
+  min-height: 3.1rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 241, 255, 0.9));
   box-shadow:
-    0 12px 28px rgba(76, 110, 245, 0.1),
-    0 2px 10px rgba(15, 23, 42, 0.08);
+    0 10px 20px rgba(59, 105, 255, 0.12),
+    0 2px 8px rgba(15, 23, 42, 0.08);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .maintenance-form-grid .maintenance-priority-field #maintenance-priority:focus {
   border-color: rgba(76, 110, 245, 0.55);
-  box-shadow: 0 0 0 0.22rem rgba(76, 110, 245, 0.18);
+  box-shadow: 0 0 0 0.2rem rgba(76, 110, 245, 0.18);
 }
 
 .maintenance-form-grid .maintenance-priority-field #maintenance-priority option {
@@ -88,7 +83,58 @@
 }
 
 :is(html.dark, body.dark) .maintenance-form-grid .maintenance-priority-field #maintenance-priority {
-  background: linear-gradient(135deg, rgba(17, 27, 53, 0.94), rgba(31, 46, 84, 0.9)) !important;
+  background: linear-gradient(135deg, rgba(17, 27, 53, 0.94), rgba(31, 46, 84, 0.9));
+  border-color: rgba(148, 163, 255, 0.26);
+  color: rgba(226, 232, 240, 0.94);
+  box-shadow:
+    0 12px 28px rgba(8, 14, 32, 0.52),
+    0 0 0 1px rgba(147, 197, 253, 0.12);
+}
+
+:is(html.dark, body.dark) .maintenance-form-grid .maintenance-priority-field #maintenance-priority option {
+  background-color: rgba(17, 27, 53, 0.95);
+  color: rgba(226, 232, 240, 0.94);
+}
+
+.maintenance-status-filter {
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.maintenance-status-filter .form-label {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.maintenance-status-filter .form-select {
+  width: min(100%, 360px);
+  border-radius: 999px;
+  padding-inline: 1.15rem;
+  min-height: 3.2rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(232, 238, 255, 0.88));
+  box-shadow:
+    0 12px 26px rgba(76, 110, 245, 0.1),
+    0 2px 10px rgba(15, 23, 42, 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.maintenance-status-filter .form-select:focus {
+  border-color: rgba(76, 110, 245, 0.55);
+  box-shadow: 0 0 0 0.22rem rgba(76, 110, 245, 0.18);
+}
+
+.maintenance-status-filter .form-select option {
+  background-color: rgba(248, 250, 255, 0.95);
+  color: #1f2d52;
+}
+
+:is(html.dark, body.dark) .maintenance-status-filter .form-select {
+  background: linear-gradient(135deg, rgba(17, 27, 53, 0.94), rgba(31, 46, 84, 0.9));
   border-color: rgba(148, 163, 255, 0.26);
   color: rgba(226, 232, 240, 0.94);
   box-shadow:
@@ -96,7 +142,7 @@
     0 0 0 1px rgba(147, 197, 253, 0.12);
 }
 
-:is(html.dark, body.dark) .maintenance-form-grid .maintenance-priority-field #maintenance-priority option {
+:is(html.dark, body.dark) .maintenance-status-filter .form-select option {
   background-color: rgba(17, 27, 53, 0.95);
   color: rgba(226, 232, 240, 0.94);
 }
@@ -107,7 +153,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .maintenance-form-grid .maintenance-issue-field .form-label {
@@ -120,14 +166,14 @@
   max-width: min(100%, 820px) !important;
   margin-inline: auto;
   border-radius: 18px;
-  min-height: 140px;
-  padding: 18px 20px;
+  min-height: 160px;
+  padding: 20px 22px;
   resize: vertical;
   border: 1px solid rgba(76, 110, 245, 0.18);
   background: linear-gradient(135deg, rgba(248, 250, 255, 0.98), rgba(231, 238, 255, 0.9)) !important;
   box-shadow:
-    0 14px 30px rgba(76, 110, 245, 0.1),
-    0 3px 12px rgba(15, 23, 42, 0.08);
+    0 16px 32px rgba(76, 110, 245, 0.12),
+    0 4px 14px rgba(15, 23, 42, 0.1);
 }
 
 .maintenance-form-grid .maintenance-issue-field #maintenance-issue::placeholder {
