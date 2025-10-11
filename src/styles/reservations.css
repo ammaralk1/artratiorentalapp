@@ -2308,6 +2308,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .reservation-notes__title {
@@ -2373,6 +2374,12 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 :is(html.dark-mode, body.dark-mode) .reservation-notes__textarea::placeholder {
   color: rgba(203, 213, 225, 0.72);
+}
+
+@media (min-width: 768px) {
+  .reservation-notes-wrapper {
+    max-width: 55%;
+  }
 }
 
 .reservation-stack {
