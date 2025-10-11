@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <link rel="icon" href="data:,">
   <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="../../favicon_io/favicon.ico">
   <title data-i18n data-i18n-key="projects.reports.pageTitle">تقارير المشاريع - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
@@ -14,16 +14,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/projectsReports-AddCdLlM.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-F79eM6s1.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-cX5geGZ9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projects-CN14fh5-.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsCommon-DtXxxb1o.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CvNA_8g1.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth-WYOFshE-.css">
-  <link rel="stylesheet" crossorigin href="../../assets/reports-CHRwx8Ur.css">
+  <script type="module" crossorigin src="../../assets/projectsReports.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projects2.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsCommon.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.js">
+  <link rel="stylesheet" crossorigin href="../../assets/index.css">
+  <link rel="stylesheet" crossorigin href="../../assets/reports.css">
 </head>
-<body class="theme-loading">
+<body class="theme-loading reports-page">
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
@@ -51,48 +50,49 @@
     </div>
 
     <section class="reports-wrapper">
-      <div class="box p-4 reports-header-card">
-        <div class="reports-header-text">
+    <div class="reports-surface-card reports-header-card box">
+      <div class="reports-card-title reports-header-leading">
+        <span class="reports-card-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M9 3h1a1 1 0 0 1 1 1v16a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-16a1 1 0 0 1 1 -1"></path>
+            <path d="M14 8h1a1 1 0 0 1 1 1v11a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-11a1 1 0 0 1 1 -1"></path>
+            <path d="M19 13h1a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1"></path>
+            <path d="M4 4v17"></path>
+          </svg>
+        </span>
+        <div class="reports-card-text">
           <h1 class="fw-bold mb-2" data-i18n data-i18n-key="projects.reports.title">لوحة تقارير المشاريع</h1>
           <p class="reports-subtitle" data-i18n data-i18n-key="projects.reports.subtitle">تحليلات تفصيلية لأداء المشاريع، المواعيد النهائية، ونسب التنفيذ.</p>
         </div>
-        <div class="reports-filters" id="reports-filters">
-          <div class="reports-filter-group">
-            <label for="reports-search" data-i18n data-i18n-key="projects.reports.filters.search">بحث</label>
-            <input type="search" id="reports-search" class="form-control" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
+      </div>
+      <div class="reports-filters filters-bar d-flex flex-wrap align-items-center gap-2" id="reports-filters">
+          <input type="search" id="reports-search" class="form-control filters-search" placeholder="بحث باسم المشروع أو العميل" data-i18n data-i18n-placeholder-key="projects.reports.filters.searchPlaceholder">
+
+          <div class="reports-status-filter d-flex flex-wrap align-items-center gap-2">
+            <span class="reports-status-label text-muted fw-semibold" data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</span>
+            <div class="reports-status-chips d-flex flex-wrap gap-2" id="reports-status-chips"></div>
           </div>
-          <div class="reports-filter-group reports-filter-group--status">
-            <label data-i18n data-i18n-key="projects.reports.filters.status">حالة المشروع</label>
-            <div class="reports-status-chips" id="reports-status-chips"></div>
+
+          <select id="reports-payment" class="form-select">
+            <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
+            <option value="paid" data-i18n data-i18n-key="projects.paymentStatus.paid">مدفوع</option>
+            <option value="unpaid" data-i18n data-i18n-key="projects.paymentStatus.unpaid">غير مدفوع</option>
+          </select>
+
+          <select id="reports-date-range" class="form-select">
+            <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
+            <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
+            <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
+            <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
+            <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
+          </select>
+
+          <div class="reports-custom-range d-flex flex-wrap align-items-center gap-2" id="reports-custom-range">
+            <input type="date" id="reports-start-date" class="form-control" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+            <input type="date" id="reports-end-date" class="form-control" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
           </div>
-          <div class="reports-filter-group">
-            <label for="reports-payment" data-i18n data-i18n-key="projects.reports.filters.payment">حالة الدفع</label>
-            <select id="reports-payment" class="form-select">
-              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.paymentAll">كل الحالات</option>
-              <option value="paid" data-i18n data-i18n-key="projects.paymentStatus.paid">مدفوع</option>
-              <option value="unpaid" data-i18n data-i18n-key="projects.paymentStatus.unpaid">غير مدفوع</option>
-            </select>
-          </div>
-          <div class="reports-filter-group">
-            <label for="reports-date-range" data-i18n data-i18n-key="projects.reports.filters.dateRange">نطاق التاريخ</label>
-            <select id="reports-date-range" class="form-select">
-              <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
-              <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
-              <option value="90" data-i18n data-i18n-key="projects.reports.filters.range.90">آخر 90 يوم</option>
-              <option value="365" data-i18n data-i18n-key="projects.reports.filters.range.365">آخر سنة</option>
-              <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">تاريخ مخصص</option>
-            </select>
-          </div>
-          <div class="reports-custom-range" id="reports-custom-range">
-            <div class="reports-filter-group">
-              <label for="reports-start-date" data-i18n data-i18n-key="projects.reports.filters.start">من</label>
-              <input type="date" id="reports-start-date" class="form-control">
-            </div>
-            <div class="reports-filter-group">
-              <label for="reports-end-date" data-i18n data-i18n-key="projects.reports.filters.end">إلى</label>
-              <input type="date" id="reports-end-date" class="form-control">
-            </div>
-          </div>
+
           <button type="button" class="btn btn-outline-primary reports-refresh-btn" id="reports-refresh" data-i18n data-i18n-key="projects.reports.filters.refresh">تحديث</button>
         </div>
       </div>
@@ -100,43 +100,129 @@
       <div class="reports-kpi-grid" id="reports-kpi-grid"></div>
 
       <div class="reports-analytics-grid">
-        <div class="reports-chart-card">
+        <div class="reports-chart-card is-loading" data-chart-card="status">
           <div class="reports-card-header">
-            <h4 data-i18n data-i18n-key="projects.reports.charts.status">توزيع الحالات</h4>
-            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.statusHint">نسبة المشاريع حسب حالة التنفيذ</span>
+            <div class="reports-card-title">
+              <span class="reports-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M12 3v9h9"></path>
+                  <path d="M20.38 12.623a8 8 0 1 1 -8.48 -8.497"></path>
+                </svg>
+              </span>
+              <div class="reports-card-text">
+                <h4 data-i18n data-i18n-key="projects.reports.charts.status">توزيع الحالات</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.statusHint">نسبة المشاريع حسب حالة التنفيذ</span>
+              </div>
+            </div>
           </div>
-          <canvas id="reports-status-chart" height="320"></canvas>
+          <div class="reports-card-body">
+            <div class="reports-chart-loading" data-chart-loading="status" role="status" aria-live="polite">
+              <span class="spinner-border text-primary" role="presentation"></span>
+              <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
+            </div>
+            <canvas id="reports-status-chart" height="320"></canvas>
+          </div>
         </div>
-        <div class="reports-chart-card">
+        <div class="reports-chart-card is-loading" data-chart-card="timeline">
           <div class="reports-card-header">
-            <h4 data-i18n data-i18n-key="projects.reports.charts.timeline">الإيرادات عبر الزمن</h4>
-            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.timelineHint">إجمالي قيمة المشاريع شهريًا</span>
+            <div class="reports-card-title">
+              <span class="reports-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M4 19l16 0"></path>
+                  <path d="M4 15l4 -6l4 2l4 -5l4 4"></path>
+                </svg>
+              </span>
+              <div class="reports-card-text">
+                <h4 data-i18n data-i18n-key="projects.reports.charts.timeline">الإيرادات عبر الزمن</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.timelineHint">إجمالي قيمة المشاريع شهريًا</span>
+              </div>
+            </div>
           </div>
-          <canvas id="reports-timeline-chart" height="320"></canvas>
+          <div class="reports-card-body">
+            <div class="reports-chart-loading" data-chart-loading="timeline" role="status" aria-live="polite">
+              <span class="spinner-border text-primary" role="presentation"></span>
+              <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
+            </div>
+            <canvas id="reports-timeline-chart" height="320"></canvas>
+          </div>
         </div>
-        <div class="reports-chart-card">
+        <div class="reports-chart-card is-loading" data-chart-card="expenses">
           <div class="reports-card-header">
-            <h4 data-i18n data-i18n-key="projects.reports.charts.expenses">المصاريف مقابل القيمة</h4>
-            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.expensesHint">مقارنة المصاريف مع إجمالي قيمة المشروع</span>
+            <div class="reports-card-title">
+              <span class="reports-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M9 12h6"></path>
+                  <path d="M12 9v6"></path>
+                  <path d="M17.657 16.657a8 8 0 1 0 -11.314 0"></path>
+                  <path d="M16.121 19.121a9.5 9.5 0 1 1 2.829 -2.83"></path>
+                </svg>
+              </span>
+              <div class="reports-card-text">
+                <h4 data-i18n data-i18n-key="projects.reports.charts.expenses">المصاريف مقابل القيمة</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.expensesHint">مقارنة المصاريف مع إجمالي قيمة المشروع</span>
+              </div>
+            </div>
           </div>
-          <canvas id="reports-expense-chart" height="320"></canvas>
+          <div class="reports-card-body">
+            <div class="reports-chart-loading" data-chart-loading="expenses" role="status" aria-live="polite">
+              <span class="spinner-border text-primary" role="presentation"></span>
+              <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
+            </div>
+            <canvas id="reports-expense-chart" height="320"></canvas>
+          </div>
         </div>
       </div>
 
       <div class="reports-detail-grid">
-        <div class="reports-chart-card">
+        <div class="reports-chart-card is-loading" data-chart-card="clients">
           <div class="reports-card-header">
-            <h4 data-i18n data-i18n-key="projects.reports.charts.clients">أفضل العملاء</h4>
-            <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.clientsHint">أعلى العملاء حسب قيمة المشاريع</span>
+            <div class="reports-card-title">
+              <span class="reports-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                  <path d="M16 21v-2a4 4 0 0 0 -4 -4h-0.5"></path>
+                  <path d="M4 21v-2a4 4 0 0 1 4 -4"></path>
+                  <path d="M20 21v-2a4 4 0 0 0 -3 -3.85"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
+              <div class="reports-card-text">
+                <h4 data-i18n data-i18n-key="projects.reports.charts.clients">أفضل العملاء</h4>
+                <span class="reports-card-hint" data-i18n data-i18n-key="projects.reports.charts.clientsHint">أعلى العملاء حسب قيمة المشاريع</span>
+              </div>
+            </div>
           </div>
-          <canvas id="reports-clients-chart" height="320"></canvas>
+          <div class="reports-card-body">
+            <div class="reports-chart-loading" data-chart-loading="clients" role="status" aria-live="polite">
+              <span class="spinner-border text-primary" role="presentation"></span>
+              <span class="reports-loading-text" data-i18n data-i18n-key="projects.reports.loading.chart">جارٍ تحديث الرسم...</span>
+            </div>
+            <canvas id="reports-clients-chart" height="320"></canvas>
+          </div>
         </div>
         <div class="reports-table-card">
           <div class="reports-card-header">
-            <h4 data-i18n data-i18n-key="projects.reports.table.title">قائمة المشاريع</h4>
+            <div class="reports-card-title">
+              <span class="reports-card-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                  <path d="M4 5h16"></path>
+                  <path d="M4 10h16"></path>
+                  <path d="M4 15h16"></path>
+                  <path d="M4 20h16"></path>
+                </svg>
+              </span>
+              <div class="reports-card-text">
+                <h4 data-i18n data-i18n-key="projects.reports.table.title">قائمة المشاريع</h4>
+              </div>
+            </div>
             <span class="reports-card-hint" id="reports-table-meta"></span>
           </div>
-          <div class="table-responsive">
+          <div class="table-responsive reports-table-wrapper">
             <table class="reports-table" id="reports-table">
               <thead>
                 <tr>

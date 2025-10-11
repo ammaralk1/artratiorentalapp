@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <link rel="icon" href="data:,">
   <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="../../favicon_io/favicon.ico">
   <title>إدارة المشاريع - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
@@ -15,15 +15,14 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects-DuNCFAou.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-F79eM6s1.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-cX5geGZ9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CvNA_8g1.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-CruqOaln.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projects-CN14fh5-.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers-CeMlwLtv.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth-WYOFshE-.css">
-  <link rel="stylesheet" crossorigin href="../../assets/reports-CHRwx8Ur.css">
+  <script type="module" crossorigin src="../../assets/projects.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projects2.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.js">
+  <link rel="stylesheet" crossorigin href="../../assets/index.css">
+  <link rel="stylesheet" crossorigin href="../../assets/reports.css">
 </head>
 <body class="theme-loading">
   <div class="container py-4">
@@ -45,7 +44,7 @@
       <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
     </div>
 
-    <div id="projects-section" class="tab-pane active" data-tab-pane>
+    <div id="projects-section" class="tab-pane active" data-tab-pane="projects-section">
       <div class="sub-tab-buttons mb-4">
         <button type="button" class="sub-tab-button active" data-project-subtab-target="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
         <button type="button" class="sub-tab-button" data-project-subtab-target="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
@@ -53,7 +52,7 @@
         <a class="sub-tab-button" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
       </div>
 
-      <div class="tab-pane active project-creation-pane" id="create-project-tab" data-project-subtab>
+      <div class="tab-pane active project-creation-pane" id="create-project-tab" data-project-subtab="create-project-tab">
         <div class="mb-4">
           <p class="text-muted projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
         </div>
@@ -228,7 +227,7 @@
         </div>
       </div>
 
-      <div class="tab-pane d-none" id="projects-list-tab" data-project-subtab>
+      <div class="tab-pane d-none" id="projects-list-tab" data-project-subtab="projects-list-tab">
         <div class="box project-focus-wrapper mb-4">
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
@@ -288,7 +287,7 @@
         </div>
       </div>
     </div>
-    <div id="customers-section" class="tab-pane d-none" data-tab-pane>
+    <div id="customers-section" class="tab-pane d-none" data-tab-pane="customers-section">
       <div class="tab-content-wrapper">
         <div class="tab active" id="embedded-customers-tab">
           <h2 data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
@@ -296,7 +295,7 @@
           <div class="box customer-form-box management-form-box mb-4">
             <div class="management-form-header">
               <div>
-                <h4 data-i18n data-i18n-key="customers.form.title">📋 إضافة / تعديل عميل</h4>
+                <h4 data-i18n data-i18n-key="customers.form.title">إضافة / تعديل عميل</h4>
                 <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
               </div>
               <div class="management-form-icon">👤</div>
@@ -346,9 +345,9 @@
             >
           </div>
 
-          <div class="table-responsive">
-            <table class="table table-bordered table-striped table-hover align-middle">
-              <thead class="table-dark">
+          <div class="customer-table-wrapper table-responsive">
+            <table class="customer-table align-middle">
+              <thead>
                 <tr>
                   <th data-i18n data-i18n-key="customers.table.headers.name">👤 الاسم</th>
                   <th data-i18n data-i18n-key="customers.table.headers.phone">📞 الجوال</th>
@@ -368,7 +367,7 @@
       </div>
     </div>
 
-    <div id="technicians-section" class="tab-pane d-none" data-tab-pane>
+    <div id="technicians-section" class="tab-pane d-none" data-tab-pane="technicians-section">
       <div class="tab-content-wrapper">
         <div class="tab active" id="embedded-technicians-tab">
           <h2 data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
@@ -376,7 +375,7 @@
           <div class="box add-technicians-box management-form-box mb-4">
             <div class="management-form-header">
               <div>
-                <h4 data-i18n data-i18n-key="technicians.form.title">📝 إضافة / تعديل عضو طاقم</h4>
+                <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
                 <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
               </div>
               <div class="management-form-icon">😎</div>

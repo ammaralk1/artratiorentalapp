@@ -2,9 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="../../favicon_io/favicon.ico">
   <title data-i18n data-i18n-key="technicianDetails.pageTitle">معلومات عضو الطاقم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
@@ -20,20 +21,19 @@
 
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/technician-CbXg1EEl.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth-F79eM6s1.js">
-  <link rel="modulepreload" crossorigin href="../../assets/common-cX5geGZ9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService-CvNA_8g1.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller-CruqOaln.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projects-CN14fh5-.js">
-  <link rel="modulepreload" crossorigin href="../../assets/events-E_kQeC2v.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsCommon-DtXxxb1o.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates-DYQaRFhI.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth-WYOFshE-.css">
+  <script type="module" crossorigin src="../../assets/technician.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projects2.js">
+  <link rel="modulepreload" crossorigin href="../../assets/events.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsCommon.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.js">
+  <link rel="stylesheet" crossorigin href="../../assets/index.css">
 </head>
-<body>
-  <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+<body class="theme-loading">
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-start my-3 flex-wrap gap-3">
       <div>
         <div class="d-flex flex-wrap gap-2 mb-3">
           <a href="home.html" class="btn btn-outline-primary" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
@@ -199,7 +199,7 @@
 
             <div class="col-md-6">
               <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-              <select id="edit-res-paid" class="form-select">
+              <select id="edit-res-paid" class="form-select payment-status-select">
                 <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
                 <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
               </select>
@@ -207,7 +207,7 @@
 
             <div class="col-12">
               <label class="form-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
-              <textarea class="form-control" id="edit-res-notes" rows="3" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+              <textarea class="form-control reservation-notes" id="edit-res-notes" rows="3" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
             </div>
 
             <div class="col-12">
@@ -232,19 +232,18 @@
                 </div>
               </div>
               <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle reservation-items-table">
+                <table class="table table-sm table-bordered reservation-items-table">
                   <thead class="table-light">
                     <tr>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.code">الكود</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.description">الوصف</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.price">السعر</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.quantity">الكمية</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.image">الصورة</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.delete">حذف</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody id="edit-res-items">
-                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                    <tr><td colspan="5" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -274,7 +273,7 @@
             </div>
           </div>
           <div class="table-responsive">
-            <table class="table table-hover align-middle" id="technician-picker-table">
+            <table class="table table-sm table-hover align-middle table-bordered" id="technician-picker-table">
               <thead class="table-light">
                 <tr>
                   <th style="width:40px;"></th>
