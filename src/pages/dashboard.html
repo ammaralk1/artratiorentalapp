@@ -1432,11 +1432,11 @@
       <div class="modal-content">
         <div class="modal-header equipment-details-header">
           <h5 class="modal-title equipment-details-header__title" data-i18n data-i18n-key="equipment.modal.title.details">📇 تفاصيل بطاقة المعدة</h5>
-          <div class="equipment-details-header__actions">
+          <div class="equipment-details-header__aside">
+            <button type="button" class="btn-close equipment-details-header__close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
             <div class="equipment-details-header__media" id="equipment-details-cover">
               <span class="equipment-details-header__placeholder" aria-hidden="true">📦</span>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
           </div>
         </div>
         <div class="modal-body">
@@ -1482,14 +1482,14 @@
                 <h6 class="equipment-variants-section__title" data-i18n data-i18n-key="equipment.modal.variants.title">📦 القطع المرتبطة</h6>
                 <span class="badge-soft equipment-variants-count" id="equipment-variants-count">0</span>
               </div>
-              <div class="table-responsive">
-                <table class="table table-sm align-middle equipment-variants-table">
+              <div class="table-responsive customer-table-wrapper equipment-variants-table-wrapper">
+                <table class="table table-sm align-middle customer-table equipment-variants-table">
                   <thead>
                     <tr>
                       <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.barcode">الباركود</th>
                       <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.status">الحالة</th>
                       <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.quantity">الكمية</th>
-                      <th scope="col" data-i18n data-i18n-key="equipment.modal.variants.actions">الإجراءات</th>
+                      <th scope="col" class="table-actions-head" data-i18n data-i18n-key="equipment.modal.variants.actions">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody id="equipment-variants-table-body">

@@ -599,7 +599,7 @@ function renderEquipmentVariantsSection(baseItem) {
       const editLabel = escapeHtml(t('equipment.item.actions.edit', '✏️ تعديل'));
       const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
-        ? `<div class="equipment-variant-actions">
+        ? `<div class="table-action-buttons equipment-variant-actions">
             <button type="button" class="btn btn-sm btn-primary equipment-variant-action" data-variant-action="edit" data-variant-index="${variantIndex}">${editLabel}</button>
             <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
@@ -614,7 +614,7 @@ function renderEquipmentVariantsSection(baseItem) {
           <td>
             <span class="equipment-variants-qty" title="${escapeHtml(qtyLabel)}">${qtyDisplay}</span>
           </td>
-          <td>${actions}</td>
+          <td class="table-actions-cell">${actions}</td>
         </tr>
       `;
     })
