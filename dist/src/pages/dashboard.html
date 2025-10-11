@@ -31,7 +31,7 @@
   <script type="module" crossorigin src="../../assets/dashboard.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.js">
+  <link rel="modulepreload" crossorigin href="../../assets/timePicker.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.js">
   <link rel="modulepreload" crossorigin href="../../assets/events.js">
   <link rel="stylesheet" crossorigin href="../../assets/app.css">
@@ -997,11 +997,11 @@
                   <table class="table table-sm table-hover align-middle reservation-items-table">
                     <thead>
                       <tr>
-                        <th data-i18n data-i18n-key="reservations.create.equipment.table.code">الكود</th>
-                        <th data-i18n data-i18n-key="reservations.create.equipment.table.description">الوصف</th>
-                        <th data-i18n data-i18n-key="reservations.create.equipment.table.price">السعر</th>
-                        <th data-i18n data-i18n-key="reservations.create.equipment.table.image">الصورة</th>
-                        <th data-i18n data-i18n-key="reservations.create.equipment.table.delete">حذف</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody id="reservation-items"></tbody>
@@ -1656,16 +1656,15 @@
                 <table class="table table-sm table-hover align-middle reservation-items-table">
                   <thead class="table-light">
                     <tr>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.code">الكود</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.description">الوصف</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.price">السعر</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.quantity">الكمية</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.image">الصورة</th>
-                      <th data-i18n data-i18n-key="reservations.edit.table.headers.delete">حذف</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody id="edit-res-items">
-                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                    <tr><td colspan="5" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1691,7 +1690,7 @@
         <div class="modal-body">
           <div class="row g-2 align-items-center mb-3">
             <div class="col-sm-6">
-              <input type="text" class="form-control" id="technician-picker-search" placeholder="🔍 ابحث بالاسم أو الوظيفة أو القسم...">
+              <input type="text" class="form-control" id="technician-picker-search" placeholder="🔍 ابحث بالاسم أو الوظيفة أو القسم..." data-i18n data-i18n-placeholder-key="technicians.search.placeholder">
             </div>
           </div>
           <div class="table-responsive">
@@ -1712,9 +1711,9 @@
           </div>
         </div>
         <div class="modal-footer">
-          <span class="text-muted me-auto" id="technician-picker-selection-info"></span>
-          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="apply-technician-selection">تم</button>
+          <span class="text-muted me-auto" id="technician-picker-selection-info" data-i18n data-i18n-key="technicians.picker.selectionInfo">لم يتم اختيار أي عضو بعد</span>
+          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="technicians.picker.actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary reservation-primary-btn" id="apply-technician-selection" data-i18n data-i18n-key="technicians.picker.actions.apply">تم</button>
         </div>
       </div>
     </div>
