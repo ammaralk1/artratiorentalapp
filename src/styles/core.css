@@ -1964,8 +1964,9 @@ input.flatpickr-alt-input:focus {
 
 .flatpickr-time .numInputWrapper {
   width: 72px;
-  display: flex;
-  align-items: center;
+  display: inline-block;
+  height: 46px;
+  padding-inline-end: 18px;
 }
 
 .flatpickr-time input {
@@ -1976,16 +1977,26 @@ input.flatpickr-alt-input:focus {
   line-height: 42px;
   background: transparent;
   border: none;
+  width: 100%;
   text-align: center;
   letter-spacing: 0.05em;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  width: 34px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   font-size: 0;
-  position: relative;
+  position: absolute;
+  right: 6px;
+}
+
+.flatpickr-time .numInputWrapper span.arrowUp {
+  top: 6px;
+}
+
+.flatpickr-time .numInputWrapper span.arrowDown {
+  bottom: 6px;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::after,
