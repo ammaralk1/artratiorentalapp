@@ -10,6 +10,9 @@ let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipme
 let isEquipmentLoading = false;
 let equipmentErrorMessage = "";
 let currentVariantsContext = null;
+let activeEquipmentIndex = null;
+let currentEquipmentSnapshot = null;
+let isEquipmentEditMode = false;
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -159,6 +162,89 @@ function resolveEquipmentGroupKey(item) {
     key = normalizeNumbers(String(item.barcode || '')).trim().toLowerCase();
   }
   return key;
+}
+
+function getVariantsForItem(item) {
+  const key = resolveEquipmentGroupKey(item);
+  if (!key) return [];
+  return getAllEquipment().filter((entry) => resolveEquipmentGroupKey(entry) === key);
+}
+
+function getEquipmentFormElements() {
+  return {
+    category: document.getElementById('edit-equipment-category'),
+    subcategory: document.getElementById('edit-equipment-subcategory'),
+    description: document.getElementById('edit-equipment-description'),
+    quantity: document.getElementById('edit-equipment-quantity'),
+    price: document.getElementById('edit-equipment-price'),
+    image: document.getElementById('edit-equipment-image'),
+    barcode: document.getElementById('edit-equipment-barcode'),
+    status: document.getElementById('edit-equipment-status'),
+  };
+}
+
+function captureEquipmentFormValues() {
+  const elements = getEquipmentFormElements();
+  return {
+    category: elements.category?.value ?? '',
+    subcategory: elements.subcategory?.value ?? '',
+    description: elements.description?.value ?? '',
+    quantity: elements.quantity?.value ?? '',
+    price: elements.price?.value ?? '',
+    image: elements.image?.value ?? '',
+    barcode: elements.barcode?.value ?? '',
+    status: elements.status?.value ?? '',
+  };
+}
+
+function applyEquipmentFormValues(values = {}) {
+  const elements = getEquipmentFormElements();
+  if (elements.category) elements.category.value = values.category ?? '';
+  if (elements.subcategory) elements.subcategory.value = values.subcategory ?? '';
+  if (elements.description) elements.description.value = values.description ?? '';
+  if (elements.quantity) elements.quantity.value = values.quantity != null ? normalizeNumbers(String(values.quantity)) : '';
+  if (elements.price) elements.price.value = values.price != null ? normalizeNumbers(String(values.price)) : '';
+  if (elements.image) elements.image.value = values.image ?? '';
+  if (elements.barcode) elements.barcode.value = values.barcode ?? '';
+  if (elements.status) elements.status.value = values.status ?? '';
+}
+
+function setEquipmentEditMode(isEditing) {
+  isEquipmentEditMode = isEditing;
+  const elements = getEquipmentFormElements();
+  const toggleBtn = document.getElementById('equipment-edit-toggle');
+  const cancelBtn = document.getElementById('equipment-edit-cancel');
+  const saveBtn = document.getElementById('save-equipment-changes');
+
+  const inputs = [
+    elements.category,
+    elements.subcategory,
+    elements.description,
+    elements.quantity,
+    elements.price,
+    elements.image,
+  ];
+
+  inputs.forEach((input) => {
+    if (!input) return;
+    if (isEditing) {
+      input.removeAttribute('disabled');
+    } else {
+      input.setAttribute('disabled', 'disabled');
+    }
+  });
+
+  if (toggleBtn) {
+    toggleBtn.hidden = isEditing;
+  }
+  if (cancelBtn) {
+    cancelBtn.hidden = !isEditing;
+    cancelBtn.disabled = !isEditing;
+  }
+  if (saveBtn) {
+    saveBtn.hidden = !isEditing;
+    saveBtn.disabled = !isEditing;
+  }
 }
 
 export async function uploadEquipmentFromExcel(file) {
@@ -425,7 +511,7 @@ function clearEquipmentVariants() {
   }
   if (tableBody) {
     const emptyMessage = t('equipment.modal.variants.empty', 'لا توجد قطع مرتبطة أخرى.');
-    tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">${escapeHtml(emptyMessage)}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${escapeHtml(emptyMessage)}</td></tr>`;
   }
   if (countEl) {
     countEl.textContent = '0';
@@ -471,6 +557,8 @@ function renderEquipmentVariantsSection(baseItem) {
   const currentBadgeLabel = t('equipment.modal.variants.current', 'الحالي');
   const qtyLabel = t('equipment.form.labels.quantity', 'الكمية');
 
+  const allItems = getAllEquipment();
+
   const rows = variants
     .map((variant) => {
       const isCurrent = variant.id && baseItem.id
@@ -482,6 +570,13 @@ function renderEquipmentVariantsSection(baseItem) {
         ? `<span class="equipment-variants-current-badge">${escapeHtml(currentBadgeLabel)}</span>`
         : '';
       const qtyDisplay = normalizeNumbers(String(Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0));
+      const variantIndex = allItems.indexOf(variant);
+      const actions = variantIndex >= 0
+        ? `<div class="equipment-variant-actions">
+            <button type="button" class="btn btn-outline btn-sm" data-variant-action="edit" data-variant-index="${variantIndex}">${escapeHtml(t('equipment.item.actions.edit', '✏️ تعديل'))}</button>
+            <button type="button" class="btn btn-outline btn-sm" data-variant-action="delete" data-variant-index="${variantIndex}">${escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'))}</button>
+          </div>`
+        : '';
       return `
         <tr class="${rowClass}">
           <td>
@@ -492,6 +587,7 @@ function renderEquipmentVariantsSection(baseItem) {
           <td>
             <span class="equipment-variants-qty" title="${escapeHtml(qtyLabel)}">${qtyDisplay}</span>
           </td>
+          <td>${actions}</td>
         </tr>
       `;
     })
@@ -1039,24 +1135,41 @@ function handleEquipmentSearch() {
 }
 
 function openEditEquipmentModal(index) {
-  const item = getAllEquipment()[index];
+  const allItems = getAllEquipment();
+  const item = allItems[index];
   if (!item) return;
 
-  document.getElementById("edit-equipment-index").value = index;
-  document.getElementById("edit-equipment-category").value = item.category || "";
-  document.getElementById("edit-equipment-subcategory").value = item.sub || "";
-  document.getElementById("edit-equipment-description").value = item.desc || "";
-  document.getElementById("edit-equipment-quantity").value = item.qty || 1;
-  document.getElementById("edit-equipment-price").value = item.price || 0;
-  document.getElementById("edit-equipment-barcode").value = item.barcode || "";
-  document.getElementById("edit-equipment-status").value = statusToFormValue(item.status);
-  document.getElementById("edit-equipment-image").value = getEquipmentImage(item) || "";
+  activeEquipmentIndex = index;
 
-  renderEquipmentVariantsSection(item);
+  const variants = getVariantsForItem(item);
+  const primary = variants[0] || item;
+  const totalQty = variants.reduce((sum, variant) => sum + (Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0), 0);
+  const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
+  const aggregatedStatus = variants
+    .map((variant) => normalizeStatusValue(variant.status))
+    .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || normalizeStatusValue(primary.status);
+
+  document.getElementById('edit-equipment-index').value = index;
+
+  applyEquipmentFormValues({
+    category: primary.category || '',
+    subcategory: primary.sub || '',
+    description: primary.desc || primary.description || '',
+    quantity: String(totalQty || primary.qty || 0),
+    price: primary.price != null ? String(primary.price) : '0',
+    image: getEquipmentImage(primary) || '',
+    barcode: primary.barcode || '',
+    status: aggregatedStatus,
+  });
+
+  setEquipmentEditMode(false);
+  currentEquipmentSnapshot = captureEquipmentFormValues();
+
+  renderEquipmentVariantsSection(primary);
   currentVariantsContext = {
-    groupKey: resolveEquipmentGroupKey(item),
-    barcode: String(item.barcode || ''),
-    id: item.id || null,
+    groupKey: resolveEquipmentGroupKey(primary),
+    barcode: String(primary.barcode || ''),
+    id: primary.id || null,
   };
 
   getBootstrapModal(document.getElementById("editEquipmentModal"))?.show();
@@ -1100,6 +1213,27 @@ function handleEquipmentListKeyDown(event) {
   }
 }
 
+function handleVariantTableClick(event) {
+  const deleteButton = event.target.closest('[data-variant-action="delete"]');
+  if (deleteButton) {
+    const variantIndex = Number(deleteButton.dataset.variantIndex);
+    if (!Number.isNaN(variantIndex)) {
+      deleteEquipment(variantIndex).catch((error) => {
+        console.error('❌ [equipment.js] deleteEquipment', error);
+      });
+    }
+    return;
+  }
+
+  const editButton = event.target.closest('[data-variant-action="edit"]');
+  if (editButton) {
+    const variantIndex = Number(editButton.dataset.variantIndex);
+    if (!Number.isNaN(variantIndex)) {
+      openEditEquipmentModal(variantIndex);
+    }
+  }
+}
+
 function refreshVariantsIfNeeded() {
   if (!currentVariantsContext) {
     return;
@@ -1135,6 +1269,29 @@ function refreshVariantsIfNeeded() {
   }
 
   renderEquipmentVariantsSection(activeItem);
+
+  if (!isEquipmentEditMode) {
+    const variants = getVariantsForItem(activeItem);
+    const primary = variants[0] || activeItem;
+    const totalQty = variants.reduce((sum, variant) => sum + (Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0), 0);
+    const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
+    const aggregatedStatus = variants
+      .map((variant) => normalizeStatusValue(variant.status))
+      .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || normalizeStatusValue(primary.status);
+
+    applyEquipmentFormValues({
+      category: primary.category || '',
+      subcategory: primary.sub || '',
+      description: primary.desc || primary.description || '',
+      quantity: String(totalQty || primary.qty || 0),
+      price: primary.price != null ? String(primary.price) : '0',
+      image: getEquipmentImage(primary) || '',
+      barcode: primary.barcode || '',
+      status: aggregatedStatus,
+    });
+
+    currentEquipmentSnapshot = captureEquipmentFormValues();
+  }
 }
 
 function wireUpEquipmentUI() {
@@ -1161,9 +1318,18 @@ function wireUpEquipmentUI() {
     equipmentList.addEventListener('keydown', handleEquipmentListKeyDown);
     equipmentList.dataset.listenerAttached = 'true';
   }
+
+  const variantsTable = document.getElementById('equipment-variants-table-body');
+  if (variantsTable && !variantsTable.dataset.listenerAttached) {
+    variantsTable.addEventListener('click', handleVariantTableClick);
+    variantsTable.dataset.listenerAttached = 'true';
+  }
 }
 
 document.getElementById("save-equipment-changes")?.addEventListener("click", async () => {
+  if (!isEquipmentEditMode) {
+    return;
+  }
   const indexValue = document.getElementById("edit-equipment-index").value;
   const index = Number.parseInt(indexValue, 10);
   if (Number.isNaN(index)) {
@@ -1184,7 +1350,9 @@ document.getElementById("save-equipment-changes")?.addEventListener("click", asy
 
   try {
     await editEquipment(index, updatedData);
-    getBootstrapModal(document.getElementById("editEquipmentModal"))?.hide();
+    currentEquipmentSnapshot = captureEquipmentFormValues();
+    setEquipmentEditMode(false);
+    refreshVariantsIfNeeded();
   } catch (error) {
     console.error("❌ [equipment.js] editEquipment", error);
   }
@@ -1194,6 +1362,28 @@ document.addEventListener("DOMContentLoaded", () => {
   wireUpEquipmentUI();
   renderEquipment();
   refreshEquipmentFromApi();
+
+  const editToggle = document.getElementById('equipment-edit-toggle');
+  if (editToggle && !editToggle.dataset.listenerAttached) {
+    editToggle.addEventListener('click', () => {
+      currentEquipmentSnapshot = captureEquipmentFormValues();
+      setEquipmentEditMode(true);
+      const descriptionInput = document.getElementById('edit-equipment-description');
+      descriptionInput?.focus();
+    });
+    editToggle.dataset.listenerAttached = 'true';
+  }
+
+  const cancelEditBtn = document.getElementById('equipment-edit-cancel');
+  if (cancelEditBtn && !cancelEditBtn.dataset.listenerAttached) {
+    cancelEditBtn.addEventListener('click', () => {
+      if (currentEquipmentSnapshot) {
+        applyEquipmentFormValues(currentEquipmentSnapshot);
+      }
+      setEquipmentEditMode(false);
+    });
+    cancelEditBtn.dataset.listenerAttached = 'true';
+  }
 });
 
 document.addEventListener("language:changed", () => {
@@ -1218,6 +1408,9 @@ document.addEventListener('DOMContentLoaded', () => {
     modalElement.addEventListener('hidden.bs.modal', () => {
       currentVariantsContext = null;
       clearEquipmentVariants();
+      activeEquipmentIndex = null;
+      currentEquipmentSnapshot = null;
+      setEquipmentEditMode(false);
     });
     modalElement.dataset.variantsListenerAttached = 'true';
   }

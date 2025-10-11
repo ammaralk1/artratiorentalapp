@@ -2135,6 +2135,33 @@
     color: rgba(76, 110, 245, 0.95);
   }
 
+  .equipment-variant-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    justify-content: center;
+  }
+
+  .equipment-variant-actions .btn {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .equipment-details-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-inline-start: auto;
+  }
+
+  .equipment-details-form input[disabled] {
+    background-color: rgba(248, 250, 255, 0.65);
+  }
+
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-details-form input[disabled] {
+    background-color: rgba(24, 33, 59, 0.55);
+  }
+
 :is(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-variants-section {
     border-top-color: rgba(148, 163, 184, 0.24);
   }
