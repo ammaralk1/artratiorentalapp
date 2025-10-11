@@ -1908,10 +1908,10 @@ textarea {
 
 .flatpickr-time {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 18px 16px;
+  gap: 12px;
+  padding: 14px 12px;
   border-top: 1px solid rgba(76, 110, 245, 0.12);
   background: rgba(246, 248, 255, 0.98);
 }
@@ -1963,17 +1963,31 @@ input.flatpickr-alt-input:focus {
 }
 
 .flatpickr-time .numInputWrapper {
-  width: 104px;
-  height: 48px;
-  padding: 6px 44px 6px 16px;
+  width: 72px;
+  height: 44px;
+  padding: 4px 30px 4px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
 }
 
+.flatpickr-time .flatpickr-am-pm {
+  width: 72px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
 .flatpickr-time input {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #1f2d52;
   height: 100%;
@@ -1982,19 +1996,19 @@ input.flatpickr-alt-input:focus {
   border: none;
   width: 100%;
   text-align: center;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp,
 .flatpickr-time .numInputWrapper span.arrowDown {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   font-size: 0;
   border-radius: 50%;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.82), rgba(37, 99, 235, 0.78));
   box-shadow: 0 6px 18px -10px rgba(59, 130, 246, 0.9);
   position: absolute;
-  right: 8px;
+  right: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2003,18 +2017,18 @@ input.flatpickr-alt-input:focus {
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp {
-  top: 6px;
+  top: 4px;
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown {
-  bottom: 6px;
+  bottom: 4px;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::after,
 .flatpickr-time .numInputWrapper span.arrowDown::after {
   content: '';
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border: 2px solid rgba(255, 255, 255, 0.92);
   border-left: transparent;
   border-bottom: transparent;
