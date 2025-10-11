@@ -1145,10 +1145,6 @@ body[dir="rtl"] .reservation-summary-card {
   }
 }
 
-.reservation-equipment-inputs .reservation-equipment-field--search .form-control {
-  padding-block: 0.3rem;
-}
-
 .reservation-remove-button {
   display: inline-flex;
   align-items: center;
