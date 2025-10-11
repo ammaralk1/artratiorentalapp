@@ -668,28 +668,21 @@ function populateEquipmentDescriptionLists() {
   setCachedEquipment(equipmentList);
   equipmentDescriptionOptionMap = new Map();
 
-  const optionEntries = equipmentList
+  const optionEntries = Array.from(new Set(
+    equipmentList
     .map((item) => {
       const searchValue = buildEquipmentSearchValue(item);
       const normalizedValue = normalizeEquipmentSearchValue(searchValue);
       if (normalizedValue) {
         equipmentDescriptionOptionMap.set(normalizedValue, item);
       }
-      const labelParts = [item?.desc || item?.description || ''];
-      if (item?.barcode) {
-        labelParts.push(`#${normalizeNumbers(item.barcode)}`);
-      }
-      const label = labelParts.filter(Boolean).join(' ');
-      return {
-        value: searchValue,
-        label,
-      };
+      return searchValue;
     })
-    .filter((entry) => entry.value)
-    .sort((a, b) => a.value.localeCompare(b.value, 'ar', { sensitivity: 'base' }));
+    .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b, 'ar', { sensitivity: 'base' }));
 
   const optionsHtml = optionEntries
-    .map((entry) => `<option value="${escapeHtml(entry.value)}" label="${escapeHtml(entry.label)}"></option>`)
+    .map((value) => `<option value="${escapeHtml(value)}"></option>`)
     .join('');
 
   if (createList) createList.innerHTML = optionsHtml;
