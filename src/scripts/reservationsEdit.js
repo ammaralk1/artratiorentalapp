@@ -530,17 +530,6 @@ export function setupEditReservationModalEvents(context = {}) {
     barcodeInput.dataset.listenerAttached = 'true';
   }
 
-  const descriptionInput = document.getElementById('edit-res-equipment-description');
-  if (descriptionInput && !descriptionInput.dataset.listenerAttached) {
-    descriptionInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        addEquipmentByDescription?.(descriptionInput, 'edit');
-      }
-    });
-    descriptionInput.dataset.listenerAttached = 'true';
-  }
-
   setupEditEquipmentDescriptionInput?.();
 
   const modalElement = document.getElementById('editReservationModal');
