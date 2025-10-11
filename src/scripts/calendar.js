@@ -5,7 +5,8 @@ import { t, getCurrentLanguage } from './language.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, isApiError as isReservationsApiError } from './reservationsService.js';
 import { loadData } from './storage.js';
-import { resolveReservationProjectState } from './reservationsShared.js';
+import { resolveReservationProjectState, groupReservationItems } from './reservationsShared.js';
+import { resolveItemImage } from './reservationsEquipment.js';
 
 const CALENDAR_FETCH_PARAMS = { limit: 200 };
 
@@ -352,6 +353,7 @@ function showReservationModal(reservation) {
   const language = getCurrentLanguage();
 
   const items = reservation.items || [];
+  const groupedItems = groupReservationItems(items);
   const techniciansList = syncTechniciansStatuses() || [];
   const techniciansMap = new Map(techniciansList.map((tech) => [String(tech.id), tech]));
   const assignedTechnicians = (reservation.technicians || [])
@@ -396,22 +398,36 @@ function showReservationModal(reservation) {
   const finalTotal = reservation.cost ?? Math.round(taxableAmount + taxAmount);
 
   const currencySuffix = t('calendar.labels.currencySuffix', 'ريال');
-  const itemsHtml = items.length
-    ? items.map((item, index) => {
-        const image = item.image || item.imageUrl || item.img || '';
-        const barcode = normalizeNumbers(String(item.barcode || '-'));
-        const qty = normalizeNumbers(String(item.qty || 1));
-        const price = normalizeNumbers(String(item.price || 0));
+  const itemsHtml = groupedItems.length
+    ? groupedItems.map((group, index) => {
+        const representative = group.items[0] || {};
+        const image = resolveItemImage(representative) || group.image || representative.image || representative.imageUrl || '';
+        const barcodeDisplay = group.barcodes.length
+          ? group.barcodes
+              .map((code) => normalizeNumbers(String(code || '-')))
+              .filter(Boolean)
+              .join('<br>')
+          : '-';
+        const quantityValue = Number(group.quantity) || 0;
+        const quantityDisplay = normalizeNumbers(String(quantityValue));
+        const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
+        const totalPriceNumber = Number.isFinite(Number(group.totalPrice))
+          ? Number(group.totalPrice)
+          : unitPriceNumber * quantityValue;
+        const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencySuffix}`;
+        const priceMeta = quantityValue > 1 && unitPriceNumber > 0
+          ? `<div class="reservation-modal-price-meta text-muted">(${normalizeNumbers(unitPriceNumber.toFixed(2))} × ${quantityDisplay})</div>`
+          : '';
         const imageCell = image
-          ? `<img src="${image}" alt="${item.desc || ''}" class="reservation-modal-item-thumb">`
+          ? `<img src="${image}" alt="${representative.desc || representative.description || representative.name || ''}" class="reservation-modal-item-thumb">`
           : '-';
         return `
           <tr>
             <td>${normalizeNumbers(String(index + 1))}</td>
-            <td>${barcode}</td>
-            <td>${item.desc || '-'}</td>
-            <td>${qty}</td>
-            <td>${price} ${currencySuffix}</td>
+            <td>${barcodeDisplay || '-'}</td>
+            <td>${representative.desc || representative.description || representative.name || '-'}</td>
+            <td>${quantityDisplay}</td>
+            <td>${totalPriceDisplay}${priceMeta}</td>
             <td>${imageCell}</td>
           </tr>
         `;

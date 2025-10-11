@@ -1,4 +1,4 @@
-import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, normalizeText } from './reservationsShared.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -1346,20 +1346,27 @@ function calculateTopCustomers(reservations, customers) {
 function calculateTopEquipment(reservations, equipment) {
   const totals = new Map();
   const equipmentMap = new Map((equipment || []).map((item) => [normalizeBarcode(item?.barcode), item]));
+  const unknownLabel = translate('reservations.reports.topEquipment.unknown', 'معدة بدون اسم', 'Unnamed equipment');
 
   reservations.forEach((res) => {
     (res?.items || []).forEach((item) => {
       const barcode = normalizeBarcode(item?.barcode);
-      const key = barcode || (item?.desc ?? 'unknown');
-      const name = item?.desc
-        || equipmentMap.get(barcode)?.desc
-        || equipmentMap.get(barcode)?.description
-        || translate('reservations.reports.topEquipment.unknown', 'معدة بدون اسم', 'Unnamed equipment');
+      const equipmentRecord = barcode ? equipmentMap.get(barcode) : null;
+      const rawName = item?.desc
+        || item?.description
+        || item?.name
+        || equipmentRecord?.desc
+        || equipmentRecord?.description
+        || equipmentRecord?.name
+        || '';
+      const displayName = rawName && rawName.trim() ? rawName : unknownLabel;
+      const key = normalizeText(displayName) || 'unknown';
       const quantity = Number(item?.qty) || 1;
-      const revenue = quantity * (Number(item?.price) || 0);
+      const unitPrice = Number(item?.price) || 0;
+      const revenue = quantity * unitPrice;
 
-      const entry = totals.get(key) || { name, count: 0, revenue: 0 };
-      entry.name = name;
+      const entry = totals.get(key) || { name: displayName, count: 0, revenue: 0 };
+      entry.name = displayName;
       entry.count += quantity;
       entry.revenue += revenue;
       totals.set(key, entry);
@@ -1367,7 +1374,10 @@ function calculateTopEquipment(reservations, equipment) {
   });
 
   return Array.from(totals.values())
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return b.revenue - a.revenue;
+    })
     .slice(0, 5);
 }
 

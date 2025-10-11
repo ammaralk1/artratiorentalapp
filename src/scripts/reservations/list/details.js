@@ -1,7 +1,7 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, groupReservationItems } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
@@ -22,6 +22,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
+  const groupedItems = groupReservationItems(items);
 
   const { technicians: storedTechnicians = [] } = loadData();
   const technicianSource = []
@@ -171,8 +172,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
 
   const paymentStatusText = paid ? paymentPaidText : paymentUnpaidText;
-  const itemsCount = items.length;
-  const itemsCountDisplay = normalizeNumbers(String(itemsCount));
+  const totalItemsQuantity = groupedItems.reduce((sum, group) => sum + (Number(group.quantity) || 0), 0);
+  const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
   const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
@@ -275,23 +276,36 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const infoRowsHtml = infoRows.join('');
 
 
-  const itemsTableBody = itemsCount
-    ? items.map((item, itemIndex) => {
-        const image = resolveItemImage(item);
-        const barcode = normalizeNumbers(String(item.barcode || '-'));
-        const qty = normalizeNumbers(String(item.qty || 1));
-        const price = normalizeNumbers(String(item.price || 0));
-        const indexLabel = normalizeNumbers(String(itemIndex + 1));
+  const itemsTableBody = groupedItems.length
+    ? groupedItems.map((group, groupIndex) => {
+        const representative = group.items[0] || {};
+        const image = resolveItemImage(representative) || group.image;
+        const barcodeDisplay = group.barcodes.length
+          ? group.barcodes
+              .map((code) => normalizeNumbers(String(code || '-')))
+              .filter(Boolean)
+              .join('<br>')
+          : '-';
+        const quantityValue = Number(group.quantity) || 0;
+        const quantityDisplay = normalizeNumbers(String(quantityValue));
+        const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
+        const totalPriceNumber = Number.isFinite(Number(group.totalPrice))
+          ? Number(group.totalPrice)
+          : unitPriceNumber * quantityValue;
+        const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
+        const priceMeta = quantityValue > 1 && unitPriceNumber > 0
+          ? `<div class="reservation-modal-price-meta text-muted">(${normalizeNumbers(unitPriceNumber.toFixed(2))} × ${quantityDisplay})</div>`
+          : '';
         const imageCell = image
-          ? `<img src="${image}" alt="${item.desc || ''}" class="reservation-modal-item-thumb">`
+          ? `<img src="${image}" alt="${escapeHtml(representative.desc || representative.description || representative.name || '')}" class="reservation-modal-item-thumb">`
           : '-';
         return `
           <tr>
-            <td>${indexLabel}</td>
-            <td>${barcode}</td>
-            <td>${item.desc || '-'}</td>
-            <td>${qty}</td>
-            <td>${price} ${currencyLabel}</td>
+            <td>${normalizeNumbers(String(groupIndex + 1))}</td>
+            <td>${barcodeDisplay || '-'}</td>
+            <td>${representative.desc || representative.description || representative.name || '-'}</td>
+            <td>${quantityDisplay}</td>
+            <td>${totalPriceDisplay}${priceMeta}</td>
             <td>${imageCell}</td>
           </tr>
         `;

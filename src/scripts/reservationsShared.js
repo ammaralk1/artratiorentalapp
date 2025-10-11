@@ -12,6 +12,14 @@ function normalizePrice(value) {
   return number.toFixed(GROUP_PRICE_PRECISION);
 }
 
+function getItemQuantity(entry = {}) {
+  const parsed = Number(entry?.qty);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return 1;
+}
+
 export function resolveReservationItemGroupKey(item = {}) {
   const description = item?.desc || item?.description || item?.name || '';
   const normalizedDescription = normalizeText(description);
@@ -53,9 +61,24 @@ export function groupReservationItems(items = []) {
 
   return Array.from(map.values()).map((group) => ({
     ...group,
-    count: group.items.length,
-    totalPrice: group.items.reduce((sum, entry) => sum + toPriceNumber(entry), 0),
-  }));
+    quantity: group.items.reduce((sum, entry) => sum + getItemQuantity(entry), 0),
+  })).map((group) => {
+    const quantity = group.quantity || 0;
+    const totalPrice = group.items.reduce((sum, entry) => {
+      const price = toPriceNumber(entry);
+      const itemQty = getItemQuantity(entry);
+      return sum + (price * itemQty);
+    }, 0);
+    const unitPrice = quantity > 0 ? totalPrice / quantity : group.unitPrice;
+
+    return {
+      ...group,
+      quantity,
+      count: quantity, // backward compatible alias
+      totalPrice,
+      unitPrice,
+    };
+  });
 }
 
 export function resolveEquipmentIdentifier(record = {}) {
