@@ -2013,7 +2013,7 @@ input.flatpickr-alt-input:focus {
   justify-content: center;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
-  color: rgba(21, 30, 55, 0.88);
+  color: rgba(37, 99, 235, 0.9);
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp {
@@ -2032,14 +2032,15 @@ input.flatpickr-alt-input:focus {
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
   transition: border-color 0.2s ease;
+  display: inline-block;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::after {
-  border-bottom: 7px solid currentColor;
+  border-bottom: 7px solid rgba(37, 99, 235, 0.95);
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown::after {
-  border-top: 7px solid currentColor;
+  border-top: 7px solid rgba(37, 99, 235, 0.95);
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::before,
@@ -2067,15 +2068,22 @@ input.flatpickr-alt-input:focus {
 
 .flatpickr-time .numInputWrapper span:hover::after,
 .flatpickr-time .numInputWrapper span:focus-visible::after {
-  border-bottom-color: currentColor;
-  border-top-color: currentColor;
+  border-bottom-color: rgba(23, 78, 211, 0.95);
+  border-top-color: rgba(23, 78, 211, 0.95);
 }
 
 :where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp,
 :where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown {
   background: rgba(96, 165, 250, 0.18);
-  color: rgba(226, 232, 240, 0.92);
   box-shadow: 0 12px 22px rgba(15, 23, 42, 0.35);
+}
+
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp::after {
+  border-bottom-color: rgba(226, 232, 240, 0.94);
+}
+
+:where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowDown::after {
+  border-top-color: rgba(226, 232, 240, 0.94);
 }
 
 :where(html.dark, body.dark) .flatpickr-time .numInputWrapper span.arrowUp:hover,
