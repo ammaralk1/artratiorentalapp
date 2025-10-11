@@ -31,14 +31,7 @@ let reservationEventsInitialized = false;
 function enhanceTimeInputs() {
   const timeInputs = document.querySelectorAll('input[type="time"]');
   timeInputs.forEach((input) => {
-    input.setAttribute('step', '3600');
-    if (input.dataset.listenerAttached === 'true') return;
-    input.addEventListener('change', () => {
-      if (!input.value) return;
-      const [hour] = input.value.split(':');
-      input.value = `${hour.padStart(2, '0')}:00`;
-    });
-    input.dataset.listenerAttached = 'true';
+    input.setAttribute('step', '300');
   });
 }
 
@@ -75,17 +68,6 @@ function initializeReservationPickers() {
     ['#edit-res-end', {}]
   ];
 
-  const enforceTopOfHour = (selectedDates, _dateStr, instance) => {
-    if (!Array.isArray(selectedDates) || selectedDates.length === 0) return;
-    const original = selectedDates[0];
-    if (!(original instanceof Date)) return;
-    if (original.getMinutes() !== 0 || original.getSeconds() !== 0 || original.getMilliseconds() !== 0) {
-      const corrected = new Date(original.getTime());
-      corrected.setMinutes(0, 0, 0);
-      instance.setDate(corrected, false);
-    }
-  };
-
   const baseTimeConfig = {
     enableTime: true,
     noCalendar: true,
@@ -96,11 +78,8 @@ function initializeReservationPickers() {
     defaultHour: 9,
     defaultMinute: 0,
     disableMobile: true,
-    minuteIncrement: 60,
-    altInputClass: 'flatpickr-alt-input form-control',
-    onChange: enforceTopOfHour,
-    onClose: enforceTopOfHour,
-    onReady: enforceTopOfHour
+    minuteIncrement: 5,
+    altInputClass: 'flatpickr-alt-input form-control'
   };
 
   const timePickers = ['#res-start-time', '#res-end-time', '#edit-res-start-time', '#edit-res-end-time'];
