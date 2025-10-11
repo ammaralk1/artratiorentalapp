@@ -1,6 +1,5 @@
 import { logout } from '../auth.js';
 import { dom } from './state.js';
-import { initTimePickers } from '../ui/timePicker.js';
 
 function getFlatpickrForProjects() {
   if (typeof window !== 'undefined' && typeof window.flatpickr === 'function') {
@@ -67,29 +66,47 @@ export function cacheDom() {
 export function initProjectDatePickers() {
   const fp = getFlatpickrForProjects();
 
+  if (!fp) return;
+
   const datePickers = [
     ['#project-start-date', { dateFormat: 'Y-m-d' }],
     ['#project-end-date', { dateFormat: 'Y-m-d' }]
   ];
 
-  if (fp) {
-    datePickers.forEach(([selector, config]) => {
-      if (document.querySelector(selector)) {
-        fp(selector, config);
-      }
-    });
-  }
-
-  initTimePickers(
-    ['#project-start-time', '#project-end-time']
-      .map((selector) => document.querySelector(selector))
-      .filter(Boolean),
-    {
-      minuteStep: 5,
+  const timePickers = [
+    ['#project-start-time', {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: 'H:i',
+      altInput: true,
+      altFormat: 'h:i K',
+      time_24hr: false,
       defaultHour: 9,
       defaultMinute: 0,
+      minuteIncrement: 5,
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
+    }],
+    ['#project-end-time', {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: 'H:i',
+      altInput: true,
+      altFormat: 'h:i K',
+      time_24hr: false,
+      defaultHour: 9,
+      defaultMinute: 0,
+      minuteIncrement: 5,
+      disableMobile: true,
+      altInputClass: 'flatpickr-alt-input form-control'
+    }]
+  ];
+
+  [...datePickers, ...timePickers].forEach(([selector, config]) => {
+    if (document.querySelector(selector)) {
+      fp(selector, config);
     }
-  );
+  });
 }
 
 export function clearProjectDateInputs() {
