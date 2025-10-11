@@ -2492,6 +2492,27 @@
     width: auto;
   }
 
+  .management-form-grid .form-field.form-field-notes textarea.form-control {
+    width: min(100%, 820px) !important;
+    max-width: min(100%, 820px) !important;
+    margin-inline: auto;
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.98), rgba(231, 238, 255, 0.9)) !important;
+    border-radius: 18px;
+    border: 1px solid rgba(76, 110, 245, 0.18);
+    box-shadow:
+      0 12px 28px rgba(76, 110, 245, 0.08),
+      0 3px 10px rgba(15, 23, 42, 0.08);
+  }
+
+  :is(html.dark, body.dark) .management-form-grid .form-field.form-field-notes textarea.form-control {
+    background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9)) !important;
+    border-color: rgba(148, 163, 255, 0.25);
+    color: rgba(226, 232, 240, 0.94);
+    box-shadow:
+      0 14px 32px rgba(8, 14, 32, 0.55),
+      0 0 0 1px rgba(147, 197, 253, 0.12);
+  }
+
   .enhanced-select {
     position: relative;
     display: inline-flex;
