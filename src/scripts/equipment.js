@@ -839,26 +839,21 @@ export function renderEquipment() {
     return matchesSearch && matchesCategory && matchesSub && matchesStatus;
   });
 
-  const sortedEntries = filteredEntries.sort((a, b) => {
-    const aKey = a.item.groupKey || resolveEquipmentGroupKey(a.item);
-    const bKey = b.item.groupKey || resolveEquipmentGroupKey(b.item);
-
-    return aKey.localeCompare(bKey, 'ar', { numeric: true, sensitivity: 'base' });
-  });
-
   const emptyMessage = search
     ? t("equipment.list.emptyFiltered", "⚠️ لا توجد معدات مطابقة.")
     : t("equipment.list.empty", "لا توجد معدات مسجلة بعد.");
 
-  container.innerHTML = sortedEntries.length
-    ? sortedEntries.map(renderEquipmentItem).join("")
+  const orderedEntries = filteredEntries;
+
+  container.innerHTML = orderedEntries.length
+    ? orderedEntries.map(renderEquipmentItem).join("")
     : renderEmptyState(emptyMessage);
 
   const countBadge = document.getElementById("equipment-list-count");
   if (countBadge) {
     const suffix = t("equipment.list.countSuffix", "عنصر");
-    const count = normalizeNumbers(String(sortedEntries.length));
-    const countText = sortedEntries.length ? `${count} ${suffix}` : `0 ${suffix}`;
+    const count = normalizeNumbers(String(orderedEntries.length));
+    const countText = orderedEntries.length ? `${count} ${suffix}` : `0 ${suffix}`;
     countBadge.textContent = countText;
   }
 
