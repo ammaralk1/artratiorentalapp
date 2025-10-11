@@ -487,7 +487,6 @@ function renderEquipmentVariantsSection(baseItem) {
 
 function renderEquipmentItem({ item, index }) {
   const imageUrl = getEquipmentImage(item);
-  const editLabel = t("equipment.item.actions.edit", "✏️ تعديل");
   const deleteLabel = t("equipment.item.actions.delete", "🗑️ حذف");
   const imageAlt = t("equipment.item.imageAlt", "صورة");
   const currencyLabel = t("equipment.item.currency", "ريال");
@@ -509,30 +508,27 @@ function renderEquipmentItem({ item, index }) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
-  const barcodeDisplay = item.barcode ? String(item.barcode).trim() : "";
   const title = item.desc || item.name || "—";
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
   const metricItems = [
-    barcodeDisplay ? { label: labels.barcode, value: barcodeDisplay } : null,
     { label: labels.quantity, value: qtyDisplay },
     { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
-  ].filter(Boolean);
+  ];
 
-  const metricsRowHtml = metricItems.length
-    ? `<div class="equipment-card__info-row">
-        ${metricItems
-          .map(
-            ({ label, value }) => `
-              <span class="equipment-card__info-item">
-                <span class="equipment-card__detail-label">${label}</span>
-                <span class="equipment-card__detail-value">${value}</span>
-              </span>
-            `
-          )
-          .join("")}
-      </div>`
-    : "";
+  const metricsRowHtml = `
+    <div class="equipment-card__info-row equipment-card__info-row--center">
+      ${metricItems
+        .map(
+          ({ label, value }) => `
+            <span class="equipment-card__info-item equipment-card__info-item--stacked">
+              <span class="equipment-card__detail-label">${label}</span>
+              <span class="equipment-card__detail-value">${value}</span>
+            </span>
+          `
+        )
+        .join("")}
+    </div>`;
 
   const categoryItems = [
     item.category ? { label: labels.category, value: item.category } : null,
@@ -573,18 +569,27 @@ function renderEquipmentItem({ item, index }) {
     </div>
   `;
 
-  const actionButtons = [
-    `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--edit" data-equipment-action="edit" data-equipment-index="${index}">${editLabel}</button>`
-  ];
-
+  const actionButtons = [];
   if (canDelete) {
     actionButtons.push(
       `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
     );
   }
+  const actionsHtml = actionButtons.length
+    ? `<div class="equipment-card__actions equipment-card__actions--center">${actionButtons.join("\n")}</div>`
+    : '';
+
+  const cardLabel = escapeHtml(title);
 
   return `
-    <article class="equipment-card" data-equipment-index="${index}" role="listitem">
+    <article
+      class="equipment-card"
+      data-equipment-index="${index}"
+      data-equipment-card="true"
+      role="listitem"
+      tabindex="0"
+      aria-label="${cardLabel}"
+    >
       <div class="equipment-card__header">
         <div class="equipment-card__status-block">
           <span class="equipment-card__label equipment-card__label--status">${labels.status}</span>
@@ -605,9 +610,7 @@ function renderEquipmentItem({ item, index }) {
         ${categoriesHtml}
         ${aliasHtml}
       </div>
-      <div class="equipment-card__actions">
-        ${actionButtons.join("\n")}
-      </div>
+      ${actionsHtml}
     </article>
   `;
 }
@@ -1025,25 +1028,40 @@ function openEditEquipmentModal(index) {
 }
 
 function handleEquipmentListClick(event) {
-  const actionButton = event.target.closest('[data-equipment-action]');
-  if (!actionButton) return;
-
-  event.preventDefault();
-  const action = actionButton.dataset.equipmentAction;
-  const index = Number(actionButton.dataset.equipmentIndex);
-  if (Number.isNaN(index)) {
+  const deleteButton = event.target.closest('[data-equipment-action="delete"]');
+  if (deleteButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const index = Number(deleteButton.dataset.equipmentIndex);
+    if (!Number.isNaN(index)) {
+      deleteEquipment(index).catch((error) => {
+        console.error('❌ [equipment.js] deleteEquipment', error);
+      });
+    }
     return;
   }
 
-  if (action === 'edit') {
-    openEditEquipmentModal(index);
-    return;
+  const card = event.target.closest('[data-equipment-card="true"]');
+  if (card) {
+    const index = Number(card.dataset.equipmentIndex);
+    if (!Number.isNaN(index)) {
+      openEditEquipmentModal(index);
+    }
   }
+}
 
-  if (action === 'delete') {
-    deleteEquipment(index).catch((error) => {
-      console.error('❌ [equipment.js] deleteEquipment', error);
-    });
+function handleEquipmentListKeyDown(event) {
+  if (event.defaultPrevented) return;
+  if (event.target.closest('[data-equipment-action]')) return;
+  const card = event.target.closest('[data-equipment-card="true"]');
+  if (!card) return;
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    const index = Number(card.dataset.equipmentIndex);
+    if (!Number.isNaN(index)) {
+      openEditEquipmentModal(index);
+    }
   }
 }
 
@@ -1103,6 +1121,7 @@ function wireUpEquipmentUI() {
   const equipmentList = document.getElementById('equipment-list');
   if (equipmentList && !equipmentList.dataset.listenerAttached) {
     equipmentList.addEventListener('click', handleEquipmentListClick);
+    equipmentList.addEventListener('keydown', handleEquipmentListKeyDown);
     equipmentList.dataset.listenerAttached = 'true';
   }
 }

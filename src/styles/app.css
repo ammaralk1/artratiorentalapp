@@ -1908,6 +1908,35 @@
     justify-content: center;
   }
 
+  .equipment-card__info-row--center {
+    justify-content: center;
+  }
+
+  .equipment-card__info-item--stacked {
+    align-items: center;
+    text-align: center;
+  }
+
+  .equipment-card__actions--center {
+    justify-content: center;
+  }
+
+  .equipment-card__actions--center .equipment-card__action-btn {
+    margin-inline: auto;
+  }
+
+  .equipment-card[data-equipment-card="true"] {
+    cursor: pointer;
+  }
+
+  .equipment-card[data-equipment-card="true"]:focus {
+    outline: none;
+  }
+
+  .equipment-card[data-equipment-card="true"]:focus-visible {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  }
+
   :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .equipment-card {
     border-color: rgba(59, 130, 246, 0.28);
     background: radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.18), transparent 55%),
