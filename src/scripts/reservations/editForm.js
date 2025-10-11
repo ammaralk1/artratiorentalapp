@@ -1,7 +1,7 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers } from '../utils.js';
-import { groupReservationItems, resolveReservationItemGroupKey } from '../reservationsShared.js';
+import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
 import {
   resolveItemImage,
   findEquipmentByBarcode,
@@ -68,10 +68,13 @@ export function renderEditReservationItems(items = []) {
       const normalizedBarcodes = group.barcodes
         .map((code) => normalizeNumbers(String(code || '')))
         .filter(Boolean);
-      const baseBarcodes = normalizedBarcodes.slice(0, 3).join(', ');
-      const remaining = normalizedBarcodes.length - 3;
       const barcodesMeta = normalizedBarcodes.length
-        ? `<div class="reservation-item-meta">${baseBarcodes}${remaining > 0 ? ` +${normalizeNumbers(String(remaining))}` : ''}</div>`
+        ? `<details class="reservation-item-barcodes">
+            <summary>${t('reservations.equipment.barcodes.summary', 'عرض الباركودات')}</summary>
+            <ul class="reservation-barcode-list">
+              ${normalizedBarcodes.map((code) => `<li>${code}</li>`).join('')}
+            </ul>
+          </details>`
         : '';
 
       return `
@@ -166,11 +169,16 @@ function increaseEditReservationGroup(groupKey) {
   }
 
   const normalizedCode = normalizeBarcodeValue(candidate.barcode);
+  const equipmentId = resolveEquipmentIdentifier(candidate);
+  if (!equipmentId) {
+    showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
+    return;
+  }
   const nextItems = [
     ...items,
     {
-      id: candidate.id,
-      equipmentId: candidate.id,
+      id: equipmentId,
+      equipmentId,
       barcode: normalizedCode,
       desc: candidate.desc || candidate.description || candidate.name || target.description || '',
       qty: 1,
@@ -319,11 +327,17 @@ export function addEquipmentToEditingReservation(barcodeInput) {
     return;
   }
 
+  const resolvedId = resolveEquipmentIdentifier(equipmentItem);
+  if (!resolvedId) {
+    showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
+    return;
+  }
+
   const nextItems = [
     ...currentItems,
     {
-      id: equipmentItem.id,
-      equipmentId: equipmentItem.id,
+      id: resolvedId,
+      equipmentId: resolvedId,
       barcode: normalizedCode,
       desc: equipmentItem.desc,
       qty: 1,
@@ -378,11 +392,17 @@ export function addEquipmentToEditingByDescription(inputElement) {
     return;
   }
 
+  const resolvedId = resolveEquipmentIdentifier(equipmentItem);
+  if (!resolvedId) {
+    showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
+    return;
+  }
+
   const nextItems = [
     ...currentItems,
     {
-      id: equipmentItem.id,
-      equipmentId: equipmentItem.id,
+      id: resolvedId,
+      equipmentId: resolvedId,
       barcode: normalizedCode,
       desc: equipmentItem.desc,
       qty: 1,

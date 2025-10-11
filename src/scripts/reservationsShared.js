@@ -28,7 +28,7 @@ export function groupReservationItems(items = []) {
     if (!map.has(key)) {
       const description = item?.desc || item?.description || item?.name || '';
       const normalizedDescription = normalizeText(description);
-      const unitPrice = Number(item?.price) || 0;
+      const unitPrice = toPriceNumber(item);
       const image = item?.image || item?.imageUrl || item?.img || '';
 
       map.set(key, {
@@ -54,8 +54,31 @@ export function groupReservationItems(items = []) {
   return Array.from(map.values()).map((group) => ({
     ...group,
     count: group.items.length,
-    totalPrice: group.items.reduce((sum, entry) => sum + (Number(entry?.price) || 0), 0),
+    totalPrice: group.items.reduce((sum, entry) => sum + toPriceNumber(entry), 0),
   }));
+}
+
+export function resolveEquipmentIdentifier(record = {}) {
+  const candidates = [
+    record?.id,
+    record?.equipment_id,
+    record?.equipmentId,
+    record?.item_id,
+    record?.itemId,
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === '') continue;
+    return String(candidate);
+  }
+
+  return null;
+}
+
+function toPriceNumber(entry = {}) {
+  const value = entry?.price ?? entry?.unit_price ?? entry?.unitPrice ?? 0;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
 }
 
 export function isReservationCompleted(reservation) {
