@@ -1,5 +1,15 @@
 import { loadData } from './storage.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
+
+function formatDateDDMMYY(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+}
 import { refreshEquipmentFromApi, renderEquipment } from './equipment.js';
 import { t } from './language.js';
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from './auth.js';
@@ -612,7 +622,9 @@ function renderTable(tickets) {
       const issuePlaceholder = t('maintenance.report.none', '—');
       const barcodeDisplay = ticket.equipmentBarcode ? normalizeNumbers(ticket.equipmentBarcode) : noBarcode;
       const issueDisplay = ticket.issue ? normalizeNumbers(ticket.issue) : issuePlaceholder;
-      const createdDisplay = ticket.createdAt ? normalizeNumbers(formatDateTime(ticket.createdAt)) : '—';
+      const createdDisplay = ticket.createdAt
+        ? normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt))
+        : '—';
 
       return `
         <tr class="${rowStatusClass}">
@@ -735,7 +747,7 @@ function viewTicketReport(id) {
       `${equipmentLabelFallback}: ${ticket.equipmentDesc}`,
       `${barcodeLabelFallback}: ${ticket.equipmentBarcode ? normalizeNumbers(ticket.equipmentBarcode) : notAvailableFallback}`,
       `${issueLabelFallback}: ${ticket.issue ? normalizeNumbers(ticket.issue) : noneFallback}`,
-      `${createdLabelFallback}: ${ticket.createdAt ? normalizeNumbers(formatDateTime(ticket.createdAt)) : noneFallback}`,
+      `${createdLabelFallback}: ${ticket.createdAt ? normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt)) : noneFallback}`,
       `${closedLabelFallback}: ${ticket.resolvedAt ? normalizeNumbers(formatDateTime(ticket.resolvedAt)) : noneFallback}`,
       `${summaryLabelFallback}: ${ticket.resolutionReport ? normalizeNumbers(ticket.resolutionReport) : noneFallback}`
     ].join('\n');
@@ -780,7 +792,7 @@ function viewTicketReport(id) {
     {
       label: createdLabel,
       value: ticket.createdAt
-        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(formatDateTime(ticket.createdAt)))}</span>`
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt)))}</span>`
         : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
     },
     {
