@@ -720,9 +720,9 @@
             </div>
             <div id="maintenance-selected-info" class="maintenance-selected-info text-muted" data-i18n data-i18n-key="maintenance.form.selectedInfo">لم يتم اختيار معدة بعد.</div>
             <input type="hidden" id="maintenance-selected-barcode">
-            <div class="form-field maintenance-issue-field">
-              <label for="maintenance-issue" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
-              <textarea id="maintenance-issue" class="form-control" rows="3" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
+            <div class="maintenance-issue-wrapper">
+              <label for="maintenance-issue" class="maintenance-issue-label" data-i18n data-i18n-key="maintenance.form.labels.issue">📝 وصف المشكلة</label>
+              <textarea id="maintenance-issue" class="maintenance-issue-textarea" rows="4" placeholder="اشرح المشكلة أو الأعراض الظاهرة للمعدة" required data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.issue"></textarea>
             </div>
             <div class="management-form-actions maintenance-form-actions">
               <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="maintenance.form.actions.submit">🛠️ إنشاء التذكرة</button>
