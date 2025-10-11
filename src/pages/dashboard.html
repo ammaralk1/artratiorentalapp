@@ -949,10 +949,20 @@
 
             <div class="row mb-3">
               <div class="col-12">
-                <div class="reservation-stack">
-                  <label for="res-notes" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</label>
-                  <textarea id="res-notes" class="form-control reservation-notes" placeholder="اكتب أي ملاحظات إضافية..." data-i18n data-i18n-placeholder-key="reservations.create.placeholders.notes"></textarea>
-                </div>
+                <section class="reservation-notes-card">
+                  <header class="reservation-notes-card__header">
+                    <h5 class="reservation-notes-card__title" data-i18n data-i18n-key="reservations.create.labels.notes">📝 ملاحظات</h5>
+                    <p class="reservation-notes-card__hint" data-i18n data-i18n-key="reservations.create.notes.hint">أضف تفاصيل إضافية لتنسيق الفريق والمعدات.</p>
+                  </header>
+                  <textarea
+                    id="res-notes"
+                    class="reservation-notes-card__textarea"
+                    rows="4"
+                    placeholder="اكتب أي ملاحظات إضافية..."
+                    data-i18n
+                    data-i18n-placeholder-key="reservations.create.placeholders.notes"
+                  ></textarea>
+                </section>
               </div>
             </div>
 
