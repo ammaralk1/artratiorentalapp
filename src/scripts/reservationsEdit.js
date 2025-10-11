@@ -6,6 +6,7 @@ import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians }
 import { normalizeBarcodeValue, getEquipmentAvailabilityStatus } from './reservationsEquipment.js';
 import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
+import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
 import {
   getReservationsState,
   updateReservationApi,

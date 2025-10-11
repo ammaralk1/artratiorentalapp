@@ -41,4 +41,7 @@ export function setFlatpickrValue(elementId, value) {
   element.value = value || '';
 }
 
-export { populateCreateEquipmentLists as populateEquipmentDescriptionLists };
+export {
+  populateCreateEquipmentLists as populateEquipmentDescriptionLists,
+  setupEditEquipmentDescriptionInput
+};
