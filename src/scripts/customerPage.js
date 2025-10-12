@@ -1,3 +1,4 @@
+import '../styles/app.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
 import { loadData, saveData, migrateOldData } from './storage.js';
@@ -26,10 +27,77 @@ window.showReservationDetails = showReservationDetails;
 const params = new URLSearchParams(window.location.search);
 const customerId = params.get('id');
 const container = document.getElementById('customer-details');
+const heroNameEl = document.getElementById('customer-hero-name');
+const heroPhoneEl = document.getElementById('customer-hero-phone');
+const heroCompanyEl = document.getElementById('customer-hero-company');
+const heroEmailEl = document.getElementById('customer-hero-email');
+const heroSummaryEl = document.getElementById('customer-hero-summary');
+const editActionBtn = document.getElementById('customer-edit-btn');
+
+if (editActionBtn) {
+  editActionBtn.disabled = true;
+}
+
 
 let currentCustomer = null;
 let isCustomerLoading = false;
 let customerLoadError = '';
+
+function escapeHtml(value = '') {
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
+  return div.innerHTML;
+}
+
+function escapeMultiline(value = '') {
+  const safe = escapeHtml(value).replace(/\r/g, '');
+  const newline = String.fromCharCode(10);
+  return safe.includes(newline) ? safe.split(newline).join('<br>') : safe;
+}
+
+function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
+  if (!element) return;
+  const stringValue = value == null ? '' : String(value).trim();
+  const hasValue = stringValue.length > 0;
+  const displayValue = hasValue ? stringValue : '—';
+  element.textContent = `${icon} ${displayValue}`;
+  if (hideWhenEmpty) {
+    element.classList.toggle('hidden', !hasValue);
+  } else {
+    element.classList.remove('hidden');
+  }
+}
+
+function setHeroData(customer) {
+  const fallbackSummary = t('customerDetails.pageTitle', 'معلومات العميل');
+  if (heroNameEl) {
+    heroNameEl.textContent = customer?.customerName || '—';
+  }
+  if (heroSummaryEl) {
+    heroSummaryEl.textContent = customer?.customerName || fallbackSummary;
+  }
+  const phoneValue = customer?.phone ? normalizeNumbers(customer.phone) : '';
+  updateHeroBadge(heroPhoneEl, '📞', phoneValue, { hideWhenEmpty: false });
+  updateHeroBadge(heroCompanyEl, '🏢', customer?.companyName || '', { hideWhenEmpty: true });
+  updateHeroBadge(heroEmailEl, '📧', customer?.email || '', { hideWhenEmpty: true });
+}
+
+if (editActionBtn && !editActionBtn.dataset.listenerAttached) {
+  editActionBtn.addEventListener('click', () => {
+    if (!currentCustomer) {
+      return;
+    }
+    populateEditModal();
+    const modalEl = document.getElementById('editCustomerModal');
+    const ModalCtor = typeof bootstrap !== 'undefined' ? bootstrap.Modal : null;
+    if (!modalEl || !ModalCtor) {
+      return;
+    }
+    const instance = ModalCtor.getInstance(modalEl) || new ModalCtor(modalEl);
+    instance.show();
+  });
+  editActionBtn.dataset.listenerAttached = 'true';
+}
 
 function findCustomerById(id) {
   const { customers } = loadData();
@@ -207,41 +275,74 @@ function renderDetails() {
   }
 
   if (!currentCustomer) {
+    setHeroData(null);
+
     if (isCustomerLoading) {
-      container.innerHTML = `<p class="text-muted" data-i18n data-i18n-key="customerDetails.status.loading">${t('customerDetails.status.loading', '⏳ جارٍ تحميل بيانات العميل...')}</p>`;
+      container.innerHTML = `
+        <div class="skeleton h-24 w-full rounded-2xl"></div>
+        <div class="skeleton h-24 w-full rounded-2xl"></div>
+        <div class="skeleton h-24 w-full rounded-2xl"></div>
+      `;
+      if (editActionBtn) {
+        editActionBtn.disabled = true;
+      }
       return;
     }
 
     if (customerLoadError) {
-      container.innerHTML = `<p class="text-danger">${customerLoadError}</p>`;
+      container.innerHTML = `
+        <div class="col-span-full">
+          <div class="alert alert-error">${escapeHtml(customerLoadError)}</div>
+        </div>
+      `;
+      if (editActionBtn) {
+        editActionBtn.disabled = true;
+      }
       return;
     }
 
-    container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.notFound">${t('customerDetails.errors.notFound', '⚠️ لم يتم العثور على هذا العميل.')}</p>`;
+    const notFoundMessage = t('customerDetails.errors.notFound', '⚠️ لم يتم العثور على هذا العميل.');
+    container.innerHTML = `
+      <div class="col-span-full">
+        <div class="alert alert-warning" data-i18n data-i18n-key="customerDetails.errors.notFound">${escapeHtml(notFoundMessage)}</div>
+      </div>
+    `;
+    if (editActionBtn) {
+      editActionBtn.disabled = true;
+    }
     return;
   }
 
-  const fields = [
-    { key: 'customerDetails.fields.name', value: currentCustomer.customerName || '—' },
-    { key: 'customerDetails.fields.phone', value: currentCustomer.phone ? normalizeNumbers(currentCustomer.phone) : '—' },
-    { key: 'customerDetails.fields.company', value: currentCustomer.companyName || '—' },
-    { key: 'customerDetails.fields.email', value: currentCustomer.email || '—' },
-    { key: 'customerDetails.fields.address', value: currentCustomer.address || '—' },
-    { key: 'customerDetails.fields.notes', value: currentCustomer.notes || '—' },
-  ].map(({ key, value }) => `
-    <p class="customer-detail-row">
-      <strong data-i18n data-i18n-key="${key}">${t(key)}</strong>
-      <span>${value}</span>
-    </p>
-  `).join('');
+  setHeroData(currentCustomer);
 
-  container.innerHTML = `
-    <div class="customer-details">
-      ${fields}
-    </div>
-    <button class="btn btn-warning mt-3" id="edit-btn" data-i18n data-i18n-key="customerDetails.actions.edit">${t('customerDetails.actions.edit', '✏️ تعديل العميل')}</button>
-  `;
-  bindEditButton();
+  if (editActionBtn) {
+    editActionBtn.disabled = false;
+  }
+
+  const fields = [
+    { key: 'customerDetails.fields.name', fallback: '👤 الاسم:', value: currentCustomer.customerName || '—' },
+    { key: 'customerDetails.fields.phone', fallback: '📞 الجوال:', value: currentCustomer.phone ? normalizeNumbers(currentCustomer.phone) : '—' },
+    { key: 'customerDetails.fields.company', fallback: '🏢 الشركة:', value: currentCustomer.companyName || '—' },
+    { key: 'customerDetails.fields.email', fallback: '📧 البريد:', value: currentCustomer.email || '—' },
+    { key: 'customerDetails.fields.address', fallback: '📍 العنوان:', value: currentCustomer.address || '—' },
+    { key: 'customerDetails.fields.notes', fallback: '📝 الملاحظات:', value: currentCustomer.notes || '—', multiline: true }
+  ];
+
+  const fieldsHtml = fields.map((field) => {
+    const label = t(field.key, field.fallback);
+    const rawValue = field.value == null ? '' : String(field.value);
+    const trimmedValue = rawValue.trim();
+    const displayValue = trimmedValue.length > 0 ? trimmedValue : '—';
+    const valueHtml = field.multiline ? escapeMultiline(displayValue) : escapeHtml(displayValue);
+    return `
+      <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+        <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
+        <p class="mt-2 text-lg font-semibold text-base-content">${valueHtml}</p>
+      </article>
+    `;
+  }).join('');
+
+  container.innerHTML = fieldsHtml;
 }
 
 function populateEditModal() {
@@ -254,19 +355,6 @@ function populateEditModal() {
   document.getElementById('edit-notes').value = currentCustomer?.notes || '';
 }
 
-function bindEditButton() {
-  const editBtn = document.getElementById('edit-btn');
-  if (!editBtn || editBtn.dataset.listenerAttached) {
-    return;
-  }
-
-  editBtn.addEventListener('click', () => {
-    populateEditModal();
-    const modal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
-    modal.show();
-  });
-  editBtn.dataset.listenerAttached = 'true';
-}
 
 const saveEditBtn = document.getElementById('save-edit-btn');
 if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
@@ -327,6 +415,7 @@ async function initializeCustomerPage() {
   }
 
   if (!customerId) {
+    setHeroData(null);
     container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.missingId">${t('customerDetails.errors.missingId', '⚠️ لا يوجد معرف عميل في الرابط.')}</p>`;
     return;
   }
