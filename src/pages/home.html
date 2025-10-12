@@ -3,74 +3,282 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/x-icon" href="/favicon_io/favicon.ico">
-  <title>الصفحة الرئيسية - نظام التأجير</title>
+  <title data-i18n data-i18n-key="home.nav.brand">لوحة التحكم</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
 
   <script src="/js/godaddy-monitor.js" defer></script>
   <script src="/js/page-boot.js"></script>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/src/styles/index.css">
 </head>
-<body class="theme-loading">
-  <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-4 px-3 home-navbar">
-    <div class="container-fluid">
-      <span class="navbar-brand fw-bold" data-i18n data-i18n-key="home.nav.brand">لوحة التحكم</span>
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-outline-secondary language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-        <button class="btn btn-outline-secondary theme-toggle-btn" data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</button>
-        <button class="btn btn-danger" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-      </div>
-    </div>
-  </nav>
+<body class="page-shell theme-loading" data-theme="light">
+  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <main class="container">
-    <div class="text-center mb-4">
-      <h1 class="fw-bold" data-i18n data-i18n-key="home.hero.title" data-home-greeting>مرحباً بك</h1>
-      <p class="text-muted home-subtitle" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
+      <div class="flex items-center gap-3">
+        <div class="sidebar-brand-logo">
+          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+        </div>
+        <div class="text-start sidebar-brand-text">
+          <p class="text-xs text-base-content/60">Art Ratio</p>
+          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
+        </div>
+      </div>
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M18 6l-12 12"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+      </button>
     </div>
 
-    <div class="row g-4 justify-content-center mb-5">
-      <div class="col-md-5">
-        <a href="dashboard.html" class="card shadow-sm h-100 text-center text-decoration-none text-reset home-nav-card">
-          <div class="card-body d-flex flex-column align-items-center gap-2">
-            <div class="display-6 mb-2">📅</div>
-            <h4 class="card-title" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</h4>
-            <p class="card-text text-muted" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-5">
-        <a href="projects.html" class="card shadow-sm h-100 text-center text-decoration-none text-reset home-nav-card">
-          <div class="card-body d-flex flex-column align-items-center gap-2">
-            <div class="display-6 mb-2">🏗️</div>
-            <h4 class="card-title" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</h4>
-            <p class="card-text text-muted" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-5 d-none" data-admin-card>
-        <a href="users.html" class="card shadow-sm h-100 border-danger text-center text-decoration-none text-reset home-nav-card">
-          <div class="card-body d-flex flex-column align-items-center gap-2">
-            <div class="display-6 mb-2">🛡️</div>
-            <h4 class="card-title" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</h4>
-            <p class="card-text text-muted" data-i18n data-i18n-key="home.users.description">إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.</p>
-          </div>
-        </a>
+    <div class="sidebar-panel sidebar-panel--stats mt-6">
+      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
+      <div class="sidebar-stats" role="list">
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
+          <span id="sidebar-stat-projects" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
+          <span id="sidebar-stat-reservations" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
+          <span id="sidebar-stat-equipment" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
+          <span id="sidebar-stat-technicians" class="badge-soft">0</span>
+        </div>
       </div>
     </div>
 
-    <section class="home-summary">
-      <div class="row g-3" data-home-summary>
-        <div class="col-12 text-center text-muted" data-i18n data-i18n-key="home.summary.loading">⏳ جارٍ جلب بيانات النظام...</div>
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+      <div class="sidebar-panel sidebar-panel--tabs">
+        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
+        <div class="tab-buttons tab-buttons-vertical" role="tablist">
+          <a class="tab-button" href="home.html" data-i18n data-i18n-key="dashboard.quickLinks.home">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M5 12l-2 0"></path>
+                <path d="M5 12l2 0"></path>
+                <path d="M5 12v-7a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v7"></path>
+                <path d="M5 12l7 -7l7 7"></path>
+                <path d="M12 12v7"></path>
+                <path d="M9 19h6"></path>
+              </svg>
+              <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#customers-tab" data-close-sidebar data-i18n data-i18n-key="tabs.customers">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"></path>
+                <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M17 10h2a2 2 0 0 1 2 2v1"></path>
+                <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
+              </svg>
+              <span>👤 العملاء</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
+                <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+              </svg>
+              <span>🎥 المعدات</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#maintenance-tab" data-close-sidebar data-i18n data-i18n-key="tabs.maintenance">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4"></path>
+                <path d="M14.5 5.5l4 4"></path>
+                <path d="M12 8l-5 -5l-4 4l5 5"></path>
+                <path d="M7 8l-1.5 1.5"></path>
+                <path d="M16 12l5 5l-4 4l-5 -5"></path>
+                <path d="M16 17l-1.5 1.5"></path>
+              </svg>
+              <span>🛠️ الصيانة</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                <path d="M6 21v-2a4 4 0 0 1 4 -4h2.5"></path>
+                <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                <path d="M19.001 15.5v1.5"></path>
+                <path d="M19.001 21v1.5"></path>
+                <path d="M22.032 17.25l-1.299 .75"></path>
+                <path d="M17.27 20l-1.3 .75"></path>
+                <path d="M15.97 17.25l1.3 .75"></path>
+                <path d="M20.733 20l1.3 .75"></path>
+              </svg>
+              <span>😎 طاقم العمل</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M6 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M6 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M6 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M9 3v18"></path>
+                <path d="M15 3v18"></path>
+                <path d="M18 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+              </svg>
+              <span>📅 الحجوزات</span>
+            </span>
+          </a>
+        </div>
       </div>
-    </section>
-  </main>
+    </nav>
+  </aside>
+
+  <div class="page-grid">
+    <header class="dashboard-header">
+      <div class="dashboard-header-nav">
+        <div class="dashboard-header-start">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+            </span>
+          </button>
+          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
+            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
+              <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
+            </div>
+            <div class="dashboard-hero-brand-text">
+              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
+            </div>
+          </a>
+        </div>
+        <div class="dashboard-header-center">
+          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
+            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
+              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="home.nav.brand">لوحة التحكم</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M6 9l6 6l6 -6"></path>
+              </svg>
+            </button>
+            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
+              <div class="flex flex-col gap-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                  <div class="space-y-1 text-start">
+                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
+                    <h2 class="text-2xl font-bold text-base-content" data-home-greeting data-i18n data-i18n-key="home.hero.title">مرحباً بك</h2>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <a href="dashboard.html" class="btn btn-primary" data-i18n data-i18n-key="home.bookings.button">انتقال إلى لوحة التحكم</a>
+                    <a href="projects.html" class="btn btn-outline" data-i18n data-i18n-key="home.projects.button">فتح لوحة المشاريع</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="dashboard-header-end">
+          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 4v-1"></path>
+              <path d="M12 21v-1"></path>
+              <path d="M4 12h-1"></path>
+              <path d="M21 12h-1"></path>
+              <path d="M5.6 5.6l-.7 -.7"></path>
+              <path d="M18.4 18.4l-.7 -.7"></path>
+              <path d="M5.6 18.4l-.7 .7"></path>
+              <path d="M18.4 5.6l-.7 .7"></path>
+              <path d="M16 12a4 4 0 1 0 -4 4"></path>
+            </svg>
+            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+            </svg>
+            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+          </label>
+          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-1 flex-col">
+      <main class="dashboard-main w-full">
+        <div class="dashboard-main-inner space-y-8">
+          <section class="glass-card space-y-4">
+            <div class="flex flex-col gap-3">
+              <h2 class="text-2xl font-bold text-base-content" data-home-greeting data-i18n data-i18n-key="home.hero.title">مرحباً بك</h2>
+              <p class="text-base text-base-content/70" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-home-links>
+              <a href="dashboard.html" class="quick-link-card glass-card flex flex-col gap-3 p-5 transition hover:-translate-y-1" data-i18n data-i18n-key="home.bookings.title">
+                <span class="text-3xl" aria-hidden="true">📅</span>
+                <div class="space-y-1">
+                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</h3>
+                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
+                </div>
+              </a>
+              <a href="projects.html" class="quick-link-card glass-card flex flex-col gap-3 p-5 transition hover:-translate-y-1" data-i18n data-i18n-key="home.projects.title">
+                <span class="text-3xl" aria-hidden="true">🏗️</span>
+                <div class="space-y-1">
+                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</h3>
+                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
+                </div>
+              </a>
+              <a href="users.html" class="quick-link-card glass-card flex hidden flex-col gap-3 p-5 transition hover:-translate-y-1" data-admin-card data-i18n data-i18n-key="home.users.title">
+                <span class="text-3xl" aria-hidden="true">🛡️</span>
+                <div class="space-y-1">
+                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</h3>
+                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.users.description">إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.</p>
+                </div>
+              </a>
+            </div>
+          </section>
+
+          <section class="glass-card space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="home.summary.title">📊 ملخص سريع</h3>
+                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.summary.subtitle">أرقام مختصرة تساعدك على اتخاذ القرار بسرعة.</p>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" id="home-refresh-summary" data-i18n data-i18n-key="actions.refresh">🔄 تحديث البيانات</button>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" data-home-summary>
+              <div class="w-full text-center text-base-content/60" data-i18n data-i18n-key="home.summary.loading">⏳ جارٍ جلب بيانات النظام...</div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
   <script type="module" src="/src/scripts/language.js"></script>
   <script type="module" src="/src/scripts/translations/common.js"></script>
+  <script type="module" src="/src/scripts/translations/dashboard.js"></script>
   <script type="module" src="/src/scripts/home.js"></script>
 </body>
 </html>

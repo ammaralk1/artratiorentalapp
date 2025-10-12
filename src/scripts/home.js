@@ -1,3 +1,4 @@
+import '../styles/app.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout, getCurrentUser } from './auth.js';
 import { migrateOldData } from './storage.js';
@@ -5,10 +6,13 @@ import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 import { updatePreferences } from './preferencesService.js';
+import { initDashboardShell } from './dashboardShell.js';
 
 applyStoredTheme();
-migrateOldData();
 checkAuth();
+initDashboardShell();
+initThemeToggle();
+migrateOldData();
 
 let cachedUsername = '';
 let cachedRole = '';
@@ -33,9 +37,9 @@ function updateAdminCardVisibility() {
   const isAdmin = cachedRole === 'admin';
   document.querySelectorAll('[data-admin-card]').forEach((element) => {
     if (isAdmin) {
-      element.classList.remove('d-none');
+      element.classList.remove('hidden');
     } else {
-      element.classList.add('d-none');
+      element.classList.add('hidden');
     }
   });
 }
@@ -85,7 +89,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.customers', 'إجمالي العملاء'),
       value: summary.customers.total,
       icon: '👥',
-      accent: 'bg-primary-subtle',
+      accent: 'primary',
       href: 'dashboard.html#customers-tab',
       dashboardTab: 'customers-tab',
     },
@@ -94,7 +98,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.reservationsToday', 'حجوزات اليوم'),
       value: summary.reservations.today,
       icon: '🛎️',
-      accent: 'bg-success-subtle',
+      accent: 'success',
       href: 'dashboard.html#reservations-tab',
       dashboardTab: 'reservations-tab',
       dashboardSubTab: 'my-reservations-tab',
@@ -104,7 +108,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.reservationsUpcoming', 'حجوزات قادمة'),
       value: summary.reservations.upcoming,
       icon: '🔔',
-      accent: 'bg-info-subtle',
+      accent: 'info',
       href: 'dashboard.html#reservations-tab',
       dashboardTab: 'reservations-tab',
       dashboardSubTab: 'calendar-tab',
@@ -114,7 +118,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.projectsActive', 'مشاريع نشطة'),
       value: summary.projects.active,
       icon: '🏗️',
-      accent: 'bg-warning-subtle',
+      accent: 'warning',
       href: 'projects.html#projects-section',
       projectsTab: 'projects-section',
       projectsSubTab: 'projects-list-tab',
@@ -124,7 +128,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.equipmentMaintenance', 'معدات قيد الصيانة'),
       value: summary.equipment.maintenance,
       icon: '🛠️',
-      accent: 'bg-danger-subtle',
+      accent: 'error',
       href: 'dashboard.html#maintenance-tab',
       dashboardTab: 'maintenance-tab',
     },
@@ -133,7 +137,7 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.maintenanceHigh', 'بلاغات صيانة عاجلة'),
       value: summary.maintenance.highPriority,
       icon: '⚡',
-      accent: 'bg-danger-subtle',
+      accent: 'error',
       href: 'dashboard.html#maintenance-tab',
       dashboardTab: 'maintenance-tab',
     },
@@ -142,12 +146,21 @@ function buildSummaryMetrics(summary) {
       label: t('home.summary.techniciansBusy', 'أعضاء طاقم مشغولون'),
       value: summary.technicians.busy,
       icon: '👷',
-      accent: 'bg-secondary-subtle',
+      accent: 'secondary',
       href: 'dashboard.html#technicians-tab',
       dashboardTab: 'technicians-tab',
     },
   ];
 }
+
+const summaryAccentClassMap = {
+  primary: 'bg-primary/10 text-primary',
+  success: 'bg-success/10 text-success',
+  info: 'bg-info/10 text-info',
+  warning: 'bg-warning/10 text-warning',
+  error: 'bg-error/10 text-error',
+  secondary: 'bg-secondary/10 text-secondary'
+};
 
 function persistNavigationPreference(patch) {
   if (typeof updatePreferences !== 'function') return;
@@ -203,7 +216,23 @@ function attachSummaryCardListeners(container) {
 }
 
 function renderSummaryCard(metric) {
-  const classes = ['card', 'home-summary-card', 'shadow-sm', 'h-100', 'text-reset', 'text-decoration-none'];
+  const classes = [
+    'glass-card',
+    'summary-card',
+    'flex',
+    'flex-col',
+    'items-center',
+    'gap-2',
+    'p-5',
+    'text-center',
+    'transition',
+    'duration-200',
+    'hover:-translate-y-1',
+    'focus-visible:outline',
+    'focus-visible:outline-2',
+    'focus-visible:outline-offset-2',
+    'focus-visible:outline-primary'
+  ];
   const attrs = ['data-summary-card'];
   const escapeAttr = (value) => String(value ?? '').replace(/"/g, '&quot;');
 
@@ -229,17 +258,14 @@ function renderSummaryCard(metric) {
 
   const value = normalizeNumbers(String(metric.value ?? 0));
   const label = escapeAttr(metric.label);
+  const accentClass = summaryAccentClassMap[metric.accent] || summaryAccentClassMap.primary;
 
   return `
-    <div class="col-6 col-md-4 col-xl-3 col-xxl-2">
-      <a ${attrs.join(' ')} class="${classes.join(' ')}" aria-label="${label}">
-        <div class="card-body d-flex flex-column align-items-center text-center gap-1 gap-md-2">
-          <div class="home-summary-icon ${metric.accent ?? ''}">${metric.icon}</div>
-          <span class="home-summary-label text-muted small mb-0">${metric.label}</span>
-          <span class="home-summary-value fw-semibold">${value}</span>
-        </div>
-      </a>
-    </div>
+    <a ${attrs.join(' ')} class="${classes.join(' ')}" aria-label="${label}">
+      <span class="summary-card__icon flex h-12 w-12 items-center justify-center rounded-2xl text-2xl ${accentClass}">${metric.icon}</span>
+      <span class="summary-card__label text-sm font-medium text-base-content/70">${metric.label}</span>
+      <span class="summary-card__value text-3xl font-bold text-base-content">${value}</span>
+    </a>
   `;
 }
 
@@ -249,7 +275,7 @@ function renderHomeSummary() {
 
   if (summaryLoading) {
     container.innerHTML = `
-      <div class="col-12 text-center text-muted" data-i18n data-i18n-key="home.summary.loading">
+      <div class="w-full text-center text-base-content/60" data-i18n data-i18n-key="home.summary.loading">
         ${t('home.summary.loading', '⏳ جارٍ جلب بيانات النظام...')}
       </div>
     `;
@@ -258,10 +284,8 @@ function renderHomeSummary() {
 
   if (summaryErrorMessage) {
     container.innerHTML = `
-      <div class="col-12">
-        <div class="alert alert-warning mb-0" role="alert">
-          ${summaryErrorMessage}
-        </div>
+      <div class="alert alert-warning" role="alert">
+        ${summaryErrorMessage}
       </div>
     `;
     return;
@@ -269,7 +293,7 @@ function renderHomeSummary() {
 
   if (!summaryState) {
     container.innerHTML = `
-      <div class="col-12 text-center text-muted">
+      <div class="w-full text-center text-base-content/60">
         ${t('home.summary.empty', 'لا تتوفر بيانات بعد. ابدأ بإضافة سجلات.')} 
       </div>
     `;
@@ -309,6 +333,14 @@ function handleSummaryRefresh() {
   loadHomeSummary({ silent: true }).catch((error) => {
     console.error('❌ [home] Summary refresh failed', error);
   });
+}
+
+const refreshSummaryBtn = document.getElementById('home-refresh-summary');
+if (refreshSummaryBtn && !refreshSummaryBtn.dataset.listenerAttached) {
+  refreshSummaryBtn.addEventListener('click', () => {
+    handleSummaryRefresh();
+  });
+  refreshSummaryBtn.dataset.listenerAttached = 'true';
 }
 
 document.addEventListener('language:translationsReady', () => {
