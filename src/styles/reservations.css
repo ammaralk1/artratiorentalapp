@@ -715,7 +715,7 @@ body[dir="ltr"] .tile-value {
   flex-wrap: wrap;
 }
 
-.fc-reservation-event .badge {
+.fc-reservation-event .reservation-chip {
   font-size: 0.7rem;
 }
 
@@ -4160,7 +4160,7 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   gap: 6px;
 }
 
-.fc-reservation-event .fc-reservation-tags .badge {
+.fc-reservation-event .fc-reservation-tags .reservation-chip {
   background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -4180,7 +4180,7 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   color: #e2e8f0;
 }
 
-:is(html.dark-mode, body.dark-mode) .fc-reservation-event .fc-reservation-tags .badge {
+:is(html.dark-mode, body.dark-mode) .fc-reservation-event .fc-reservation-tags .reservation-chip {
   background: rgba(148, 163, 184, 0.18);
   color: #f8fafc;
   border-color: rgba(148, 163, 184, 0.35);
