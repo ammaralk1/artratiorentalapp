@@ -10,10 +10,13 @@ import { apiRequest, ApiError } from './apiClient.js';
 import { mapReservationFromApi } from './reservationsService.js';
 import { mapProjectFromApi } from './projectsService.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
+import { initDashboardShell } from './dashboardShell.js';
+import { formatCurrencyLocalized } from './projectsCommon.js';
 
 applyStoredTheme();
 checkAuth();
 initThemeToggle();
+initDashboardShell();
 migrateOldData();
 
 const logoutBtn = document.getElementById('logout-btn');
@@ -31,13 +34,30 @@ const heroNameEl = document.getElementById('customer-hero-name');
 const heroPhoneEl = document.getElementById('customer-hero-phone');
 const heroCompanyEl = document.getElementById('customer-hero-company');
 const heroEmailEl = document.getElementById('customer-hero-email');
+const heroTaxEl = document.getElementById('customer-hero-tax');
 const heroSummaryEl = document.getElementById('customer-hero-summary');
-const editActionBtn = document.getElementById('customer-edit-btn');
+const heroPanelNameEl = document.getElementById('dashboard-greeting-customer-name');
+const heroPanelCompanyEl = document.getElementById('dashboard-greeting-customer-company');
+const heroStatReservationsEl = document.getElementById('customer-stat-reservations');
+const heroStatReservationsDescEl = document.getElementById('customer-stat-reservations-desc');
+const heroStatUpcomingEl = document.getElementById('customer-stat-upcoming');
+const heroStatUpcomingDescEl = document.getElementById('customer-stat-upcoming-desc');
+const heroStatProjectsEl = document.getElementById('customer-stat-projects');
+const heroStatProjectsDescEl = document.getElementById('customer-stat-projects-desc');
+const heroStatLastActivityEl = document.getElementById('customer-stat-last-activity');
+const heroStatLastActivityDescEl = document.getElementById('customer-stat-last-activity-desc');
+const sidebarProjectsEl = document.getElementById('sidebar-stat-projects');
+const sidebarReservationsEl = document.getElementById('sidebar-stat-reservations');
+const sidebarEquipmentEl = document.getElementById('sidebar-stat-equipment');
+const sidebarTechniciansEl = document.getElementById('sidebar-stat-technicians');
+const editButtons = [
+  document.getElementById('customer-edit-btn'),
+  document.getElementById('customer-edit-btn-secondary')
+].filter(Boolean);
 
-if (editActionBtn) {
-  editActionBtn.disabled = true;
-}
-
+editButtons.forEach((button) => {
+  button.disabled = true;
+});
 
 let currentCustomer = null;
 let isCustomerLoading = false;
@@ -70,33 +90,379 @@ function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
 
 function setHeroData(customer) {
   const fallbackSummary = t('customerDetails.pageTitle', 'معلومات العميل');
+  const displayName = customer?.customerName || '—';
+  const phoneValue = customer?.phone ? normalizeNumbers(customer.phone) : '';
+  const companyValue = customer?.companyName || '';
+  const emailValue = customer?.email || '';
+  const taxValue = customer?.tax_id ?? customer?.taxId ?? '';
+
   if (heroNameEl) {
-    heroNameEl.textContent = customer?.customerName || '—';
+    heroNameEl.textContent = displayName;
   }
   if (heroSummaryEl) {
-    heroSummaryEl.textContent = customer?.customerName || fallbackSummary;
+    heroSummaryEl.textContent = displayName !== '—' ? displayName : fallbackSummary;
   }
-  const phoneValue = customer?.phone ? normalizeNumbers(customer.phone) : '';
+
   updateHeroBadge(heroPhoneEl, '📞', phoneValue, { hideWhenEmpty: false });
-  updateHeroBadge(heroCompanyEl, '🏢', customer?.companyName || '', { hideWhenEmpty: true });
-  updateHeroBadge(heroEmailEl, '📧', customer?.email || '', { hideWhenEmpty: true });
+  updateHeroBadge(heroCompanyEl, '🏢', companyValue, { hideWhenEmpty: true });
+  updateHeroBadge(heroEmailEl, '📧', emailValue, { hideWhenEmpty: true });
+  updateHeroBadge(heroTaxEl, '🧾', taxValue, { hideWhenEmpty: true });
+
+  if (heroPanelNameEl) {
+    heroPanelNameEl.textContent = displayName;
+  }
+  if (heroPanelCompanyEl) {
+    const infoParts = [];
+    if (companyValue) infoParts.push(companyValue);
+    if (phoneValue) infoParts.push(`📞 ${phoneValue}`);
+    const trimmedTax = typeof taxValue === 'string' ? taxValue.trim() : String(taxValue || '').trim();
+    if (trimmedTax) infoParts.push(`🧾 ${trimmedTax}`);
+    heroPanelCompanyEl.textContent = infoParts.length ? infoParts.join(' • ') : '—';
+  }
 }
 
-if (editActionBtn && !editActionBtn.dataset.listenerAttached) {
-  editActionBtn.addEventListener('click', () => {
-    if (!currentCustomer) {
-      return;
-    }
-    populateEditModal();
-    const modalEl = document.getElementById('editCustomerModal');
-    const ModalCtor = typeof bootstrap !== 'undefined' ? bootstrap.Modal : null;
-    if (!modalEl || !ModalCtor) {
-      return;
-    }
-    const instance = ModalCtor.getInstance(modalEl) || new ModalCtor(modalEl);
-    instance.show();
+function handleEditCustomerClick(event) {
+  event?.preventDefault?.();
+  if (!currentCustomer) {
+    return;
+  }
+  populateEditModal();
+  const modalEl = document.getElementById('editCustomerModal');
+  const ModalCtor = typeof bootstrap !== 'undefined' ? bootstrap.Modal : null;
+  if (!modalEl || !ModalCtor) {
+    return;
+  }
+  const instance = ModalCtor.getInstance(modalEl) || new ModalCtor(modalEl);
+  instance.show();
+}
+
+function attachEditButtons() {
+  editButtons.forEach((button) => {
+    if (!button || button.dataset.listenerAttached) return;
+    button.addEventListener('click', handleEditCustomerClick);
+    button.dataset.listenerAttached = 'true';
   });
-  editActionBtn.dataset.listenerAttached = 'true';
+}
+
+function setEditButtonsDisabled(isDisabled) {
+  editButtons.forEach((button) => {
+    if (!button) return;
+    button.disabled = Boolean(isDisabled);
+  });
+}
+
+attachEditButtons();
+
+function normalizeCustomerDocument(rawCustomer = {}) {
+  if (!rawCustomer || typeof rawCustomer !== 'object') {
+    return null;
+  }
+
+  const documentCandidate = [rawCustomer.document, rawCustomer.attachment, rawCustomer.file]
+    .find((value) => value && typeof value === 'object');
+
+  const pickFirstString = (list) => {
+    for (const value of list) {
+      if (typeof value === 'string' && value.trim() !== '') {
+        return value.trim();
+      }
+    }
+    return '';
+  };
+
+  const pickFirstNumber = (list) => {
+    for (const value of list) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return Math.max(0, Math.trunc(value));
+      }
+      if (typeof value === 'string' && value.trim() !== '' && /^\d+$/.test(value.trim())) {
+        return Math.max(0, parseInt(value.trim(), 10));
+      }
+    }
+    return null;
+  };
+
+  const urlCandidates = [
+    rawCustomer.document_url,
+    rawCustomer.documentUrl,
+    rawCustomer.url,
+    rawCustomer.href,
+    rawCustomer.link,
+    documentCandidate?.url,
+    documentCandidate?.href,
+    documentCandidate?.link,
+  ];
+
+  const pathCandidates = [
+    rawCustomer.document_path,
+    rawCustomer.documentPath,
+    rawCustomer.path,
+    documentCandidate?.path,
+    documentCandidate?.documentPath,
+  ];
+
+  const nameCandidates = [
+    rawCustomer.document_file_name,
+    rawCustomer.documentFileName,
+    rawCustomer.document_name,
+    rawCustomer.fileName,
+    rawCustomer.filename,
+    rawCustomer.name,
+    documentCandidate?.fileName,
+    documentCandidate?.filename,
+    documentCandidate?.name,
+  ];
+
+  const mimeCandidates = [
+    rawCustomer.document_mime_type,
+    rawCustomer.documentMimeType,
+    rawCustomer.document_type,
+    rawCustomer.mimeType,
+    rawCustomer.contentType,
+    rawCustomer.type,
+    documentCandidate?.mimeType,
+    documentCandidate?.contentType,
+    documentCandidate?.type,
+  ];
+
+  const sizeCandidates = [
+    rawCustomer.document_size,
+    rawCustomer.documentSize,
+    rawCustomer.size,
+    documentCandidate?.size,
+    documentCandidate?.length,
+  ];
+
+  const base64Candidates = [
+    documentCandidate?.data,
+    documentCandidate?.base64,
+    documentCandidate?.content,
+    rawCustomer.data,
+    rawCustomer.base64,
+    rawCustomer.content,
+    rawCustomer.document_data,
+  ];
+
+  const directUrl = pickFirstString(urlCandidates);
+  const fileName = pickFirstString(nameCandidates);
+  const mimeType = pickFirstString(mimeCandidates) || 'application/octet-stream';
+  const pathValue = pickFirstString(pathCandidates);
+  const base64Value = pickFirstString(base64Candidates);
+  const sizeValue = pickFirstNumber(sizeCandidates);
+
+  if (!directUrl && !base64Value) {
+    return null;
+  }
+
+  let normalizedUrl = directUrl;
+  let base64Payload = base64Value;
+
+  if (!normalizedUrl && base64Payload && base64Payload.startsWith('data:')) {
+    const commaIndex = base64Payload.indexOf(',');
+    if (commaIndex !== -1) {
+      normalizedUrl = base64Payload;
+      base64Payload = base64Payload.slice(commaIndex + 1);
+    }
+  }
+
+  if (!normalizedUrl && base64Payload) {
+    const prefix = base64Payload.startsWith('data:') ? '' : `data:${mimeType};base64,`;
+    normalizedUrl = `${prefix}${base64Payload}`;
+  }
+
+  const normalized = {
+    url: normalizedUrl,
+    fileName,
+    mimeType,
+    path: pathValue,
+    data: base64Payload || null,
+    size: sizeValue,
+  };
+
+  if (normalized.url && /sirv\.com/i.test(normalized.url)) {
+    normalized.source = 'sirv';
+  }
+
+  return normalized;
+}
+
+function getActiveLanguage() {
+  return document.documentElement.getAttribute('lang') || 'ar';
+}
+
+function formatNumberLocalized(value) {
+  const number = Number(value) || 0;
+  const lang = getActiveLanguage();
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  try {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(number);
+  } catch (error) {
+    return String(number);
+  }
+}
+
+function formatDateLocalized(value) {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  const lang = getActiveLanguage();
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  try {
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
+  } catch (error) {
+    return date.toLocaleDateString();
+  }
+}
+
+function escapeAttribute(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, technicians = 0 } = {}) {
+  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(projects);
+  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(reservations);
+  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(equipment);
+  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(technicians);
+}
+
+function updateHeroStats() {
+  if (!currentCustomer || !customerId) {
+    if (heroStatReservationsEl) heroStatReservationsEl.textContent = '0';
+    if (heroStatReservationsDescEl) heroStatReservationsDescEl.textContent = t('customerDetails.stats.reservationsDesc', 'عدد الحجوزات الكلي');
+    if (heroStatUpcomingEl) heroStatUpcomingEl.textContent = '0';
+    if (heroStatUpcomingDescEl) heroStatUpcomingDescEl.textContent = t('customerDetails.stats.upcomingEmpty', 'لا توجد حجوزات قادمة');
+    if (heroStatProjectsEl) heroStatProjectsEl.textContent = '0';
+    if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsDesc', 'المشاريع المرتبطة بالعميل');
+    if (heroStatLastActivityEl) heroStatLastActivityEl.textContent = '—';
+    if (heroStatLastActivityDescEl) heroStatLastActivityDescEl.textContent = t('customerDetails.stats.totalValueEmpty', 'لم يتم رصد مبالغ بعد.');
+    updateSidebarStats({ projects: 0, reservations: 0, equipment: 0, technicians: 0 });
+    return;
+  }
+
+  const snapshot = loadData();
+  const reservations = Array.isArray(snapshot.reservations) ? snapshot.reservations : [];
+  const relevantReservations = reservations.filter((reservation) => {
+    if (!reservation) return false;
+    const idCandidates = [
+      reservation.customerId,
+      reservation.customer_id,
+      reservation.customer?.id,
+    ];
+    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(customerId));
+  });
+
+  const totalReservations = relevantReservations.length;
+  const now = Date.now();
+  const upcomingReservations = relevantReservations.filter((reservation) => {
+    const startRaw = reservation?.start ?? reservation?.startDatetime ?? reservation?.start_datetime ?? reservation?.start_date;
+    if (!startRaw) return false;
+    const start = new Date(startRaw);
+    if (Number.isNaN(start.getTime())) return false;
+    return start.getTime() >= now;
+  });
+
+  const nextReservationDate = upcomingReservations
+    .map((reservation) => reservation?.start ?? reservation?.startDatetime ?? reservation?.start_datetime)
+    .map((value) => new Date(value))
+    .filter((date) => !Number.isNaN(date.getTime()))
+    .sort((a, b) => a - b)[0] || null;
+
+  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
+  const relevantProjects = projects.filter((project) => {
+    if (!project) return false;
+    const idCandidates = [project.clientId, project.client_id, project.customer_id];
+    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(customerId));
+  });
+  const totalProjects = relevantProjects.length;
+
+  const totalAmount = relevantReservations.reduce((sum, reservation) => {
+    const value = reservation?.totalAmount ?? reservation?.cost ?? reservation?.netTotal ?? 0;
+    const numeric = Number(value);
+    return sum + (Number.isFinite(numeric) ? numeric : 0);
+  }, 0);
+
+  let lastActivityDate = null;
+  relevantReservations.forEach((reservation) => {
+    const candidateRaw = reservation?.updatedAt
+      ?? reservation?.updated_at
+      ?? reservation?.end
+      ?? reservation?.endDatetime
+      ?? reservation?.end_datetime
+      ?? reservation?.start
+      ?? reservation?.createdAt
+      ?? reservation?.created_at;
+    if (!candidateRaw) return;
+    const candidate = new Date(candidateRaw);
+    if (Number.isNaN(candidate.getTime())) return;
+    if (!lastActivityDate || candidate > lastActivityDate) {
+      lastActivityDate = candidate;
+    }
+  });
+
+  if (!lastActivityDate) {
+    const candidate = currentCustomer?.updated_at ?? currentCustomer?.created_at;
+    if (candidate) {
+      const candidateDate = new Date(candidate);
+      if (!Number.isNaN(candidateDate.getTime())) {
+        lastActivityDate = candidateDate;
+      }
+    }
+  }
+
+  const totalEquipment = relevantReservations.reduce((sum, reservation) => {
+    if (Array.isArray(reservation?.items)) {
+      return sum + reservation.items.length;
+    }
+    return sum;
+  }, 0);
+
+  const technicianSet = new Set();
+  relevantReservations.forEach((reservation) => {
+    if (Array.isArray(reservation?.technicians)) {
+      reservation.technicians.forEach((tech) => {
+        const id = tech != null ? String(tech) : '';
+        if (id) technicianSet.add(id);
+      });
+    }
+    if (Array.isArray(reservation?.techniciansDetails)) {
+      reservation.techniciansDetails.forEach((tech) => {
+        const id = tech?.id ?? tech?.technician_id ?? tech?.technicianId;
+        if (id != null) technicianSet.add(String(id));
+      });
+    }
+  });
+
+  if (heroStatReservationsEl) heroStatReservationsEl.textContent = formatNumberLocalized(totalReservations);
+  if (heroStatReservationsDescEl) heroStatReservationsDescEl.textContent = t('customerDetails.stats.reservationsDesc', 'عدد الحجوزات الكلي');
+
+  if (heroStatUpcomingEl) heroStatUpcomingEl.textContent = formatNumberLocalized(upcomingReservations.length);
+  if (heroStatUpcomingDescEl) {
+    heroStatUpcomingDescEl.textContent = upcomingReservations.length > 0 && nextReservationDate
+      ? t('customerDetails.stats.nextReservation', 'أقرب حجز: {date}').replace('{date}', formatDateLocalized(nextReservationDate))
+      : t('customerDetails.stats.upcomingEmpty', 'لا توجد حجوزات قادمة');
+  }
+
+  if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
+  if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsDesc', 'المشاريع المرتبطة بالعميل');
+
+  if (heroStatLastActivityEl) heroStatLastActivityEl.textContent = lastActivityDate ? formatDateLocalized(lastActivityDate) : '—';
+  if (heroStatLastActivityDescEl) {
+    heroStatLastActivityDescEl.textContent = totalAmount > 0
+      ? t('customerDetails.stats.totalValue', 'القيمة الإجمالية: {amount}').replace('{amount}', formatCurrencyLocalized(totalAmount))
+      : t('customerDetails.stats.totalValueEmpty', 'لم يتم رصد مبالغ بعد.');
+  }
+
+  updateSidebarStats({
+    projects: totalProjects,
+    reservations: totalReservations,
+    equipment: totalEquipment,
+    technicians: technicianSet.size,
+  });
 }
 
 function findCustomerById(id) {
@@ -104,7 +470,19 @@ function findCustomerById(id) {
   if (!Array.isArray(customers)) {
     return null;
   }
-  return customers.find((customer) => String(customer.id) === String(id));
+  const match = customers.find((customer) => String(customer.id) === String(id));
+  if (!match) {
+    return null;
+  }
+  const rawTax = match.tax_id ?? match.taxId ?? '';
+  const taxValue = typeof rawTax === 'string' ? rawTax.trim() : String(rawTax || '').trim();
+  const document = match.document ?? normalizeCustomerDocument(match);
+  return {
+    ...match,
+    tax_id: taxValue,
+    taxId: taxValue,
+    document
+  };
 }
 
 function mapCustomerFromApi(raw = {}) {
@@ -114,6 +492,14 @@ function mapCustomerFromApi(raw = {}) {
 
   const idValue = raw.id ?? raw.customerId ?? raw.customer_id ?? null;
   const customerName = raw.full_name ?? raw.customerName ?? raw.name ?? '';
+  const rawTaxId = raw.tax_id
+    ?? raw.taxId
+    ?? raw.vat_number
+    ?? raw.vatNumber
+    ?? raw.taxNumber
+    ?? '';
+  const taxValue = typeof rawTaxId === 'string' ? rawTaxId.trim() : String(rawTaxId || '').trim();
+  const document = normalizeCustomerDocument(raw);
 
   if (idValue == null) {
     return null;
@@ -129,6 +515,9 @@ function mapCustomerFromApi(raw = {}) {
     email: raw.email ?? '',
     address: raw.address ?? '',
     notes: raw.notes ?? '',
+    tax_id: taxValue,
+    taxId: taxValue,
+    document,
     created_at: raw.created_at ?? raw.createdAt ?? null,
     updated_at: raw.updated_at ?? raw.updatedAt ?? null,
   };
@@ -245,6 +634,7 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
 
     renderCustomerReservations(mappedCustomer.id);
     renderCustomerProjects(mappedCustomer.id);
+    updateHeroStats();
   } catch (error) {
     isCustomerLoading = false;
 
@@ -276,6 +666,8 @@ function renderDetails() {
 
   if (!currentCustomer) {
     setHeroData(null);
+    setEditButtonsDisabled(true);
+    updateHeroStats();
 
     if (isCustomerLoading) {
       container.innerHTML = `
@@ -283,9 +675,6 @@ function renderDetails() {
         <div class="skeleton h-24 w-full rounded-2xl"></div>
         <div class="skeleton h-24 w-full rounded-2xl"></div>
       `;
-      if (editActionBtn) {
-        editActionBtn.disabled = true;
-      }
       return;
     }
 
@@ -295,9 +684,6 @@ function renderDetails() {
           <div class="alert alert-error">${escapeHtml(customerLoadError)}</div>
         </div>
       `;
-      if (editActionBtn) {
-        editActionBtn.disabled = true;
-      }
       return;
     }
 
@@ -307,17 +693,11 @@ function renderDetails() {
         <div class="alert alert-warning" data-i18n data-i18n-key="customerDetails.errors.notFound">${escapeHtml(notFoundMessage)}</div>
       </div>
     `;
-    if (editActionBtn) {
-      editActionBtn.disabled = true;
-    }
     return;
   }
 
   setHeroData(currentCustomer);
-
-  if (editActionBtn) {
-    editActionBtn.disabled = false;
-  }
+  setEditButtonsDisabled(false);
 
   const fields = [
     { key: 'customerDetails.fields.name', fallback: '👤 الاسم:', value: currentCustomer.customerName || '—' },
@@ -325,11 +705,35 @@ function renderDetails() {
     { key: 'customerDetails.fields.company', fallback: '🏢 الشركة:', value: currentCustomer.companyName || '—' },
     { key: 'customerDetails.fields.email', fallback: '📧 البريد:', value: currentCustomer.email || '—' },
     { key: 'customerDetails.fields.address', fallback: '📍 العنوان:', value: currentCustomer.address || '—' },
-    { key: 'customerDetails.fields.notes', fallback: '📝 الملاحظات:', value: currentCustomer.notes || '—', multiline: true }
+    { key: 'customerDetails.fields.taxId', fallback: '🧾 الرقم الضريبي:', value: currentCustomer.tax_id ?? currentCustomer.taxId ?? '—' },
+    { key: 'customerDetails.fields.notes', fallback: '📝 الملاحظات:', value: currentCustomer.notes || '—', multiline: true },
+    { key: 'customerDetails.fields.document', fallback: '📎 مستند العميل', value: currentCustomer.document ?? null, type: 'document' }
   ];
 
   const fieldsHtml = fields.map((field) => {
     const label = t(field.key, field.fallback);
+    if (field.type === 'document') {
+      const doc = field.value;
+      let docContent = '<span class="text-base-content/50">—</span>';
+      if (doc && typeof doc === 'object') {
+        const docName = doc.fileName?.trim() || doc.path?.trim() || doc.url || '';
+        if (doc.url) {
+          const safeName = docName ? escapeHtml(docName) : escapeHtml(t('customerDetails.document.defaultName', 'المستند المرتبط'));
+          const safeUrl = escapeAttribute(doc.url);
+          const openLabel = escapeHtml(t('customerDetails.document.open', 'عرض المستند'));
+          docContent = `<div class="flex flex-wrap items-center gap-3"><span class="text-base-content break-all">${safeName}</span><a class="btn btn-outline btn-sm" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${openLabel}</a></div>`;
+        } else if (docName) {
+          docContent = `<span class="text-base-content break-all">${escapeHtml(docName)}</span>`;
+        }
+      }
+      return `
+        <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+          <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${field.key}">${escapeHtml(label)}</span>
+          <div class="mt-2">${docContent}</div>
+        </article>
+      `;
+    }
+
     const rawValue = field.value == null ? '' : String(field.value);
     const trimmedValue = rawValue.trim();
     const displayValue = trimmedValue.length > 0 ? trimmedValue : '—';
@@ -343,6 +747,7 @@ function renderDetails() {
   }).join('');
 
   container.innerHTML = fieldsHtml;
+  updateHeroStats();
 }
 
 function populateEditModal() {
@@ -352,6 +757,10 @@ function populateEditModal() {
   document.getElementById('edit-company').value = currentCustomer?.companyName || '';
   document.getElementById('edit-email').value = currentCustomer?.email || '';
   document.getElementById('edit-address').value = currentCustomer?.address || '';
+  document.getElementById('edit-tax-id').value = normalizeNumbers(currentCustomer?.tax_id ?? currentCustomer?.taxId ?? '');
+  const doc = currentCustomer?.document ?? null;
+  document.getElementById('edit-document-url').value = doc?.url || '';
+  document.getElementById('edit-document-name').value = doc?.fileName || '';
   document.getElementById('edit-notes').value = currentCustomer?.notes || '';
 }
 
@@ -369,6 +778,9 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
     const company = document.getElementById('edit-company').value.trim();
     const email = document.getElementById('edit-email').value.trim();
     const address = document.getElementById('edit-address').value.trim();
+    const taxId = normalizeNumbers(document.getElementById('edit-tax-id').value.trim());
+    const documentUrl = document.getElementById('edit-document-url').value.trim();
+    const documentNameInput = document.getElementById('edit-document-name').value.trim();
     const notes = document.getElementById('edit-notes').value.trim();
 
     if (!name || !phone) {
@@ -385,6 +797,16 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
       return;
     }
 
+    let documentPayload = null;
+    if (documentUrl) {
+      const existingDocument = customers[idx]?.document ?? null;
+      documentPayload = {
+        ...(existingDocument || {}),
+        url: documentUrl,
+        fileName: documentNameInput || existingDocument?.fileName || '',
+      };
+    }
+
     customers[idx] = {
       ...customers[idx],
       customerName: name,
@@ -393,6 +815,9 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
       email,
       address,
       notes,
+      tax_id: taxId,
+      taxId,
+      document: documentPayload,
     };
 
     saveData({ customers });
@@ -400,6 +825,7 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
     renderDetails();
     renderCustomerReservations(customerId);
     renderCustomerProjects(customerId);
+    updateHeroStats();
     document.dispatchEvent(new CustomEvent('customers:changed'));
     showToast(t('customerDetails.toast.updateSuccess', '✅ تم تحديث بيانات العميل'));
 
@@ -416,6 +842,8 @@ async function initializeCustomerPage() {
 
   if (!customerId) {
     setHeroData(null);
+    setEditButtonsDisabled(true);
+    updateHeroStats();
     container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="customerDetails.errors.missingId">${t('customerDetails.errors.missingId', '⚠️ لا يوجد معرف عميل في الرابط.')}</p>`;
     return;
   }
@@ -425,6 +853,7 @@ async function initializeCustomerPage() {
     renderDetails();
     renderCustomerReservations(customerId);
     renderCustomerProjects(customerId);
+    updateHeroStats();
   }
 
   await loadCustomerFromApi(customerId, { showSpinner: !currentCustomer });
@@ -432,11 +861,22 @@ async function initializeCustomerPage() {
 
 initializeCustomerPage();
 
+const maybeUpdateStats = () => {
+  if (!customerId || !currentCustomer) {
+    return;
+  }
+  updateHeroStats();
+};
+
+document.addEventListener('reservations:changed', maybeUpdateStats);
+document.addEventListener('projects:changed', maybeUpdateStats);
+
 document.addEventListener('language:changed', () => {
   renderDetails();
   if (customerId && currentCustomer) {
     renderCustomerReservations(customerId);
     renderCustomerProjects(customerId);
+    updateHeroStats();
   }
 });
 
