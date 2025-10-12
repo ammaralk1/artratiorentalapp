@@ -1417,13 +1417,20 @@
         </div>
         <!-- ✅ تبويب فرعي: التقويم -->
         <div class="sub-tab tab-content" id="calendar-tab" role="tabpanel" aria-labelledby="sub-tab-trigger-calendar-tab">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <h4 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
-            <div class="text-sm text-base-content/60" data-i18n data-i18n-key="reservations.calendar.helper">🎯 اختر أي حجز للاطلاع على التفاصيل.</div>
-          </div>
-          <div id="calendar-panel" class="calendar-panel relative mt-6">
-            <div id="calendar-status" class="calendar-status hidden absolute inset-3 z-10 flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-primary/30 bg-base-100/95 px-6 text-center text-sm font-semibold text-base-content shadow-soft backdrop-blur-sm" role="status"></div>
-            <div id="calendar" class="calendar-shell card rounded-3xl border border-base-200 bg-base-100 shadow-soft p-4 sm:p-5"></div>
+          <div id="calendar-panel" class="calendar-panel mt-6">
+            <div class="calendar-surface">
+              <div class="calendar-surface__header">
+                <div class="calendar-heading">
+                  <h4 class="calendar-heading__title" data-i18n data-i18n-key="reservations.calendar.title">📅 التقويم</h4>
+                  <p class="calendar-heading__subtitle" data-i18n data-i18n-key="reservations.calendar.helper">🎯 اختر أي حجز للاطلاع على التفاصيل.</p>
+                </div>
+                <div id="calendar-legend" class="calendar-legend" aria-label="خيارات حالة الحجز" role="list"></div>
+              </div>
+              <div class="calendar-surface__body">
+                <div id="calendar-status" class="calendar-status hidden" role="status"></div>
+                <div id="calendar" class="calendar-shell"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div> <!-- نهاية تبويب الحجوزات -->

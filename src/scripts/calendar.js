@@ -17,6 +17,32 @@ let calendarThemeObserver = null;
 let calendarThemeDebounce = null;
 let isCalendarLoading = false;
 let calendarErrorMessage = '';
+const CALENDAR_LEGEND_ITEMS = [
+  { key: 'confirmed', chipClass: 'reservation-chip status-confirmed' },
+  { key: 'pending', chipClass: 'reservation-chip status-pending' },
+  { key: 'paid', chipClass: 'reservation-chip status-paid' },
+  { key: 'unpaid', chipClass: 'reservation-chip status-unpaid' },
+  { key: 'completed', chipClass: 'reservation-chip status-completed' }
+];
+
+const LEGEND_FALLBACK_AR = {
+  confirmed: 'حجز مؤكد',
+  pending: 'بانتظار التأكيد',
+  paid: 'مدفوع بالكامل',
+  unpaid: 'لم يتم الدفع',
+  completed: 'منتهي'
+};
+
+const LEGEND_FALLBACK_EN = {
+  confirmed: 'Confirmed reservation',
+  pending: 'Awaiting confirmation',
+  paid: 'Paid in full',
+  unpaid: 'Payment pending',
+  completed: 'Completed'
+};
+
+const TIME_FORMATTER_CACHE = new Map();
+
 
 function escapeHtml(value = '') {
   return String(value)
@@ -41,6 +67,106 @@ function getFullCalendarGlobal() {
   return null;
 }
 
+function getLegendFallback(key) {
+  const language = getCurrentLanguage?.() === 'en' ? 'en' : 'ar';
+  if (language === 'en') {
+    return LEGEND_FALLBACK_EN[key] ?? key;
+  }
+  return LEGEND_FALLBACK_AR[key] ?? key;
+}
+
+function getTimeFormatter(locale) {
+  if (!TIME_FORMATTER_CACHE.has(locale)) {
+    TIME_FORMATTER_CACHE.set(locale, new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit'
+    }));
+  }
+  return TIME_FORMATTER_CACHE.get(locale);
+}
+
+function formatEventTimeRange(startStr, endStr, isAllDay = false) {
+  if (isAllDay) {
+    const language = getCurrentLanguage?.() === 'en' ? 'en' : 'ar';
+    const allDayFallback = language === 'en' ? 'All day' : 'طوال اليوم';
+    return t('calendar.labels.allDay', allDayFallback);
+  }
+
+  if (!startStr) {
+    return '';
+  }
+
+  const start = new Date(startStr);
+  if (Number.isNaN(start.getTime())) {
+    return '';
+  }
+
+  const locale = getCurrentLanguage?.() === 'en' ? 'en-US' : 'ar-SA';
+  const formatter = getTimeFormatter(locale);
+  const startLabel = formatter.format(start);
+
+  if (!endStr) {
+    return startLabel;
+  }
+
+  const end = new Date(endStr);
+  if (Number.isNaN(end.getTime())) {
+    return startLabel;
+  }
+
+  const endLabel = formatter.format(end);
+  return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
+}
+
+function getEventClassNames({ paid, confirmed, completed }) {
+  const classNames = ['calendar-event'];
+  if (completed === true || completed === 'true') {
+    classNames.push('calendar-event--completed');
+  }
+  if (confirmed === true || confirmed === 'true') {
+    classNames.push('calendar-event--confirmed');
+  } else {
+    classNames.push('calendar-event--pending');
+  }
+  if (paid === true || paid === 'paid') {
+    classNames.push('calendar-event--paid');
+  } else {
+    classNames.push('calendar-event--unpaid');
+  }
+  return classNames;
+}
+
+function renderCalendarLegend() {
+  const legendEl = document.getElementById('calendar-legend');
+  if (!legendEl) return;
+  const language = getCurrentLanguage?.() === 'en' ? 'en' : 'ar';
+  legendEl.innerHTML = CALENDAR_LEGEND_ITEMS.map(({ key, chipClass }) => {
+    const fallback = language === 'en' ? LEGEND_FALLBACK_EN[key] ?? key : LEGEND_FALLBACK_AR[key] ?? key;
+    const label = escapeHtml(t(`calendar.legend.${key}`, fallback));
+    return `<span class="calendar-legend__item" role="listitem"><span class="${chipClass} calendar-legend__chip">${label}</span></span>`;
+  }).join('');
+}
+
+function decorateCalendarControls() {
+  const { calendarEl } = getCalendarElements();
+  if (!calendarEl) return;
+  const toolbar = calendarEl.querySelector('.fc-header-toolbar');
+  if (!toolbar) return;
+  toolbar.classList.add('calendar-toolbar');
+  toolbar.querySelectorAll('.fc-toolbar-chunk').forEach((chunk) => {
+    chunk.classList.add('calendar-toolbar__chunk');
+  });
+  const titleEl = toolbar.querySelector('.fc-toolbar-title');
+  if (titleEl) {
+    titleEl.classList.add('calendar-toolbar__title');
+  }
+  toolbar.querySelectorAll('.fc-button').forEach((button) => {
+    button.classList.add('calendar-toolbar__button');
+  });
+}
+
+
+
 function setCalendarStatus({ loading = false, error = '', empty = false } = {}) {
   const { panelEl, statusEl } = getCalendarElements();
   if (!panelEl || !statusEl) return;
@@ -55,34 +181,33 @@ function setCalendarStatus({ loading = false, error = '', empty = false } = {}) 
 
   if (!statusEl.dataset.initialized) {
     statusEl.classList.add(
-      'alert',
-      'rounded-3xl',
-      'shadow-soft',
+      'calendar-status-card',
+      'shadow-2xl',
       'bg-base-100/95',
       'border',
-      'border-dashed',
-      'border-primary/30',
+      'border-base-200/80',
+      'rounded-3xl',
       'text-base-content',
-      'text-sm',
-      'font-semibold',
-      'px-6',
-      'py-5',
+      'px-8',
+      'py-8',
       'flex',
       'flex-col',
       'items-center',
       'justify-center',
-      'gap-3',
-      'backdrop-blur-sm',
-      'text-center'
+      'gap-4'
     );
     statusEl.dataset.initialized = 'true';
   }
 
-  statusEl.classList.remove('alert-info', 'alert-error', 'alert-warning', 'alert-success');
+  statusEl.classList.remove(
+    'calendar-status-card--loading',
+    'calendar-status-card--error',
+    'calendar-status-card--empty'
+  );
   statusEl.classList.toggle('hidden', !shouldShow);
 
   if (!shouldShow) {
-    statusEl.textContent = '';
+    statusEl.innerHTML = '';
     statusEl.removeAttribute('data-status');
     return;
   }
@@ -100,29 +225,29 @@ function setCalendarStatus({ loading = false, error = '', empty = false } = {}) 
 
   const statusKey = loading ? 'loading' : (hasError ? 'error' : 'empty');
   statusEl.setAttribute('data-status', statusKey);
-
-  if (loading) {
-    statusEl.classList.add('alert-info');
-  } else if (hasError) {
-    statusEl.classList.add('alert-error');
-  } else {
-    statusEl.classList.add('alert-warning');
-  }
+  statusEl.classList.add(`calendar-status-card--${statusKey}`);
 
   statusEl.innerHTML = '';
 
   if (loading) {
     const spinner = document.createElement('span');
-    spinner.className = 'loading loading-spinner loading-sm text-primary';
+    spinner.className = 'loading loading-spinner loading-md text-primary';
     spinner.setAttribute('aria-hidden', 'true');
     statusEl.appendChild(spinner);
+  } else {
+    const icon = document.createElement('span');
+    icon.className = 'calendar-status-card__icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = hasError ? '⚠️' : '🗓️';
+    statusEl.appendChild(icon);
   }
 
   const messageEl = document.createElement('span');
-  messageEl.className = 'status-message';
+  messageEl.className = 'calendar-status-card__message text-center text-sm font-semibold';
   messageEl.textContent = message;
   statusEl.appendChild(messageEl);
 }
+
 
 function destroyCalendarInstance() {
   if (!calendarInstance) return;
@@ -184,11 +309,10 @@ function buildCalendarEvents(reservations = []) {
       const normalized = normalizeReservationForEvent(reservation, project);
       if (!normalized) return null;
 
-      const palette = getEventPalette({
-        ...reservation,
+      const classNames = getEventClassNames({
         paid: normalized.paid,
         confirmed: normalized.confirmed,
-        completed: normalized.completed,
+        completed: normalized.completed
       });
 
       return {
@@ -196,12 +320,14 @@ function buildCalendarEvents(reservations = []) {
         title: '',
         start: normalized.start,
         end: normalized.end,
-        backgroundColor: palette.background,
-        borderColor: palette.border,
-        textColor: palette.text,
-        display: 'auto',
+        display: 'block',
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        textColor: '',
+        classNames,
         extendedProps: {
           ...reservation,
+          raw: reservation,
           paid: normalized.paid,
           confirmed: normalized.confirmed,
           completed: normalized.completed,
@@ -212,6 +338,7 @@ function buildCalendarEvents(reservations = []) {
     })
     .filter(Boolean);
 }
+
 
 function getCalendarButtonText() {
   return {
@@ -275,6 +402,8 @@ function refreshCalendarFromState() {
   applyResponsiveCalendarView();
   setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
   dispatchCalendarUpdated(events);
+  renderCalendarLegend();
+  decorateCalendarControls();
 }
 
 function ensureCalendarListeners() {
@@ -344,79 +473,16 @@ function ensureThemeListener() {
   calendarThemeObserverAttached = true;
 }
 
-function isDarkModeActive() {
-  if (typeof document === 'undefined') return false;
-  const htmlEl = document.documentElement;
-  return htmlEl?.classList.contains('dark-mode') || document.body?.classList.contains('dark-mode');
-}
 
-function getEventPalette({ paid, confirmed, completed } = {}) {
-  const dark = isDarkModeActive();
-  const isPaid = paid === true || paid === 'paid';
-  const isConfirmed = confirmed === true || confirmed === 'true';
-  const isCompleted = completed === true || completed === 'true';
-
-  if (isCompleted) {
-    return dark
-      ? {
-          background: 'rgba(148, 163, 184, 0.28)',
-          border: 'rgba(148, 163, 184, 0.55)',
-          text: '#f8fafc'
-        }
-      : {
-          background: 'rgba(148, 163, 184, 0.22)',
-          border: 'rgba(148, 163, 184, 0.45)',
-          text: '#1f2937'
-        };
-  }
-
-  if (!isConfirmed) {
-    return dark
-      ? {
-          background: 'rgba(251, 191, 36, 0.28)',
-          border: 'rgba(251, 146, 60, 0.6)',
-          text: '#fff7ed'
-        }
-      : {
-          background: 'rgba(251, 191, 36, 0.18)',
-          border: 'rgba(217, 119, 6, 0.4)',
-          text: '#92400e'
-        };
-  }
-
-  if (!isPaid) {
-    return dark
-      ? {
-          background: 'rgba(248, 113, 113, 0.32)',
-          border: 'rgba(248, 113, 113, 0.65)',
-          text: '#fee2e2'
-        }
-      : {
-          background: 'rgba(248, 113, 113, 0.18)',
-          border: 'rgba(220, 38, 38, 0.35)',
-          text: '#991b1b'
-        };
-  }
-
-  return dark
-    ? {
-        background: 'rgba(79, 70, 229, 0.25)',
-        border: 'rgba(129, 140, 248, 0.65)',
-        text: '#e0e7ff'
-      }
-    : {
-        background: 'rgba(99, 102, 241, 0.16)',
-        border: 'rgba(79, 70, 229, 0.42)',
-        text: '#1e1b4b'
-      };
-}
 
 function buildEventContent(arg) {
   const { reservationId, customerName, paid, confirmed, completed } = arg.event.extendedProps;
   const isPaid = paid === true || paid === 'paid';
   const isConfirmed = confirmed === true || confirmed === 'true';
+  const isCompleted = completed === true || completed === 'true';
   const wrapper = document.createElement('div');
-  wrapper.className = 'fc-reservation-event flex flex-col gap-2 text-xs leading-5 text-base-content';
+  wrapper.className = 'calendar-event-wrapper';
+
   const confirmedLabel = isConfirmed
     ? t('calendar.badges.confirmed', 'مؤكد')
     : t('calendar.badges.pending', 'غير مؤكد');
@@ -425,22 +491,35 @@ function buildEventContent(arg) {
     : t('calendar.badges.unpaid', 'غير مدفوع');
   const completedLabel = t('calendar.badges.completed', 'منتهي');
   const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
+
   const chips = [
-    `<span class="reservation-chip ${isConfirmed ? 'status-confirmed' : 'status-pending'}">${escapeHtml(confirmedLabel)}</span>`,
-    `<span class="reservation-chip ${isPaid ? 'status-paid' : 'status-unpaid'}">${escapeHtml(paidLabel)}</span>`
+    `<span class="reservation-chip calendar-chip ${isConfirmed ? 'status-confirmed' : 'status-pending'}">${escapeHtml(confirmedLabel)}</span>`,
+    `<span class="reservation-chip calendar-chip ${isPaid ? 'status-paid' : 'status-unpaid'}">${escapeHtml(paidLabel)}</span>`
   ];
-  if (completed) {
-    chips.push(`<span class="reservation-chip status-completed">${escapeHtml(completedLabel)}</span>`);
+  if (isCompleted) {
+    chips.push(`<span class="reservation-chip calendar-chip status-completed">${escapeHtml(completedLabel)}</span>`);
   }
 
+  const timeLabel = formatEventTimeRange(arg.event.startStr, arg.event.endStr, arg.event.allDay);
+  const safeTime = escapeHtml(timeLabel || '');
   const safeReservationId = escapeHtml(reservationId || '—');
   const safeCustomer = escapeHtml(customerName || unknownCustomer);
 
+  const timeMarkup = safeTime
+    ? `<span class="calendar-event-card__time">${safeTime}</span>`
+    : '';
+
   wrapper.innerHTML = `
-    <div class="fc-reservation-id text-[0.78rem] font-semibold">${safeReservationId}</div>
-    <div class="fc-reservation-customer text-[0.72rem] text-base-content/70">${safeCustomer}</div>
-    <div class="fc-reservation-tags flex flex-wrap items-center gap-2 pt-1">${chips.join('')}</div>
+    <article class="calendar-event-card">
+      <header class="calendar-event-card__head">
+        ${timeMarkup}
+        <span class="calendar-event-card__id">${safeReservationId}</span>
+      </header>
+      <div class="calendar-event-card__customer">${safeCustomer}</div>
+      <div class="calendar-event-card__chips">${chips.join('')}</div>
+    </article>
   `;
+
   return { domNodes: [wrapper] };
 }
 
@@ -622,23 +701,31 @@ export function renderCalendar() {
         buttonText: getCalendarButtonText(),
         events,
         eventContent: buildEventContent,
-        eventClick(info) {
-          showReservationModal(info.event.extendedProps);
-        },
-        windowResize: applyResponsiveCalendarView,
-      });
-      calendarInstance.render();
+  eventClick(info) {
+    showReservationModal(info.event.extendedProps);
+  },
+  windowResize: applyResponsiveCalendarView,
+  datesSet() {
+    decorateCalendarControls();
+  }
+});
+calendarInstance.render();
+decorateCalendarControls();
     } else {
       calendarInstance.setOption('locale', getCurrentLanguage());
       calendarInstance.setOption('buttonText', getCalendarButtonText());
       updateCalendarEvents(events);
+      decorateCalendarControls();
     }
 
     applyResponsiveCalendarView();
     dispatchCalendarUpdated(events);
     setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
+    renderCalendarLegend();
+    decorateCalendarControls();
     setTimeout(() => {
       applyResponsiveCalendarView();
+      decorateCalendarControls();
     }, 120);
   })().catch((error) => {
     console.error('❌ [calendar] renderCalendar failed', error);

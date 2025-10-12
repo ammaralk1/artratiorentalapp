@@ -1,505 +1,456 @@
-/* التقويم */
+/* Calendar surface */
 .calendar-panel {
   position: relative;
 }
 
-.calendar-panel .calendar-status {
-  position: absolute;
-  inset: 12px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 18px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px dashed rgba(76, 110, 245, 0.35);
-  color: var(--clr-text);
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
-}
-
-.calendar-panel.is-loading .calendar-status,
-.calendar-panel.has-error .calendar-status,
-.calendar-panel.is-empty .calendar-status {
-  display: flex;
-}
-
-.calendar-panel.is-loading #calendar,
-.calendar-panel.has-error #calendar,
-.calendar-panel.is-empty #calendar {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-html[dir="rtl"] .calendar-status,
-body[dir="rtl"] .calendar-status {
-  direction: rtl;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-panel .calendar-status {
-  background: rgba(15, 23, 42, 0.94);
-  border-color: rgba(148, 163, 184, 0.4);
-  color: rgba(226, 232, 240, 0.95);
-}
-
-#calendar {
-  background: var(--clr-card);
-  padding: 16px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(76, 110, 245, 0.08);
-}
-
-html[dir="rtl"] #calendar-reservation-details,
-body[dir="rtl"] #calendar-reservation-details {
-  direction: rtl;
-  text-align: right;
-}
-
-:is(html.dark-mode, body.dark-mode) #calendar {
-  background: rgba(10, 16, 32, 0.95) !important;
-  border: 1px solid rgba(59, 130, 246, 0.28) !important;
-  box-shadow: 0 22px 54px rgba(5, 12, 28, 0.65);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc-theme-standard td,
-:is(html.dark-mode, body.dark-mode) .fc-theme-standard th {
-  border-color: rgba(71, 85, 105, 0.35);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-scrollgrid {
-  background: rgba(148, 163, 184, 0.1);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day-number,
-:is(html.dark-mode, body.dark-mode) .fc .fc-col-header-cell-cushion {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day:hover {
-  background: rgba(148, 163, 184, 0.18);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-daygrid-day.fc-day-today {
-  background: rgba(96, 165, 250, 0.24);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-event {
-  color: #0f172a;
-  border: none;
-  font-weight: 600;
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-toolbar-title {
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-button {
-  background: rgba(30, 42, 68, 0.9);
-  border: 1px solid rgba(93, 133, 255, 0.3);
-  color: var(--clr-text);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-button:not(:disabled):hover {
-  background: rgba(37, 55, 88, 0.95);
-  border-color: rgba(148, 163, 184, 0.4);
-}
-
-:is(html.dark-mode, body.dark-mode) .fc .fc-button-primary:not(:disabled):active,
-:is(html.dark-mode, body.dark-mode) .fc .fc-button-primary:not(:disabled).fc-button-active {
-  background: #2563eb;
-  border-color: #1d4ed8;
-  color: #fff;
-}
-
-.calendar-reservation-status {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-html[dir="rtl"] .calendar-reservation-status,
-body[dir="rtl"] .calendar-reservation-status {
-  justify-content: flex-end;
-}
-
-.calendar-reservation-info {
-  background: rgba(248, 250, 255, 0.9);
-  border: 1px solid rgba(76, 110, 245, 0.12);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  padding: 16px 18px;
+.calendar-surface {
+  position: relative;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(14, 165, 233, 0.06));
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  box-shadow: 0 40px 80px rgba(15, 23, 42, 0.14);
+  padding: clamp(1.25rem, 1.8vw, 1.75rem);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  align-items: stretch;
+  gap: clamp(1.25rem, 2vw, 1.75rem);
 }
 
-html[dir="rtl"] .calendar-reservation-info,
-body[dir="rtl"] .calendar-reservation-info {
-  direction: rtl;
-  text-align: left;
+.calendar-surface__header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   align-items: flex-start;
 }
 
-html[dir="rtl"] .calendar-reservation-info .calendar-info-row,
-body[dir="rtl"] .calendar-reservation-info .calendar-info-row {
-  justify-content: flex-start;
-}
-
-html[dir="rtl"] .calendar-reservation-info .calendar-info-row .label,
-body[dir="rtl"] .calendar-reservation-info .calendar-info-row .label {
-  text-align: left;
-}
-
-html[dir="rtl"] .calendar-reservation-info .calendar-info-row .value,
-body[dir="rtl"] .calendar-reservation-info .calendar-info-row .value {
-  text-align: left;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-info {
-  background: rgba(24, 33, 59, 0.92);
-  border: 1px solid rgba(93, 133, 255, 0.2);
-  box-shadow: 0 8px 20px rgba(3, 10, 26, 0.5);
-}
-
-.calendar-info-row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(76, 110, 245, 0.08);
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-info-row {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.calendar-info-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.calendar-info-row .label {
-  color: var(--clr-muted);
-  font-size: 0.9rem;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-info-row .label {
-  color: rgba(148, 163, 184, 0.8);
-}
-
-.calendar-info-row .value {
-  color: #1d2b56;
-  font-weight: 600;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-info-row .value {
-  color: var(--clr-text);
-}
-
-html[dir="rtl"] .calendar-info-row,
-body[dir="rtl"] .calendar-info-row {
-  direction: rtl;
-  text-align: right;
-  justify-content: flex-end;
-}
-
-html[dir="rtl"] .calendar-info-row .label,
-html[dir="rtl"] .calendar-info-row .value,
-body[dir="rtl"] .calendar-info-row .label,
-body[dir="rtl"] .calendar-info-row .value {
-  text-align: inherit;
-}
-
-.calendar-section-title {
-  margin: 18px 0 10px;
-  font-weight: 700;
-  color: #26334d;
-}
-
-html[dir="rtl"] .calendar-section-title,
-body[dir="rtl"] .calendar-section-title {
-  text-align: right;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-section-title {
-  color: var(--clr-text);
-}
-
-.calendar-reservation-technicians {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid rgba(76, 110, 245, 0.12);
-  border-radius: var(--radius-md);
-  background: rgba(248, 250, 255, 0.65);
-}
-
-.calendar-reservation-technicians li {
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(76, 110, 245, 0.1);
-  font-weight: 600;
-  color: #1f2d52;
-}
-
-html[dir="rtl"] .calendar-reservation-technicians li,
-body[dir="rtl"] .calendar-reservation-technicians li {
-  text-align: right;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-technicians {
-  border: 1px solid rgba(93, 133, 255, 0.22);
-  background: rgba(30, 42, 68, 0.85);
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-technicians li {
-  border-bottom: 1px solid rgba(93, 133, 255, 0.18);
-  color: var(--clr-text);
-}
-
-.calendar-reservation-technicians li:last-child {
-  border-bottom: none;
-}
-
-.calendar-empty-state {
-  margin: 0;
-  padding: 12px 16px;
-  background: rgba(245, 248, 255, 0.75);
-  border-radius: var(--radius-md);
-  color: #32405b;
-}
-
-html[dir="rtl"] .calendar-empty-state,
-body[dir="rtl"] .calendar-empty-state {
-  text-align: right;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-empty-state {
-  background: rgba(30, 42, 68, 0.82);
-  color: rgba(226, 232, 240, 0.85);
-  border: 1px solid rgba(93, 133, 255, 0.18);
-}
-
-.calendar-reservation-summary {
-  margin-top: 16px;
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  background: rgba(243, 247, 255, 0.9);
-  border: 1px solid rgba(76, 110, 245, 0.12);
-  display: grid;
-  gap: 6px;
-  color: #1d2b56;
-  font-weight: 600;
-}
-
-html[dir="rtl"] .calendar-reservation-summary,
-body[dir="rtl"] .calendar-reservation-summary {
-  text-align: right;
-}
-
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-summary {
-  background: rgba(24, 33, 59, 0.92);
-  border: 1px solid rgba(93, 133, 255, 0.2);
-  color: var(--clr-text);
-}
-
-@media (max-width: 768px) {
-  #calendar {
-    padding: 10px;
-  }
-
-  .calendar-panel .calendar-status {
-    inset: 6px;
-    padding: 14px;
-  }
-
-  .fc .fc-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .fc .fc-toolbar-chunk {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .fc .fc-toolbar-title {
-    font-size: 1.1rem;
-    text-align: center;
-  }
-
-  .fc .fc-button {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .fc .fc-button-group {
-    width: 100%;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .fc-listWeek-view .fc-event {
-    border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 8px;
-  }
-
-  .fc-listWeek-view .fc-list-day-cushion {
-    padding: 8px 12px;
-  }
-
-  .calendar-reservation-info {
-    padding: 14px;
-  }
-}
-
-@media (max-width: 576px) {
-  #calendar {
-    padding: 8px;
-  }
-
-  .fc .fc-toolbar {
+@media (min-width: 1024px) {
+  .calendar-surface__header {
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
-  }
-
-  .fc .fc-toolbar-title {
-    font-size: 1rem;
-  }
-
-  .fc .fc-button {
-    flex: 1 0 calc(50% - 6px);
-    min-width: calc(50% - 6px);
-    padding: 6px 10px;
-    font-size: 0.85rem;
-  }
-
-  .fc .fc-button-group {
-    flex-wrap: wrap;
-  }
-
-  .fc .fc-daygrid-day-frame {
-    padding: 6px 4px;
-  }
-
-  .fc .fc-daygrid-day-number {
-    font-size: 0.85rem;
-  }
-
-  .fc .fc-col-header-cell-cushion {
-    font-size: 0.8rem;
-    padding: 6px 0;
-  }
-
-  .fc .fc-daygrid-event {
-    font-size: 0.75rem;
-    line-height: 1.2;
-    padding: 4px 6px;
-  }
-
-  .calendar-reservation-info {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .calendar-info-row {
-    gap: 8px;
+    gap: 2rem;
   }
 }
 
-/* DaisyUI calendar refresh overrides */
-.calendar-panel {
+.calendar-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.calendar-heading__title {
+  font-size: clamp(1.35rem, 2.4vw, 1.6rem);
+  font-weight: 700;
+  color: var(--tw-prose-headings, var(--fc-neutral, #0f172a));
+}
+
+.calendar-heading__subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(15, 23, 42, 0.62);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-heading__subtitle {
+  color: rgba(226, 232, 240, 0.65);
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.calendar-legend__item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.calendar-legend__chip {
+  font-size: 0.65rem;
+  padding-inline: 0.85rem;
+  padding-block: 0.35rem;
+  box-shadow: none;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-legend__chip {
+  background: rgba(148, 163, 184, 0.18);
+  border-color: rgba(148, 163, 184, 0.24);
+}
+
+.calendar-surface__body {
   position: relative;
 }
-.calendar-panel .calendar-status {
-  inset: 12px;
-  pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  z-index: 20;
+
+.calendar-shell {
+  position: relative;
+  border-radius: 24px;
+  background: rgba(248, 250, 255, 0.82);
+  border: 1px solid rgba(148, 163, 255, 0.18);
+  box-shadow: 0 32px 75px rgba(30, 41, 59, 0.18);
+  padding: clamp(1rem, 1.5vw, 1.5rem);
 }
-.calendar-panel .calendar-status.hidden {
-  display: none !important;
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-shell {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 40px 80px rgba(4, 7, 15, 0.6);
 }
-.calendar-panel .calendar-status:not(.hidden) {
-  display: flex;
-  opacity: 1;
-  pointer-events: auto;
-}
+
 .calendar-panel.is-loading .calendar-shell,
 .calendar-panel.has-error .calendar-shell,
 .calendar-panel.is-empty .calendar-shell {
-  opacity: 0.35;
-  filter: blur(1px);
-  transition: opacity 0.25s ease, filter 0.25s ease;
+  filter: saturate(65%) brightness(0.95);
+  opacity: 0.55;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
-.calendar-shell {
-  min-height: 420px;
-  transition: box-shadow 0.25s ease, transform 0.25s ease;
+
+.calendar-status {
+  position: absolute;
+  inset: clamp(0.85rem, 2vw, 1.4rem);
+  display: none;
+  pointer-events: none;
+  z-index: 4;
 }
-.calendar-shell:hover {
-  box-shadow: 0 24px 50px rgba(79, 70, 229, 0.18);
+
+.calendar-status.hidden {
+  display: none !important;
+}
+
+.calendar-status:not(.hidden) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.calendar-status-card {
+  pointer-events: auto;
+}
+
+.calendar-status-card__icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.calendar-status-card__message {
+  color: currentColor;
+}
+
+.calendar-status-card--error {
+  border-color: rgba(248, 113, 113, 0.35) !important;
+  color: rgba(190, 18, 60, 0.9);
+}
+
+.calendar-status-card--empty {
+  border-color: rgba(99, 102, 241, 0.28) !important;
+  color: rgba(30, 41, 59, 0.75);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-status-card--empty {
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.calendar-status-card--loading .loading {
+  transform: scale(1.1);
+}
+
+/* Toolbar styling */
+.calendar-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-toolbar__chunk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.calendar-toolbar__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--tw-prose-headings, var(--fc-neutral, #0f172a));
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar__title {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.calendar-toolbar__button {
+  border-radius: 999px !important;
+  border: 1px solid rgba(99, 102, 241, 0.28) !important;
+  background: rgba(248, 250, 255, 0.65) !important;
+  color: rgba(30, 41, 59, 0.78) !important;
+  font-weight: 600 !important;
+  padding: 0.42rem 1.2rem !important;
+  transition: all 0.18s ease !important;
+}
+
+.calendar-toolbar__button:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: rgba(49, 46, 129, 0.95) !important;
+  border-color: rgba(79, 70, 229, 0.45) !important;
+}
+
+.fc .calendar-toolbar__button.fc-button-active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.92)) !important;
+  border-color: rgba(76, 110, 245, 0.65) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 18px 36px rgba(79, 70, 229, 0.28);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar__button {
+  background: rgba(15, 23, 42, 0.78) !important;
+  color: rgba(226, 232, 240, 0.86) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+}
+
+/* FullCalendar base adjustments */
+.fc .fc-header-toolbar {
+  margin-bottom: 1.4rem;
+}
+
+.fc .fc-button-group {
+  gap: 0.45rem;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc-theme-standard td,
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc-theme-standard th {
+  border-color: rgba(71, 85, 105, 0.55);
+}
+
+.fc .fc-scrollgrid {
+  border-radius: 20px;
+  overflow: hidden;
+  border: none;
+}
+
+.fc .fc-col-header-cell {
+  padding-block: 0.6rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: rgba(30, 41, 59, 0.8);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-col-header-cell {
+  background: rgba(99, 102, 241, 0.18);
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.fc .fc-daygrid-day {
+  background: rgba(248, 250, 255, 0.72);
+  transition: background 0.15s ease;
+}
+
+.fc .fc-daygrid-day:hover {
+  background: rgba(224, 231, 255, 0.55);
+}
+
+.fc .fc-daygrid-day.fc-day-today {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(14, 165, 233, 0.16));
+}
+
+.fc .fc-daygrid-day-number {
+  font-weight: 600;
+  padding: 0.75rem;
+  color: rgba(30, 41, 59, 0.78);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-daygrid-day-number {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.fc .fc-daygrid-event-harness {
+  margin-block: 6px;
+}
+
+.fc .fc-daygrid-event {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* Event cards */
+.calendar-event-wrapper {
+  width: 100%;
+}
+
+.calendar-event-card {
+  width: 100%;
+  border-radius: 18px;
+  padding: 0.85rem 1.05rem;
+  background: rgba(248, 250, 255, 0.9);
+  border: 1px solid rgba(148, 163, 255, 0.18);
+  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.calendar-event-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 30px 60px rgba(14, 37, 89, 0.22);
 }
-.calendar-reservation-layout {
-  direction: rtl;
-  gap: 2rem;
-}
-.calendar-reservation-status .reservation-chip {
+
+.calendar-event-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
   font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(30, 41, 59, 0.55);
 }
-.calendar-info-row .label {
+
+.calendar-event-card__time {
+  font-weight: 700;
+}
+
+.calendar-event-card__id {
   font-weight: 600;
 }
-.calendar-info-row .value {
-  word-break: break-word;
-  max-width: 55%;
+
+.calendar-event-card__customer {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.92);
 }
-@media (max-width: 768px) {
-  .calendar-info-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .calendar-info-row .value {
-    max-width: 100%;
-    text-align: start;
-  }
+
+.calendar-event-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
-.calendar-empty-state {
-  line-height: 1.7;
+
+.calendar-chip {
+  font-size: 0.66rem;
+  padding-inline: 0.8rem;
+  padding-block: 0.32rem;
+  border-radius: 999px;
+  box-shadow: none;
 }
-.calendar-technician-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+.calendar-event--confirmed .calendar-event-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.92), rgba(14, 165, 233, 0.82));
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #eef2ff;
 }
-.calendar-technician-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 36px rgba(79, 70, 229, 0.16);
+
+.calendar-event--pending .calendar-event-card {
+  background: linear-gradient(135deg, rgba(253, 224, 71, 0.92), rgba(251, 191, 36, 0.86));
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #422006;
 }
-.calendar-reservation-summary .summary-row strong {
+
+.calendar-event--completed .calendar-event-card {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.92), rgba(71, 85, 105, 0.88));
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #f8fafc;
+}
+
+.calendar-event--confirmed .calendar-event-card__head,
+.calendar-event--confirmed .calendar-event-card__customer,
+.calendar-event--confirmed .calendar-event-card__chips,
+.calendar-event--pending .calendar-event-card__head,
+.calendar-event--pending .calendar-event-card__customer,
+.calendar-event--pending .calendar-event-card__chips,
+.calendar-event--completed .calendar-event-card__head,
+.calendar-event--completed .calendar-event-card__customer,
+.calendar-event--completed .calendar-event-card__chips {
   color: inherit;
 }
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-info,
-:is(html.dark-mode, body.dark-mode) .calendar-reservation-summary,
-:is(html.dark-mode, body.dark-mode) .reservation-modal-items-wrapper {
-  background: rgba(15, 23, 42, 0.92) !important;
-  border-color: rgba(129, 140, 248, 0.35) !important;
-  box-shadow: 0 22px 44px rgba(2, 6, 23, 0.55) !important;
+
+.calendar-event--pending .calendar-chip.status-pending {
+  background: rgba(30, 64, 175, 0.12);
+  color: #312e81;
 }
-:is(html.dark-mode, body.dark-mode) .summary-row {
+
+.calendar-event--completed .calendar-chip {
+  background: rgba(15, 23, 42, 0.18);
+  color: #f9fafb;
+}
+
+.fc .fc-list-day {
+  background: rgba(99, 102, 241, 0.12);
+  color: rgba(30, 41, 59, 0.85);
+  font-weight: 600;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-list-day {
   background: rgba(99, 102, 241, 0.18);
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: rgba(226, 232, 240, 0.85);
 }
-:is(html.dark-mode, body.dark-mode) .calendar-technician-card {
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(148, 163, 184, 0.32);
+
+.fc .fc-list-event {
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+.fc .fc-list-event .calendar-event-card {
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.92), rgba(224, 231, 255, 0.85));
+  border: 1px solid rgba(148, 163, 255, 0.22);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.15);
+}
+
+.calendar-event--confirmed .fc-list-event .calendar-event-card,
+.calendar-event--pending .fc-list-event .calendar-event-card,
+.calendar-event--completed .fc-list-event .calendar-event-card {
+  background: inherit;
+  border-color: inherit;
+  color: inherit;
+}
+
+@media (max-width: 768px) {
+  .calendar-surface {
+    padding: 1.15rem;
+    border-radius: 22px;
+  }
+
+  .calendar-surface__header {
+    gap: 1rem;
+  }
+
+  .calendar-shell {
+    padding: 0.85rem;
+    border-radius: 20px;
+  }
+
+  .calendar-legend {
+    gap: 0.35rem;
+  }
+
+  .calendar-toolbar {
+    gap: 0.6rem;
+  }
+
+  .calendar-toolbar__button {
+    padding: 0.38rem 1rem !important;
+  }
+
+  .calendar-event-card {
+    padding: 0.75rem 0.95rem;
+  }
+}
+
+/* Modal tweaks */
+.calendar-reservation-details .reservation-modal {
+  background: transparent;
+}
+
+.calendar-reservation-details .reservation-modal-id {
+  color: inherit;
 }
