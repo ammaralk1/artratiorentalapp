@@ -1035,7 +1035,7 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 }
 
 .reservation-notes--short {
-  min-height: 80px;
+  min-height: 58px;
   line-height: 1.35;
   resize: vertical;
 }

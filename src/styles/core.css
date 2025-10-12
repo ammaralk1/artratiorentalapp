@@ -2020,11 +2020,11 @@ input.flatpickr-alt-input:focus {
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp {
-  top: 7px;
+  top: 5px;
 }
 
 .flatpickr-time .numInputWrapper span.arrowDown {
-  bottom: 7px;
+  bottom: 5px;
 }
 
 .flatpickr-time .numInputWrapper span.arrowUp::after,

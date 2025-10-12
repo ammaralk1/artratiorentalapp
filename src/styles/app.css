@@ -4648,7 +4648,7 @@
 
 
 .reservation-notes--compact {
-  min-height: 120px;
+  min-height: 96px;
   resize: vertical;
   width: 100%;
   max-width: none;
