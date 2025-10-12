@@ -279,21 +279,14 @@
         <div class="dashboard-main-inner space-y-8">
           <section class="glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div class="space-y-4">
-                <div class="flex flex-wrap gap-2">
-                  <a href="dashboard.html" class="btn btn-ghost btn-sm" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</a>
-                  <a href="projects.html" class="btn btn-ghost btn-sm" data-i18n data-i18n-key="projects.nav.projects">📁 المشاريع</a>
-                  <a href="home.html" class="btn btn-ghost btn-sm" data-i18n data-i18n-key="actions.goHome">🏠 الرئيسية</a>
-                </div>
-                <div class="space-y-2">
-                  <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="customerDetails.title">👤 بيانات العميل</p>
-                  <h2 id="customer-hero-name" class="text-2xl font-bold text-base-content">—</h2>
-                  <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
-                    <span class="badge badge-outline badge-lg" id="customer-hero-phone">📞 —</span>
-                    <span class="badge badge-outline badge-lg hidden" id="customer-hero-company">🏢 —</span>
-                    <span class="badge badge-outline badge-lg hidden" id="customer-hero-email">📧 —</span>
-                    <span class="badge badge-outline badge-lg hidden" id="customer-hero-tax">🧾 —</span>
-                  </div>
+              <div class="space-y-2">
+                <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="customerDetails.title">👤 بيانات العميل</p>
+                <h2 id="customer-hero-name" class="text-2xl font-bold text-base-content">—</h2>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
+                  <span class="badge badge-outline badge-lg" id="customer-hero-phone">📞 —</span>
+                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-company">🏢 —</span>
+                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-email">📧 —</span>
+                  <span class="badge badge-outline badge-lg hidden" id="customer-hero-tax">🧾 —</span>
                 </div>
               </div>
               <div class="flex items-start justify-end">
@@ -305,7 +298,26 @@
             </div>
           </section>
 
-          <section class="glass-card space-y-5 customer-reservations-section">
+          <div class="glass-card customer-tabbar">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <button
+                type="button"
+                class="tab-button tab-active"
+                data-customer-tab="reservations"
+                data-i18n
+                data-i18n-key="customerTabs.reservations"
+              >📅 إدارة الحجوزات</button>
+              <button
+                type="button"
+                class="tab-button"
+                data-customer-tab="projects"
+                data-i18n
+                data-i18n-key="customerTabs.projects"
+              >📁 إدارة المشاريع</button>
+            </div>
+          </div>
+
+          <section class="glass-card space-y-5 customer-reservations-section" data-customer-tab-panel="reservations">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</h3>
               <button type="button" class="btn btn-outline btn-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
@@ -332,7 +344,7 @@
             </div>
           </section>
 
-          <section class="glass-card space-y-5 customer-projects-section">
+          <section class="glass-card space-y-5 customer-projects-section hidden" data-customer-tab-panel="projects">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerProjects.title">📁 مشاريع العميل</h3>
               <div class="flex flex-wrap items-center gap-2">

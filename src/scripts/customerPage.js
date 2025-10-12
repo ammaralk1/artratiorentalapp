@@ -54,6 +54,10 @@ const editButtons = [
   document.getElementById('customer-edit-btn'),
   document.getElementById('customer-edit-btn-secondary')
 ].filter(Boolean);
+const customerTabButtons = Array.from(document.querySelectorAll('[data-customer-tab]'));
+const customerTabPanels = new Map(
+  Array.from(document.querySelectorAll('[data-customer-tab-panel]')).map((panel) => [panel.getAttribute('data-customer-tab-panel'), panel])
+);
 
 editButtons.forEach((button) => {
   button.disabled = true;
@@ -62,6 +66,7 @@ editButtons.forEach((button) => {
 let currentCustomer = null;
 let isCustomerLoading = false;
 let customerLoadError = '';
+let activeCustomerTab = 'reservations';
 
 function escapeHtml(value = '') {
   const div = document.createElement('div');
@@ -152,6 +157,44 @@ function setEditButtonsDisabled(isDisabled) {
 }
 
 attachEditButtons();
+
+function setActiveCustomerTab(tab) {
+  if (!tab) return;
+  activeCustomerTab = tab;
+  customerTabButtons.forEach((button) => {
+    const isActive = button?.getAttribute('data-customer-tab') === tab;
+    if (!button) return;
+    button.classList.toggle('tab-active', isActive);
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
+  });
+  customerTabPanels.forEach((panel, key) => {
+    if (!panel) return;
+    panel.classList.toggle('hidden', key !== tab);
+  });
+
+  if (tab === 'projects' && customerId && currentCustomer) {
+    renderCustomerProjects(customerId);
+  }
+}
+
+function initCustomerTabs() {
+  if (!customerTabButtons.length) {
+    return;
+  }
+  customerTabButtons.forEach((button) => {
+    if (!button || button.dataset.listenerAttached) return;
+    button.addEventListener('click', () => {
+      const tab = button.getAttribute('data-customer-tab');
+      if (!tab) return;
+      setActiveCustomerTab(tab);
+    });
+    button.dataset.listenerAttached = 'true';
+  });
+  setActiveCustomerTab(activeCustomerTab);
+}
+
+initCustomerTabs();
 
 function normalizeCustomerDocument(rawCustomer = {}) {
   if (!rawCustomer || typeof rawCustomer !== 'object') {
@@ -664,6 +707,8 @@ function renderDetails() {
     return;
   }
 
+  setActiveCustomerTab(activeCustomerTab);
+
   if (!currentCustomer) {
     setHeroData(null);
     setEditButtonsDisabled(true);
@@ -797,14 +842,21 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
       return;
     }
 
-    let documentPayload = null;
+    const existingDocument = customers[idx]?.document ?? null;
+    let documentPayload = existingDocument;
     if (documentUrl) {
-      const existingDocument = customers[idx]?.document ?? null;
       documentPayload = {
         ...(existingDocument || {}),
         url: documentUrl,
         fileName: documentNameInput || existingDocument?.fileName || '',
       };
+    } else if (documentNameInput && existingDocument) {
+      documentPayload = {
+        ...existingDocument,
+        fileName: documentNameInput,
+      };
+    } else if (!documentUrl && !documentNameInput) {
+      documentPayload = existingDocument;
     }
 
     customers[idx] = {
@@ -879,4 +931,3 @@ document.addEventListener('language:changed', () => {
     updateHeroStats();
   }
 });
-
