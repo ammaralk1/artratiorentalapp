@@ -395,8 +395,8 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
 
-  .sidebar-panel--tabs .tab-button > span {
-    @apply flex w-full items-center justify-center gap-3 text-base font-semibold leading-tight;
+  .sidebar-panel--tabs .tab-button__content {
+    @apply flex w-full flex-col items-center justify-center gap-3 text-base font-semibold leading-tight;
     text-align: center;
   }
 
@@ -420,7 +420,7 @@
     transform: scale(1.05);
   }
 
-  .sidebar-panel--tabs .tab-button > span span {
+  .sidebar-panel--tabs .tab-button__content span {
     display: block;
     width: 100%;
     text-align: center;
