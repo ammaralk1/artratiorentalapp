@@ -21,16 +21,17 @@ let summaryLoading = false;
 let summaryErrorMessage = '';
 
 function updateGreetingMessage() {
-  const greeting = document.querySelector('[data-home-greeting]');
-  if (!greeting) return;
+  const greetingElements = document.querySelectorAll('[data-home-greeting]');
+  if (!greetingElements.length) return;
 
-  if (cachedUsername) {
-    const template = t('home.hero.greetingUser', 'مرحباً {name}');
-    greeting.textContent = template.replace('{name}', cachedUsername);
-    return;
-  }
+  const defaultMessage = t('home.hero.title', 'مرحباً بك');
+  const personalisedMessage = cachedUsername
+    ? t('home.hero.greetingUser', 'مرحباً {name}').replace('{name}', cachedUsername)
+    : defaultMessage;
 
-  greeting.textContent = t('home.hero.title', 'مرحباً بك');
+  greetingElements.forEach((element) => {
+    element.textContent = personalisedMessage;
+  });
 }
 
 function updateAdminCardVisibility() {

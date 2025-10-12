@@ -389,29 +389,42 @@
   }
 
   .sidebar-panel--tabs .tab-button {
-    @apply flex w-full items-center justify-between gap-3 rounded-2xl border border-base-200 px-4 py-3 text-sm font-semibold text-base-content;
-    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(238, 242, 255, 0.9));
+    @apply relative flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-base-200 px-5 py-4 text-base font-semibold text-base-content text-center;
+    background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(234, 240, 255, 0.94));
     box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
 
   .sidebar-panel--tabs .tab-button > span {
-    @apply flex flex-1 items-center justify-start gap-3;
+    @apply flex w-full items-center justify-center gap-3 text-base font-semibold leading-tight;
+    text-align: center;
   }
 
   .sidebar-panel--tabs .tab-button svg {
+    width: 1.75rem;
+    height: 1.75rem;
     color: hsl(var(--bc) / 0.55);
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, transform 0.2s ease;
   }
 
   .sidebar-panel--tabs .tab-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
-    background: linear-gradient(135deg, rgba(234, 240, 255, 0.98), rgba(228, 236, 255, 0.92));
+    box-shadow: 0 22px 42px rgba(15, 23, 42, 0.16);
+    background: linear-gradient(135deg, rgba(234, 240, 255, 0.98), rgba(221, 232, 255, 0.95));
+    border-color: rgba(76, 110, 245, 0.45);
+    color: rgba(41, 64, 185, 1);
   }
 
   .sidebar-panel--tabs .tab-button:hover svg {
-    color: hsl(var(--bc));
+    color: rgba(49, 73, 198, 1);
+    transform: scale(1.05);
+  }
+
+  .sidebar-panel--tabs .tab-button > span span {
+    display: block;
+    width: 100%;
+    text-align: center;
+    line-height: 1.4;
   }
 
   .sidebar-panel--tabs .tab-button.active {
@@ -478,6 +491,8 @@
   :where(html.dark, body.dark) .sidebar-panel--tabs .tab-button:hover {
     background: linear-gradient(135deg, rgba(47, 71, 120, 0.95), rgba(37, 58, 102, 0.88));
     box-shadow: 0 24px 46px rgba(3, 8, 26, 0.8);
+    border-color: rgba(129, 140, 248, 0.55);
+    color: #f8fafc;
   }
 
   :where(html.dark, body.dark) .sidebar-panel--tabs .tab-button:hover svg {
