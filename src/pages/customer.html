@@ -185,77 +185,97 @@
                     <a href="projects.html" class="btn btn-outline" data-i18n data-i18n-key="projects.nav.projects">📁 المشاريع</a>
                   </div>
                 </div>
-                <div class="stats stats-vertical sm:stats-horizontal w-full bg-transparent gap-4" id="customer-financial-stats">
-                  <div class="stat min-w-[12rem] place-items-start gap-2">
-                    <div class="stat-figure text-primary">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M4 19h16"></path>
-                        <path d="M5 6h8"></path>
-                        <path d="M7 12h6"></path>
-                        <path d="M9 18v-12a2 2 0 0 1 2 -2h6"></path>
-                      </svg>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="customer-financial-stats">
+                  <article class="rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="rounded-2xl bg-primary/10 p-3 text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M4 19h16"></path>
+                          <path d="M5 6h8"></path>
+                          <path d="M7 12h6"></path>
+                          <path d="M9 18v-12a2 2 0 0 1 2 -2h6"></path>
+                        </svg>
+                      </span>
+                      <div class="flex flex-col gap-1 text-start">
+                        <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.projects">عدد المشاريع</span>
+                        <span id="customer-stat-projects" class="text-2xl font-bold text-base-content">0</span>
+                        <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-projects-desc" data-i18n data-i18n-key="customerDetails.stats.projectsDesc">المشاريع المرتبطة بالعميل</p>
+                      </div>
                     </div>
-                    <div class="stat-title whitespace-normal text-sm text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.projects">عدد المشاريع</div>
-                    <div id="customer-stat-projects" class="stat-value text-2xl text-base-content/90">0</div>
-                    <div class="stat-desc text-sm text-base-content/60 whitespace-normal leading-relaxed" id="customer-stat-projects-desc" data-i18n data-i18n-key="customerDetails.stats.projectsDesc">المشاريع المرتبطة بالعميل</div>
-                  </div>
-                  <div class="stat min-w-[12rem] place-items-start gap-2">
-                    <div class="stat-figure text-success">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M5 21v-10a1 1 0 0 1 1 -1h3v11"></path>
-                        <path d="M10 16h4"></path>
-                        <path d="M12 13l2 -2l-2 -2"></path>
-                        <path d="M14 11h3a1 1 0 0 1 1 1v9"></path>
-                      </svg>
+                  </article>
+                  <article class="rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="rounded-2xl bg-success/10 p-3 text-success">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M5 21v-10a1 1 0 0 1 1 -1h3v11"></path>
+                          <path d="M10 16h4"></path>
+                          <path d="M12 13l2 -2l-2 -2"></path>
+                          <path d="M14 11h3a1 1 0 0 1 1 1v9"></path>
+                        </svg>
+                      </span>
+                      <div class="flex flex-col gap-1 text-start">
+                        <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.payment">قيمة المدفوع/المستحق</span>
+                        <span id="customer-stat-payment" class="text-2xl font-bold text-base-content">0 / 0</span>
+                        <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-payment-desc" data-i18n data-i18n-key="customerDetails.stats.paymentBreakdown">مدفوع / مستحق</p>
+                      </div>
                     </div>
-                    <div class="stat-title whitespace-normal text-sm text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.payment">قيمة المدفوع/المستحق</div>
-                    <div id="customer-stat-payment" class="stat-value text-2xl text-base-content/90">0 / 0</div>
-                    <div class="stat-desc text-sm text-base-content/60 whitespace-normal leading-relaxed" id="customer-stat-payment-desc" data-i18n data-i18n-key="customerDetails.stats.paymentBreakdown">مدفوع / مستحق</div>
-                  </div>
-                  <div class="stat min-w-[12rem] place-items-start gap-2">
-                    <div class="stat-figure text-info">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M4 7h16"></path>
-                        <path d="M10 11h6"></path>
-                        <path d="M12 15h4"></path>
-                        <path d="M14 18v3"></path>
-                        <path d="M8 14v7"></path>
-                      </svg>
+                  </article>
+                  <article class="rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="rounded-2xl bg-info/10 p-3 text-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M4 7h16"></path>
+                          <path d="M10 11h6"></path>
+                          <path d="M12 15h4"></path>
+                          <path d="M14 18v3"></path>
+                          <path d="M8 14v7"></path>
+                        </svg>
+                      </span>
+                      <div class="flex flex-col gap-1 text-start">
+                        <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.upcoming">الحجوزات القادمة</span>
+                        <span id="customer-stat-upcoming" class="text-2xl font-bold text-base-content">0</span>
+                        <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-upcoming-desc">—</p>
+                      </div>
                     </div>
-                    <div class="stat-title whitespace-normal text-sm text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.upcoming">الحجوزات القادمة</div>
-                    <div id="customer-stat-upcoming" class="stat-value text-2xl text-base-content/90">0</div>
-                    <div class="stat-desc text-sm text-base-content/60 whitespace-normal leading-relaxed" id="customer-stat-upcoming-desc">—</div>
-                  </div>
-                  <div class="stat min-w-[12rem] place-items-start gap-2">
-                    <div class="stat-figure text-secondary">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M12 7v5l3 3"></path>
-                        <path d="M12 21a9 9 0 1 0 -9 -9"></path>
-                      </svg>
+                  </article>
+                  <article class="rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="rounded-2xl bg-secondary/10 p-3 text-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M12 7v5ل3 3"></path>
+                          <path d="M12 21a9 9 0 1 0 -9 -9"></path>
+                        </svg>
+                      </span>
+                      <div class="flex flex-col gap-1 text-start">
+                        <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.lastActivity">آخر نشاط</span>
+                        <span id="customer-stat-activity" class="text-2xl font-bold text-base-content">—</span>
+                        <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-activity-desc">—</p>
+                      </div>
                     </div>
-                    <div class="stat-title whitespace-normal text-sm text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.lastActivity">آخر نشاط</div>
-                    <div id="customer-stat-activity" class="stat-value text-2xl text-base-content/90">—</div>
-                    <div class="stat-desc text-sm text-base-content/60 whitespace-normal leading-relaxed" id="customer-stat-activity-desc">—</div>
-                  </div>
-                  <div class="stat min-w-[12rem] place-items-start gap-2">
-                    <div class="stat-figure text-warning">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M9 7h6"></path>
-                        <path d="M9 11h6"></path>
-                        <path d="M9 15h2"></path>
-                        <path d="M15 15h2"></path>
-                        <path d="M4 5h16a1 1 0 0 1 1 1v14l-4 -3l-4 3l-4 -3l-4 3v-14a1 1 0 0 1 1 -1"></path>
-                      </svg>
+                  </article>
+                  <article class="rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <span class="rounded-2xl bg-warning/10 p-3 text-warning">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M9 7h6"></path>
+                          <path d="M9 11h6"></path>
+                          <path d="M9 15h2"></path>
+                          <path d="M15 15h2"></path>
+                          <path d="M4 5h16a1 1 0 0 1 1 1v14l-4 -3l-4 3l-4 -3l-4 3v-14a1 1 0 0 1 1 -1"></path>
+                        </svg>
+                      </span>
+                      <div class="flex flex-col gap-1 text-start">
+                        <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.compliance">الالتزام بالدفع</span>
+                        <span id="customer-stat-compliance" class="text-2xl font-bold text-base-content">0%</span>
+                        <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-compliance-desc">—</p>
+                      </div>
                     </div>
-                    <div class="stat-title whitespace-normal text-sm text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.compliance">الالتزام بالدفع</div>
-                    <div id="customer-stat-compliance" class="stat-value text-2xl text-base-content/90">0%</div>
-                    <div class="stat-desc text-sm text-base-content/60 whitespace-normal leading-relaxed" id="customer-stat-compliance-desc">—</div>
-                  </div>
+                  </article>
                 </div>
               </div>
             </div>
