@@ -21,6 +21,7 @@ import {
 } from './formatting.js';
 import {
   combineProjectDateTime,
+  formatDateRange,
   setDateInputValue,
   setTimeInputValue,
   splitDateTimeParts
