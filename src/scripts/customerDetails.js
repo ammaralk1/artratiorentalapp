@@ -434,10 +434,19 @@ function updateCustomerProjects() {
 
   const filtered = relevant.filter((project) => {
     if (searchTerm) {
+      const identifierTokens = [
+        project.id,
+        project.projectId,
+        project.project_id,
+        project.projectCode,
+        project.project_code
+      ].map((value) => (value == null ? '' : normalizeNumbers(String(value))));
+
       const haystack = normalizeSearchText([
         project.title,
         project.description,
-        project.notes
+        project.notes,
+        ...identifierTokens
       ].filter(Boolean).join(' '));
       if (!haystack.includes(searchTerm)) return false;
     }
