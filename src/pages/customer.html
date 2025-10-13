@@ -310,17 +310,17 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <nav class="glass-card border border-base-200/60 bg-base-100/70 p-3 customer-primary-nav" aria-label="التنقل السريع">
-            <div class="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav" aria-label="التنقل السريع">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <a
                 href="dashboard.html#reservations-tab"
-                class="inline-flex items-center gap-2 rounded-full border border-base-200 bg-base-100 px-5 py-2 text-sm font-semibold text-base-content/80 transition-colors hover:border-primary/70 hover:bg-primary/10 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/60 customer-primary-nav-link"
+                class="tab-button customer-primary-nav-link"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.reservations"
               >📅 إدارة الحجوزات</a>
               <a
                 href="projects.html"
-                class="inline-flex items-center gap-2 rounded-full border border-base-200 bg-base-100 px-5 py-2 text-sm font-semibold text-base-content/80 transition-colors hover:border-primary/70 hover:bg-primary/10 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/60 customer-primary-nav-link"
+                class="tab-button customer-primary-nav-link"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.projects"
               >📁 إدارة المشاريع</a>
@@ -348,7 +348,7 @@
             </div>
           </section>
 
-          <div class="glass-card customer-tabbar">
+          <div class="glass-card dashboard-tabbar customer-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <button
                 type="button"
