@@ -310,17 +310,17 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <nav class="glass-card border border-primary/20 bg-base-100/80 p-4" aria-label="التنقل السريع">
-            <div class="grid gap-3 sm:grid-cols-2">
+          <nav class="glass-card border border-base-200/60 bg-base-100/70 p-3" aria-label="التنقل السريع">
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <a
                 href="dashboard.html#reservations-tab"
-                class="btn btn-primary btn-lg flex items-center justify-center gap-2"
+                class="btn btn-ghost btn-sm rounded-full px-4 text-sm font-medium text-base-content/80 hover:text-primary hover:bg-primary/10 transition-colors"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.reservations"
               >📅 إدارة الحجوزات</a>
               <a
                 href="projects.html"
-                class="btn btn-outline btn-primary btn-lg flex items-center justify-center gap-2"
+                class="btn btn-ghost btn-sm rounded-full px-4 text-sm font-medium text-base-content/80 hover:text-primary hover:bg-primary/10 transition-colors"
                 data-i18n
                 data-i18n-key="customerDetails.primaryNav.projects"
               >📁 إدارة المشاريع</a>
@@ -373,16 +373,16 @@
               <button type="button" class="btn btn-outline btn-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="customer-search-reservation" class="input input-bordered w-full flex-1 min-w-[14rem] bg-base-100" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="customerDetails.filters.search">
-              <input type="text" id="customer-filter-start-date" class="input input-bordered w-full md:w-40 bg-base-100" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-              <input type="text" id="customer-filter-end-date" class="input input-bordered w-full md:w-40 bg-base-100" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
-              <select id="customer-reservation-date-range" class="select select-bordered w-full md:w-44 bg-base-100">
+              <input type="text" id="customer-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="customerDetails.filters.search">
+              <input type="text" id="customer-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="customer-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="customer-reservation-date-range" class="form-select w-auto">
                 <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
                 <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
                 <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
                 <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
               </select>
-              <select id="customer-reservation-status-filter" class="select select-bordered w-full md:w-48 bg-base-100">
+              <select id="customer-reservation-status-filter" class="form-select w-auto">
                 <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
                 <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
                 <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
@@ -400,8 +400,8 @@
               <button type="button" class="btn btn-outline btn-secondary" id="customer-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="customer-project-search" class="input input-bordered w-full flex-1 min-w-[14rem] bg-base-100" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
-              <select id="customer-project-status-filter" class="select select-bordered w-full md:w-48 bg-base-100">
+              <input type="text" id="customer-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+              <select id="customer-project-status-filter" class="form-select w-auto">
                 <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
                 <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
                 <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
