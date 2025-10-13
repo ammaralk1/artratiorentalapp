@@ -11,9 +11,9 @@ migrateOldData();
 checkAuth();
 registerReservationGlobals();
 
-initDashboardShell();
 initProjectsPage();
 
 document.addEventListener('DOMContentLoaded', () => {
+  initDashboardShell();
   initThemeToggle();
 });
