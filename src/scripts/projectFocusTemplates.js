@@ -257,37 +257,60 @@ export function buildProjectFocusCard(project, {
     }
   ];
 
-  const sectionsHtml = [
-    buildCardSection('projectCards.groups.meta', 'بيانات المشروع', metaRows),
-    buildCardSection('projectCards.groups.reservations', 'موجز الحجز', reservationStats),
-    buildCardSection('projectCards.groups.payment', 'ملخص الدفع', paymentStats)
-  ].filter(Boolean).join('');
+  const infoLines = [
+    customerName ? `👤 ${escapeHtml(customerName)}` : '',
+    companyName ? `🏢 ${escapeHtml(companyName)}` : '',
+    typeLabel ? `🏷️ ${escapeHtml(typeLabel)}` : '',
+    `📅 ${escapeHtml(formatDateRangeDetailed(project?.start, project?.end))}`,
+    crewPreview ? `😎 ${escapeHtml(t('projectCards.stats.crewLabel', 'عدد الطاقم'))}: ${escapeHtml(crewPreview)}` : `😎 ${escapeHtml(t('projectCards.stats.crewLabel', 'عدد الطاقم'))}: ${normalizeNumbers(String(crewAssignmentsTotal))}`,
+    `🔗 ${escapeHtml(t('projectCards.stats.reservationsShort', 'الحجوزات'))}: ${normalizeNumbers(String(reservationList.length))}`
+  ].filter(Boolean).map((line) => `<span>${line}</span>`).join('');
+
+  const financialLines = [
+    `💸 ${formatCurrencyLocalized(projectTotals.expensesTotal)}`,
+    `💵 ${formatCurrencyLocalized(reservationsTotal)}`,
+    `🧮 ${formatCurrencyLocalized(overallTotal)}`
+  ].map((line) => `<span>${line}</span>`).join('');
+
+  const statusBadge = `<span class="badge ${statusClass} text-white fw-semibold">${escapeHtml(statusLabel)}</span>`;
+  const paymentBadge = `<span class="badge ${paymentChipClass === 'status-paid' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} fw-semibold">${escapeHtml(paymentStatusLabel)}</span>`;
+
+  const projectMetaBadges = [
+    projectCodeDisplay ? `<span class="badge bg-primary-subtle text-primary fw-semibold">#${escapeHtml(projectCodeDisplay)}</span>` : '',
+    typeLabel ? `<span class="badge bg-base-200 text-base-content fw-semibold">${escapeHtml(typeLabel)}</span>` : ''
+  ].filter(Boolean).join(' ');
 
   const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const pendingLabel = t('projects.focus.pending', '⌛ بانتظار التأكيد');
-  const confirmChipClass = confirmed ? 'status-confirmed' : 'status-pending';
   const confirmText = confirmed ? confirmedLabel : pendingLabel;
-  const actionsHtml = `<div class="project-focus-card__actions"><span class="reservation-chip ${confirmChipClass} project-focus-card__confirm-indicator">${escapeHtml(confirmText)}</span></div>`;
-
-  const topBadges = [projectCodeBadge, categoryBadge, statusChip, paymentChip]
-    .filter(Boolean)
-    .join('\n          ');
-  const cardClassNames = ['project-focus-card', ...cardStateClasses].join(' ');
+  const confirmationControl = confirmed
+    ? `<span class="badge bg-success-subtle text-success fw-semibold">${escapeHtml(confirmText)}</span>`
+    : `<button class="btn btn-success btn-sm" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
 
   return `
     <div class="project-card-grid__item">
-      <article class="${cardClassNames}" data-project-id="${projectIdAttr}">
-        <div class="project-focus-card__accent"></div>
-        <div class="project-focus-card__top">
-          ${topBadges}
+      <div class="box h-100 project-card project-focus-card" data-project-id="${projectIdAttr}">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+          <div>
+            <h6 class="mb-1">${escapeHtml(title)}</h6>
+            <div class="d-flex flex-wrap gap-2 small text-muted">${projectMetaBadges}</div>
+          </div>
+          <div class="d-flex flex-column align-items-end gap-2">
+            ${statusBadge}
+            ${paymentBadge}
+          </div>
         </div>
-        <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
-        <p class="project-focus-card__description">${descriptionText}</p>
-        <div class="project-focus-card__sections">
-          ${sectionsHtml}
+        <p class="text-muted small mb-3">${descriptionText}</p>
+        <div class="d-flex flex-column gap-1 text-muted small">
+          ${infoLines}
         </div>
-        ${actionsHtml}
-      </article>
+        <div class="d-flex flex-column gap-1 text-muted small mt-3">
+          ${financialLines}
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+          ${confirmationControl}
+        </div>
+      </div>
     </div>
   `;
 }
