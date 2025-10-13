@@ -700,9 +700,9 @@
 
   :where(html.dark, body.dark) .glass-card,
   :where(html.dark, body.dark) .box {
-    background: #0b1120f0;
+    background: #18213beb;
     border-color: rgba(63, 93, 245, 0.28);
-    box-shadow: 0 28px 55px rgba(4, 9, 22, 0.65);
+    box-shadow: 0 28px 55px #040916a6;
   }
 
   :where(html.dark, body.dark) .dashboard-greeting-panel {
@@ -3953,9 +3953,9 @@
   :where(html.dark, body.dark) .table-responsive:not(.customer-table-wrapper),
   :where(html.dark, body.dark) .card,
   :where(html.dark, body.dark) .modal-content {
-    background: #0b1120f0;
+    background: #18213beb;
     border: 1px solid rgba(63, 93, 245, 0.28);
-    box-shadow: 0 28px 55px rgba(4, 9, 22, 0.65);
+    box-shadow: 0 28px 55px #040916a6;
   }
 
   :where(html.dark, body.dark) .management-form-header h4,
