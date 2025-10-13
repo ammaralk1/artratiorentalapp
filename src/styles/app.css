@@ -4212,19 +4212,19 @@
   }
 
   .customer-page .dashboard-header {
-    background: transparent !important;
-    background-color: transparent !important;
-    border-color: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
+    background: linear-gradient(135deg, rgba(248, 251, 255, 0.86) 0%, rgba(233, 241, 255, 0.82) 52%, rgba(226, 237, 255, 0.8) 100%) !important;
+    border-color: rgba(148, 163, 184, 0.18);
+    box-shadow: 0 20px 44px rgba(15, 23, 42, 0.14);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
 
   :where(html.dark, body.dark) .customer-page .dashboard-header {
-    background: transparent !important;
-    border-color: transparent !important;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    background: linear-gradient(140deg, rgba(24, 33, 59, 0.94) 0%, rgba(18, 28, 52, 0.9) 52%, rgba(12, 22, 48, 0.84) 100%) !important;
+    border-color: rgba(63, 93, 245, 0.3) !important;
+    box-shadow: var(--customer-shadow);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
   }
 
   :where(html.dark, body.dark) .customer-page .dashboard-header .mobile-sidebar-toggle,
