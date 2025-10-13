@@ -35,7 +35,7 @@ function formatDateTimeLocalized(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   try {
     const formatter = new Intl.DateTimeFormat(locale, {
       day: '2-digit',
@@ -60,7 +60,7 @@ function formatDateTimeLocalized(value) {
 export function formatCurrencyLocalized(value) {
   const number = Number(value) || 0;
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US';
   const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0

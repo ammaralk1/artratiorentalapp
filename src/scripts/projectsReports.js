@@ -875,7 +875,7 @@ function formatProjectPeriod(start, end) {
 function formatCurrency(value) {
   const number = Number(value) || 0;
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
@@ -886,19 +886,19 @@ function formatCurrency(value) {
 
 function formatNumber(value) {
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   return normalizeNumbers(new Intl.NumberFormat(locale).format(value));
 }
 
 function formatCompactNumber(value) {
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   return normalizeNumbers(new Intl.NumberFormat(locale, { notation: 'compact', compactDisplay: 'short' }).format(value));
 }
 
 function getChartLocale() {
   const lang = getCurrentLanguage();
-  return lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  return lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
 }
 
 function escapeHtml(value = '') {

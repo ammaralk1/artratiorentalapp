@@ -14,7 +14,7 @@ export function escapeHtml(value = '') {
 export function formatCurrency(value) {
   const number = Number(value) || 0;
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0

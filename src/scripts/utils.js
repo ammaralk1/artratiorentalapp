@@ -173,7 +173,7 @@ export function formatDateTime(dateStr, overrides = {}) {
     || (typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : null)
     || 'ar';
   const isArabic = String(activeLanguage).toLowerCase().startsWith('ar');
-  const locale = isArabic ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = isArabic ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
 
   const formatter = new Intl.DateTimeFormat(locale, {
     dateStyle: 'short',

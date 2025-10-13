@@ -353,7 +353,7 @@ function formatDateLocalized(value) {
     return '—';
   }
   const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   try {
     return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
   } catch (error) {

@@ -67,7 +67,7 @@ function getActiveLanguage() {
 function formatCurrency(value) {
   const amount = Number(value) || 0;
   const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   try {
     const formatted = new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
@@ -89,7 +89,7 @@ function formatDateLocalized(value) {
     return '—';
   }
   const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   try {
     return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
   } catch (error) {
