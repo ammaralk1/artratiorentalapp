@@ -321,24 +321,9 @@ function bindTechnicianProjectCards() {
 }
 
 function handleTechnicianProjectCardClick(event) {
-  const actionButton = event.target.closest('[data-action]');
-  if (actionButton) {
-    const action = actionButton.dataset.action;
-    const projectId = actionButton.dataset.id || actionButton.dataset.projectId || '';
-    if (!projectId) return;
-    if (action === 'confirm-project') {
-      event.preventDefault();
-      confirmTechnicianProject(projectId);
-      return;
-    }
-    if (action === 'view' || action === 'highlight') {
-      event.preventDefault();
-      openTechnicianProjectDetails(projectId);
-      return;
-    }
-  }
-
   const card = event.target.closest('.project-focus-card');
+  if (!card) return;
+  console.debug('[technician] card click', card.dataset.projectId);
   if (!card) return;
   const ignored = event.target.closest('[data-ignore-project-modal]');
   if (ignored) return;
@@ -490,7 +475,7 @@ function updateTechnicianProjects() {
 
   if (!filtered.length) {
     const emptyMessage = t('technicianProjects.empty', container.dataset.empty || 'لا توجد مشاريع مرتبطة بهذا العضو.');
-    container.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
+    container.innerHTML = `<div class="col-12"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
     return;
   }
 
@@ -508,41 +493,6 @@ function updateTechnicianProjects() {
     .join('');
 
   bindTechnicianProjectCards();
-}
-
-async function confirmTechnicianProject(projectId) {
-  const { projects = [] } = loadData();
-
-  const project = projects.find((entry) => {
-    const identifier = entry?.projectId ?? entry?.id;
-    return identifier != null && String(identifier) === String(projectId);
-  }) || projects.find((entry) => String(entry?.id) === String(projectId));
-
-  if (!project) {
-    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
-    return;
-  }
-
-  if (project.confirmed === true || project.confirmed === 'true') {
-    showToast(t('projects.toast.alreadyConfirmed', 'ℹ️ المشروع مؤكّد مسبقًا'));
-    return;
-  }
-
-  const targetId = project.projectId ?? project.id;
-  if (!targetId) {
-    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
-    return;
-  }
-
-  try {
-    await updateProjectApi(targetId, { confirmed: true });
-    showToast(t('projects.toast.confirmed', '✅ تم تأكيد المشروع'));
-    updateTechnicianProjects();
-  } catch (error) {
-    console.error('[technicianDetails] confirmTechnicianProject failed', error);
-    const message = error?.message || t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
-    showToast(message, 'error');
-  }
 }
 
 function groupReservationsByProject(reservations = []) {

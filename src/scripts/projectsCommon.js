@@ -144,7 +144,7 @@ export function buildProjectCard(project, { techniciansMap = new Map(), clientNa
     : '';
 
   return `
-    <div class="project-card-grid__item">
+    <div class="col-12 col-md-6 col-xl-4">
       <div class="box h-100 project-card">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div>

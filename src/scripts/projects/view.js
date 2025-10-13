@@ -257,7 +257,7 @@ export function renderFocusCards() {
   const cards = buildFocusCards();
   if (!cards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
-    dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
+    dom.focusCards.innerHTML = `<div class="col-12"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
     return;
   }
 
@@ -417,67 +417,51 @@ function renderFocusCard(project, category) {
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
   const confirmationControl = isConfirmed
-    ? `<span class="badge bg-success-subtle text-success fw-semibold">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
-    : `<button class="btn btn-success btn-sm" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
+    ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
+    : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
 
   const highlightLabel = t('projects.focus.actions.highlight', '🔍 عرض في القائمة');
   const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
 
-  const statusBadge = `<span class="badge ${statusClass} text-white fw-semibold">${escapeHtml(statusLabel)}</span>`;
-  const paymentBadge = `<span class="badge ${paymentChipClass === 'status-paid' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'} fw-semibold">${escapeHtml(paymentStatusLabel)}</span>`;
-
-  const projectMeta = [
-    projectCodeDisplay ? `<span class="badge bg-primary-subtle text-primary fw-semibold">#${escapeHtml(projectCodeDisplay)}</span>` : '',
-    categoryLabel ? `<span class="badge bg-base-200 text-base-content fw-semibold">${escapeHtml(categoryLabel)}</span>` : '',
-    typeLabel ? `<span class="badge bg-base-200 text-base-content fw-semibold">${escapeHtml(typeLabel)}</span>` : ''
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const infoLines = [
-    clientName ? `👤 ${escapeHtml(clientName)}` : '',
-    companyName ? `🏢 ${escapeHtml(companyName)}` : '',
-    `📅 ${escapeHtml(combineProjectDateRange(project.start, project.end))}`,
-    `😎 ${escapeHtml(t('projectCards.stats.crewCount', 'عدد الطاقم'))}: ${normalizeNumbers(String(crewAssignmentsTotal))}`,
-    `🔗 ${escapeHtml(t('projectCards.stats.reservationsShort', 'الحجوزات'))}: ${normalizeNumbers(String(reservationsCount))}`
-  ].filter(Boolean).map((line) => `<span>${line}</span>`).join('');
-
-  const financialLines = [
-    `💸 ${formatCurrency(expensesTotal)}`,
-    `💵 ${formatCurrency(reservationsTotal)}`,
-    `🧮 ${formatCurrency(overallTotal)}`
-  ].map((line) => `<span>${line}</span>`).join('');
-
-  const actions = `
-    <div class="d-flex flex-wrap gap-2 mt-3">
-      ${confirmationControl}
-      <button class="btn btn-outline-secondary btn-sm" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
-      <button class="btn btn-primary btn-sm" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
-    </div>
-  `;
-
   return `
-    <div class="project-card-grid__item">
-      <div class="box h-100 project-card project-focus-card" data-project-id="${projectIdAttr}">
-        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-          <div>
-            <h5 class="mb-1">${escapeHtml(title)}</h5>
-            <div class="d-flex flex-wrap gap-2 small text-muted">${projectMeta}</div>
+    <div class="col-12 col-md-6 col-lg-4">
+      <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+        <div class="project-focus-card__accent"></div>
+        <div class="project-focus-card__top">
+          ${projectCodeBadge}
+          ${typeBadge}
+          ${categoryMetaTag}
+          ${statusChip}
+          ${paymentChip}
+        </div>
+        <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
+        <p class="project-focus-card__description">${escapeHtml(descriptionText)}</p>
+        <div class="project-focus-card__sections">
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.project', 'ملخص المشروع'))}</span>
+            <div class="project-focus-card__section-box">
+              ${projectInfoRows}
+            </div>
           </div>
-          <div class="d-flex flex-column align-items-end gap-2">
-            ${statusBadge}
-            ${paymentBadge}
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الجانب المالي'))}</span>
+            <div class="project-focus-card__section-box">
+              ${financialRows}
+            </div>
+          </div>
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</span>
+            <div class="project-focus-card__section-box">
+              ${reservationRows}
+            </div>
           </div>
         </div>
-        <p class="text-muted small mb-3">${escapeHtml(descriptionText)}</p>
-        <div class="d-flex flex-column gap-1 text-muted small">
-          ${infoLines}
+        <div class="project-focus-card__actions">
+          ${confirmationControl}
+          <button class="btn btn-sm btn-outline-secondary" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
+          <button class="btn btn-sm btn-primary" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
         </div>
-        <div class="d-flex flex-column gap-1 text-muted small mt-3">
-          ${financialLines}
-        </div>
-        ${actions}
-      </div>
+      </article>
     </div>
   `;
 }

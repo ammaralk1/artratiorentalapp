@@ -256,23 +256,6 @@ function attachCustomerProjectCardEvents() {
 }
 
 function handleCustomerProjectCardClick(event) {
-  const actionButton = event.target.closest('[data-action]');
-  if (actionButton) {
-    const action = actionButton.dataset.action;
-    const projectId = actionButton.dataset.id || actionButton.dataset.projectId || '';
-    if (!projectId) return;
-    if (action === 'confirm-project') {
-      event.preventDefault();
-      confirmCustomerProject(projectId);
-      return;
-    }
-    if (action === 'view' || action === 'highlight') {
-      event.preventDefault();
-      openCustomerProjectDetails(projectId);
-      return;
-    }
-  }
-
   const card = event.target.closest('.project-focus-card');
   if (!card) return;
   const ignored = event.target.closest('[data-ignore-project-modal]');
@@ -280,43 +263,6 @@ function handleCustomerProjectCardClick(event) {
   const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
   if (!projectId) return;
   openCustomerProjectDetails(projectId);
-}
-
-async function confirmCustomerProject(projectId) {
-  const {
-    projects = []
-  } = loadData();
-
-  const project = projects.find((entry) => {
-    const identifier = entry?.projectId ?? entry?.id;
-    return identifier != null && String(identifier) === String(projectId);
-  }) || projects.find((entry) => String(entry?.id) === String(projectId));
-
-  if (!project) {
-    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
-    return;
-  }
-
-  if (project.confirmed === true || project.confirmed === 'true') {
-    showToast(t('projects.toast.alreadyConfirmed', 'ℹ️ المشروع مؤكّد مسبقًا'));
-    return;
-  }
-
-  const targetId = project.projectId ?? project.id;
-  if (!targetId) {
-    showToast(t('projects.toast.editMissing', '⚠️ تعذّر العثور على المشروع المطلوب تعديله'));
-    return;
-  }
-
-  try {
-    await updateProjectApi(targetId, { confirmed: true });
-    showToast(t('projects.toast.confirmed', '✅ تم تأكيد المشروع'));
-    updateCustomerProjects();
-  } catch (error) {
-    console.error('[customerDetails] confirmCustomerProject failed', error);
-    const message = error?.message || t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
-    showToast(message, 'error');
-  }
 }
 
 function setupCustomerProjectModal() {
@@ -384,7 +330,7 @@ function updateCustomerProjects() {
 
   if (!filtered.length) {
     const emptyMessage = t('customerProjects.empty', container.dataset.empty || 'لا توجد مشاريع مرتبطة بهذا العميل.');
-    container.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
+    container.innerHTML = `<div class="col-12"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
     return;
   }
 
