@@ -4211,12 +4211,20 @@
     border-color: var(--customer-border);
   }
 
+  .customer-page .dashboard-header {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
   :where(html.dark, body.dark) .customer-page .dashboard-header {
-    background: linear-gradient(140deg, #18213bf5, #121c34eb 52%, #0c1630e0) !important;
-    border-color: var(--customer-border) !important;
-    box-shadow: var(--customer-shadow);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   :where(html.dark, body.dark) .customer-page .dashboard-header .mobile-sidebar-toggle,
