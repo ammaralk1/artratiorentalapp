@@ -277,7 +277,10 @@ export function buildProjectFocusCard(project, {
 
   const projectMetaBadges = [
     projectCodeDisplay ? `<span class="badge bg-primary-subtle text-primary fw-semibold">#${escapeHtml(projectCodeDisplay)}</span>` : '',
-    typeLabel ? `<span class="badge bg-base-200 text-base-content fw-semibold">${escapeHtml(typeLabel)}</span>` : ''
+    typeLabel ? `<span class="badge bg-base-200 text-base-content fw-semibold">${escapeHtml(typeLabel)}</span>` : '',
+    categoryBadge?
+      categoryBadge.replace('project-focus-card__badge', 'badge bg-base-200 text-base-content fw-semibold')
+      : ''
   ].filter(Boolean).join(' ');
 
   const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
@@ -286,6 +289,8 @@ export function buildProjectFocusCard(project, {
   const confirmationControl = confirmed
     ? `<span class="badge bg-success-subtle text-success fw-semibold">${escapeHtml(confirmText)}</span>`
     : `<button class="btn btn-success btn-sm" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
+  const highlightLabel = t('projects.focus.actions.highlight', '🔍 عرض في القائمة');
+  const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
 
   return `
     <div class="project-card-grid__item">
@@ -309,6 +314,8 @@ export function buildProjectFocusCard(project, {
         </div>
         <div class="d-flex flex-wrap gap-2 mt-3">
           ${confirmationControl}
+          <button class="btn btn-outline-secondary btn-sm" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
+          <button class="btn btn-primary btn-sm" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
         </div>
       </div>
     </div>
