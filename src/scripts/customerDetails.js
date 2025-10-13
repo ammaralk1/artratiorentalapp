@@ -60,6 +60,42 @@ function applyQuickRangeToInputs(range, startInput, endInput) {
   }
 }
 
+function parseInputDate(value, { endOfDay = false } = {}) {
+  if (!value) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  const isoCandidate = normalized.includes('T') ? normalized : `${normalized}T00:00:00`;
+  const date = new Date(isoCandidate);
+  if (Number.isNaN(date.getTime())) return null;
+  if (endOfDay) {
+    date.setHours(23, 59, 59, 999);
+  } else {
+    date.setHours(0, 0, 0, 0);
+  }
+  return date;
+}
+
+function getProjectPrimaryDate(project) {
+  const candidates = [
+    project?.start,
+    project?.start_datetime,
+    project?.startDatetime,
+    project?.startDate,
+    project?.createdAt,
+    project?.created_at
+  ];
+
+  for (const value of candidates) {
+    if (!value) continue;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) continue;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  return null;
+}
+
 export function renderCustomerReservations(customerId) {
   const container = document.getElementById("customer-reservations");
   if (!container) return;
@@ -214,13 +250,27 @@ function getCustomerProjectsElements() {
   return {
     container: document.getElementById('customer-projects'),
     searchInput: document.getElementById('customer-project-search'),
+    startInput: document.getElementById('customer-project-start-date'),
+    endInput: document.getElementById('customer-project-end-date'),
+    rangeSelect: document.getElementById('customer-project-date-range'),
     statusSelect: document.getElementById('customer-project-status-filter'),
     clearBtn: document.getElementById('customer-projects-clear-filters')
   };
 }
 
 function setupCustomerProjectsUI() {
-  const { searchInput, statusSelect, clearBtn } = getCustomerProjectsElements();
+  const { searchInput, statusSelect, clearBtn, startInput, endInput, rangeSelect } = getCustomerProjectsElements();
+
+  if (window.flatpickr) {
+    if (startInput && !startInput.dataset.datepickerAttached) {
+      window.flatpickr(startInput, { dateFormat: 'Y-m-d' });
+      startInput.dataset.datepickerAttached = 'true';
+    }
+    if (endInput && !endInput.dataset.datepickerAttached) {
+      window.flatpickr(endInput, { dateFormat: 'Y-m-d' });
+      endInput.dataset.datepickerAttached = 'true';
+    }
+  }
 
   if (searchInput && !searchInput.dataset.listenerAttached) {
     searchInput.addEventListener('input', () => {
@@ -237,11 +287,52 @@ function setupCustomerProjectsUI() {
     statusSelect.dataset.listenerAttached = 'true';
   }
 
+  if (startInput && !startInput.dataset.listenerAttached) {
+    startInput.addEventListener('change', () => {
+      startInput.value = normalizeNumbers(startInput.value);
+      if (rangeSelect) rangeSelect.value = '';
+      updateCustomerProjects();
+    });
+    startInput.dataset.listenerAttached = 'true';
+  }
+
+  if (endInput && !endInput.dataset.listenerAttached) {
+    endInput.addEventListener('change', () => {
+      endInput.value = normalizeNumbers(endInput.value);
+      if (rangeSelect) rangeSelect.value = '';
+      updateCustomerProjects();
+    });
+    endInput.dataset.listenerAttached = 'true';
+  }
+
+  if (rangeSelect && !rangeSelect.dataset.listenerAttached) {
+    rangeSelect.addEventListener('change', () => {
+      applyQuickRangeToInputs(rangeSelect.value, startInput, endInput);
+      updateCustomerProjects();
+    });
+    rangeSelect.dataset.listenerAttached = 'true';
+  }
+
   if (clearBtn && !clearBtn.dataset.listenerAttached) {
     clearBtn.addEventListener('click', () => {
-      const { searchInput: sInput, statusSelect: sSelect } = getCustomerProjectsElements();
+      const {
+        searchInput: sInput,
+        statusSelect: sSelect,
+        startInput: sStart,
+        endInput: sEnd,
+        rangeSelect: sRange
+      } = getCustomerProjectsElements();
       if (sInput) sInput.value = '';
       if (sSelect) sSelect.value = '';
+      if (sRange) sRange.value = '';
+      if (sStart) {
+        if (sStart._flatpickr) sStart._flatpickr.clear();
+        sStart.value = '';
+      }
+      if (sEnd) {
+        if (sEnd._flatpickr) sEnd._flatpickr.clear();
+        sEnd.value = '';
+      }
       updateCustomerProjects();
     });
     clearBtn.dataset.listenerAttached = 'true';
@@ -286,11 +377,46 @@ function ensureProjectDetailsModal() {
 }
 
 function updateCustomerProjects() {
-  const { container, searchInput, statusSelect } = getCustomerProjectsElements();
+  const {
+    container,
+    searchInput,
+    statusSelect,
+    startInput,
+    endInput,
+    rangeSelect
+  } = getCustomerProjectsElements();
   if (!container || !customerProjectsContext.currentId) return;
 
   const searchTerm = normalizeSearchText(searchInput?.value || '');
   const statusFilter = statusSelect?.value || '';
+  let startDate = normalizeNumbers(startInput?.value || '').trim();
+  let endDate = normalizeNumbers(endInput?.value || '').trim();
+  let quickRange = rangeSelect?.value || '';
+
+  const allowedRanges = new Set(['', 'today', 'week', 'month']);
+  if (!allowedRanges.has(quickRange)) {
+    quickRange = '';
+    if (rangeSelect) rangeSelect.value = '';
+    if (startInput) {
+      if (startInput._flatpickr) startInput._flatpickr.clear();
+      startInput.value = '';
+    }
+    if (endInput) {
+      if (endInput._flatpickr) endInput._flatpickr.clear();
+      endInput.value = '';
+    }
+    startDate = '';
+    endDate = '';
+  }
+
+  if (!startDate && !endDate && quickRange) {
+    const { startDate: resolvedStart, endDate: resolvedEnd } = resolveQuickDateRange(quickRange);
+    startDate = resolvedStart;
+    endDate = resolvedEnd;
+  }
+
+  const startDateObj = parseInputDate(startDate);
+  const endDateObj = parseInputDate(endDate, { endOfDay: true });
 
   const {
     projects = [],
@@ -321,10 +447,17 @@ function updateCustomerProjects() {
       if (projectStatus !== statusFilter) return false;
     }
 
+    if (startDateObj || endDateObj) {
+      const projectDate = getProjectPrimaryDate(project);
+      if (!projectDate) return false;
+      if (startDateObj && projectDate < startDateObj) return false;
+      if (endDateObj && projectDate > endDateObj) return false;
+    }
+
     return true;
   }).sort((a, b) => {
-    const aDate = new Date(a.start || a.createdAt || 0).getTime();
-    const bDate = new Date(b.start || b.createdAt || 0).getTime();
+    const aDate = getProjectPrimaryDate(a)?.getTime() || 0;
+    const bDate = getProjectPrimaryDate(b)?.getTime() || 0;
     return bDate - aDate;
   });
 
