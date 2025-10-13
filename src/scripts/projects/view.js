@@ -424,7 +424,7 @@ function renderFocusCard(project, category) {
   const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
 
   return `
-    <div class="col-12 col-md-6 col-xl-4">
+    <div class="col-12 col-md-6 col-lg-4">
       <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">

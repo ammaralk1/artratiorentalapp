@@ -275,7 +275,7 @@ export function buildProjectFocusCard(project, {
   const cardClassNames = ['project-focus-card', ...cardStateClasses].join(' ');
 
   return `
-    <div class="col-12 col-md-6 col-xl-4">
+    <div class="col-12 col-md-6 col-lg-4">
       <article class="${cardClassNames}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
