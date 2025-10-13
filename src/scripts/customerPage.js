@@ -372,6 +372,21 @@ function renderCurrencyCompact(display) {
   return `<span class="currency-amount">${amount}</span> <span class="currency-unit currency-unit--sm">${unit}</span>`;
 }
 
+function renderPaymentBreakdownHtml(paidDisplay, outstandingDisplay) {
+  const paidLabel = t('customerDetails.stats.paymentPaid', 'المدفوع');
+  const outstandingLabel = t('customerDetails.stats.paymentOutstandingLabel', 'المستحق');
+  return `
+    <div class="payment-line payment-line--paid">
+      <span class="payment-line-label">${paidLabel}</span>
+      ${renderCurrencyCompact(paidDisplay)}
+    </div>
+    <div class="payment-line payment-line--outstanding">
+      <span class="payment-line-label">${outstandingLabel}</span>
+      ${renderCurrencyCompact(outstandingDisplay)}
+    </div>
+  `;
+}
+
 const complianceLabelFallbacks = {
   excellent: 'Excellent commitment',
   good: 'On-time payments',
@@ -418,8 +433,7 @@ function updateHeroStats() {
     if (heroStatProjectsEl) heroStatProjectsEl.textContent = '0';
     if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsEmpty', 'لا توجد مشاريع مرتبطة بهذا العميل.');
     if (heroStatPaymentEl) {
-      const slash = '<span class="currency-divider">/</span>';
-      heroStatPaymentEl.innerHTML = `${renderCurrencyCompact(emptyCurrency)} ${slash} ${renderCurrencyCompact(emptyCurrency)}`;
+      heroStatPaymentEl.innerHTML = renderPaymentBreakdownHtml(emptyCurrency, emptyCurrency);
     }
     if (heroStatPaymentDescEl) {
       const breakdownLabel = t('customerDetails.stats.paymentBreakdown', 'مدفوع / مستحق');
@@ -581,8 +595,7 @@ function updateHeroStats() {
   const paidDisplay = formatCurrencyLocalized(projectFinancials.paid);
   const outstandingDisplay = formatCurrencyLocalized(projectFinancials.outstanding);
   if (heroStatPaymentEl) {
-    const slash = '<span class="currency-divider">/</span>';
-    heroStatPaymentEl.innerHTML = `${renderCurrencyCompact(paidDisplay)} ${slash} ${renderCurrencyCompact(outstandingDisplay)}`;
+    heroStatPaymentEl.innerHTML = renderPaymentBreakdownHtml(paidDisplay, outstandingDisplay);
   }
   if (heroStatPaymentDescEl) {
     const breakdownLabel = t('customerDetails.stats.paymentBreakdown', 'مدفوع / مستحق');

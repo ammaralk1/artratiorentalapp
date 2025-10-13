@@ -203,22 +203,6 @@
                     </div>
                   </article>
                   <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
-                    <span class="absolute right-4 top-4 rounded-xl bg-success/10 p-2 text-success">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M5 21v-10a1 1 0 0 1 1 -1h3v11"></path>
-                        <path d="M10 16h4"></path>
-                        <path d="M12 13l2 -2l-2 -2"></path>
-                        <path d="M14 11h3a1 1 0 0 1 1 1v9"></path>
-                      </svg>
-                    </span>
-                    <div class="space-y-2 pt-12 text-start">
-                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.payment">قيمة المدفوع/المستحق</span>
-                      <span id="customer-stat-payment" class="text-2xl font-bold text-base-content">0 / 0</span>
-                      <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-payment-desc" data-i18n data-i18n-key="customerDetails.stats.paymentBreakdown">مدفوع / مستحق</p>
-                    </div>
-                  </article>
-                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
                     <span class="absolute right-4 top-4 rounded-xl bg-info/10 p-2 text-info">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -233,6 +217,31 @@
                       <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.upcoming">الحجوزات القادمة</span>
                       <span id="customer-stat-upcoming" class="text-2xl font-bold text-base-content">0</span>
                       <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-upcoming-desc">—</p>
+                    </div>
+                  </article>
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-success/10 p-2 text-success">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M5 21v-10a1 1 0 0 1 1 -1h3v11"></path>
+                        <path d="M10 16h4"></path>
+                        <path d="M12 13l2 -2l-2 -2"></path>
+                        <path d="M14 11h3a1 1 0 0 1 1 1v9"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-3 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="customerDetails.stats.payment">قيمة المدفوع/المستحق</span>
+                      <div id="customer-stat-payment" class="payment-breakdown" aria-live="polite">
+                        <div class="payment-line payment-line--paid">
+                          <span class="payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentPaid">المدفوع</span>
+                          <span class="payment-line-value">0 SR</span>
+                        </div>
+                        <div class="payment-line payment-line--outstanding">
+                          <span class="payment-line-label" data-i18n data-i18n-key="customerDetails.stats.paymentOutstandingLabel">المستحق</span>
+                          <span class="payment-line-value">0 SR</span>
+                        </div>
+                      </div>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="customer-stat-payment-desc" data-i18n data-i18n-key="customerDetails.stats.paymentBreakdown">مدفوع / مستحق</p>
                     </div>
                   </article>
                   <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">

@@ -2395,3 +2395,34 @@ html[data-user-role="technician"] .requires-admin {
   opacity: 0.5;
   padding: 0 0.25rem;
 }
+
+.payment-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.payment-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.payment-line-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: hsl(var(--bc) / 0.65);
+}
+
+.payment-line--paid .currency-amount {
+  color: hsl(var(--su));
+}
+
+.payment-line--outstanding .payment-line-label {
+  color: hsl(var(--wa) / 0.8);
+}
+
+.payment-line--outstanding .currency-amount {
+  color: hsl(var(--wa));
+}
