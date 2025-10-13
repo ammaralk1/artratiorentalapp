@@ -2330,7 +2330,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
 
   const technicians = collectAssignedTechnicians(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, technicians, project);
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const { sequence, quoteNumber } = peekNextQuoteSequence();
   const now = new Date();
 

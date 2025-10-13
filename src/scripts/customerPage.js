@@ -338,14 +338,13 @@ function getActiveLanguage() {
 
 function formatNumberLocalized(value) {
   const number = Number(value) || 0;
-  const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
   try {
-    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(number);
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(number);
   } catch (error) {
     return String(number);
   }
 }
+
 
 function formatDateLocalized(value) {
   if (!value) return '—';

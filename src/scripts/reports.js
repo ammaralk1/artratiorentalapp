@@ -9,7 +9,6 @@ import { loadData } from './storage.js';
 
 let cachedLocale = null;
 let numberFormatter = null;
-let currencyFormatter = null;
 
 const state = {
   range: 'all',
@@ -121,27 +120,21 @@ function renderIfCustomRange() {
 function resetFormatters() {
   cachedLocale = null;
   numberFormatter = null;
-  currencyFormatter = null;
 }
 
 function getActiveLocale() {
   const lang = (getCurrentLanguage() || 'ar').toLowerCase();
-  return lang.startsWith('ar') ? 'ar-EG' : 'en-US';
+  return lang.startsWith('ar') ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
 }
 
 function getFormatters() {
   const language = getCurrentLanguage();
-  if (language !== cachedLocale || !numberFormatter || !currencyFormatter) {
+  if (language !== cachedLocale || !numberFormatter) {
     cachedLocale = language;
     const locale = getActiveLocale();
     numberFormatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
-    currencyFormatter = new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'SAR',
-      maximumFractionDigits: 0
-    });
   }
-  return { numberFormatter, currencyFormatter };
+  return { numberFormatter };
 }
 
 function getMonthLabel(date) {
@@ -1689,12 +1682,12 @@ async function renderTrendChart(data) {
         data: reservationsSeries
       },
       {
-        name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+        name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
         type: 'line',
         data: revenueSeries
       },
       {
-        name: translate('reservations.reports.chart.volume.series.net', 'صافي الربح (ر.س)', 'Net profit (SAR)'),
+        name: translate('reservations.reports.chart.volume.series.net', 'صافي الربح (SR)', 'Net profit (SR)'),
         type: 'line',
         data: netSeries,
         yAxisIndex: 1
@@ -1756,7 +1749,7 @@ async function renderTrendChart(data) {
         },
         {
           opposite: true,
-          seriesName: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+          seriesName: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
           axisTicks: { show: true },
           axisBorder: { show: true, color: '#22c55e' },
           labels: {
@@ -1764,7 +1757,7 @@ async function renderTrendChart(data) {
             formatter: (value) => formatCurrency(value)
           },
           title: {
-            text: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (ر.س)', 'Revenue (SAR)'),
+            text: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
             style: { color: '#22c55e' }
           }
         }
@@ -2221,9 +2214,8 @@ function formatNumber(value) {
 }
 
 function formatCurrency(value) {
-  const { currencyFormatter: cf } = getFormatters();
-  const formatted = cf.format(Math.max(0, Math.round(value || 0)));
-  return normalizeNumbers(formatted);
+  const amount = formatNumber(value);
+  return `${amount} SR`;
 }
 
 function normalizeBarcode(value) {

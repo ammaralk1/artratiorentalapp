@@ -154,7 +154,7 @@ import{t as e,n as p,d as st}from"./auth.js";import{c as $t,e as s,d as at,t as 
             <input type="text" class="form-control" id="project-edit-expense-label" placeholder="${s(e("projects.form.placeholders.expenseLabel","مثال: رسوم موقع التصوير"))}">
           </div>
           <div class="col-md-6">
-            <label class="form-label" for="project-edit-expense-amount">${s(e("projects.form.labels.expenseAmount","المبلغ (ر.س)"))}</label>
+            <label class="form-label" for="project-edit-expense-amount">${s(e("projects.form.labels.expenseAmount","المبلغ (SR)"))}</label>
             <input type="text" class="form-control" id="project-edit-expense-amount" inputmode="decimal" placeholder="0">
           </div>
           <div class="col-12 d-flex justify-content-end">

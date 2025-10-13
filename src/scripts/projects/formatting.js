@@ -19,7 +19,7 @@ export function formatCurrency(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(Math.round(number));
-  const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+  const currencyLabel = 'SR';
   return `${normalizeNumbers(formatted)} ${currencyLabel}`;
 }
 

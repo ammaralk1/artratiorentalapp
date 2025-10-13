@@ -120,7 +120,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const finalTotalDisplay = normalizeNumbers((finalTotal ?? 0).toFixed(2));
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
 
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const discountLabel = t('reservations.details.labels.discount', 'الخصم');
   const taxLabel = t('reservations.details.labels.tax', 'الضريبة (15%)');
   const crewTotalLabel = t('reservations.details.labels.crewTotal', 'إجمالي الفريق');

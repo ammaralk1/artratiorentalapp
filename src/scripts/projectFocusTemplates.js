@@ -776,7 +776,7 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
             <input type="text" class="form-control" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'مثال: رسوم موقع التصوير'))}">
           </div>
           <div class="col-md-6">
-            <label class="form-label" for="project-edit-expense-amount">${escapeHtml(t('projects.form.labels.expenseAmount', 'المبلغ (ر.س)'))}</label>
+            <label class="form-label" for="project-edit-expense-amount">${escapeHtml(t('projects.form.labels.expenseAmount', 'المبلغ (SR)'))}</label>
             <input type="text" class="form-control" id="project-edit-expense-amount" inputmode="decimal" placeholder="0">
           </div>
           <div class="col-12 d-flex justify-content-end">

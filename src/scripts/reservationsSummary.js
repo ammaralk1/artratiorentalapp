@@ -170,7 +170,7 @@ export function buildSummaryHtml({
   netProfit = null,
   totalKey = 'reservations.summary.total'
 }) {
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const totalDisplay = normalizeNumbers(String(total));
   const itemsCountDisplay = normalizeNumbers(String(itemsCount));
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays ?? 1));

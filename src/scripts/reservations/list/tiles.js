@@ -3,7 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
 
 export function buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap }) {
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const taxIncludedShort = t('reservations.list.taxIncludedShort', '(شامل الضريبة)');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
   const notesFallback = t('reservations.list.noNotes', 'لا توجد ملاحظات');

@@ -73,11 +73,11 @@ function formatCurrency(value) {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(Math.round(amount));
-    const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+  const currencyLabel = 'SR';
     return `${normalizeNumbers(formatted)} ${currencyLabel}`;
   } catch (error) {
     const fallback = Math.round(amount);
-    const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+  const currencyLabel = 'SR';
     return `${normalizeNumbers(String(fallback))} ${currencyLabel}`;
   }
 }
@@ -549,7 +549,7 @@ function renderTechnicianDetails(technician) {
     ? technician.notes
     : `<span data-i18n data-i18n-key="technicianDetails.fallback.notes">${t('technicianDetails.fallback.notes', '—')}</span>`;
 
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const currencySpan = `<span data-i18n data-i18n-key="reservations.create.summary.currency">${currencyLabel}</span>`;
   const wageValue = `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
 

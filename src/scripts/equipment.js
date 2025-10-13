@@ -704,7 +704,7 @@ function renderEquipmentItem({ item, index }) {
   const imageUrl = getEquipmentImage(item);
   const deleteLabel = t("equipment.item.actions.delete", "🗑️ حذف");
   const imageAlt = t("equipment.item.imageAlt", "صورة");
-  const currencyLabel = t("equipment.item.currency", "ريال");
+  const currencyLabel = t("equipment.item.currency", "SR");
   const canDelete = userCanManageDestructiveActions();
   const labels = {
     description: t("equipment.card.labels.description", "الوصف"),

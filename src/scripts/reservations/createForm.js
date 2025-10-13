@@ -940,7 +940,7 @@ function renderReservationItems(containerId = 'reservation-items') {
 
   const items = getSelectedItems();
   const noItemsMessage = t('reservations.create.equipment.noneAdded', 'لا توجد معدات مضافة');
-  const currencyLabel = t('reservations.create.summary.currency', 'ريال');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
   const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');

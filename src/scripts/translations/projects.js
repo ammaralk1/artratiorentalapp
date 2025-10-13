@@ -25,7 +25,7 @@ registerTranslations({
     'projects.form.labels.equipment': 'إضافة معدة',
     'projects.form.labels.quantity': 'الكمية',
     'projects.form.labels.expenseLabel': 'اسم المصروف',
-    'projects.form.labels.expenseAmount': 'المبلغ (ر.س)',
+    'projects.form.labels.expenseAmount': 'المبلغ (SR)',
 
     'projects.form.placeholders.title': 'مثال: تصوير منتج جديد',
     'projects.form.placeholders.description': 'ملخص عن المشروع والمتطلبات',
@@ -108,7 +108,7 @@ registerTranslations({
     'projects.table.headers.crew': 'الطاقم',
     'projects.table.headers.equipment': 'المعدات',
     'projects.table.headers.total': 'الإجمالي (مع الضريبة)',
-    'projects.table.headers.expenses': 'مصروفات (ر.س)',
+    'projects.table.headers.expenses': 'مصروفات (SR)',
     'projects.table.emptyInitial': 'لم يتم إنشاء مشاريع بعد.',
     'projects.table.emptyFiltered': 'لا توجد مشاريع مطابقة.',
 
@@ -296,7 +296,7 @@ registerTranslations({
     'projects.form.labels.equipment': 'Add Equipment',
     'projects.form.labels.quantity': 'Quantity',
     'projects.form.labels.expenseLabel': 'Expense Name',
-    'projects.form.labels.expenseAmount': 'Amount (SAR)',
+    'projects.form.labels.expenseAmount': 'Amount (SR)',
 
     'projects.form.placeholders.title': 'Example: New product shoot',
     'projects.form.placeholders.description': 'Project brief and requirements',
@@ -379,7 +379,7 @@ registerTranslations({
     'projects.table.headers.crew': 'Crew',
     'projects.table.headers.equipment': 'Equipment',
     'projects.table.headers.total': 'Total (with VAT)',
-    'projects.table.headers.expenses': 'Expenses (SAR)',
+    'projects.table.headers.expenses': 'Expenses (SR)',
     'projects.table.emptyInitial': 'No projects have been created yet.',
     'projects.table.emptyFiltered': 'No matching projects found.',
 

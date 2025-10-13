@@ -39,7 +39,7 @@ function formatTechnicianWage(technician = {}) {
     return '—';
   }
 
-  const wageSuffix = t('technicians.table.wageSuffix', 'ريال');
+  const wageSuffix = t('technicians.table.wageSuffix', 'SR');
   return `${normalizeNumbers(String(wage))} ${wageSuffix}`;
 }
 
