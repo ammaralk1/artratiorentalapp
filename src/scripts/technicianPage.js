@@ -199,20 +199,13 @@ function renderFinancialModal(state) {
 
 function openFinancialModal() {
   if (!financialModalEl) return;
-  if (typeof financialModalEl.showModal === 'function') {
-    if (!financialModalEl.open) {
-      financialModalEl.showModal();
-    }
-  } else {
-    financialModalEl.classList.add('modal-open');
-  }
+  financialModalEl.classList.remove('hidden');
+  financialModalEl.classList.add('modal-open');
 }
 
 function closeFinancialModal() {
   if (!financialModalEl) return;
-  if (typeof financialModalEl.close === 'function') {
-    financialModalEl.close();
-  }
+  financialModalEl.classList.add('hidden');
   financialModalEl.classList.remove('modal-open');
 }
 
@@ -492,14 +485,21 @@ financialModalCloseButtons.forEach((button) => {
   });
   button.dataset.listenerAttached = 'true';
 });
-
 if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
-  financialModalEl.addEventListener('cancel', (event) => {
-    event.preventDefault();
-    closeFinancialModal();
+  financialModalEl.addEventListener('click', (event) => {
+    if (event.target === financialModalEl) {
+      closeFinancialModal();
+    }
   });
   financialModalEl.dataset.listenerAttached = 'true';
 }
+
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && financialModalEl && financialModalEl.classList.contains('modal-open')) {
+    closeFinancialModal();
+  }
+});
 
 window.showReservationDetails = showReservationDetails;
 
