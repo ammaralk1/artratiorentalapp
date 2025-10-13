@@ -4215,15 +4215,20 @@
   }
 
   :where(html.dark, body.dark) .customer-page .dashboard-header {
-    background: var(--customer-surface);
-    border-color: var(--customer-border);
+    background: linear-gradient(140deg, rgba(24, 33, 59, 0.96) 0%, rgba(18, 28, 52, 0.92) 52%, rgba(12, 22, 48, 0.88) 100%) !important;
+    border-color: var(--customer-border) !important;
     box-shadow: var(--customer-shadow);
+    backdrop-filter: blur(18px);
   }
 
   :where(html.dark, body.dark) .customer-page .dashboard-header .mobile-sidebar-toggle,
   :where(html.dark, body.dark) .customer-page .dashboard-header .btn-ghost {
     border-color: rgba(63, 93, 245, 0.28);
     color: rgba(226, 232, 240, 0.9);
+  }
+
+  :where(html.dark, body.dark) .customer-page .dashboard-header-nav {
+    background: transparent;
   }
 
   :where(html.dark, body.dark) .customer-page .customer-primary-nav {
@@ -4272,6 +4277,62 @@
   :where(html.dark, body.dark) .customer-page .tab-button:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px var(--customer-focus-ring), 0 12px 26px rgba(4, 9, 22, 0.45);
+  }
+
+  :where(html.dark, body.dark) .customer-page .customer-tabbar {
+    background: var(--customer-surface-muted);
+    border-color: var(--customer-border);
+    box-shadow: var(--customer-shadow);
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats > article {
+    background: var(--customer-surface);
+    border: 1px solid var(--customer-border);
+    box-shadow: var(--customer-shadow);
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content"] {
+    color: rgba(226, 232, 240, 0.92) !important;
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content/60"] {
+    color: rgba(148, 163, 184, 0.78) !important;
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-details > * {
+    background: var(--customer-input);
+    border: 1px solid var(--customer-border);
+    border-radius: 1.75rem;
+    padding: 1.2rem 1.4rem;
+    box-shadow: var(--customer-shadow);
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content"] {
+    color: rgba(226, 232, 240, 0.92) !important;
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content/60"],
+  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content/70"] {
+    color: rgba(148, 163, 184, 0.78) !important;
+  }
+
+  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline,
+  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline:hover {
+    border-color: var(--customer-border-strong);
+    color: rgba(226, 232, 240, 0.95);
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.18), rgba(96, 165, 250, 0.24));
+  }
+
+  :where(html.dark, body.dark) .customer-page .payment-line {
+    background: rgba(12, 18, 40, 0.92);
+    border: 1px solid rgba(63, 93, 245, 0.28);
+    border-radius: 1.25rem;
+    padding: 0.85rem 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.35);
+  }
+
+  :where(html.dark, body.dark) .customer-page .payment-line-label {
+    color: rgba(203, 213, 225, 0.78);
   }
 
   :where(html.dark, body.dark) .customer-page .bg-primary\/10 {
