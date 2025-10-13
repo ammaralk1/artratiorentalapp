@@ -330,7 +330,7 @@ function updateCustomerProjects() {
 
   if (!filtered.length) {
     const emptyMessage = t('customerProjects.empty', container.dataset.empty || 'لا توجد مشاريع مرتبطة بهذا العميل.');
-    container.innerHTML = `<div class="col-12"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
+    container.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info text-center mb-0">${emptyMessage}</div></div>`;
     return;
   }
 

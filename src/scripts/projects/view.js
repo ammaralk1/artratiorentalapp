@@ -257,7 +257,7 @@ export function renderFocusCards() {
   const cards = buildFocusCards();
   if (!cards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
-    dom.focusCards.innerHTML = `<div class="col-12"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
+    dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
     return;
   }
 
@@ -424,7 +424,7 @@ function renderFocusCard(project, category) {
   const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
 
   return `
-    <div class="col-12 col-md-6 col-lg-4">
+    <div class="project-card-grid__item">
       <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
