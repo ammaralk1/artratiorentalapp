@@ -638,7 +638,7 @@ export function formatDateTimeLocalized(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-GB';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-GB';
   const formatter = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',

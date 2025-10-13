@@ -101,7 +101,7 @@ function formatEventTimeRange(startStr, endStr, isAllDay = false) {
     return '';
   }
 
-  const locale = getCurrentLanguage?.() === 'en' ? 'en-US' : 'ar-SA';
+  const locale = getCurrentLanguage?.() === 'en' ? 'en-US' : 'ar-SA-u-ca-gregory';
   const formatter = getTimeFormatter(locale);
   const startLabel = formatter.format(start);
 

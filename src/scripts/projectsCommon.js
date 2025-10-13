@@ -35,16 +35,27 @@ function formatDateTimeLocalized(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   const lang = getCurrentLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-GB';
-  const formatter = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  return normalizeNumbers(formatter.format(date));
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
+  try {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    return normalizeNumbers(formatter.format(date));
+  } catch (error) {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${month}/${day}/${year} ${hours}:${minutes}`;
+  }
 }
+
 
 export function formatCurrencyLocalized(value) {
   const number = Number(value) || 0;
@@ -54,7 +65,7 @@ export function formatCurrencyLocalized(value) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(Math.round(number));
-  const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+  const currencyLabel = 'SR';
   return `${normalizeNumbers(formatted)} ${currencyLabel}`;
 }
 

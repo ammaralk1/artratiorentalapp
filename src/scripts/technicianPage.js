@@ -67,7 +67,7 @@ function getActiveLanguage() {
 function formatCurrency(value) {
   const amount = Number(value) || 0;
   const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
   try {
     const formatted = new Intl.NumberFormat(locale, {
       minimumFractionDigits: 0,
@@ -89,22 +89,17 @@ function formatDateLocalized(value) {
     return '—';
   }
   const lang = getActiveLanguage();
-  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory' : 'en-US';
   try {
     return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
   } catch (error) {
-    return date.toLocaleDateString();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   }
 }
 
-function escapeHtml(value = '') {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function resolveTechnicianRate(technician = {}) {
   const candidates = [
@@ -201,12 +196,16 @@ function openFinancialModal() {
   if (!financialModalEl) return;
   financialModalEl.classList.remove('hidden');
   financialModalEl.classList.add('modal-open');
+  document.documentElement.classList.add('modal-open');
+  document.body.classList.add('overflow-hidden');
 }
 
 function closeFinancialModal() {
   if (!financialModalEl) return;
   financialModalEl.classList.add('hidden');
   financialModalEl.classList.remove('modal-open');
+  document.documentElement.classList.remove('modal-open');
+  document.body.classList.remove('overflow-hidden');
 }
 
 function getTechnicianEditButtons() {
