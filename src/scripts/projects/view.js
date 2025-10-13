@@ -313,14 +313,17 @@ function buildFocusCards() {
 
 function renderFocusCard(project, category) {
   const client = state.customers.find((c) => String(c.id) === String(project.clientId));
-  const clientName = client?.customerName || t('projects.fallback.unknownClient', 'Unknown client');
+  const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
   const companyName = (project.clientCompany || client?.companyName || '').trim();
   const crewCount = Array.isArray(project.technicians) ? project.technicians.length : 0;
   const reservationsForProject = getReservationsForProject(project.id);
   const reservationsCount = reservationsForProject.length;
   const expensesTotal = getProjectExpenses(project);
-  const { subtotal: projectSubtotal, applyTax, totalWithTax } = resolveProjectTotals(project);
+  const { subtotal: projectSubtotal, applyTax } = resolveProjectTotals(project);
   const description = (project.description || '').trim();
+  const descriptionText = description
+    ? truncateText(description, 110)
+    : t('projects.fallback.noDescription', 'لا يوجد وصف');
   const typeLabel = getProjectTypeLabel(project.type);
   const paymentStatus = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
   const paymentStatusLabel = t(`projects.paymentStatus.${paymentStatus}`, paymentStatus === 'paid' ? 'Paid' : 'Unpaid');
@@ -346,15 +349,13 @@ function renderFocusCard(project, category) {
   const categoryKey = categoryKeyMap[category] || categoryKeyMap.recent;
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const status = determineProjectStatus(project);
-  const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status]);
+  const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   const statusClass = statusBadgeClass[status] || 'bg-secondary';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
   if (isConfirmed) {
     cardStateClasses.push('project-focus-card--confirmed');
   }
-  const confirmLabel = t('projects.focus.actions.confirm', '✔️ تأكيد المشروع');
-  const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
 
   const reservationsTotals = reservationsForProject.reduce((acc, reservation) => {
     const net = resolveReservationNetTotal(reservation);
@@ -369,105 +370,97 @@ function renderFocusCard(project, category) {
 
   const reservationsTotal = Number(reservationsTotals.total.toFixed(2));
   const equipmentCountTotal = reservationsTotals.equipment;
-  const crewAssignmentsTotal = reservationsTotals.crew;
-
+  const crewAssignmentsTotal = reservationsTotals.crew || crewCount;
   const combinedTaxAmount = applyTax
     ? Number(((projectSubtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
     : 0;
   const overallTotal = Number((projectSubtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+
   const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
-  const categoryBadge = `<span class="badge project-focus-card__badge ${statusClass}">${escapeHtml(categoryLabel)}</span>`;
+  const typeBadge = typeLabel
+    ? `<span class="badge project-focus-card__badge bg-primary">${escapeHtml(typeLabel)}</span>`
+    : '';
+  const categoryMetaTag = categoryLabel
+    ? `<span class="project-focus-card__meta-tag">${escapeHtml(categoryLabel)}</span>`
+    : '';
   const statusChip = `<span class="project-focus-card__status-chip ${statusClass}">${escapeHtml(statusLabel)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
-  const reservationStats = [
-    {
-      icon: '📦',
-      label: t('projectCards.stats.equipmentCount', 'عدد المعدات'),
-      value: normalizeNumbers(String(equipmentCountTotal))
-    },
-    {
-      icon: '😎',
-      label: t('projectCards.stats.crewCount', 'عدد الطاقم'),
-      value: normalizeNumbers(String(crewAssignmentsTotal))
-    },
-    {
-      icon: '💵',
-      label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'),
-      value: formatCurrency(reservationsTotal)
-    }
-  ];
+  const buildRow = (icon, label, value) => `
+    <div class="project-focus-card__row">
+      <span class="project-focus-card__row-label">
+        ${icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : ''}
+        ${escapeHtml(label)}
+      </span>
+      <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
+    </div>
+  `;
 
-  const paymentStats = [
-    {
-      icon: '💳',
-      label: t('projectCards.stats.paymentStatus', 'حالة الدفع'),
-      value: paymentStatusLabel
-    },
-    {
-      icon: '💸',
-      label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'),
-      value: formatCurrency(expensesTotal)
-    },
-    {
-      icon: '🧮',
-      label: t('projectCards.stats.totalWithTax', 'الإجمالي مع الضريبة'),
-      value: formatCurrency(overallTotal)
-    }
-  ];
+  const projectInfoRows = [
+    { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
+    companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
+    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: typeLabel },
+    { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: combineProjectDateRange(project.start, project.end) }
+  ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
-  const projectSummaryRows = paymentStats
-    .map(({ icon, label, value }) => `<div class="project-focus-card__row"><span>${icon} ${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`)
-    .join('');
+  const financialRows = [
+    { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
+    { icon: '💸', label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'), value: formatCurrency(expensesTotal) },
+    { icon: '🧮', label: t('projectCards.stats.totalWithTax', 'الإجمالي مع الضريبة'), value: formatCurrency(overallTotal) }
+  ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
-  const reservationSummaryRows = reservationStats
-    .map(({ icon, label, value }) => `<div class="project-focus-card__row"><span>${icon} ${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`)
-    .join('');
+  const reservationRows = [
+    { icon: '🔗', label: t('projectCards.stats.reservationsShort', 'الحجوزات'), value: normalizeNumbers(String(reservationsCount)) },
+    { icon: '📦', label: t('projectCards.stats.equipmentCount', 'عدد المعدات'), value: normalizeNumbers(String(equipmentCountTotal)) },
+    { icon: '😎', label: t('projectCards.stats.crewCount', 'عدد الطاقم'), value: normalizeNumbers(String(crewAssignmentsTotal)) },
+    { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrency(reservationsTotal) }
+  ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
-  const confirmationButton = isConfirmed
-    ? `<span class="project-focus-card__chip status-confirmed">${escapeHtml(confirmedLabel)}</span>`
-    : `<button class="btn btn-sm btn-success" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(confirmLabel)}</button>`;
+  const confirmationControl = isConfirmed
+    ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
+    : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
 
   const highlightLabel = t('projects.focus.actions.highlight', '🔍 عرض في القائمة');
   const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
 
   return `
-    <div class="col-lg-6">
-      <article class="project-focus-card ${cardStateClasses.join(' ')}" data-project-id="${projectIdAttr}">
-        <header class="project-focus-card__header">
-          <div>
-            <h5 class="project-focus-card__title">${escapeHtml(title)}</h5>
-            <div class="project-focus-card__meta">
-              ${projectCodeBadge}
-              ${categoryBadge}
-              ${statusChip}
-              ${paymentChip}
+    <div class="col-12 col-md-6 col-xl-4">
+      <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+        <div class="project-focus-card__accent"></div>
+        <div class="project-focus-card__top">
+          ${projectCodeBadge}
+          ${typeBadge}
+          ${categoryMetaTag}
+          ${statusChip}
+          ${paymentChip}
+        </div>
+        <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
+        <p class="project-focus-card__description">${escapeHtml(descriptionText)}</p>
+        <div class="project-focus-card__sections">
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.project', 'ملخص المشروع'))}</span>
+            <div class="project-focus-card__section-box">
+              ${projectInfoRows}
             </div>
           </div>
-          <div class="project-focus-card__actions">
-            ${confirmationButton}
-            <button class="btn btn-sm btn-outline-secondary" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
-            <button class="btn btn-sm btn-primary" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الجانب المالي'))}</span>
+            <div class="project-focus-card__section-box">
+              ${financialRows}
+            </div>
           </div>
-        </header>
-        <section class="project-focus-card__section">
-          <h6 class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.project', 'ملخص المشروع'))}</h6>
-          <div class="project-focus-card__rows">
-            <div class="project-focus-card__row"><span>👤 ${escapeHtml(t('projects.details.client', 'العميل'))}</span><span>${escapeHtml(clientName)}</span></div>
-            ${companyName ? `<div class="project-focus-card__row"><span>🏢 ${escapeHtml(t('projects.details.company', 'شركة العميل'))}</span><span>${escapeHtml(companyName)}</span></div>` : ''}
-            <div class="project-focus-card__row"><span>🏷️ ${escapeHtml(t('projects.details.type', 'نوع المشروع'))}</span><span>${escapeHtml(typeLabel)}</span></div>
-            <div class="project-focus-card__row"><span>📅 ${escapeHtml(t('projects.focus.summary.range', 'الفترة الزمنية'))}</span><span>${combineProjectDateRange(project.start, project.end)}</span></div>
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</span>
+            <div class="project-focus-card__section-box">
+              ${reservationRows}
+            </div>
           </div>
-        </section>
-        <section class="project-focus-card__section">
-          <h6 class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الجانب المالي'))}</h6>
-          <div class="project-focus-card__rows">${projectSummaryRows}</div>
-        </section>
-        <section class="project-focus-card__section">
-          <h6 class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</h6>
-          <div class="project-focus-card__rows">${reservationSummaryRows}</div>
-        </section>
-        ${description ? `<footer class="project-focus-card__footer">${escapeHtml(description)}</footer>` : ''}
+        </div>
+        <div class="project-focus-card__actions">
+          ${confirmationControl}
+          <button class="btn btn-sm btn-outline-secondary" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
+          <button class="btn btn-sm btn-primary" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
+        </div>
       </article>
     </div>
   `;
