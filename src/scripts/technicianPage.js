@@ -8,6 +8,9 @@ import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
 import { t } from './language.js';
 import { initDashboardShell } from './dashboardShell.js';
+import { ensureReservationsLoaded } from './reservationsActions.js';
+import { getReservationsState } from './reservationsService.js';
+import { calculateReservationDays } from './reservationsSummary.js';
 
 applyStoredTheme();
 checkAuth();
@@ -23,6 +26,25 @@ const heroRoleEl = document.getElementById('technician-hero-role');
 const heroPhoneEl = document.getElementById('technician-hero-phone');
 const heroDepartmentEl = document.getElementById('technician-hero-department');
 
+const financialSummaryEls = {
+  total: document.getElementById('technician-financial-total'),
+  totalDesc: document.getElementById('technician-financial-total-desc'),
+  paid: document.getElementById('technician-financial-paid'),
+  paidDesc: document.getElementById('technician-financial-paid-desc'),
+  outstanding: document.getElementById('technician-financial-outstanding'),
+  outstandingDesc: document.getElementById('technician-financial-outstanding-desc'),
+};
+
+const financialModalEl = document.getElementById('technician-financial-modal');
+const financialModalOpenBtn = document.getElementById('technician-financial-open');
+const financialModalTotalEl = document.getElementById('technician-financial-modal-total');
+const financialModalPaidEl = document.getElementById('technician-financial-modal-paid');
+const financialModalOutstandingEl = document.getElementById('technician-financial-modal-outstanding');
+const financialModalEmptyEl = document.getElementById('technician-financial-modal-empty');
+const financialModalTableWrapper = document.getElementById('technician-financial-modal-table-wrapper');
+const financialModalRowsEl = document.getElementById('technician-financial-modal-rows');
+const financialModalCloseButtons = Array.from(document.querySelectorAll('[data-financial-modal-close]'));
+
 const technicianTabButtons = Array.from(document.querySelectorAll('[data-technician-tab]'));
 const technicianTabPanels = new Map(
   Array.from(document.querySelectorAll('[data-technician-tab-panel]')).map((panel) => [panel.getAttribute('data-technician-tab-panel'), panel])
@@ -30,8 +52,169 @@ const technicianTabPanels = new Map(
 
 let activeTechnicianTab = 'reservations';
 let technicianState = null;
+let technicianFinancialState = {
+  totals: { total: 0, paid: 0, outstanding: 0 },
+  metrics: { assignments: 0, paidCount: 0, outstandingCount: 0 },
+  breakdown: [],
+};
 
 initThemeToggle();
+
+function getActiveLanguage() {
+  return document.documentElement.getAttribute('lang') || 'ar';
+}
+
+function formatCurrency(value) {
+  const amount = Number(value) || 0;
+  const lang = getActiveLanguage();
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  try {
+    const formatted = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(Math.round(amount));
+    const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+    return `${normalizeNumbers(formatted)} ${currencyLabel}`;
+  } catch (error) {
+    const fallback = Math.round(amount);
+    const currencyLabel = lang === 'ar' ? 'ر.س' : 'SAR';
+    return `${normalizeNumbers(String(fallback))} ${currencyLabel}`;
+  }
+}
+
+function formatDateLocalized(value) {
+  if (!value) return '—';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
+  const lang = getActiveLanguage();
+  const locale = lang === 'ar' ? 'ar-SA' : 'en-US';
+  try {
+    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(date);
+  } catch (error) {
+    return date.toLocaleDateString();
+  }
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function resolveTechnicianRate(technician = {}) {
+  const candidates = [
+    technician.dailyWage,
+    technician.daily_rate,
+    technician.dailyRate,
+    technician.rate,
+    technician.wage,
+  ];
+
+  for (const value of candidates) {
+    if (value == null || value === '') continue;
+    const number = Number(normalizeNumbers(String(value)));
+    if (Number.isFinite(number)) {
+      return number;
+    }
+  }
+  return 0;
+}
+
+function buildPaymentStatusBadge(status) {
+  const normalized = typeof status === 'string' ? status.toLowerCase() : 'unpaid';
+  let key = 'technicianFinancial.status.unpaid';
+  let badgeClass = 'badge badge-outline badge-warning';
+  if (normalized === 'paid') {
+    key = 'technicianFinancial.status.paid';
+    badgeClass = 'badge badge-success';
+  } else if (normalized === 'partial') {
+    key = 'technicianFinancial.status.partial';
+    badgeClass = 'badge badge-info';
+  }
+  return `<span class="${badgeClass}">${t(key, key)}</span>`;
+}
+
+function renderFinancialSummary(state) {
+  const { totals, metrics } = state;
+  const assignmentsText = t('technicianFinancial.stats.totalDesc', 'مرتبطة بـ {count} مهام')
+    .replace('{count}', normalizeNumbers(String(metrics.assignments)));
+  const paidText = t('technicianFinancial.stats.paidDesc', 'مدفوعة بالكامل في {count} حالات')
+    .replace('{count}', normalizeNumbers(String(metrics.paidCount)));
+  const outstandingText = t('technicianFinancial.stats.outstandingDesc', 'بحاجة متابعة في {count} حجوزات')
+    .replace('{count}', normalizeNumbers(String(metrics.outstandingCount)));
+
+  if (financialSummaryEls.total) financialSummaryEls.total.textContent = formatCurrency(totals.total);
+  if (financialSummaryEls.totalDesc) financialSummaryEls.totalDesc.textContent = metrics.assignments > 0 ? assignmentsText : '—';
+  if (financialSummaryEls.paid) financialSummaryEls.paid.textContent = formatCurrency(totals.paid);
+  if (financialSummaryEls.paidDesc) financialSummaryEls.paidDesc.textContent = metrics.paidCount > 0 ? paidText : '—';
+  if (financialSummaryEls.outstanding) financialSummaryEls.outstanding.textContent = formatCurrency(totals.outstanding);
+  if (financialSummaryEls.outstandingDesc) financialSummaryEls.outstandingDesc.textContent = metrics.outstandingCount > 0 ? outstandingText : '—';
+}
+
+function renderFinancialModal(state) {
+  const { totals, breakdown } = state;
+  if (financialModalTotalEl) financialModalTotalEl.textContent = formatCurrency(totals.total);
+  if (financialModalPaidEl) financialModalPaidEl.textContent = formatCurrency(totals.paid);
+  if (financialModalOutstandingEl) financialModalOutstandingEl.textContent = formatCurrency(totals.outstanding);
+
+  if (!financialModalRowsEl || !financialModalTableWrapper || !financialModalEmptyEl) {
+    return;
+  }
+
+  if (!breakdown.length) {
+    financialModalRowsEl.innerHTML = '';
+    financialModalTableWrapper.classList.add('hidden');
+    financialModalEmptyEl.classList.remove('hidden');
+    return;
+  }
+
+  const rows = breakdown.map((entry) => {
+    const period = entry.period || '—';
+    const outstanding = entry.outstandingAmount > 0
+      ? formatCurrency(entry.outstandingAmount)
+      : `<span class="text-success">${t('technicianFinancial.list.settled', 'لا يوجد')}</span>`;
+    return `
+      <tr>
+        <td>
+          <div class="font-semibold text-base-content">${escapeHtml(entry.label)}</div>
+          <div class="text-xs text-base-content/60">${escapeHtml(entry.reference)}</div>
+        </td>
+        <td class="whitespace-nowrap">${escapeHtml(period)}</td>
+        <td>${formatCurrency(entry.dueAmount)}</td>
+        <td>${buildPaymentStatusBadge(entry.paidStatus)}</td>
+        <td>${outstanding}</td>
+      </tr>
+    `;
+  }).join('');
+
+  financialModalRowsEl.innerHTML = rows;
+  financialModalTableWrapper.classList.remove('hidden');
+  financialModalEmptyEl.classList.add('hidden');
+}
+
+function openFinancialModal() {
+  if (!financialModalEl) return;
+  if (typeof financialModalEl.showModal === 'function') {
+    if (!financialModalEl.open) {
+      financialModalEl.showModal();
+    }
+  } else {
+    financialModalEl.classList.add('modal-open');
+  }
+}
+
+function closeFinancialModal() {
+  if (!financialModalEl) return;
+  if (typeof financialModalEl.close === 'function') {
+    financialModalEl.close();
+  }
+  financialModalEl.classList.remove('modal-open');
+}
 
 function getTechnicianEditButtons() {
   return Array.from(document.querySelectorAll('[data-technician-edit]'));
@@ -66,6 +249,112 @@ function attachTechnicianEditListeners() {
     button.addEventListener('click', handleTechnicianEditClick);
     button.dataset.listenerAttached = 'true';
   });
+}
+
+async function refreshTechnicianFinancialSummary(technician) {
+  const initialState = {
+    totals: { total: 0, paid: 0, outstanding: 0 },
+    metrics: { assignments: 0, paidCount: 0, outstandingCount: 0 },
+    breakdown: [],
+  };
+
+  technicianFinancialState = initialState;
+  renderFinancialSummary(technicianFinancialState);
+  renderFinancialModal(technicianFinancialState);
+
+  if (!technicianId || !technician) {
+    return;
+  }
+
+  try {
+    await ensureReservationsLoaded({ suppressError: true });
+  } catch (error) {
+    console.error('⚠️ [technician-page] Failed to load reservations for financial summary', error);
+  }
+
+  const reservations = getReservationsState();
+  const normalizedId = String(technicianId);
+  const relevantReservations = reservations.filter((reservation) => {
+    if (!reservation) return false;
+    if (String(reservation.status || '').toLowerCase() === 'cancelled') {
+      return false;
+    }
+    const technicianIds = Array.isArray(reservation.technicians)
+      ? reservation.technicians.map((id) => String(id))
+      : [];
+    return technicianIds.includes(normalizedId);
+  });
+
+  const breakdown = relevantReservations.map((reservation) => {
+    const detailsEntry = Array.isArray(reservation.techniciansDetails)
+      ? reservation.techniciansDetails.find((entry) => {
+          const entryId = entry?.id ?? entry?.technician_id ?? entry?.technicianId ?? entry?.ID;
+          return entryId != null && String(entryId) === normalizedId;
+        })
+      : null;
+
+    const rate = resolveTechnicianRate(detailsEntry) || resolveTechnicianRate(technician);
+    const days = Math.max(1, calculateReservationDays(reservation.start, reservation.end));
+    const dueAmount = Math.max(0, Math.round(rate * days));
+    const paidStatus = reservation.paidStatus || 'unpaid';
+    const paidAmount = paidStatus === 'paid' ? dueAmount : 0;
+    const outstandingAmount = Math.max(0, dueAmount - paidAmount);
+
+    const fallbackLabel = t('technicianFinancial.list.reservationFallback', 'حجز رقم {id}')
+      .replace('{id}', normalizeNumbers(String(reservation.reservationId || reservation.id || '?')));
+    const label = reservation.title && reservation.title.trim().length
+      ? reservation.title.trim()
+      : fallbackLabel;
+
+    const referenceParts = [];
+    if (reservation.reservationId || reservation.id) {
+      const refId = reservation.reservationId || reservation.id;
+      referenceParts.push(`#${normalizeNumbers(String(refId))}`);
+    }
+    if (reservation.projectId) {
+      referenceParts.push(
+        t('technicianFinancial.list.projectReference', 'مشروع #{id}')
+          .replace('{id}', normalizeNumbers(String(reservation.projectId)))
+      );
+    }
+    if (reservation.status) {
+      const statusKey = `reservations.status.${reservation.status}`;
+      referenceParts.push(t(statusKey, reservation.status));
+    }
+
+    const periodStart = formatDateLocalized(reservation.start);
+    const periodEnd = formatDateLocalized(reservation.end);
+    const period = periodStart === periodEnd
+      ? periodStart
+      : `${periodStart} – ${periodEnd}`;
+
+    return {
+      label,
+      reference: referenceParts.join(' • ') || '—',
+      period,
+      dueAmount,
+      paidAmount,
+      outstandingAmount,
+      paidStatus,
+    };
+  });
+
+  const totals = breakdown.reduce((acc, entry) => {
+    acc.total += entry.dueAmount;
+    acc.paid += entry.paidAmount;
+    acc.outstanding += entry.outstandingAmount;
+    return acc;
+  }, { total: 0, paid: 0, outstanding: 0 });
+
+  const metrics = {
+    assignments: breakdown.length,
+    paidCount: breakdown.filter((entry) => entry.paidStatus === 'paid').length,
+    outstandingCount: breakdown.filter((entry) => entry.outstandingAmount > 0).length,
+  };
+
+  technicianFinancialState = { totals, metrics, breakdown };
+  renderFinancialSummary(technicianFinancialState);
+  renderFinancialModal(technicianFinancialState);
 }
 
 function setHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
@@ -187,6 +476,30 @@ setHeroData(null);
 setEditButtonsDisabled(true);
 initTechnicianTabs();
 attachTechnicianEditListeners();
+
+if (financialModalOpenBtn && !financialModalOpenBtn.dataset.listenerAttached) {
+  financialModalOpenBtn.addEventListener('click', () => {
+    renderFinancialModal(technicianFinancialState);
+    openFinancialModal();
+  });
+  financialModalOpenBtn.dataset.listenerAttached = 'true';
+}
+
+financialModalCloseButtons.forEach((button) => {
+  if (!button || button.dataset.listenerAttached) return;
+  button.addEventListener('click', () => {
+    closeFinancialModal();
+  });
+  button.dataset.listenerAttached = 'true';
+});
+
+if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
+  financialModalEl.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeFinancialModal();
+  });
+  financialModalEl.dataset.listenerAttached = 'true';
+}
 
 window.showReservationDetails = showReservationDetails;
 
@@ -320,6 +633,7 @@ async function loadTechnicianDetails() {
   }
 
   technicianState = technician;
+  await refreshTechnicianFinancialSummary(technician);
   renderTechnicianDetails(technician);
   renderTechnicianReservations(technicianId);
   renderTechnicianProjects(technicianId);
@@ -328,7 +642,7 @@ async function loadTechnicianDetails() {
 syncTechniciansStatuses();
 loadTechnicianDetails();
 
-const handleTechniciansUpdated = () => {
+const handleTechniciansUpdated = async () => {
   if (!technicianId) return;
   syncTechniciansStatuses();
   const updated = getTechnicianById(technicianId);
@@ -336,7 +650,15 @@ const handleTechniciansUpdated = () => {
     return;
   }
   technicianState = updated;
+  await refreshTechnicianFinancialSummary(updated);
   renderTechnicianDetails(updated);
 };
 
 window.addEventListener('technicians:updated', handleTechniciansUpdated);
+
+const handleReservationsUpdated = () => {
+  if (!technicianId || !technicianState) return;
+  refreshTechnicianFinancialSummary(technicianState);
+};
+
+document.addEventListener('reservations:changed', handleReservationsUpdated, { passive: true });
