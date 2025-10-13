@@ -4128,6 +4128,92 @@
     color: rgba(226, 232, 240, 0.88) !important;
   }
 
+  :where(html.dark, body.dark) .customer-page {
+    --customer-surface: #18213beb;
+    --customer-surface-muted: rgba(24, 33, 59, 0.9);
+    --customer-border: rgba(63, 93, 245, 0.32);
+    --customer-border-strong: rgba(96, 165, 250, 0.48);
+    --customer-input: rgba(12, 18, 40, 0.94);
+    --customer-shadow: 0 28px 55px #040916a6;
+    --customer-focus-ring: rgba(79, 70, 229, 0.32);
+  }
+
+  :where(html.dark, body.dark) .customer-page .glass-card,
+  :where(html.dark, body.dark) .customer-page .box,
+  :where(html.dark, body.dark) .customer-page .card,
+  :where(html.dark, body.dark) .customer-page .modal-content,
+  :where(html.dark, body.dark) .customer-page .table-responsive:not(.customer-table-wrapper) {
+    background: var(--customer-surface);
+    border-color: var(--customer-border);
+    box-shadow: var(--customer-shadow);
+  }
+
+  :where(html.dark, body.dark) .customer-page .bg-base-100,
+  :where(html.dark, body.dark) .customer-page .bg-base-100\/80,
+  :where(html.dark, body.dark) .customer-page .bg-base-100\/75,
+  :where(html.dark, body.dark) .customer-page .bg-base-100\/70,
+  :where(html.dark, body.dark) .customer-page .bg-base-100\/60 {
+    background-color: var(--customer-surface);
+  }
+
+  :where(html.dark, body.dark) .customer-page .border-base-200,
+  :where(html.dark, body.dark) .customer-page .border-base-200\/70,
+  :where(html.dark, body.dark) .customer-page .border-base-200\/60 {
+    border-color: var(--customer-border);
+  }
+
+  :where(html.dark, body.dark) .customer-page .badge-outline,
+  :where(html.dark, body.dark) .customer-page .badge-soft {
+    background: var(--customer-input);
+    border-color: var(--customer-border);
+    color: rgba(226, 232, 240, 0.9);
+  }
+
+  :where(html.dark, body.dark) .customer-page .form-control,
+  :where(html.dark, body.dark) .customer-page input.flatpickr-input,
+  :where(html.dark, body.dark) .customer-page input.flatpickr-alt-input,
+  :where(html.dark, body.dark) .customer-page textarea,
+  :where(html.dark, body.dark) .customer-page .form-select,
+  :where(html.dark, body.dark) .customer-page select.form-select {
+    background-color: var(--customer-input);
+    border-color: var(--customer-border);
+    color: rgba(226, 232, 240, 0.94);
+    box-shadow: none;
+  }
+
+  :where(html.dark, body.dark) .customer-page .form-control:focus,
+  :where(html.dark, body.dark) .customer-page input.flatpickr-input:focus,
+  :where(html.dark, body.dark) .customer-page input.flatpickr-alt-input:focus,
+  :where(html.dark, body.dark) .customer-page .form-select:focus,
+  :where(html.dark, body.dark) .customer-page textarea:focus,
+  :where(html.dark, body.dark) .customer-page select.form-select:focus {
+    border-color: var(--customer-border-strong);
+    box-shadow: 0 0 0 3px var(--customer-focus-ring);
+    background-color: var(--customer-input);
+  }
+
+  :where(html.dark, body.dark) .customer-page .form-control:disabled,
+  :where(html.dark, body.dark) .customer-page .form-select:disabled,
+  :where(html.dark, body.dark) .customer-page select.form-select:disabled {
+    background: rgba(12, 18, 36, 0.96);
+    border-color: var(--customer-border);
+    color: rgba(226, 232, 240, 0.8);
+    opacity: 0.9;
+  }
+
+  :where(html.dark, body.dark) .customer-page .tab-buttons,
+  :where(html.dark, body.dark) .customer-page .tab-buttons-horizontal,
+  :where(html.dark, body.dark) .customer-page .filters-bar {
+    background: var(--customer-surface-muted);
+    border-color: var(--customer-border);
+    box-shadow: none;
+  }
+
+  :where(html.dark, body.dark) .customer-page .filters-bar .btn,
+  :where(html.dark, body.dark) .customer-page .tab-button {
+    border-color: var(--customer-border);
+  }
+
   :where(html.dark, body.dark) .flatpickr-day {
     color: #f8fafc !important;
     border-radius: 10px !important;
