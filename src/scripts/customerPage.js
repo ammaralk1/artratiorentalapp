@@ -12,6 +12,7 @@ import { mapProjectFromApi } from './projectsService.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { formatCurrencyLocalized } from './projectsCommon.js';
+import { resolveProjectTotals } from './projectFocusTemplates.js';
 
 applyStoredTheme();
 checkAuth();
@@ -38,14 +39,16 @@ const heroTaxEl = document.getElementById('customer-hero-tax');
 const heroSummaryEl = document.getElementById('customer-hero-summary');
 const heroPanelNameEl = document.getElementById('dashboard-greeting-customer-name');
 const heroPanelCompanyEl = document.getElementById('dashboard-greeting-customer-company');
-const heroStatReservationsEl = document.getElementById('customer-stat-reservations');
-const heroStatReservationsDescEl = document.getElementById('customer-stat-reservations-desc');
-const heroStatUpcomingEl = document.getElementById('customer-stat-upcoming');
-const heroStatUpcomingDescEl = document.getElementById('customer-stat-upcoming-desc');
 const heroStatProjectsEl = document.getElementById('customer-stat-projects');
 const heroStatProjectsDescEl = document.getElementById('customer-stat-projects-desc');
-const heroStatLastActivityEl = document.getElementById('customer-stat-last-activity');
-const heroStatLastActivityDescEl = document.getElementById('customer-stat-last-activity-desc');
+const heroStatPaymentEl = document.getElementById('customer-stat-payment');
+const heroStatPaymentDescEl = document.getElementById('customer-stat-payment-desc');
+const heroStatUpcomingEl = document.getElementById('customer-stat-upcoming');
+const heroStatUpcomingDescEl = document.getElementById('customer-stat-upcoming-desc');
+const heroStatActivityEl = document.getElementById('customer-stat-activity');
+const heroStatActivityDescEl = document.getElementById('customer-stat-activity-desc');
+const heroStatComplianceEl = document.getElementById('customer-stat-compliance');
+const heroStatComplianceDescEl = document.getElementById('customer-stat-compliance-desc');
 const sidebarProjectsEl = document.getElementById('sidebar-stat-projects');
 const sidebarReservationsEl = document.getElementById('sidebar-stat-reservations');
 const sidebarEquipmentEl = document.getElementById('sidebar-stat-equipment');
@@ -359,6 +362,32 @@ function formatDateLocalized(value) {
   }
 }
 
+const complianceLabelFallbacks = {
+  excellent: 'Excellent commitment',
+  good: 'On-time payments',
+  average: 'Needs follow-up',
+  poor: 'Repeated delays',
+};
+
+const activityLabelFallbacks = {
+  reservation: 'Reservation',
+  project: 'Project',
+  customer: 'Client record',
+};
+
+function resolveLatestTimestamp(candidates = []) {
+  let latest = null;
+  candidates.forEach((rawValue) => {
+    if (!rawValue) return;
+    const candidate = rawValue instanceof Date ? rawValue : new Date(rawValue);
+    if (Number.isNaN(candidate.getTime())) return;
+    if (!latest || candidate > latest) {
+      latest = candidate;
+    }
+  });
+  return latest;
+}
+
 function escapeAttribute(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -375,14 +404,21 @@ function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, tec
 
 function updateHeroStats() {
   if (!currentCustomer || !customerId) {
-    if (heroStatReservationsEl) heroStatReservationsEl.textContent = '0';
-    if (heroStatReservationsDescEl) heroStatReservationsDescEl.textContent = t('customerDetails.stats.reservationsDesc', 'عدد الحجوزات الكلي');
+    const emptyCurrency = formatCurrencyLocalized(0);
+    if (heroStatProjectsEl) heroStatProjectsEl.textContent = '0';
+    if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsEmpty', 'لا توجد مشاريع مرتبطة بهذا العميل.');
+    if (heroStatPaymentEl) heroStatPaymentEl.textContent = `${emptyCurrency} / ${emptyCurrency}`;
+    if (heroStatPaymentDescEl) {
+      const breakdownLabel = t('customerDetails.stats.paymentBreakdown', 'مدفوع / مستحق');
+      const outstandingText = t('customerDetails.stats.paymentOutstandingEmpty', 'لا توجد مبالغ مستحقة');
+      heroStatPaymentDescEl.textContent = `${breakdownLabel} • ${outstandingText}`;
+    }
     if (heroStatUpcomingEl) heroStatUpcomingEl.textContent = '0';
     if (heroStatUpcomingDescEl) heroStatUpcomingDescEl.textContent = t('customerDetails.stats.upcomingEmpty', 'لا توجد حجوزات قادمة');
-    if (heroStatProjectsEl) heroStatProjectsEl.textContent = '0';
-    if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsDesc', 'المشاريع المرتبطة بالعميل');
-    if (heroStatLastActivityEl) heroStatLastActivityEl.textContent = '—';
-    if (heroStatLastActivityDescEl) heroStatLastActivityDescEl.textContent = t('customerDetails.stats.totalValueEmpty', 'لم يتم رصد مبالغ بعد.');
+    if (heroStatActivityEl) heroStatActivityEl.textContent = '—';
+    if (heroStatActivityDescEl) heroStatActivityDescEl.textContent = t('customerDetails.stats.activityEmpty', 'لا يوجد نشاط حديث');
+    if (heroStatComplianceEl) heroStatComplianceEl.textContent = '0%';
+    if (heroStatComplianceDescEl) heroStatComplianceDescEl.textContent = t('customerDetails.stats.complianceEmpty', 'لا توجد بيانات دفع كافية');
     updateSidebarStats({ projects: 0, reservations: 0, equipment: 0, technicians: 0 });
     return;
   }
@@ -423,39 +459,81 @@ function updateHeroStats() {
   });
   const totalProjects = relevantProjects.length;
 
-  const totalAmount = relevantReservations.reduce((sum, reservation) => {
-    const value = reservation?.totalAmount ?? reservation?.cost ?? reservation?.netTotal ?? 0;
-    const numeric = Number(value);
-    return sum + (Number.isFinite(numeric) ? numeric : 0);
-  }, 0);
+  const projectFinancials = relevantProjects.reduce((acc, project) => {
+    if (!project) return acc;
+    const totals = resolveProjectTotals(project) || {};
+    const totalWithTax = Number(totals.totalWithTax ?? totals.subtotal ?? 0) || 0;
+    const paymentStatus = String(project?.paymentStatus ?? project?.status ?? '').toLowerCase();
+    const isPaid = paymentStatus === 'paid';
 
-  let lastActivityDate = null;
+    if (isPaid) {
+      acc.paid += totalWithTax;
+      acc.paidCount += 1;
+    } else {
+      acc.outstanding += totalWithTax;
+    }
+    return acc;
+  }, { paid: 0, outstanding: 0, paidCount: 0 });
+
+  const compliancePercentage = totalProjects > 0
+    ? Math.round((projectFinancials.paidCount / totalProjects) * 100)
+    : 0;
+
+  const activityCandidates = [];
+
   relevantReservations.forEach((reservation) => {
-    const candidateRaw = reservation?.updatedAt
-      ?? reservation?.updated_at
-      ?? reservation?.end
-      ?? reservation?.endDatetime
-      ?? reservation?.end_datetime
-      ?? reservation?.start
-      ?? reservation?.createdAt
-      ?? reservation?.created_at;
-    if (!candidateRaw) return;
-    const candidate = new Date(candidateRaw);
-    if (Number.isNaN(candidate.getTime())) return;
-    if (!lastActivityDate || candidate > lastActivityDate) {
-      lastActivityDate = candidate;
+    const timestamp = resolveLatestTimestamp([
+      reservation?.updatedAt,
+      reservation?.updated_at,
+      reservation?.end,
+      reservation?.endDatetime,
+      reservation?.end_datetime,
+      reservation?.start,
+      reservation?.startDatetime,
+      reservation?.start_datetime,
+      reservation?.createdAt,
+      reservation?.created_at,
+    ]);
+    if (timestamp) {
+      activityCandidates.push({ date: timestamp, type: 'reservation' });
     }
   });
 
-  if (!lastActivityDate) {
-    const candidate = currentCustomer?.updated_at ?? currentCustomer?.created_at;
-    if (candidate) {
-      const candidateDate = new Date(candidate);
-      if (!Number.isNaN(candidateDate.getTime())) {
-        lastActivityDate = candidateDate;
-      }
+  relevantProjects.forEach((project) => {
+    const timestamp = resolveLatestTimestamp([
+      project?.updatedAt,
+      project?.updated_at,
+      project?.end,
+      project?.end_datetime,
+      project?.start,
+      project?.start_datetime,
+      project?.createdAt,
+      project?.created_at,
+    ]);
+    if (timestamp) {
+      activityCandidates.push({ date: timestamp, type: 'project' });
+    }
+  });
+
+  if (!activityCandidates.length) {
+    const customerTimestamp = resolveLatestTimestamp([
+      currentCustomer?.updated_at,
+      currentCustomer?.updatedAt,
+      currentCustomer?.created_at,
+      currentCustomer?.createdAt,
+    ]);
+    if (customerTimestamp) {
+      activityCandidates.push({ date: customerTimestamp, type: 'customer' });
     }
   }
+
+  const lastActivity = activityCandidates.reduce((latest, entry) => {
+    if (!latest) return entry;
+    return entry.date > latest.date ? entry : latest;
+  }, null);
+
+  const lastActivityDate = lastActivity?.date ?? null;
+  const lastActivityType = lastActivity?.type ?? null;
 
   const totalEquipment = relevantReservations.reduce((sum, reservation) => {
     if (Array.isArray(reservation?.items)) {
@@ -480,8 +558,25 @@ function updateHeroStats() {
     }
   });
 
-  if (heroStatReservationsEl) heroStatReservationsEl.textContent = formatNumberLocalized(totalReservations);
-  if (heroStatReservationsDescEl) heroStatReservationsDescEl.textContent = t('customerDetails.stats.reservationsDesc', 'عدد الحجوزات الكلي');
+  if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
+  if (heroStatProjectsDescEl) {
+    heroStatProjectsDescEl.textContent = totalProjects > 0
+      ? t('customerDetails.stats.projectsDesc', 'المشاريع المرتبطة بالعميل')
+      : t('customerDetails.stats.projectsEmpty', 'لا توجد مشاريع مرتبطة بهذا العميل.');
+  }
+
+  const paidDisplay = formatCurrencyLocalized(projectFinancials.paid);
+  const outstandingDisplay = formatCurrencyLocalized(projectFinancials.outstanding);
+  if (heroStatPaymentEl) {
+    heroStatPaymentEl.textContent = `${paidDisplay} / ${outstandingDisplay}`;
+  }
+  if (heroStatPaymentDescEl) {
+    const breakdownLabel = t('customerDetails.stats.paymentBreakdown', 'مدفوع / مستحق');
+    const outstandingText = projectFinancials.outstanding > 0
+      ? t('customerDetails.stats.paymentOutstanding', 'المتبقي: {amount}').replace('{amount}', outstandingDisplay)
+      : t('customerDetails.stats.paymentAllSet', 'لا توجد مبالغ مستحقة');
+    heroStatPaymentDescEl.textContent = `${breakdownLabel} • ${outstandingText}`;
+  }
 
   if (heroStatUpcomingEl) heroStatUpcomingEl.textContent = formatNumberLocalized(upcomingReservations.length);
   if (heroStatUpcomingDescEl) {
@@ -490,14 +585,47 @@ function updateHeroStats() {
       : t('customerDetails.stats.upcomingEmpty', 'لا توجد حجوزات قادمة');
   }
 
-  if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
-  if (heroStatProjectsDescEl) heroStatProjectsDescEl.textContent = t('customerDetails.stats.projectsDesc', 'المشاريع المرتبطة بالعميل');
+  if (heroStatActivityEl) {
+    if (lastActivityType) {
+      const activityLabel = t(
+        `customerDetails.stats.activityType.${lastActivityType}`,
+        activityLabelFallbacks[lastActivityType] || lastActivityType
+      );
+      heroStatActivityEl.textContent = activityLabel;
+    } else {
+      heroStatActivityEl.textContent = '—';
+    }
+  }
+  if (heroStatActivityDescEl) {
+    heroStatActivityDescEl.textContent = lastActivityDate
+      ? t('customerDetails.stats.activityOn', 'بتاريخ {date}').replace('{date}', formatDateLocalized(lastActivityDate))
+      : t('customerDetails.stats.activityEmpty', 'لا يوجد نشاط حديث');
+  }
 
-  if (heroStatLastActivityEl) heroStatLastActivityEl.textContent = lastActivityDate ? formatDateLocalized(lastActivityDate) : '—';
-  if (heroStatLastActivityDescEl) {
-    heroStatLastActivityDescEl.textContent = totalAmount > 0
-      ? t('customerDetails.stats.totalValue', 'القيمة الإجمالية: {amount}').replace('{amount}', formatCurrencyLocalized(totalAmount))
-      : t('customerDetails.stats.totalValueEmpty', 'لم يتم رصد مبالغ بعد.');
+  if (heroStatComplianceEl) heroStatComplianceEl.textContent = `${formatNumberLocalized(compliancePercentage)}%`;
+  if (heroStatComplianceDescEl) {
+    if (totalProjects > 0) {
+      const complianceLabelKey = (() => {
+        if (compliancePercentage >= 90) return 'excellent';
+        if (compliancePercentage >= 70) return 'good';
+        if (compliancePercentage >= 40) return 'average';
+        return 'poor';
+      })();
+      const complianceLabel = complianceLabelKey
+        ? t(
+          `customerDetails.stats.complianceLabel.${complianceLabelKey}`,
+          complianceLabelFallbacks[complianceLabelKey] || complianceLabelFallbacks.poor
+        )
+        : '';
+      const projectsText = t('customerDetails.stats.complianceProjects', 'مشاريع مدفوعة بالكامل: {count} من {total}')
+        .replace('{count}', formatNumberLocalized(projectFinancials.paidCount))
+        .replace('{total}', formatNumberLocalized(totalProjects));
+      heroStatComplianceDescEl.textContent = complianceLabel
+        ? `${complianceLabel} • ${projectsText}`
+        : projectsText;
+    } else {
+      heroStatComplianceDescEl.textContent = t('customerDetails.stats.complianceEmpty', 'لا توجد بيانات دفع كافية');
+    }
   }
 
   updateSidebarStats({
