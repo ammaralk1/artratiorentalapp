@@ -270,12 +270,40 @@ function mergeSummaryWithLocalData(summary) {
     };
   }
 
-  const syncedTechnicians = syncTechniciansStatuses() || snapshot.technicians || [];
-  const technicians = Array.isArray(syncedTechnicians) ? syncedTechnicians : [];
+  const techniciansFromState = syncTechniciansStatuses();
+  const techniciansFallback = Array.isArray(snapshot.technicians) ? snapshot.technicians : [];
+  const technicians = Array.isArray(techniciansFromState) && techniciansFromState.length > 0
+    ? techniciansFromState
+    : techniciansFallback;
   if (technicians.length) {
     const busyCount = technicians.filter((tech) => {
-      const status = String(tech?.status || tech?.baseStatus || '').toLowerCase();
-      return status === 'busy';
+      const candidates = [
+        tech?.status,
+        tech?.baseStatus,
+        tech?.currentStatus,
+        tech?.availability,
+        tech?.state,
+        tech?.status_label,
+        tech?.statusLabel
+      ];
+      const normalized = candidates
+        .map((value) => String(value || '').trim().toLowerCase())
+        .find((value) => value.length > 0) || '';
+
+      if (!normalized) return false;
+
+      const busyKeywords = new Set([
+        'busy',
+        'مشغول',
+        'occupied',
+        'غير متاح',
+        'in-use',
+        'in_use',
+        'working',
+        'assigned'
+      ]);
+
+      return busyKeywords.has(normalized);
     }).length;
     result.technicians = {
       ...result.technicians,
