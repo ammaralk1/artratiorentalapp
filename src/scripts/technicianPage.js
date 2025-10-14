@@ -138,14 +138,32 @@ function normalizePayoutEntry(entry = {}) {
 }
 
 function loadAllTechnicianPayouts() {
+  let payouts = [];
   try {
-    const { technicianPayouts } = loadData();
-    if (!Array.isArray(technicianPayouts)) return [];
-    return technicianPayouts.map(normalizePayoutEntry).filter(Boolean);
+    const snapshot = loadData();
+    if (Array.isArray(snapshot?.technicianPayouts)) {
+      payouts = snapshot.technicianPayouts;
+    }
   } catch (error) {
-    console.error('⚠️ [technician-page] Failed to load technician payouts from storage', error);
-    return [];
+    console.error('⚠️ [technician-page] Failed to access in-memory payouts', error);
   }
+
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = window.localStorage.getItem('technicianPayouts');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          payouts = parsed;
+          saveData({ technicianPayouts: parsed });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('⚠️ [technician-page] Failed to read technician payouts from localStorage', error);
+  }
+
+  return payouts.map(normalizePayoutEntry).filter(Boolean);
 }
 
 function persistAllTechnicianPayouts(list) {
@@ -153,6 +171,9 @@ function persistAllTechnicianPayouts(list) {
     saveData({ technicianPayouts: list });
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
       window.dispatchEvent(new CustomEvent('technicians:payoutsUpdated'));
+    }
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('technicianPayouts', JSON.stringify(list));
     }
   } catch (error) {
     console.error('⚠️ [technician-page] Failed to persist technician payouts', error);
