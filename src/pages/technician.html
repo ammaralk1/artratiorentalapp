@@ -364,48 +364,51 @@
   </div>
 
   <div id="technician-financial-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-box max-w-4xl space-y-5">
-      <header class="space-y-2">
-        <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.modal.title">📊 الملخص المالي للفني</h3>
-        <p class="text-sm text-base-content/70" data-i18n data-i18n-key="technicianFinancial.modal.subtitle">نظرة تفصيلية على مستحقات العضو والمدفوعات السابقة والحالية.</p>
-      </header>
-      <section class="grid gap-3 rounded-2xl border border-base-200/80 bg-base-100/80 p-4 sm:grid-cols-3" id="technician-financial-modal-summary">
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
-          <strong id="technician-financial-modal-total" class="text-lg font-semibold text-base-content">0</strong>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.modal.title">📊 الملخص المالي للفني</h3>
+          <button type="button" class="btn-close" data-financial-modal-close aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
-          <strong id="technician-financial-modal-paid" class="text-lg font-semibold text-success">0</strong>
+        <div class="modal-body space-y-5">
+          <section class="grid gap-3 rounded-2xl border border-base-200 bg-base-100/90 p-4 sm:grid-cols-3" id="technician-financial-modal-summary">
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
+              <strong id="technician-financial-modal-total" class="text-lg font-semibold text-base-content">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
+              <strong id="technician-financial-modal-paid" class="text-lg font-semibold text-success">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
+              <strong id="technician-financial-modal-outstanding" class="text-lg font-semibold text-warning">0</strong>
+            </div>
+          </section>
+          <section class="space-y-3">
+            <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.list.title">تفاصيل الحجوزات والمشاريع</h4>
+            <div id="technician-financial-modal-empty" class="hidden rounded-2xl border border-dashed border-base-200 bg-base-100/80 p-4 text-center text-base-content/70" data-i18n data-i18n-key="technicianFinancial.assignments.empty">لا توجد حجوزات أو مشاريع مرتبطة لعرضها.</div>
+            <div class="table-responsive" id="technician-financial-modal-table-wrapper">
+              <table class="table table-sm table-borderless align-middle" id="technician-financial-modal-table">
+                <thead>
+                  <tr>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.reservation">الحجز / المشروع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.period">الفترة</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.due">المستحق</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.status">حالة الدفع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.outstanding">المتبقي</th>
+                  </tr>
+                </thead>
+                <tbody id="technician-financial-modal-rows"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
-          <strong id="technician-financial-modal-outstanding" class="text-lg font-semibold text-warning">0</strong>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-financial-modal-close data-i18n data-i18n-key="actions.close">إغلاق</button>
         </div>
-      </section>
-      <section class="space-y-3">
-        <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.list.title">تفاصيل الحجوزات والمشاريع</h4>
-        <div id="technician-financial-modal-empty" class="hidden rounded-2xl border border-dashed border-base-200 bg-base-100/70 p-4 text-center text-base-content/70" data-i18n data-i18n-key="technicianFinancial.assignments.empty">لا توجد حجوزات أو مشاريع مرتبطة لعرضها.</div>
-        <div class="overflow-x-auto" id="technician-financial-modal-table-wrapper">
-          <table class="table table-zebra w-full text-sm" id="technician-financial-modal-table">
-            <thead>
-              <tr>
-                <th data-i18n data-i18n-key="technicianFinancial.list.reservation">الحجز / المشروع</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.period">الفترة</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.due">المستحق</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.status">حالة الدفع</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.outstanding">المتبقي</th>
-              </tr>
-            </thead>
-            <tbody id="technician-financial-modal-rows"></tbody>
-          </table>
-        </div>
-      </section>
-      <div class="modal-action">
-        <button type="button" class="btn" data-financial-modal-close data-i18n data-i18n-key="actions.close">إغلاق</button>
       </div>
     </div>
-    <div class="modal-backdrop" data-financial-modal-close></div>
   </div>
 
   <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
@@ -590,6 +593,7 @@
         <div class="modal-body">
           <form id="edit-technician-form" class="management-form" novalidate>
             <input type="hidden" id="edit-technician-id">
+            <input type="hidden" id="edit-technician-status">
 
             <div class="management-form-grid">
               <div class="form-field">
@@ -611,13 +615,6 @@
               <div class="form-field">
                 <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
                 <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
-              </div>
-              <div class="form-field">
-                <label class="form-label" for="edit-technician-status" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
-                <select id="edit-technician-status" class="form-select" required>
-                  <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
-                  <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
-                </select>
               </div>
               <div class="form-field form-field-notes">
                 <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>

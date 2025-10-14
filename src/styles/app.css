@@ -4495,6 +4495,82 @@
     color: #cfd8f6;
   }
 
+  :where(html.dark, body.dark) .technician-page {
+    --technician-surface: var(--customer-surface, rgba(24, 33, 59, 0.92));
+    --technician-border: var(--customer-border, rgba(63, 93, 245, 0.32));
+    --technician-shadow: var(--customer-shadow, 0 28px 55px #040916a6);
+    --technician-muted: var(--customer-input, rgba(12, 18, 40, 0.92));
+  }
+
+  :where(html.dark, body.dark) .technician-page .modal-content,
+  :where(html.dark, body.dark) .technician-page .table-responsive,
+  :where(html.dark, body.dark) .technician-page .glass-card,
+  :where(html.dark, body.dark) .technician-page .card,
+  :where(html.dark, body.dark) .technician-page .box {
+    background: var(--technician-surface);
+    border-color: var(--technician-border);
+    box-shadow: var(--technician-shadow);
+  }
+
+  :where(html.dark, body.dark) .technician-page .modal-header,
+  :where(html.dark, body.dark) .technician-page .modal-footer {
+    border-color: color-mix(in srgb, var(--technician-border) 70%, transparent);
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-summary {
+    background: linear-gradient(135deg, rgba(25, 37, 70, 0.92), rgba(16, 26, 52, 0.92));
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-empty {
+    background: rgba(15, 23, 42, 0.82);
+    border-color: rgba(99, 102, 241, 0.28);
+    color: rgba(203, 213, 225, 0.78);
+  }
+
+  #technician-financial-modal-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  #technician-financial-modal-table thead tr {
+    background: linear-gradient(135deg, rgba(236, 246, 255, 0.92), rgba(219, 234, 254, 0.85));
+    color: #0f172a;
+  }
+
+  #technician-financial-modal-table tbody tr:not(:last-child) {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  #technician-financial-modal-table td,
+  #technician-financial-modal-table th {
+    padding-block: 0.65rem;
+    padding-inline: 0.75rem;
+    vertical-align: middle;
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table thead tr {
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.35), rgba(28, 41, 74, 0.92));
+    color: #f1f5f9;
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table tbody tr:not(:last-child) {
+    border-color: rgba(55, 75, 115, 0.6);
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table td,
+  :where(html.dark, body.dark) #technician-financial-modal-table th {
+    color: rgba(219, 234, 254, 0.92);
+  }
+
+  #technician-financial-modal-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table tbody tr:hover {
+    background: rgba(59, 130, 246, 0.18);
+  }
+
   :where(html.dark, body.dark) .btn-outline-secondary {
     border-color: rgba(148, 163, 184, 0.45);
     color: #dbeafe;
