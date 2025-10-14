@@ -1,12 +1,13 @@
 import '../styles/app.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout, getCurrentUser } from './auth.js';
-import { migrateOldData } from './storage.js';
+import { migrateOldData, loadData } from './storage.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 import { updatePreferences } from './preferencesService.js';
 import { initDashboardShell } from './dashboardShell.js';
+import { syncTechniciansStatuses } from './technicians.js';
 
 applyStoredTheme();
 checkAuth();
@@ -81,6 +82,140 @@ function normalizeSummaryResponse(raw) {
       highPriority: toInt(raw?.maintenance?.highPriority),
     },
   };
+}
+
+function createEmptySummarySnapshot() {
+  return {
+    customers: { total: 0 },
+    reservations: { total: 0, today: 0, upcoming: 0 },
+    equipment: { total: 0, maintenance: 0 },
+    technicians: { total: 0, busy: 0 },
+    projects: { total: 0, active: 0 },
+    maintenance: { open: 0, highPriority: 0 }
+  };
+}
+
+function toValidDate(value) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function mergeSummaryWithLocalData(summary) {
+  const snapshot = loadData();
+  const result = summary ? { ...summary } : createEmptySummarySnapshot();
+
+  const customers = Array.isArray(snapshot.customers) ? snapshot.customers : [];
+  const reservations = Array.isArray(snapshot.reservations) ? snapshot.reservations : [];
+  const equipment = Array.isArray(snapshot.equipment) ? snapshot.equipment : [];
+  const maintenanceEntries = Array.isArray(snapshot.maintenance) ? snapshot.maintenance : [];
+  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
+
+  if (customers.length) {
+    result.customers = { ...result.customers, total: customers.length };
+  }
+
+  if (equipment.length) {
+    const maintenanceEquipment = equipment.filter((item) => {
+      const status = String(item?.status || item?.state || '').toLowerCase();
+      return status.includes('maintenance') || status.includes('repair');
+    }).length;
+    result.equipment = {
+      ...result.equipment,
+      total: equipment.length,
+      maintenance: maintenanceEquipment
+    };
+  }
+
+  if (projects.length) {
+    const activeProjects = projects.filter((project) => determineProjectStatus(project) === 'ongoing').length;
+    result.projects = {
+      ...result.projects,
+      total: projects.length,
+      active: activeProjects
+    };
+  }
+
+  if (maintenanceEntries.length) {
+    const openCount = maintenanceEntries.filter((entry) => {
+      const status = String(entry?.status || entry?.state || '').toLowerCase();
+      return !status || ['open', 'pending', 'in-progress', 'progress', 'scheduled'].includes(status);
+    }).length;
+    const highPriorityCount = maintenanceEntries.filter((entry) => {
+      const priority = String(entry?.priority || entry?.severity || '').toLowerCase();
+      return ['high', 'urgent', 'critical'].includes(priority);
+    }).length;
+    result.maintenance = {
+      ...result.maintenance,
+      open: openCount,
+      highPriority: highPriorityCount
+    };
+  }
+
+  if (reservations.length) {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    const isCancelled = (reservation) => {
+      const status = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+      return ['cancelled', 'canceled'].includes(status);
+    };
+
+    const resolveStartDate = (reservation) => {
+      const candidates = [
+        reservation?.start,
+        reservation?.startDatetime,
+        reservation?.start_datetime,
+        reservation?.start_date,
+        reservation?.startDate
+      ];
+      for (const candidate of candidates) {
+        const date = toValidDate(candidate);
+        if (date) return date;
+      }
+      return null;
+    };
+
+    const todayCount = reservations.filter((reservation) => {
+      if (isCancelled(reservation)) return false;
+      const start = resolveStartDate(reservation);
+      if (!start) return false;
+      return start >= startOfDay && start < endOfDay;
+    }).length;
+
+    const upcomingCount = reservations.filter((reservation) => {
+      if (isCancelled(reservation)) return false;
+      const start = resolveStartDate(reservation);
+      if (!start) return false;
+      return start >= now;
+    }).length;
+
+    result.reservations = {
+      ...result.reservations,
+      total: reservations.length,
+      today: todayCount,
+      upcoming: upcomingCount
+    };
+  }
+
+  const syncedTechnicians = syncTechniciansStatuses() || snapshot.technicians || [];
+  const technicians = Array.isArray(syncedTechnicians) ? syncedTechnicians : [];
+  if (technicians.length) {
+    const busyCount = technicians.filter((tech) => {
+      const status = String(tech?.status || tech?.baseStatus || '').toLowerCase();
+      return status === 'busy';
+    }).length;
+    result.technicians = {
+      ...result.technicians,
+      total: technicians.length,
+      busy: busyCount
+    };
+  }
+
+  return result;
 }
 
 function buildSummaryMetrics(summary) {
@@ -317,10 +452,11 @@ async function loadHomeSummary({ silent = false } = {}) {
   try {
     const response = await apiRequest('/summary/');
     summaryState = normalizeSummaryResponse(response?.data ?? null);
+    summaryState = mergeSummaryWithLocalData(summaryState);
     summaryErrorMessage = '';
   } catch (error) {
     console.error('❌ [home] Failed to load summary data', error);
-    summaryState = null;
+    summaryState = mergeSummaryWithLocalData(null);
     summaryErrorMessage = error instanceof ApiError
       ? error.message
       : t('home.summary.error', 'تعذر تحميل بيانات النظام، حاول لاحقاً');
