@@ -3961,17 +3961,49 @@
   #customer-hero-phone,
   #customer-hero-company,
   #customer-hero-email,
-  #customer-hero-tax,
-  #technician-hero-status,
-  #technician-hero-role,
-  #technician-hero-phone,
-  #technician-hero-department,
-  #dashboard-greeting-technician-status,
-  #dashboard-greeting-technician-phone,
-  #dashboard-greeting-technician-department {
+  #customer-hero-tax {
     min-height: 2.75rem;
     padding: 0.6rem 1.25rem;
     font-size: 1rem;
+  }
+
+  .technician-tag {
+    @apply badge badge-outline badge-lg px-4 rounded-full font-medium;
+    min-height: 2.75rem;
+    color: hsl(var(--bc) / 0.78);
+    border-color: color-mix(in srgb, hsl(var(--bc)) 22%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--b1)) 88%, transparent);
+    gap: 0.35rem;
+    letter-spacing: -0.01em;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .technician-tag--status-available {
+    color: hsl(var(--su));
+    border-color: color-mix(in srgb, hsl(var(--su)) 48%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--su)) 18%, transparent);
+  }
+
+  .technician-tag--status-busy {
+    color: hsl(var(--wa));
+    border-color: color-mix(in srgb, hsl(var(--wa)) 48%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--wa)) 16%, transparent);
+  }
+
+  :where(html.dark, body.dark) .technician-tag {
+    color: color-mix(in srgb, hsl(var(--bc)) 85%, transparent);
+    border-color: color-mix(in srgb, hsl(var(--bc)) 28%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--b1)) 34%, transparent);
+  }
+
+  :where(html.dark, body.dark) .technician-tag--status-available {
+    border-color: color-mix(in srgb, hsl(var(--su)) 62%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--su)) 35%, transparent);
+  }
+
+  :where(html.dark, body.dark) .technician-tag--status-busy {
+    border-color: color-mix(in srgb, hsl(var(--wa)) 62%, transparent);
+    background-color: color-mix(in srgb, hsl(var(--wa)) 33%, transparent);
   }
 
   .empty-state {
