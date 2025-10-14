@@ -1143,14 +1143,30 @@ function setupSummaryEvents() {
   const shareCheckbox = document.getElementById('res-company-share');
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
     shareCheckbox.addEventListener('change', () => {
+      let skipImmediateRender = false;
       if (shareCheckbox.checked) {
         if (!shareCheckbox.dataset.companyShare) {
           shareCheckbox.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
         }
+        if (taxCheckbox) {
+          if (taxCheckbox.disabled) {
+            shareCheckbox.checked = false;
+            showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+            renderDraftReservationSummary();
+            return;
+          }
+          if (!taxCheckbox.checked) {
+            taxCheckbox.checked = true;
+            taxCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            skipImmediateRender = true;
+          }
+        }
       } else if (taxCheckbox?.checked) {
         ensureCompanyShareEnabled();
       }
-      renderDraftReservationSummary();
+      if (!skipImmediateRender) {
+        renderDraftReservationSummary();
+      }
     });
     shareCheckbox.dataset.listenerAttached = 'true';
   }

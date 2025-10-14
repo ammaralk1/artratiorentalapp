@@ -473,14 +473,30 @@ export function setupEditReservationModalEvents(context = {}) {
   const shareCheckbox = document.getElementById('edit-res-company-share');
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
     shareCheckbox.addEventListener('change', () => {
+      let skipImmediateRender = false;
       if (shareCheckbox.checked) {
         if (!shareCheckbox.dataset.companyShare) {
           shareCheckbox.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
         }
+        if (taxCheckbox) {
+          if (taxCheckbox.disabled) {
+            shareCheckbox.checked = false;
+            showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+            updateEditReservationSummary?.();
+            return;
+          }
+          if (!taxCheckbox.checked) {
+            taxCheckbox.checked = true;
+            taxCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+            skipImmediateRender = true;
+          }
+        }
       } else if (taxCheckbox?.checked) {
         ensureCompanyShareEnabled('edit-res-company-share');
       }
-      updateEditReservationSummary?.();
+      if (!skipImmediateRender) {
+        updateEditReservationSummary?.();
+      }
     });
     shareCheckbox.dataset.listenerAttached = 'true';
   }
