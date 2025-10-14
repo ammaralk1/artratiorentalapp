@@ -360,9 +360,6 @@ function openFinancialModal() {
   if (financialPayoutDateInput && !financialPayoutDateInput.value) {
     financialPayoutDateInput.value = formatDateInputValue(new Date());
   }
-  if (financialPayoutAmountInput) {
-    financialPayoutAmountInput.setAttribute('min', '0');
-  }
 }
 
 function closeFinancialModal() {

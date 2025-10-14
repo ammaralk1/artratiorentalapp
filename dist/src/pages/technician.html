@@ -277,25 +277,6 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع">
-            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <a
-                href="dashboard.html#reservations-tab"
-                class="tab-button customer-primary-nav-link"
-                data-close-sidebar
-                data-i18n
-                data-i18n-key="customerDetails.primaryNav.reservations"
-              >📅 إدارة الحجوزات</a>
-              <a
-                href="projects.html"
-                class="tab-button customer-primary-nav-link"
-                data-close-sidebar
-                data-i18n
-                data-i18n-key="customerDetails.primaryNav.projects"
-              >📁 إدارة المشاريع</a>
-            </div>
-          </nav>
-
           <section class="glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="space-y-2">
@@ -422,7 +403,7 @@
               <div class="technician-payout-form-grid">
                 <div class="form-field">
                   <label class="form-label" for="technician-payout-amount" data-i18n data-i18n-key="technicianFinancial.payouts.form.amount">💰 المبلغ</label>
-                  <input type="number" step="0.01" class="form-control" id="technician-payout-amount" placeholder="0.00" required>
+                  <input type="text" inputmode="decimal" class="form-control" id="technician-payout-amount" placeholder="0.00" required>
                 </div>
                 <div class="form-field">
                   <label class="form-label" for="technician-payout-date" data-i18n data-i18n-key="technicianFinancial.payouts.form.date">📅 تاريخ الدفع</label>
@@ -459,7 +440,7 @@
           <p class="text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.confirmMessage">هل أنت متأكد من حذف هذه الدفعة؟</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-payout-confirm-close data-i18n data-i18n-key="technicianFinancial.payouts.confirmCancel">إلغاء</button>
+          <button type="button" class="btn btn-outline" data-payout-confirm-close data-i18n data-i18n-key="technicianFinancial.payouts.confirmCancel">إلغاء</button>
           <button type="button" class="btn btn-error" id="technician-payout-confirm-yes" data-i18n data-i18n-key="technicianFinancial.payouts.confirmAccept">🗑️ حذف</button>
         </div>
       </div>
