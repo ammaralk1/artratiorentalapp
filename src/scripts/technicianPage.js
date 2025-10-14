@@ -385,22 +385,18 @@ function setStatusBadge(status) {
 
   if (!normalized) {
     targets.forEach((element) => {
-      element.className = 'badge badge-outline hidden';
+      element.className = 'badge badge-outline badge-lg hidden';
       element.textContent = '—';
     });
     return;
   }
 
   const isBusy = normalized === 'busy';
-  const badgeClasses = ['badge', 'px-3', 'py-2', 'text-sm', 'font-semibold'];
-  if (isBusy) {
-    badgeClasses.push('badge-warning');
-  } else {
-    badgeClasses.push('badge-success');
-  }
+  const badgeClasses = ['badge', 'badge-outline', 'badge-lg', 'font-semibold'];
+  badgeClasses.push(isBusy ? 'text-warning' : 'text-success');
 
   const key = isBusy ? 'technicians.status.busy' : 'technicians.status.available';
-  const fallback = isBusy ? 'مشغول' : 'متاح';
+  const fallback = isBusy ? '⛔ مشغول' : '✅ متاح';
 
   targets.forEach((element) => {
     element.className = badgeClasses.join(' ');
