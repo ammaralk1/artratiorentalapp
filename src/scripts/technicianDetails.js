@@ -142,16 +142,10 @@ export async function renderTechnicianReservations(technicianId) {
       endDate = resolvedEnd;
     }
 
-    const rawSearch = searchInput?.value || "";
-    const normalizedSearch = normalizeSearchText(rawSearch);
-    const generalSearch = normalizedSearch.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-    const identifierSearch = normalizedSearch.replace(/[^a-z0-9]/g, '');
+    const searchValue = normalizeSearchText(searchInput?.value || "");
 
     return {
-      searchTerm: generalSearch,
-      searchReservationId: identifierSearch,
-      searchCustomerName: generalSearch,
-      searchProjectId: identifierSearch,
+      searchTerm: searchValue,
       startDate,
       endDate,
       status: statusSelect?.value || "",
