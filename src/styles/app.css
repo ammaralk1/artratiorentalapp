@@ -2376,9 +2376,9 @@
   .equipment-details-field {
     display: flex;
     flex-wrap: nowrap;
-    align-items: center;
-    gap: clamp(0.45rem, 1vw, 0.8rem);
-    padding: clamp(0.75rem, 1.1vw, 1rem);
+    align-items: flex-start;
+    gap: clamp(0.4rem, 0.8vw, 0.7rem);
+    padding: clamp(0.6rem, 0.9vw, 0.85rem);
     border-radius: 0.9rem;
     background: linear-gradient(140deg, hsl(var(--b1) / 0.96), hsl(var(--b1)));
     border: 1px solid rgba(76, 110, 245, 0.32);
@@ -2416,10 +2416,9 @@
     min-width: clamp(110px, 18vw, 160px);
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    gap: 0.45rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .equipment-details-field .form-control {
@@ -2429,11 +2428,13 @@
     color: hsl(var(--bc));
     box-shadow: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    min-height: 2.4rem;
-    flex: 1 1 clamp(240px, 55vw, 100%);
+    min-height: 2.35rem;
+    flex: 1 1 clamp(240px, 60vw, 100%);
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    min-width: 0;
   }
 
   @media (max-width: 640px) {
@@ -2445,6 +2446,7 @@
     .equipment-details-field label {
       min-width: 0;
       white-space: normal;
+      overflow-wrap: anywhere;
     }
 
     .equipment-details-field .form-control {
