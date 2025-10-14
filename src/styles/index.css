@@ -116,9 +116,15 @@ body.dark-mode .home-summary-value {
   background: transparent;
 }
 
+.home-main-tabbar .tab-buttons.tab-buttons-horizontal {
+  justify-content: center;
+}
+
 .home-main-tabbar .tab-buttons {
   justify-content: center;
   gap: 1rem;
+  width: auto;
+  max-width: none;
 }
 
 .home-main-tabbar .tab-button {
