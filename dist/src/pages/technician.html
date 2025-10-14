@@ -28,7 +28,7 @@
   <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.js">
   <link rel="stylesheet" crossorigin href="../../assets/app.css">
 </head>
-<body class="page-shell theme-loading" data-theme="light">
+<body class="page-shell theme-loading technician-page customer-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
@@ -173,63 +173,75 @@
               </svg>
             </button>
             <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-4">
-                <div class="space-y-1 text-start">
-                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianDetails.hero.subtitle">راجع نشاط عضو الطاقم ومهامه الحالية.</p>
-                  <p class="text-base text-base-content/70" data-i18n data-i18n-key="technicianDetails.hero.helper">استخدم هذه الصفحة لمتابعة حجوزات ومشاريع عضو الطاقم.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <a href="#" class="btn btn-primary" data-technician-tab-trigger="reservations" data-i18n data-i18n-key="customerTabs.reservations">📅 إدارة الحجوزات</a>
-                  <a href="dashboard.html#technicians-tab" class="btn btn-outline" data-i18n data-i18n-key="tabs.technicians">😎 الانتقال للطاقم</a>
-                </div>
-                <div class="rounded-2xl border border-base-200/80 bg-base-100/70 p-4">
-                  <div class="stats stats-vertical sm:stats-horizontal w-full bg-transparent gap-4" id="technician-financial-stats">
-                    <div class="stat">
-                      <div class="stat-figure text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M12 3c3.866 0 7 2.91 7 6.5c0 5.25 -5.5 9.5 -7 11c-1.5 -1.5 -7 -5.75 -7 -11c0 -3.59 3.134 -6.5 7 -6.5z"></path>
-                        </svg>
-                      </div>
-                      <div class="stat-title" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</div>
-                      <div id="technician-financial-total" class="stat-value text-primary">0</div>
-                      <div id="technician-financial-total-desc" class="stat-desc text-base-content/70">—</div>
-                    </div>
-                    <div class="stat">
-                      <div class="stat-figure text-success">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M11 4h10"></path>
-                          <path d="M11 8h8"></path>
-                          <path d="M11 12h6"></path>
-                          <path d="M11 16h4"></path>
-                          <path d="M3 11l2 -2l2 2l-2 2l-2 -2"></path>
-                          <path d="M3 17l2 -2l2 2l-2 2l-2 -2"></path>
-                        </svg>
-                      </div>
-                      <div class="stat-title" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</div>
-                      <div id="technician-financial-paid" class="stat-value text-success">0</div>
-                      <div id="technician-financial-paid-desc" class="stat-desc text-base-content/70">—</div>
-                    </div>
-                    <div class="stat">
-                      <div class="stat-figure text-warning">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                          <path d="M12 9v2m0 4v.01"></path>
-                          <path d="M5 19h14"></path>
-                          <path d="M7.002 19.005a5 5 0 1 1 9.99 0"></path>
-                          <path d="M12 5a7 7 0 0 1 7 7v2"></path>
-                          <path d="M5 12a7 7 0 0 1 7 -7"></path>
-                        </svg>
-                      </div>
-                      <div class="stat-title" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</div>
-                      <div id="technician-financial-outstanding" class="stat-value text-warning">0</div>
-                      <div id="technician-financial-outstanding-desc" class="stat-desc text-base-content/70">—</div>
-                    </div>
+              <div class="flex flex-col gap-6">
+                <div class="flex flex-wrap items-start gap-4">
+                  <div class="space-y-1 text-start">
+                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianDetails.hero.subtitle">راجع نشاط عضو الطاقم ومهامه الحالية.</p>
+                    <h2 class="text-2xl font-bold text-base-content" id="dashboard-greeting-technician-name">—</h2>
+                    <p class="text-sm text-base-content/60" id="dashboard-greeting-technician-role">—</p>
                   </div>
-                  <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                    <button type="button" id="technician-financial-open" class="btn btn-outline btn-primary w-full sm:w-auto" data-i18n data-i18n-key="technicianFinancial.actions.viewDetails">📊 عرض التفاصيل</button>
+                  <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
+                    <span class="badge badge-outline badge-lg hidden" id="dashboard-greeting-technician-status">—</span>
+                    <span class="badge badge-outline badge-lg hidden" id="dashboard-greeting-technician-phone">—</span>
+                    <span class="badge badge-outline badge-lg hidden" id="dashboard-greeting-technician-department">—</span>
                   </div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="technician-financial-stats">
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-primary/10 p-2 text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 3c3.866 0 7 2.91 7 6.5c0 5.25 -5.5 9.5 -7 11c-1.5 -1.5 -7 -5.75 -7 -11c0 -3.59 3.134 -6.5 7 -6.5z"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
+                      <span id="technician-financial-total" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-total-desc">—</p>
+                    </div>
+                  </article>
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-success/10 p-2 text-success">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M11 4h10"></path>
+                        <path d="M11 8h8"></path>
+                        <path d="M11 12h6"></path>
+                        <path d="M11 16h4"></path>
+                        <path d="M3 11l2 -2l2 2l-2 2l-2 -2"></path>
+                        <path d="M3 17l2 -2l2 2l-2 2l-2 -2"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
+                      <span id="technician-financial-paid" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-paid-desc">—</p>
+                    </div>
+                  </article>
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-warning/10 p-2 text-warning">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 9v2m0 4v.01"></path>
+                        <path d="M5 19h14"></path>
+                        <path d="M7.002 19.005a5 5 0 1 1 9.99 0"></path>
+                        <path d="M12 5a7 7 0 0 1 7 7v2"></path>
+                        <path d="M5 12a7 7 0 0 1 7 -7"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
+                      <span id="technician-financial-outstanding" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-outstanding-desc">—</p>
+                    </div>
+                  </article>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 justify-between">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <a href="#" class="btn btn-primary" data-technician-tab-trigger="reservations" data-i18n data-i18n-key="customerTabs.reservations">📅 إدارة الحجوزات</a>
+                    <a href="dashboard.html#technicians-tab" class="btn btn-outline" data-i18n data-i18n-key="tabs.technicians">😎 الانتقال للطاقم</a>
+                  </div>
+                  <button type="button" id="technician-financial-open" class="btn btn-outline btn-primary" data-i18n data-i18n-key="technicianFinancial.actions.viewDetails">📊 عرض التفاصيل</button>
                 </div>
               </div>
             </div>
@@ -265,30 +277,45 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <a
+                href="dashboard.html#reservations-tab"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.reservations"
+              >📅 إدارة الحجوزات</a>
+              <a
+                href="projects.html"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.projects"
+              >📁 إدارة المشاريع</a>
+            </div>
+          </nav>
+
           <section class="glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div class="space-y-3">
+              <div class="space-y-2">
                 <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="technicianDetails.title">😎 بيانات عضو الطاقم</p>
-                <div class="flex flex-wrap items-center gap-3">
-                  <h2 id="technician-hero-name" class="text-2xl font-bold text-base-content">😎 —</h2>
-                  <span id="technician-hero-status" class="badge badge-outline hidden">—</span>
-                </div>
+                <h2 id="technician-hero-name" class="text-2xl font-bold text-base-content">😎 —</h2>
                 <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
+                  <span id="technician-hero-status" class="badge badge-outline badge-lg hidden">—</span>
                   <span id="technician-hero-role" class="badge badge-outline badge-lg hidden">🎯 —</span>
                   <span id="technician-hero-phone" class="badge badge-outline badge-lg hidden">📞 —</span>
                   <span id="technician-hero-department" class="badge badge-outline badge-lg hidden">🏢 —</span>
                 </div>
               </div>
-              <div class="flex items-start gap-2">
-                <button class="btn btn-primary" id="technician-edit-primary" type="button" data-technician-edit data-i18n data-i18n-key="technicianDetails.actions.edit">✏️ تعديل عضو الطاقم</button>
+              <div class="flex items-start justify-end">
+                <button class="btn btn-primary btn-wide" id="technician-edit-primary" type="button" data-technician-edit data-i18n data-i18n-key="technicianDetails.actions.edit">✏️ تعديل عضو الطاقم</button>
               </div>
             </div>
-            <div class="rounded-3xl border border-base-200/60 bg-base-100/75 p-4">
-              <div id="technician-details" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
-            </div>
+            <div id="technician-details" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
           </section>
 
-          <div class="glass-card technician-tabbar">
+          <div class="glass-card dashboard-tabbar customer-tabbar technician-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <button type="button" class="tab-button tab-active" data-technician-tab="reservations" data-i18n data-i18n-key="customerTabs.reservations">📅 إدارة الحجوزات</button>
               <button type="button" class="tab-button" data-technician-tab="projects" data-i18n data-i18n-key="customerTabs.projects">📁 إدارة المشاريع</button>
@@ -301,7 +328,7 @@
               <button type="button" class="btn btn-outline btn-secondary" id="technician-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="technician-search-reservation" class="form-control w-auto" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
+              <input type="text" id="technician-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
               <input type="text" id="technician-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
               <input type="text" id="technician-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
               <select id="technician-reservation-date-range" class="form-select w-auto">
@@ -326,7 +353,7 @@
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerProjects.title">📁 مشاريع العضو</h3>
               <div class="flex flex-wrap items-center gap-2">
-                <input type="text" id="technician-project-search" class="form-control w-auto" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+                <input type="text" id="technician-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
                 <select id="technician-project-status-filter" class="form-select w-auto">
                   <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
                   <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
@@ -347,48 +374,78 @@
   </div>
 
   <div id="technician-financial-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-box max-w-4xl space-y-5">
-      <header class="space-y-2">
-        <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.modal.title">📊 الملخص المالي للفني</h3>
-        <p class="text-sm text-base-content/70" data-i18n data-i18n-key="technicianFinancial.modal.subtitle">نظرة تفصيلية على مستحقات العضو والمدفوعات السابقة والحالية.</p>
-      </header>
-      <section class="grid gap-3 rounded-2xl border border-base-200/80 bg-base-100/80 p-4 sm:grid-cols-3" id="technician-financial-modal-summary">
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
-          <strong id="technician-financial-modal-total" class="text-lg font-semibold text-base-content">0</strong>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.modal.title">📊 الملخص المالي للفني</h3>
+          <button type="button" class="btn-close" data-financial-modal-close aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
-          <strong id="technician-financial-modal-paid" class="text-lg font-semibold text-success">0</strong>
+        <div class="modal-body space-y-5">
+          <section class="grid gap-3 rounded-2xl border border-base-200 bg-base-100/90 p-4 sm:grid-cols-3" id="technician-financial-modal-summary">
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
+              <strong id="technician-financial-modal-total" class="text-lg font-semibold text-base-content">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
+              <strong id="technician-financial-modal-paid" class="text-lg font-semibold text-success">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
+              <strong id="technician-financial-modal-outstanding" class="text-lg font-semibold text-warning">0</strong>
+            </div>
+          </section>
+          <section class="space-y-3">
+            <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.list.title">تفاصيل الحجوزات والمشاريع</h4>
+            <div id="technician-financial-modal-empty" class="hidden rounded-2xl border border-dashed border-base-200 p-4 text-center text-base-content/70" data-i18n data-i18n-key="technicianFinancial.assignments.empty">لا توجد حجوزات أو مشاريع مرتبطة لعرضها.</div>
+            <div class="table-responsive" id="technician-financial-modal-table-wrapper">
+              <table class="table table-sm table-borderless align-middle" id="technician-financial-modal-table">
+                <thead>
+                  <tr>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.reservation">الحجز / المشروع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.period">الفترة</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.due">المستحق</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.status">حالة الدفع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.outstanding">المتبقي</th>
+                  </tr>
+                </thead>
+                <tbody id="technician-financial-modal-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="technician-payouts-section">
+            <div class="space-y-1">
+              <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.payouts.title">💸 سجل الدفعات الداخلية</h4>
+              <p class="text-sm text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.helper">سجّل المبالغ التي تم دفعها لهذا العضو من الشركة لضمان تتبع السداد.</p>
+            </div>
+            <form id="technician-payout-form" class="technician-payout-form">
+              <div class="technician-payout-form-grid">
+                <div class="form-field">
+                  <label class="form-label" for="technician-payout-amount" data-i18n data-i18n-key="technicianFinancial.payouts.form.amount">💰 المبلغ</label>
+                  <input type="number" step="0.01" class="form-control" id="technician-payout-amount" placeholder="0.00" required>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="technician-payout-date" data-i18n data-i18n-key="technicianFinancial.payouts.form.date">📅 تاريخ الدفع</label>
+                  <input type="date" class="form-control" id="technician-payout-date">
+                </div>
+                <div class="form-field technician-payout-note-field">
+                  <label class="form-label" for="technician-payout-note" data-i18n data-i18n-key="technicianFinancial.payouts.form.note">📝 ملاحظات (اختياري)</label>
+                  <input type="text" class="form-control" id="technician-payout-note" placeholder="مثال: دفعة سريعة أو مرجع التحويل">
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-2">
+                <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="technicianFinancial.payouts.form.submit">💸 تسجيل الدفعة</button>
+              </div>
+            </form>
+            <div id="technician-payouts-empty" class="technician-payouts-empty text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.empty">لا توجد دفعات مسجلة بعد.</div>
+            <ul id="technician-payouts-list" class="technician-payouts-list"></ul>
+          </section>
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
-          <strong id="technician-financial-modal-outstanding" class="text-lg font-semibold text-warning">0</strong>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-financial-modal-close data-i18n data-i18n-key="actions.close">إغلاق</button>
         </div>
-      </section>
-      <section class="space-y-3">
-        <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.list.title">تفاصيل الحجوزات والمشاريع</h4>
-        <div id="technician-financial-modal-empty" class="hidden rounded-2xl border border-dashed border-base-200 bg-base-100/70 p-4 text-center text-base-content/70" data-i18n data-i18n-key="technicianFinancial.assignments.empty">لا توجد حجوزات أو مشاريع مرتبطة لعرضها.</div>
-        <div class="overflow-x-auto" id="technician-financial-modal-table-wrapper">
-          <table class="table table-zebra w-full text-sm" id="technician-financial-modal-table">
-            <thead>
-              <tr>
-                <th data-i18n data-i18n-key="technicianFinancial.list.reservation">الحجز / المشروع</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.period">الفترة</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.due">المستحق</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.status">حالة الدفع</th>
-                <th data-i18n data-i18n-key="technicianFinancial.list.outstanding">المتبقي</th>
-              </tr>
-            </thead>
-            <tbody id="technician-financial-modal-rows"></tbody>
-          </table>
-        </div>
-      </section>
-      <div class="modal-action">
-        <button type="button" class="btn" data-financial-modal-close data-i18n data-i18n-key="actions.close">إغلاق</button>
       </div>
     </div>
-    <div class="modal-backdrop" data-financial-modal-close></div>
   </div>
 
   <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
@@ -571,50 +628,39 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
         <div class="modal-body">
-          <form id="edit-technician-form" class="row g-3">
+          <form id="edit-technician-form" class="management-form" novalidate>
             <input type="hidden" id="edit-technician-id">
+            <input type="hidden" id="edit-technician-status" value="available">
 
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-name" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-              <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-phone" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-              <input type="tel" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-role" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-              <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-department" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-              <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-              <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-status" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
-              <select id="edit-technician-status" class="form-select" required>
-                <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
-                <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
-              </select>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-              <textarea id="edit-technician-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+            <div class="management-form-grid">
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-name" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-phone" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                <input type="tel" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-role" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-department" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+                <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+              </div>
+              <div class="form-field form-field-notes">
+                <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                <textarea id="edit-technician-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+              </div>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
           <button type="button" class="btn btn-primary" id="save-technician-changes" data-i18n data-i18n-key="technicians.form.actions.update">💾 حفظ التعديل</button>
         </div>
       </div>

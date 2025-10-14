@@ -4634,7 +4634,7 @@
   }
 
   .technician-payout-item {
-    @apply flex flex-col gap-3 rounded-2xl border border-base-200 bg-base-100/90 p-4 md:flex-row md:items-center md:justify-between;
+    @apply flex flex-col gap-3 rounded-2xl border border-base-200 bg-base-100/80 p-4 md:flex-row md:items-center md:justify-between;
   }
 
   .technician-payout-item-body {
@@ -4642,7 +4642,8 @@
   }
 
   .technician-payout-item-head {
-    @apply flex flex-wrap items-center gap-3 text-sm text-base-content/60;
+    @apply flex flex-wrap items-center gap-3 text-sm;
+    color: hsl(var(--bc) / 0.65);
   }
 
   .technician-payout-amount {
@@ -4650,7 +4651,8 @@
   }
 
   .technician-payout-date {
-    @apply text-xs text-base-content/60;
+    @apply text-xs;
+    color: hsl(var(--bc) / 0.55);
   }
 
   :where(html.dark, body.dark) .btn-outline-secondary {
