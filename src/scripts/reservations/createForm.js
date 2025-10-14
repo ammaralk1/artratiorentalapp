@@ -1388,18 +1388,6 @@ async function handleReservationSubmit() {
   const projectLinked = Boolean(projectIdValue);
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
-  const totalCost = calculateReservationTotal(
-    draftItems,
-    discount,
-    discountType,
-    applyTax,
-    technicianIds,
-    { start, end }
-  );
-  if (applyTax) {
-    ensureCompanyShareEnabled();
-  }
-
   const shareChecked = Boolean(shareCheckbox?.checked);
   if (!projectLinked && shareChecked !== applyTax) {
     showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
@@ -1413,6 +1401,23 @@ async function handleReservationSubmit() {
   }
 
   const companyShareEnabled = shareChecked && applyTax && Number.isFinite(companySharePercent) && companySharePercent > 0;
+
+  if (applyTax) {
+    ensureCompanyShareEnabled();
+  }
+
+  const totalCost = calculateReservationTotal(
+    draftItems,
+    discount,
+    discountType,
+    applyTax,
+    technicianIds,
+    {
+      start,
+      end,
+      companySharePercent: companyShareEnabled ? companySharePercent : 0
+    }
+  );
 
   const reservationCode = generateReservationId();
 

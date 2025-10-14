@@ -402,28 +402,11 @@ function computeReservationFinancials(reservation) {
     discountAmount = discountBase;
   }
 
-  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
   const applyTaxFlag = reservation.applyTax === true
     || reservation.apply_tax === true
     || reservation.apply_tax === 1
     || reservation.apply_tax === '1';
-  let taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-
-  const storedCost = Number(reservation.cost);
-  const computedTotal = taxableAmount + taxAmount;
-  let finalTotal = Math.max(0, Math.round(computedTotal));
-  if (Number.isFinite(storedCost) && storedCost > 0) {
-    finalTotal = storedCost;
-    if (applyTaxFlag) {
-      const adjustedTax = finalTotal - taxableAmount;
-      if (Number.isFinite(adjustedTax) && adjustedTax >= 0) {
-        taxAmount = adjustedTax;
-      }
-    }
-  }
 
   const rawCompanySharePercent = reservation.companySharePercent
     ?? reservation.company_share_percent
@@ -448,9 +431,34 @@ function computeReservationFinancials(reservation) {
     companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
     companyShareEnabled = true;
   }
-  const companyShareAmount = companySharePercent > 0
-    ? Math.max(0, finalTotal * (companySharePercent / 100))
+  let companyShareAmount = companySharePercent > 0
+    ? Math.max(0, subtotalAfterDiscount * (companySharePercent / 100))
     : 0;
+  companyShareAmount = Number.isFinite(companyShareAmount)
+    ? Number(companyShareAmount.toFixed(2))
+    : 0;
+
+  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  let taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+  taxAmount = Number(taxAmount.toFixed(2));
+
+  const computedTotal = taxableAmount + taxAmount;
+  const storedCost = Number(reservation.cost);
+  let finalTotal = Number.isFinite(computedTotal)
+    ? Number(computedTotal.toFixed(2))
+    : 0;
+  if (Number.isFinite(storedCost) && storedCost > 0) {
+    finalTotal = storedCost;
+    if (applyTaxFlag) {
+      const adjustedTax = finalTotal - taxableAmount;
+      if (Number.isFinite(adjustedTax) && adjustedTax >= 0) {
+        taxAmount = Number(adjustedTax.toFixed(2));
+      }
+    }
+  }
 
   const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
 
@@ -459,6 +467,7 @@ function computeReservationFinancials(reservation) {
     equipmentTotal,
     crewTotal,
     discountAmount,
+    subtotalAfterDiscount,
     taxableAmount,
     taxAmount,
     finalTotal,

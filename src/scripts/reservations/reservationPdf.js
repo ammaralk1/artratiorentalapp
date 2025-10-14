@@ -1007,13 +1007,10 @@ function collectReservationFinancials(reservation, technicians, project) {
   const discountAmount = reservation.discountType === 'amount'
     ? discountValue
     : discountBase * (discountValue / 100);
-  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
   const applyTaxFlag = projectLinked ? false : reservation.applyTax;
-  const taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
   const storedCost = Number(reservation.cost);
   const hasStoredCost = Number.isFinite(storedCost);
-  const computedTotal = taxableAmount + taxAmount;
-  const finalTotal = projectLinked ? Math.round(computedTotal) : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
   const rawCompanySharePercent = reservation.companySharePercent
     ?? reservation.company_share_percent
@@ -1037,18 +1034,35 @@ function collectReservationFinancials(reservation, technicians, project) {
   if (applyTaxFlag && companySharePercent <= 0) {
     companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
   }
-  const companyShareAmount = companySharePercent > 0
-    ? Math.max(0, (finalTotal ?? 0) * (companySharePercent / 100))
+  let companyShareAmount = companySharePercent > 0
+    ? Math.max(0, subtotalAfterDiscount * (companySharePercent / 100))
     : 0;
-  const crewCost = Number.isFinite(totals?.crewTotal) ? totals.crewTotal : 0;
-  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount - crewCost);
+  companyShareAmount = Number(companyShareAmount.toFixed(2));
+
+  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  let taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+  taxAmount = Number(taxAmount.toFixed(2));
+
+  const computedTotal = taxableAmount + taxAmount;
+  const finalTotalComputed = Number.isFinite(computedTotal)
+    ? Number(computedTotal.toFixed(2))
+    : 0;
+  const finalTotal = projectLinked
+    ? finalTotalComputed
+    : (hasStoredCost ? storedCost : finalTotalComputed);
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
 
   const totals = {
     equipmentTotal,
     crewTotal,
     discountAmount,
+    subtotalAfterDiscount,
+    taxableAmount,
     taxAmount,
-    finalTotal: finalTotal ?? 0,
+    finalTotal,
     companySharePercent,
     companyShareAmount,
     netProfit
@@ -1058,8 +1072,10 @@ function collectReservationFinancials(reservation, technicians, project) {
     equipmentTotal: normalizeNumbers(equipmentTotal.toFixed(2)),
     crewTotal: normalizeNumbers(crewTotal.toFixed(2)),
     discountAmount: normalizeNumbers(discountAmount.toFixed(2)),
+    subtotalAfterDiscount: normalizeNumbers(subtotalAfterDiscount.toFixed(2)),
+    taxableAmount: normalizeNumbers(taxableAmount.toFixed(2)),
     taxAmount: normalizeNumbers(taxAmount.toFixed(2)),
-    finalTotal: normalizeNumbers((finalTotal ?? 0).toFixed(2)),
+    finalTotal: normalizeNumbers(finalTotal.toFixed(2)),
     companySharePercent: normalizeNumbers(companySharePercent.toFixed(2)),
     companyShareAmount: normalizeNumbers(companyShareAmount.toFixed(2)),
     netProfit: normalizeNumbers(netProfit.toFixed(2))

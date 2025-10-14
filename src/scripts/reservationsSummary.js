@@ -66,7 +66,7 @@ export function calculateReservationDays(start, end) {
   return Math.max(1, Math.ceil(diffDays));
 }
 
-function calculateDraftFinancialBreakdown({
+export function calculateDraftFinancialBreakdown({
   items = [],
   technicianIds = [],
   discount = 0,
@@ -99,14 +99,7 @@ function calculateDraftFinancialBreakdown({
     discountAmount = discountBase;
   }
 
-  const taxableAmount = Math.max(0, discountBase - discountAmount);
-  let taxAmount = applyTax ? taxableAmount * 0.15 : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-
-  const interimTotal = taxableAmount + taxAmount;
-  const finalTotal = Math.max(0, Math.round(interimTotal));
+  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
 
   let normalizedSharePercent = Number.isFinite(companySharePercent)
     ? Number(companySharePercent)
@@ -118,8 +111,18 @@ function calculateDraftFinancialBreakdown({
     ? normalizedSharePercent
     : 0;
   const companyShareAmount = sharePercent > 0
-    ? Math.max(0, finalTotal * (sharePercent / 100))
+    ? Math.max(0, subtotalAfterDiscount * (sharePercent / 100))
     : 0;
+
+  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  let taxAmount = applyTax ? taxableAmount * 0.15 : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+  taxAmount = Number(taxAmount.toFixed(2));
+
+  const interimTotal = taxableAmount + taxAmount;
+  const finalTotal = Math.max(0, Number(interimTotal.toFixed(2)));
 
   const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
 
@@ -128,6 +131,7 @@ function calculateDraftFinancialBreakdown({
     equipmentTotal,
     crewTotal,
     discountAmount,
+    subtotalAfterDiscount,
     taxableAmount,
     taxAmount,
     finalTotal,
@@ -143,7 +147,7 @@ export function calculateReservationTotal(
   discountType = 'percent',
   applyTax = false,
   technicianIds = [],
-  { start = null, end = null } = {}
+  { start = null, end = null, companySharePercent = null } = {}
 ) {
   const breakdown = calculateDraftFinancialBreakdown({
     items,
@@ -152,7 +156,8 @@ export function calculateReservationTotal(
     discountType,
     applyTax,
     start,
-    end
+    end,
+    companySharePercent
   });
   return breakdown.finalTotal;
 }

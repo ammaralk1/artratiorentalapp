@@ -480,7 +480,11 @@ export async function saveReservationChanges({
     discountType,
     applyTax,
     technicianIds,
-    { start, end }
+    {
+      start,
+      end,
+      companySharePercent: companyShareEnabled ? companySharePercent : 0
+    }
   );
 
   let statusForPayload = reservation.status ?? 'pending';

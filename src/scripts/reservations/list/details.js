@@ -76,15 +76,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const discountAmount = reservation.discountType === 'amount'
     ? discountValue
     : discountBase * (discountValue / 100);
-  const taxableAmount = Math.max(0, discountBase - discountAmount);
+  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
   const applyTaxFlag = projectLinked ? false : reservation.applyTax;
-  const taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
   const storedCost = Number(reservation.cost);
   const hasStoredCost = Number.isFinite(storedCost);
-  const computedTotal = taxableAmount + taxAmount;
-  const finalTotal = projectLinked
-    ? Math.round(computedTotal)
-    : (hasStoredCost ? storedCost : Math.round(computedTotal));
 
   const rawCompanySharePercent = reservation.companySharePercent
     ?? reservation.company_share_percent
@@ -101,12 +96,27 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   let companySharePercent = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
     ? normalizedCompanyShare
     : 0;
-  let companyShareAmount = companySharePercent > 0
-    ? Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100))
-    : 0;
   if (applyTaxFlag && companySharePercent <= 0) {
     companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
-    companyShareAmount = Math.max(0, (Number.isFinite(finalTotal) ? finalTotal : 0) * (companySharePercent / 100));
+  }
+  let companyShareAmount = companySharePercent > 0
+    ? Math.max(0, subtotalAfterDiscount * (companySharePercent / 100))
+    : 0;
+
+  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  const taxAmountRaw = applyTaxFlag ? taxableAmount * 0.15 : 0;
+  const taxAmount = Number.isFinite(taxAmountRaw) && taxAmountRaw > 0
+    ? Number(taxAmountRaw.toFixed(2))
+    : 0;
+  const computedTotal = taxableAmount + taxAmount;
+  const finalTotalComputed = Number.isFinite(computedTotal)
+    ? Number(computedTotal.toFixed(2))
+    : 0;
+  const finalTotal = projectLinked
+    ? finalTotalComputed
+    : (hasStoredCost ? storedCost : finalTotalComputed);
+  if (companySharePercent > 0) {
+    companyShareAmount = Number(Math.max(0, subtotalAfterDiscount * (companySharePercent / 100)).toFixed(2));
   }
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
@@ -115,9 +125,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const techniciansCountDisplay = normalizeNumbers(String(assignedTechnicians.length));
   const equipmentTotalDisplay = normalizeNumbers(equipmentTotal.toFixed(2));
   const discountAmountDisplay = normalizeNumbers(discountAmount.toFixed(2));
-  const subtotalAfterDiscountDisplay = normalizeNumbers(taxableAmount.toFixed(2));
+  const subtotalAfterDiscountDisplay = normalizeNumbers(subtotalAfterDiscount.toFixed(2));
   const taxAmountDisplay = normalizeNumbers(taxAmount.toFixed(2));
-  const finalTotalDisplay = normalizeNumbers((finalTotal ?? 0).toFixed(2));
+  const finalTotalDisplay = normalizeNumbers((Number.isFinite(finalTotal) ? finalTotal : 0).toFixed(2));
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
 
   const currencyLabel = t('reservations.create.summary.currency', 'SR');

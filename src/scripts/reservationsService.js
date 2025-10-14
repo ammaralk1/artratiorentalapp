@@ -1,7 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
-import { DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
+import { DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
 
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
@@ -58,8 +58,20 @@ export async function createReservationApi(payload) {
   if (!Number.isFinite(created.companySharePercent) && payload?.company_share_percent != null) {
     created.companySharePercent = Number(payload.company_share_percent) || 0;
   }
-  if (created.companySharePercent > 0 && !Number.isFinite(created.companyShareAmount) && Number.isFinite(created.cost)) {
-    created.companyShareAmount = Math.max(0, created.cost * (created.companySharePercent / 100));
+  if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
+    const breakdown = calculateDraftFinancialBreakdown({
+      items: created.items || [],
+      technicianIds: created.technicians || [],
+      discount: created.discount,
+      discountType: created.discountType,
+      applyTax: created.applyTax,
+      start: created.start,
+      end: created.end,
+      companySharePercent: created.companySharePercent
+    });
+    created.companyShareAmount = breakdown.companyShareAmount;
+    created.cost = breakdown.finalTotal;
+    created.totalAmount = breakdown.finalTotal;
   }
   created.companyShareEnabled = payload?.company_share_enabled ? true : created.companySharePercent > 0;
   setReservationsState([...reservationsState, created]);
@@ -75,8 +87,20 @@ export async function updateReservationApi(id, payload) {
   if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
     updated.companySharePercent = Number(payload.company_share_percent) || 0;
   }
-  if (updated.companySharePercent > 0 && !Number.isFinite(updated.companyShareAmount) && Number.isFinite(updated.cost)) {
-    updated.companyShareAmount = Math.max(0, updated.cost * (updated.companySharePercent / 100));
+  if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
+    const breakdown = calculateDraftFinancialBreakdown({
+      items: updated.items || [],
+      technicianIds: updated.technicians || [],
+      discount: updated.discount,
+      discountType: updated.discountType,
+      applyTax: updated.applyTax,
+      start: updated.start,
+      end: updated.end,
+      companySharePercent: updated.companySharePercent
+    });
+    updated.companyShareAmount = breakdown.companyShareAmount;
+    updated.cost = breakdown.finalTotal;
+    updated.totalAmount = breakdown.finalTotal;
   }
   updated.companyShareEnabled = payload?.company_share_enabled ? true : updated.companySharePercent > 0;
   const next = reservationsState.map((reservation) =>
@@ -152,9 +176,10 @@ export function toInternalReservation(raw = {}) {
   const start = raw.start ?? raw.start_datetime ?? '';
   const end = raw.end ?? raw.end_datetime ?? '';
 
-  const totalAmount = toNumber(raw.total_amount ?? raw.totalAmount ?? raw.cost ?? 0);
+  let totalAmount = toNumber(raw.total_amount ?? raw.totalAmount ?? raw.cost ?? 0);
   const discount = toNumber(raw.discount ?? 0);
   const discountType = raw.discount_type ?? raw.discountType ?? 'percent';
+  const normalizedDiscountType = ['percent', 'amount'].includes(discountType) ? discountType : 'percent';
   const applyTax = Boolean(raw.apply_tax ?? raw.applyTax ?? false);
   const paidStatus = normalisePaidStatus(raw.paid_status ?? raw.paidStatus ?? (raw.paid === true || raw.paid === 'paid' ? 'paid' : 'unpaid')) ?? 'unpaid';
   const confirmed = raw.confirmed != null
@@ -183,12 +208,34 @@ export function toInternalReservation(raw = {}) {
   const companyShareAmountRaw = raw.company_share_amount ?? raw.companyShareAmount;
   let companyShareAmount = Number.isFinite(Number(companyShareAmountRaw))
     ? Number(companyShareAmountRaw)
-    : (companySharePercent > 0 ? Math.max(0, totalAmount * (companySharePercent / 100)) : 0);
+    : NaN;
   if (applyTax && companySharePercent <= 0) {
     companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
-    companyShareAmount = Math.max(0, totalAmount * (companySharePercent / 100));
     companyShareEnabled = true;
   }
+
+  const breakdown = calculateDraftFinancialBreakdown({
+    items,
+    technicianIds,
+    discount,
+    discountType: normalizedDiscountType,
+    applyTax,
+    start,
+    end,
+    companySharePercent: companySharePercent > 0 ? companySharePercent : null
+  });
+
+  if (!Number.isFinite(totalAmount) || totalAmount <= 0 || applyTax) {
+    totalAmount = breakdown.finalTotal;
+  }
+
+  if (!Number.isFinite(companyShareAmount) || companyShareAmount < 0) {
+    companyShareAmount = breakdown.companyShareAmount;
+  }
+  companyShareAmount = Number.isFinite(companyShareAmount)
+    ? Number(companyShareAmount.toFixed(2))
+    : 0;
+
   if (!companyShareEnabled && companySharePercent > 0) {
     companyShareEnabled = true;
   }
@@ -207,7 +254,7 @@ export function toInternalReservation(raw = {}) {
     location: raw.location ?? '',
     notes: raw.notes ?? '',
     discount,
-    discountType: ['percent', 'amount'].includes(discountType) ? discountType : 'percent',
+    discountType: normalizedDiscountType,
     applyTax,
     paid: paidStatus === 'paid',
     paidStatus,
