@@ -614,53 +614,47 @@
           <form id="edit-customer-form" class="management-form" novalidate>
             <input type="hidden" id="edit-id">
 
-            <div class="row g-3">
-              <div class="col-12 col-md-4">
+            <div class="management-form-grid">
+              <div class="form-field">
                 <label class="form-label" for="edit-name" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
                 <input class="form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
               </div>
-              <div class="col-12 col-md-4">
-              <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
-              <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-              <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
-            </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-12 col-md-4">
+              <div class="form-field">
+                <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+              </div>
+              <div class="form-field">
                 <label class="form-label" for="edit-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
                 <input class="form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
               </div>
-              <div class="col-12 col-md-4">
-              <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
-              <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label" for="edit-tax-id" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
-              <input class="form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
-            </div>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-12">
+              <div class="form-field">
+                <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-tax-id" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                <input class="form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+              </div>
+              <div class="form-field col-span-full">
                 <label class="form-label" for="edit-document-file" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
                 <div class="customer-upload-inline">
                   <input type="file" class="form-control" id="edit-document-file" accept="application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
                   <button type="button" class="btn btn-outline btn-secondary" id="edit-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
-                <small class="customer-upload-hint" id="edit-document-file-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                  <small class="customer-upload-hint" id="edit-document-file-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                </div>
+                <small class="form-text text-muted d-block mt-2" data-i18n data-i18n-key="customers.form.document.helper">يمكنك لصق رابط مباشر للمستند أو لملف مخزن.</small>
+                <input type="hidden" id="edit-document-url">
+                <input type="hidden" id="edit-document-name">
               </div>
-              <small class="form-text text-muted d-block mt-2" data-i18n data-i18n-key="customers.form.document.helper">يمكنك لصق رابط مباشر للمستند أو لملف مخزن.</small>
-              <input type="hidden" id="edit-document-url">
-              <input type="hidden" id="edit-document-name">
-            </div>
-            </div>
 
-            <div class="mt-3">
-              <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
-              <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+              <div class="form-field form-field-notes">
+                <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+              </div>
             </div>
           </form>
         </div>

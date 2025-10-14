@@ -3104,6 +3104,10 @@
     gap: 0.25rem;
   }
 
+  .management-form-grid .col-span-full {
+    @apply sm:col-span-2 lg:col-span-3;
+  }
+
   .form-field-notes {
     @apply sm:col-span-2 lg:col-span-3 flex flex-col items-center text-center;
   }
