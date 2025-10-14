@@ -355,15 +355,7 @@ export async function saveReservationChanges({
   const projectIdValue = document.getElementById('edit-res-project')?.value || '';
   const technicianIds = getEditingTechnicians();
   const shareCheckbox = document.getElementById('edit-res-company-share');
-  let companySharePercent = null;
-  if (shareCheckbox && shareCheckbox.checked) {
-    const rawShare = shareCheckbox.dataset.companyShare ?? shareCheckbox.value ?? DEFAULT_COMPANY_SHARE_PERCENT;
-    const parsedShare = Number.parseFloat(normalizeNumbers(String(rawShare).replace('%', '').trim()));
-    companySharePercent = Number.isFinite(parsedShare) && parsedShare > 0
-      ? parsedShare
-      : DEFAULT_COMPANY_SHARE_PERCENT;
-  }
-  const companyShareEnabled = Number.isFinite(companySharePercent) && companySharePercent > 0;
+  const taxCheckbox = document.getElementById('edit-res-tax');
 
   if (!startDate || !endDate) {
     showToast(t('reservations.toast.requireDates', '⚠️ يرجى تحديد تاريخ البداية والنهاية'));
@@ -425,8 +417,6 @@ export async function saveReservationChanges({
     }
   }
 
-  const taxCheckbox = document.getElementById('edit-res-tax');
-
   const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length
     ? modalEventsContext.projects
     : (loadData().projects || []);
@@ -445,7 +435,36 @@ export async function saveReservationChanges({
     projectStatus
   } = resolveReservationProjectState(reservationStateForHelper, selectedProject);
 
-  const applyTax = helperProjectLinked ? false : (taxCheckbox?.checked || false);
+  let shareChecked = Boolean(shareCheckbox?.checked);
+  let taxChecked = Boolean(taxCheckbox?.checked);
+
+  if (helperProjectLinked) {
+    if (shareChecked) {
+      shareCheckbox.checked = false;
+      shareChecked = false;
+    }
+    taxChecked = false;
+  }
+
+  if (!helperProjectLinked && shareChecked !== taxChecked) {
+    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+    return;
+  }
+
+  if (taxChecked) {
+    ensureCompanyShareEnabled('edit-res-company-share');
+    shareChecked = Boolean(shareCheckbox?.checked);
+  }
+
+  let companySharePercent = shareChecked ? getCompanySharePercent('edit-res-company-share') : null;
+  if (shareChecked && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
+    ensureCompanyShareEnabled('edit-res-company-share');
+    companySharePercent = getCompanySharePercent('edit-res-company-share');
+  }
+
+  const companyShareEnabled = shareChecked && taxChecked && Number.isFinite(companySharePercent) && companySharePercent > 0;
+
+  const applyTax = helperProjectLinked ? false : taxChecked;
 
   const totalAmount = calculateReservationTotal(
     editingItems,

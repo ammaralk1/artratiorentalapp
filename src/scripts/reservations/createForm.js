@@ -1159,7 +1159,7 @@ function renderDraftReservationSummary() {
   if (applyTax) {
     ensureCompanyShareEnabled();
   }
-  const companySharePercent = getCompanySharePercent();
+  const sharePercentForSummary = getCompanySharePercent();
 
   const paymentSelect = document.getElementById('res-payment-status');
   updatePaymentStatusAppearance(paymentSelect, paidStatus);
@@ -1172,7 +1172,7 @@ function renderDraftReservationSummary() {
     paidStatus,
     start,
     end,
-    companySharePercent
+    companySharePercent: sharePercentForSummary
   });
 }
 
@@ -1378,6 +1378,7 @@ async function handleReservationSubmit() {
   }
 
   const taxCheckbox = document.getElementById('res-tax');
+  const shareCheckbox = document.getElementById('res-company-share');
   const projectLinked = Boolean(projectIdValue);
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
@@ -1392,12 +1393,20 @@ async function handleReservationSubmit() {
   if (applyTax) {
     ensureCompanyShareEnabled();
   }
-  let companySharePercent = getCompanySharePercent();
-  if (applyTax && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
+
+  const shareChecked = Boolean(shareCheckbox?.checked);
+  if (!projectLinked && shareChecked !== applyTax) {
+    showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+    return;
+  }
+
+  let companySharePercent = shareChecked ? getCompanySharePercent() : null;
+  if (shareChecked && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
     ensureCompanyShareEnabled();
     companySharePercent = getCompanySharePercent();
   }
-  const companyShareEnabled = applyTax || (Number.isFinite(companySharePercent) && companySharePercent > 0);
+
+  const companyShareEnabled = shareChecked && applyTax && Number.isFinite(companySharePercent) && companySharePercent > 0;
 
   const reservationCode = generateReservationId();
 
