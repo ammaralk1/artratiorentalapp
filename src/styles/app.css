@@ -4614,7 +4614,7 @@
   }
 
   .technician-payout-form {
-    @apply space-y-4 rounded-2xl border border-base-200 bg-base-100/85 p-4;
+    @apply space-y-4 rounded-2xl border border-base-200 bg-base-100/80 p-4;
   }
 
   .technician-payout-form-grid {

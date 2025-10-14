@@ -234,28 +234,21 @@
               <h2 class="text-2xl font-bold text-base-content" data-home-greeting data-i18n data-i18n-key="home.hero.title">مرحباً بك</h2>
               <p class="text-base text-base-content/70" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
             </div>
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-home-links>
-              <a href="dashboard.html" class="quick-link-card glass-card flex flex-col gap-3 p-5 transition hover:-translate-y-1" data-i18n data-i18n-key="home.bookings.title">
-                <span class="text-3xl" aria-hidden="true">📅</span>
-                <div class="space-y-1">
-                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</h3>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.bookings.description">الوصول إلى لوحة التحكم الكاملة لإدارة الحجوزات، المعدات، الصيانة، والطاقم.</p>
-                </div>
-              </a>
-              <a href="projects.html" class="quick-link-card glass-card flex flex-col gap-3 p-5 transition hover:-translate-y-1" data-i18n data-i18n-key="home.projects.title">
-                <span class="text-3xl" aria-hidden="true">🏗️</span>
-                <div class="space-y-1">
-                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</h3>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.projects.description">إنشاء ومتابعة المشاريع، توزيع الطاقم والمعدات، وتتبع المصروفات المرتبطة بكل مشروع.</p>
-                </div>
-              </a>
-              <a href="users.html" class="quick-link-card glass-card flex hidden flex-col gap-3 p-5 transition hover:-translate-y-1" data-admin-card data-i18n data-i18n-key="home.users.title">
-                <span class="text-3xl" aria-hidden="true">🛡️</span>
-                <div class="space-y-1">
-                  <h3 class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</h3>
-                  <p class="text-sm text-base-content/70" data-i18n data-i18n-key="home.users.description">إنشاء المستخدمين، تعديل الصلاحيات، والاطلاع على سجلات الجلسات والنشاط.</p>
-                </div>
-              </a>
+            <div class="home-primary-tabs" data-home-links>
+              <div class="tab-buttons home-primary-tab-buttons" role="tablist">
+                <a href="dashboard.html" class="tab-button home-primary-tab">
+                  <span class="home-primary-tab__icon" aria-hidden="true">📅</span>
+                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</span>
+                </a>
+                <a href="projects.html" class="tab-button home-primary-tab">
+                  <span class="home-primary-tab__icon" aria-hidden="true">🏗️</span>
+                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</span>
+                </a>
+                <a href="users.html" class="tab-button home-primary-tab hidden" data-admin-card>
+                  <span class="home-primary-tab__icon" aria-hidden="true">🛡️</span>
+                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</span>
+                </a>
+              </div>
             </div>
           </section>
 
