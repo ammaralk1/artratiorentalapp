@@ -144,12 +144,14 @@ export async function renderTechnicianReservations(technicianId) {
 
     const rawSearch = searchInput?.value || "";
     const normalizedSearch = normalizeSearchText(rawSearch);
+    const generalSearch = normalizedSearch.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const identifierSearch = normalizedSearch.replace(/[^a-z0-9]/g, '');
 
     return {
-      searchTerm: normalizedSearch,
-      searchReservationId: normalizedSearch,
-      searchCustomerName: normalizedSearch,
-      searchProjectId: normalizedSearch,
+      searchTerm: generalSearch,
+      searchReservationId: identifierSearch,
+      searchCustomerName: generalSearch,
+      searchProjectId: identifierSearch,
       startDate,
       endDate,
       status: statusSelect?.value || "",
