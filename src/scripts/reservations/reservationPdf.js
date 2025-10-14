@@ -1040,7 +1040,8 @@ function collectReservationFinancials(reservation, technicians, project) {
   const companyShareAmount = companySharePercent > 0
     ? Math.max(0, (finalTotal ?? 0) * (companySharePercent / 100))
     : 0;
-  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount);
+  const crewCost = Number.isFinite(totals?.crewTotal) ? totals.crewTotal : 0;
+  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount - crewCost);
 
   const totals = {
     equipmentTotal,

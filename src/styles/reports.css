@@ -653,6 +653,49 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   color: var(--reports-muted);
 }
 
+.reports-kpi-details {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+  border-top: 1px dashed rgba(71, 85, 105, 0.25);
+  padding-top: 8px;
+}
+
+.reports-kpi-details.hidden {
+  display: none;
+}
+
+.reports-kpi-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: rgba(71, 85, 105, 0.9);
+}
+
+.reports-kpi-detail-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reports-kpi-detail-value {
+  font-weight: 600;
+  color: rgba(30, 41, 59, 0.95);
+}
+
+html.dark .reports-kpi-details {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+html.dark .reports-kpi-detail-row {
+  color: rgba(203, 213, 225, 0.85);
+}
+
+html.dark .reports-kpi-detail-value {
+  color: rgba(226, 232, 240, 0.95);
+}
+
 .reports-analytics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

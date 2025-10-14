@@ -121,7 +121,7 @@ function calculateDraftFinancialBreakdown({
     ? Math.max(0, finalTotal * (sharePercent / 100))
     : 0;
 
-  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount);
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
 
   return {
     rentalDays,
