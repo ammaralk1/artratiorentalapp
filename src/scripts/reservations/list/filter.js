@@ -101,13 +101,25 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
     if (endDateObj && reservationStart && reservationStart > endDateObj) return false;
 
     if (searchReservationIdTerm) {
+      const reservationIdCandidates = [
+        reservation.reservationId,
+        reservation.id,
+        reservation.reservation_id,
+        reservation.reservationCode,
+        reservation.reservation_code,
+        reservation.code,
+        reservation.reference,
+        reservation.referenceNumber,
+        reservation.reference_number
+      ];
       const reservationIdText = normalizeText(
-        [reservation.reservationId, reservation.id]
-          .filter(Boolean)
+        reservationIdCandidates
+          .filter((value) => value !== null && value !== undefined && value !== '')
           .map(String)
           .join(' ')
-      );
-      if (!reservationIdText.includes(searchReservationIdTerm)) return false;
+      ).replace(/\s+/g, '');
+      const reservationIdSearch = searchReservationIdTerm.replace(/\s+/g, '');
+      if (!reservationIdText.includes(reservationIdSearch)) return false;
     }
 
     if (searchCustomerNameTerm) {

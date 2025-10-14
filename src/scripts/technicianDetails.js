@@ -33,7 +33,10 @@ let technicianProjectsContext = {
 let technicianReservationsHydrated = false;
 
 function normalizeSearchText(value = "") {
-  return normalizeNumbers(String(value)).trim().toLowerCase();
+  return normalizeNumbers(String(value))
+    .replace(/[٬،]/g, '')
+    .trim()
+    .toLowerCase();
 }
 
 function applyQuickRangeToInputs(range, startInput, endInput) {
@@ -260,13 +263,16 @@ function getTechnicianProjectsElements() {
   return {
     container: document.getElementById('technician-projects'),
     searchInput: document.getElementById('technician-project-search'),
+    startInput: document.getElementById('technician-project-start-date'),
+    endInput: document.getElementById('technician-project-end-date'),
+    rangeSelect: document.getElementById('technician-project-date-range'),
     statusSelect: document.getElementById('technician-project-status-filter'),
     clearBtn: document.getElementById('technician-projects-clear-filters')
   };
 }
 
 function setupTechnicianProjectsUI() {
-  const { searchInput, statusSelect, clearBtn } = getTechnicianProjectsElements();
+  const { searchInput, statusSelect, clearBtn, startInput, endInput, rangeSelect } = getTechnicianProjectsElements();
 
   if (searchInput && !searchInput.dataset.listenerAttached) {
     searchInput.addEventListener('input', () => {
@@ -274,6 +280,36 @@ function setupTechnicianProjectsUI() {
       updateTechnicianProjects();
     });
     searchInput.dataset.listenerAttached = 'true';
+  }
+
+  if (startInput && !startInput.dataset.listenerAttached) {
+    if (window.flatpickr) {
+      window.flatpickr(startInput, { dateFormat: 'Y-m-d' });
+    }
+    startInput.addEventListener('change', () => {
+      if (rangeSelect) rangeSelect.value = '';
+      updateTechnicianProjects();
+    });
+    startInput.dataset.listenerAttached = 'true';
+  }
+
+  if (endInput && !endInput.dataset.listenerAttached) {
+    if (window.flatpickr) {
+      window.flatpickr(endInput, { dateFormat: 'Y-m-d' });
+    }
+    endInput.addEventListener('change', () => {
+      if (rangeSelect) rangeSelect.value = '';
+      updateTechnicianProjects();
+    });
+    endInput.dataset.listenerAttached = 'true';
+  }
+
+  if (rangeSelect && !rangeSelect.dataset.listenerAttached) {
+    rangeSelect.addEventListener('change', () => {
+      applyQuickRangeToInputs(rangeSelect.value, startInput, endInput);
+      updateTechnicianProjects();
+    });
+    rangeSelect.dataset.listenerAttached = 'true';
   }
 
   if (statusSelect && !statusSelect.dataset.listenerAttached) {
@@ -285,9 +321,24 @@ function setupTechnicianProjectsUI() {
 
   if (clearBtn && !clearBtn.dataset.listenerAttached) {
     clearBtn.addEventListener('click', () => {
-      const { searchInput: sInput, statusSelect: sSelect } = getTechnicianProjectsElements();
+      const {
+        searchInput: sInput,
+        statusSelect: sSelect,
+        startInput: sStart,
+        endInput: sEnd,
+        rangeSelect: sRange
+      } = getTechnicianProjectsElements();
       if (sInput) sInput.value = '';
       if (sSelect) sSelect.value = '';
+      if (sStart) {
+        if (sStart._flatpickr) sStart._flatpickr.clear();
+        sStart.value = '';
+      }
+      if (sEnd) {
+        if (sEnd._flatpickr) sEnd._flatpickr.clear();
+        sEnd.value = '';
+      }
+      if (sRange) sRange.value = '';
       updateTechnicianProjects();
     });
     clearBtn.dataset.listenerAttached = 'true';
@@ -353,11 +404,15 @@ function ensureTechnicianProjectModal() {
 }
 
 function updateTechnicianProjects() {
-  const { container, searchInput, statusSelect } = getTechnicianProjectsElements();
+  const { container, searchInput, statusSelect, startInput, endInput } = getTechnicianProjectsElements();
   if (!container || !technicianProjectsContext.currentId) return;
 
   const searchTerm = normalizeSearchText(searchInput?.value || '');
   const statusFilter = statusSelect?.value || '';
+  const startValue = startInput?.value || '';
+  const endValue = endInput?.value || '';
+  const startDateObj = startValue ? new Date(`${startValue}T00:00:00`) : null;
+  const endDateObj = endValue ? new Date(`${endValue}T23:59:59`) : null;
 
   const { projects = [], customers = [], technicians = [], reservations = [] } = loadData();
   const customerMap = new Map(customers.map((customer) => [String(customer.id), customer]));
@@ -464,6 +519,20 @@ function updateTechnicianProjects() {
     if (statusFilter) {
       const projectStatus = determineProjectStatus(project);
       if (projectStatus !== statusFilter) return false;
+    }
+
+    if (startDateObj || endDateObj) {
+      const projectStartRaw = project.start || project.createdAt || project.created_at || null;
+      const projectEndRaw = project.end || project.projectEnd || project.project_end || null;
+      const projectStart = projectStartRaw ? new Date(projectStartRaw) : null;
+      const projectEnd = projectEndRaw ? new Date(projectEndRaw) : projectStart;
+
+      if (startDateObj && projectStart && projectStart < startDateObj) {
+        return false;
+      }
+      if (endDateObj && projectEnd && projectEnd > endDateObj) {
+        return false;
+      }
     }
 
     return true;
