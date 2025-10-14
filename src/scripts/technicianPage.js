@@ -209,6 +209,7 @@ function renderFinancialModal(state) {
 function openFinancialModal() {
   if (!financialModalEl) return;
   financialModalEl.classList.remove('hidden');
+  financialModalEl.classList.add('show');
   financialModalEl.classList.add('modal-open');
   document.documentElement.classList.add('modal-open');
   document.body.classList.add('overflow-hidden');
@@ -216,8 +217,9 @@ function openFinancialModal() {
 
 function closeFinancialModal() {
   if (!financialModalEl) return;
-  financialModalEl.classList.add('hidden');
+  financialModalEl.classList.remove('show');
   financialModalEl.classList.remove('modal-open');
+  financialModalEl.classList.add('hidden');
   document.documentElement.classList.remove('modal-open');
   document.body.classList.remove('overflow-hidden');
 }
