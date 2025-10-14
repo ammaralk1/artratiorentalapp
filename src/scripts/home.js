@@ -434,6 +434,35 @@ const summaryAccentClassMap = {
   secondary: 'bg-secondary/10 text-secondary'
 };
 
+const sidebarMetricTargetMap = {
+  projects: ['sidebar-stat-projects'],
+  reservations: ['sidebar-stat-reservations'],
+  equipment: ['sidebar-stat-equipment'],
+  technicians: ['sidebar-stat-technicians'],
+};
+
+function updateSidebarMetrics(summary) {
+  const effective = summary ?? createEmptySummarySnapshot();
+  const metrics = {
+    projects: effective?.projects?.total ?? 0,
+    reservations: effective?.reservations?.total ?? 0,
+    equipment: effective?.equipment?.total ?? 0,
+    technicians: effective?.technicians?.total ?? 0,
+  };
+
+  Object.entries(metrics).forEach(([key, value]) => {
+    const targets = sidebarMetricTargetMap[key];
+    if (!Array.isArray(targets)) return;
+    const displayValue = normalizeNumbers(String(value ?? 0));
+    targets.forEach((targetId) => {
+      if (!targetId) return;
+      const element = document.getElementById(targetId);
+      if (!element) return;
+      element.textContent = displayValue;
+    });
+  });
+}
+
 function persistNavigationPreference(patch) {
   if (typeof updatePreferences !== 'function') return;
 
@@ -551,6 +580,7 @@ function renderHomeSummary() {
         ${t('home.summary.loading', '⏳ جارٍ جلب بيانات النظام...')}
       </div>
     `;
+    updateSidebarMetrics(summaryState);
     return;
   }
 
@@ -560,6 +590,7 @@ function renderHomeSummary() {
         ${summaryErrorMessage}
       </div>
     `;
+    updateSidebarMetrics(summaryState);
     return;
   }
 
@@ -569,12 +600,14 @@ function renderHomeSummary() {
         ${t('home.summary.empty', 'لا تتوفر بيانات بعد. ابدأ بإضافة سجلات.')} 
       </div>
     `;
+    updateSidebarMetrics(summaryState);
     return;
   }
 
   const metrics = buildSummaryMetrics(summaryState);
   container.innerHTML = metrics.map(renderSummaryCard).join('');
   attachSummaryCardListeners(container);
+  updateSidebarMetrics(summaryState);
 }
 
 async function loadHomeSummary({ silent = false } = {}) {
