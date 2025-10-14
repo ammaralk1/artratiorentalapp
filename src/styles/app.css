@@ -3997,9 +3997,9 @@
   }
 
   .technician-badge--status-busy {
-    background-color: rgba(251, 191, 36, 0.92);
-    border-color: rgba(245, 158, 11, 0.94);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5), 0 16px 32px -14px rgba(245, 158, 11, 0.7);
+    background-color: rgba(239, 68, 68, 0.92);
+    border-color: rgba(220, 38, 38, 0.94);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.55), 0 16px 34px -16px rgba(220, 38, 38, 0.72);
   }
 
   :where(html.dark, body.dark) .technician-badge {
@@ -4021,9 +4021,9 @@
   }
 
   :where(html.dark, body.dark) .technician-badge--status-busy {
-    background-color: rgba(251, 191, 36, 0.9);
-    border-color: rgba(245, 158, 11, 0.94);
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.55), 0 18px 36px -18px rgba(245, 158, 11, 0.78);
+    background-color: rgba(239, 68, 68, 0.88);
+    border-color: rgba(220, 38, 38, 0.94);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.6), 0 18px 36px -18px rgba(220, 38, 38, 0.82);
   }
 
   .empty-state {
