@@ -4609,7 +4609,7 @@
   }
 
   :where(html.dark, body.dark) #technician-financial-modal-table thead tr {
-    background: linear-gradient(135deg, rgba(63, 93, 245, 0.35), rgba(28, 41, 74, 0.92));
+    background: transparent;
     color: #f1f5f9;
   }
 
@@ -4620,6 +4620,7 @@
   :where(html.dark, body.dark) #technician-financial-modal-table td,
   :where(html.dark, body.dark) #technician-financial-modal-table th {
     color: rgba(219, 234, 254, 0.92);
+    background: transparent;
   }
 
   #technician-financial-modal-table tbody tr:hover {
@@ -4627,7 +4628,11 @@
   }
 
   :where(html.dark, body.dark) #technician-financial-modal-table tbody tr:hover {
-    background: rgba(59, 130, 246, 0.18);
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table {
+    background: transparent;
   }
 
   .technician-payouts-section {
