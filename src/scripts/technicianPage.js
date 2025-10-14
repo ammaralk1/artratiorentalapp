@@ -151,15 +151,15 @@ function resolveTechnicianRate(technician = {}) {
 function buildPaymentStatusBadge(status) {
   const normalized = typeof status === 'string' ? status.toLowerCase() : 'unpaid';
   let key = 'technicianFinancial.status.unpaid';
-  let badgeClass = 'badge badge-outline badge-warning';
+  let badgeClass = 'technician-payment-badge technician-payment-badge--unpaid';
   if (normalized === 'paid') {
     key = 'technicianFinancial.status.paid';
-    badgeClass = 'badge badge-success';
+    badgeClass = 'technician-payment-badge technician-payment-badge--paid';
   } else if (normalized === 'partial') {
     key = 'technicianFinancial.status.partial';
-    badgeClass = 'badge badge-info';
+    badgeClass = 'technician-payment-badge technician-payment-badge--partial';
   }
-  return `<span class="${badgeClass}">${t(key, key)}</span>`;
+  return `<span class="${badgeClass}" data-i18n data-i18n-key="${key}">${t(key, key)}</span>`;
 }
 
 function renderFinancialSummary(state) {
