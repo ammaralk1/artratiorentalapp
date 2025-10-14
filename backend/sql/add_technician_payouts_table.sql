@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS technician_payouts (
     amount DECIMAL(10, 2) NOT NULL,
     note TEXT NULL,
     paid_at DATETIME NOT NULL,
-    recorded_by INT UNSIGNED NULL,
+    recorded_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_technician_payouts_technician FOREIGN KEY (technician_id) REFERENCES technicians(id) ON DELETE CASCADE,
