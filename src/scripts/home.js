@@ -242,7 +242,11 @@ function mergeSummaryWithLocalData(summary) {
     reservations.forEach((reservation) => {
       if (isCancelled(reservation)) return;
       const start = resolveStartDate(reservation);
-      const end = resolveEndDate(reservation) || start;
+      let end = resolveEndDate(reservation);
+      if (!start) return;
+      if (!end || end <= start) {
+        end = new Date(start.getTime() + 4 * 60 * 60 * 1000);
+      }
       if (!start || !end) return;
       if (start > now || end <= now) return;
       const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
