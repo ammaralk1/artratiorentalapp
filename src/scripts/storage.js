@@ -5,6 +5,7 @@ const DEFAULT_STORE = {
   technicians: [],
   maintenance: [],
   projects: [],
+  technicianPayouts: [],
 };
 
 function getMemoryStore() {
@@ -17,6 +18,7 @@ function getMemoryStore() {
       technicians: [],
       maintenance: [],
       projects: [],
+      technicianPayouts: [],
     };
   }
   return root.__APP_DATA_STORE__;
@@ -37,10 +39,11 @@ export function loadData() {
     technicians: [...store.technicians],
     maintenance: [...store.maintenance],
     projects: [...store.projects],
+    technicianPayouts: [...store.technicianPayouts],
   };
 }
 
-export function saveData({ customers, reservations, equipment, technicians, maintenance, projects }) {
+export function saveData({ customers, reservations, equipment, technicians, maintenance, projects, technicianPayouts }) {
   const store = getMemoryStore();
   assignIfProvided(store, 'customers', customers);
   assignIfProvided(store, 'reservations', reservations);
@@ -48,6 +51,7 @@ export function saveData({ customers, reservations, equipment, technicians, main
   assignIfProvided(store, 'technicians', technicians);
   assignIfProvided(store, 'maintenance', maintenance);
   assignIfProvided(store, 'projects', projects);
+  assignIfProvided(store, 'technicianPayouts', technicianPayouts);
 }
 
 // ✅ نقل البيانات من النظام القديم الذي يتم حقنه من الخادم مرة واحدة
@@ -65,7 +69,7 @@ export function migrateOldData(legacyPayload = null) {
   }
 
   const store = getMemoryStore();
-  const fields = ['customers', 'reservations', 'equipment', 'technicians', 'maintenance', 'projects'];
+  const fields = ['customers', 'reservations', 'equipment', 'technicians', 'maintenance', 'projects', 'technicianPayouts'];
 
   fields.forEach((field) => {
     const value = legacySource[field];

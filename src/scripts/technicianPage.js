@@ -3,7 +3,7 @@ import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { renderTechnicianReservations, renderTechnicianProjects } from './technicianDetails.js';
 import { showReservationDetails } from './reservationsUI.js';
-import { normalizeNumbers } from './utils.js';
+import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
 import { t } from './language.js';
@@ -11,6 +11,7 @@ import { initDashboardShell } from './dashboardShell.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState } from './reservationsService.js';
 import { calculateReservationDays } from './reservationsSummary.js';
+import { loadData, saveData } from './storage.js';
 
 applyStoredTheme();
 checkAuth();
@@ -49,6 +50,12 @@ const financialModalEmptyEl = document.getElementById('technician-financial-moda
 const financialModalTableWrapper = document.getElementById('technician-financial-modal-table-wrapper');
 const financialModalRowsEl = document.getElementById('technician-financial-modal-rows');
 const financialModalCloseButtons = Array.from(document.querySelectorAll('[data-financial-modal-close]'));
+const financialPayoutForm = document.getElementById('technician-payout-form');
+const financialPayoutAmountInput = document.getElementById('technician-payout-amount');
+const financialPayoutDateInput = document.getElementById('technician-payout-date');
+const financialPayoutNoteInput = document.getElementById('technician-payout-note');
+const financialPayoutListEl = document.getElementById('technician-payouts-list');
+const financialPayoutEmptyEl = document.getElementById('technician-payouts-empty');
 
 const technicianTabButtons = Array.from(document.querySelectorAll('[data-technician-tab]'));
 const technicianTabPanels = new Map(
@@ -59,8 +66,9 @@ let activeTechnicianTab = 'reservations';
 let technicianState = null;
 let technicianFinancialState = {
   totals: { total: 0, paid: 0, outstanding: 0 },
-  metrics: { assignments: 0, paidCount: 0, outstandingCount: 0 },
+  metrics: { assignments: 0, payoutsCount: 0, outstandingAmount: 0 },
   breakdown: [],
+  payouts: [],
 };
 
 initThemeToggle();
@@ -103,6 +111,85 @@ function formatDateLocalized(value) {
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
   }
+}
+
+function generatePayoutId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `payout-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+}
+
+function normalizePayoutEntry(entry = {}) {
+  if (!entry) return null;
+  const amount = Number(entry.amount);
+  if (!Number.isFinite(amount)) return null;
+  const technician = entry.technicianId != null ? String(entry.technicianId) : '';
+  if (!technician) return null;
+  return {
+    id: entry.id ? String(entry.id) : generatePayoutId(),
+    technicianId: technician,
+    amount: Math.max(0, Number(amount.toFixed(2))),
+    note: entry.note ? String(entry.note).trim() : '',
+    paidAt: entry.paidAt ? new Date(entry.paidAt).toISOString() : new Date().toISOString(),
+    createdAt: entry.createdAt ? new Date(entry.createdAt).toISOString() : new Date().toISOString(),
+    recordedBy: entry.recordedBy ? String(entry.recordedBy) : null,
+  };
+}
+
+function loadAllTechnicianPayouts() {
+  try {
+    const { technicianPayouts } = loadData();
+    if (!Array.isArray(technicianPayouts)) return [];
+    return technicianPayouts.map(normalizePayoutEntry).filter(Boolean);
+  } catch (error) {
+    console.error('⚠️ [technician-page] Failed to load technician payouts from storage', error);
+    return [];
+  }
+}
+
+function persistAllTechnicianPayouts(list) {
+  try {
+    saveData({ technicianPayouts: list });
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('technicians:payoutsUpdated'));
+    }
+  } catch (error) {
+    console.error('⚠️ [technician-page] Failed to persist technician payouts', error);
+  }
+}
+
+function getTechnicianPayoutsList(technicianIdentifier) {
+  const normalizedId = technicianIdentifier != null ? String(technicianIdentifier) : '';
+  if (!normalizedId) return [];
+  return loadAllTechnicianPayouts()
+    .filter((entry) => entry && String(entry.technicianId) === normalizedId)
+    .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
+}
+
+function addTechnicianPayout(technicianIdentifier, { amount, note, paidAt }) {
+  const normalizedId = technicianIdentifier != null ? String(technicianIdentifier) : '';
+  if (!normalizedId) return null;
+  const entry = normalizePayoutEntry({
+    technicianId: normalizedId,
+    amount,
+    note,
+    paidAt,
+  });
+  if (!entry) return null;
+  const all = loadAllTechnicianPayouts();
+  all.push(entry);
+  persistAllTechnicianPayouts(all);
+  return entry;
+}
+
+function removeTechnicianPayout(payoutId) {
+  if (!payoutId) return false;
+  const all = loadAllTechnicianPayouts();
+  const next = all.filter((entry) => entry.id !== payoutId);
+  if (next.length === all.length) return false;
+  persistAllTechnicianPayouts(next);
+  return true;
 }
 
 function escapeHtml(value = '') {
@@ -150,23 +237,27 @@ function buildPaymentStatusBadge(status) {
 
 function renderFinancialSummary(state) {
   const { totals, metrics } = state;
+  const assignmentsCount = Number(metrics.assignments ?? 0);
+  const payoutsCount = Number(metrics.payoutsCount ?? 0);
   const assignmentsText = t('technicianFinancial.stats.totalDesc', 'مرتبطة بـ {count} مهام')
-    .replace('{count}', normalizeNumbers(String(metrics.assignments)));
-  const paidText = t('technicianFinancial.stats.paidDesc', 'مدفوعة بالكامل في {count} حالات')
-    .replace('{count}', normalizeNumbers(String(metrics.paidCount)));
-  const outstandingText = t('technicianFinancial.stats.outstandingDesc', 'بحاجة متابعة في {count} حجوزات')
-    .replace('{count}', normalizeNumbers(String(metrics.outstandingCount)));
+    .replace('{count}', normalizeNumbers(String(assignmentsCount)));
+  const paidText = t('technicianFinancial.stats.paidDesc', '{count} دفعات مسجلة')
+    .replace('{count}', normalizeNumbers(String(payoutsCount)));
+  const outstandingTemplate = t('technicianFinancial.stats.outstandingDesc', 'المتبقي {amount}');
+  const outstandingText = totals.outstanding > 0
+    ? outstandingTemplate.replace('{amount}', formatCurrency(totals.outstanding))
+    : '—';
 
   if (financialSummaryEls.total) financialSummaryEls.total.textContent = formatCurrency(totals.total);
-  if (financialSummaryEls.totalDesc) financialSummaryEls.totalDesc.textContent = metrics.assignments > 0 ? assignmentsText : '—';
+  if (financialSummaryEls.totalDesc) financialSummaryEls.totalDesc.textContent = assignmentsCount > 0 ? assignmentsText : '—';
   if (financialSummaryEls.paid) financialSummaryEls.paid.textContent = formatCurrency(totals.paid);
-  if (financialSummaryEls.paidDesc) financialSummaryEls.paidDesc.textContent = metrics.paidCount > 0 ? paidText : '—';
+  if (financialSummaryEls.paidDesc) financialSummaryEls.paidDesc.textContent = payoutsCount > 0 ? paidText : '—';
   if (financialSummaryEls.outstanding) financialSummaryEls.outstanding.textContent = formatCurrency(totals.outstanding);
-  if (financialSummaryEls.outstandingDesc) financialSummaryEls.outstandingDesc.textContent = metrics.outstandingCount > 0 ? outstandingText : '—';
+  if (financialSummaryEls.outstandingDesc) financialSummaryEls.outstandingDesc.textContent = outstandingText;
 }
 
 function renderFinancialModal(state) {
-  const { totals, breakdown } = state;
+  const { totals, breakdown, payouts } = state;
   if (financialModalTotalEl) financialModalTotalEl.textContent = formatCurrency(totals.total);
   if (financialModalPaidEl) financialModalPaidEl.textContent = formatCurrency(totals.paid);
   if (financialModalOutstandingEl) financialModalOutstandingEl.textContent = formatCurrency(totals.outstanding);
@@ -179,31 +270,155 @@ function renderFinancialModal(state) {
     financialModalRowsEl.innerHTML = '';
     financialModalTableWrapper.classList.add('hidden');
     financialModalEmptyEl.classList.remove('hidden');
+  } else {
+    financialModalEmptyEl.classList.add('hidden');
+    financialModalTableWrapper.classList.remove('hidden');
+
+    const rows = breakdown.map((entry) => {
+      const period = entry.period || '—';
+      const outstanding = entry.outstandingAmount > 0
+        ? formatCurrency(entry.outstandingAmount)
+        : `<span class="text-success">${t('technicianFinancial.list.settled', 'لا يوجد')}</span>`;
+      return `
+        <tr>
+          <td>
+            <div class="font-semibold text-base-content">${escapeHtml(entry.label)}</div>
+            <div class="text-xs text-base-content/60">${escapeHtml(entry.reference)}</div>
+          </td>
+          <td class="whitespace-nowrap">${escapeHtml(period)}</td>
+          <td>${formatCurrency(entry.dueAmount)}</td>
+          <td>${buildPaymentStatusBadge(entry.paidStatus)}</td>
+          <td>${outstanding}</td>
+        </tr>
+      `;
+    }).join('');
+
+    financialModalRowsEl.innerHTML = rows;
+  }
+
+  renderFinancialPayouts(payouts);
+}
+
+function renderFinancialPayouts(payouts = []) {
+  if (!financialPayoutListEl || !financialPayoutEmptyEl) {
     return;
   }
 
-  const rows = breakdown.map((entry) => {
-    const period = entry.period || '—';
-    const outstanding = entry.outstandingAmount > 0
-      ? formatCurrency(entry.outstandingAmount)
-      : `<span class="text-success">${t('technicianFinancial.list.settled', 'لا يوجد')}</span>`;
+  if (!Array.isArray(payouts) || payouts.length === 0) {
+    financialPayoutListEl.innerHTML = '';
+    financialPayoutEmptyEl.classList.remove('hidden');
+    return;
+  }
+
+  const items = payouts.map((entry) => {
+    const amountFormatted = formatCurrency(entry.amount || 0);
+    const dateFormatted = formatDateLocalized(entry.paidAt || entry.createdAt);
+    const noteHtml = entry.note
+      ? `<p class="technician-payout-note text-sm text-base-content/70">${escapeHtml(entry.note)}</p>`
+      : '';
+    const deleteLabel = t('actions.delete', '🗑️ حذف');
+
     return `
-      <tr>
-        <td>
-          <div class="font-semibold text-base-content">${escapeHtml(entry.label)}</div>
-          <div class="text-xs text-base-content/60">${escapeHtml(entry.reference)}</div>
-        </td>
-        <td class="whitespace-nowrap">${escapeHtml(period)}</td>
-        <td>${formatCurrency(entry.dueAmount)}</td>
-        <td>${buildPaymentStatusBadge(entry.paidStatus)}</td>
-        <td>${outstanding}</td>
-      </tr>
+      <li class="technician-payout-item">
+        <div class="technician-payout-item-body">
+          <div class="technician-payout-item-head">
+            <span class="technician-payout-amount">${amountFormatted}</span>
+            <span class="technician-payout-date">${escapeHtml(dateFormatted)}</span>
+          </div>
+          ${noteHtml}
+        </div>
+        <button type="button" class="btn btn-outline btn-sm technician-payout-remove" data-payout-remove="${escapeHtml(entry.id)}" data-i18n data-i18n-key="actions.delete">${deleteLabel}</button>
+      </li>
     `;
   }).join('');
 
-  financialModalRowsEl.innerHTML = rows;
-  financialModalTableWrapper.classList.remove('hidden');
-  financialModalEmptyEl.classList.add('hidden');
+  financialPayoutListEl.innerHTML = items;
+  financialPayoutEmptyEl.classList.add('hidden');
+}
+
+function formatDateInputValue(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+function parseDateInputValue(value) {
+  if (!value) {
+    return new Date();
+  }
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date();
+  }
+  return parsed;
+}
+
+function handlePayoutFormSubmit(event) {
+  event.preventDefault();
+  if (!technicianId) {
+    showToast(t('technicianFinancial.payouts.toast.invalidTechnician', '⚠️ لا يمكن تحديد عضو الطاقم حالياً.'));
+    return;
+  }
+
+  const amountRaw = financialPayoutAmountInput?.value ?? '';
+  const amount = Number.parseFloat(normalizeNumbers(String(amountRaw)));
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showToast(t('technicianFinancial.payouts.toast.invalidAmount', '⚠️ أدخل قيمة صحيحة للمبلغ.'));
+    financialPayoutAmountInput?.focus();
+    return;
+  }
+
+  const note = financialPayoutNoteInput?.value?.trim() || '';
+  const paidDate = parseDateInputValue(financialPayoutDateInput?.value || null);
+
+  const entry = addTechnicianPayout(technicianId, {
+    amount,
+    note,
+    paidAt: paidDate.toISOString(),
+  });
+
+  if (!entry) {
+    showToast(t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.'));
+    return;
+  }
+
+  showToast(t('technicianFinancial.payouts.toast.added', '✅ تم تسجيل الدفعة.'));
+  if (financialPayoutForm) {
+    financialPayoutForm.reset();
+  }
+  if (financialPayoutDateInput) {
+    financialPayoutDateInput.value = formatDateInputValue(entry.paidAt);
+  }
+
+  if (technicianState) {
+    refreshTechnicianFinancialSummary(technicianState);
+  } else {
+    const payouts = getTechnicianPayoutsList(technicianId);
+    renderFinancialPayouts(payouts);
+  }
+}
+
+function handlePayoutRemoval(payoutId) {
+  if (!payoutId) return;
+  const confirmMessage = t('technicianFinancial.payouts.confirmDelete', '❌ هل تريد حذف هذه الدفعة؟');
+  const confirmed = window.confirm(confirmMessage);
+  if (!confirmed) return;
+
+  const removed = removeTechnicianPayout(payoutId);
+  if (!removed) {
+    showToast(t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.'));
+    return;
+  }
+
+  showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
+  if (technicianState) {
+    refreshTechnicianFinancialSummary(technicianState);
+  } else {
+    const payouts = getTechnicianPayoutsList(technicianId);
+    renderFinancialPayouts(payouts);
+  }
 }
 
 function openFinancialModal() {
@@ -213,6 +428,12 @@ function openFinancialModal() {
   financialModalEl.classList.add('modal-open');
   document.documentElement.classList.add('modal-open');
   document.body.classList.add('overflow-hidden');
+  if (financialPayoutDateInput && !financialPayoutDateInput.value) {
+    financialPayoutDateInput.value = formatDateInputValue(new Date());
+  }
+  if (financialPayoutAmountInput) {
+    financialPayoutAmountInput.setAttribute('min', '0');
+  }
 }
 
 function closeFinancialModal() {
@@ -262,8 +483,9 @@ function attachTechnicianEditListeners() {
 async function refreshTechnicianFinancialSummary(technician) {
   const initialState = {
     totals: { total: 0, paid: 0, outstanding: 0 },
-    metrics: { assignments: 0, paidCount: 0, outstandingCount: 0 },
+    metrics: { assignments: 0, payoutsCount: 0, outstandingAmount: 0 },
     breakdown: [],
+    payouts: [],
   };
 
   technicianFinancialState = initialState;
@@ -347,20 +569,24 @@ async function refreshTechnicianFinancialSummary(technician) {
     };
   });
 
-  const totals = breakdown.reduce((acc, entry) => {
-    acc.total += entry.dueAmount;
-    acc.paid += entry.paidAmount;
-    acc.outstanding += entry.outstandingAmount;
-    return acc;
-  }, { total: 0, paid: 0, outstanding: 0 });
+  const totalsDue = breakdown.reduce((acc, entry) => acc + entry.dueAmount, 0);
+  const payouts = getTechnicianPayoutsList(normalizedId);
+  const payoutsTotal = payouts.reduce((acc, entry) => acc + (Number(entry.amount) || 0), 0);
+  const outstanding = Math.max(0, Number((totalsDue - payoutsTotal).toFixed(2)));
+
+  const totals = {
+    total: Math.max(0, Number(totalsDue.toFixed(2))),
+    paid: Math.max(0, Number(payoutsTotal.toFixed(2))),
+    outstanding,
+  };
 
   const metrics = {
     assignments: breakdown.length,
-    paidCount: breakdown.filter((entry) => entry.paidStatus === 'paid').length,
-    outstandingCount: breakdown.filter((entry) => entry.outstandingAmount > 0).length,
+    payoutsCount: payouts.length,
+    outstandingAmount: outstanding,
   };
 
-  technicianFinancialState = { totals, metrics, breakdown };
+  technicianFinancialState = { totals, metrics, breakdown, payouts };
   renderFinancialSummary(technicianFinancialState);
   renderFinancialModal(technicianFinancialState);
 }
@@ -522,6 +748,21 @@ financialModalCloseButtons.forEach((button) => {
   });
   button.dataset.listenerAttached = 'true';
 });
+
+if (financialPayoutForm && !financialPayoutForm.dataset.listenerAttached) {
+  financialPayoutForm.addEventListener('submit', handlePayoutFormSubmit);
+  financialPayoutForm.dataset.listenerAttached = 'true';
+}
+
+if (financialPayoutListEl && !financialPayoutListEl.dataset.listenerAttached) {
+  financialPayoutListEl.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-payout-remove]');
+    if (!target) return;
+    const payoutId = target.getAttribute('data-payout-remove');
+    handlePayoutRemoval(payoutId);
+  });
+  financialPayoutListEl.dataset.listenerAttached = 'true';
+}
 if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
   financialModalEl.addEventListener('click', (event) => {
     if (event.target === financialModalEl) {
@@ -690,3 +931,12 @@ const handleReservationsUpdated = () => {
 };
 
 document.addEventListener('reservations:changed', handleReservationsUpdated, { passive: true });
+
+window.addEventListener('technicians:payoutsUpdated', () => {
+  if (technicianState) {
+    refreshTechnicianFinancialSummary(technicianState);
+  } else {
+    renderFinancialSummary(technicianFinancialState);
+    renderFinancialModal(technicianFinancialState);
+  }
+});

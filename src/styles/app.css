@@ -4522,10 +4522,48 @@
     border-color: rgba(99, 102, 241, 0.35);
   }
 
-  :where(html.dark, body.dark) #technician-financial-modal-empty {
-    background: rgba(15, 23, 42, 0.82);
+  :where(html.dark, body.dark) #technician-financial-modal-empty,
+  :where(html.dark, body.dark) .technician-payouts-empty {
+    background: transparent;
     border-color: rgba(99, 102, 241, 0.28);
     color: rgba(203, 213, 225, 0.78);
+  }
+
+  :where(html.dark, body.dark) .technician-page .technician-payout-form,
+  :where(html.dark, body.dark) .technician-page .technician-payout-item {
+    background: var(--technician-surface);
+    border-color: var(--technician-border);
+    box-shadow: var(--technician-shadow);
+  }
+
+  :where(html.dark, body.dark) .technician-page .technician-payout-item-head {
+    color: rgba(203, 213, 225, 0.7);
+  }
+
+  :where(html.dark, body.dark) .technician-page .technician-payout-amount {
+    color: rgba(226, 232, 240, 0.95);
+  }
+
+  :where(html.dark, body.dark) .technician-page .technician-payout-note {
+    color: rgba(203, 213, 225, 0.78);
+  }
+
+  #technician-financial-modal-table-wrapper.table-responsive {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  :where(html.dark, body.dark) #technician-financial-modal-table-wrapper.table-responsive {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  #technician-financial-modal-table {
+    background: transparent;
   }
 
   #technician-financial-modal-table {
@@ -4569,6 +4607,50 @@
 
   :where(html.dark, body.dark) #technician-financial-modal-table tbody tr:hover {
     background: rgba(59, 130, 246, 0.18);
+  }
+
+  .technician-payouts-section {
+    @apply space-y-4;
+  }
+
+  .technician-payout-form {
+    @apply space-y-4 rounded-2xl border border-base-200 bg-base-100/85 p-4;
+  }
+
+  .technician-payout-form-grid {
+    @apply grid gap-3 md:grid-cols-3;
+  }
+
+  .technician-payout-note-field {
+    @apply md:col-span-3;
+  }
+
+  .technician-payouts-empty {
+    @apply rounded-2xl border border-dashed border-base-200 px-4 py-3 text-sm;
+  }
+
+  .technician-payouts-list {
+    @apply flex flex-col gap-3;
+  }
+
+  .technician-payout-item {
+    @apply flex flex-col gap-3 rounded-2xl border border-base-200 bg-base-100/90 p-4 md:flex-row md:items-center md:justify-between;
+  }
+
+  .technician-payout-item-body {
+    @apply flex-1 space-y-2;
+  }
+
+  .technician-payout-item-head {
+    @apply flex flex-wrap items-center gap-3 text-sm text-base-content/60;
+  }
+
+  .technician-payout-amount {
+    @apply text-lg font-semibold text-base-content;
+  }
+
+  .technician-payout-date {
+    @apply text-xs text-base-content/60;
   }
 
   :where(html.dark, body.dark) .btn-outline-secondary {
