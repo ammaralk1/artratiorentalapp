@@ -611,14 +611,9 @@ function renderTechnicianDetails(technician) {
     </article>
   `).join('');
 
-  const editButtonLabel = t('technicianDetails.actions.edit', '✏️ تعديل عضو الطاقم');
-
   container.innerHTML = `
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       ${detailCards}
-    </div>
-    <div class="mt-6 flex flex-wrap items-center gap-2">
-      <button type="button" class="btn btn-warning" id="edit-technician-btn" data-technician-edit data-i18n data-i18n-key="technicianDetails.actions.edit">${editButtonLabel}</button>
     </div>
   `;
 
