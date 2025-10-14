@@ -588,50 +588,45 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
         <div class="modal-body">
-          <form id="edit-technician-form" class="row g-3">
+          <form id="edit-technician-form" class="management-form" novalidate>
             <input type="hidden" id="edit-technician-id">
 
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-name" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-              <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-phone" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-              <input type="tel" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-role" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-              <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-department" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-              <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-              <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label" for="edit-technician-status" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
-              <select id="edit-technician-status" class="form-select" required>
-                <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
-                <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
-              </select>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-              <textarea id="edit-technician-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+            <div class="management-form-grid">
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-name" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-phone" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                <input type="tel" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-role" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-department" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+                <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-status" data-i18n data-i18n-key="technicians.form.labels.status">⚙️ الحالة الأساسية</label>
+                <select id="edit-technician-status" class="form-select" required>
+                  <option value="available" data-i18n data-i18n-key="technicians.form.options.available">✅ متاح</option>
+                  <option value="busy" data-i18n data-i18n-key="technicians.form.options.busy">⛔ مشغول</option>
+                </select>
+              </div>
+              <div class="form-field form-field-notes">
+                <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                <textarea id="edit-technician-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+              </div>
             </div>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
           <button type="button" class="btn btn-primary" id="save-technician-changes" data-i18n data-i18n-key="technicians.form.actions.update">💾 حفظ التعديل</button>
         </div>
       </div>
