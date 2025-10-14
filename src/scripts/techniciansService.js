@@ -14,6 +14,9 @@ export function setTechniciansState(list) {
   saveData({ technicians: techniciansState });
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('technicians:updated'));
+    if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+      document.dispatchEvent(new CustomEvent('technicians:updated'));
+    }
   } else if (typeof dispatchEvent === 'function') {
     dispatchEvent(new CustomEvent('technicians:updated'));
   }

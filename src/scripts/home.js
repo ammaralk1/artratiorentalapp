@@ -102,6 +102,27 @@ function toValidDate(value) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function normalizeTechnicianIdentifier(entry) {
+  if (entry == null) return null;
+  if (typeof entry === 'object') {
+    const candidates = [
+      entry.id,
+      entry.technicianId,
+      entry.technician_id,
+      entry.technician?.id,
+      entry.value,
+    ];
+    for (const candidate of candidates) {
+      if (candidate != null && String(candidate).trim() !== '') {
+        return String(candidate).trim();
+      }
+    }
+    return null;
+  }
+  const normalized = String(entry).trim();
+  return normalized === '' ? null : normalized;
+}
+
 function mergeSummaryWithLocalData(summary) {
   const snapshot = loadData();
   const result = summary ? { ...summary } : createEmptySummarySnapshot();
@@ -250,9 +271,10 @@ function mergeSummaryWithLocalData(summary) {
       if (!start || !end) return;
       if (start > now || end <= now) return;
       const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-      assigned.forEach((id) => {
-        if (id != null) {
-          busyTechnicianIds.add(String(id));
+      assigned.forEach((value) => {
+        const identifier = normalizeTechnicianIdentifier(value);
+        if (identifier) {
+          busyTechnicianIds.add(identifier);
         }
       });
     });
@@ -636,6 +658,10 @@ function bootstrapHome() {
   document.addEventListener('maintenance:updated', handleSummaryRefresh, { passive: true });
   document.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
   document.addEventListener('projects:changed', handleSummaryRefresh, { passive: true });
+
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
+  }
 }
 
 if (document.readyState === 'loading') {
