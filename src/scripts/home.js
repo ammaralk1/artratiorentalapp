@@ -9,6 +9,7 @@ import { updatePreferences } from './preferencesService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
+import { refreshReservationsFromApi } from './reservationsService.js';
 import { determineProjectStatus } from './projectsCommon.js';
 
 applyStoredTheme();
@@ -664,19 +665,33 @@ function bootstrapHome() {
     window.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
   }
 
-  try {
-    const maybePromise = refreshTechniciansFromApi();
-    if (maybePromise && typeof maybePromise.then === 'function') {
-      maybePromise
-        .then(() => {
-          handleSummaryRefresh();
-        })
-        .catch((error) => {
-          console.warn('⚠️ [home] Failed to prefetch technicians for summary', error);
-        });
+  const scheduleRefresh = () => {
+    handleSummaryRefresh();
+  };
+
+  const attachRefetch = (promise, label) => {
+    if (!promise || typeof promise.then !== 'function') {
+      return;
     }
+    promise
+      .then(() => {
+        scheduleRefresh();
+      })
+      .catch((error) => {
+        console.warn(`⚠️ [home] Failed to prefetch ${label} for summary`, error);
+      });
+  };
+
+  try {
+    attachRefetch(refreshTechniciansFromApi(), 'technicians');
   } catch (error) {
     console.warn('⚠️ [home] Failed to kick off technicians prefetch', error);
+  }
+
+  try {
+    attachRefetch(refreshReservationsFromApi(), 'reservations');
+  } catch (error) {
+    console.warn('⚠️ [home] Failed to kick off reservations prefetch', error);
   }
 }
 
