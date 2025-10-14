@@ -149,6 +149,7 @@ export async function renderTechnicianReservations(technicianId) {
       searchTerm: normalizedSearch,
       searchReservationId: normalizedSearch,
       searchCustomerName: normalizedSearch,
+      searchProjectId: normalizedSearch,
       startDate,
       endDate,
       status: statusSelect?.value || "",
@@ -508,10 +509,25 @@ function updateTechnicianProjects() {
   const filtered = relevant.filter((project) => {
     if (searchTerm) {
       const clientName = customerMap.get(String(project.clientId))?.customerName || '';
+      const projectIdentifiers = [
+        project.id,
+        project.projectId,
+        project.project_id,
+        project.projectCode,
+        project.project_code,
+        project.reference,
+        project.reference_code,
+        project.code,
+        getProjectIdentifier(project)
+      ];
       const haystack = normalizeSearchText([
         project.title,
         project.description,
-        clientName
+        clientName,
+        projectIdentifiers
+          .filter((value) => value !== null && value !== undefined && value !== '')
+          .map(String)
+          .join(' ')
       ].filter(Boolean).join(' '));
       if (!haystack.includes(searchTerm)) return false;
     }

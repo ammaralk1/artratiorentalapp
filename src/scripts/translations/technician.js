@@ -8,6 +8,8 @@ registerTranslations({
     'technicianDetails.actions.edit': '✏️ تعديل عضو الطاقم',
     'technicianDetails.hero.subtitle': 'راجع نشاط عضو الطاقم ومهامه الحالية.',
     'technicianDetails.hero.helper': 'استخدم هذه الصفحة لمتابعة حجوزات ومشاريع عضو الطاقم.',
+    'technicianTabs.reservations': '📅 حجوزات الفني',
+    'technicianTabs.projects': '📁 مشاريع الفني',
     'technicianFinancial.stats.total': '💼 إجمالي المستحقات',
     'technicianFinancial.stats.paid': '💰 المبالغ المدفوعة',
     'technicianFinancial.stats.outstanding': '🧾 المبلغ المتبقي',
@@ -47,7 +49,7 @@ registerTranslations({
     'technicianFinancial.payouts.toast.invalidAmount': '⚠️ أدخل قيمة صحيحة للمبلغ.',
     'technicianFinancial.payouts.toast.failed': '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.',
     'technicianFinancial.payouts.toast.invalidTechnician': '⚠️ لا يمكن تحديد عضو الطاقم حالياً.',
-    'technicianDetails.filters.search': '🔍 ابحث باسم العميل أو رقم الحجز...',
+    'technicianDetails.filters.search': '🔍 ابحث باسم العميل أو رقم الحجز أو المشروع...',
     'technicianDetails.fields.role': '👔 الوظيفة:',
     'technicianDetails.fields.department': '🧩 القسم:',
     'technicianDetails.fields.phone': '📞 الجوال:',
@@ -65,7 +67,8 @@ registerTranslations({
     'technicianDetails.status.loading': '⏳ جارٍ تحميل بيانات عضو الطاقم...',
     'technicianDetails.edit.modalTitle': '✏️ تعديل بيانات عضو الطاقم',
     'technicians.picker.actions.apply': 'تم',
-    'technicianProjects.title': '📁 مشاريع مرتبطة بالطاقم',
+    'technicianProjects.title': '📁 مشاريع الفني',
+    'technicianReservations.title': '📅 حجوزات الفني',
     'technicianProjects.empty': 'لا توجد مشاريع مرتبطة بهذا العضو.'
   },
   en: {
@@ -75,6 +78,8 @@ registerTranslations({
     'technicianDetails.actions.edit': '✏️ Edit Crew Member',
     'technicianDetails.hero.subtitle': 'Review the crew member’s activity and current assignments.',
     'technicianDetails.hero.helper': 'Use this page to keep track of their reservations and linked projects.',
+    'technicianTabs.reservations': '📅 Technician Reservations',
+    'technicianTabs.projects': '📁 Technician Projects',
     'technicianFinancial.stats.total': '💼 Total Due',
     'technicianFinancial.stats.paid': '💰 Paid Amount',
     'technicianFinancial.stats.outstanding': '🧾 Outstanding',
@@ -114,7 +119,7 @@ registerTranslations({
     'technicianFinancial.payouts.toast.invalidAmount': '⚠️ Enter a valid payout amount.',
     'technicianFinancial.payouts.toast.failed': '⚠️ Unable to record the payout. Please try again.',
     'technicianFinancial.payouts.toast.invalidTechnician': '⚠️ Unable to determine the crew member right now.',
-    'technicianDetails.filters.search': '🔍 Search by client or reservation ID...',
+    'technicianDetails.filters.search': '🔍 Search by client, reservation, or project ID...',
     'technicianDetails.fields.role': '👔 Role:',
     'technicianDetails.fields.department': '🧩 Department:',
     'technicianDetails.fields.phone': '📞 Phone:',
@@ -132,7 +137,8 @@ registerTranslations({
     'technicianDetails.status.loading': '⏳ Loading crew member details...',
     'technicianDetails.edit.modalTitle': '✏️ Edit Crew Member',
     'technicians.picker.actions.apply': 'Done',
-    'technicianProjects.title': '📁 Crew Projects',
+    'technicianProjects.title': '📁 Technician Projects',
+    'technicianReservations.title': '📅 Technician Reservations',
     'technicianProjects.empty': 'No projects are linked to this crew member.'
   }
 });

@@ -303,18 +303,18 @@
 
           <div class="glass-card dashboard-tabbar customer-tabbar technician-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button type="button" class="tab-button tab-active" data-technician-tab="reservations" data-i18n data-i18n-key="customerTabs.reservations">📅 إدارة الحجوزات</button>
-              <button type="button" class="tab-button" data-technician-tab="projects" data-i18n data-i18n-key="customerTabs.projects">📁 إدارة المشاريع</button>
+              <button type="button" class="tab-button tab-active" data-technician-tab="reservations" data-i18n data-i18n-key="technicianTabs.reservations">📅 حجوزات الفني</button>
+              <button type="button" class="tab-button" data-technician-tab="projects" data-i18n data-i18n-key="technicianTabs.projects">📁 مشاريع الفني</button>
             </div>
           </div>
 
           <section class="glass-card space-y-5 technician-reservations-section" data-technician-tab-panel="reservations">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</h3>
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianReservations.title">📅 حجوزات الفني</h3>
               <button type="button" class="btn btn-outline btn-secondary" id="technician-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
-              <input type="text" id="technician-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
+              <input type="text" id="technician-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز أو المشروع..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
               <input type="text" id="technician-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
               <input type="text" id="technician-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
               <select id="technician-reservation-date-range" class="form-select w-auto">
@@ -337,25 +337,25 @@
 
           <section class="glass-card space-y-5 technician-projects-section hidden" data-technician-tab-panel="projects">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerProjects.title">📁 مشاريع العضو</h3>
-              <div class="flex flex-wrap items-center gap-2">
-                <input type="text" id="technician-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
-                <input type="text" id="technician-project-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
-                <input type="text" id="technician-project-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
-                <select id="technician-project-date-range" class="form-select w-auto">
-                  <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
-                  <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
-                  <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
-                  <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
-                </select>
-                <select id="technician-project-status-filter" class="form-select w-auto">
-                  <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
-                  <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
-                  <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
-                  <option value="completed" data-i18n data-i18n-key="projectCards.filters.status.completed">✅ مشاريع منتهية</option>
-                </select>
-                <button type="button" class="btn btn-outline btn-secondary" id="technician-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
-              </div>
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianProjects.title">📁 مشاريع الفني</h3>
+              <button type="button" class="btn btn-outline btn-secondary" id="technician-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+            <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
+              <input type="text" id="technician-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+              <input type="text" id="technician-project-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="technician-project-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="technician-project-date-range" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+                <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+                <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+              </select>
+              <select id="technician-project-status-filter" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
+                <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
+                <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
+                <option value="completed" data-i18n data-i18n-key="projectCards.filters.status.completed">✅ مشاريع منتهية</option>
+              </select>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
               <div id="technician-projects" class="project-card-grid" data-empty="لا توجد مشاريع مرتبطة بهذا العضو." data-empty-key="technicianProjects.empty"></div>

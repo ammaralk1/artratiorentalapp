@@ -64,6 +64,7 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
   const searchTerm = filters.searchTerm || '';
   const searchReservationIdTerm = filters.searchReservationId || '';
   const searchCustomerNameTerm = filters.searchCustomerName || '';
+  const searchProjectTerm = filters.searchProjectId || '';
   const startDate = filters.startDate || '';
   const endDate = filters.endDate || '';
   const statusFilter = filters.status || '';
@@ -125,6 +126,25 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
     if (searchCustomerNameTerm) {
       const customerNameText = normalizeText(customer?.customerName || '');
       if (!customerNameText.includes(searchCustomerNameTerm)) return false;
+    }
+
+    if (searchProjectTerm) {
+      const projectCandidates = [
+        reservation.projectId,
+        reservation.project_id,
+        reservation.projectID,
+        project?.id,
+        project?.projectCode,
+        project?.project_code
+      ];
+      const projectText = normalizeText(
+        projectCandidates
+          .filter((value) => value !== null && value !== undefined && value !== '')
+          .map(String)
+          .join(' ')
+      ).replace(/\s+/g, '');
+      const projectSearch = searchProjectTerm.replace(/\s+/g, '');
+      if (!projectText.includes(projectSearch)) return false;
     }
 
     if (!searchTerm) return true;
