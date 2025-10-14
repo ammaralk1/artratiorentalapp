@@ -1115,6 +1115,33 @@
     transform: translateY(-1px);
   }
 
+  .home-main-tabbar .tab-buttons.tab-buttons-horizontal {
+    justify-content: center;
+  }
+
+  .home-main-tabbar .tab-buttons {
+    justify-content: center;
+    gap: clamp(0.8rem, 3vw, 1.4rem);
+    width: auto;
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  .home-main-tabbar .tab-button {
+    transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    border-radius: 999px;
+    padding-inline: clamp(1.2rem, 3vw, 1.8rem);
+    padding-block: clamp(0.6rem, 2vw, 0.9rem);
+  }
+
+  .home-main-tabbar .tab-button:hover,
+  .home-main-tabbar .tab-button:focus-visible {
+    background-color: rgba(76, 110, 245, 0.12);
+    box-shadow: 0 12px 24px -16px rgba(76, 110, 245, 0.35);
+    transform: translateY(-2px);
+    color: inherit;
+  }
+
   .dashboard-tabbar .tab-button.active {
     background: linear-gradient(135deg, rgba(76, 110, 245, 0.92), rgba(90, 141, 255, 0.88));
     color: #fff;
@@ -1166,6 +1193,12 @@
     background: rgba(59, 130, 246, 0.2);
     color: #f8fafc;
     box-shadow: 0 16px 32px rgba(59, 130, 246, 0.28);
+  }
+
+  :where(html.dark, body.dark) .home-main-tabbar .tab-button:hover,
+  :where(html.dark, body.dark) .home-main-tabbar .tab-button:focus-visible {
+    background-color: rgba(118, 136, 255, 0.18);
+    box-shadow: 0 14px 24px -16px rgba(118, 136, 255, 0.45);
   }
 
   :where(html.dark, body.dark) .dashboard-tabbar .tab-button.active {
