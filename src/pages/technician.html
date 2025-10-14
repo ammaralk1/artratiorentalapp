@@ -226,11 +226,7 @@
                     </div>
                   </article>
                 </div>
-                <div class="flex flex-wrap items-center gap-3 justify-between">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <a href="#" class="btn btn-primary" data-technician-tab-trigger="reservations" data-i18n data-i18n-key="customerTabs.reservations">📅 إدارة الحجوزات</a>
-                    <a href="dashboard.html#technicians-tab" class="btn btn-outline" data-i18n data-i18n-key="tabs.technicians">😎 الانتقال للطاقم</a>
-                  </div>
+                <div class="flex flex-wrap items-center justify-end">
                   <button type="button" id="technician-financial-open" class="btn btn-outline btn-primary" data-i18n data-i18n-key="technicianFinancial.actions.viewDetails">📊 عرض التفاصيل</button>
                 </div>
               </div>
@@ -267,6 +263,25 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <a
+                href="dashboard.html#reservations-tab"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.reservations"
+              >📅 إدارة الحجوزات</a>
+              <a
+                href="projects.html"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.projects"
+              >📁 إدارة المشاريع</a>
+            </div>
+          </nav>
+
           <section class="glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="space-y-2">
