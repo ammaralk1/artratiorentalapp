@@ -116,6 +116,32 @@ body.dark-mode .home-summary-value {
   background: transparent;
 }
 
+.home-main-tabbar .tab-buttons {
+  justify-content: center;
+  gap: 1rem;
+}
+
+.home-main-tabbar .tab-button {
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  border-radius: 999px;
+  padding-inline: 1.25rem;
+  padding-block: 0.75rem;
+}
+
+.home-main-tabbar .tab-button:hover,
+.home-main-tabbar .tab-button:focus-visible {
+  background-color: rgba(76, 110, 245, 0.12);
+  box-shadow: 0 12px 24px -16px rgba(76, 110, 245, 0.35);
+  transform: translateY(-2px);
+  color: inherit;
+}
+
+:where(html.dark, body.dark) .home-main-tabbar .tab-button:hover,
+:where(html.dark, body.dark) .home-main-tabbar .tab-button:focus-visible {
+  background-color: rgba(118, 136, 255, 0.18);
+  box-shadow: 0 14px 24px -16px rgba(118, 136, 255, 0.45);
+}
+
 .users-navbar {
   border-radius: var(--radius-md, 12px);
   background-color: rgba(255, 255, 255, 0.92) !important;
