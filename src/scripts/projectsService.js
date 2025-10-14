@@ -14,6 +14,17 @@ export function setProjectsState(projects) {
     ? projects.map(toInternalProject)
     : [];
   saveData({ projects: projectsState });
+  try {
+    const event = new CustomEvent('projects:changed');
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(event);
+    }
+    if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+      document.dispatchEvent(event);
+    }
+  } catch (error) {
+    console.warn('⚠️ [projectsService] Failed to dispatch projects:changed event', error);
+  }
   return projectsState;
 }
 
