@@ -3141,6 +3141,27 @@
       0 3px 10px rgba(15, 23, 42, 0.08);
   }
 
+  .technician-detail-grid {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .technician-detail-field {
+    @apply flex flex-col gap-2;
+  }
+
+  .technician-detail-label {
+    @apply text-sm font-medium;
+    color: hsl(var(--bc) / 0.65);
+  }
+
+  .technician-detail-value {
+    @apply text-lg font-semibold text-base-content leading-relaxed break-words;
+  }
+
+  :where(html.dark, body.dark) .technician-detail-label {
+    color: rgba(203, 213, 225, 0.78);
+  }
+
   :is(html.dark, body.dark) .management-form-grid .form-field.form-field-notes textarea.form-control {
     background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9)) !important;
     border-color: rgba(148, 163, 255, 0.25);
@@ -4319,8 +4340,7 @@
     color: rgba(148, 163, 184, 0.78) !important;
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-details > *,
-  :where(html.dark, body.dark) .technician-page #technician-details > * {
+  :where(html.dark, body.dark) .customer-page #customer-details > * {
     background: var(--customer-input);
     border: 1px solid var(--customer-border);
     border-radius: 1.75rem;
@@ -4341,9 +4361,7 @@
   }
 
   :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline,
-  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline:hover,
-  :where(html.dark, body.dark) .technician-page #technician-details .btn.btn-outline,
-  :where(html.dark, body.dark) .technician-page #technician-details .btn.btn-outline:hover {
+  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline:hover {
     border-color: var(--customer-border-strong);
     color: rgba(226, 232, 240, 0.95);
     background: linear-gradient(135deg, rgba(63, 93, 245, 0.18), rgba(96, 165, 250, 0.24));
@@ -4532,8 +4550,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
     border-radius: 9999px;
     border: 1px solid rgba(148, 163, 184, 0.35);
     background: rgba(255, 255, 255, 0.94);
@@ -4547,7 +4565,7 @@
 
   .btn-close::before {
     content: '✕';
-    font-size: 1.05rem;
+    font-size: 0.9rem;
     line-height: 1;
   }
 
