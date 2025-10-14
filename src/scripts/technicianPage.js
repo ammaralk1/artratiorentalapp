@@ -613,15 +613,15 @@ function setStatusBadge(status) {
 
   if (!normalized) {
     targets.forEach((element) => {
-      element.className = 'badge badge-outline badge-lg hidden';
+      element.className = 'technician-badge hidden';
       element.textContent = '—';
     });
     return;
   }
 
   const isBusy = normalized === 'busy';
-  const badgeClasses = ['badge', 'badge-outline', 'badge-lg', 'font-semibold'];
-  badgeClasses.push(isBusy ? 'text-warning' : 'text-success');
+  const badgeClasses = ['technician-badge'];
+  badgeClasses.push(isBusy ? 'technician-badge--status-busy' : 'technician-badge--status-available');
 
   const key = isBusy ? 'technicians.status.busy' : 'technicians.status.available';
   const fallback = isBusy ? '⛔ مشغول' : '✅ متاح';
