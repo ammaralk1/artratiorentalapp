@@ -2413,7 +2413,7 @@
     font-weight: 600;
     color: hsl(var(--bc));
     letter-spacing: 0.01em;
-    min-width: clamp(110px, 16vw, 150px);
+    min-width: clamp(110px, 18vw, 160px);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -2429,8 +2429,8 @@
     color: hsl(var(--bc));
     box-shadow: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    min-height: 2.35rem;
-    flex: 1 1 clamp(220px, 45vw, 100%);
+    min-height: 2.4rem;
+    flex: 1 1 clamp(240px, 55vw, 100%);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
