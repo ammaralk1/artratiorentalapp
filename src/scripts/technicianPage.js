@@ -278,6 +278,19 @@ function parseDateInputValue(value) {
   return parsed;
 }
 
+function sanitizeAmountInput(rawValue) {
+  const normalized = normalizeNumbers(String(rawValue ?? ''));
+  if (!normalized) return '';
+  const cleaned = normalized.replace(/[^0-9.]/g, '');
+  const parts = cleaned.split('.');
+  const integerPart = parts[0] || '';
+  const decimalPart = parts.length > 1 ? parts.slice(1).join('') : '';
+  const trimmedInteger = integerPart.replace(/^0+(\d)/, '$1');
+  const finalInteger = trimmedInteger.length ? trimmedInteger : (decimalPart ? '0' : '');
+  const finalDecimal = decimalPart ? decimalPart.replace(/\D/g, '').slice(0, 2) : '';
+  return finalDecimal ? `${finalInteger}.${finalDecimal}` : finalInteger;
+}
+
 function handlePayoutFormSubmit(event) {
   event.preventDefault();
   if (!technicianId) {
@@ -737,6 +750,30 @@ if (financialPayoutListEl && !financialPayoutListEl.dataset.listenerAttached) {
     handlePayoutRemoval(payoutId);
   });
   financialPayoutListEl.dataset.listenerAttached = 'true';
+}
+
+if (financialPayoutAmountInput && !financialPayoutAmountInput.dataset.normalizerAttached) {
+  const normalizeInput = () => {
+    const sanitized = sanitizeAmountInput(financialPayoutAmountInput.value);
+    if (sanitized !== financialPayoutAmountInput.value) {
+      const cursor = sanitized.length;
+      financialPayoutAmountInput.value = sanitized;
+      if (financialPayoutAmountInput.setSelectionRange) {
+        financialPayoutAmountInput.setSelectionRange(cursor, cursor);
+      }
+    }
+  };
+  financialPayoutAmountInput.addEventListener('input', normalizeInput);
+  financialPayoutAmountInput.addEventListener('blur', () => {
+    normalizeInput();
+    if (financialPayoutAmountInput.value) {
+      const numberValue = Number.parseFloat(financialPayoutAmountInput.value);
+      if (Number.isFinite(numberValue)) {
+        financialPayoutAmountInput.value = numberValue.toFixed(2);
+      }
+    }
+  });
+  financialPayoutAmountInput.dataset.normalizerAttached = 'true';
 }
 if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
   financialModalEl.addEventListener('click', (event) => {

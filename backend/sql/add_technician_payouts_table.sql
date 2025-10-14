@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS technician_payouts (
     CONSTRAINT fk_technician_payouts_technician FOREIGN KEY (technician_id) REFERENCES technicians(id) ON DELETE CASCADE,
     CONSTRAINT fk_technician_payouts_user FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_technician_payouts_technician_paid_at (technician_id, paid_at)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
