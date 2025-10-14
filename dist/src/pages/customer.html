@@ -28,7 +28,7 @@
   <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.js">
   <link rel="stylesheet" crossorigin href="../../assets/app.css">
 </head>
-<body class="page-shell theme-loading" data-theme="light">
+<body class="page-shell theme-loading customer-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
@@ -184,15 +184,11 @@
             </button>
             <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
               <div class="flex flex-col gap-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-start gap-4">
                   <div class="space-y-1 text-start">
                     <p class="text-sm text-base-content/60" data-i18n data-i18n-key="customerDetails.hero.subtitle">👋 هذه نظرة سريعة على بيانات العميل</p>
                     <h2 class="text-2xl font-bold text-base-content" id="dashboard-greeting-customer-name">—</h2>
                     <p class="text-sm text-base-content/60" id="dashboard-greeting-customer-company">—</p>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <button class="btn btn-primary" id="customer-edit-btn" type="button" data-i18n data-i18n-key="customerDetails.actions.edit">✏️ تعديل العميل</button>
-                    <a href="projects.html" class="btn btn-outline" data-i18n data-i18n-key="projects.nav.projects">📁 المشاريع</a>
                   </div>
                 </div>
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="customer-financial-stats">
@@ -320,6 +316,23 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav" aria-label="التنقل السريع">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <a
+                href="dashboard.html#reservations-tab"
+                class="tab-button customer-primary-nav-link"
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.reservations"
+              >📅 إدارة الحجوزات</a>
+              <a
+                href="projects.html"
+                class="tab-button customer-primary-nav-link"
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.projects"
+              >📁 إدارة المشاريع</a>
+            </div>
+          </nav>
+
           <section class="glass-card space-y-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="space-y-2">
@@ -341,28 +354,28 @@
             </div>
           </section>
 
-          <div class="glass-card customer-tabbar">
+          <div class="glass-card dashboard-tabbar customer-tabbar">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <button
                 type="button"
                 class="tab-button tab-active"
                 data-customer-tab="reservations"
                 data-i18n
-                data-i18n-key="customerTabs.reservations"
-              >📅 إدارة الحجوزات</button>
+                data-i18n-key="customerTabs.customerReservations"
+              >📅 حجوزات العميل</button>
               <button
                 type="button"
                 class="tab-button"
                 data-customer-tab="projects"
                 data-i18n
-                data-i18n-key="customerTabs.projects"
-              >📁 إدارة المشاريع</button>
+                data-i18n-key="customerTabs.customerProjects"
+              >📁 مشاريع العميل</button>
             </div>
           </div>
 
           <section class="glass-card space-y-5 customer-reservations-section" data-customer-tab-panel="reservations">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</h3>
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerTabs.customerReservations">📅 حجوزات العميل</h3>
               <button type="button" class="btn btn-outline btn-secondary" id="customer-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
             </div>
             <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
@@ -390,16 +403,24 @@
           <section class="glass-card space-y-5 customer-projects-section hidden" data-customer-tab-panel="projects">
             <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
               <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="customerProjects.title">📁 مشاريع العميل</h3>
-              <div class="flex flex-wrap items-center gap-2">
-                <input type="text" id="customer-project-search" class="form-control w-auto" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
-                <select id="customer-project-status-filter" class="form-select w-auto">
-                  <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
-                  <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
-                  <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
-                  <option value="completed" data-i18n data-i18n-key="projectCards.filters.status.completed">✅ مشاريع منتهية</option>
-                </select>
-                <button type="button" class="btn btn-outline btn-secondary" id="customer-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
-              </div>
+              <button type="button" class="btn btn-outline btn-secondary" id="customer-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+            <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
+              <input type="text" id="customer-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+              <input type="text" id="customer-project-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="customer-project-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="customer-project-date-range" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+                <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+                <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+              </select>
+              <select id="customer-project-status-filter" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
+                <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
+                <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
+                <option value="completed" data-i18n data-i18n-key="projectCards.filters.status.completed">✅ مشاريع منتهية</option>
+              </select>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
               <div id="customer-projects" class="project-card-grid" data-empty="لا توجد مشاريع مرتبطة بهذا العميل." data-empty-key="customerProjects.empty"></div>
@@ -583,60 +604,65 @@
   </div>
 
   <div class="modal fade" id="editCustomerModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" data-i18n data-i18n-key="customerDetails.edit.modalTitle">✏️ تعديل العميل</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
         <div class="modal-body">
-          <input type="hidden" id="edit-id">
+          <form id="edit-customer-form" class="management-form" novalidate>
+            <input type="hidden" id="edit-id">
 
-          <div class="mb-3">
-            <label class="form-label" for="edit-name" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
-            <input class="form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
-          </div>
+            <div class="row g-3">
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="edit-name" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                <input class="form-control" id="edit-name" placeholder="اسم العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+              </div>
+              <div class="col-12 col-md-4">
+              <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+              <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+              <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+            </div>
+            </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="edit-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
-            <input class="form-control" id="edit-phone" placeholder="05xxxxxxxx" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
-          </div>
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="edit-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                <input class="form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+              </div>
+              <div class="col-12 col-md-4">
+              <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+              <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="edit-tax-id" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+              <input class="form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+            </div>
+            </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="edit-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-            <input class="form-control" id="edit-company" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
-          </div>
+            <div class="row g-3 mt-1">
+              <div class="col-12">
+                <label class="form-label" for="edit-document-file" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                <div class="customer-upload-inline">
+                  <input type="file" class="form-control" id="edit-document-file" accept="application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                  <button type="button" class="btn btn-outline btn-secondary" id="edit-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                <small class="customer-upload-hint" id="edit-document-file-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+              </div>
+              <small class="form-text text-muted d-block mt-2" data-i18n data-i18n-key="customers.form.document.helper">يمكنك لصق رابط مباشر للمستند أو لملف مخزن.</small>
+              <input type="hidden" id="edit-document-url">
+              <input type="hidden" id="edit-document-name">
+            </div>
+            </div>
 
-          <div class="mb-3">
-            <label class="form-label" for="edit-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
-            <input class="form-control" id="edit-email" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="edit-address" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
-            <input class="form-control" id="edit-address" placeholder="عنوان العميل" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="edit-tax-id" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
-            <input class="form-control" id="edit-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="edit-document-url" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
-            <input class="form-control" id="edit-document-url" placeholder="https://example.com/document.pdf" data-i18n data-i18n-placeholder-key="customers.form.document.placeholder">
-            <small class="form-text text-muted" data-i18n data-i18n-key="customers.form.document.helper">يمكنك لصق رابط مباشر للمستند أو لملف مخزن.</small>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="edit-document-name" data-i18n data-i18n-key="customers.form.labels.documentName">📄 اسم الملف</label>
-            <input class="form-control" id="edit-document-name" placeholder="invoice.pdf" data-i18n data-i18n-placeholder-key="customers.form.document.namePlaceholder">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
-            <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
-          </div>
+            <div class="mt-3">
+              <label class="form-label" for="edit-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+              <textarea class="form-control" id="edit-notes" rows="3" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+            </div>
+          </form>
         </div>
         <div class="modal-footer">
           <button class="btn btn-primary" id="save-edit-btn" data-i18n data-i18n-key="customers.form.actions.update">💾 حفظ التعديل</button>
