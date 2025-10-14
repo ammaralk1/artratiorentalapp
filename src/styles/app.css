@@ -2407,7 +2407,15 @@
   }
 
   .equipment-details-field--wide {
-    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .equipment-details-field--wide label {
+    flex: 1 1 100%;
+  }
+
+  .equipment-details-field--wide .form-control {
+    flex: 1 1 100%;
   }
 
   .equipment-details-field label {
@@ -2437,6 +2445,8 @@
     white-space: normal;
     overflow-wrap: anywhere;
     min-width: 0;
+    resize: vertical;
+    max-width: 100%;
   }
 
   @media (max-width: 640px) {

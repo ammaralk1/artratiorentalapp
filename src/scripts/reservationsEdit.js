@@ -135,12 +135,20 @@ function updateEditProjectTaxState() {
     if (shareCheckbox && shareCheckbox.checked) {
       shareCheckbox.checked = false;
     }
+    if (shareCheckbox) {
+      shareCheckbox.disabled = true;
+      shareCheckbox.classList.add('disabled');
+    }
   } else {
     const wasDisabled = taxCheckbox.disabled;
     taxCheckbox.disabled = false;
     taxCheckbox.classList.remove('disabled');
     if (wasDisabled) {
       taxCheckbox.checked = false;
+    }
+    if (shareCheckbox) {
+      shareCheckbox.disabled = false;
+      shareCheckbox.classList.remove('disabled');
     }
   }
 

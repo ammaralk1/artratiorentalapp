@@ -507,8 +507,10 @@ function updateCreateProjectTaxState() {
     taxCheckbox.checked = false;
     taxCheckbox.disabled = true;
     taxCheckbox.classList.add('disabled');
-    if (shareCheckbox && shareCheckbox.checked) {
+    if (shareCheckbox) {
       shareCheckbox.checked = false;
+      shareCheckbox.disabled = true;
+      shareCheckbox.classList.add('disabled');
     }
   } else {
     const wasDisabled = taxCheckbox.disabled;
@@ -516,6 +518,10 @@ function updateCreateProjectTaxState() {
     taxCheckbox.classList.remove('disabled');
     if (wasDisabled) {
       taxCheckbox.checked = false;
+    }
+    if (shareCheckbox) {
+      shareCheckbox.disabled = false;
+      shareCheckbox.classList.remove('disabled');
     }
   }
 
