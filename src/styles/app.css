@@ -3937,6 +3937,15 @@
     text-align: center;
   }
 
+  #customer-hero-phone,
+  #customer-hero-company,
+  #customer-hero-email,
+  #customer-hero-tax {
+    min-height: 2.75rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 1rem;
+  }
+
   .empty-state {
     @apply flex flex-col items-center justify-center gap-3 py-16 text-center;
     color: hsl(var(--bc) / 0.6);
