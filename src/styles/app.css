@@ -1596,8 +1596,15 @@
   .equipment-grid {
     display: grid;
     gap: 22px;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     justify-content: center;
+  }
+
+  @media (max-width: 640px) {
+    .equipment-grid {
+      grid-template-columns: minmax(0, 1fr);
+      justify-content: stretch;
+    }
   }
 
   .equipment-filters {
@@ -2980,6 +2987,10 @@
   }
 
   @media (max-width: 640px) {
+    .equipment-card {
+      min-height: auto;
+    }
+
     #search-customer-input.form-control {
       max-width: 100%;
       width: 100%;
