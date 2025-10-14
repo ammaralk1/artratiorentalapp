@@ -515,7 +515,7 @@ async function refreshTechnicianFinancialSummary(technician) {
     return technicianIds.includes(normalizedId);
   });
 
-  const breakdown = relevantReservations.map((reservation) => {
+  const breakdown = relevantReservations.map((reservation, index) => {
     const detailsEntry = Array.isArray(reservation.techniciansDetails)
       ? reservation.techniciansDetails.find((entry) => {
           const entryId = entry?.id ?? entry?.technician_id ?? entry?.technicianId ?? entry?.ID;
@@ -526,9 +526,6 @@ async function refreshTechnicianFinancialSummary(technician) {
     const rate = resolveTechnicianRate(detailsEntry) || resolveTechnicianRate(technician);
     const days = Math.max(1, calculateReservationDays(reservation.start, reservation.end));
     const dueAmount = Math.max(0, Math.round(rate * days));
-    const paidStatus = reservation.paidStatus || 'unpaid';
-    const paidAmount = paidStatus === 'paid' ? dueAmount : 0;
-    const outstandingAmount = Math.max(0, dueAmount - paidAmount);
 
     const fallbackLabel = t('technicianFinancial.list.reservationFallback', 'حجز رقم {id}')
       .replace('{id}', normalizeNumbers(String(reservation.reservationId || reservation.id || '?')));
@@ -558,19 +555,64 @@ async function refreshTechnicianFinancialSummary(technician) {
       ? periodStart
       : `${periodStart} – ${periodEnd}`;
 
+    const sortKey = (() => {
+      const dateOrder = reservation.start || reservation.startDatetime || reservation.createdAt || reservation.created_at;
+      const parsed = dateOrder ? new Date(dateOrder).getTime() : NaN;
+      if (Number.isNaN(parsed)) {
+        return index;
+      }
+      return parsed;
+    })();
+
     return {
       label,
       reference: referenceParts.join(' • ') || '—',
       period,
       dueAmount,
-      paidAmount,
-      outstandingAmount,
-      paidStatus,
+      paidAmount: 0,
+      outstandingAmount: dueAmount,
+      paidStatus: 'unpaid',
+      sortKey,
+      originalIndex: index,
     };
   });
 
-  const totalsDue = breakdown.reduce((acc, entry) => acc + entry.dueAmount, 0);
   const payouts = getTechnicianPayoutsList(normalizedId);
+  let remainingPayout = payouts.reduce((acc, entry) => acc + (Number(entry.amount) || 0), 0);
+  const sortedForAllocation = [...breakdown]
+    .sort((a, b) => {
+      if (a.sortKey === b.sortKey) {
+        return a.originalIndex - b.originalIndex;
+      }
+      return a.sortKey - b.sortKey;
+    })
+    .map((entry) => {
+      const result = { ...entry };
+      const due = Number(entry.dueAmount) || 0;
+      const applied = Math.min(due, Math.max(0, Number(remainingPayout.toFixed(2))));
+      if (applied > 0) {
+        remainingPayout = Number((remainingPayout - applied).toFixed(2));
+      }
+      result.paidAmount = Number(applied.toFixed(2));
+      const outstanding = Math.max(0, Number((due - applied).toFixed(2)));
+      result.outstandingAmount = outstanding;
+      if (outstanding <= 0.009) {
+        result.paidStatus = 'paid';
+        result.outstandingAmount = 0;
+      } else if (applied > 0) {
+        result.paidStatus = 'partial';
+      } else {
+        result.paidStatus = 'unpaid';
+      }
+      return result;
+    });
+
+  // Restore original order for display
+  const processedBreakdown = sortedForAllocation
+    .sort((a, b) => a.originalIndex - b.originalIndex)
+    .map(({ sortKey, originalIndex, ...rest }) => rest);
+
+  const totalsDue = processedBreakdown.reduce((acc, entry) => acc + entry.dueAmount, 0);
   const payoutsTotal = payouts.reduce((acc, entry) => acc + (Number(entry.amount) || 0), 0);
   const outstanding = Math.max(0, Number((totalsDue - payoutsTotal).toFixed(2)));
 
@@ -581,12 +623,12 @@ async function refreshTechnicianFinancialSummary(technician) {
   };
 
   const metrics = {
-    assignments: breakdown.length,
+    assignments: processedBreakdown.length,
     payoutsCount: payouts.length,
     outstandingAmount: outstanding,
   };
 
-  technicianFinancialState = { totals, metrics, breakdown, payouts };
+  technicianFinancialState = { totals, metrics, breakdown: processedBreakdown, payouts };
   renderFinancialSummary(technicianFinancialState);
   renderFinancialModal(technicianFinancialState);
 }
