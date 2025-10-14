@@ -606,15 +606,14 @@ function renderTechnicianDetails(technician) {
     { key: 'technicianDetails.fields.notes', value: notesValue },
   ];
 
-  const detailFields = detailItems.map(({ key, value }) => `
-    <div class="technician-detail-field">
-      <span class="technician-detail-label" data-i18n data-i18n-key="${key}">${t(key)}</span>
-      <div class="technician-detail-value">${value}</div>
-    </div>
+  const detailCards = detailItems.map(({ key, value }) => `
+    <article class="rounded-2xl border border-base-200 bg-base-100/90 p-4 shadow-sm">
+      <span class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="${key}">${t(key)}</span>
+      <p class="mt-2 text-lg font-semibold text-base-content">${value}</p>
+    </article>
   `).join('');
 
-  container.classList.add('technician-detail-grid');
-  container.innerHTML = detailFields;
+  container.innerHTML = detailCards;
 
   attachTechnicianEditListeners();
   setEditButtonsDisabled(false);

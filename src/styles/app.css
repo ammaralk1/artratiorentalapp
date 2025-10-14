@@ -3141,27 +3141,6 @@
       0 3px 10px rgba(15, 23, 42, 0.08);
   }
 
-  .technician-detail-grid {
-    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-3;
-  }
-
-  .technician-detail-field {
-    @apply flex flex-col gap-2;
-  }
-
-  .technician-detail-label {
-    @apply text-sm font-medium;
-    color: hsl(var(--bc) / 0.65);
-  }
-
-  .technician-detail-value {
-    @apply text-lg font-semibold text-base-content leading-relaxed break-words;
-  }
-
-  :where(html.dark, body.dark) .technician-detail-label {
-    color: rgba(203, 213, 225, 0.78);
-  }
-
   :is(html.dark, body.dark) .management-form-grid .form-field.form-field-notes textarea.form-control {
     background: linear-gradient(135deg, rgba(17, 27, 53, 0.95), rgba(31, 46, 84, 0.9)) !important;
     border-color: rgba(148, 163, 255, 0.25);
@@ -4340,7 +4319,8 @@
     color: rgba(148, 163, 184, 0.78) !important;
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-details > * {
+  :where(html.dark, body.dark) .customer-page #customer-details > *,
+  :where(html.dark, body.dark) .technician-page #technician-details > article {
     background: var(--customer-input);
     border: 1px solid var(--customer-border);
     border-radius: 1.75rem;
