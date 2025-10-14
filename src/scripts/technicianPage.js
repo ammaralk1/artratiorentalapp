@@ -11,7 +11,7 @@ import { initDashboardShell } from './dashboardShell.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState } from './reservationsService.js';
 import { calculateReservationDays } from './reservationsSummary.js';
-import { loadData, saveData } from './storage.js';
+import { listTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout } from './technicianPayoutsService.js';
 
 applyStoredTheme();
 checkAuth();
@@ -71,6 +71,8 @@ let technicianFinancialState = {
   payouts: [],
 };
 
+let technicianPayoutsState = [];
+
 initThemeToggle();
 
 function getActiveLanguage() {
@@ -111,106 +113,6 @@ function formatDateLocalized(value) {
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
   }
-}
-
-function generatePayoutId() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return `payout-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
-}
-
-function normalizePayoutEntry(entry = {}) {
-  if (!entry) return null;
-  const amount = Number(entry.amount);
-  if (!Number.isFinite(amount)) return null;
-  const technician = entry.technicianId != null ? String(entry.technicianId) : '';
-  if (!technician) return null;
-  return {
-    id: entry.id ? String(entry.id) : generatePayoutId(),
-    technicianId: technician,
-    amount: Math.max(0, Number(amount.toFixed(2))),
-    note: entry.note ? String(entry.note).trim() : '',
-    paidAt: entry.paidAt ? new Date(entry.paidAt).toISOString() : new Date().toISOString(),
-    createdAt: entry.createdAt ? new Date(entry.createdAt).toISOString() : new Date().toISOString(),
-    recordedBy: entry.recordedBy ? String(entry.recordedBy) : null,
-  };
-}
-
-function loadAllTechnicianPayouts() {
-  let payouts = [];
-  try {
-    const snapshot = loadData();
-    if (Array.isArray(snapshot?.technicianPayouts)) {
-      payouts = snapshot.technicianPayouts;
-    }
-  } catch (error) {
-    console.error('⚠️ [technician-page] Failed to access in-memory payouts', error);
-  }
-
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const raw = window.localStorage.getItem('technicianPayouts');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          payouts = parsed;
-          saveData({ technicianPayouts: parsed });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('⚠️ [technician-page] Failed to read technician payouts from localStorage', error);
-  }
-
-  return payouts.map(normalizePayoutEntry).filter(Boolean);
-}
-
-function persistAllTechnicianPayouts(list) {
-  try {
-    saveData({ technicianPayouts: list });
-    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-      window.dispatchEvent(new CustomEvent('technicians:payoutsUpdated'));
-    }
-    if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('technicianPayouts', JSON.stringify(list));
-    }
-  } catch (error) {
-    console.error('⚠️ [technician-page] Failed to persist technician payouts', error);
-  }
-}
-
-function getTechnicianPayoutsList(technicianIdentifier) {
-  const normalizedId = technicianIdentifier != null ? String(technicianIdentifier) : '';
-  if (!normalizedId) return [];
-  return loadAllTechnicianPayouts()
-    .filter((entry) => entry && String(entry.technicianId) === normalizedId)
-    .sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
-}
-
-function addTechnicianPayout(technicianIdentifier, { amount, note, paidAt }) {
-  const normalizedId = technicianIdentifier != null ? String(technicianIdentifier) : '';
-  if (!normalizedId) return null;
-  const entry = normalizePayoutEntry({
-    technicianId: normalizedId,
-    amount,
-    note,
-    paidAt,
-  });
-  if (!entry) return null;
-  const all = loadAllTechnicianPayouts();
-  all.push(entry);
-  persistAllTechnicianPayouts(all);
-  return entry;
-}
-
-function removeTechnicianPayout(payoutId) {
-  if (!payoutId) return false;
-  const all = loadAllTechnicianPayouts();
-  const next = all.filter((entry) => entry.id !== payoutId);
-  if (next.length === all.length) return false;
-  persistAllTechnicianPayouts(next);
-  return true;
 }
 
 function escapeHtml(value = '') {
@@ -393,32 +295,34 @@ function handlePayoutFormSubmit(event) {
 
   const note = financialPayoutNoteInput?.value?.trim() || '';
   const paidDate = parseDateInputValue(financialPayoutDateInput?.value || null);
+  const submitButton = financialPayoutForm?.querySelector('button[type="submit"]');
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
 
-  const entry = addTechnicianPayout(technicianId, {
-    amount,
+  createTechnicianPayout({
+    technicianId,
+    amount: Number(amount.toFixed(2)),
     note,
     paidAt: paidDate.toISOString(),
+  }).then((entry) => {
+    showToast(t('technicianFinancial.payouts.toast.added', '✅ تم تسجيل الدفعة.'));
+    financialPayoutForm?.reset();
+    if (financialPayoutDateInput) {
+      financialPayoutDateInput.value = formatDateInputValue(entry?.paidAt || new Date());
+    }
+    if (technicianState) {
+      refreshTechnicianFinancialSummary(technicianState);
+    }
+  }).catch((error) => {
+    console.error('❌ [technician-page] Failed to create technician payout', error);
+    const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
+    showToast(message);
+  }).finally(() => {
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
   });
-
-  if (!entry) {
-    showToast(t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.'));
-    return;
-  }
-
-  showToast(t('technicianFinancial.payouts.toast.added', '✅ تم تسجيل الدفعة.'));
-  if (financialPayoutForm) {
-    financialPayoutForm.reset();
-  }
-  if (financialPayoutDateInput) {
-    financialPayoutDateInput.value = formatDateInputValue(entry.paidAt);
-  }
-
-  if (technicianState) {
-    refreshTechnicianFinancialSummary(technicianState);
-  } else {
-    const payouts = getTechnicianPayoutsList(technicianId);
-    renderFinancialPayouts(payouts);
-  }
 }
 
 function handlePayoutRemoval(payoutId) {
@@ -427,19 +331,16 @@ function handlePayoutRemoval(payoutId) {
   const confirmed = window.confirm(confirmMessage);
   if (!confirmed) return;
 
-  const removed = removeTechnicianPayout(payoutId);
-  if (!removed) {
-    showToast(t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.'));
-    return;
-  }
-
-  showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
-  if (technicianState) {
-    refreshTechnicianFinancialSummary(technicianState);
-  } else {
-    const payouts = getTechnicianPayoutsList(technicianId);
-    renderFinancialPayouts(payouts);
-  }
+  deleteTechnicianPayout(payoutId).then(() => {
+    showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
+    if (technicianState) {
+      refreshTechnicianFinancialSummary(technicianState);
+    }
+  }).catch((error) => {
+    console.error('❌ [technician-page] Failed to remove technician payout', error);
+    const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
+    showToast(message);
+  });
 }
 
 function openFinancialModal() {
@@ -525,6 +426,14 @@ async function refreshTechnicianFinancialSummary(technician) {
 
   const reservations = getReservationsState();
   const normalizedId = String(technicianId);
+
+  try {
+    const payoutsResponse = await listTechnicianPayouts(normalizedId);
+    technicianPayoutsState = Array.isArray(payoutsResponse) ? payoutsResponse : [];
+  } catch (error) {
+    console.error('⚠️ [technician-page] Failed to load technician payouts from API', error);
+    technicianPayoutsState = [];
+  }
   const relevantReservations = reservations.filter((reservation) => {
     if (!reservation) return false;
     if (String(reservation.status || '').toLowerCase() === 'cancelled') {
@@ -598,8 +507,11 @@ async function refreshTechnicianFinancialSummary(technician) {
     };
   });
 
-  const payouts = getTechnicianPayoutsList(normalizedId);
-  let remainingPayout = payouts.reduce((acc, entry) => acc + (Number(entry.amount) || 0), 0);
+  const payouts = technicianPayoutsState.map((entry) => ({
+    ...entry,
+    amount: Number(entry.amount) || 0,
+  }));
+  let remainingPayout = payouts.reduce((acc, entry) => acc + entry.amount, 0);
   const sortedForAllocation = [...breakdown]
     .sort((a, b) => {
       if (a.sortKey === b.sortKey) {
@@ -994,12 +906,3 @@ const handleReservationsUpdated = () => {
 };
 
 document.addEventListener('reservations:changed', handleReservationsUpdated, { passive: true });
-
-window.addEventListener('technicians:payoutsUpdated', () => {
-  if (technicianState) {
-    refreshTechnicianFinancialSummary(technicianState);
-  } else {
-    renderFinancialSummary(technicianFinancialState);
-    renderFinancialModal(technicianFinancialState);
-  }
-});
