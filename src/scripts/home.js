@@ -277,6 +277,9 @@ function mergeSummaryWithLocalData(summary) {
     : techniciansFallback;
   if (technicians.length) {
     const busyCount = technicians.filter((tech) => {
+      if (!tech) return false;
+      if (tech.isBusy === true || tech.busy === true) return true;
+
       const candidates = [
         tech?.status,
         tech?.baseStatus,
@@ -284,26 +287,38 @@ function mergeSummaryWithLocalData(summary) {
         tech?.availability,
         tech?.state,
         tech?.status_label,
-        tech?.statusLabel
+        tech?.statusLabel,
+        tech?.statusText,
+        tech?.status_text
       ];
-      const normalized = candidates
-        .map((value) => String(value || '').trim().toLowerCase())
-        .find((value) => value.length > 0) || '';
+      const normalizedVariants = candidates
+        .map((value) => String(value ?? '').trim().toLowerCase())
+        .filter((value) => value.length > 0)
+        .map((value) => value
+          .replace(/[\u2700-\u27bf\u1f300-\u1f64f\u1f680-\u1f6ff\u2600-\u26ff]/g, '') // emojis
+          .replace(/[^\p{L}\p{N}\s_-]+/gu, ' ')
+          .replace(/\s+/g, ' ')
+          .trim());
 
-      if (!normalized) return false;
+      if (!normalizedVariants.length) return false;
 
-      const busyKeywords = new Set([
+      const busyKeywords = [
         'busy',
         'مشغول',
-        'occupied',
         'غير متاح',
+        'مشغولة',
+        'occupied',
+        'in use',
         'in-use',
-        'in_use',
         'working',
-        'assigned'
-      ]);
+        'assigned',
+        'قيد العمل',
+        'assigned crew'
+      ];
 
-      return busyKeywords.has(normalized);
+      return normalizedVariants.some((value) =>
+        busyKeywords.some((keyword) => value.includes(keyword))
+      );
     }).length;
     result.technicians = {
       ...result.technicians,
