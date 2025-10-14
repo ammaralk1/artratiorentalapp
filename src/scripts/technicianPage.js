@@ -885,18 +885,11 @@ function renderTechnicianDetails(technician) {
   const currencySpan = `<span data-i18n data-i18n-key="reservations.create.summary.currency">${currencyLabel}</span>`;
   const wageValue = `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
 
-  const baseStatus = technician.baseStatus || technician.status || 'available';
-  const baseStatusKey = baseStatus === 'busy'
-    ? 'technicians.status.busy'
-    : 'technicians.status.available';
-  const baseStatusBadge = `<span class="badge ${baseStatus === 'busy' ? 'badge-warning' : 'badge-success'}" data-i18n data-i18n-key="${baseStatusKey}">${t(baseStatusKey)}</span>`;
-
   const detailItems = [
     { key: 'technicianDetails.fields.role', value: roleValue },
     { key: 'technicianDetails.fields.department', value: departmentValue },
     { key: 'technicianDetails.fields.phone', value: phoneValue },
     { key: 'technicianDetails.fields.wage', value: wageValue },
-    { key: 'technicianDetails.fields.baseStatus', value: baseStatusBadge },
     { key: 'technicianDetails.fields.notes', value: notesValue },
   ];
 
