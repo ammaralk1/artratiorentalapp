@@ -3940,7 +3940,13 @@
   #customer-hero-phone,
   #customer-hero-company,
   #customer-hero-email,
-  #customer-hero-tax {
+  #customer-hero-tax,
+  #technician-hero-role,
+  #technician-hero-phone,
+  #technician-hero-department,
+  #dashboard-greeting-technician-status,
+  #dashboard-greeting-technician-phone,
+  #dashboard-greeting-technician-department {
     min-height: 2.75rem;
     padding: 0.6rem 1.25rem;
     font-size: 1rem;
@@ -4295,21 +4301,25 @@
     color: #f8fafc;
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-financial-stats > article {
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats > article,
+  :where(html.dark, body.dark) .technician-page #technician-financial-stats > article {
     background: var(--customer-surface);
     border: 1px solid var(--customer-border);
     box-shadow: var(--customer-shadow);
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content"] {
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content"],
+  :where(html.dark, body.dark) .technician-page #technician-financial-stats [class*="text-base-content"] {
     color: rgba(226, 232, 240, 0.92) !important;
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content/60"] {
+  :where(html.dark, body.dark) .customer-page #customer-financial-stats [class*="text-base-content/60"],
+  :where(html.dark, body.dark) .technician-page #technician-financial-stats [class*="text-base-content/60"] {
     color: rgba(148, 163, 184, 0.78) !important;
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-details > * {
+  :where(html.dark, body.dark) .customer-page #customer-details > *,
+  :where(html.dark, body.dark) .technician-page #technician-details > * {
     background: var(--customer-input);
     border: 1px solid var(--customer-border);
     border-radius: 1.75rem;
@@ -4317,17 +4327,22 @@
     box-shadow: var(--customer-shadow);
   }
 
-  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content"] {
+  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content"],
+  :where(html.dark, body.dark) .technician-page #technician-details [class*="text-base-content"] {
     color: rgba(226, 232, 240, 0.92) !important;
   }
 
   :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content/60"],
-  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content/70"] {
+  :where(html.dark, body.dark) .customer-page #customer-details [class*="text-base-content/70"],
+  :where(html.dark, body.dark) .technician-page #technician-details [class*="text-base-content/60"],
+  :where(html.dark, body.dark) .technician-page #technician-details [class*="text-base-content/70"] {
     color: rgba(148, 163, 184, 0.78) !important;
   }
 
   :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline,
-  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline:hover {
+  :where(html.dark, body.dark) .customer-page #customer-details .btn.btn-outline:hover,
+  :where(html.dark, body.dark) .technician-page #technician-details .btn.btn-outline,
+  :where(html.dark, body.dark) .technician-page #technician-details .btn.btn-outline:hover {
     border-color: var(--customer-border-strong);
     color: rgba(226, 232, 240, 0.95);
     background: linear-gradient(135deg, rgba(63, 93, 245, 0.18), rgba(96, 165, 250, 0.24));

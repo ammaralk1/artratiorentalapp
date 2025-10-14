@@ -25,6 +25,11 @@ const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
 const heroPhoneEl = document.getElementById('technician-hero-phone');
 const heroDepartmentEl = document.getElementById('technician-hero-department');
+const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
+const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
+const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
+const greetingPhoneEl = document.getElementById('dashboard-greeting-technician-phone');
+const greetingDepartmentEl = document.getElementById('dashboard-greeting-technician-department');
 
 const financialSummaryEls = {
   total: document.getElementById('technician-financial-total'),
@@ -371,12 +376,18 @@ function setHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
 }
 
 function setStatusBadge(status) {
-  if (!heroStatusEl) return;
+  const targets = [heroStatusEl, greetingStatusEl].filter(Boolean);
+  if (!targets.length) {
+    return;
+  }
+
   const normalized = typeof status === 'string' ? status.toLowerCase() : '';
 
   if (!normalized) {
-    heroStatusEl.className = 'badge badge-outline hidden';
-    heroStatusEl.textContent = '—';
+    targets.forEach((element) => {
+      element.className = 'badge badge-outline hidden';
+      element.textContent = '—';
+    });
     return;
   }
 
@@ -388,14 +399,16 @@ function setStatusBadge(status) {
     badgeClasses.push('badge-success');
   }
 
-  heroStatusEl.className = badgeClasses.join(' ');
-  heroStatusEl.classList.remove('hidden');
-
   const key = isBusy ? 'technicians.status.busy' : 'technicians.status.available';
   const fallback = isBusy ? 'مشغول' : 'متاح';
-  heroStatusEl.setAttribute('data-i18n', '');
-  heroStatusEl.setAttribute('data-i18n-key', key);
-  heroStatusEl.textContent = t(key, fallback);
+
+  targets.forEach((element) => {
+    element.className = badgeClasses.join(' ');
+    element.classList.remove('hidden');
+    element.setAttribute('data-i18n', '');
+    element.setAttribute('data-i18n-key', key);
+    element.textContent = t(key, fallback);
+  });
 }
 
 function setHeroData(technician) {
@@ -404,6 +417,10 @@ function setHeroData(technician) {
     setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
     setHeroBadge(heroPhoneEl, '📞', '', { hideWhenEmpty: true });
     setHeroBadge(heroDepartmentEl, '🏢', '', { hideWhenEmpty: true });
+    if (greetingNameEl) greetingNameEl.textContent = '—';
+    if (greetingRoleEl) greetingRoleEl.textContent = '—';
+    setHeroBadge(greetingPhoneEl, '📞', '', { hideWhenEmpty: true });
+    setHeroBadge(greetingDepartmentEl, '🏢', '', { hideWhenEmpty: true });
     setStatusBadge(null);
     return;
   }
@@ -412,6 +429,20 @@ function setHeroData(technician) {
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
   setHeroBadge(heroPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
   setHeroBadge(heroDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
+  if (greetingNameEl) {
+    greetingNameEl.textContent = technician.name || '—';
+  }
+  if (greetingRoleEl) {
+    const roleText = technician.role ? technician.role : '';
+    if (roleText) {
+      greetingRoleEl.textContent = `🎯 ${roleText}`;
+    } else {
+      const fallbackRole = t('technicianDetails.fallback.role', 'غير محدد');
+      greetingRoleEl.textContent = `🎯 ${fallbackRole}`;
+    }
+  }
+  setHeroBadge(greetingPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
+  setHeroBadge(greetingDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
   setStatusBadge(technician.status || technician.baseStatus || 'available');
 }
 
