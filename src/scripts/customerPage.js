@@ -62,6 +62,16 @@ const customerTabPanels = new Map(
   Array.from(document.querySelectorAll('[data-customer-tab-panel]')).map((panel) => [panel.getAttribute('data-customer-tab-panel'), panel])
 );
 
+const editDocumentFileInput = document.getElementById('edit-document-file');
+const editDocumentPreviewBtn = document.getElementById('edit-document-preview');
+const editDocumentNameHint = document.getElementById('edit-document-file-name');
+const editDocumentUrlInput = document.getElementById('edit-document-url');
+const editDocumentNameInput = document.getElementById('edit-document-name');
+
+let editDocumentState = null;
+let editDocumentUploadStatus = 'idle';
+let editExistingDocument = null;
+
 editButtons.forEach((button) => {
   button.disabled = true;
 });
@@ -81,6 +91,108 @@ function escapeMultiline(value = '') {
   const safe = escapeHtml(value).replace(/\r/g, '');
   const newline = String.fromCharCode(10);
   return safe.includes(newline) ? safe.split(newline).join('<br>') : safe;
+}
+
+function resetEditDocumentState(documentInfo = null) {
+  editExistingDocument = documentInfo && typeof documentInfo === 'object' ? { ...documentInfo } : null;
+  editDocumentState = null;
+  editDocumentUploadStatus = 'idle';
+  if (editDocumentFileInput) {
+    editDocumentFileInput.value = '';
+  }
+  updateEditDocumentUI();
+}
+
+function updateEditDocumentUI() {
+  if (!editDocumentNameHint || !editDocumentPreviewBtn) return;
+
+  const uploading = editDocumentUploadStatus === 'uploading';
+  const hasNewDocument = Boolean(editDocumentState?.dataUrl);
+
+  let labelText = t('customers.form.document.empty', 'لم يتم اختيار ملف بعد');
+
+  if (uploading) {
+    labelText = t('customers.form.document.uploading', '📤 جارٍ رفع الملف...');
+  } else if (editDocumentUploadStatus === 'error') {
+    labelText = t('customers.form.document.uploadFailed', '⚠️ فشل رفع الملف');
+  } else if (hasNewDocument) {
+    labelText = editDocumentState?.fileName || t('customers.form.document.selected', 'تم إرفاق ملف.');
+  } else if (editExistingDocument && (editExistingDocument.fileName || editExistingDocument.url)) {
+    labelText = editExistingDocument.fileName || editExistingDocument.url;
+  }
+
+  editDocumentNameHint.textContent = labelText;
+
+  const hasPreview = hasNewDocument || Boolean(editExistingDocument?.url);
+  editDocumentPreviewBtn.disabled = uploading || !hasPreview;
+}
+
+function handleEditDocumentFileChange() {
+  if (!editDocumentFileInput) return;
+  const [file] = editDocumentFileInput.files || [];
+
+  if (!file) {
+    editDocumentUploadStatus = 'idle';
+    editDocumentState = null;
+    updateEditDocumentUI();
+    return;
+  }
+
+  editDocumentUploadStatus = 'uploading';
+  updateEditDocumentUI();
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (typeof reader.result !== 'string') {
+      editDocumentUploadStatus = 'error';
+      editDocumentState = null;
+      updateEditDocumentUI();
+      return;
+    }
+
+    editDocumentState = {
+      dataUrl: reader.result,
+      fileName: file.name,
+      mimeType: file.type,
+      size: file.size,
+    };
+
+    if (editDocumentUrlInput) {
+      editDocumentUrlInput.value = reader.result;
+    }
+    if (editDocumentNameInput) {
+      editDocumentNameInput.value = file.name;
+    }
+
+    editDocumentUploadStatus = 'success';
+    updateEditDocumentUI();
+  };
+
+  reader.onerror = () => {
+    editDocumentUploadStatus = 'error';
+    editDocumentState = null;
+    updateEditDocumentUI();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+if (editDocumentFileInput && !editDocumentFileInput.dataset.listenerAttached) {
+  editDocumentFileInput.addEventListener('change', handleEditDocumentFileChange);
+  editDocumentFileInput.dataset.listenerAttached = 'true';
+}
+
+if (editDocumentPreviewBtn && !editDocumentPreviewBtn.dataset.listenerAttached) {
+  editDocumentPreviewBtn.addEventListener('click', () => {
+    if (editDocumentUploadStatus === 'uploading') {
+      return;
+    }
+    const url = editDocumentState?.dataUrl || editExistingDocument?.url;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  });
+  editDocumentPreviewBtn.dataset.listenerAttached = 'true';
 }
 
 function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
@@ -959,8 +1071,13 @@ function populateEditModal() {
   document.getElementById('edit-address').value = currentCustomer?.address || '';
   document.getElementById('edit-tax-id').value = normalizeNumbers(currentCustomer?.tax_id ?? currentCustomer?.taxId ?? '');
   const doc = currentCustomer?.document ?? null;
-  document.getElementById('edit-document-url').value = doc?.url || '';
-  document.getElementById('edit-document-name').value = doc?.fileName || '';
+  if (editDocumentUrlInput) {
+    editDocumentUrlInput.value = doc?.url || '';
+  }
+  if (editDocumentNameInput) {
+    editDocumentNameInput.value = doc?.fileName || '';
+  }
+  resetEditDocumentState(doc);
   document.getElementById('edit-notes').value = currentCustomer?.notes || '';
 }
 
@@ -979,8 +1096,8 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
     const email = document.getElementById('edit-email').value.trim();
     const address = document.getElementById('edit-address').value.trim();
     const taxId = normalizeNumbers(document.getElementById('edit-tax-id').value.trim());
-    const documentUrl = document.getElementById('edit-document-url').value.trim();
-    const documentNameInput = document.getElementById('edit-document-name').value.trim();
+    const documentUrl = (editDocumentUrlInput?.value || '').trim();
+    const documentNameInput = (editDocumentNameInput?.value || '').trim();
     const notes = document.getElementById('edit-notes').value.trim();
 
     if (!name || !phone) {
@@ -999,7 +1116,16 @@ if (saveEditBtn && !saveEditBtn.dataset.listenerAttached) {
 
     const existingDocument = customers[idx]?.document ?? null;
     let documentPayload = existingDocument;
-    if (documentUrl) {
+
+    if (editDocumentState?.dataUrl) {
+      documentPayload = {
+        ...(existingDocument || {}),
+        url: editDocumentState.dataUrl,
+        fileName: documentNameInput || editDocumentState.fileName || existingDocument?.fileName || '',
+        mimeType: editDocumentState.mimeType || existingDocument?.mimeType,
+        size: editDocumentState.size ?? existingDocument?.size,
+      };
+    } else if (documentUrl) {
       documentPayload = {
         ...(existingDocument || {}),
         url: documentUrl,
