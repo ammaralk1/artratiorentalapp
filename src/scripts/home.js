@@ -8,6 +8,7 @@ import { normalizeNumbers } from './utils.js';
 import { updatePreferences } from './preferencesService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { syncTechniciansStatuses } from './technicians.js';
+import { determineProjectStatus } from './projectsCommon.js';
 
 applyStoredTheme();
 checkAuth();
@@ -131,8 +132,8 @@ function mergeSummaryWithLocalData(summary) {
     const activeProjects = projects.filter((project) => determineProjectStatus(project) === 'ongoing').length;
     result.projects = {
       ...result.projects,
-      total: projects.length,
-      active: activeProjects
+      total: Math.max(result.projects?.total ?? 0, projects.length),
+      active: Math.max(result.projects?.active ?? 0, activeProjects)
     };
   }
 
@@ -147,8 +148,8 @@ function mergeSummaryWithLocalData(summary) {
     }).length;
     result.maintenance = {
       ...result.maintenance,
-      open: openCount,
-      highPriority: highPriorityCount
+      open: Math.max(result.maintenance?.open ?? 0, openCount),
+      highPriority: Math.max(result.maintenance?.highPriority ?? 0, highPriorityCount)
     };
   }
 
@@ -164,16 +165,60 @@ function mergeSummaryWithLocalData(summary) {
       return ['cancelled', 'canceled'].includes(status);
     };
 
+    const combineDateAndTime = (datePart, timePart) => {
+      const date = String(datePart || '').trim();
+      const time = String(timePart || '').trim();
+      if (!date && !time) return null;
+      if (date && time) {
+        return `${date}T${time}`;
+      }
+      if (date) return `${date}T00:00:00`;
+      return null;
+    };
+
+    const normalizeDateValue = (value) => {
+      if (!value) return null;
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+      let normalized = String(value).trim();
+      if (!normalized) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+        normalized = `${normalized}T00:00:00`;
+      } else if (normalized.includes(' ')) {
+        normalized = normalized.replace(' ', 'T');
+      }
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
     const resolveStartDate = (reservation) => {
       const candidates = [
         reservation?.start,
         reservation?.startDatetime,
         reservation?.start_datetime,
         reservation?.start_date,
-        reservation?.startDate
+        reservation?.startDate,
+        combineDateAndTime(reservation?.startDate, reservation?.startTime),
+        combineDateAndTime(reservation?.start_date, reservation?.start_time)
       ];
       for (const candidate of candidates) {
-        const date = toValidDate(candidate);
+        const date = normalizeDateValue(candidate);
+        if (date) return date;
+      }
+      return null;
+    };
+
+    const resolveEndDate = (reservation) => {
+      const candidates = [
+        reservation?.end,
+        reservation?.endDatetime,
+        reservation?.end_datetime,
+        reservation?.end_date,
+        reservation?.endDate,
+        combineDateAndTime(reservation?.endDate, reservation?.endTime),
+        combineDateAndTime(reservation?.end_date, reservation?.end_time)
+      ];
+      for (const candidate of candidates) {
+        const date = normalizeDateValue(candidate);
         if (date) return date;
       }
       return null;
@@ -193,11 +238,31 @@ function mergeSummaryWithLocalData(summary) {
       return start >= now;
     }).length;
 
+    const busyTechnicianIds = new Set();
+    reservations.forEach((reservation) => {
+      if (isCancelled(reservation)) return;
+      const start = resolveStartDate(reservation);
+      const end = resolveEndDate(reservation) || start;
+      if (!start || !end) return;
+      if (start > now || end <= now) return;
+      const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+      assigned.forEach((id) => {
+        if (id != null) {
+          busyTechnicianIds.add(String(id));
+        }
+      });
+    });
+
     result.reservations = {
       ...result.reservations,
-      total: reservations.length,
-      today: todayCount,
-      upcoming: upcomingCount
+      total: Math.max(result.reservations?.total ?? 0, reservations.length),
+      today: Math.max(result.reservations?.today ?? 0, todayCount),
+      upcoming: Math.max(result.reservations?.upcoming ?? 0, upcomingCount)
+    };
+
+    result.technicians = {
+      ...result.technicians,
+      busy: Math.max(result.technicians?.busy ?? 0, busyTechnicianIds.size)
     };
   }
 
@@ -210,8 +275,8 @@ function mergeSummaryWithLocalData(summary) {
     }).length;
     result.technicians = {
       ...result.technicians,
-      total: technicians.length,
-      busy: busyCount
+      total: Math.max(result.technicians?.total ?? 0, technicians.length),
+      busy: Math.max(result.technicians?.busy ?? 0, busyCount)
     };
   }
 
