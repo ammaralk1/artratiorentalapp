@@ -8,6 +8,7 @@ import { normalizeNumbers } from './utils.js';
 import { updatePreferences } from './preferencesService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { syncTechniciansStatuses } from './technicians.js';
+import { refreshTechniciansFromApi } from './techniciansService.js';
 import { determineProjectStatus } from './projectsCommon.js';
 
 applyStoredTheme();
@@ -661,6 +662,21 @@ function bootstrapHome() {
 
   if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
     window.addEventListener('technicians:updated', handleSummaryRefresh, { passive: true });
+  }
+
+  try {
+    const maybePromise = refreshTechniciansFromApi();
+    if (maybePromise && typeof maybePromise.then === 'function') {
+      maybePromise
+        .then(() => {
+          handleSummaryRefresh();
+        })
+        .catch((error) => {
+          console.warn('⚠️ [home] Failed to prefetch technicians for summary', error);
+        });
+    }
+  } catch (error) {
+    console.warn('⚠️ [home] Failed to kick off technicians prefetch', error);
   }
 }
 
