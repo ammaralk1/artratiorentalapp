@@ -41,6 +41,7 @@ let cachedProjects = [];
 let customerOptionMap = new Map();
 let projectOptionMap = new Map();
 let equipmentDescriptionOptionMap = new Map();
+let isSyncingShareTaxCreate = false;
 
 function escapeHtml(value = '') {
   return String(value)
@@ -194,6 +195,62 @@ export function ensureCompanyShareEnabled(elementId = 'res-company-share') {
   }
   shareInput.dataset.companyShare = String(parsed);
   shareInput.checked = true;
+}
+
+function syncCreateTaxAndShare(source) {
+  const taxCheckbox = document.getElementById('res-tax');
+  const shareCheckbox = document.getElementById('res-company-share');
+
+  if (!taxCheckbox || !shareCheckbox) {
+    return;
+  }
+
+  if (isSyncingShareTaxCreate) {
+    renderDraftReservationSummary();
+    return;
+  }
+
+  isSyncingShareTaxCreate = true;
+
+  const finalize = () => {
+    isSyncingShareTaxCreate = false;
+    renderDraftReservationSummary();
+  };
+
+  if (source === 'share') {
+    if (shareCheckbox.checked) {
+      if (!shareCheckbox.dataset.companyShare) {
+        shareCheckbox.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
+      }
+
+      if (taxCheckbox.disabled) {
+        shareCheckbox.checked = false;
+        showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+        finalize();
+        return;
+      }
+
+      if (!taxCheckbox.checked) {
+        taxCheckbox.checked = true;
+      }
+
+      ensureCompanyShareEnabled();
+    } else {
+      if (taxCheckbox.checked && !taxCheckbox.disabled) {
+        taxCheckbox.checked = false;
+      }
+    }
+  } else if (source === 'tax') {
+    if (taxCheckbox.checked) {
+      ensureCompanyShareEnabled();
+    } else {
+      if (shareCheckbox.checked) {
+        shareCheckbox.checked = false;
+      }
+    }
+  }
+
+  finalize();
 }
 
 function isProjectConfirmed(project) {
@@ -442,6 +499,7 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
 function updateCreateProjectTaxState() {
   const projectSelect = document.getElementById('res-project');
   const taxCheckbox = document.getElementById('res-tax');
+  const shareCheckbox = document.getElementById('res-company-share');
   if (!taxCheckbox) return;
 
   const isLinked = Boolean(projectSelect?.value);
@@ -449,6 +507,9 @@ function updateCreateProjectTaxState() {
     taxCheckbox.checked = false;
     taxCheckbox.disabled = true;
     taxCheckbox.classList.add('disabled');
+    if (shareCheckbox && shareCheckbox.checked) {
+      shareCheckbox.checked = false;
+    }
   } else {
     const wasDisabled = taxCheckbox.disabled;
     taxCheckbox.disabled = false;
@@ -457,6 +518,8 @@ function updateCreateProjectTaxState() {
       taxCheckbox.checked = false;
     }
   }
+
+  syncCreateTaxAndShare('tax');
 }
 
 function setupProjectSelection() {
@@ -1132,10 +1195,7 @@ function setupSummaryEvents() {
   const taxCheckbox = document.getElementById('res-tax');
   if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
     taxCheckbox.addEventListener('change', () => {
-      if (taxCheckbox.checked) {
-        ensureCompanyShareEnabled();
-      }
-      renderDraftReservationSummary();
+      syncCreateTaxAndShare('tax');
     });
     taxCheckbox.dataset.listenerAttached = 'true';
   }
@@ -1143,30 +1203,7 @@ function setupSummaryEvents() {
   const shareCheckbox = document.getElementById('res-company-share');
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
     shareCheckbox.addEventListener('change', () => {
-      let skipImmediateRender = false;
-      if (shareCheckbox.checked) {
-        if (!shareCheckbox.dataset.companyShare) {
-          shareCheckbox.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
-        }
-        if (taxCheckbox) {
-          if (taxCheckbox.disabled) {
-            shareCheckbox.checked = false;
-            showToast(t('reservations.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
-            renderDraftReservationSummary();
-            return;
-          }
-          if (!taxCheckbox.checked) {
-            taxCheckbox.checked = true;
-            taxCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-            skipImmediateRender = true;
-          }
-        }
-      } else if (taxCheckbox?.checked) {
-        ensureCompanyShareEnabled();
-      }
-      if (!skipImmediateRender) {
-        renderDraftReservationSummary();
-      }
+      syncCreateTaxAndShare('share');
     });
     shareCheckbox.dataset.listenerAttached = 'true';
   }
