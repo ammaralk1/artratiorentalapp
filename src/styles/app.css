@@ -2417,6 +2417,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .equipment-details-field .form-control {
@@ -2428,6 +2431,9 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     min-height: 2.35rem;
     flex: 1 1 clamp(220px, 45vw, 100%);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   @media (max-width: 640px) {
@@ -2438,10 +2444,13 @@
 
     .equipment-details-field label {
       min-width: 0;
+      white-space: normal;
     }
 
     .equipment-details-field .form-control {
       flex: 1 1 100%;
+      white-space: normal;
+      overflow: auto;
     }
   }
 
