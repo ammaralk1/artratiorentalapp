@@ -112,57 +112,6 @@ body.dark-mode .home-summary-value {
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-.home-primary-tabs {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.home-primary-tab-buttons {
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(230, 237, 255, 0.94));
-  border: 1px solid rgba(76, 110, 245, 0.16);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  margin-inline: auto;
-}
-
-body[dir="rtl"] .home-primary-tab-buttons,
-body[dir="ltr"] .home-primary-tab-buttons {
-  justify-content: center;
-  margin-inline: auto;
-}
-
-.home-primary-tab {
-  min-width: clamp(150px, 26vw, 200px);
-  padding: 14px 18px;
-  flex-direction: column;
-  gap: 8px;
-  text-align: center;
-  font-size: 0.95rem;
-  line-height: 1.3;
-}
-
-.home-primary-tab__icon {
-  font-size: 1.9rem;
-  line-height: 1;
-}
-
-.home-primary-tab__label {
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
-html.dark-mode .home-primary-tab-buttons,
-body.dark-mode .home-primary-tab-buttons {
-  background: linear-gradient(135deg, rgba(19, 28, 52, 0.85), rgba(22, 36, 60, 0.92));
-  border: 1px solid rgba(59, 130, 246, 0.28);
-  box-shadow: 0 18px 34px rgba(3, 8, 26, 0.55);
-}
-
 .users-page {
   background: transparent;
 }

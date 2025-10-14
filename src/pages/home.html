@@ -234,23 +234,33 @@
               <h2 class="text-2xl font-bold text-base-content" data-home-greeting data-i18n data-i18n-key="home.hero.title">مرحباً بك</h2>
               <p class="text-base text-base-content/70" data-i18n data-i18n-key="home.hero.subtitle">اختر المسار المناسب لإدارة أعمالك.</p>
             </div>
-            <div class="home-primary-tabs" data-home-links>
-              <div class="tab-buttons home-primary-tab-buttons" role="tablist">
-                <a href="dashboard.html" class="tab-button home-primary-tab">
-                  <span class="home-primary-tab__icon" aria-hidden="true">📅</span>
-                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.bookings.title">إدارة الحجوزات</span>
-                </a>
-                <a href="projects.html" class="tab-button home-primary-tab">
-                  <span class="home-primary-tab__icon" aria-hidden="true">🏗️</span>
-                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.projects.title">إدارة المشاريع</span>
-                </a>
-                <a href="users.html" class="tab-button home-primary-tab hidden" data-admin-card>
-                  <span class="home-primary-tab__icon" aria-hidden="true">🛡️</span>
-                  <span class="home-primary-tab__label" data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</span>
-                </a>
-              </div>
-            </div>
           </section>
+
+          <div class="glass-card dashboard-tabbar hidden lg:block home-main-tabbar">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <a class="tab-button" href="dashboard.html" data-i18n data-i18n-key="home.bookings.title">📅 إدارة الحجوزات</a>
+              <a class="tab-button" href="projects.html" data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</a>
+              <a class="tab-button hidden" href="users.html" data-admin-card data-i18n data-i18n-key="home.users.title">🛡️ إدارة المستخدمين</a>
+            </div>
+          </div>
+
+          <div class="glass-card dashboard-tabbar p-3 lg:hidden home-main-tabbar">
+            <div class="tab-scroll" data-tab-scroll>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+                <span aria-hidden="true">‹</span>
+              </button>
+              <div class="tab-scroll-track" data-tab-scroll-track>
+                <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+                  <a class="tab-button" href="dashboard.html" data-i18n data-i18n-key="home.bookings.title">📅 إدارة الحجوزات</a>
+                  <a class="tab-button" href="projects.html" data-i18n data-i18n-key="home.projects.title">🏗️ إدارة المشاريع</a>
+                  <a class="tab-button hidden" href="users.html" data-admin-card data-i18n data-i18n-key="home.users.title">🛡️ إدارة المستخدمين</a>
+                </div>
+              </div>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
 
           <section class="glass-card space-y-4">
             <div class="flex items-center justify-between flex-wrap gap-3">
