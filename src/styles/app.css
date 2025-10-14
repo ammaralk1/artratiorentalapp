@@ -4826,6 +4826,11 @@
     @apply max-w-4xl;
   }
 
+  .modal-dialog.modal-sm {
+    max-width: 24rem;
+    width: 100%;
+  }
+
   .modal-content {
     @apply bg-base-100 text-base-content rounded-3xl border border-base-200 shadow-soft overflow-hidden;
   }

@@ -56,6 +56,9 @@ const financialPayoutDateInput = document.getElementById('technician-payout-date
 const financialPayoutNoteInput = document.getElementById('technician-payout-note');
 const financialPayoutListEl = document.getElementById('technician-payouts-list');
 const financialPayoutEmptyEl = document.getElementById('technician-payouts-empty');
+const payoutConfirmModalEl = document.getElementById('technician-payout-confirm-modal');
+const payoutConfirmYesBtn = document.getElementById('technician-payout-confirm-yes');
+const payoutConfirmCloseButtons = Array.from(document.querySelectorAll('[data-payout-confirm-close]'));
 
 const technicianTabButtons = Array.from(document.querySelectorAll('[data-technician-tab]'));
 const technicianTabPanels = new Map(
@@ -72,6 +75,7 @@ let technicianFinancialState = {
 };
 
 let technicianPayoutsState = [];
+let pendingPayoutRemovalId = null;
 
 initThemeToggle();
 
@@ -281,7 +285,10 @@ function parseDateInputValue(value) {
 function sanitizeAmountInput(rawValue) {
   const normalized = normalizeNumbers(String(rawValue ?? ''));
   if (!normalized) return '';
-  const cleaned = normalized.replace(/[^0-9.]/g, '');
+  const withDecimal = normalized
+    .replace(/[٬،]/g, '')
+    .replace(/[٫,]/g, '.');
+  const cleaned = withDecimal.replace(/[^0-9.]/g, '');
   const parts = cleaned.split('.');
   const integerPart = parts[0] || '';
   const decimalPart = parts.length > 1 ? parts.slice(1).join('') : '';
@@ -340,20 +347,7 @@ function handlePayoutFormSubmit(event) {
 
 function handlePayoutRemoval(payoutId) {
   if (!payoutId) return;
-  const confirmMessage = t('technicianFinancial.payouts.confirmDelete', '❌ هل تريد حذف هذه الدفعة؟');
-  const confirmed = window.confirm(confirmMessage);
-  if (!confirmed) return;
-
-  deleteTechnicianPayout(payoutId).then(() => {
-    showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
-    if (technicianState) {
-      refreshTechnicianFinancialSummary(technicianState);
-    }
-  }).catch((error) => {
-    console.error('❌ [technician-page] Failed to remove technician payout', error);
-    const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
-    showToast(message);
-  });
+  openPayoutConfirmModal(payoutId);
 }
 
 function openFinancialModal() {
@@ -378,6 +372,27 @@ function closeFinancialModal() {
   financialModalEl.classList.add('hidden');
   document.documentElement.classList.remove('modal-open');
   document.body.classList.remove('overflow-hidden');
+}
+
+function openPayoutConfirmModal(payoutId) {
+  if (!payoutConfirmModalEl) return;
+  pendingPayoutRemovalId = payoutId || null;
+  payoutConfirmModalEl.classList.remove('hidden');
+  payoutConfirmModalEl.classList.add('show', 'modal-open');
+  document.documentElement.classList.add('modal-open');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closePayoutConfirmModal() {
+  if (!payoutConfirmModalEl) return;
+  payoutConfirmModalEl.classList.remove('show', 'modal-open');
+  payoutConfirmModalEl.classList.add('hidden');
+  document.documentElement.classList.remove('modal-open');
+  document.body.classList.remove('overflow-hidden');
+  pendingPayoutRemovalId = null;
+  if (payoutConfirmYesBtn) {
+    payoutConfirmYesBtn.disabled = false;
+  }
 }
 
 function getTechnicianEditButtons() {
@@ -774,6 +789,35 @@ if (financialPayoutAmountInput && !financialPayoutAmountInput.dataset.normalizer
     }
   });
   financialPayoutAmountInput.dataset.normalizerAttached = 'true';
+}
+
+payoutConfirmCloseButtons.forEach((button) => {
+  if (!button || button.dataset.listenerAttached) return;
+  button.addEventListener('click', closePayoutConfirmModal);
+  button.dataset.listenerAttached = 'true';
+});
+
+if (payoutConfirmYesBtn && !payoutConfirmYesBtn.dataset.listenerAttached) {
+  payoutConfirmYesBtn.addEventListener('click', () => {
+    if (!pendingPayoutRemovalId) {
+      closePayoutConfirmModal();
+      return;
+    }
+    payoutConfirmYesBtn.disabled = true;
+    deleteTechnicianPayout(pendingPayoutRemovalId).then(() => {
+      showToast(t('technicianFinancial.payouts.toast.removed', '🗑️ تم حذف الدفعة.'));
+      closePayoutConfirmModal();
+      if (technicianState) {
+        refreshTechnicianFinancialSummary(technicianState);
+      }
+    }).catch((error) => {
+      console.error('❌ [technician-page] Failed to remove technician payout', error);
+      const message = error?.message || t('technicianFinancial.payouts.toast.failed', '⚠️ تعذر تسجيل الدفعة، حاول مرة أخرى.');
+      showToast(message);
+      payoutConfirmYesBtn.disabled = false;
+    });
+  });
+  payoutConfirmYesBtn.dataset.listenerAttached = 'true';
 }
 if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
   financialModalEl.addEventListener('click', (event) => {

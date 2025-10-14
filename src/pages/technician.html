@@ -438,6 +438,24 @@
     </div>
   </div>
 
+  <div id="technician-payout-confirm-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="technicianFinancial.payouts.confirmTitle">🗑️ حذف الدفعة</h5>
+          <button type="button" class="btn-close" data-payout-confirm-close aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.confirmMessage">هل أنت متأكد من حذف هذه الدفعة؟</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-payout-confirm-close data-i18n data-i18n-key="technicianFinancial.payouts.confirmCancel">إلغاء</button>
+          <button type="button" class="btn btn-error" id="technician-payout-confirm-yes" data-i18n data-i18n-key="technicianFinancial.payouts.confirmAccept">🗑️ حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">

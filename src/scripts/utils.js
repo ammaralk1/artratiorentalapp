@@ -206,10 +206,18 @@ export function normalizeNumbers(str) {
   str = String(str);
 
   const arabicNumbers = ["٠","١","٢","٣","٤","٥","٦","٧","٨","٩"];
+  const persianNumbers = ["۰","۱","۲","۳","۴","۵","۶","۷","۸","۹"];
   const englishNumbers = ["0","1","2","3","4","5","6","7","8","9"];
 
-  return str.split("").map(ch => {
-    const index = arabicNumbers.indexOf(ch);
-    return index > -1 ? englishNumbers[index] : ch;
-  }).join("");
+  return Array.from(str).map((ch) => {
+    const arabicIndex = arabicNumbers.indexOf(ch);
+    if (arabicIndex > -1) {
+      return englishNumbers[arabicIndex];
+    }
+    const persianIndex = persianNumbers.indexOf(ch);
+    if (persianIndex > -1) {
+      return englishNumbers[persianIndex];
+    }
+    return ch;
+  }).join('');
 }
