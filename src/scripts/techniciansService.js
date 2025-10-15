@@ -102,6 +102,7 @@ export function mapTechnicianFromApi(raw = {}) {
     specialization: raw.specialization,
     department: raw.department,
     daily_wage: raw.daily_wage,
+    daily_total: raw.daily_total,
     status: raw.status,
     notes: raw.notes,
     active: raw.active,
