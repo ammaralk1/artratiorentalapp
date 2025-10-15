@@ -487,7 +487,7 @@ function computeReservationFinancials(reservation) {
     }
   }
 
-  const netProfit = Math.max(0, crewTotal - crewCostTotal);
+  const netProfit = Math.max(0, equipmentTotal + crewTotal - crewCostTotal);
 
   const breakdown = {
     rentalDays,

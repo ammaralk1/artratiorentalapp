@@ -1,6 +1,6 @@
 (function () {
   const root = document.documentElement;
-  const FAVICON_PATH = '/favicon_io/favicon.ico';
+  const FAVICON_PATH = '/favicon.ico';
 
   function ensureFavicon() {
     const head = document.head;
