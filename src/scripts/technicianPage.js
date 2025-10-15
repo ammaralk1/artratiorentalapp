@@ -24,17 +24,10 @@ const container = document.getElementById('technician-details');
 const heroNameEl = document.getElementById('technician-hero-name');
 const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
-const heroPhoneEl = document.getElementById('technician-hero-phone');
-const heroDepartmentEl = document.getElementById('technician-hero-department');
-const heroCostEl = document.getElementById('technician-hero-cost');
-const heroTotalEl = document.getElementById('technician-hero-total');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
-const greetingPhoneEl = document.getElementById('dashboard-greeting-technician-phone');
-const greetingDepartmentEl = document.getElementById('dashboard-greeting-technician-department');
-const greetingCostEl = document.getElementById('dashboard-greeting-technician-cost');
-const greetingTotalEl = document.getElementById('dashboard-greeting-technician-total');
+const greetingRoleBadgeEl = document.getElementById('dashboard-greeting-technician-role-badge');
 
 const financialSummaryEls = {
   total: document.getElementById('technician-financial-total'),
@@ -643,26 +636,15 @@ function setHeroData(technician) {
   if (!technician) {
     setHeroBadge(heroNameEl, '😎', '—');
     setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
-    setHeroBadge(heroPhoneEl, '📞', '', { hideWhenEmpty: true });
-    setHeroBadge(heroDepartmentEl, '🏢', '', { hideWhenEmpty: true });
-    setHeroBadge(heroCostEl, '💰', '', { hideWhenEmpty: true });
-    setHeroBadge(heroTotalEl, '💼', '', { hideWhenEmpty: true });
     if (greetingNameEl) greetingNameEl.textContent = '—';
     if (greetingRoleEl) greetingRoleEl.textContent = '—';
-    setHeroBadge(greetingPhoneEl, '📞', '', { hideWhenEmpty: true });
-    setHeroBadge(greetingDepartmentEl, '🏢', '', { hideWhenEmpty: true });
-    setHeroBadge(greetingCostEl, '💰', '', { hideWhenEmpty: true });
-    setHeroBadge(greetingTotalEl, '💼', '', { hideWhenEmpty: true });
+    setHeroBadge(greetingRoleBadgeEl, '🎯', '', { hideWhenEmpty: true });
     setStatusBadge(null);
     return;
   }
 
   setHeroBadge(heroNameEl, '😎', technician.name || '—');
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
-  setHeroBadge(heroPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
-  setHeroBadge(heroDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
-  setHeroBadge(heroCostEl, '💰', formatDailyBadgeValue(technician.dailyWage), { hideWhenEmpty: true });
-  setHeroBadge(heroTotalEl, '💼', formatDailyBadgeValue(technician.dailyTotal), { hideWhenEmpty: true });
   if (greetingNameEl) {
     greetingNameEl.textContent = technician.name || '—';
   }
@@ -675,10 +657,7 @@ function setHeroData(technician) {
       greetingRoleEl.textContent = `🎯 ${fallbackRole}`;
     }
   }
-  setHeroBadge(greetingPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
-  setHeroBadge(greetingDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
-  setHeroBadge(greetingCostEl, '💰', formatDailyBadgeValue(technician.dailyWage), { hideWhenEmpty: true });
-  setHeroBadge(greetingTotalEl, '💼', formatDailyBadgeValue(technician.dailyTotal), { hideWhenEmpty: true });
+  setHeroBadge(greetingRoleBadgeEl, '🎯', technician.role || '', { hideWhenEmpty: true });
   setStatusBadge(technician.status || technician.baseStatus || 'available');
 }
 
