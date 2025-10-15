@@ -3,42 +3,152 @@ import { getCurrentLanguage } from './language.js';
 
 // ===== أدوات مساعدة =====
 
-export function showToast(message, duration = 3000) {
-  // 🔄 إذا ما فيه container للتوست، ننشئ واحد
-  let container = document.getElementById("toast-container");
+function ensureToastContainer() {
+  let container = document.getElementById('toast-container');
   if (!container) {
-    container = document.createElement("div");
-    container.id = "toast-container";
-    container.style.position = "fixed";
-    container.style.top = "20px";            // المسافة من الأعلى
-    container.style.left = "50%";            // منتصف الصفحة
-    container.style.transform = "translateX(-50%)"; // ضبط التوسيط
-    container.style.zIndex = "9999";
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.zIndex = '9999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.width = 'min(92vw, 380px)';
+    container.style.pointerEvents = 'none';
     document.body.appendChild(container);
   }
+  return container;
+}
 
-  const toast = document.createElement("div");
-  toast.className = "toast-message";
+function applyToastBaseStyles(toast) {
+  toast.style.background = '#333';
+  toast.style.color = '#fff';
+  toast.style.padding = '10px 18px';
+  toast.style.marginTop = '10px';
+  toast.style.borderRadius = '10px';
+  toast.style.boxShadow = '0 8px 24px rgba(15, 23, 42, 0.32)';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.3s ease';
+  toast.style.fontSize = '0.875rem';
+  toast.style.lineHeight = '1.4';
+  toast.style.pointerEvents = 'auto';
+  toast.style.backdropFilter = 'blur(4px)';
+}
+
+function fadeInToast(toast) {
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+  });
+}
+
+function scheduleToastRemoval(toast, duration) {
+  let timeoutId;
+  const hide = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 320);
+  };
+  timeoutId = setTimeout(hide, duration);
+  return { hide, timeoutId };
+}
+
+export function showToast(message, duration = 3000) {
+  const container = ensureToastContainer();
+  const toast = document.createElement('div');
+  toast.className = 'toast-message';
   toast.textContent = message;
-
-  // ستايل افتراضي للتوست
-  toast.style.background = "#333";
-  toast.style.color = "#fff";
-  toast.style.padding = "10px 20px";
-  toast.style.marginTop = "10px";
-  toast.style.borderRadius = "6px";
-  toast.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
-  toast.style.opacity = "0";
-  toast.style.transition = "opacity 0.3s ease";
-
+  applyToastBaseStyles(toast);
   container.appendChild(toast);
+  fadeInToast(toast);
+  const { hide } = scheduleToastRemoval(toast, duration);
+  toast.addEventListener('click', hide);
+}
 
-  // تشغيل الحركة
-  setTimeout(() => toast.style.opacity = "1", 10);
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
+export function showToastWithAction({
+  message,
+  duration = 6000,
+  actionLabel,
+  onAction,
+  linkLabel,
+  linkHref
+} = {}) {
+  const container = ensureToastContainer();
+  const toast = document.createElement('div');
+  toast.className = 'toast-message';
+  applyToastBaseStyles(toast);
+
+  const content = document.createElement('div');
+  content.style.display = 'flex';
+  content.style.flexDirection = 'column';
+  content.style.gap = '8px';
+
+  const text = document.createElement('span');
+  text.textContent = message;
+  content.appendChild(text);
+
+  const actionRow = document.createElement('div');
+  actionRow.style.display = 'flex';
+  actionRow.style.flexWrap = 'wrap';
+  actionRow.style.gap = '8px';
+
+  let hasAction = false;
+  let hideToastCallback = () => {};
+
+  if (linkLabel && linkHref) {
+    const link = document.createElement('a');
+    link.href = linkHref;
+    link.textContent = linkLabel;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.style.color = '#bfdbfe';
+    link.style.textDecoration = 'underline';
+    link.style.fontWeight = '500';
+    link.style.pointerEvents = 'auto';
+    actionRow.appendChild(link);
+    hasAction = true;
+  }
+
+  if (actionLabel && typeof onAction === 'function') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = actionLabel;
+    button.style.border = '1px solid rgba(255,255,255,0.4)';
+    button.style.background = 'rgba(15, 23, 42, 0.2)';
+    button.style.color = '#fff';
+    button.style.borderRadius = '999px';
+    button.style.padding = '6px 14px';
+    button.style.fontSize = '0.78rem';
+    button.style.cursor = 'pointer';
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      try {
+        onAction();
+      } catch (error) {
+        console.error('⚠️ [toast] action callback failed', error);
+      } finally {
+        hideToastCallback();
+      }
+    });
+    actionRow.appendChild(button);
+    hasAction = true;
+  }
+
+  if (hasAction) {
+    content.appendChild(actionRow);
+  }
+
+  toast.appendChild(content);
+  container.appendChild(toast);
+  fadeInToast(toast);
+  const { hide } = scheduleToastRemoval(toast, duration);
+  hideToastCallback = hide;
+  toast.addEventListener('click', hide);
 }
 
 const RESERVATION_PREFIX = 'RSV';

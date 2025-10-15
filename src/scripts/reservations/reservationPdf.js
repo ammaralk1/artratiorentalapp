@@ -1,12 +1,13 @@
 import { loadData } from '../storage.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { t } from '../language.js';
-import { normalizeNumbers, formatDateTime, showToast } from '../utils.js';
+import { normalizeNumbers, formatDateTime, showToast, showToastWithAction } from '../utils.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
+const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
 const QUOTE_COMPANY_INFO = {
   logoUrl: 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png',
@@ -131,6 +132,16 @@ const QUOTE_FIELD_DEFS = {
   crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
 };
 
+function getQuoteStatusMessage(type) {
+  switch (type) {
+    case 'export':
+      return t('reservations.quote.status.exporting', 'جاري تجهيز ملف PDF...');
+    case 'render':
+    default:
+      return t('reservations.quote.status.rendering', 'جاري تحديث المعاينة...');
+  }
+}
+
 const HTML2PDF_SRC = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
 const HTML2CANVAS_SRC = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
@@ -169,6 +180,62 @@ let ensureJsPdfPromise = null;
 let ensureHtml2CanvasPromise = null;
 let manualQuoteBackdrop = null;
 let manualQuoteEscapeHandler = null;
+let quoteAssetWarningShown = false;
+
+function showQuotePreviewStatus(type = 'render', {
+  message,
+  actionLabel,
+  onAction,
+  showSpinner = type !== 'error'
+} = {}) {
+  if (!quoteModalRefs?.statusIndicator || !quoteModalRefs?.statusText) return;
+  quoteModalRefs.statusKind = type;
+
+  const textValue = message || getQuoteStatusMessage(type);
+  quoteModalRefs.statusText.textContent = textValue;
+
+  if (quoteModalRefs.statusSpinner) {
+    quoteModalRefs.statusSpinner.hidden = !showSpinner;
+  }
+
+  if (quoteModalRefs.statusAction) {
+    quoteModalRefs.statusAction.hidden = true;
+    quoteModalRefs.statusAction.onclick = null;
+    if (actionLabel && typeof onAction === 'function') {
+      quoteModalRefs.statusAction.textContent = actionLabel;
+      quoteModalRefs.statusAction.hidden = false;
+      quoteModalRefs.statusAction.onclick = (event) => {
+        event.preventDefault();
+        onAction();
+      };
+    }
+  }
+
+  quoteModalRefs.statusIndicator.hidden = false;
+  requestAnimationFrame(() => {
+    quoteModalRefs.statusIndicator.classList.add('is-visible');
+  });
+}
+
+function hideQuotePreviewStatus(type) {
+  if (!quoteModalRefs?.statusIndicator || !quoteModalRefs?.statusText) return;
+  if (type && quoteModalRefs.statusKind && quoteModalRefs.statusKind !== type) {
+    return;
+  }
+  quoteModalRefs.statusKind = null;
+  quoteModalRefs.statusIndicator.classList.remove('is-visible');
+  setTimeout(() => {
+    if (!quoteModalRefs?.statusIndicator) return;
+    quoteModalRefs.statusIndicator.hidden = true;
+    if (quoteModalRefs.statusAction) {
+      quoteModalRefs.statusAction.hidden = true;
+      quoteModalRefs.statusAction.onclick = null;
+    }
+    if (quoteModalRefs.statusSpinner) {
+      quoteModalRefs.statusSpinner.hidden = false;
+    }
+  }, 220);
+}
 
 function hasBootstrapModalSupport() {
   return Boolean(window?.bootstrap?.Modal);
@@ -235,6 +302,41 @@ function showQuoteModalElement(modalEl) {
     return;
   }
   showModalFallback(modalEl);
+}
+
+function notifyQuoteAssetFailure() {
+  if (quoteAssetWarningShown) return;
+  quoteAssetWarningShown = true;
+  const guideLabel = t('reservations.quote.toast.viewGuide', '📘 عرض دليل الحل السريع');
+  const retryLabel = t('reservations.quote.toast.retry', 'إعادة المحاولة');
+  const message = t('reservations.quote.toast.assetsFailed', '⚠️ تعذر تحميل بعض الصور ضمن عرض السعر.');
+
+  const canRetry = Boolean(quoteModalRefs?.modal?.classList.contains('show'));
+  const retryHandler = () => {
+    if (quoteModalRefs?.modal?.classList.contains('show')) {
+      showQuotePreviewStatus('render');
+      quoteAssetWarningShown = false;
+      renderQuotePreview();
+    }
+  };
+
+  showToastWithAction({
+    message,
+    duration: 9000,
+    actionLabel: canRetry ? retryLabel : undefined,
+    onAction: canRetry ? retryHandler : undefined,
+    linkLabel: guideLabel,
+    linkHref: QUOTE_TROUBLESHOOT_URL
+  });
+
+  if (canRetry) {
+    showQuotePreviewStatus('error', {
+      message,
+      actionLabel: retryLabel,
+      onAction: retryHandler,
+      showSpinner: false
+    });
+  }
 }
 
 function buildDefaultFieldSelections() {
@@ -752,8 +854,41 @@ function handlePdfError(error, context = 'export', { toastMessage, suppressToast
   logPdfError(`${context} failed`, error);
   const alreadyNotified = Boolean(error && error.__artRatioPdfNotified);
   if (!suppressToast && !alreadyNotified) {
-    const message = toastMessage || t('reservations.quote.errors.exportFailed', '⚠️ تعذر إنشاء ملف PDF، يرجى المحاولة مرة أخرى.');
-    showToast(message);
+    const defaultMessage = t('reservations.quote.errors.exportFailed', '⚠️ تعذر إنشاء ملف PDF، يرجى المحاولة مرة أخرى.');
+    const message = toastMessage || defaultMessage;
+    const guideLabel = t('reservations.quote.toast.viewGuide', '📘 عرض دليل الحل السريع');
+    const retryLabel = t('reservations.quote.toast.retry', 'إعادة المحاولة');
+    const canRetry = ['exportQuoteAsPdf', 'renderQuotePreview', 'layoutQuoteDocument', 'pageCapture'].includes(context);
+
+    const retryHandler = () => {
+      if (context === 'exportQuoteAsPdf') {
+        showQuotePreviewStatus('export');
+        exportQuoteAsPdf();
+      } else {
+        showQuotePreviewStatus('render');
+        quoteAssetWarningShown = false;
+        renderQuotePreview();
+      }
+    };
+
+    showToastWithAction({
+      message,
+      duration: 9000,
+      actionLabel: canRetry ? retryLabel : undefined,
+      onAction: canRetry ? retryHandler : undefined,
+      linkLabel: guideLabel,
+      linkHref: QUOTE_TROUBLESHOOT_URL
+    });
+
+    if (quoteModalRefs?.modal?.classList.contains('show')) {
+      showQuotePreviewStatus('error', {
+        message,
+        actionLabel: canRetry ? retryLabel : undefined,
+        onAction: canRetry ? retryHandler : undefined,
+        showSpinner: false
+      });
+    }
+
     if (error && typeof error === 'object') {
       try {
         Object.defineProperty(error, '__artRatioPdfNotified', {
@@ -1438,11 +1573,27 @@ function buildQuotationHtml({
 
 function waitForImage(image) {
   if (!image) return Promise.resolve();
-  if (image.complete && image.naturalHeight !== 0) return Promise.resolve();
-  return new Promise((resolve) => {
-    const finalize = () => resolve();
-    image.addEventListener('load', finalize, { once: true });
-    image.addEventListener('error', finalize, { once: true });
+  if (image.complete) {
+    return image.naturalHeight === 0
+      ? Promise.reject(new Error(`image failed to load: ${image.src || 'unknown'}`))
+      : Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const handleLoad = () => {
+      cleanup();
+      resolve();
+    };
+    const handleError = () => {
+      cleanup();
+      reject(new Error(`image failed to load: ${image.src || 'unknown'}`));
+    };
+    const cleanup = () => {
+      image.removeEventListener('load', handleLoad);
+      image.removeEventListener('error', handleError);
+    };
+    image.addEventListener('load', handleLoad, { once: true });
+    image.addEventListener('error', handleError, { once: true });
   });
 }
 
@@ -1456,6 +1607,7 @@ async function waitForQuoteAssets(root) {
   const assetPromises = [fontPromise, ...imagePromises].map((promise) => (
     promise.catch((error) => {
       logPdfWarn('asset load failed', error);
+      notifyQuoteAssetFailure();
       return null;
     })
   ));
@@ -1796,8 +1948,6 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
         canvas = await html2canvasFn(pageClone, {
           ...html2canvasBaseOptions,
           scale: captureScale,
-          width: A4_WIDTH_PX,
-          height: A4_HEIGHT_PX,
           backgroundColor: '#ffffff',
           scrollX: 0,
           scrollY: 0
@@ -1850,27 +2000,61 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     throw new Error('PDF generation produced no pages.');
   }
 
-  const needsBlobDelivery = safariMode || (mobileWindowRef && !mobileWindowRef.closed);
+  const needsBlobDelivery = safariMode || mobileSafari || (mobileWindowRef && !mobileWindowRef.closed);
 
   if (needsBlobDelivery) {
     const blob = pdf.output('blob');
     const blobUrl = URL.createObjectURL(blob);
 
-    if (safariMode) {
-      if (safariWindowRef && !safariWindowRef.closed) {
-        safariWindowRef.location.href = blobUrl;
-        safariWindowRef.focus?.();
-      } else {
-        window.open(blobUrl, '_blank');
+    const resolveTargetWindow = () => {
+      if ((safariMode || mobileSafari) && safariWindowRef && !safariWindowRef.closed) {
+        return safariWindowRef;
       }
-    } else if (mobileWindowRef && !mobileWindowRef.closed) {
-      mobileWindowRef.location.href = blobUrl;
-      mobileWindowRef.focus?.();
-    }
+      if (mobileWindowRef && !mobileWindowRef.closed) {
+        return mobileWindowRef;
+      }
+      return null;
+    };
 
+    const deliverToWindow = (targetWindow, url) => {
+      hideQuotePreviewStatus();
+      if (!targetWindow) {
+        window.location.assign(url);
+        return;
+      }
+      try {
+        targetWindow.location.replace(url);
+        targetWindow.focus?.();
+      } catch (navigationError) {
+        logPdfWarn('direct blob navigation failed', navigationError);
+        try {
+          targetWindow.document.open();
+          targetWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(t('reservations.quote.actions.export', 'تنزيل PDF'))}</title><style>html,body{margin:0;height:100%;background:#0f172a;color:#f8fafc;font-family:'Tajawal',sans-serif;} iframe{border:none;width:100%;height:100%;display:block;}</style></head><body><iframe src="${url}" title="PDF preview"></iframe></body></html>`);
+          targetWindow.document.close();
+        } catch (iframeError) {
+          logPdfWarn('iframe blob delivery failed', iframeError);
+          window.location.assign(url);
+        }
+      }
+    };
+
+    const targetWindow = resolveTargetWindow();
+    deliverToWindow(targetWindow, blobUrl);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
   } else {
-    pdf.save(filename);
+    hideQuotePreviewStatus();
+    const blobUrl = pdf.output('bloburl');
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+      link.remove();
+    }, 2000);
   }
 }
 
@@ -1895,60 +2079,65 @@ function renderQuotePreview() {
     quoteDate: activeQuoteState.quoteDateLabel
   });
 
+  showQuotePreviewStatus('render');
   previewFrame.srcdoc = `<!DOCTYPE html>${html}`;
   previewFrame.addEventListener('load', async () => {
-    const doc = previewFrame.contentDocument;
-    const view = doc?.defaultView || window;
-    const rootNode = doc?.documentElement || doc;
-    if (rootNode) {
-      scrubUnsupportedColorFunctions(rootNode);
-      sanitizeComputedColorFunctions(rootNode, view);
-      enforceLegacyColorFallback(rootNode, view);
-    }
-    const pdfRoot = doc?.getElementById('quotation-pdf-root');
     try {
-      if (pdfRoot) {
-        await layoutQuoteDocument(pdfRoot, { context: 'preview' });
-        enforceQuoteTextColor(pdfRoot);
+      const doc = previewFrame.contentDocument;
+      const view = doc?.defaultView || window;
+      const rootNode = doc?.documentElement || doc;
+      if (rootNode) {
+        scrubUnsupportedColorFunctions(rootNode);
+        sanitizeComputedColorFunctions(rootNode, view);
+        enforceLegacyColorFallback(rootNode, view);
       }
-    } catch (error) {
-      console.error('[reservations/pdf] failed to layout preview document', error);
-    }
-    const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
-    const pagesContainer = doc?.querySelector('.quote-preview-pages');
-    const baseWidth = A4_WIDTH_PX;
-
-    let pageGap = 18;
-    if (pagesContainer && doc?.defaultView) {
-      const styles = doc.defaultView.getComputedStyle(pagesContainer);
-      const gapCandidate = parseFloat(styles.rowGap || styles.gap || `${pageGap}`);
-      if (Number.isFinite(gapCandidate) && gapCandidate >= 0) {
-        pageGap = gapCandidate;
+      const pdfRoot = doc?.getElementById('quotation-pdf-root');
+      try {
+        if (pdfRoot) {
+          await layoutQuoteDocument(pdfRoot, { context: 'preview' });
+          enforceQuoteTextColor(pdfRoot);
+        }
+      } catch (error) {
+        console.error('[reservations/pdf] failed to layout preview document', error);
       }
-    }
+      const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
+      const pagesContainer = doc?.querySelector('.quote-preview-pages');
+      const baseWidth = A4_WIDTH_PX;
 
-    const singlePageHeight = A4_HEIGHT_PX;
-    const totalHeight = pages.length
-      ? (pages.length * singlePageHeight) + Math.max(0, (pages.length - 1) * pageGap)
-      : singlePageHeight;
-
-    previewFrame.dataset.baseWidth = String(baseWidth);
-    previewFrame.dataset.baseHeight = String(totalHeight);
-    previewFrame.style.width = `${baseWidth}px`;
-    previewFrame.style.minWidth = `${baseWidth}px`;
-    previewFrame.style.height = `${totalHeight}px`;
-    previewFrame.style.minHeight = `${totalHeight}px`;
-
-    if (quoteModalRefs?.previewFrameWrapper && !quoteModalRefs?.userAdjustedZoom) {
-      const availableWidth = quoteModalRefs.previewFrameWrapper.clientWidth - 24;
-      if (availableWidth > 0 && availableWidth < baseWidth) {
-        previewZoom = Math.max(availableWidth / baseWidth, 0.3);
-      } else {
-        previewZoom = 1;
+      let pageGap = 18;
+      if (pagesContainer && doc?.defaultView) {
+        const styles = doc.defaultView.getComputedStyle(pagesContainer);
+        const gapCandidate = parseFloat(styles.rowGap || styles.gap || `${pageGap}`);
+        if (Number.isFinite(gapCandidate) && gapCandidate >= 0) {
+          pageGap = gapCandidate;
+        }
       }
-    }
 
-    applyPreviewZoom(previewZoom);
+      const singlePageHeight = A4_HEIGHT_PX;
+      const totalHeight = pages.length
+        ? (pages.length * singlePageHeight) + Math.max(0, (pages.length - 1) * pageGap)
+        : singlePageHeight;
+
+      previewFrame.dataset.baseWidth = String(baseWidth);
+      previewFrame.dataset.baseHeight = String(totalHeight);
+      previewFrame.style.width = `${baseWidth}px`;
+      previewFrame.style.minWidth = `${baseWidth}px`;
+      previewFrame.style.height = `${totalHeight}px`;
+      previewFrame.style.minHeight = `${totalHeight}px`;
+
+      if (quoteModalRefs?.previewFrameWrapper && !quoteModalRefs?.userAdjustedZoom) {
+        const availableWidth = quoteModalRefs.previewFrameWrapper.clientWidth - 24;
+        if (availableWidth > 0 && availableWidth < baseWidth) {
+          previewZoom = Math.max(availableWidth / baseWidth, 0.3);
+        } else {
+          previewZoom = 1;
+        }
+      }
+
+      applyPreviewZoom(previewZoom);
+    } finally {
+      hideQuotePreviewStatus();
+    }
   }, { once: true });
 }
 
@@ -2120,6 +2309,17 @@ function ensureQuoteModal() {
   previewScroll.className = 'quote-preview-scroll';
   previewScroll.appendChild(frameWrapper);
   preview.appendChild(previewScroll);
+  const statusIndicator = document.createElement('div');
+  statusIndicator.className = 'quote-preview-status';
+  statusIndicator.setAttribute('role', 'status');
+  statusIndicator.setAttribute('aria-live', 'polite');
+  statusIndicator.hidden = true;
+  statusIndicator.innerHTML = `
+    <span class="quote-preview-spinner" data-quote-status-spinner aria-hidden="true"></span>
+    <span data-quote-status-text>${escapeHtml(getQuoteStatusMessage('render'))}</span>
+    <button type="button" class="quote-preview-status-action" data-quote-status-action hidden></button>
+  `;
+  preview.appendChild(statusIndicator);
   headerActions.appendChild(zoomControls);
 
   downloadBtn?.addEventListener('click', async () => {
@@ -2156,12 +2356,18 @@ function ensureQuoteModal() {
     modal,
     toggles,
     preview,
+    previewScroll,
     previewFrameWrapper: frameWrapper,
     zoomControls,
     zoomValue: zoomControls.querySelector('[data-zoom-value]'),
     previewFrame,
     meta,
     downloadBtn,
+    statusIndicator,
+    statusText: statusIndicator.querySelector('[data-quote-status-text]'),
+    statusSpinner: statusIndicator.querySelector('[data-quote-status-spinner]'),
+    statusAction: statusIndicator.querySelector('[data-quote-status-action]'),
+    statusKind: null,
     userAdjustedZoom: false
   };
 
@@ -2227,12 +2433,27 @@ function updateQuoteMeta() {
 
 async function exportQuoteAsPdf() {
   if (!activeQuoteState) return;
+  showQuotePreviewStatus('export');
   const mobileViewport = isMobileViewport();
   const safariPopupRequired = !mobileViewport && isIosSafari();
-  const mobileDownloadWindow = mobileViewport ? window.open('', '_blank') : null;
-  const safariDownloadWindow = safariPopupRequired
-    ? window.open('data:text/html;charset=utf-8,' + encodeURIComponent(''), '_blank')
+  const mobileDownloadWindow = mobileViewport && !mobileSafari ? window.open('', '_blank') : null;
+  const safariDownloadWindow = safariPopupRequired && !mobileSafari
+    ? window.open('', '_blank')
     : null;
+
+  const primeDownloadWindow = (win) => {
+    if (!win) return;
+    try {
+      win.document.open();
+      win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(t('reservations.quote.status.exporting', 'جاري تجهيز ملف PDF...'))}</title><style>body{font-family:'Tajawal',sans-serif;margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;text-align:center;padding:24px;} .loader{width:42px;height:42px;border-radius:50%;border:4px solid rgba(248,250,252,0.35);border-top-color:#38bdf8;animation:spin 1s linear infinite;margin:0 auto 18px;}@keyframes spin{to{transform:rotate(360deg);}} h1{margin:0 0 6px;font-size:1.05rem;} p{margin:0;font-size:0.9rem;opacity:0.8;}</style></head><body><div><div class="loader" aria-hidden="true"></div><h1>${escapeHtml(t('reservations.quote.status.exporting', 'جاري تجهيز ملف PDF...'))}</h1><p>${escapeHtml(t('reservations.quote.status.exportingHint', 'قد يستغرق ذلك بضع ثوانٍ، الرجاء الانتظار...'))}</p></div></body></html>`);
+      win.document.close();
+    } catch (error) {
+      logPdfWarn('failed to prime download window', error);
+    }
+  };
+
+  primeDownloadWindow(mobileDownloadWindow);
+  primeDownloadWindow(safariDownloadWindow);
 
   let container = null;
   const browserLimitMessage = t('reservations.quote.errors.browserLimit', 'تعذر إتمام عملية التحويل بسبب قيود المتصفح، يرجى إعادة المحاولة أو تقليل حجم المحتوى.');
@@ -2321,6 +2542,7 @@ async function exportQuoteAsPdf() {
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
+    hideQuotePreviewStatus();
   }
 }
 
@@ -2328,6 +2550,7 @@ function openQuoteModal() {
   const refs = ensureQuoteModal();
   if (!refs?.modal) return;
 
+  quoteAssetWarningShown = false;
   previewZoom = 1;
   if (quoteModalRefs) {
     quoteModalRefs.userAdjustedZoom = false;
