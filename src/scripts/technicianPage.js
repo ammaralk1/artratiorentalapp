@@ -852,6 +852,14 @@ function formatDailyBadgeValue(amount) {
   return `${formatCurrency(numeric)} ${perDayLabel}`;
 }
 
+function formatTechnicianTotalValue(amount) {
+  const numeric = Number(amount ?? 0);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return '';
+  }
+  return formatCurrency(numeric);
+}
+
 function renderTechnicianDetails(technician) {
   if (!container) {
     return;
@@ -884,9 +892,9 @@ function renderTechnicianDetails(technician) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const currencySpan = `<span data-i18n data-i18n-key="reservations.create.summary.currency">${currencyLabel}</span>`;
   const wageBadge = formatDailyBadgeValue(technician.dailyWage) || `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
-  const totalBadge = formatDailyBadgeValue(technician.dailyTotal);
+  const totalBadge = formatTechnicianTotalValue(technician.dailyTotal);
   const wageValue = wageBadge;
-  const totalValue = totalBadge || wageBadge;
+  const totalValue = totalBadge || formatTechnicianTotalValue(technician.dailyWage) || wageBadge;
 
   const detailItems = [
     { key: 'technicianDetails.fields.role', value: roleValue },
