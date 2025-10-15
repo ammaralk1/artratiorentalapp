@@ -119,8 +119,6 @@ const QUOTE_FIELD_DEFS = {
     { id: 'crewTotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' },
     { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
-    { id: 'companyShare', labelKey: 'reservations.details.labels.companyShare', fallback: '🏦 نسبة الشركة' },
-    { id: 'netProfit', labelKey: 'reservations.details.labels.netProfit', fallback: 'صافي الربح' },
     { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
   ],
   payment: [
@@ -1125,12 +1123,6 @@ function buildQuotationHtml({
   quoteNumber,
   quoteDate
 }) {
-  const {
-    companySharePercent = 0,
-    companyShareAmount = 0,
-    netProfit = 0
-  } = totals || {};
-
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
@@ -1247,23 +1239,10 @@ function buildQuotationHtml({
   if (isFieldEnabled('financialSummary', 'taxAmount')) {
     financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
   }
-  if (companySharePercent > 0 && isFieldEnabled('financialSummary', 'companyShare')) {
-    const sharePercentDisplay = totalsDisplay.companySharePercent ?? normalizeNumbers(companySharePercent.toFixed(2));
-    const shareAmountDisplay = totalsDisplay.companyShareAmount ?? normalizeNumbers(companyShareAmount.toFixed(2));
-    const shareValue = `${sharePercentDisplay}% (${shareAmountDisplay} ${currencyLabel})`;
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.companyShare', '🏦 نسبة الشركة'), shareValue));
-  }
-
   const showFinalTotal = isFieldEnabled('financialSummary', 'finalTotal');
-  const showNetProfit = isFieldEnabled('financialSummary', 'netProfit')
-    && Number.isFinite(netProfit)
-    && Math.abs((netProfit ?? 0) - (totals?.finalTotal ?? 0)) > 0.009;
   const financialFinalItems = [];
   if (showFinalTotal) {
     financialFinalItems.push(renderTotalsItem(t('reservations.details.labels.total', 'الإجمالي النهائي'), `${totalsDisplay.finalTotal} ${currencyLabel}`, { variant: 'final' }));
-  }
-  if (showNetProfit) {
-    financialFinalItems.push(renderTotalsItem(t('reservations.details.labels.netProfit', '💵 صافي الربح'), `${totalsDisplay.netProfit} ${currencyLabel}`, { variant: 'final' }));
   }
   const financialFinalHtml = financialFinalItems.length
     ? `<div class="totals-final">${financialFinalItems.join('')}</div>`
