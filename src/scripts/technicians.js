@@ -149,15 +149,17 @@ function populateTechnicianForm(technician) {
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const wageInput = document.getElementById("technician-wage");
+  const totalInput = document.getElementById("technician-total");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput) return;
+  if (!nameInput || !phoneInput || !roleInput || !wageInput || !totalInput) return;
 
   nameInput.value = technician.name || "";
   phoneInput.value = normalizePhoneValue(technician.phone || "");
   roleInput.value = technician.role || "";
   if (departmentInput) departmentInput.value = technician.department || "";
   wageInput.value = normalizeMoneyValue(technician.dailyWage != null ? technician.dailyWage : "");
+  totalInput.value = normalizeMoneyValue(technician.dailyTotal != null ? technician.dailyTotal : "");
   if (notesInput) notesInput.value = technician.notes || "";
 
   editingTechnicianId = String(technician.id);
@@ -171,9 +173,10 @@ function collectTechnicianForm() {
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const wageInput = document.getElementById("technician-wage");
+  const totalInput = document.getElementById("technician-total");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput) return null;
+  if (!nameInput || !phoneInput || !roleInput || !wageInput || !totalInput) return null;
 
   const name = nameInput.value.trim();
   const phone = normalizePhoneValue(phoneInput.value.trim());
@@ -183,6 +186,9 @@ function collectTechnicianForm() {
   const wageValue = normalizeMoneyValue(wageInput.value.trim());
   wageInput.value = wageValue;
   const wage = wageValue === "" ? 0 : parseFloat(wageValue);
+  const totalValueRaw = normalizeMoneyValue(totalInput.value.trim());
+  totalInput.value = totalValueRaw;
+  const totalAmount = totalValueRaw === "" ? null : parseFloat(totalValueRaw);
   const status = 'available';
   const notes = notesInput?.value.trim() || "";
 
@@ -210,12 +216,19 @@ function collectTechnicianForm() {
     return null;
   }
 
+  if (totalAmount != null && (Number.isNaN(totalAmount) || totalAmount < 0)) {
+    showToast(t("technicians.toast.invalidTotal", "⚠️ أدخل قيمة صحيحة للتكلفة الإجمالية"));
+    totalInput.focus();
+    return null;
+  }
+
   return {
     name,
     phone,
     role,
     department,
     dailyWage: Number.isFinite(wage) ? wage : 0,
+    dailyTotal: totalAmount == null ? null : Number(totalAmount),
     status,
     baseStatus: status,
     notes
@@ -233,6 +246,7 @@ async function handleTechnicianSubmit(event) {
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
+    dailyTotal: payload.dailyTotal,
     status: payload.status,
     notes: payload.notes,
     active: true,
@@ -270,11 +284,12 @@ function populateTechnicianEditModal(technician) {
     role: document.getElementById("edit-technician-role"),
     department: document.getElementById("edit-technician-department"),
     wage: document.getElementById("edit-technician-wage"),
+    total: document.getElementById("edit-technician-total"),
     status: document.getElementById("edit-technician-status"),
     notes: document.getElementById("edit-technician-notes")
   };
 
-  if (!fields.id || !fields.name || !fields.phone || !fields.role || !fields.wage || !fields.status) return;
+  if (!fields.id || !fields.name || !fields.phone || !fields.role || !fields.wage || !fields.total || !fields.status) return;
 
   fields.id.value = technician.id || "";
   if (fields.name.value !== (technician.name || "")) fields.name.value = technician.name || "";
@@ -286,12 +301,15 @@ function populateTechnicianEditModal(technician) {
   }
   const normalizedWage = normalizeMoneyValue(technician.dailyWage != null ? technician.dailyWage : "");
   if (fields.wage.value !== normalizedWage) fields.wage.value = normalizedWage;
+  const normalizedTotal = normalizeMoneyValue(technician.dailyTotal != null ? technician.dailyTotal : "");
+  if (fields.total.value !== normalizedTotal) fields.total.value = normalizedTotal;
   const statusValue = technician.baseStatus || technician.status || "available";
   if (fields.status.value !== statusValue) fields.status.value = statusValue;
   if (fields.notes && fields.notes.value !== (technician.notes || "")) fields.notes.value = technician.notes || "";
 
   sanitizeNumericInput(fields.phone, normalizePhoneValue);
   sanitizeNumericInput(fields.wage, normalizeMoneyValue);
+  sanitizeNumericInput(fields.total, normalizeMoneyValue);
 }
 
 function collectTechnicianEditModal() {
@@ -301,10 +319,11 @@ function collectTechnicianEditModal() {
   const roleInput = document.getElementById("edit-technician-role");
   const departmentInput = document.getElementById("edit-technician-department");
   const wageInput = document.getElementById("edit-technician-wage");
+  const totalInput = document.getElementById("edit-technician-total");
   const statusSelect = document.getElementById("edit-technician-status");
   const notesInput = document.getElementById("edit-technician-notes");
 
-  if (!idInput || !nameInput || !phoneInput || !roleInput || !wageInput || !statusSelect) return null;
+  if (!idInput || !nameInput || !phoneInput || !roleInput || !wageInput || !totalInput || !statusSelect) return null;
 
   const id = idInput.value.trim();
   const name = nameInput.value.trim();
@@ -315,6 +334,9 @@ function collectTechnicianEditModal() {
   const wageValue = normalizeMoneyValue(wageInput.value.trim());
   wageInput.value = wageValue;
   const wage = wageValue === "" ? 0 : parseFloat(wageValue);
+  const totalValueRaw = normalizeMoneyValue(totalInput.value.trim());
+  totalInput.value = totalValueRaw;
+  const totalAmount = totalValueRaw === "" ? null : parseFloat(totalValueRaw);
   const status = statusSelect.value || "available";
   const notes = notesInput?.value.trim() || "";
 
@@ -347,6 +369,12 @@ function collectTechnicianEditModal() {
     return null;
   }
 
+  if (totalAmount != null && (Number.isNaN(totalAmount) || totalAmount < 0)) {
+    showToast(t("technicians.toast.invalidTotal", "⚠️ أدخل قيمة صحيحة للتكلفة الإجمالية"));
+    totalInput.focus();
+    return null;
+  }
+
   return {
     id,
     name,
@@ -354,6 +382,7 @@ function collectTechnicianEditModal() {
     role,
     department,
     dailyWage: Number.isFinite(wage) ? wage : 0,
+    dailyTotal: totalAmount == null ? null : Number(totalAmount),
     status,
     baseStatus: status,
     notes
@@ -370,6 +399,7 @@ async function handleTechnicianModalSave() {
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
+    dailyTotal: payload.dailyTotal,
     status: payload.status,
     notes: payload.notes,
     active: true,
@@ -609,6 +639,7 @@ function setupTechnicianModule() {
 
   sanitizeNumericInput(document.getElementById("technician-phone"), normalizePhoneValue);
   sanitizeNumericInput(document.getElementById("technician-wage"), normalizeMoneyValue);
+  sanitizeNumericInput(document.getElementById("technician-total"), normalizeMoneyValue);
 
   const tableBody = document.getElementById("technicians-table");
   if (tableBody && !tableBody.dataset.listenerAttached) {

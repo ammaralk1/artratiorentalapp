@@ -74,6 +74,7 @@ export function buildTechnicianPayload({
   role,
   department,
   dailyWage,
+  dailyTotal,
   status,
   notes,
   active = true,
@@ -85,6 +86,7 @@ export function buildTechnicianPayload({
     specialization: role ?? '',
     department: department ?? null,
     daily_wage: dailyWage ?? 0,
+    daily_total: dailyTotal ?? null,
     status: status ?? 'available',
     notes: notes ?? null,
     active: active ? 1 : 0,
@@ -118,6 +120,7 @@ function toInternalTechnician(raw = {}) {
   const role = raw.specialization ?? raw.role ?? raw.position ?? '';
   const department = raw.department ?? raw.team ?? '';
   const dailyWage = toNumber(raw.daily_wage ?? raw.dailyWage ?? raw.wage ?? raw.rate ?? 0);
+  const dailyTotal = toNumber(raw.daily_total ?? raw.dailyTotal ?? raw.total ?? raw.total_wage ?? dailyWage);
   const baseStatusValue = normalizeStatus(raw.baseStatus ?? raw.status ?? 'available');
   const statusValue = normalizeStatus(raw.status ?? raw.baseStatus ?? 'available');
   const notes = raw.notes ?? '';
@@ -131,6 +134,7 @@ function toInternalTechnician(raw = {}) {
     role,
     department,
     dailyWage,
+    dailyTotal,
     status: statusValue,
     baseStatus: baseStatusValue,
     notes,

@@ -26,11 +26,15 @@ const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
 const heroPhoneEl = document.getElementById('technician-hero-phone');
 const heroDepartmentEl = document.getElementById('technician-hero-department');
+const heroCostEl = document.getElementById('technician-hero-cost');
+const heroTotalEl = document.getElementById('technician-hero-total');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
 const greetingPhoneEl = document.getElementById('dashboard-greeting-technician-phone');
 const greetingDepartmentEl = document.getElementById('dashboard-greeting-technician-department');
+const greetingCostEl = document.getElementById('dashboard-greeting-technician-cost');
+const greetingTotalEl = document.getElementById('dashboard-greeting-technician-total');
 
 const financialSummaryEls = {
   total: document.getElementById('technician-financial-total'),
@@ -129,7 +133,7 @@ function escapeHtml(value = '') {
 }
 
 
-function resolveTechnicianRate(technician = {}) {
+function resolveTechnicianCostRate(technician = {}) {
   const candidates = [
     technician.dailyWage,
     technician.daily_rate,
@@ -478,7 +482,7 @@ async function refreshTechnicianFinancialSummary(technician) {
         })
       : null;
 
-    const rate = resolveTechnicianRate(detailsEntry) || resolveTechnicianRate(technician);
+    const rate = resolveTechnicianCostRate(detailsEntry) || resolveTechnicianCostRate(technician);
     const days = Math.max(1, calculateReservationDays(reservation.start, reservation.end));
     const dueAmount = Math.max(0, Math.round(rate * days));
 
@@ -641,10 +645,14 @@ function setHeroData(technician) {
     setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
     setHeroBadge(heroPhoneEl, '📞', '', { hideWhenEmpty: true });
     setHeroBadge(heroDepartmentEl, '🏢', '', { hideWhenEmpty: true });
+    setHeroBadge(heroCostEl, '💰', '', { hideWhenEmpty: true });
+    setHeroBadge(heroTotalEl, '💼', '', { hideWhenEmpty: true });
     if (greetingNameEl) greetingNameEl.textContent = '—';
     if (greetingRoleEl) greetingRoleEl.textContent = '—';
     setHeroBadge(greetingPhoneEl, '📞', '', { hideWhenEmpty: true });
     setHeroBadge(greetingDepartmentEl, '🏢', '', { hideWhenEmpty: true });
+    setHeroBadge(greetingCostEl, '💰', '', { hideWhenEmpty: true });
+    setHeroBadge(greetingTotalEl, '💼', '', { hideWhenEmpty: true });
     setStatusBadge(null);
     return;
   }
@@ -653,6 +661,8 @@ function setHeroData(technician) {
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
   setHeroBadge(heroPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
   setHeroBadge(heroDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
+  setHeroBadge(heroCostEl, '💰', formatDailyBadgeValue(technician.dailyWage), { hideWhenEmpty: true });
+  setHeroBadge(heroTotalEl, '💼', formatDailyBadgeValue(technician.dailyTotal), { hideWhenEmpty: true });
   if (greetingNameEl) {
     greetingNameEl.textContent = technician.name || '—';
   }
@@ -667,6 +677,8 @@ function setHeroData(technician) {
   }
   setHeroBadge(greetingPhoneEl, '📞', technician.phone ? normalizeNumbers(technician.phone) : '', { hideWhenEmpty: true });
   setHeroBadge(greetingDepartmentEl, '🏢', technician.department || '', { hideWhenEmpty: true });
+  setHeroBadge(greetingCostEl, '💰', formatDailyBadgeValue(technician.dailyWage), { hideWhenEmpty: true });
+  setHeroBadge(greetingTotalEl, '💼', formatDailyBadgeValue(technician.dailyTotal), { hideWhenEmpty: true });
   setStatusBadge(technician.status || technician.baseStatus || 'available');
 }
 
@@ -852,6 +864,15 @@ function formatWageValue(wage) {
   });
 }
 
+function formatDailyBadgeValue(amount) {
+  const numeric = Number(amount ?? 0);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return '';
+  }
+  const perDayLabel = t('technicians.badge.perDay', '/اليوم');
+  return `${formatCurrency(numeric)} ${perDayLabel}`;
+}
+
 function renderTechnicianDetails(technician) {
   if (!container) {
     return;
@@ -883,13 +904,17 @@ function renderTechnicianDetails(technician) {
 
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const currencySpan = `<span data-i18n data-i18n-key="reservations.create.summary.currency">${currencyLabel}</span>`;
-  const wageValue = `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
+  const wageBadge = formatDailyBadgeValue(technician.dailyWage) || `${formatWageValue(technician.dailyWage)} ${currencySpan}`;
+  const totalBadge = formatDailyBadgeValue(technician.dailyTotal);
+  const wageValue = wageBadge;
+  const totalValue = totalBadge || wageBadge;
 
   const detailItems = [
     { key: 'technicianDetails.fields.role', value: roleValue },
     { key: 'technicianDetails.fields.department', value: departmentValue },
     { key: 'technicianDetails.fields.phone', value: phoneValue },
     { key: 'technicianDetails.fields.wage', value: wageValue },
+    { key: 'technicianDetails.fields.total', value: totalValue || `0 ${currencySpan}` },
     { key: 'technicianDetails.fields.notes', value: notesValue },
   ];
 

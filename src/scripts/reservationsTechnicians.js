@@ -12,7 +12,7 @@ let technicianPickerContext = 'create';
 let onDraftSelectionChange = () => {};
 let onEditSelectionChange = () => {};
 
-function resolveTechnicianWage(technician = {}) {
+function resolveTechnicianCostRate(technician = {}) {
   const candidates = [
     technician.dailyWage,
     technician.daily_rate,
@@ -34,13 +34,34 @@ function resolveTechnicianWage(technician = {}) {
 }
 
 function formatTechnicianWage(technician = {}) {
-  const wage = resolveTechnicianWage(technician);
-  if (!Number.isFinite(wage) || wage <= 0) {
+  const dailyTotalCandidates = [
+    technician.dailyTotal,
+    technician.daily_total,
+    technician.totalRate,
+    technician.total,
+    technician.total_wage,
+  ];
+
+  let totalRate = null;
+  for (const value of dailyTotalCandidates) {
+    if (value == null || value === '') continue;
+    const parsed = parseFloat(normalizeNumbers(String(value)));
+    if (Number.isFinite(parsed)) {
+      totalRate = parsed;
+      break;
+    }
+  }
+
+  if (!Number.isFinite(totalRate) || totalRate <= 0) {
+    totalRate = resolveTechnicianCostRate(technician);
+  }
+
+  if (!Number.isFinite(totalRate) || totalRate <= 0) {
     return '—';
   }
 
   const wageSuffix = t('technicians.table.wageSuffix', 'SR');
-  return `${normalizeNumbers(String(wage))} ${wageSuffix}`;
+  return `${normalizeNumbers(String(totalRate))} ${wageSuffix}`;
 }
 
 function normalizeText(value = '') {

@@ -5,7 +5,7 @@ import { loadData } from './storage.js';
 
 export const DEFAULT_COMPANY_SHARE_PERCENT = 10;
 
-function resolveTechnicianRate(tech = {}) {
+function resolveTechnicianCostRate(tech = {}) {
   const candidates = [
     tech.dailyWage,
     tech.daily_rate,
@@ -24,14 +24,41 @@ function resolveTechnicianRate(tech = {}) {
   return 0;
 }
 
-function calculateTechniciansCost(ids = []) {
+function resolveTechnicianTotalRate(tech = {}) {
+  const candidates = [
+    tech.dailyTotal,
+    tech.daily_total,
+    tech.totalRate,
+    tech.total,
+    tech.total_wage,
+    tech.totalRatePerDay,
+  ];
+
+  for (const value of candidates) {
+    if (value == null || value === '') continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) {
+      return number;
+    }
+  }
+
+  return resolveTechnicianCostRate(tech);
+}
+
+function calculateTechnicianDayRates(ids = []) {
   if (!Array.isArray(ids) || ids.length === 0) {
-    return 0;
+    return {
+      costPerDay: 0,
+      totalPerDay: 0
+    };
   }
 
   const { technicians = [] } = loadData();
   if (!Array.isArray(technicians) || technicians.length === 0) {
-    return 0;
+    return {
+      costPerDay: 0,
+      totalPerDay: 0
+    };
   }
 
   const technicianMap = new Map(
@@ -40,11 +67,16 @@ function calculateTechniciansCost(ids = []) {
       .map((tech) => [String(tech.id ?? tech.ID), tech])
   );
 
-  return ids.reduce((sum, technicianId) => {
+  return ids.reduce((acc, technicianId) => {
     const technician = technicianMap.get(String(technicianId));
-    if (!technician) return sum;
-    return sum + resolveTechnicianRate(technician);
-  }, 0);
+    if (!technician) return acc;
+    const costRate = resolveTechnicianCostRate(technician);
+    const totalRate = resolveTechnicianTotalRate(technician);
+    return {
+      costPerDay: acc.costPerDay + (Number.isFinite(costRate) ? costRate : 0),
+      totalPerDay: acc.totalPerDay + (Number.isFinite(totalRate) ? totalRate : 0)
+    };
+  }, { costPerDay: 0, totalPerDay: 0 });
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -82,9 +114,9 @@ export function calculateDraftFinancialBreakdown({
     0
   );
   const equipmentTotal = equipmentDailyTotal * rentalDays;
-
-  const techniciansCostPerDay = calculateTechniciansCost(technicianIds);
-  const crewTotal = techniciansCostPerDay * rentalDays;
+  const { costPerDay, totalPerDay } = calculateTechnicianDayRates(technicianIds);
+  const crewTotal = totalPerDay * rentalDays;
+  const crewCostTotal = costPerDay * rentalDays;
 
   const discountBase = equipmentTotal + crewTotal;
   const discountValue = Number(discount) || 0;
@@ -124,12 +156,13 @@ export function calculateDraftFinancialBreakdown({
   const interimTotal = taxableAmount + taxAmount;
   const finalTotal = Math.max(0, Number(interimTotal.toFixed(2)));
 
-  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewCostTotal);
 
   return {
     rentalDays,
     equipmentTotal,
     crewTotal,
+    crewCostTotal,
     discountAmount,
     subtotalAfterDiscount,
     taxableAmount,

@@ -354,13 +354,35 @@ function resolveTechnicianDailyRateForReports(technician = {}) {
   return 0;
 }
 
+function resolveTechnicianTotalRateForReports(technician = {}) {
+  const candidates = [
+    technician.dailyTotal,
+    technician.daily_total,
+    technician.totalRate,
+    technician.total,
+    technician.total_wage
+  ];
+
+  for (const value of candidates) {
+    if (value == null) continue;
+    const parsed = Number.parseFloat(normalizeNumbers(String(value)));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return resolveTechnicianDailyRateForReports(technician);
+}
+
 function computeReservationFinancials(reservation) {
   if (!reservation) {
     return {
       rentalDays: 1,
       equipmentTotal: 0,
       crewTotal: 0,
+      crewCostTotal: 0,
       discountAmount: 0,
+      subtotalAfterDiscount: 0,
       taxableAmount: 0,
       taxAmount: 0,
       finalTotal: 0,
@@ -383,11 +405,16 @@ function computeReservationFinancials(reservation) {
   }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
 
-  const crewDailyTotal = (reservation.technicians || []).reduce((sum, technicianId) => {
+  const crewCostDailyTotal = (reservation.technicians || []).reduce((sum, technicianId) => {
     const technician = getTechnicianRecordById(technicianId);
     return sum + resolveTechnicianDailyRateForReports(technician);
   }, 0);
-  const crewTotal = crewDailyTotal * rentalDays;
+  const crewTotalDaily = (reservation.technicians || []).reduce((sum, technicianId) => {
+    const technician = getTechnicianRecordById(technicianId);
+    return sum + resolveTechnicianTotalRateForReports(technician);
+  }, 0);
+  const crewCostTotal = crewCostDailyTotal * rentalDays;
+  const crewTotal = crewTotalDaily * rentalDays;
 
   const discountBase = equipmentTotal + crewTotal;
   const discountValue = Number(reservation.discount) || 0;
@@ -460,12 +487,13 @@ function computeReservationFinancials(reservation) {
     }
   }
 
-  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewCostTotal);
 
   const breakdown = {
     rentalDays,
     equipmentTotal,
     crewTotal,
+    crewCostTotal,
     discountAmount,
     subtotalAfterDiscount,
     taxableAmount,
@@ -1162,6 +1190,7 @@ function calculateMetrics(reservations) {
   let companyShareTotal = 0;
   let taxTotal = 0;
   let crewTotal = 0;
+  let crewCostTotal = 0;
   let netProfit = 0;
 
   reservations.forEach((reservation) => {
@@ -1181,6 +1210,7 @@ function calculateMetrics(reservations) {
     companyShareTotal += financials.companyShareAmount;
     taxTotal += financials.taxAmount;
     crewTotal += financials.crewTotal;
+    crewCostTotal += financials.crewCostTotal ?? 0;
     netProfit += financials.netProfit;
   });
 
@@ -1196,6 +1226,7 @@ function calculateMetrics(reservations) {
     companyShareTotal,
     taxTotal,
     crewTotal,
+    crewCostTotal,
     netProfit
   };
 }
@@ -2161,7 +2192,8 @@ function updateKpiCards(metrics) {
   const avg = metrics.average || 0;
   const companyShareTotal = metrics.companyShareTotal || 0;
   const taxTotal = metrics.taxTotal || 0;
-  const crewTotal = metrics.crewTotal || 0;
+  const crewGross = metrics.crewTotal || 0;
+  const crewCost = metrics.crewCostTotal || 0;
   const net = metrics.netProfit || 0;
   const confirmedRate = total ? Math.round((confirmed / total) * 100) : 0;
   const paidRate = total ? Math.round((paid / total) * 100) : 0;
@@ -2215,11 +2247,19 @@ function updateKpiCards(metrics) {
         },
         {
           label: translate(
+            'reservations.reports.kpi.revenue.details.crewGross',
+            'إجمالي الطاقم',
+            'Crew total'
+          ),
+          value: formatCurrency(crewGross)
+        },
+        {
+          label: translate(
             'reservations.reports.kpi.revenue.details.crew',
             'تكلفة الطاقم',
             'Crew cost'
           ),
-          value: formatCurrency(crewTotal)
+          value: formatCurrency(crewCost)
         },
         {
           label: translate(

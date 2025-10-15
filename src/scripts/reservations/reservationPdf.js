@@ -974,6 +974,26 @@ function resolveTechnicianDailyRate(technician = {}) {
   return 0;
 }
 
+function resolveTechnicianTotalRate(technician = {}) {
+  const candidates = [
+    technician.dailyTotal,
+    technician.daily_total,
+    technician.totalRate,
+    technician.total,
+    technician.total_wage
+  ];
+
+  for (const value of candidates) {
+    if (value == null) continue;
+    const parsed = parseFloat(normalizeNumbers(String(value)));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return resolveTechnicianDailyRate(technician);
+}
+
 function collectAssignedTechnicians(reservation) {
   const syncedTechnicians = syncTechniciansStatuses() || [];
   const { technicians: storedTechnicians = [] } = loadData();
@@ -1000,8 +1020,10 @@ function collectReservationFinancials(reservation, technicians, project) {
   const items = Array.isArray(reservation.items) ? reservation.items : [];
   const equipmentDailyTotal = items.reduce((sum, item) => sum + ((Number(item?.qty) || 1) * (Number(item?.price) || 0)), 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
-  const crewDailyTotal = technicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
-  const crewTotal = crewDailyTotal * rentalDays;
+  const crewCostDailyTotal = technicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
+  const crewTotalDaily = technicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);
+  const crewCostTotal = crewCostDailyTotal * rentalDays;
+  const crewTotal = crewTotalDaily * rentalDays;
   const discountBase = equipmentTotal + crewTotal;
   const discountValue = parseFloat(reservation.discount) || 0;
   const discountAmount = reservation.discountType === 'amount'
@@ -1053,11 +1075,12 @@ function collectReservationFinancials(reservation, technicians, project) {
   const finalTotal = projectLinked
     ? finalTotalComputed
     : (hasStoredCost ? storedCost : finalTotalComputed);
-  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewTotal);
+  const netProfit = Math.max(0, finalTotal - taxAmount - companyShareAmount - crewCostTotal);
 
   const totals = {
     equipmentTotal,
     crewTotal,
+    crewCostTotal,
     discountAmount,
     subtotalAfterDiscount,
     taxableAmount,

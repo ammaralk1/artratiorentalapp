@@ -44,7 +44,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
 
-  const resolveTechnicianDailyRate = (technician = {}) => {
+  const resolveTechnicianCostRate = (technician = {}) => {
     const candidates = [
       technician.dailyWage,
       technician.daily_rate,
@@ -64,13 +64,35 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return 0;
   };
 
+  const resolveTechnicianTotalRate = (technician = {}) => {
+    const candidates = [
+      technician.dailyTotal,
+      technician.daily_total,
+      technician.totalRate,
+      technician.total,
+      technician.total_wage
+    ];
+
+    for (const value of candidates) {
+      if (value == null) continue;
+      const parsed = parseFloat(normalizeNumbers(String(value)));
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+
+    return resolveTechnicianCostRate(technician);
+  };
+
   const equipmentDailyTotal = items.reduce(
     (sum, item) => sum + ((item.qty || 1) * (item.price || 0)),
     0
   );
   const equipmentTotal = equipmentDailyTotal * rentalDays;
-  const crewDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
-  const crewTotal = crewDailyTotal * rentalDays;
+  const crewCostDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianCostRate(tech), 0);
+  const crewTotalDaily = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);
+  const crewCostTotal = crewCostDailyTotal * rentalDays;
+  const crewTotal = crewTotalDaily * rentalDays;
   const discountBase = equipmentTotal + crewTotal;
   const discountValue = parseFloat(reservation.discount) || 0;
   const discountAmount = reservation.discountType === 'amount'
@@ -192,8 +214,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
-  const netProfit = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount - crewTotal);
-  const netProfitDisplay = normalizeNumbers(netProfit.toFixed(2));
+  const netProfitValue = Math.max(0, (finalTotal ?? 0) - taxAmount - companyShareAmount - crewCostTotal);
+  const netProfitDisplay = normalizeNumbers(netProfitValue.toFixed(2));
 
   const summaryDetails = [
     { icon: '💳', label: paymentStatusLabel, value: paymentStatusText },
@@ -218,7 +240,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
   }
 
-  if (Math.abs(netProfit - (finalTotal ?? 0)) > 0.009) {
+  if (Math.abs(netProfitValue - (finalTotal ?? 0)) > 0.009) {
     summaryDetails.push({ icon: '💵', label: netProfitLabel, value: `${netProfitDisplay} ${currencyLabel}` });
   }
 
