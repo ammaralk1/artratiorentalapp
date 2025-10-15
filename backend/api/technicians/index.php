@@ -141,6 +141,7 @@ function handleTechniciansCreate(PDO $pdo): void
         specialization,
         department,
         daily_wage,
+        daily_total,
         status,
         notes,
         active
@@ -151,6 +152,7 @@ function handleTechniciansCreate(PDO $pdo): void
         :specialization,
         :department,
         :daily_wage,
+        :daily_total,
         :status,
         :notes,
         :active
@@ -164,6 +166,7 @@ function handleTechniciansCreate(PDO $pdo): void
         'specialization' => $data['specialization'],
         'department' => $data['department'],
         'daily_wage' => $data['daily_wage'],
+        'daily_total' => $data['daily_total'] ?? $data['daily_wage'],
         'status' => $data['status'],
         'notes' => $data['notes'],
         'active' => $data['active'],
@@ -265,6 +268,7 @@ function validateTechnicianPayload(array $payload, bool $isUpdate): array
     $specialization = isset($payload['specialization']) ? trim((string) $payload['specialization']) : null;
     $department = isset($payload['department']) ? trim((string) $payload['department']) : null;
     $dailyWage = isset($payload['daily_wage']) ? $payload['daily_wage'] : null;
+    $dailyTotal = isset($payload['daily_total']) ? $payload['daily_total'] : null;
     $status = isset($payload['status']) ? trim((string) $payload['status']) : null;
     $notes = isset($payload['notes']) ? trim((string) $payload['notes']) : null;
     $active = isset($payload['active']) ? (int) ((bool) $payload['active']) : 1;
@@ -317,6 +321,14 @@ function validateTechnicianPayload(array $payload, bool $isUpdate): array
         }
     }
 
+    if ($dailyTotal !== null) {
+        if (!is_numeric($dailyTotal)) {
+            $errors['daily_total'] = 'Daily total must be numeric';
+        } elseif ((float) $dailyTotal < 0) {
+            $errors['daily_total'] = 'Daily total must be zero or greater';
+        }
+    }
+
     if ($status !== null && $status !== '') {
         $normalizedStatus = normalizeTechnicianStatus($status);
         if (!$normalizedStatus) {
@@ -352,6 +364,14 @@ function validateTechnicianPayload(array $payload, bool $isUpdate): array
 
     if (!$isUpdate || array_key_exists('daily_wage', $payload)) {
         $data['daily_wage'] = $dailyWage !== null ? (float) $dailyWage : 0;
+    }
+
+    if (!$isUpdate || array_key_exists('daily_total', $payload)) {
+        if ($dailyTotal !== null) {
+            $data['daily_total'] = (float) $dailyTotal;
+        } elseif (!$isUpdate && $dailyWage !== null) {
+            $data['daily_total'] = (float) $dailyWage;
+        }
     }
 
     if (!$isUpdate || array_key_exists('status', $payload)) {
@@ -415,6 +435,7 @@ function mapTechnicianRow(array $row): array
         'specialization' => $row['specialization'] ?? '',
         'department' => $row['department'] ?? null,
         'daily_wage' => isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0,
+        'daily_total' => isset($row['daily_total']) ? (float) $row['daily_total'] : (isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0),
         'status' => normalizeTechnicianStatus($row['status'] ?? 'available'),
         'notes' => $row['notes'] ?? null,
         'active' => (bool) ($row['active'] ?? 1),
