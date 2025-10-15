@@ -1642,4 +1642,8 @@ if (typeof document !== 'undefined') {
   document.addEventListener('language:translationsReady', handleLanguageRefresh);
 }
 
+if (typeof window !== 'undefined') {
+  window.getCompanySharePercent = getCompanySharePercent;
+}
+
 export { populateEquipmentDescriptionLists, addDraftEquipmentByDescription, renderDraftReservationSummary, renderReservationItems };

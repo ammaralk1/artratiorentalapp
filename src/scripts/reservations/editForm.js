@@ -471,3 +471,7 @@ if (typeof document !== 'undefined') {
     updateEditReservationSummary();
   });
 }
+
+if (typeof window !== 'undefined') {
+  window.getEditReservationDateRange = getEditReservationDateRange;
+}
