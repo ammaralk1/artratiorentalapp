@@ -896,6 +896,14 @@ function renderTechnicianDetails(technician) {
   const wageValue = wageBadge;
   const totalValue = totalBadge || formatTechnicianTotalValue(technician.dailyWage) || wageBadge;
 
+  console.debug('[technician] amounts', {
+    id: technician.id,
+    dailyWage: technician.dailyWage,
+    dailyTotal: technician.dailyTotal,
+    wageValue,
+    totalValue
+  });
+
   const detailItems = [
     { key: 'technicianDetails.fields.role', value: roleValue },
     { key: 'technicianDetails.fields.department', value: departmentValue },
