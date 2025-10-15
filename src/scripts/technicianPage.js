@@ -928,20 +928,28 @@ async function loadTechnicianDetails() {
   setEditButtonsDisabled(true);
   setHeroData(null);
 
-  let technician = getTechnicianById(technicianId);
+  let technician = null;
+  let apiError = null;
+
+  try {
+    await refreshTechniciansFromApi();
+    syncTechniciansStatuses();
+  } catch (error) {
+    apiError = error;
+    console.error('❌ [technician-details] Failed to refresh technician from API', error);
+  }
+
+  technician = getTechnicianById(technicianId);
 
   if (!technician) {
-    try {
-      await refreshTechniciansFromApi();
-    } catch (error) {
-      console.error('❌ [technician-details] Failed to load technician from API', error);
+    if (apiError) {
       container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.loadFailed">${t('technicianDetails.errors.loadFailed', '❌ تعذر تحميل بيانات عضو الطاقم. حاول مرة أخرى لاحقًا.')}</p>`;
-      setHeroData(null);
-      technicianState = null;
-      return;
+    } else {
+      container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.notFound">${t('technicianDetails.errors.notFound', '⚠️ لم يتم العثور على عضو الطاقم المطلوب.')}</p>`;
     }
-
-    technician = getTechnicianById(technicianId);
+    setHeroData(null);
+    technicianState = null;
+    return;
   }
 
   if (!technician) {
