@@ -183,8 +183,7 @@
                   </div>
                   <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
                     <span class="technician-badge hidden" id="dashboard-greeting-technician-status">—</span>
-                    <span class="technician-badge hidden" id="dashboard-greeting-technician-phone">—</span>
-                    <span class="technician-badge hidden" id="dashboard-greeting-technician-department">—</span>
+                    <span class="technician-badge hidden" id="dashboard-greeting-technician-role-badge">—</span>
                   </div>
                 </div>
                 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="technician-financial-stats">
@@ -301,8 +300,6 @@
                 <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
                   <span id="technician-hero-status" class="technician-badge hidden">—</span>
                   <span id="technician-hero-role" class="technician-badge hidden">🎯 —</span>
-                  <span id="technician-hero-phone" class="technician-badge hidden">📞 —</span>
-                  <span id="technician-hero-department" class="technician-badge hidden">🏢 —</span>
                 </div>
               </div>
               <div class="flex items-start justify-end">
@@ -623,7 +620,7 @@
                     <tr>
                       <th data-i18n data-i18n-key="reservations.edit.tech.headers.name">الاسم</th>
                       <th data-i18n data-i18n-key="reservations.edit.tech.headers.role">الدور</th>
-                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.wage">الأجر اليومي</th>
+                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.total">التكلفة الإجمالية</th>
                       <th data-i18n data-i18n-key="reservations.edit.tech.headers.actions">إجراءات</th>
                     </tr>
                   </thead>
@@ -675,6 +672,10 @@
               <div class="form-field">
                 <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
                 <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-total" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
+                <input type="text" class="form-control" id="edit-technician-total" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
               </div>
               <div class="form-field form-field-notes">
                 <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
