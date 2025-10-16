@@ -75,17 +75,21 @@
             <div class="password-field">
               <input type="password" class="form-control" id="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
               <button type="button" class="password-toggle-btn" data-action="toggle-password" aria-pressed="false">
-                <span data-state="show" data-i18n data-i18n-key="login.form.password.toggleShow">إظهار كلمة المرور</span>
-                <span data-state="hide" class="hidden" data-i18n data-i18n-key="login.form.password.toggleHide">إخفاء كلمة المرور</span>
+                <svg class="password-toggle-icon" data-icon="show" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path stroke="none" d="M0 0h24v24H0z"></path>
+                  <path d="M12 5c-4.5 0-7.8 2.7-10 7c2.2 4.3 5.5 7 10 7s7.8-2.7 10-7c-2.2-4.3-5.5-7-10-7z"></path>
+                  <circle cx="12" cy="12" r="2.5"></circle>
+                </svg>
+                <svg class="password-toggle-icon hidden" data-icon="hide" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path stroke="none" d="M0 0h24v24H0z"></path>
+                  <path d="M3 3l18 18"></path>
+                  <path d="M9.88 9.88a2.5 2.5 0 0 0 3.54 3.54"></path>
+                  <path d="M10.58 5.55A8.9 8.9 0 0 1 12 5c4.5 0 7.8 2.7 10 7a15.9 15.9 0 0 1-2.1 2.99"></path>
+                  <path d="M6.12 6.12C4.27 7.38 2.73 9.12 2 12c2.2 4.3 5.5 7 10 7a9.71 9.71 0 0 0 3.4-.61"></path>
+                </svg>
+                <span class="sr-only" data-role="password-toggle-label"></span>
               </button>
             </div>
-          </div>
-
-          <div class="flex items-center justify-between text-sm text-base-content/70">
-            <label for="remember-me" class="inline-flex items-center gap-2 font-medium">
-              <input type="checkbox" id="remember-me" class="checkbox checkbox-sm checkbox-primary" autocomplete="on">
-              <span data-i18n data-i18n-key="login.form.rememberMe">تذكرني</span>
-            </label>
           </div>
           <button type="submit" class="btn btn-primary w-full" data-i18n data-i18n-key="login.form.submit">دخول</button>
           <p id="login-error" class="hidden text-center text-sm text-error" role="alert" aria-live="polite"></p>

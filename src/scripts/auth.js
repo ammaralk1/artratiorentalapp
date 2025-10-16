@@ -80,6 +80,40 @@ function renderLoginError(type = 'INVALID', overrideMessage) {
   }
 }
 
+async function storeBrowserCredentials({ username, password }) {
+  if (!username || !password) return;
+
+  try {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    if (!window.isSecureContext) return;
+    if (!navigator.credentials || typeof navigator.credentials.store !== 'function') return;
+
+    let credential = null;
+
+    if (typeof window.PasswordCredential !== 'undefined') {
+      credential = new window.PasswordCredential({
+        id: username,
+        name: username,
+        password,
+      });
+    } else if (typeof navigator.credentials.create === 'function') {
+      credential = await navigator.credentials.create({
+        password: {
+          id: username,
+          name: username,
+          password,
+        },
+      });
+    }
+
+    if (credential) {
+      await navigator.credentials.store(credential);
+    }
+  } catch (error) {
+    console.warn('⚠️ تعذر حفظ بيانات الاعتماد في المتصفح', error);
+  }
+}
+
 export async function login(username, password) {
   const sanitizedUsername = (username || '').trim();
   const sanitizedPassword = password || '';
@@ -109,6 +143,8 @@ export async function login(username, password) {
     }
 
     clearSkipRemotePreferencesFlag();
+
+    await storeBrowserCredentials({ username: sanitizedUsername, password: sanitizedPassword });
 
     window.location.href = 'home.html';
     return true;
