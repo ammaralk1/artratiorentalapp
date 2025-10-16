@@ -80,7 +80,7 @@ function renderLoginError(type = 'INVALID', overrideMessage) {
   }
 }
 
-async function storeBrowserCredentials({ username, password }) {
+async function storeBrowserCredentials({ username, password, form }) {
   if (!username || !password) return;
 
   try {
@@ -99,13 +99,25 @@ async function storeBrowserCredentials({ username, password }) {
 
     let credential = null;
 
-    if (typeof window.PasswordCredential !== 'undefined') {
-      credential = new window.PasswordCredential({
-        id: username,
-        name: username,
-        password,
-        iconURL: iconHref,
-      });
+    if (form && form instanceof HTMLFormElement && typeof window.PasswordCredential !== 'undefined') {
+      try {
+        credential = new window.PasswordCredential(form);
+      } catch (formError) {
+        console.warn('⚠️ تعذر إنشاء بيانات الاعتماد من النموذج', formError);
+      }
+    }
+
+    if (!credential && typeof window.PasswordCredential !== 'undefined') {
+      try {
+        credential = new window.PasswordCredential({
+          id: username,
+          name: username,
+          password,
+          iconURL: iconHref,
+        });
+      } catch (ctorError) {
+        console.warn('⚠️ تعذر إنشاء PasswordCredential مباشر', ctorError);
+      }
     }
 
     if (!credential && typeof navigator.credentials.create === 'function') {
@@ -127,7 +139,7 @@ async function storeBrowserCredentials({ username, password }) {
   }
 }
 
-export async function login(username, password) {
+export async function login(username, password, { form } = {}) {
   const sanitizedUsername = (username || '').trim();
   const sanitizedPassword = password || '';
 
@@ -157,7 +169,7 @@ export async function login(username, password) {
 
     clearSkipRemotePreferencesFlag();
 
-    await storeBrowserCredentials({ username: sanitizedUsername, password: sanitizedPassword });
+    await storeBrowserCredentials({ username: sanitizedUsername, password: sanitizedPassword, form });
 
     window.location.href = 'home.html';
     return true;

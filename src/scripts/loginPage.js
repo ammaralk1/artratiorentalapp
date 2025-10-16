@@ -93,7 +93,7 @@ if (form) {
     const username = usernameInput ? usernameInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value.trim() : '';
 
-    await login(username, password);
+    await login(username, password, { form });
   });
 } else {
   console.warn('[login-page] #login-form not found');
