@@ -2047,26 +2047,15 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     const blob = pdf.output('blob');
 
     if (mobileSafari) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        hideQuotePreviewStatus();
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        if (result) {
-          try {
-            window.location.assign(result);
-          } catch (assignError) {
-            logPdfWarn('mobile safari data-url navigation failed', assignError);
-          }
-        }
-      };
-      reader.onerror = () => {
-        logPdfWarn('mobile safari data-url generation failed', reader.error);
-        const fallbackUrl = URL.createObjectURL(blob);
-        hideQuotePreviewStatus();
-        window.location.assign(fallbackUrl);
-        setTimeout(() => URL.revokeObjectURL(fallbackUrl), 60_000);
-      };
-      reader.readAsDataURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
+      hideQuotePreviewStatus();
+      try {
+        window.location.assign(blobUrl);
+      } catch (assignError) {
+        logPdfWarn('mobile safari blob navigation failed', assignError);
+      } finally {
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      }
     } else {
       const blobUrl = URL.createObjectURL(blob);
 
