@@ -931,7 +931,6 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 }
 
 body[dir="rtl"] .reservation-modal-header {
-  flex-direction: row-reverse;
   justify-content: space-between;
 }
 
