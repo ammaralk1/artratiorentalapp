@@ -2107,37 +2107,6 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     }
   } else {
-    if (mobileViewport && !safariMode && !mobileSafari) {
-      const blob = pdf.output('blob');
-      const fileUrl = URL.createObjectURL(blob);
-      const previewWindow = window.open('', '_blank');
-      if (previewWindow) {
-        hideQuotePreviewStatus();
-        try {
-          previewWindow.location.href = fileUrl;
-          previewWindow.focus?.();
-        } catch (mobileNavError) {
-          logPdfWarn('mobile chrome blob navigation failed', mobileNavError);
-          previewWindow.close?.();
-          const tempLink = document.createElement('a');
-          tempLink.href = fileUrl;
-          tempLink.download = filename;
-          tempLink.rel = 'noopener';
-          tempLink.style.display = 'none';
-          document.body.appendChild(tempLink);
-          tempLink.click();
-          setTimeout(() => {
-            URL.revokeObjectURL(fileUrl);
-            tempLink.remove();
-          }, 60_000);
-          return;
-        }
-        setTimeout(() => URL.revokeObjectURL(fileUrl), 60_000);
-        return;
-      }
-      URL.revokeObjectURL(fileUrl);
-    }
-
     hideQuotePreviewStatus();
     const blobUrl = pdf.output('bloburl');
     const link = document.createElement('a');
