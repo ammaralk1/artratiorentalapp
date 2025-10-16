@@ -548,6 +548,69 @@ function patchHtml2CanvasColorParsing() {
   html2canvas.Color.__artRatioPatched = true;
 }
 
+const ARABIC_RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;
+
+function patchCanvasTextDirection() {
+  const C2DProto = window.CanvasRenderingContext2D?.prototype;
+  if (!C2DProto || C2DProto.__artRatioDirectionPatched) return;
+
+  const patchMethod = (methodName) => {
+    const original = C2DProto[methodName];
+    if (typeof original !== 'function') return;
+
+    C2DProto[methodName] = function patchedCanvasTextMethod(text, ...args) {
+      if (typeof text !== 'string' || !ARABIC_RTL_REGEX.test(text)) {
+        return original.call(this, text, ...args);
+      }
+
+      let originalDirection;
+      let directionSupported = false;
+
+      try {
+        if ('direction' in this) {
+          originalDirection = this.direction;
+          if (originalDirection !== 'rtl') {
+            this.direction = 'rtl';
+          }
+          directionSupported = true;
+        }
+      } catch (error) {
+        // Ignore failures when the property is read-only or unsupported.
+      }
+
+      try {
+        if (!directionSupported) {
+          const canvasElement = this.canvas;
+          if (canvasElement && canvasElement.style?.direction !== 'rtl') {
+            canvasElement.__artRatioOriginalDirection = canvasElement.style.direction;
+            canvasElement.style.direction = 'rtl';
+          }
+        }
+        return original.call(this, text, ...args);
+      } finally {
+        if (directionSupported && originalDirection !== undefined && originalDirection !== 'rtl') {
+          try {
+            this.direction = originalDirection;
+          } catch (restoreError) {
+            // Ignore restore failures
+          }
+        } else if (!directionSupported) {
+          const canvasElement = this.canvas;
+          if (canvasElement && canvasElement.__artRatioOriginalDirection !== undefined) {
+            canvasElement.style.direction = canvasElement.__artRatioOriginalDirection;
+            delete canvasElement.__artRatioOriginalDirection;
+          }
+        }
+      }
+    };
+  };
+
+  patchMethod('fillText');
+  patchMethod('strokeText');
+
+  C2DProto.__artRatioDirectionPatched = true;
+}
+
 function scrubUnsupportedColorFunctions(root) {
   if (!root) return;
 
@@ -1072,6 +1135,7 @@ async function ensureHtml2Pdf() {
     window.html2pdf.__artRatioConfigured = true;
   }
   patchHtml2CanvasColorParsing();
+  patchCanvasTextDirection();
 }
 
 function escapeHtml(value = '') {
