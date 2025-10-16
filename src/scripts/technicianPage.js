@@ -1,7 +1,7 @@
 import '../styles/app.css';
 import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
-import { renderTechnicianReservations, renderTechnicianProjects } from './technicianDetails.js';
+import { renderTechnicianReservations, renderTechnicianProjects, normalizeTechnicianAssignments } from './technicianDetails.js';
 import { showReservationDetails } from './reservationsUI.js';
 import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';

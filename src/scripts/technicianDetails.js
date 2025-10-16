@@ -64,7 +64,7 @@ function applyQuickRangeToInputs(range, startInput, endInput) {
   }
 }
 
-function normalizeTechnicianAssignments(technicians) {
+export function normalizeTechnicianAssignments(technicians) {
   if (!Array.isArray(technicians)) return [];
   const seen = new Set();
   return technicians
