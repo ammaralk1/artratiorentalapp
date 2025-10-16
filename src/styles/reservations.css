@@ -1051,6 +1051,11 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   box-shadow: var(--shadow-sm);
 }
 
+.reservation-modal .reservation-info-card {
+  gap: 8px;
+  padding: 14px 16px;
+}
+
 .reservation-summary-card {
   display: flex;
   align-items: flex-start;
@@ -1291,7 +1296,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card h6 {
 .reservation-modal .reservation-info-card .res-info-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 6px;
   font-size: 0.9rem;
   color: #26334d;
   flex-wrap: wrap;
@@ -1303,7 +1308,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card h6 {
 
 body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row {
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 body[dir="ltr"] .reservation-modal .reservation-info-card .res-info-row {
@@ -1314,7 +1319,7 @@ body[dir="ltr"] .reservation-modal .reservation-info-card .res-info-row {
 .reservation-modal .reservation-info-card .res-info-row .label {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: 4px;
   font-weight: 600;
   color: var(--clr-muted);
   min-width: fit-content;
@@ -1332,7 +1337,8 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   display: block;
   font-weight: 700;
   color: #1d2b56;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 100%;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1888,7 +1894,7 @@ body[dir="ltr"] .reservation-modal .reservation-info-card .res-info-row .value {
 }
 
 body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .value {
-  text-align: left;
+  text-align: right;
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-details-value {
