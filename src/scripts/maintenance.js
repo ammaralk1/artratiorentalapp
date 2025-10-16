@@ -927,12 +927,10 @@ function renderTable(tickets) {
       const closeLabel = t('maintenance.actions.close', '🔧 إغلاق بعد الإصلاح');
       const viewLabel = t('maintenance.actions.view', '👁️ عرض التقرير');
       const deleteLabel = t('maintenance.actions.delete', '🗑️ حذف التذكرة');
-      const editClosedLabel = t('maintenance.actions.editClosed', '✏️ تعديل بيانات الإغلاق');
       if (ticket.status === 'open') {
         actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="close" data-id="${ticket.id}">${closeLabel}</button>`);
       } else {
         actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="view" data-id="${ticket.id}">${viewLabel}</button>`);
-        actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="edit" data-id="${ticket.id}">${editClosedLabel}</button>`);
       }
       if (userCanManageDestructiveActions()) {
         actionButtons.push(`<button type="button" class="maintenance-action-btn maintenance-action-btn--delete" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
