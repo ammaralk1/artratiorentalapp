@@ -29,6 +29,11 @@ const greetingRoleEl = document.getElementById('dashboard-greeting-technician-ro
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
 const greetingRoleBadgeEl = document.getElementById('dashboard-greeting-technician-role-badge');
 
+const sidebarProjectsEl = document.getElementById('sidebar-stat-projects');
+const sidebarReservationsEl = document.getElementById('sidebar-stat-reservations');
+const sidebarEquipmentEl = document.getElementById('sidebar-stat-equipment');
+const sidebarTechniciansEl = document.getElementById('sidebar-stat-technicians');
+
 const financialSummaryEls = {
   total: document.getElementById('technician-financial-total'),
   totalDesc: document.getElementById('technician-financial-total-desc'),
@@ -78,6 +83,82 @@ initThemeToggle();
 
 function getActiveLanguage() {
   return document.documentElement.getAttribute('lang') || 'ar';
+}
+
+function formatNumberLocalized(value) {
+  const number = Number(value) || 0;
+  const lang = getActiveLanguage();
+  const locale = lang === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US';
+  try {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(number);
+  } catch (error) {
+    return normalizeNumbers(String(number)) || '0';
+  }
+}
+
+function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, technicians = 0 } = {}) {
+  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(projects);
+  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(reservations);
+  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(equipment);
+  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(technicians);
+}
+
+function resolveReservationItemQuantity(item) {
+  if (!item || typeof item !== 'object') return 0;
+  const candidates = [item.quantity, item.qty, item.count];
+  for (const candidate of candidates) {
+    if (candidate == null || candidate === '') continue;
+    const parsed = Number(normalizeNumbers(String(candidate)));
+    if (Number.isFinite(parsed)) {
+      if (parsed > 0) {
+        return parsed;
+      }
+      return 0;
+    }
+  }
+  return 1;
+}
+
+function computeTechnicianSidebarStats(reservations, technicianId) {
+  if (!Array.isArray(reservations) || !reservations.length) {
+    return {
+      projects: 0,
+      reservations: 0,
+      equipment: 0,
+      technicians: technicianId ? 1 : 0
+    };
+  }
+
+  const projectsSet = new Set();
+  const collaboratorIds = new Set();
+  if (technicianId) {
+    collaboratorIds.add(String(technicianId));
+  }
+
+  let equipmentCount = 0;
+
+  reservations.forEach((reservation) => {
+    if (!reservation) return;
+    if (reservation.projectId != null) {
+      projectsSet.add(String(reservation.projectId));
+    }
+
+    const technicianIds = normalizeTechnicianAssignments(reservation.technicians);
+    technicianIds.forEach((id) => collaboratorIds.add(id));
+
+    if (Array.isArray(reservation.items)) {
+      reservation.items.forEach((item) => {
+        equipmentCount += resolveReservationItemQuantity(item);
+      });
+    }
+  });
+
+  return {
+    projects: projectsSet.size,
+    reservations: reservations.length,
+    equipment: equipmentCount,
+    technicians: collaboratorIds.size || (technicianId ? 1 : 0)
+  };
 }
 
 function formatCurrency(value) {
@@ -435,6 +516,7 @@ async function refreshTechnicianFinancialSummary(technician) {
   technicianFinancialState = initialState;
   renderFinancialSummary(technicianFinancialState);
   renderFinancialModal(technicianFinancialState);
+  updateSidebarStats();
 
   if (!technicianId || !technician) {
     return;
@@ -466,6 +548,9 @@ async function refreshTechnicianFinancialSummary(technician) {
       : [];
     return technicianIds.includes(normalizedId);
   });
+
+  const sidebarStats = computeTechnicianSidebarStats(relevantReservations, normalizedId);
+  updateSidebarStats(sidebarStats);
 
   const breakdown = relevantReservations.map((reservation, index) => {
     const detailsEntry = Array.isArray(reservation.techniciansDetails)
@@ -934,6 +1019,7 @@ async function loadTechnicianDetails() {
 
   if (!technicianId) {
     setHeroData(null);
+    updateSidebarStats();
     setEditButtonsDisabled(true);
     technicianState = null;
     container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.missingId">${t('technicianDetails.errors.missingId', '⚠️ لا يوجد معرف عضو طاقم في الرابط.')}</p>`;
@@ -964,6 +1050,7 @@ async function loadTechnicianDetails() {
       container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.notFound">${t('technicianDetails.errors.notFound', '⚠️ لم يتم العثور على عضو الطاقم المطلوب.')}</p>`;
     }
     setHeroData(null);
+    updateSidebarStats();
     technicianState = null;
     return;
   }
@@ -971,6 +1058,7 @@ async function loadTechnicianDetails() {
   if (!technician) {
     container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.notFound">${t('technicianDetails.errors.notFound', '⚠️ لم يتم العثور على عضو الطاقم المطلوب.')}</p>`;
     setHeroData(null);
+    updateSidebarStats();
     technicianState = null;
     return;
   }

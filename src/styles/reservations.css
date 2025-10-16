@@ -927,12 +927,12 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
 }
 
 body[dir="rtl"] .reservation-modal-header {
   flex-direction: row-reverse;
-  justify-content: flex-start;
+  justify-content: space-between;
 }
 
 .status-chips {
