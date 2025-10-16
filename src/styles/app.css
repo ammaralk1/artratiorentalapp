@@ -1120,7 +1120,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: clamp(18rem, 55vh, 28rem);
+    min-height: clamp(12rem, 25vh, 20rem);
     width: min(100%, 40rem);
     margin-inline: auto;
     text-align: center;
@@ -3899,7 +3899,7 @@
     border-radius: 0.9rem;
     background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(244, 63, 94, 0.2));
     color: #b91c1c;
-    border: 2px solid rgba(239, 68, 68, 0.55);
+    border: 1.5px solid rgba(255, 255, 255, 0.38);
     box-shadow: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   }
@@ -3908,20 +3908,20 @@
     transform: translateY(-1px);
     background: linear-gradient(135deg, #fb7185, #dc2626);
     box-shadow: 0 20px 40px rgba(220, 38, 38, 0.28);
-    border-color: rgba(248, 113, 113, 0.85);
+    border-color: rgba(255, 255, 255, 0.6);
     color: #fff;
   }
 
   :where(html.dark, body.dark) #logout-btn {
     background: transparent;
-    border-color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.45);
     color: #ffffff;
   }
 
   :where(html.dark, body.dark) #logout-btn:hover {
     background: linear-gradient(135deg, #7f1d1d, #65121c);
     box-shadow: 0 26px 52px rgba(185, 28, 28, 0.38);
-    border-color: rgba(248, 113, 113, 0.75);
+    border-color: rgba(255, 255, 255, 0.65);
   }
 
   .theme-toggle-btn {
