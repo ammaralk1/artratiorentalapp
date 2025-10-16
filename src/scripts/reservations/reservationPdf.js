@@ -1039,7 +1039,14 @@ function createNoteCanvasRenderer(note, { pixelRatio = 1 } = {}) {
   });
 
   const img = doc.createElement('img');
-  img.src = canvas.toDataURL('image/png');
+  let dataUrl;
+  try {
+    dataUrl = canvas.toDataURL('image/png');
+  } catch (error) {
+    logPdfWarn('note canvas toDataURL failed', error);
+    return null;
+  }
+  img.src = dataUrl;
   img.alt = textContent;
   img.style.width = `${Math.max(1, maxWidth)}px`;
   img.style.height = `${Math.max(1, totalHeight)}px`;
@@ -1056,11 +1063,18 @@ function createNoteCanvasRenderer(note, { pixelRatio = 1 } = {}) {
 
 function rasterizeQuoteNotes(root, { pixelRatio = 1 } = {}) {
   if (!root) return;
+  if (!isMobileSafariBrowser()) return;
   const notes = Array.from(root.querySelectorAll?.('.quote-notes') || []);
   notes.forEach((note) => {
     if (!note || note.dataset.quoteNoteRasterized === 'true') return;
     if (!isProbablyArabic(note.textContent || '')) return;
-    const rendered = createNoteCanvasRenderer(note, { pixelRatio });
+    let rendered;
+    try {
+      rendered = createNoteCanvasRenderer(note, { pixelRatio });
+    } catch (error) {
+      logPdfWarn('failed to rasterize note content', error);
+      rendered = null;
+    }
     if (!rendered) return;
     note.dataset.quoteNoteRasterized = 'true';
     note.innerHTML = '';
@@ -2111,8 +2125,9 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
 
   if (!isPreview) {
     const view = doc.defaultView || window;
-    const pixelRatio = Math.min(3, Math.max(1, view.devicePixelRatio || 1));
-    filteredPages.forEach((page) => rasterizeQuoteNotes(page, { pixelRatio }));
+    const basePixelRatio = Math.min(3, Math.max(1, view.devicePixelRatio || 1));
+    const notePixelRatio = isMobileSafariBrowser() ? Math.min(2, basePixelRatio) : basePixelRatio;
+    filteredPages.forEach((page) => rasterizeQuoteNotes(page, { pixelRatio: notePixelRatio }));
   }
 
   filteredPages.forEach((page, index) => {
