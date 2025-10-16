@@ -2701,7 +2701,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   background-color: #ffffff;
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: 'Tajawal', 'Cairo', 'Segoe UI', 'Arial', sans-serif;
+  font-family: 'Geeza Pro', 'Arial', 'Tahoma', sans-serif;
   line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -2780,7 +2780,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   background-color: #ffffff;
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  font-family: 'Tajawal', 'Cairo', 'Segoe UI', 'Arial', sans-serif;
+  font-family: 'Geeza Pro', 'Arial', 'Tahoma', sans-serif;
   line-height: 1.7;
   white-space: pre-wrap;
   overflow-wrap: break-word;
