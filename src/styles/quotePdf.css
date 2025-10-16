@@ -20,7 +20,7 @@ body,
   max-width: 210mm;
   min-height: 100%;
   box-sizing: border-box;
-  font-family: 'Geeza Pro', 'Arial', 'Tahoma', 'Tajawal', sans-serif;
+  font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif;
   color: #000000 !important;
   /* background: #ffffff !important; */
   direction: rtl;
@@ -719,7 +719,7 @@ body,
   border-radius: 12px;
   padding: 10px 12px;
   min-height: 0;
-  font-family: 'Geeza Pro', 'Arial', 'Tahoma', 'Tajawal', sans-serif;
+  font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif;
   font-size: 13px;
   line-height: 1.85;
   letter-spacing: normal;
