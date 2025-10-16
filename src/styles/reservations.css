@@ -2746,8 +2746,86 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: rgba(203, 213, 225, 0.72);
 }
 
+.reservation-terms-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.reservation-terms__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(22, 34, 64, 0.95);
+}
+
+.reservation-terms__hint {
+  margin: 0;
+  color: rgba(71, 85, 105, 0.7);
+  font-size: 0.9rem;
+}
+
+.reservation-terms__textarea {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 16px;
+  border: 1px solid rgba(76, 110, 245, 0.2);
+  padding: 14px 16px;
+  resize: vertical;
+  background-color: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.reservation-terms__textarea:focus {
+  border-color: rgba(76, 110, 245, 0.55);
+  box-shadow:
+    inset 0 1px 2px rgba(15, 23, 42, 0.18),
+    0 0 0 3px rgba(76, 110, 245, 0.12);
+  outline: none;
+}
+
+.reservation-terms__textarea::placeholder {
+  color: rgba(76, 110, 245, 0.65);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-terms__title {
+  color: rgba(226, 232, 240, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-terms__hint {
+  color: rgba(148, 163, 184, 0.72);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-terms__textarea {
+  background: linear-gradient(135deg, rgba(17, 23, 43, 0.92), rgba(31, 41, 73, 0.88));
+  border-color: rgba(148, 163, 255, 0.26);
+  color: rgba(226, 232, 240, 0.94);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-terms__textarea:focus {
+  border-color: rgba(147, 197, 253, 0.35);
+  box-shadow:
+    inset 0 1px 2px rgba(3, 8, 26, 0.3),
+    0 0 0 3px rgba(93, 133, 255, 0.18);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-terms__textarea::placeholder {
+  color: rgba(203, 213, 225, 0.7);
+}
+
 @media (min-width: 768px) {
   .reservation-notes-wrapper {
+    max-width: 55%;
+  }
+
+  .reservation-terms-wrapper {
     max-width: 55%;
   }
 }

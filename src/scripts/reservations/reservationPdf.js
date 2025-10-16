@@ -38,6 +38,30 @@ function normalizeTermsInput(value) {
     .filter((line) => line.length > 0);
 }
 
+function resolveTermsFromForms() {
+  const creationInput = document.getElementById('reservation-terms');
+  if (creationInput && creationInput.value.trim().length > 0) {
+    const normalized = normalizeTermsInput(creationInput.value);
+    if (normalized.length) return normalized;
+  }
+
+  const editInput = document.getElementById('edit-res-terms');
+  if (editInput && editInput.value.trim().length > 0) {
+    const normalized = normalizeTermsInput(editInput.value);
+    if (normalized.length) return normalized;
+  }
+
+  const defaultText = DEFAULT_TERMS.join('\n');
+  if (creationInput && creationInput.value.trim().length === 0) {
+    creationInput.value = defaultText;
+  }
+  if (editInput && editInput.value.trim().length === 0) {
+    editInput.value = defaultText;
+  }
+
+  return [...DEFAULT_TERMS];
+}
+
 const QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'reservations.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'reservationInfo', labelKey: 'reservations.quote.sections.reservation', fallback: 'تفاصيل الحجز', defaultSelected: true },
@@ -2474,9 +2498,26 @@ function handleQuoteTermsInput(event) {
   const nextTerms = normalizeTermsInput(event?.target?.value ?? '');
   if (nextTerms.length) {
     activeQuoteState.terms = nextTerms;
+    const creationInput = document.getElementById('reservation-terms');
+    if (creationInput) {
+      creationInput.value = event.target.value;
+    }
+    const editInput = document.getElementById('edit-res-terms');
+    if (editInput) {
+      editInput.value = event.target.value;
+    }
   } else {
     activeQuoteState.terms = [...DEFAULT_TERMS];
     updateQuoteTermsEditor();
+    const defaultText = DEFAULT_TERMS.join('\n');
+    const creationInput = document.getElementById('reservation-terms');
+    if (creationInput) {
+      creationInput.value = defaultText;
+    }
+    const editInput = document.getElementById('edit-res-terms');
+    if (editInput) {
+      editInput.value = defaultText;
+    }
   }
   renderQuotePreview();
 }
@@ -2485,6 +2526,14 @@ function handleQuoteTermsReset(event) {
   event?.preventDefault?.();
   if (!activeQuoteState) return;
   activeQuoteState.terms = [...DEFAULT_TERMS];
+  const creationInput = document.getElementById('reservation-terms');
+  if (creationInput) {
+    creationInput.value = DEFAULT_TERMS.join('\n');
+  }
+  const editInput = document.getElementById('edit-res-terms');
+  if (editInput) {
+    editInput.value = DEFAULT_TERMS.join('\n');
+  }
   updateQuoteTermsEditor();
   renderQuotePreview();
 }
@@ -2635,6 +2684,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const { sequence, quoteNumber } = peekNextQuoteSequence();
   const now = new Date();
+  const baseTerms = resolveTermsFromForms();
 
   activeQuoteState = {
     reservation,
@@ -2648,7 +2698,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
     sectionExpansions: buildDefaultSectionExpansions(),
     fields: buildDefaultFieldSelections(),
-    terms: [...DEFAULT_TERMS],
+    terms: baseTerms,
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,

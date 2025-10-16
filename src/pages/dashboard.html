@@ -967,6 +967,21 @@
             </div>
 
             <div class="row mb-3">
+              <div class="col-12 reservation-terms-wrapper">
+                <h5 class="reservation-terms__title" data-i18n data-i18n-key="reservations.create.terms.title">📄 الشروط العامة لعرض السعر</h5>
+                <p class="reservation-terms__hint" data-i18n data-i18n-key="reservations.create.terms.hint">يمكنك تعديل بنود عرض السعر قبل إرسالها للعميل. اكتب كل شرط في سطر مستقل.</p>
+                <textarea
+                  id="reservation-terms"
+                  class="reservation-terms__textarea"
+                  rows="4"
+                  placeholder="اكتب الشروط هنا..."
+                  data-i18n
+                  data-i18n-placeholder-key="reservations.create.terms.placeholder"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="row mb-3">
               <div class="col-12">
                 <div class="reservation-stack">
                   <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
@@ -1611,6 +1626,16 @@
                 <div class="edit-reservation-field edit-reservation-field--wide">
                   <label class="form-label edit-reservation-notes-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
                   <textarea class="form-control reservation-notes reservation-notes--compact reservation-notes--short" id="edit-res-notes" rows="2" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row edit-reservation-field-row--single">
+                <div class="edit-reservation-field edit-reservation-field--wide reservation-terms-wrapper">
+                  <h5 class="reservation-terms__title" data-i18n data-i18n-key="reservations.edit.terms.title">📄 الشروط العامة لعرض السعر</h5>
+                  <p class="reservation-terms__hint" data-i18n data-i18n-key="reservations.edit.terms.hint">يمكنك تعديل البنود قبل إرسال عرض السعر. اكتب كل شرط في سطر مستقل.</p>
+                  <textarea class="reservation-terms__textarea" id="edit-res-terms" rows="3" placeholder="اكتب الشروط هنا..." data-i18n data-i18n-placeholder-key="reservations.edit.terms.placeholder"></textarea>
                 </div>
               </div>
             </div>
