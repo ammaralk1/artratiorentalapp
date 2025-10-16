@@ -1600,7 +1600,8 @@ function collectReservationFinancials(reservation, technicians, project) {
   const finalTotal = projectLinked
     ? finalTotalComputed
     : (hasStoredCost ? storedCost : finalTotalComputed);
-  const netProfit = Math.max(0, equipmentTotal + crewTotal - crewCostTotal);
+  const revenueAfterDiscount = Math.max(0, (equipmentTotal + crewTotal) - discountAmount);
+  const netProfit = Math.max(0, revenueAfterDiscount - crewCostTotal);
 
   const totals = {
     equipmentTotal,

@@ -214,7 +214,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
-  const netProfitValue = Math.max(0, equipmentTotal + crewTotal - crewCostTotal);
+  const revenueAfterDiscountValue = Math.max(0, (equipmentTotal + crewTotal) - discountAmount);
+  const netProfitValue = Math.max(0, revenueAfterDiscountValue - crewCostTotal);
   const netProfitDisplay = normalizeNumbers(netProfitValue.toFixed(2));
 
   const summaryDetails = [
