@@ -1380,9 +1380,87 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
   overflow: auto;
 }
 
+.quote-terms-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.quote-terms-editor__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(38, 51, 77, 0.85);
+  margin: 0;
+  text-align: right;
+}
+
+.quote-terms-editor__textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 12px;
+  border: 1px solid rgba(76, 110, 245, 0.24);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 12px 14px;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quote-terms-editor__textarea:focus {
+  outline: none;
+  border-color: rgba(76, 110, 245, 0.55);
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.14);
+}
+
+.quote-terms-reset {
+  align-self: flex-start;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.12);
+  color: rgba(30, 64, 175, 0.9);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.quote-terms-reset:hover {
+  background: rgba(59, 130, 246, 0.18);
+  color: rgba(30, 64, 175, 1);
+}
+
 :is(html.dark-mode, body.dark-mode) .quote-preview-sidebar {
   background: rgba(15, 23, 42, 0.95);
   border-color: rgba(59, 130, 246, 0.32);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-terms-editor__label {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-terms-editor__textarea {
+  background: rgba(17, 24, 39, 0.82);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-terms-editor__textarea:focus {
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-terms-reset {
+  background: rgba(59, 130, 246, 0.22);
+  color: rgba(219, 234, 254, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .quote-terms-reset:hover {
+  background: rgba(96, 165, 250, 0.3);
+  color: #f8fafc;
 }
 
 .quote-preview-sidebar h6 {
@@ -2623,6 +2701,9 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   background-color: #ffffff;
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .reservation-notes__textarea:focus {

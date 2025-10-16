@@ -28,6 +28,16 @@ const QUOTE_TERMS = [
   'يتم فرض رسوم على الإلغاء إذا لم يتم الإبلاغ قبل 24 ساعة.'
 ];
 
+const DEFAULT_TERMS = [...QUOTE_TERMS];
+
+function normalizeTermsInput(value) {
+  if (!value) return [...DEFAULT_TERMS];
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
 const QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'reservations.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'reservationInfo', labelKey: 'reservations.quote.sections.reservation', fallback: 'تفاصيل الحجز', defaultSelected: true },
@@ -1256,7 +1266,8 @@ function buildQuotationHtml({
   sections,
   fieldSelections = {},
   quoteNumber,
-  quoteDate
+  quoteDate,
+  terms = DEFAULT_TERMS
 }) {
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -1270,6 +1281,7 @@ function buildQuotationHtml({
   const projectCode = project?.code || project?.projectCode || '';
   const rentalDaysDisplay = normalizeNumbers(String(rentalDays));
   const notes = reservation?.notes || '';
+  const termsList = Array.isArray(terms) && terms.length ? terms : DEFAULT_TERMS;
 
   const fieldsSelection = cloneFieldSelections(fieldSelections);
   const isFieldEnabled = (sectionId, fieldId) => isFieldEnabledInSelections(fieldsSelection, sectionId, fieldId);
@@ -1483,7 +1495,7 @@ function buildQuotationHtml({
 
   const termsSectionMarkup = `<footer class="quote-footer">
         <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
-        <ul>${QUOTE_TERMS.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
+        <ul>${termsList.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
       </footer>`;
 
   const primaryBlocks = [];
@@ -2076,7 +2088,8 @@ function renderQuotePreview() {
     sections: activeQuoteState.sections,
     fieldSelections: activeQuoteState.fields,
     quoteNumber: activeQuoteState.quoteNumber,
-    quoteDate: activeQuoteState.quoteDateLabel
+    quoteDate: activeQuoteState.quoteDateLabel,
+    terms: activeQuoteState.terms
   });
 
   showQuotePreviewStatus('render');
@@ -2254,6 +2267,11 @@ function ensureQuoteModal() {
               <h6>${escapeHtml(t('reservations.quote.toggleHeading', 'حدد المعلومات المراد تصديرها'))}</h6>
               <div class="quote-toggle-list" data-quote-toggles></div>
               <div class="quote-meta-info" data-quote-meta></div>
+              <div class="quote-terms-editor" data-quote-terms-editor>
+                <label class="quote-terms-editor__label" for="quote-terms-input">${escapeHtml(t('reservations.quote.termsEditor.title', 'الشروط العامة (قابلة للتعديل)'))}</label>
+                <textarea id="quote-terms-input" class="quote-terms-editor__textarea" rows="6" data-quote-terms-input placeholder="${escapeHtml(t('reservations.quote.termsEditor.placeholder', 'اكتب كل شرط في سطر مستقل'))}"></textarea>
+                <button type="button" class="quote-terms-reset" data-quote-terms-reset>${escapeHtml(t('reservations.quote.termsEditor.reset', 'استعادة الشروط الافتراضية'))}</button>
+              </div>
             </aside>
             <section class="quote-preview-panel">
               <div class="quote-preview" data-quote-preview></div>
@@ -2275,6 +2293,8 @@ function ensureQuoteModal() {
   const toggles = modal.querySelector('[data-quote-toggles]');
   const preview = modal.querySelector('[data-quote-preview]');
   const meta = modal.querySelector('[data-quote-meta]');
+  const termsInput = modal.querySelector('[data-quote-terms-input]');
+  const termsReset = modal.querySelector('[data-quote-terms-reset]');
   const downloadBtn = modal.querySelector('[data-quote-download]');
   const modalHeader = modal.querySelector('.modal-header');
   const headerCloseButton = modalHeader?.querySelector('.btn-close');
@@ -2367,6 +2387,8 @@ function ensureQuoteModal() {
     statusText: statusIndicator.querySelector('[data-quote-status-text]'),
     statusSpinner: statusIndicator.querySelector('[data-quote-status-spinner]'),
     statusAction: statusIndicator.querySelector('[data-quote-status-action]'),
+    termsInput,
+    termsReset,
     statusKind: null,
     userAdjustedZoom: false
   };
@@ -2378,6 +2400,14 @@ function ensureQuoteModal() {
   zoomOutBtn?.addEventListener('click', () => adjustPreviewZoom(-0.1));
   zoomInBtn?.addEventListener('click', () => adjustPreviewZoom(0.1));
   zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1, { markManual: true }));
+
+  if (termsInput) {
+    termsInput.addEventListener('input', handleQuoteTermsInput);
+  }
+
+  if (termsReset) {
+    termsReset.addEventListener('click', handleQuoteTermsReset);
+  }
 
   setPreviewZoom(previewZoom);
 
@@ -2431,6 +2461,34 @@ function updateQuoteMeta() {
   `;
 }
 
+function updateQuoteTermsEditor() {
+  if (!quoteModalRefs?.termsInput) return;
+  const termsValue = (activeQuoteState?.terms && activeQuoteState.terms.length ? activeQuoteState.terms : DEFAULT_TERMS).join('\n');
+  if (quoteModalRefs.termsInput.value !== termsValue) {
+    quoteModalRefs.termsInput.value = termsValue;
+  }
+}
+
+function handleQuoteTermsInput(event) {
+  if (!activeQuoteState) return;
+  const nextTerms = normalizeTermsInput(event?.target?.value ?? '');
+  if (nextTerms.length) {
+    activeQuoteState.terms = nextTerms;
+  } else {
+    activeQuoteState.terms = [...DEFAULT_TERMS];
+    updateQuoteTermsEditor();
+  }
+  renderQuotePreview();
+}
+
+function handleQuoteTermsReset(event) {
+  event?.preventDefault?.();
+  if (!activeQuoteState) return;
+  activeQuoteState.terms = [...DEFAULT_TERMS];
+  updateQuoteTermsEditor();
+  renderQuotePreview();
+}
+
 async function exportQuoteAsPdf() {
   if (!activeQuoteState) return;
   showQuotePreviewStatus('export');
@@ -2474,7 +2532,8 @@ async function exportQuoteAsPdf() {
       sections: activeQuoteState.sections,
       fieldSelections: activeQuoteState.fields,
       quoteNumber: activeQuoteState.quoteNumber,
-      quoteDate: activeQuoteState.quoteDateLabel
+      quoteDate: activeQuoteState.quoteDateLabel,
+      terms: activeQuoteState.terms
     });
 
     container = document.createElement('div');
@@ -2559,6 +2618,7 @@ function openQuoteModal() {
 
   renderQuoteToggles();
   updateQuoteMeta();
+  updateQuoteTermsEditor();
   renderQuotePreview();
 
   showQuoteModalElement(refs.modal);
@@ -2588,6 +2648,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
     sectionExpansions: buildDefaultSectionExpansions(),
     fields: buildDefaultFieldSelections(),
+    terms: [...DEFAULT_TERMS],
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,
