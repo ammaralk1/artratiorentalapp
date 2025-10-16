@@ -7,6 +7,7 @@ import { resolveReservationProjectState } from '../reservationsShared.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
+const QUOTE_TOGGLE_PREFS_STORAGE_KEY = 'reservations.quote.togglePrefs.v1';
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
 const QUOTE_COMPANY_INFO = {
@@ -165,6 +166,14 @@ const QUOTE_FIELD_DEFS = {
   items: QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
 };
+
+const QUOTE_SECTION_ID_SET = new Set(QUOTE_SECTION_DEFS.map(({ id }) => id));
+const QUOTE_FIELD_ID_MAP = Object.fromEntries(
+  Object.entries(QUOTE_FIELD_DEFS).map(([sectionId, fields = []]) => [
+    sectionId,
+    new Set(fields.map((field) => field.id))
+  ])
+);
 
 function getQuoteStatusMessage(type) {
   switch (type) {
@@ -1366,6 +1375,98 @@ function commitQuoteSequence(sequence) {
   }
 }
 
+function readQuoteTogglePreferences() {
+  try {
+    const stored = window.localStorage?.getItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (error) {
+    console.warn('⚠️ [reservations/pdf] failed to read toggle preferences', error);
+    return null;
+  }
+}
+
+function writeQuoteTogglePreferences(preferences) {
+  try {
+    if (!preferences) {
+      window.localStorage?.removeItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY);
+      return;
+    }
+    window.localStorage?.setItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.warn('⚠️ [reservations/pdf] failed to persist toggle preferences', error);
+  }
+}
+
+function collectSelectionIds(selection) {
+  if (!selection) return { ids: null, emptyExplicitly: false };
+  if (selection instanceof Set) {
+    return { ids: Array.from(selection), emptyExplicitly: selection.size === 0 };
+  }
+  if (Array.isArray(selection)) {
+    return { ids: selection.slice(), emptyExplicitly: selection.length === 0 };
+  }
+  if (typeof selection === 'object') {
+    const entries = Object.entries(selection).filter(([, enabled]) => Boolean(enabled));
+    return { ids: entries.map(([id]) => id), emptyExplicitly: entries.length === 0 };
+  }
+  return { ids: null, emptyExplicitly: false };
+}
+
+function serializeQuoteToggleState(state) {
+  if (!state) return null;
+  const sectionIds = Array.from(state.sections instanceof Set ? state.sections : new Set(state.sections || []))
+    .filter((id) => QUOTE_SECTION_ID_SET.has(id));
+
+  const fieldsPayload = {};
+  const selections = state.fields || {};
+  Object.entries(QUOTE_FIELD_ID_MAP).forEach(([sectionId, validIds]) => {
+    const selection = selections[sectionId];
+    if (selection == null) return;
+    const { ids, emptyExplicitly } = collectSelectionIds(selection);
+    if (!ids && !emptyExplicitly) return;
+    const normalized = Array.isArray(ids) ? ids.filter((id) => validIds.has(id)) : [];
+    if (normalized.length > 0 || emptyExplicitly) {
+      fieldsPayload[sectionId] = normalized;
+    }
+  });
+
+  return {
+    version: 1,
+    sections: sectionIds,
+    fields: fieldsPayload
+  };
+}
+
+function persistQuoteTogglePreferences(state) {
+  const snapshot = serializeQuoteToggleState(state);
+  if (!snapshot) return;
+  writeQuoteTogglePreferences(snapshot);
+}
+
+function applyQuoteTogglePreferences(state) {
+  if (!state) return;
+  const preferences = readQuoteTogglePreferences();
+  if (!preferences) return;
+
+  const storedSections = Array.isArray(preferences.sections) ? preferences.sections.filter((id) => QUOTE_SECTION_ID_SET.has(id)) : [];
+  if (storedSections.length) {
+    state.sections = new Set(storedSections);
+  }
+
+  if (preferences.fields && typeof preferences.fields === 'object') {
+    const nextSelections = cloneFieldSelections(state.fields || buildDefaultFieldSelections());
+    Object.entries(preferences.fields).forEach(([sectionId, storedIds]) => {
+      const validIds = QUOTE_FIELD_ID_MAP[sectionId];
+      if (!validIds) return;
+      const normalized = Array.isArray(storedIds) ? storedIds.filter((id) => validIds.has(id)) : [];
+      nextSelections[sectionId] = new Set(normalized);
+    });
+    state.fields = nextSelections;
+  }
+}
+
 function formatQuoteDate(date = new Date()) {
   try {
     return date.toLocaleDateString('en-GB', {
@@ -2476,6 +2577,7 @@ function handleToggleChange(event) {
   } else {
     activeQuoteState.sections.delete(sectionId);
   }
+  persistQuoteTogglePreferences(activeQuoteState);
   renderQuoteToggles();
   renderQuotePreview();
 }
@@ -2493,6 +2595,7 @@ function handleFieldToggleChange(event) {
   } else {
     set.delete(fieldId);
   }
+  persistQuoteTogglePreferences(activeQuoteState);
   renderQuotePreview();
 }
 
@@ -2992,5 +3095,6 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sequenceCommitted: false
   };
 
+  applyQuoteTogglePreferences(activeQuoteState);
   openQuoteModal();
 }
