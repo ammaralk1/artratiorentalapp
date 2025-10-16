@@ -2041,7 +2041,7 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     throw new Error('PDF generation produced no pages.');
   }
 
-  const needsBlobDelivery = safariMode || mobileSafari || (mobileWindowRef && !mobileWindowRef.closed);
+  const needsBlobDelivery = safariMode || mobileSafari;
 
   if (needsBlobDelivery) {
     const blob = pdf.output('blob');
@@ -2573,7 +2573,7 @@ async function exportQuoteAsPdf() {
   const mobileViewport = isMobileViewport();
   const safariPopupRequired = !mobileViewport && isIosSafari();
   const mobileSafari = isMobileSafariBrowser();
-  const mobileDownloadWindow = (!mobileSafari && mobileViewport) ? window.open('', '_blank') : null;
+  const mobileDownloadWindow = null;
   const safariDownloadWindow = (!mobileSafari && safariPopupRequired) ? window.open('', '_blank') : null;
 
   const primeDownloadWindow = (win) => {
@@ -2587,7 +2587,6 @@ async function exportQuoteAsPdf() {
     }
   };
 
-  primeDownloadWindow(mobileDownloadWindow);
   primeDownloadWindow(safariDownloadWindow);
 
   let container = null;
