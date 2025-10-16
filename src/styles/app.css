@@ -3245,6 +3245,55 @@
     text-align: start;
   }
 
+  .password-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .password-field .form-control {
+    width: 100%;
+    padding-inline-end: 3rem;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    inset-block: 0.35rem;
+    inset-inline-end: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: hsl(var(--p) / 0.7);
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .password-toggle-btn:hover,
+  .password-toggle-btn:focus-visible {
+    color: hsl(var(--p));
+    background: hsl(var(--p) / 0.14);
+    outline: none;
+  }
+
+  .password-toggle-btn:active {
+    transform: translateY(1px);
+  }
+
+  :where(html.dark, body.dark) .password-toggle-btn {
+    color: rgba(129, 221, 255, 0.85);
+  }
+
+  :where(html.dark, body.dark) .password-toggle-btn:hover,
+  :where(html.dark, body.dark) .password-toggle-btn:focus-visible {
+    color: rgba(125, 211, 252, 1);
+    background: rgba(12, 74, 110, 0.35);
+  }
+
   .enhanced-select__trigger:disabled,
   .enhanced-select--disabled .enhanced-select__trigger {
     cursor: not-allowed;

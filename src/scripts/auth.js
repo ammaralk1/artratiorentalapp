@@ -4,7 +4,11 @@ import { updatePreferences, clearSkipRemotePreferencesFlag } from './preferences
 import { getCurrentTheme } from './theme.js';
 import { t } from './language.js';
 
-const ERROR_MESSAGE = '❌ بيانات الدخول غير صحيحة';
+const LOGIN_ERROR_MESSAGES = {
+  INVALID: { key: 'login.errors.invalidCredentials', fallback: '❌ بيانات الدخول غير صحيحة' },
+  NETWORK: { key: 'login.errors.network', fallback: '🌐 تعذر الاتصال بالخادم. حاول مرة أخرى.' },
+  GENERIC: { key: 'login.errors.generic', fallback: '⚠️ حدث خطأ غير متوقع. حاول مرة أخرى.' },
+};
 let currentUser = null;
 
 export const AUTH_EVENTS = {
@@ -49,11 +53,30 @@ function setCurrentUser(user) {
   emitUserUpdated();
 }
 
-function renderLoginError(message = ERROR_MESSAGE) {
+function resolveLoginErrorMessage(type = 'INVALID', overrideMessage) {
+  if (overrideMessage && typeof overrideMessage === 'string') {
+    return overrideMessage;
+  }
+
+  const definition = LOGIN_ERROR_MESSAGES[type] || LOGIN_ERROR_MESSAGES.INVALID;
+  return t(definition.key, definition.fallback);
+}
+
+function clearLoginError() {
+  const err = document.getElementById('login-error');
+  if (err) {
+    err.textContent = '';
+    err.classList.add('hidden');
+  }
+}
+
+function renderLoginError(type = 'INVALID', overrideMessage) {
+  const message = resolveLoginErrorMessage(type, overrideMessage);
   showToast(message);
   const err = document.getElementById('login-error');
   if (err) {
-    err.innerText = message;
+    err.textContent = message;
+    err.classList.remove('hidden');
   }
 }
 
@@ -61,9 +84,11 @@ export async function login(username, password) {
   const sanitizedUsername = (username || '').trim();
   const sanitizedPassword = password || '';
 
+  clearLoginError();
+
   if (!sanitizedUsername || !sanitizedPassword) {
-    renderLoginError();
-    return;
+    renderLoginError('INVALID');
+    return false;
   }
 
   try {
@@ -86,14 +111,24 @@ export async function login(username, password) {
     clearSkipRemotePreferencesFlag();
 
     window.location.href = 'home.html';
+    return true;
   } catch (error) {
     console.error('❌ فشل تسجيل الدخول', error);
     setCurrentUser(null);
-    if (error instanceof ApiError && error.message) {
-      renderLoginError(error.message);
+    if (error instanceof ApiError) {
+      if (error.status === 401 || error.status === 403) {
+        renderLoginError('INVALID');
+      } else if (error.status >= 500) {
+        renderLoginError('GENERIC');
+      } else {
+        const hasCustomMessage = typeof error.message === 'string' && !/^request failed with status/i.test(error.message);
+        const message = hasCustomMessage ? error.message : null;
+        renderLoginError('GENERIC', message);
+      }
     } else {
-      renderLoginError();
+      renderLoginError('NETWORK');
     }
+    return false;
   }
 }
 

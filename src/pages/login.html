@@ -72,9 +72,23 @@
           </div>
           <div class="form-field">
             <label for="password" class="form-label" data-i18n data-i18n-key="login.form.password">كلمة المرور</label>
-            <input type="password" class="form-control" id="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+            <div class="password-field">
+              <input type="password" class="form-control" id="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+              <button type="button" class="password-toggle-btn" data-action="toggle-password" aria-pressed="false">
+                <span data-state="show" data-i18n data-i18n-key="login.form.password.toggleShow">إظهار كلمة المرور</span>
+                <span data-state="hide" class="hidden" data-i18n data-i18n-key="login.form.password.toggleHide">إخفاء كلمة المرور</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-sm text-base-content/70">
+            <label for="remember-me" class="inline-flex items-center gap-2 font-medium">
+              <input type="checkbox" id="remember-me" class="checkbox checkbox-sm checkbox-primary" autocomplete="on">
+              <span data-i18n data-i18n-key="login.form.rememberMe">تذكرني</span>
+            </label>
           </div>
           <button type="submit" class="btn btn-primary w-full" data-i18n data-i18n-key="login.form.submit">دخول</button>
+          <p id="login-error" class="hidden text-center text-sm text-error" role="alert" aria-live="polite"></p>
         </form>
 
         <p class="text-center text-xs text-base-content/50" data-i18n data-i18n-key="login.footer.note">
