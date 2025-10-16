@@ -85,18 +85,23 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
   const { reservations = [] } = loadData();
   const normalizedCode = normalizeBarcodeValue(barcode);
+  const normalizedIgnoreId = ignoreReservationId != null ? String(ignoreReservationId) : null;
 
-  return reservations.some(reservation => {
+  const shouldIgnoreReservation = (reservation) => {
+    if (!normalizedIgnoreId) return false;
+    const candidates = [
+      reservation?.id,
+      reservation?.reservationId,
+      reservation?.reservation_id,
+      reservation?.reservationCode,
+      reservation?.reservation_code,
+    ].filter((value) => value !== undefined && value !== null);
+    return candidates.map((value) => String(value)).includes(normalizedIgnoreId);
+  };
+
+  return reservations.some((reservation) => {
     if (!reservation || !reservation.items || reservation.items.length === 0) return false;
-
-    if (
-      ignoreReservationId &&
-      (String(reservation.id) === String(ignoreReservationId) ||
-        String(reservation.reservationId) === String(ignoreReservationId))
-    ) {
-      return false;
-    }
-
+    if (shouldIgnoreReservation(reservation)) return false;
     if (!reservation.start || !reservation.end) return false;
 
     const resStart = new Date(reservation.start);
@@ -106,7 +111,7 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
     const overlaps = resStart < end && resEnd > start;
     if (!overlaps) return false;
 
-    return reservation.items.some(item => normalizeBarcodeValue(item?.barcode) === normalizedCode);
+    return reservation.items.some((item) => normalizeBarcodeValue(item?.barcode) === normalizedCode);
   });
 }
 
