@@ -95,6 +95,9 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
       reservation?.reservation_id,
       reservation?.reservationCode,
       reservation?.reservation_code,
+      reservation?.uuid,
+      reservation?.UUID,
+      reservation?._id,
     ].filter((value) => value !== undefined && value !== null);
     return candidates.map((value) => String(value)).includes(normalizedIgnoreId);
   };
