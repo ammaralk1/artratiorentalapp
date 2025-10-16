@@ -46,6 +46,8 @@ let closeTicketSubmitButton = null;
 let closeTicketDetailsContainer = null;
 let reportModal = null;
 let reportModalContent = null;
+let reportModalEditButton = null;
+let reportModalLastTicketId = null;
 
 async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
   if (maintenanceLoading) return;
@@ -536,10 +538,18 @@ function ensureReportModalElements() {
   if (!reportModalContent) {
     reportModalContent = modalEl.querySelector('#maintenance-report-modal-content');
   }
+  if (!reportModalEditButton) {
+    reportModalEditButton = modalEl.querySelector('#maintenance-report-edit');
+  }
 
   if (!modalEl.dataset.listenerAttached) {
     modalEl.addEventListener('hidden.bs.modal', resetReportModalContent);
     modalEl.dataset.listenerAttached = 'true';
+  }
+
+  if (reportModalEditButton && reportModalEditButton.dataset.listenerAttached !== 'true') {
+    reportModalEditButton.addEventListener('click', handleReportModalEditButtonClick);
+    reportModalEditButton.dataset.listenerAttached = 'true';
   }
 
   return true;
@@ -549,6 +559,12 @@ function resetReportModalContent() {
   if (reportModalContent) {
     reportModalContent.innerHTML = '';
   }
+  if (reportModalEditButton) {
+    reportModalEditButton.hidden = true;
+    reportModalEditButton.disabled = false;
+    delete reportModalEditButton.dataset.id;
+  }
+  reportModalLastTicketId = null;
 }
 
 function setCloseModalLoading(isLoading) {
@@ -973,8 +989,6 @@ function handleTableActions(event) {
     openCloseTicketModal(id);
   } else if (action === 'view') {
     viewTicketReport(id);
-  } else if (action === 'edit') {
-    openCloseTicketModal(id, { mode: 'edit' });
   } else if (action === 'delete') {
     if (!userCanManageDestructiveActions()) {
       notifyPermissionDenied();
@@ -1054,6 +1068,8 @@ function viewTicketReport(id) {
   const ticket = tickets.find((t) => Number(t.id) === Number(id));
   if (!ticket) return;
 
+  reportModalLastTicketId = ticket.id;
+
   if (!ensureReportModalElements()) {
     const equipmentLabelFallback = t('maintenance.report.equipment', 'المعدة');
     const barcodeLabelFallback = t('maintenance.report.barcode', 'الباركود');
@@ -1062,7 +1078,7 @@ function viewTicketReport(id) {
     const closedLabelFallback = t('maintenance.report.closedAt', 'تاريخ الإغلاق');
     const summaryLabelFallback = t('maintenance.report.summary', 'التقرير');
     const repairCostLabelFallback = t('maintenance.report.repairCost', 'تكلفة الإصلاح');
-    const currencyFallback = t('maintenance.report.currencyLabel', 'SR');
+    const currencyFallback = t('maintenance.report.currencyLabel', 'ريال');
     const repairCostNumberFallback = Number.parseFloat(normalizeNumbers(String(ticket.repairCost ?? '')));
     const repairCostDisplayFallback = Number.isFinite(repairCostNumberFallback)
       ? `${normalizeNumbers(repairCostNumberFallback.toFixed(2))} ${currencyFallback}`
@@ -1106,7 +1122,7 @@ function viewTicketReport(id) {
     ? normalizeNumbers(repairCostNumber.toFixed(2))
     : null;
 
-  const currencyLabel = t('maintenance.report.currencyLabel', 'SR');
+  const currencyLabel = t('maintenance.report.currencyLabel', 'ريال');
 
   const formattedFields = [
     {
@@ -1177,7 +1193,37 @@ function viewTicketReport(id) {
     `;
   }
 
+  if (reportModalEditButton) {
+    const canEdit = userCanManageDestructiveActions() && ticket.status === 'closed';
+    reportModalEditButton.hidden = !canEdit;
+    reportModalEditButton.disabled = !canEdit;
+    reportModalEditButton.textContent = t('maintenance.actions.editClosed', '✏️ تعديل بيانات الإغلاق');
+    if (canEdit) {
+      reportModalEditButton.dataset.id = String(ticket.id);
+    } else {
+      delete reportModalEditButton.dataset.id;
+    }
+  }
+
   reportModal?.show();
+}
+
+function handleReportModalEditButtonClick() {
+  if (!reportModalEditButton) return;
+  const id = Number(reportModalEditButton.dataset.id);
+  if (!id) {
+    reportModal?.hide();
+    return;
+  }
+  if (!userCanManageDestructiveActions()) {
+    reportModal?.hide();
+    notifyPermissionDenied();
+    return;
+  }
+  reportModal?.hide();
+  setTimeout(() => {
+    openCloseTicketModal(id, { mode: 'edit' });
+  }, 220);
 }
 
 async function deleteTicket(id) {
