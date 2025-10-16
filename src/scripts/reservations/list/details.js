@@ -335,7 +335,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
         return `
           <tr>
-            <td>
+            <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--item">
               <div class="reservation-item-info">
                 <div class="reservation-item-thumb-wrapper">${imageCell}</div>
                 <div class="reservation-item-copy">
@@ -344,16 +344,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
                 </div>
               </div>
             </td>
-            <td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.quantity)}">
               <div class="reservation-quantity-control reservation-quantity-control--static">
                 <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">−</button>
                 <span class="reservation-qty-value">${quantityDisplay}</span>
                 <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">+</button>
               </div>
             </td>
-            <td>${unitPriceDisplay}</td>
-            <td>${totalPriceDisplay}</td>
-            <td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitPrice)}">${unitPriceDisplay}</td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.total)}">${totalPriceDisplay}</td>
+            <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--actions" data-label="${escapeHtml(tableHeaders.actions)}">
               <button type="button" class="reservation-remove-button" disabled aria-disabled="true" tabindex="-1">🗑️</button>
             </td>
           </tr>

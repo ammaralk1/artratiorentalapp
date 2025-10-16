@@ -2247,6 +2247,14 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   background: rgba(248, 250, 255, 0.6);
 }
 
+.reservation-modal-items-table td.reservation-modal-items-table__cell--item {
+  text-align: start;
+}
+
+.reservation-modal-items-table td.reservation-modal-items-table__cell--actions {
+  text-align: center;
+}
+
 .reservation-modal-item-thumb {
   width: 60px;
   height: 60px;
@@ -2301,6 +2309,116 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 :is(html.dark-mode, body.dark-mode) #editReservationModal table.table-bordered tbody tr:nth-child(even) td {
   background: rgba(24, 36, 63, 0.88);
+}
+
+@media (max-width: 640px) {
+  .reservation-modal-items-wrapper,
+  .reservation-modal-items-wrapper .table-responsive {
+    overflow-x: visible;
+  }
+
+  .reservation-modal-items-table,
+  .reservation-modal-items-wrapper > table {
+    min-width: 0;
+  }
+
+  .reservation-modal-items-table {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .reservation-modal-items-table thead {
+    display: none;
+  }
+
+  .reservation-modal-items-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reservation-modal-items-table tr {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid rgba(76, 110, 245, 0.18);
+    border-radius: 16px;
+    padding: 14px;
+    background: var(--clr-card, #fff);
+  }
+
+  .reservation-modal-items-table td,
+  .reservation-modal-items-table th {
+    border: none;
+    padding: 0;
+    text-align: start;
+  }
+
+  .reservation-modal-items-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .reservation-modal-items-table td + td {
+    padding-top: 12px;
+    border-top: 1px solid rgba(226, 232, 240, 0.7);
+  }
+
+  .reservation-modal-items-table__cell--item {
+    padding-bottom: 8px;
+  }
+
+  .reservation-modal-items-table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: rgba(59, 76, 110, 0.85);
+    margin-inline-end: 10px;
+    flex: 0 0 auto;
+  }
+
+  .reservation-modal-items-table__cell--item::before {
+    content: none;
+  }
+
+  .reservation-modal-items-table__cell--actions {
+    justify-content: flex-start;
+  }
+
+  .reservation-modal-items-table__cell--actions .reservation-remove-button {
+    width: auto;
+  }
+
+  .reservation-modal-items-wrapper .reservation-item-info {
+    align-items: flex-start;
+  }
+
+  .reservation-modal-items-wrapper .reservation-item-copy {
+    flex: 1 1 auto;
+  }
+
+  .reservation-modal-items-wrapper .reservation-item-title {
+    word-break: break-word;
+  }
+
+  .reservation-modal-items-wrapper .reservation-item-barcodes {
+    margin-top: 6px;
+  }
+
+  :is(html.dark-mode, body.dark-mode) .reservation-modal-items-table tr {
+    background: rgba(24, 33, 59, 0.92);
+    border-color: rgba(93, 133, 255, 0.22);
+  }
+
+  :is(html.dark-mode, body.dark-mode) .reservation-modal-items-table td + td {
+    border-top: 1px solid rgba(59, 76, 110, 0.45);
+  }
+
+  :is(html.dark-mode, body.dark-mode) .reservation-modal-items-table td[data-label]::before {
+    color: rgba(165, 180, 203, 0.85);
+  }
 }
 
 :is(html.dark-mode, body.dark-mode) #editReservationModal table.table-bordered tbody tr:hover td {
