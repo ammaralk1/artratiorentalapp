@@ -4868,6 +4868,7 @@
 
   .table-responsive:not(.customer-table-wrapper) {
     @apply overflow-x-auto rounded-3xl border border-base-200 bg-base-100 shadow-soft;
+    -webkit-overflow-scrolling: touch;
   }
 
   .table-responsive > table {
