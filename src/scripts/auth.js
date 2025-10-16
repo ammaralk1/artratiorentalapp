@@ -88,6 +88,15 @@ async function storeBrowserCredentials({ username, password }) {
     if (!window.isSecureContext) return;
     if (!navigator.credentials || typeof navigator.credentials.store !== 'function') return;
 
+    const iconHref = (() => {
+      try {
+        const iconLink = document.querySelector('link[rel~="icon"]');
+        return iconLink ? iconLink.href : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+
     let credential = null;
 
     if (typeof window.PasswordCredential !== 'undefined') {
@@ -95,13 +104,17 @@ async function storeBrowserCredentials({ username, password }) {
         id: username,
         name: username,
         password,
+        iconURL: iconHref,
       });
-    } else if (typeof navigator.credentials.create === 'function') {
+    }
+
+    if (!credential && typeof navigator.credentials.create === 'function') {
       credential = await navigator.credentials.create({
         password: {
           id: username,
           name: username,
           password,
+          iconURL: iconHref,
         },
       });
     }

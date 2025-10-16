@@ -19,6 +19,31 @@ const passwordToggleLabel = passwordToggleButton?.querySelector('[data-role="pas
 const showPasswordIcon = passwordToggleButton?.querySelector('[data-icon="show"]') || null;
 const hidePasswordIcon = passwordToggleButton?.querySelector('[data-icon="hide"]') || null;
 
+async function attemptCredentialAutofill() {
+  if (!usernameInput || !passwordInput) return;
+  try {
+    if (typeof navigator === 'undefined' || typeof window === 'undefined') return;
+    if (!('credentials' in navigator) || typeof navigator.credentials.get !== 'function') return;
+    if (!window.isSecureContext) return;
+
+    const credential = await navigator.credentials.get({
+      password: true,
+      mediation: 'optional',
+    });
+
+    if (credential && credential.type === 'password') {
+      if (!usernameInput.value && credential.id) {
+        usernameInput.value = credential.id;
+      }
+      if (!passwordInput.value && credential.password) {
+        passwordInput.value = credential.password;
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ [login-page] Failed to retrieve stored credentials', error);
+  }
+}
+
 function updatePasswordToggleState(isVisible) {
   if (!passwordToggleButton || !passwordInput) return;
 
@@ -73,3 +98,5 @@ if (form) {
 } else {
   console.warn('[login-page] #login-form not found');
 }
+
+attemptCredentialAutofill();

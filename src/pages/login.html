@@ -65,15 +65,15 @@
           <p class="text-sm text-base-content/60" data-i18n data-i18n-key="login.header.subtitle">أدخل بيانات الحساب للوصول إلى لوحة التحكم.</p>
         </div>
 
-        <form id="login-form" class="space-y-5">
+        <form id="login-form" class="space-y-5" autocomplete="on">
           <div class="form-field">
             <label for="username" class="form-label" data-i18n data-i18n-key="login.form.username">اسم المستخدم</label>
-            <input type="text" class="form-control" id="username" data-i18n data-i18n-placeholder-key="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
+            <input type="text" class="form-control" id="username" name="username" data-i18n data-i18n-placeholder-key="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@-]{3,100}" minlength="3" maxlength="100">
           </div>
           <div class="form-field">
             <label for="password" class="form-label" data-i18n data-i18n-key="login.form.password">كلمة المرور</label>
             <div class="password-field">
-              <input type="password" class="form-control" id="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+              <input type="password" class="form-control" id="password" name="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
               <button type="button" class="password-toggle-btn" data-action="toggle-password" aria-pressed="false">
                 <svg class="password-toggle-icon" data-icon="show" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path stroke="none" d="M0 0h24v24H0z"></path>
