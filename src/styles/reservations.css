@@ -930,19 +930,16 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   justify-content: flex-start;
 }
 
+body[dir="rtl"] .reservation-modal-header {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
 .status-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-start;
-}
-
-body[dir="rtl"] .reservation-modal-header {
-  justify-content: flex-end;
-}
-
-body[dir="rtl"] .status-chips {
-  justify-content: flex-end;
 }
 
 .reservation-modal-id {
@@ -955,6 +952,11 @@ body[dir="rtl"] .status-chips {
   background: rgba(248, 250, 255, 0.85);
   border: 1px solid rgba(76, 110, 245, 0.12);
   text-align: left;
+}
+
+body[dir="rtl"] .reservation-modal-id {
+  align-items: flex-end;
+  text-align: right;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-modal-id {
