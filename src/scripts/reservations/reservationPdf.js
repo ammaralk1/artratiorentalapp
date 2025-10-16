@@ -1922,6 +1922,16 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     ensureHtml2Canvas()
   ]);
 
+  const ownerDocument = root.ownerDocument || document;
+  const styleDirection = ownerDocument?.defaultView?.getComputedStyle?.(root)?.direction;
+  const directionHints = [
+    root.getAttribute?.('dir'),
+    root.style?.direction,
+    styleDirection,
+    ownerDocument?.documentElement?.getAttribute?.('dir')
+  ];
+  const isRtlDocument = directionHints.some((dir) => typeof dir === 'string' && dir.toLowerCase().startsWith('rtl'));
+
   const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
   const mobileViewport = isMobileViewport();
   const safariMode = isIosSafari();
@@ -1945,7 +1955,8 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     useCORS: true,
     allowTaint: false,
     backgroundColor: '#ffffff',
-    letterRendering: true,
+    // html2canvas letter-level rendering breaks Arabic ligatures on iOS Safari; fall back to native shaping when RTL.
+    letterRendering: !isRtlDocument,
     removeContainer: false,
     logging: true
   };
