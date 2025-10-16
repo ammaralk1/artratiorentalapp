@@ -727,11 +727,6 @@ body,
   word-break: break-word;
   overflow-wrap: break-word;
   text-align: right;
-  direction: rtl;
-  unicode-bidi: plaintext;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: 'liga' 1, 'clig' 1, 'rlig' 1, 'kern' 1;
-  -webkit-font-smoothing: antialiased;
 }
 
 .quote-approval-note {

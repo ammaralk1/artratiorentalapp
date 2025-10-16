@@ -2706,9 +2706,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
-  direction: rtl;
-  unicode-bidi: plaintext;
-  font-feature-settings: 'liga' 1, 'clig' 1, 'rlig' 1, 'kern' 1;
 }
 
 .reservation-notes__textarea:focus {
@@ -2788,9 +2785,6 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
-  direction: rtl;
-  unicode-bidi: plaintext;
-  font-feature-settings: 'liga' 1, 'clig' 1, 'rlig' 1, 'kern' 1;
 }
 
 .reservation-terms__textarea:focus {

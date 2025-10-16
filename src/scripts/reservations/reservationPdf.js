@@ -1947,8 +1947,7 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
     backgroundColor: '#ffffff',
     letterRendering: true,
     removeContainer: false,
-    logging: true,
-    foreignObjectRendering: true
+    logging: true
   };
 
   let pdfPageIndex = 0;
