@@ -2040,43 +2040,67 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
 
   if (needsBlobDelivery) {
     const blob = pdf.output('blob');
-    const blobUrl = URL.createObjectURL(blob);
 
-    const resolveTargetWindow = () => {
-      if ((safariMode || mobileSafari) && safariWindowRef && !safariWindowRef.closed) {
-        return safariWindowRef;
-      }
-      if (mobileWindowRef && !mobileWindowRef.closed) {
-        return mobileWindowRef;
-      }
-      return null;
-    };
-
-    const deliverToWindow = (targetWindow, url) => {
-      hideQuotePreviewStatus();
-      if (!targetWindow) {
-        window.location.assign(url);
-        return;
-      }
-      try {
-        targetWindow.location.replace(url);
-        targetWindow.focus?.();
-      } catch (navigationError) {
-        logPdfWarn('direct blob navigation failed', navigationError);
-        try {
-          targetWindow.document.open();
-          targetWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(t('reservations.quote.actions.export', 'تنزيل PDF'))}</title><style>html,body{margin:0;height:100%;background:#0f172a;color:#f8fafc;font-family:'Tajawal',sans-serif;} iframe{border:none;width:100%;height:100%;display:block;}</style></head><body><iframe src="${url}" title="PDF preview"></iframe></body></html>`);
-          targetWindow.document.close();
-        } catch (iframeError) {
-          logPdfWarn('iframe blob delivery failed', iframeError);
-          window.location.assign(url);
+    if (mobileSafari) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        hideQuotePreviewStatus();
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        if (result) {
+          try {
+            window.location.assign(result);
+          } catch (assignError) {
+            logPdfWarn('mobile safari data-url navigation failed', assignError);
+          }
         }
-      }
-    };
+      };
+      reader.onerror = () => {
+        logPdfWarn('mobile safari data-url generation failed', reader.error);
+        const fallbackUrl = URL.createObjectURL(blob);
+        hideQuotePreviewStatus();
+        window.location.assign(fallbackUrl);
+        setTimeout(() => URL.revokeObjectURL(fallbackUrl), 60_000);
+      };
+      reader.readAsDataURL(blob);
+    } else {
+      const blobUrl = URL.createObjectURL(blob);
 
-    const targetWindow = resolveTargetWindow();
-    deliverToWindow(targetWindow, blobUrl);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      const resolveTargetWindow = () => {
+        if (safariMode && safariWindowRef && !safariWindowRef.closed) {
+          return safariWindowRef;
+        }
+        if (mobileWindowRef && !mobileWindowRef.closed) {
+          return mobileWindowRef;
+        }
+        return null;
+      };
+
+      const deliverToWindow = (targetWindow, url) => {
+        hideQuotePreviewStatus();
+        if (!targetWindow) {
+          window.location.assign(url);
+          return;
+        }
+        try {
+          targetWindow.location.replace(url);
+          targetWindow.focus?.();
+        } catch (navigationError) {
+          logPdfWarn('direct blob navigation failed', navigationError);
+          try {
+            targetWindow.document.open();
+            targetWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${escapeHtml(t('reservations.quote.actions.export', 'تنزيل PDF'))}</title><style>html,body{margin:0;height:100%;background:#0f172a;color:#f8fafc;font-family:'Tajawal',sans-serif;} iframe{border:none;width:100%;height:100%;display:block;}</style></head><body><iframe src="${url}" title="PDF preview"></iframe></body></html>`);
+            targetWindow.document.close();
+          } catch (iframeError) {
+            logPdfWarn('iframe blob delivery failed', iframeError);
+            window.location.assign(url);
+          }
+        }
+      };
+
+      const targetWindow = resolveTargetWindow();
+      deliverToWindow(targetWindow, blobUrl);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    }
   } else {
     hideQuotePreviewStatus();
     const blobUrl = pdf.output('bloburl');
@@ -2543,10 +2567,9 @@ async function exportQuoteAsPdf() {
   showQuotePreviewStatus('export');
   const mobileViewport = isMobileViewport();
   const safariPopupRequired = !mobileViewport && isIosSafari();
-  const mobileDownloadWindow = mobileViewport && !mobileSafari ? window.open('', '_blank') : null;
-  const safariDownloadWindow = safariPopupRequired && !mobileSafari
-    ? window.open('', '_blank')
-    : null;
+  const mobileSafari = isMobileSafariBrowser();
+  const mobileDownloadWindow = (!mobileSafari && mobileViewport) ? window.open('', '_blank') : null;
+  const safariDownloadWindow = (!mobileSafari && safariPopupRequired) ? window.open('', '_blank') : null;
 
   const primeDownloadWindow = (win) => {
     if (!win) return;
