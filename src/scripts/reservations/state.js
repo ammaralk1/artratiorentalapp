@@ -85,26 +85,17 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
   const { reservations = [] } = loadData();
   const normalizedCode = normalizeBarcodeValue(barcode);
-  const normalizedIgnoreId = ignoreReservationId != null ? String(ignoreReservationId) : null;
-
-  const shouldIgnoreReservation = (reservation) => {
-    if (!normalizedIgnoreId) return false;
-    const candidates = [
-      reservation?.id,
-      reservation?.reservationId,
-      reservation?.reservation_id,
-      reservation?.reservationCode,
-      reservation?.reservation_code,
-      reservation?.uuid,
-      reservation?.UUID,
-      reservation?._id,
-    ].filter((value) => value !== undefined && value !== null);
-    return candidates.map((value) => String(value)).includes(normalizedIgnoreId);
-  };
+  const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
 
   return reservations.some((reservation) => {
-    if (!reservation || !reservation.items || reservation.items.length === 0) return false;
-    if (shouldIgnoreReservation(reservation)) return false;
+    if (!reservation || !Array.isArray(reservation.items) || reservation.items.length === 0) {
+      return false;
+    }
+
+    if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) {
+      return false;
+    }
+
     if (!reservation.start || !reservation.end) return false;
 
     const resStart = new Date(reservation.start);
@@ -127,15 +118,12 @@ export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreRese
 
   const { reservations = [] } = loadData();
   const normalizedId = String(technicianId);
+  const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
 
-  return reservations.some(reservation => {
+  return reservations.some((reservation) => {
     if (!reservation?.start || !reservation?.end) return false;
 
-    if (
-      ignoreReservationId &&
-      (String(reservation.id) === String(ignoreReservationId) ||
-        String(reservation.reservationId) === String(ignoreReservationId))
-    ) {
+    if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) {
       return false;
     }
 
@@ -147,11 +135,110 @@ export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreRese
     if (!overlaps) return false;
 
     const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-    return assigned.some(assignedId => String(assignedId) === normalizedId);
+    return assigned.some((assignedId) => String(assignedId) === normalizedId);
   });
 }
 
 export function resetState() {
   selectedItems = [];
   resetCachedData();
+}
+
+function buildReservationIdentifierSet(source) {
+  return collectNormalizedIdentifiers(source, new Set());
+}
+
+function shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers) {
+  if (!ignoreIdentifiers || ignoreIdentifiers.size === 0) {
+    return false;
+  }
+
+  const reservationIdentifiers = collectNormalizedIdentifiers(
+    [
+      reservation?.id,
+      reservation?.reservationId,
+      reservation?.reservation_id,
+      reservation?.reservationCode,
+      reservation?.reservation_code,
+      reservation?.uuid,
+      reservation?.UUID,
+      reservation?._id,
+    ],
+    new Set()
+  );
+
+  for (const identifier of reservationIdentifiers) {
+    if (ignoreIdentifiers.has(identifier)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function collectNormalizedIdentifiers(source, accumulator) {
+  if (source == null) {
+    return accumulator;
+  }
+
+  if (source instanceof Set) {
+    source.forEach((value) => collectNormalizedIdentifiers(value, accumulator));
+    return accumulator;
+  }
+
+  if (Array.isArray(source)) {
+    source.forEach((value) => collectNormalizedIdentifiers(value, accumulator));
+    return accumulator;
+  }
+
+  if (typeof source === 'object') {
+    const candidateKeys = [
+      'id',
+      'reservationId',
+      'reservation_id',
+      'reservationCode',
+      'reservation_code',
+      'uuid',
+      'UUID',
+      '_id',
+    ];
+
+    let matchedKey = false;
+    candidateKeys.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        matchedKey = true;
+        collectNormalizedIdentifiers(source[key], accumulator);
+      }
+    });
+
+    if (!matchedKey) {
+      Object.values(source).forEach((value) => collectNormalizedIdentifiers(value, accumulator));
+    }
+
+    return accumulator;
+  }
+
+  const rawValue = normalizeNumbers(String(source ?? '')).trim();
+  if (!rawValue) {
+    return accumulator;
+  }
+
+  const variants = [rawValue, rawValue.toLowerCase(), rawValue.toUpperCase()];
+  const digits = rawValue.replace(/\D+/g, '');
+
+  if (digits) {
+    variants.push(digits);
+    const numeric = Number.parseInt(digits, 10);
+    if (!Number.isNaN(numeric)) {
+      variants.push(String(numeric));
+    }
+  }
+
+  variants.forEach((value) => {
+    if (value) {
+      accumulator.add(value);
+    }
+  });
+
+  return accumulator;
 }
