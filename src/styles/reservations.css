@@ -927,13 +927,22 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .status-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-start;
+}
+
+body[dir="rtl"] .reservation-modal-header {
+  justify-content: flex-end;
+}
+
+body[dir="rtl"] .status-chips {
+  justify-content: flex-end;
 }
 
 .reservation-modal-id {
@@ -945,6 +954,7 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
   border-radius: 16px;
   background: rgba(248, 250, 255, 0.85);
   border: 1px solid rgba(76, 110, 245, 0.12);
+  text-align: left;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-modal-id {
@@ -1093,7 +1103,7 @@ body[dir="rtl"] .reservation-details .reservation-info-card .res-info-row .value
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-body {
-  text-align: right;
+  text-align: left;
 }
 
 body[dir="ltr"] .reservation-summary-card .summary-body {
@@ -1117,7 +1127,7 @@ body[dir="ltr"] .reservation-summary-card .summary-heading {
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-heading {
-  text-align: right;
+  text-align: left;
   align-self: stretch;
 }
 
@@ -1246,7 +1256,7 @@ body[dir="rtl"] .reservation-summary-card {
 
 body[dir="rtl"] .reservation-summary-card .summary-details-row {
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 body[dir="ltr"] .reservation-summary-card .summary-details-row {
@@ -1266,7 +1276,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-row {
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-details-label {
-  text-align: right;
+  text-align: left;
 }
 
 .reservation-summary-card .summary-details-value {
@@ -1290,7 +1300,7 @@ body[dir="rtl"] .reservation-summary-card .summary-details-label {
 }
 
 body[dir="rtl"] .reservation-modal .reservation-info-card h6 {
-  text-align: right;
+  text-align: left;
 }
 
 .reservation-modal .reservation-info-card .res-info-row {
@@ -1330,7 +1340,7 @@ body[dir="ltr"] .reservation-modal .reservation-info-card .res-info-row {
 }
 
 body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
-  text-align: right;
+  text-align: left;
 }
 
 .reservation-modal .reservation-info-card .res-info-row .value {
@@ -1894,7 +1904,7 @@ body[dir="ltr"] .reservation-modal .reservation-info-card .res-info-row .value {
 }
 
 body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .value {
-  text-align: right;
+  text-align: left;
 }
 
 body[dir="rtl"] .reservation-summary-card .summary-details-value {
@@ -1913,10 +1923,21 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-items-section .section-title {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   font-weight: 600;
   color: #26334d;
+  gap: 12px;
+}
+
+body[dir="rtl"] .reservation-items-section .section-title,
+body[dir="rtl"] .reservation-technicians-section .section-title {
+  justify-content: flex-end;
+}
+
+.reservation-items-section .section-title span,
+.reservation-technicians-section .section-title span {
+  text-align: left;
 }
 
 .reservation-items-section .section-title .count {
@@ -2524,15 +2545,17 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 .reservation-technicians-section .section-title {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   font-weight: 600;
   color: #26334d;
+  gap: 12px;
 }
 
 .reservation-technicians-section .section-title .count {
   font-size: 0.85rem;
   color: var(--clr-muted);
+  text-align: left;
 }
 
 .reservation-technicians-grid {
@@ -2589,6 +2612,11 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: flex-start;
+}
+
+body[dir="rtl"] .reservation-technician-card .technician-card-head {
+  justify-content: flex-end;
 }
 
 .reservation-technician-card .technician-card-head .technician-name {
@@ -2623,16 +2651,27 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   gap: 4px;
   font-size: 0.9rem;
   color: #32405b;
+  text-align: left;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-technician-card .technician-card-body {
   color: var(--clr-text);
 }
 
+body[dir="rtl"] .reservation-technician-card .technician-card-body {
+  text-align: left;
+}
+
 .reservation-technician-card .technician-card-body div {
   display: flex;
   align-items: center;
   gap: 6px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+body[dir="rtl"] .reservation-technician-card .technician-card-body div {
+  justify-content: flex-end;
 }
 
 
@@ -3709,10 +3748,14 @@ body[dir="ltr"] .reservation-field textarea {
 .reservation-modal-actions {
   margin-top: clamp(1.2rem, 2.2vw, 1.8rem);
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: clamp(0.6rem, 1.8vw, 1rem);
   flex-wrap: wrap;
+}
+
+body[dir="rtl"] .reservation-modal-actions {
+  justify-content: flex-end;
 }
 
 .modal-action-btn {
