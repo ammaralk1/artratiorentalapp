@@ -649,6 +649,10 @@ body,
   padding: 9px 6px;
 }
 
+.quote-table tbody tr:last-child td {
+  border-bottom: 1.5px solid rgba(148, 163, 184, 0.7);
+}
+
 .quote-section--table {
   display: block;
   clear: both;
@@ -724,8 +728,12 @@ body,
   line-height: 1.85;
   letter-spacing: normal;
   white-space: pre-wrap;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-break: normal;
+  unicode-bidi: plaintext;
+  font-feature-settings: 'liga' 1, 'rlig' 1;
+  font-kerning: normal;
   text-align: right;
 }
 
