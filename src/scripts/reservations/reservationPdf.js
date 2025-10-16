@@ -455,7 +455,12 @@ function isIosSafari() {
 function isMobileSafariBrowser() {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  return IOS_SAFARI_REGEX.test(ua) && SAFARI_USER_AGENT_REGEX.test(ua) && !IOS_SAFARI_EXCLUDED_BROWSERS_REGEX.test(ua);
+  const platform = navigator.platform || '';
+  const maxTouchPoints = Number.isFinite(navigator.maxTouchPoints) ? navigator.maxTouchPoints : 0;
+  const isIosPlatform = IOS_SAFARI_REGEX.test(ua) || IOS_SAFARI_REGEX.test(platform);
+  const isTouchMac = /Macintosh/i.test(ua) && maxTouchPoints > 1;
+  const isSafariUa = SAFARI_USER_AGENT_REGEX.test(ua) && !IOS_SAFARI_EXCLUDED_BROWSERS_REGEX.test(ua);
+  return isSafariUa && (isIosPlatform || isTouchMac);
 }
 
 function logPdfDebug(message, ...args) {
