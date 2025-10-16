@@ -6,6 +6,7 @@ import { mapReservationFromApi, mapLegacyReservation } from './reservationsServi
 import { DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
 import { loadData } from './storage.js';
+import { mapMaintenanceFromApi } from './maintenanceService.js';
 
 let cachedLocale = null;
 let numberFormatter = null;
@@ -30,6 +31,7 @@ const reportsData = {
   equipment: [],
   technicians: [],
   projects: [],
+  maintenance: [],
   projectsMap: new Map(),
 };
 
@@ -63,7 +65,8 @@ const lastReportSnapshot = {
   trend: [],
   statusBreakdown: [],
   paymentBreakdown: [],
-  tableRows: []
+  tableRows: [],
+  maintenance: { total: 0, items: [] }
 };
 
 const columnPreferences = {
@@ -565,12 +568,13 @@ async function loadReportsData({ silent = false } = {}) {
   }
 
   try {
-    const [reservationsRes, customersRes, equipmentRes, techniciansRes, projectsRes] = await Promise.all([
+    const [reservationsRes, customersRes, equipmentRes, techniciansRes, projectsRes, maintenanceRes] = await Promise.all([
       apiRequest('/reservations/?limit=500'),
       apiRequest('/customers/?limit=500'),
       apiRequest('/equipment/?limit=500'),
       apiRequest('/technicians/?limit=500'),
       apiRequest('/projects/?limit=500'),
+      apiRequest('/maintenance/?limit=500'),
     ]);
 
     reportsData.reservations = Array.isArray(reservationsRes?.data)
@@ -589,6 +593,9 @@ async function loadReportsData({ silent = false } = {}) {
       ? projectsRes.data.map(mapProjectFromApi)
       : [];
     reportsData.projectsMap = new Map(reportsData.projects.map((project) => [project.id, project]));
+    reportsData.maintenance = Array.isArray(maintenanceRes?.data)
+      ? maintenanceRes.data.map(mapMaintenanceFromApi)
+      : [];
     techniciansIndex = new Map((reportsData.technicians || []).map((tech) => [String(tech.id), tech]));
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
@@ -601,6 +608,7 @@ async function loadReportsData({ silent = false } = {}) {
     reportsData.technicians = [];
     reportsData.projects = [];
     reportsData.projectsMap = new Map();
+    reportsData.maintenance = [];
     techniciansIndex = null;
   } finally {
     reportsLoading = false;
@@ -744,6 +752,7 @@ export function initReports() {
     document.addEventListener('equipment:changed', handleReportsDataMutation);
     document.addEventListener('projects:changed', handleReportsDataMutation);
     document.addEventListener('technicians:updated', handleReportsDataMutation);
+    window.addEventListener('maintenance:updated', handleReportsDataMutation);
     reportsDataListenersAttached = true;
   }
 
@@ -821,13 +830,15 @@ export function renderReports() {
   const { reservations, customers, equipment, technicians } = reportsData;
   const filtered = filterReservations(reservations, state, customers, equipment, technicians);
   const metrics = calculateMetrics(filtered);
+  const maintenanceSummary = calculateMaintenanceExpenses(reportsData.maintenance, state);
+  const metricsWithMaintenance = applyMaintenanceExpenses(metrics, maintenanceSummary.total);
   const trend = calculateMonthlyTrend(filtered);
   const statusBreakdown = calculateStatusBreakdown(filtered);
   const paymentBreakdown = calculatePaymentBreakdown(filtered);
   const topCustomers = calculateTopCustomers(filtered, customers);
   const topEquipment = calculateTopEquipment(filtered, equipment);
 
-  updateKpiCards(metrics);
+  updateKpiCards(metricsWithMaintenance);
   renderTrendChart(trend);
   renderStatusChart(statusBreakdown);
   renderPaymentChart(paymentBreakdown);
@@ -838,11 +849,12 @@ export function renderReports() {
   toggleEmptyState(filtered.length === 0);
 
   lastReportSnapshot.filtered = filtered;
-  lastReportSnapshot.metrics = metrics;
+  lastReportSnapshot.metrics = metricsWithMaintenance;
   lastReportSnapshot.trend = trend;
   lastReportSnapshot.statusBreakdown = statusBreakdown;
   lastReportSnapshot.paymentBreakdown = paymentBreakdown;
   lastReportSnapshot.tableRows = tableRows;
+  lastReportSnapshot.maintenance = maintenanceSummary;
 }
 
 function setupCustomRangePickers(startInput, endInput) {
@@ -1228,6 +1240,62 @@ function calculateMetrics(reservations) {
     crewTotal,
     crewCostTotal,
     netProfit
+  };
+}
+
+function calculateMaintenanceExpenses(maintenanceTickets, filters) {
+  const { startDate, endDate } = resolveRange(filters);
+  let total = 0;
+  const items = [];
+
+  (maintenanceTickets || []).forEach((ticket) => {
+    if (!ticket) return;
+    const rawCost = typeof ticket.repairCost === 'number'
+      ? ticket.repairCost
+      : Number.parseFloat(normalizeNumbers(String(ticket.repairCost ?? '')));
+    if (!Number.isFinite(rawCost) || rawCost <= 0) {
+      return;
+    }
+
+    const statusValue = String(ticket.statusRaw ?? ticket.status ?? '').toLowerCase();
+    const isClosed = statusValue === 'closed'
+      || statusValue === 'completed'
+      || statusValue === 'cancelled';
+    if (!isClosed) {
+      return;
+    }
+
+    const resolvedAtRaw = ticket.resolvedAt ?? ticket.resolved_at ?? null;
+    const reportedAtRaw = ticket.reportedAt ?? ticket.reported_at ?? null;
+    const createdAtRaw = ticket.createdAt ?? ticket.created_at ?? null;
+
+    const resolvedAt = resolvedAtRaw ? new Date(resolvedAtRaw) : null;
+    const fallbackDate = reportedAtRaw ? new Date(reportedAtRaw) : (createdAtRaw ? new Date(createdAtRaw) : null);
+    const pivotDate = resolvedAt && !Number.isNaN(resolvedAt.getTime()) ? resolvedAt
+      : (fallbackDate && !Number.isNaN(fallbackDate.getTime()) ? fallbackDate : null);
+
+    if (pivotDate) {
+      if (startDate && pivotDate < startDate) return;
+      if (endDate && pivotDate > endDate) return;
+    }
+
+    const normalizedCost = Math.round(rawCost * 100) / 100;
+    total += normalizedCost;
+    items.push({ id: ticket.id, cost: normalizedCost, date: pivotDate });
+  });
+
+  return {
+    total,
+    items,
+  };
+}
+
+function applyMaintenanceExpenses(metrics, maintenanceExpense) {
+  const expense = Number.isFinite(maintenanceExpense) ? maintenanceExpense : 0;
+  return {
+    ...metrics,
+    maintenanceExpense: expense,
+    netProfit: (metrics.netProfit || 0) - expense,
   };
 }
 
@@ -2195,6 +2263,7 @@ function updateKpiCards(metrics) {
   const crewGross = metrics.crewTotal || 0;
   const crewCost = metrics.crewCostTotal || 0;
   const net = metrics.netProfit || 0;
+  const maintenanceExpense = metrics.maintenanceExpense || 0;
   const confirmedRate = total ? Math.round((confirmed / total) * 100) : 0;
   const paidRate = total ? Math.round((paid / total) * 100) : 0;
 
@@ -2261,6 +2330,20 @@ function updateKpiCards(metrics) {
           ),
           value: formatCurrency(crewCost)
         },
+      ];
+
+      if (maintenanceExpense > 0) {
+        rows.splice(rows.length, 0, {
+          label: translate(
+            'reservations.reports.kpi.revenue.details.maintenance',
+            'مصاريف الصيانة',
+            'Maintenance expenses'
+          ),
+          value: `−${formatCurrency(maintenanceExpense)}`
+        });
+      }
+
+      rows.push(
         {
           label: translate(
             'reservations.reports.kpi.revenue.details.net',
@@ -2269,7 +2352,7 @@ function updateKpiCards(metrics) {
           ),
           value: formatCurrency(net)
         }
-      ];
+      );
 
       revenueDetailsEl.innerHTML = rows
         .map(({ label, value }) => `

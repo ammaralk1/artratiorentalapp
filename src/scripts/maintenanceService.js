@@ -74,6 +74,7 @@ export function buildMaintenancePayload({
     status: status ?? 'open',
     notes: issue ?? '',
     resolution_report: resolutionReport ?? null,
+    repair_cost: null,
   };
 }
 
@@ -93,6 +94,7 @@ export function mapMaintenanceFromApi(raw = {}) {
     resolvedAt: raw.resolvedAt ?? raw.resolved_at,
     resolutionReport: raw.resolutionReport ?? raw.resolution_report,
     technicianId: raw.technicianId ?? raw.technician_id,
+    repairCost: raw.repairCost ?? raw.repair_cost,
   });
 }
 
@@ -123,7 +125,22 @@ function toInternalMaintenanceTicket(raw = {}) {
     resolvedAt: raw.resolvedAt ?? raw.resolved_at ?? null,
     resolutionReport: raw.resolutionReport ?? raw.resolution_report ?? '',
     technicianId: raw.technicianId ?? raw.technician_id ?? null,
+    repairCost: normalizeRepairCostValue(raw.repairCost ?? raw.repair_cost ?? raw.repair_cost_value ?? null),
   };
+}
+
+function normalizeRepairCostValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const parsed = Number.parseFloat(normalizeNumbers(String(value)));
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+  if (parsed < 0) {
+    return null;
+  }
+  return Math.round(parsed * 100) / 100;
 }
 
 function normalizeStatusRaw(value) {

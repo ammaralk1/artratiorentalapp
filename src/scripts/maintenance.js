@@ -34,10 +34,12 @@ let maintenanceHasLoaded = maintenanceTickets.length > 0;
 let closeTicketState = {
   id: null,
   equipmentDesc: '',
-  equipmentBarcode: ''
+  equipmentBarcode: '',
+  repairCost: null
 };
 let closeTicketModal = null;
 let closeTicketReportInput = null;
+let closeTicketCostInput = null;
 let closeTicketSubmitButton = null;
 let closeTicketDetailsContainer = null;
 let reportModal = null;
@@ -446,6 +448,16 @@ function ensureCloseTicketModalElements() {
   if (!closeTicketReportInput) {
     closeTicketReportInput = modalEl.querySelector('#maintenance-close-report');
   }
+  if (!closeTicketCostInput) {
+    closeTicketCostInput = modalEl.querySelector('#maintenance-close-cost');
+  }
+  if (closeTicketCostInput && closeTicketCostInput.dataset.normalizeAttached !== 'true') {
+    closeTicketCostInput.addEventListener('input', (event) => {
+      normalizeRepairCostInput(event.currentTarget);
+      event.currentTarget?.classList.remove('is-invalid');
+    });
+    closeTicketCostInput.dataset.normalizeAttached = 'true';
+  }
   if (!closeTicketSubmitButton) {
     closeTicketSubmitButton = modalEl.querySelector('#maintenance-close-submit');
   }
@@ -471,11 +483,18 @@ function resetCloseTicketModal() {
   closeTicketState = {
     id: null,
     equipmentDesc: '',
-    equipmentBarcode: ''
+    equipmentBarcode: '',
+    repairCost: null
   };
 
   if (closeTicketReportInput) {
     closeTicketReportInput.value = '';
+    closeTicketReportInput.classList.remove('is-invalid');
+  }
+
+  if (closeTicketCostInput) {
+    closeTicketCostInput.value = '';
+    closeTicketCostInput.classList.remove('is-invalid');
   }
 
   if (closeTicketDetailsContainer) {
@@ -529,6 +548,71 @@ function setCloseModalLoading(isLoading) {
   }
 }
 
+function normalizeRepairCostInput(input) {
+  if (!input) return;
+  const originalValue = input.value;
+  if (typeof originalValue !== 'string') return;
+  const normalized = normalizeNumbers(originalValue).replace(/٫/g, '.').replace(/٬/g, ',');
+  if (normalized !== originalValue) {
+    const { selectionStart, selectionEnd } = input;
+    input.value = normalized;
+    if (selectionStart !== null && selectionEnd !== null) {
+      try {
+        input.setSelectionRange(selectionStart, selectionEnd);
+      } catch (error) {
+        // ignore selection errors in unsupported browsers
+      }
+    }
+  }
+}
+
+function resolveRepairCostFromInput(rawValue, previousValue) {
+  const trimmed = typeof rawValue === 'string' ? rawValue.trim() : '';
+  const hadPrevious = Number.isFinite(previousValue);
+
+  if (!trimmed) {
+    return {
+      provided: hadPrevious,
+      value: null,
+      error: null,
+    };
+  }
+
+  const normalizedDigits = normalizeNumbers(trimmed).replace(/٫/g, '.').replace(/٬/g, ',');
+  const sanitized = normalizedDigits.replace(/[^0-9.,-]/g, '');
+  if (!sanitized) {
+    return {
+      provided: true,
+      value: null,
+      error: 'invalid',
+    };
+  }
+
+  const hasComma = sanitized.includes(',');
+  const hasDot = sanitized.includes('.');
+  let prepared = sanitized;
+  if (hasComma && !hasDot) {
+    prepared = sanitized.replace(',', '.');
+  } else if (hasComma && hasDot) {
+    prepared = sanitized.replace(/,/g, '');
+  }
+
+  const parsed = Number.parseFloat(prepared);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return {
+      provided: true,
+      value: null,
+      error: 'invalid',
+    };
+  }
+
+  return {
+    provided: true,
+    value: Math.round(parsed * 100) / 100,
+    error: null,
+  };
+}
+
 function openCloseTicketModal(id) {
   const ticket = getTicketById(id);
   if (!ticket) {
@@ -548,14 +632,32 @@ function openCloseTicketModal(id) {
     return;
   }
 
+  const repairCostNumber = ticket.repairCost != null && ticket.repairCost !== ''
+    ? Number.parseFloat(normalizeNumbers(String(ticket.repairCost)))
+    : null;
+  const normalizedRepairCost = Number.isFinite(repairCostNumber)
+    ? Math.round(repairCostNumber * 100) / 100
+    : null;
+
   closeTicketState = {
     id: ticket.id,
     equipmentDesc: ticket.equipmentDesc || '',
-    equipmentBarcode: ticket.equipmentBarcode || ''
+    equipmentBarcode: ticket.equipmentBarcode || '',
+    repairCost: normalizedRepairCost,
   };
 
   if (closeTicketReportInput) {
     closeTicketReportInput.value = ticket.resolutionReport || '';
+    closeTicketReportInput.classList.remove('is-invalid');
+  }
+
+  if (closeTicketCostInput) {
+    if (normalizedRepairCost !== null) {
+      closeTicketCostInput.value = normalizeNumbers(normalizedRepairCost.toFixed(2));
+    } else {
+      closeTicketCostInput.value = '';
+    }
+    closeTicketCostInput.classList.remove('is-invalid');
   }
 
   if (closeTicketDetailsContainer) {
@@ -611,9 +713,27 @@ async function handleCloseTicketFormSubmit(event) {
     return;
   }
 
+  if (closeTicketCostInput) {
+    closeTicketCostInput.classList.remove('is-invalid');
+  }
+
+  const costResolution = closeTicketCostInput
+    ? resolveRepairCostFromInput(closeTicketCostInput.value, closeTicketState.repairCost)
+    : { provided: false, value: null, error: null };
+
+  if (costResolution.error) {
+    showToast(t('maintenance.toast.invalidRepairCost', '⚠️ يرجى إدخال قيمة رقمية صحيحة لتكلفة الإصلاح'), 'error');
+    closeTicketCostInput?.classList.add('is-invalid');
+    closeTicketCostInput?.focus();
+    return;
+  }
+
   setCloseModalLoading(true);
 
-  const result = await performTicketClosure(closeTicketState.id, report);
+  const result = await performTicketClosure(closeTicketState.id, report, {
+    repairCost: costResolution.value,
+    repairCostProvided: costResolution.provided,
+  });
   if (result.success) {
     closeTicketModal?.hide();
   } else {
@@ -805,7 +925,7 @@ function handleTableActions(event) {
   }
 }
 
-async function performTicketClosure(id, report) {
+async function performTicketClosure(id, report, options = {}) {
   const ticket = getTicketById(id);
   if (!ticket) {
     showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
@@ -820,18 +940,26 @@ async function performTicketClosure(id, report) {
 
   const resolvedAt = toSqlDatetime(new Date()) || new Date().toISOString();
 
+  const payload = {
+    equipment_id: ticket.equipmentId,
+    technician_id: ticket.technicianId ?? null,
+    priority: ticket.priority ?? 'medium',
+    status: 'completed',
+    notes: ticket.issue ?? '',
+    reported_at: ticket.reportedAt ?? null,
+    scheduled_at: ticket.scheduledAt ?? null,
+    resolution_report: trimmedReport,
+    resolved_at: resolvedAt,
+  };
+
+  if (options?.repairCostProvided) {
+    payload.repair_cost = options.repairCost != null
+      ? Math.round(options.repairCost * 100) / 100
+      : null;
+  }
+
   try {
-    await updateMaintenanceRequest(id, {
-      equipment_id: ticket.equipmentId,
-      technician_id: ticket.technicianId ?? null,
-      priority: ticket.priority ?? 'medium',
-      status: 'completed',
-      notes: ticket.issue ?? '',
-      reported_at: ticket.reportedAt ?? null,
-      scheduled_at: ticket.scheduledAt ?? null,
-      resolution_report: trimmedReport,
-      resolved_at: resolvedAt,
-    });
+    await updateMaintenanceRequest(id, payload);
     await loadMaintenanceFromApi({ showToastOnError: false });
     const statusFilterEl = document.getElementById('maintenance-status-filter');
     if (statusFilterEl && statusFilterEl.value === 'open') {

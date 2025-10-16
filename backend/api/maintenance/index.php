@@ -150,7 +150,8 @@ function handleMaintenanceCreate(PDO $pdo): void
             status,
             notes,
             resolution_report,
-            resolved_at
+            resolved_at,
+            repair_cost
         ) VALUES (
             :equipment_id,
             :technician_id,
@@ -161,7 +162,8 @@ function handleMaintenanceCreate(PDO $pdo): void
             :status,
             :notes,
             :resolution_report,
-            :resolved_at
+            :resolved_at,
+            :repair_cost
         )';
 
         $statement = $pdo->prepare($sql);
@@ -176,6 +178,7 @@ function handleMaintenanceCreate(PDO $pdo): void
             'notes' => $data['notes'],
             'resolution_report' => null,
             'resolved_at' => null,
+            'repair_cost' => $data['repair_cost'],
         ]);
 
         $id = (int) $pdo->lastInsertId();
@@ -339,6 +342,25 @@ function validateMaintenancePayload(array $payload, bool $isUpdate, PDO $pdo, ?i
     $notes = isset($payload['notes']) ? trim((string) $payload['notes']) : null;
     $resolutionReport = isset($payload['resolution_report']) ? trim((string) $payload['resolution_report']) : null;
     $resolvedAt = isset($payload['resolved_at']) ? trim((string) $payload['resolved_at']) : null;
+    $repairCostRaw = $payload['repair_cost'] ?? $payload['repairCost'] ?? null;
+    if (is_string($repairCostRaw)) {
+        $repairCostRaw = trim($repairCostRaw);
+    }
+    $repairCostProvided = array_key_exists('repair_cost', $payload) || array_key_exists('repairCost', $payload);
+    $repairCost = null;
+
+    if ($repairCostRaw !== null && $repairCostRaw !== '') {
+        $parsedRepairCost = normalizeAmountInput($repairCostRaw);
+        if ($parsedRepairCost === null) {
+            $errors['repair_cost'] = 'Repair cost must be a valid number';
+        } elseif ($parsedRepairCost < 0) {
+            $errors['repair_cost'] = 'Repair cost cannot be negative';
+        } elseif ($parsedRepairCost > 9999999.99) {
+            $errors['repair_cost'] = 'Repair cost is too high';
+        } else {
+            $repairCost = $parsedRepairCost;
+        }
+    }
 
     if (!$isUpdate || array_key_exists('equipment_id', $payload)) {
         if (!$equipmentId) {
@@ -428,6 +450,12 @@ function validateMaintenancePayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $data['resolved_at'] = $resolvedAt ?: null;
     }
 
+    if (!$isUpdate || $repairCostProvided) {
+        $data['repair_cost'] = $repairCost !== null
+            ? number_format($repairCost, 2, '.', '')
+            : null;
+    }
+
     return [$data, $errors];
 }
 
@@ -501,7 +529,63 @@ function mapMaintenanceRow(array $row): array
         'resolvedAt' => $row['resolved_at'] ?? null,
         'resolutionReport' => $row['resolution_report'] ?? null,
         'technicianId' => $row['technician_id'] ? (int) $row['technician_id'] : null,
+        'repairCost' => $row['repair_cost'] !== null ? (float) $row['repair_cost'] : null,
     ];
+}
+
+function normalizeAmountInput(mixed $value): ?float
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    if (is_float($value) || is_int($value)) {
+        return round((float) $value, 2);
+    }
+
+    if (!is_string($value)) {
+        return null;
+    }
+
+    $trimmed = trim($value);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    $converted = strtr($trimmed, [
+        '٠' => '0',
+        '١' => '1',
+        '٢' => '2',
+        '٣' => '3',
+        '٤' => '4',
+        '٥' => '5',
+        '٦' => '6',
+        '٧' => '7',
+        '٨' => '8',
+        '٩' => '9',
+        '٫' => '.',
+        '٬' => ',',
+    ]);
+
+    $normalized = preg_replace('/[^0-9.,\-]/u', '', $converted);
+    if ($normalized === null || $normalized === '') {
+        return null;
+    }
+
+    $hasComma = str_contains($normalized, ',');
+    $hasDot = str_contains($normalized, '.');
+
+    if ($hasComma && !$hasDot) {
+        $normalized = str_replace(',', '.', $normalized);
+    } else {
+        $normalized = str_replace(',', '', $normalized);
+    }
+
+    if (!is_numeric($normalized)) {
+        return null;
+    }
+
+    return round((float) $normalized, 2);
 }
 
 function normalizeMaintenanceStatus(string $value): ?string

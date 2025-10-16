@@ -154,6 +154,7 @@ CREATE TABLE maintenance_requests (
   equipment_id BIGINT UNSIGNED NOT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'open',
   issue TEXT,
+  repair_cost DECIMAL(10, 2) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -202,5 +203,5 @@ INSERT INTO reservation_technicians (reservation_id, technician_id, role, hours_
 (1, 2, 'Audio Engineer', 10),
 (2, 3, 'Coordinator', 8);
 
-INSERT INTO maintenance_requests (equipment_id, status, issue) VALUES
-(3, 'open', 'فحص الكاميرا قبل الإرجاع للعميل');
+INSERT INTO maintenance_requests (equipment_id, status, issue, repair_cost) VALUES
+(3, 'open', 'فحص الكاميرا قبل الإرجاع للعميل', NULL);
