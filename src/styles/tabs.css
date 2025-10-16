@@ -51,6 +51,7 @@ body[dir="ltr"] .sub-tab-buttons {
   background: linear-gradient(135deg, #eff4ff, #d6e1ff);
   color: #1f2d52;
   transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(76, 110, 245, 0.2), 0 0 0 4px rgba(76, 110, 245, 0.18);
 }
 
 .tab-button.active,
@@ -74,6 +75,7 @@ body[dir="ltr"] .sub-tab-buttons {
 :is(html.dark-mode, body.dark-mode) .sub-tab-button:hover {
   background: linear-gradient(135deg, rgba(37, 55, 88, 0.95), rgba(30, 48, 82, 0.88));
   color: #f8fafc;
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.3), 0 0 0 4px rgba(96, 165, 250, 0.25);
 }
 
 :is(html.dark-mode, body.dark-mode) .tab-button.active,
