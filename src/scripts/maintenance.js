@@ -35,7 +35,9 @@ let closeTicketState = {
   id: null,
   equipmentDesc: '',
   equipmentBarcode: '',
-  repairCost: null
+  repairCost: null,
+  resolvedAt: null,
+  mode: 'close'
 };
 let closeTicketModal = null;
 let closeTicketReportInput = null;
@@ -484,7 +486,9 @@ function resetCloseTicketModal() {
     id: null,
     equipmentDesc: '',
     equipmentBarcode: '',
-    repairCost: null
+    repairCost: null,
+    resolvedAt: null,
+    mode: 'close'
   };
 
   if (closeTicketReportInput) {
@@ -502,6 +506,21 @@ function resetCloseTicketModal() {
   }
 
   setCloseModalLoading(false);
+
+  const modalEl = document.getElementById('closeMaintenanceModal');
+  if (modalEl) {
+    const titleEl = modalEl.querySelector('#maintenance-close-modal-title');
+    const subtitleEl = modalEl.querySelector('.maintenance-close-modal__subtitle');
+    if (titleEl) {
+      titleEl.textContent = t('maintenance.closeModal.title', '🔧 إغلاق تذكرة الصيانة');
+    }
+    if (subtitleEl) {
+      subtitleEl.textContent = t('maintenance.closeModal.subtitle', 'يرجى كتابة تقرير الإصلاح قبل إغلاق هذه التذكرة.');
+    }
+    if (closeTicketSubmitButton) {
+      closeTicketSubmitButton.textContent = t('maintenance.closeModal.confirm', 'إغلاق التذكرة');
+    }
+  }
 }
 
 function ensureReportModalElements() {
@@ -534,8 +553,13 @@ function resetReportModalContent() {
 
 function setCloseModalLoading(isLoading) {
   if (!closeTicketSubmitButton) return;
-  const savingLabel = t('maintenance.closeModal.saving', '⏳ جاري الإغلاق...');
-  const confirmLabel = t('maintenance.closeModal.confirm', 'إغلاق التذكرة');
+  const isEditMode = closeTicketState.mode === 'edit';
+  const savingLabel = isEditMode
+    ? t('maintenance.closeModal.editSaving', '⏳ جاري الحفظ...')
+    : t('maintenance.closeModal.saving', '⏳ جاري الإغلاق...');
+  const confirmLabel = isEditMode
+    ? t('maintenance.closeModal.editConfirm', 'حفظ التعديلات')
+    : t('maintenance.closeModal.confirm', 'إغلاق التذكرة');
 
   if (isLoading) {
     closeTicketSubmitButton.disabled = true;
@@ -613,7 +637,7 @@ function resolveRepairCostFromInput(rawValue, previousValue) {
   };
 }
 
-function openCloseTicketModal(id) {
+function openCloseTicketModal(id, { mode = 'close' } = {}) {
   const ticket = getTicketById(id);
   if (!ticket) {
     showToast(t('maintenance.toast.ticketNotFound', '⚠️ تعذر العثور على تذكرة الصيانة'));
@@ -639,11 +663,15 @@ function openCloseTicketModal(id) {
     ? Math.round(repairCostNumber * 100) / 100
     : null;
 
+  const normalizedMode = mode === 'edit' ? 'edit' : 'close';
+
   closeTicketState = {
     id: ticket.id,
     equipmentDesc: ticket.equipmentDesc || '',
     equipmentBarcode: ticket.equipmentBarcode || '',
     repairCost: normalizedRepairCost,
+    resolvedAt: ticket.resolvedAt || null,
+    mode: normalizedMode
   };
 
   if (closeTicketReportInput) {
@@ -686,6 +714,29 @@ function openCloseTicketModal(id) {
   }
 
   setCloseModalLoading(false);
+  const isEditMode = normalizedMode === 'edit';
+  if (closeTicketSubmitButton) {
+    closeTicketSubmitButton.textContent = isEditMode
+      ? t('maintenance.closeModal.editConfirm', 'حفظ التعديلات')
+      : t('maintenance.closeModal.confirm', 'إغلاق التذكرة');
+  }
+
+  const modalEl = document.getElementById('closeMaintenanceModal');
+  if (modalEl) {
+    const titleEl = modalEl.querySelector('#maintenance-close-modal-title');
+    const subtitleEl = modalEl.querySelector('.maintenance-close-modal__subtitle');
+    if (titleEl) {
+      titleEl.textContent = isEditMode
+        ? t('maintenance.closeModal.editTitle', '✏️ تعديل بيانات الإغلاق')
+        : t('maintenance.closeModal.title', '🔧 إغلاق تذكرة الصيانة');
+    }
+    if (subtitleEl) {
+      subtitleEl.textContent = isEditMode
+        ? t('maintenance.closeModal.editSubtitle', 'يمكنك تحديث تقرير الإصلاح وتكلفته.')
+        : t('maintenance.closeModal.subtitle', 'يرجى كتابة تقرير الإصلاح قبل إغلاق هذه التذكرة.');
+    }
+  }
+
   closeTicketModal?.show();
 
   setTimeout(() => {
@@ -733,6 +784,8 @@ async function handleCloseTicketFormSubmit(event) {
   const result = await performTicketClosure(closeTicketState.id, report, {
     repairCost: costResolution.value,
     repairCostProvided: costResolution.provided,
+    mode: closeTicketState.mode,
+    resolvedAt: closeTicketState.resolvedAt,
   });
   if (result.success) {
     closeTicketModal?.hide();
@@ -858,10 +911,12 @@ function renderTable(tickets) {
       const closeLabel = t('maintenance.actions.close', '🔧 إغلاق بعد الإصلاح');
       const viewLabel = t('maintenance.actions.view', '👁️ عرض التقرير');
       const deleteLabel = t('maintenance.actions.delete', '🗑️ حذف التذكرة');
+      const editClosedLabel = t('maintenance.actions.editClosed', '✏️ تعديل بيانات الإغلاق');
       if (ticket.status === 'open') {
         actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="close" data-id="${ticket.id}">${closeLabel}</button>`);
       } else {
         actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="view" data-id="${ticket.id}">${viewLabel}</button>`);
+        actionButtons.push(`<button type="button" class="maintenance-action-btn" data-action="edit" data-id="${ticket.id}">${editClosedLabel}</button>`);
       }
       if (userCanManageDestructiveActions()) {
         actionButtons.push(`<button type="button" class="maintenance-action-btn maintenance-action-btn--delete" data-action="delete" data-id="${ticket.id}">${deleteLabel}</button>`);
@@ -872,6 +927,10 @@ function renderTable(tickets) {
       const issuePlaceholder = t('maintenance.report.none', '—');
       const barcodeDisplay = ticket.equipmentBarcode ? normalizeNumbers(ticket.equipmentBarcode) : noBarcode;
       const issueDisplay = ticket.issue ? normalizeNumbers(ticket.issue) : issuePlaceholder;
+      const repairCostValueRaw = ticket.repairCost != null ? Number.parseFloat(normalizeNumbers(String(ticket.repairCost))) : null;
+      const repairCostLine = ticket.status === 'closed' && Number.isFinite(repairCostValueRaw)
+        ? `<div class="maintenance-repair-cost">${escapeHtml(t('maintenance.table.repairCost', '💰 تكلفة الإصلاح: {amount}').replace('{amount}', normalizeNumbers(repairCostValueRaw.toFixed(2))))}</div>`
+        : '';
       const createdDisplay = ticket.createdAt
         ? normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt))
         : '—';
@@ -882,7 +941,7 @@ function renderTable(tickets) {
             <strong>${ticket.equipmentDesc}</strong><br>
             <small class="text-muted">${barcodeDisplay}</small>
           </td>
-          <td class="maintenance-issue-text">${issueDisplay}</td>
+          <td class="maintenance-issue-text">${issueDisplay}${repairCostLine}</td>
           <td>${priorityBadge}</td>
           <td>${createdDisplay}</td>
           <td>${statusBadge}</td>
@@ -914,6 +973,8 @@ function handleTableActions(event) {
     openCloseTicketModal(id);
   } else if (action === 'view') {
     viewTicketReport(id);
+  } else if (action === 'edit') {
+    openCloseTicketModal(id, { mode: 'edit' });
   } else if (action === 'delete') {
     if (!userCanManageDestructiveActions()) {
       notifyPermissionDenied();
@@ -938,7 +999,9 @@ async function performTicketClosure(id, report, options = {}) {
     return { success: false };
   }
 
-  const resolvedAt = toSqlDatetime(new Date()) || new Date().toISOString();
+  const resolvedAt = options?.mode === 'edit' && options?.resolvedAt
+    ? options.resolvedAt
+    : (toSqlDatetime(new Date()) || new Date().toISOString());
 
   const payload = {
     equipment_id: ticket.equipmentId,
@@ -998,6 +1061,12 @@ function viewTicketReport(id) {
     const createdLabelFallback = t('maintenance.report.createdAt', 'تاريخ الإنشاء');
     const closedLabelFallback = t('maintenance.report.closedAt', 'تاريخ الإغلاق');
     const summaryLabelFallback = t('maintenance.report.summary', 'التقرير');
+    const repairCostLabelFallback = t('maintenance.report.repairCost', 'تكلفة الإصلاح');
+    const currencyFallback = t('maintenance.report.currencyLabel', 'SR');
+    const repairCostNumberFallback = Number.parseFloat(normalizeNumbers(String(ticket.repairCost ?? '')));
+    const repairCostDisplayFallback = Number.isFinite(repairCostNumberFallback)
+      ? `${normalizeNumbers(repairCostNumberFallback.toFixed(2))} ${currencyFallback}`
+      : noneFallback;
     const notAvailableFallback = t('maintenance.report.notAvailable', 'غير متوفر');
     const noneFallback = t('maintenance.report.none', '—');
 
@@ -1007,6 +1076,7 @@ function viewTicketReport(id) {
       `${issueLabelFallback}: ${ticket.issue ? normalizeNumbers(ticket.issue) : noneFallback}`,
       `${createdLabelFallback}: ${ticket.createdAt ? normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt)) : noneFallback}`,
       `${closedLabelFallback}: ${ticket.resolvedAt ? normalizeNumbers(formatDateTime(ticket.resolvedAt)) : noneFallback}`,
+      `${repairCostLabelFallback}: ${repairCostDisplayFallback}`,
       `${summaryLabelFallback}: ${ticket.resolutionReport ? normalizeNumbers(ticket.resolutionReport) : noneFallback}`
     ].join('\n');
 
@@ -1019,6 +1089,7 @@ function viewTicketReport(id) {
   const issueLabel = t('maintenance.report.issue', 'الوصف');
   const createdLabel = t('maintenance.report.createdAt', 'تاريخ الإنشاء');
   const closedLabel = t('maintenance.report.closedAt', 'تاريخ الإغلاق');
+  const repairCostLabel = t('maintenance.report.repairCost', 'تكلفة الإصلاح');
   const summaryLabel = t('maintenance.report.summary', 'التقرير');
   const notAvailable = t('maintenance.report.notAvailable', 'غير متوفر');
   const none = t('maintenance.report.none', '—');
@@ -1029,6 +1100,13 @@ function viewTicketReport(id) {
     }
     return `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(String(value)))}</span>`;
   };
+
+  const repairCostNumber = Number.parseFloat(normalizeNumbers(String(ticket.repairCost ?? '')));
+  const repairCostDisplay = Number.isFinite(repairCostNumber)
+    ? normalizeNumbers(repairCostNumber.toFixed(2))
+    : null;
+
+  const currencyLabel = t('maintenance.report.currencyLabel', 'SR');
 
   const formattedFields = [
     {
@@ -1057,6 +1135,12 @@ function viewTicketReport(id) {
       label: closedLabel,
       value: ticket.resolvedAt
         ? `<span class="maintenance-report-modal__value">${escapeHtml(normalizeNumbers(formatDateTime(ticket.resolvedAt)))}</span>`
+        : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
+    },
+    {
+      label: repairCostLabel,
+      value: repairCostDisplay
+        ? `<span class="maintenance-report-modal__value">${escapeHtml(repairCostDisplay)} ${escapeHtml(currencyLabel)}</span>`
         : `<span class="maintenance-report-modal__value maintenance-report-modal__value--muted">${escapeHtml(none)}</span>`
     }
   ];
