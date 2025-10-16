@@ -394,21 +394,29 @@ export async function saveReservationChanges({
     return;
   }
 
+  const hasEquipmentConflictFn = typeof hasEquipmentConflict === 'function'
+    ? hasEquipmentConflict
+    : () => false;
+  const ignoreReservationKey = reservation.id ?? reservation.reservationId;
+
   for (const item of editingItems) {
     const status = getEquipmentAvailabilityStatus(item.barcode);
+    if (status === 'reserved') {
+      const code = normalizeBarcodeValue(item.barcode);
+      if (!hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
+        continue;
+      }
+    }
+
     if (status !== 'available') {
       showToast(getEquipmentUnavailableMessage(status));
       return;
     }
   }
 
-  const hasEquipmentConflictFn = typeof hasEquipmentConflict === 'function'
-    ? hasEquipmentConflict
-    : () => false;
-
   for (const item of editingItems) {
     const code = normalizeBarcodeValue(item.barcode);
-    if (hasEquipmentConflictFn(code, start, end, reservation.id ?? reservation.reservationId)) {
+    if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
       showToast(t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات'));
       return;
     }
@@ -419,7 +427,7 @@ export async function saveReservationChanges({
     : () => false;
 
   for (const technicianId of technicianIds) {
-    if (hasTechnicianConflictFn(technicianId, start, end, reservation.id ?? reservation.reservationId)) {
+    if (hasTechnicianConflictFn(technicianId, start, end, ignoreReservationKey)) {
       showToast(t('reservations.toast.updateCrewConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في جدول أحد أعضاء الطاقم'));
       return;
     }
