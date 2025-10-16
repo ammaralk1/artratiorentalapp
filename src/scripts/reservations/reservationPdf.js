@@ -550,6 +550,10 @@ function patchHtml2CanvasColorParsing() {
 
 const ARABIC_RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;
 
+function isProbablyArabic(value = '') {
+  return ARABIC_RTL_REGEX.test(value);
+}
+
 function patchCanvasTextDirection() {
   const C2DProto = window.CanvasRenderingContext2D?.prototype;
   if (!C2DProto || C2DProto.__artRatioDirectionPatched) return;
@@ -559,7 +563,7 @@ function patchCanvasTextDirection() {
     if (typeof original !== 'function') return;
 
     C2DProto[methodName] = function patchedCanvasTextMethod(text, ...args) {
-      if (typeof text !== 'string' || !ARABIC_RTL_REGEX.test(text)) {
+      if (typeof text !== 'string' || !isProbablyArabic(text)) {
         return original.call(this, text, ...args);
       }
 
@@ -892,6 +896,176 @@ async function rasterizeQuoteImages(root) {
   if (tasks.length) {
     await Promise.allSettled(tasks);
   }
+}
+
+function createNoteCanvasRenderer(note, { pixelRatio = 1 } = {}) {
+  if (!note) return null;
+  const doc = note.ownerDocument || document;
+  const view = doc.defaultView || window;
+  const styles = view.getComputedStyle?.(note);
+  if (!styles) return null;
+
+  const parsePx = (value, fallback = 0) => {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const paddingTop = parsePx(styles.paddingTop);
+  const paddingBottom = parsePx(styles.paddingBottom);
+  const paddingRight = parsePx(styles.paddingRight);
+  const paddingLeft = parsePx(styles.paddingLeft);
+  const borderRadius = parsePx(styles.borderRadius);
+  const fontSize = parsePx(styles.fontSize, 14);
+  const lineHeight = (() => {
+    const lh = styles.lineHeight;
+    if (!lh || lh === 'normal') return fontSize * 1.6;
+    const parsed = parsePx(lh, fontSize * 1.6);
+    return parsed > 0 ? parsed : fontSize * 1.6;
+  })();
+
+  const maxWidth = Math.max(note.clientWidth || 0, note.scrollWidth || 0, parsePx(styles.width, 0));
+  if (maxWidth <= 0) return null;
+
+  const contentWidth = Math.max(1, maxWidth - paddingLeft - paddingRight);
+  const textContent = note.textContent || '';
+  const paragraphs = textContent.split(/\r?\n/);
+
+  const canvas = doc.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  const fontStyle = styles.fontStyle || 'normal';
+  const fontVariant = styles.fontVariant || 'normal';
+  const fontWeight = styles.fontWeight || '400';
+  const fontFamily = styles.fontFamily || 'sans-serif';
+  const fontStretch = styles.fontStretch || 'normal';
+
+  const buildLine = (segments) => segments.join(' ');
+
+  const lines = [];
+  const measureTextWidth = (text) => ctx.measureText(text).width;
+
+  ctx.font = `${fontStyle} ${fontVariant} ${fontWeight} ${fontStretch} ${fontSize}px ${fontFamily}`;
+
+  paragraphs.forEach((paragraph) => {
+    const trimmed = paragraph.trim();
+    if (trimmed.length === 0) {
+      lines.push('');
+      return;
+    }
+
+    const words = trimmed.split(/\s+/);
+    let currentSegments = [];
+
+    words.forEach((word, index) => {
+      const sanitizedWord = word.trim();
+      if (!sanitizedWord) return;
+      const tentative = buildLine(currentSegments.concat(sanitizedWord));
+      const width = measureTextWidth(tentative);
+      if (width <= contentWidth || currentSegments.length === 0) {
+        currentSegments.push(sanitizedWord);
+        return;
+      }
+
+      lines.push(buildLine(currentSegments));
+      currentSegments = [sanitizedWord];
+    });
+
+    if (currentSegments.length) {
+      lines.push(buildLine(currentSegments));
+    }
+  });
+
+  if (!lines.length) {
+    lines.push('');
+  }
+
+  const totalHeight = paddingTop + paddingBottom + (lines.length * lineHeight);
+  const scaledWidth = Math.ceil(Math.max(1, maxWidth) * pixelRatio);
+  const scaledHeight = Math.ceil(Math.max(1, totalHeight) * pixelRatio);
+  canvas.width = scaledWidth;
+  canvas.height = scaledHeight;
+  canvas.style.width = `${Math.max(1, maxWidth)}px`;
+  canvas.style.height = `${Math.max(1, totalHeight)}px`;
+
+  ctx.scale(pixelRatio, pixelRatio);
+
+  const backgroundColor = styles.backgroundColor && styles.backgroundColor !== 'rgba(0, 0, 0, 0)'
+    ? styles.backgroundColor
+    : '#ffffff';
+
+  if (borderRadius > 0) {
+    ctx.save();
+    ctx.beginPath();
+    const width = Math.max(1, maxWidth);
+    const height = Math.max(1, totalHeight);
+    const radius = Math.min(borderRadius, width / 2, height / 2);
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(width - radius, 0);
+    ctx.quadraticCurveTo(width, 0, width, radius);
+    ctx.lineTo(width, height - radius);
+    ctx.quadraticCurveTo(width, height, width - radius, height);
+    ctx.lineTo(radius, height);
+    ctx.quadraticCurveTo(0, height, 0, height - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.clip();
+  }
+
+  ctx.fillStyle = backgroundColor;
+  ctx.fillRect(0, 0, Math.max(1, maxWidth), Math.max(1, totalHeight));
+
+  ctx.font = `${fontStyle} ${fontVariant} ${fontWeight} ${fontStretch} ${fontSize}px ${fontFamily}`;
+  ctx.fillStyle = styles.color || '#000000';
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'right';
+
+  if ('direction' in ctx) {
+    try {
+      ctx.direction = 'rtl';
+    } catch (error) {
+      // Ignore failures, Safari < 15 may throw
+    }
+  }
+
+  const paintX = Math.max(0, maxWidth - paddingRight);
+  let paintY = paddingTop;
+
+  lines.forEach((line) => {
+    const renderLine = line.length ? line : ' ';
+    ctx.fillText(renderLine, paintX, paintY, contentWidth);
+    paintY += lineHeight;
+  });
+
+  const img = doc.createElement('img');
+  img.src = canvas.toDataURL('image/png');
+  img.alt = textContent;
+  img.style.width = `${Math.max(1, maxWidth)}px`;
+  img.style.height = `${Math.max(1, totalHeight)}px`;
+  img.style.display = 'block';
+  img.setAttribute('data-quote-note-image', 'true');
+
+  return {
+    image: img,
+    canvas,
+    totalHeight,
+    width: maxWidth
+  };
+}
+
+function rasterizeQuoteNotes(root, { pixelRatio = 1 } = {}) {
+  if (!root) return;
+  const notes = Array.from(root.querySelectorAll?.('.quote-notes') || []);
+  notes.forEach((note) => {
+    if (!note || note.dataset.quoteNoteRasterized === 'true') return;
+    if (!isProbablyArabic(note.textContent || '')) return;
+    const rendered = createNoteCanvasRenderer(note, { pixelRatio });
+    if (!rendered) return;
+    note.dataset.quoteNoteRasterized = 'true';
+    note.innerHTML = '';
+    note.appendChild(rendered.image);
+  });
 }
 
 async function capturePageSegments(page, html2canvasFn, {
@@ -1934,6 +2108,12 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
     }
     filteredPages.push(page);
   });
+
+  if (!isPreview) {
+    const view = doc.defaultView || window;
+    const pixelRatio = Math.min(3, Math.max(1, view.devicePixelRatio || 1));
+    filteredPages.forEach((page) => rasterizeQuoteNotes(page, { pixelRatio }));
+  }
 
   filteredPages.forEach((page, index) => {
     const isFirst = index === 0;
