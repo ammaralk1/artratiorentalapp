@@ -487,12 +487,14 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         <div class="summary-icon">💳</div>
         <div class="summary-body">
           <h6 class="summary-heading">${paymentSummaryTitle}</h6>
-          <div class="summary-details">
-            ${summaryDetailsHtml}
-          </div>
-          <div class="reservation-payment-history-modal">
-            <h6 class="history-heading">${paymentHistoryTitle}</h6>
-            ${paymentHistoryHtml}
+          <div class="summary-content">
+            <div class="summary-details">
+              ${summaryDetailsHtml}
+            </div>
+            <div class="reservation-payment-history-modal">
+              <h6 class="history-heading">${paymentHistoryTitle}</h6>
+              ${paymentHistoryHtml}
+            </div>
           </div>
         </div>
       </div>
