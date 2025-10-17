@@ -602,6 +602,14 @@ html.dark-mode .projects-hero-text {
   --chip-shadow: 0 12px 26px rgba(190, 18, 60, 0.34), 0 0 0 2px rgba(244, 63, 94, 0.32);
 }
 
+.reservation-chip.status-partial,
+.status-chip.status-partial,
+.project-reservation-card__badge--partial {
+  --chip-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.9));
+  --chip-color: #fffdf5;
+  --chip-shadow: 0 12px 24px rgba(245, 158, 11, 0.26), 0 0 0 2px rgba(251, 191, 36, 0.28);
+}
+
 .reservation-chip.status-completed,
 .status-chip.status-completed,
 .project-reservation-card__badge--completed {

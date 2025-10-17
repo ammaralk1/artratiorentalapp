@@ -10,7 +10,13 @@ import {
   isEquipmentAvailable
 } from '../reservationsEquipment.js';
 import { getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
-import { calculateReservationTotal, renderDraftSummary, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
+import {
+  calculateReservationTotal,
+  renderDraftSummary,
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus,
+} from '../reservationsSummary.js';
 import { normalizeText, groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
 import {
   getSelectedItems,
@@ -77,6 +83,34 @@ function parseEquipmentSearchValue(value) {
   };
 }
 
+function getPaymentProgressType(select, fallback = 'percent') {
+  const value = select?.value;
+  if (value === 'amount' || value === 'percent') {
+    return value;
+  }
+  return fallback;
+}
+
+function parsePaymentProgressValue(input) {
+  if (!input) return null;
+  const raw = normalizeNumbers(String(input.value || '')).replace('%', '').trim();
+  if (!raw) return null;
+  const parsed = Number.parseFloat(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function setPaymentProgressInputValue(input, value) {
+  if (!input) return;
+  if (value == null || !Number.isFinite(value) || value <= 0) {
+    input.value = '';
+    return;
+  }
+  input.value = normalizeNumbers(String(value));
+}
+
 export function getEquipmentUnavailableMessage(status) {
   switch (status) {
     case 'maintenance':
@@ -141,9 +175,11 @@ function resolveProjectByLabel(value, options = {}) {
 export function updatePaymentStatusAppearance(select, statusValue) {
   if (!select) return;
   const value = statusValue ?? select.value;
-  select.classList.remove('payment-status-select--paid', 'payment-status-select--unpaid');
+  select.classList.remove('payment-status-select--paid', 'payment-status-select--unpaid', 'payment-status-select--partial');
   if (value === 'paid') {
     select.classList.add('payment-status-select--paid');
+  } else if (value === 'partial') {
+    select.classList.add('payment-status-select--partial');
   } else {
     select.classList.add('payment-status-select--unpaid');
   }
@@ -1160,15 +1196,18 @@ function renderDraftReservationSummary() {
   const projectLinked = Boolean(document.getElementById('res-project')?.value);
   const taxCheckbox = document.getElementById('res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
-  const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
+  const paymentSelect = document.getElementById('res-payment-status');
+  const paidStatus = paymentSelect?.value || 'unpaid';
   const { start, end } = getCreateReservationDateRange();
   if (applyTax) {
     ensureCompanyShareEnabled();
   }
   const sharePercentForSummary = getCompanySharePercent();
 
-  const paymentSelect = document.getElementById('res-payment-status');
-  updatePaymentStatusAppearance(paymentSelect, paidStatus);
+  const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
+  const paymentProgressType = getPaymentProgressType(paymentProgressTypeSelect);
+  const paymentProgressValue = parsePaymentProgressValue(paymentProgressValueInput);
 
   renderDraftSummary({
     selectedItems: getSelectedItems(),
@@ -1176,10 +1215,24 @@ function renderDraftReservationSummary() {
     discountType,
     applyTax,
     paidStatus,
+    paymentProgressType,
+    paymentProgressValue,
     start,
     end,
     companySharePercent: sharePercentForSummary
   });
+
+  const summaryResult = renderDraftSummary.lastResult;
+
+  if (summaryResult) {
+    setPaymentProgressInputValue(paymentProgressValueInput, summaryResult.paymentProgressValue);
+    if (paymentSelect) {
+      paymentSelect.value = summaryResult.paymentStatus;
+      updatePaymentStatusAppearance(paymentSelect, summaryResult.paymentStatus);
+    }
+  } else {
+    updatePaymentStatusAppearance(paymentSelect, paidStatus);
+  }
 }
 
 function setupSummaryEvents() {
@@ -1223,7 +1276,22 @@ function setupSummaryEvents() {
     paymentSelect.dataset.listenerAttached = 'true';
   }
 
-  updatePaymentStatusAppearance(paymentSelect);
+  const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
+  if (paymentProgressTypeSelect && !paymentProgressTypeSelect.dataset.listenerAttached) {
+    paymentProgressTypeSelect.addEventListener('change', renderDraftReservationSummary);
+    paymentProgressTypeSelect.dataset.listenerAttached = 'true';
+  }
+
+  const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
+  if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
+    paymentProgressValueInput.addEventListener('input', (event) => {
+      event.target.value = normalizeNumbers(event.target.value);
+      renderDraftReservationSummary();
+    });
+    paymentProgressValueInput.dataset.listenerAttached = 'true';
+  }
+
+  renderDraftReservationSummary();
 }
 
 function setupReservationTimeSync() {
@@ -1347,7 +1415,12 @@ async function handleReservationSubmit() {
   const notes = document.getElementById('res-notes')?.value || '';
   const discount = parseFloat(normalizeNumbers(document.getElementById('res-discount')?.value)) || 0;
   const discountType = document.getElementById('res-discount-type')?.value || 'percent';
-  const paidStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
+  const paymentSelect = document.getElementById('res-payment-status');
+  const paidStatus = paymentSelect?.value || 'unpaid';
+  const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
+  const paymentProgressType = getPaymentProgressType(paymentProgressTypeSelect);
+  const paymentProgressValue = parsePaymentProgressValue(paymentProgressValueInput);
 
   const selectedProject = projectIdValue ? findProjectById(projectIdValue) : null;
   const projectConfirmed = isProjectConfirmed(selectedProject);
@@ -1421,6 +1494,25 @@ async function handleReservationSubmit() {
 
   const reservationCode = generateReservationId();
 
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount: totalCost,
+    progressType: paymentProgressType,
+    progressValue: paymentProgressValue,
+  });
+  if (paymentProgressValueInput) {
+    setPaymentProgressInputValue(paymentProgressValueInput, paymentProgress.paymentProgressValue);
+  }
+  const effectivePaidStatus = determinePaymentStatus({
+    manualStatus: paidStatus,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount: totalCost,
+  });
+  if (paymentSelect) {
+    paymentSelect.value = effectivePaidStatus;
+    updatePaymentStatusAppearance(paymentSelect, effectivePaidStatus);
+  }
+
   const payload = buildReservationPayload({
     reservationCode,
     customerId: customerId,
@@ -1435,7 +1527,7 @@ async function handleReservationSubmit() {
     discount,
     discountType,
     applyTax,
-    paidStatus,
+    paidStatus: effectivePaidStatus,
     confirmed: projectConfirmed,
     items: draftItems.map((item) => ({
       ...item,
@@ -1444,6 +1536,10 @@ async function handleReservationSubmit() {
     technicians: technicianIds,
     companySharePercent: companyShareEnabled ? companySharePercent : null,
     companyShareEnabled,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercentage: paymentProgress.paidPercent,
+    paymentProgressType: paymentProgress.paymentProgressType,
+    paymentProgressValue: paymentProgress.paymentProgressValue,
   });
 
   try {
@@ -1504,6 +1600,14 @@ function resetForm() {
   if (paymentSelect) {
     paymentSelect.value = 'unpaid';
     updatePaymentStatusAppearance(paymentSelect, 'unpaid');
+  }
+  const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
+  if (paymentProgressTypeSelect) {
+    paymentProgressTypeSelect.value = 'percent';
+  }
+  const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
+  if (paymentProgressValueInput) {
+    paymentProgressValueInput.value = '';
   }
   resetSelectedTechnicians();
   setSelectedItems([]);

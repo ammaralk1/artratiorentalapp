@@ -177,6 +177,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const statusPendingText = t('reservations.list.status.pending', '⏳ غير مؤكد');
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
+  const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
   const completedText = t('reservations.list.status.completed', '📁 منتهي');
   const reservationIdLabel = t('reservations.details.labels.id', '🆔 رقم الحجز');
   const bookingSectionTitle = t('reservations.details.section.bookingInfo', 'بيانات الحجز');
@@ -203,7 +204,15 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paymentStatusLabel = t('reservations.details.labels.paymentStatus', 'حالة الدفع');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
 
-  const paymentStatusText = paid ? paymentPaidText : paymentUnpaidText;
+  const paidStatus = reservation.paidStatus
+    ?? reservation.paid_status
+    ?? (paid ? 'paid' : 'unpaid');
+  const isPartial = paidStatus === 'partial';
+  const paymentStatusText = paidStatus === 'paid'
+    ? paymentPaidText
+    : isPartial
+      ? paymentPartialText
+      : paymentUnpaidText;
   const totalItemsQuantity = groupedItems.reduce((sum, group) => sum + (Number(group.quantity) || 0), 0);
   const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
@@ -261,7 +270,11 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     },
     {
       text: paymentStatusText,
-      className: paid ? 'status-paid' : 'status-unpaid'
+      className: paidStatus === 'paid'
+        ? 'status-paid'
+        : isPartial
+          ? 'status-partial'
+          : 'status-unpaid'
     }
   ];
 

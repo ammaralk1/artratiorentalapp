@@ -1,7 +1,12 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
-import { DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
+import {
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculateDraftFinancialBreakdown,
+  calculatePaymentProgress,
+  determinePaymentStatus,
+} from './reservationsSummary.js';
 
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
@@ -181,7 +186,7 @@ export function toInternalReservation(raw = {}) {
   const discountType = raw.discount_type ?? raw.discountType ?? 'percent';
   const normalizedDiscountType = ['percent', 'amount'].includes(discountType) ? discountType : 'percent';
   const applyTax = Boolean(raw.apply_tax ?? raw.applyTax ?? false);
-  const paidStatus = normalisePaidStatus(raw.paid_status ?? raw.paidStatus ?? (raw.paid === true || raw.paid === 'paid' ? 'paid' : 'unpaid')) ?? 'unpaid';
+  let paidStatus = normalisePaidStatus(raw.paid_status ?? raw.paidStatus ?? (raw.paid === true || raw.paid === 'paid' ? 'paid' : 'unpaid')) ?? 'unpaid';
   const confirmed = raw.confirmed != null
     ? Boolean(raw.confirmed)
     : ['confirmed', 'in_progress', 'completed'].includes(String(raw.status ?? '').toLowerCase());
@@ -240,6 +245,21 @@ export function toInternalReservation(raw = {}) {
     companyShareEnabled = true;
   }
 
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount,
+    progressType: raw.payment_progress_type ?? raw.paymentProgressType ?? null,
+    progressValue: raw.payment_progress_value ?? raw.paymentProgressValue ?? null,
+    paidAmount: raw.paid_amount ?? raw.paidAmount ?? null,
+    paidPercent: raw.paid_percentage ?? raw.paidPercentage ?? null,
+  });
+  paidStatus = determinePaymentStatus({
+    manualStatus: paidStatus,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount,
+  });
+  const paid = paidStatus === 'paid';
+
   return {
     id: idValue != null ? String(idValue) : '',
     reservationId: reservationCode ?? (idValue != null ? String(idValue) : ''),
@@ -256,8 +276,12 @@ export function toInternalReservation(raw = {}) {
     discount,
     discountType: normalizedDiscountType,
     applyTax,
-    paid: paidStatus === 'paid',
+    paid,
     paidStatus,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    paymentProgressType: paymentProgress.paymentProgressType,
+    paymentProgressValue: paymentProgress.paymentProgressValue,
     totalAmount,
     cost: totalAmount,
     projectId: raw.project_id ?? raw.projectId ?? null,
@@ -310,6 +334,10 @@ export function buildReservationPayload({
   technicians,
   companySharePercent,
   companyShareEnabled,
+  paidAmount,
+  paidPercentage,
+  paymentProgressType,
+  paymentProgressValue,
 }) {
   return {
     reservation_code: reservationCode ?? null,
@@ -326,6 +354,12 @@ export function buildReservationPayload({
     discount_type: discountType ?? 'percent',
     apply_tax: applyTax ? 1 : 0,
     paid_status: paidStatus ?? 'unpaid',
+    paid_amount: Number.isFinite(paidAmount) ? toNumber(paidAmount) : 0,
+    paid_percentage: Number.isFinite(paidPercentage) ? Number(paidPercentage.toFixed(2)) : 0,
+    payment_progress_type: paymentProgressType ?? null,
+    payment_progress_value: Number.isFinite(paymentProgressValue)
+      ? Number(paymentProgressValue.toFixed(2))
+      : null,
     confirmed: confirmed === undefined ? null : Boolean(confirmed),
     items: Array.isArray(items)
       ? items.map((item) => ({

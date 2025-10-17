@@ -551,11 +551,15 @@ function computeReportStatus(reservation) {
   }
 
   const paid = isReservationPaid(reservation);
+  const paidStatus = reservation?.paidStatus
+    ?? reservation?.paid_status
+    ?? (paid ? 'paid' : 'unpaid');
 
   return {
     statusValue,
     confirmed,
     paid,
+    paidStatus,
   };
 }
 
@@ -1018,13 +1022,17 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
 
   if (reservation?.notes) parts.push(reservation.notes);
 
-  const { statusValue, paid } = computeReportStatus(reservation);
+  const { statusValue, paid, paidStatus } = computeReportStatus(reservation);
   if (statusValue) parts.push(statusValue);
 
   const paymentStatus = reservation?.paymentStatus || reservation?.payment_status;
   if (paymentStatus) parts.push(paymentStatus);
   if (reservation?.paid != null) {
     parts.push(reservation.paid ? 'paid' : 'unpaid');
+  }
+
+  if (paidStatus) {
+    parts.push(paidStatus);
   }
 
   const customer = customerMap.get(String(reservation?.customerId));
@@ -1037,7 +1045,7 @@ function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, t
     parts.push(project.title, project.code, project.status);
   }
 
-  parts.push(paymentLabelText(paid));
+  parts.push(paymentLabelText(paidStatus));
 
   (reservation?.items || []).forEach((item) => {
     if (item?.desc) parts.push(item.desc);
@@ -2167,7 +2175,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const statusInfo = computeReportStatus(reservation);
   const statusLabel = getReservationStatusLabel(statusInfo.statusValue);
   const statusChip = createStatusChip(statusInfo.statusValue, statusLabel);
-  const paymentChip = createPaymentChip(statusInfo.paid);
+  const paymentChip = createPaymentChip(statusInfo.paidStatus);
   const dateLabel = formatDateTime(reservation?.start);
   const financials = computeReservationFinancials(reservation);
   const totalLabel = formatCurrency(financials.finalTotal);
@@ -2191,10 +2199,15 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   };
 }
 
-function paymentLabelText(paid) {
-  return paid
-    ? translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid')
-    : translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid');
+function paymentLabelText(paymentStatus) {
+  const normalized = String(paymentStatus ?? '').toLowerCase();
+  if (normalized === 'paid') {
+    return translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid');
+  }
+  if (normalized === 'partial') {
+    return translate('reservations.reports.payment.partialLabel', 'مدفوعة جزئياً', 'Partially paid');
+  }
+  return translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid');
 }
 
 function getReservationStatusLabel(statusValue) {
@@ -2217,9 +2230,10 @@ function createStatusChip(statusValue, label) {
   return { html: chipHtml, text: safeLabel };
 }
 
-function createPaymentChip(paid) {
-  const label = paymentLabelText(paid);
-  const slug = paid ? 'paid' : 'unpaid';
+function createPaymentChip(paymentStatus) {
+  const label = paymentLabelText(paymentStatus);
+  const normalized = String(paymentStatus ?? '').toLowerCase();
+  const slug = normalized === 'paid' ? 'paid' : normalized === 'partial' ? 'partial' : 'unpaid';
   const chipHtml = `<span class="reservation-chip status-${slug}">${escapeHtml(label)}</span>`;
   return { html: chipHtml, text: label };
 }

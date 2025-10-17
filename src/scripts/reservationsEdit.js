@@ -4,7 +4,12 @@ import { showToast, normalizeNumbers } from './utils.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
 import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { normalizeBarcodeValue, getEquipmentAvailabilityStatus } from './reservationsEquipment.js';
-import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
+import {
+  calculateReservationTotal,
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus,
+} from './reservationsSummary.js';
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
 import {
@@ -81,6 +86,34 @@ function ensureModalInstance(modalElement, factory) {
   }
 
   return null;
+}
+
+function getEditPaymentProgressType(select, fallback = 'percent') {
+  const value = select?.value;
+  if (value === 'amount' || value === 'percent') {
+    return value;
+  }
+  return fallback;
+}
+
+function parseEditPaymentProgressValue(input) {
+  if (!input) return null;
+  const raw = normalizeNumbers(String(input.value || '')).replace('%', '').trim();
+  if (!raw) return null;
+  const parsed = Number.parseFloat(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function setEditPaymentProgressValue(input, value) {
+  if (!input) return;
+  if (value == null || !Number.isFinite(value) || value <= 0) {
+    input.value = '';
+    return;
+  }
+  input.value = normalizeNumbers(String(value));
 }
 
 function escapeHtml(value = '') {
@@ -323,7 +356,38 @@ export function editReservation(index, {
   updateConfirmedControls(initialConfirmed, { disable: projectLinked });
 
   const paidSelect = document.getElementById('edit-res-paid');
-  if (paidSelect) paidSelect.value = reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid';
+  const initialPaidStatus = reservation.paidStatus
+    ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
+  if (paidSelect) {
+    paidSelect.value = initialPaidStatus;
+  }
+
+  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
+  let resolvedProgressType = reservation.paymentProgressType;
+  if (!resolvedProgressType) {
+    if (Number.isFinite(Number(reservation.paidAmount)) && reservation.paidAmount > 0) {
+      resolvedProgressType = 'amount';
+    } else if (Number.isFinite(Number(reservation.paidPercent)) && reservation.paidPercent > 0) {
+      resolvedProgressType = 'percent';
+    } else {
+      resolvedProgressType = 'percent';
+    }
+  }
+  if (paymentProgressTypeSelect) {
+    paymentProgressTypeSelect.value = resolvedProgressType;
+  }
+  let resolvedProgressValue = reservation.paymentProgressValue;
+  if (resolvedProgressType === 'amount') {
+    if (resolvedProgressValue == null || resolvedProgressValue === '') {
+      resolvedProgressValue = reservation.paidAmount ?? null;
+    }
+  } else {
+    if (resolvedProgressValue == null || resolvedProgressValue === '') {
+      resolvedProgressValue = reservation.paidPercent ?? null;
+    }
+  }
+  setEditPaymentProgressValue(paymentProgressValueInput, resolvedProgressValue);
 
   setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
 
@@ -359,7 +423,12 @@ export async function saveReservationChanges({
   const discount = parseFloat(discountRaw) || 0;
   const discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
   const confirmed = isReservationConfirmed();
-  const paidStatus = document.getElementById('edit-res-paid')?.value || 'unpaid';
+  const paymentSelect = document.getElementById('edit-res-paid');
+  const paidStatus = paymentSelect?.value || 'unpaid';
+  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
+  const paymentProgressType = getEditPaymentProgressType(paymentProgressTypeSelect);
+  const paymentProgressValue = parseEditPaymentProgressValue(paymentProgressValueInput);
   const projectIdValue = document.getElementById('edit-res-project')?.value || '';
   const technicianIds = getEditingTechnicians();
   const shareCheckbox = document.getElementById('edit-res-company-share');
@@ -495,6 +564,24 @@ export async function saveReservationChanges({
     }
   );
 
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount,
+    progressType: paymentProgressType,
+    progressValue: paymentProgressValue,
+  });
+  if (paymentProgressValueInput) {
+    setEditPaymentProgressValue(paymentProgressValueInput, paymentProgress.paymentProgressValue);
+  }
+  const effectivePaidStatus = determinePaymentStatus({
+    manualStatus: paidStatus,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount,
+  });
+  if (paymentSelect) {
+    paymentSelect.value = effectivePaidStatus;
+  }
+
   let statusForPayload = reservation.status ?? 'pending';
   if (helperProjectLinked) {
     statusForPayload = selectedProject?.status ?? projectStatus ?? statusForPayload;
@@ -516,7 +603,7 @@ export async function saveReservationChanges({
     discount,
     discountType,
     applyTax,
-    paidStatus,
+    paidStatus: effectivePaidStatus,
     confirmed: effectiveConfirmed,
     items: editingItems.map((item) => ({
       ...item,
@@ -525,6 +612,10 @@ export async function saveReservationChanges({
     technicians: technicianIds,
     companySharePercent: companyShareEnabled ? companySharePercent : null,
     companyShareEnabled,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercentage: paymentProgress.paidPercent,
+    paymentProgressType: paymentProgress.paymentProgressType,
+    paymentProgressValue: paymentProgress.paymentProgressValue,
   });
 
   try {
@@ -582,6 +673,21 @@ export function setupEditReservationModalEvents(context = {}) {
       syncEditTaxAndShare('share');
     });
     shareCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
+  if (paymentProgressTypeSelect && !paymentProgressTypeSelect.dataset.listenerAttached) {
+    paymentProgressTypeSelect.addEventListener('change', () => updateEditReservationSummary?.());
+    paymentProgressTypeSelect.dataset.listenerAttached = 'true';
+  }
+
+  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
+  if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
+    paymentProgressValueInput.addEventListener('input', () => {
+      paymentProgressValueInput.value = normalizeNumbers(paymentProgressValueInput.value);
+      updateEditReservationSummary?.();
+    });
+    paymentProgressValueInput.dataset.listenerAttached = 'true';
   }
 
   const projectSelect = document.getElementById('edit-res-project');

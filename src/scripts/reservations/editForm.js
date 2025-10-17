@@ -272,17 +272,41 @@ export function updateEditReservationSummary() {
 
   const { items: editingItems = [] } = getEditingState();
   const { start, end } = getEditReservationDateRange();
+  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
+  const paymentProgressType = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+  const progressRaw = normalizeNumbers(String(paymentProgressValueInput?.value || '')).replace('%', '').trim();
+  const paymentProgressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
 
-  summaryEl.innerHTML = renderEditSummary({
+  const html = renderEditSummary({
     items: editingItems,
     discount,
     discountType,
     applyTax,
     paidStatus,
+    paymentProgressType,
+    paymentProgressValue,
     start,
     end,
-    companySharePercent
+    companySharePercent,
   });
+
+  summaryEl.innerHTML = html;
+
+  const summaryResult = renderEditSummary.lastResult;
+
+  if (summaryResult && paymentProgressValueInput) {
+    if (summaryResult.paymentProgressValue != null && Number.isFinite(summaryResult.paymentProgressValue) && summaryResult.paymentProgressValue > 0) {
+      paymentProgressValueInput.value = normalizeNumbers(String(summaryResult.paymentProgressValue));
+    } else {
+      paymentProgressValueInput.value = '';
+    }
+  }
+
+  if (summaryResult && paidSelect) {
+    paidSelect.value = summaryResult.paymentStatus;
+    updatePaymentStatusAppearance(paidSelect, summaryResult.paymentStatus);
+  }
 }
 
 export function removeEditReservationItem(index) {

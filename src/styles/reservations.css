@@ -229,6 +229,11 @@
   background: linear-gradient(165deg, rgba(40,167,69,0.1) 0%, rgba(255,255,255,0.96) 75%);
 }
 
+.reservation-tile.tile-partial {
+  border-color: rgba(245, 158, 11, 0.22);
+  background: linear-gradient(165deg, rgba(245,158,11,0.12) 0%, rgba(255,255,255,0.96) 75%);
+}
+
 .customer-reservations-section {
   display: block;
   margin-bottom: 28px;
@@ -309,6 +314,11 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-paid {
   border-color: rgba(46, 204, 113, 0.28);
   background: linear-gradient(165deg, rgba(46,204,113,0.18) 0%, rgba(24,33,59,0.92) 75%);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-tile.tile-partial {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: linear-gradient(165deg, rgba(245,158,11,0.2) 0%, rgba(24,33,59,0.9) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-unpaid {
@@ -3288,6 +3298,13 @@ body[dir="ltr"] .reservation-field textarea {
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
+.payment-status-select--partial {
+  background-color: rgba(251, 191, 36, 0.18) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+  color: #b45309 !important;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+}
+
 .reservation-billing-input:focus {
   border-color: rgba(76, 110, 245, 0.48);
   box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.15);
@@ -3336,6 +3353,13 @@ body[dir="ltr"] .reservation-field textarea {
   border-color: rgba(74, 222, 128, 0.55) !important;
   color: #bbf7d0 !important;
   box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.3);
+}
+
+:is(html.dark-mode, body.dark-mode) .payment-status-select--partial {
+  background-color: rgba(146, 64, 14, 0.55) !important;
+  border-color: rgba(253, 186, 116, 0.55) !important;
+  color: #fde68a !important;
+  box-shadow: 0 0 0 3px rgba(146, 64, 14, 0.3);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-billing-input:focus {
@@ -3394,6 +3418,45 @@ body[dir="ltr"] .reservation-field textarea {
   white-space: nowrap;
 }
 
+.reservation-payment-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.reservation-payment-progress--flush {
+  margin-top: 0;
+}
+
+.reservation-payment-progress__label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.reservation-payment-progress__grid {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) minmax(120px, 1fr);
+  gap: 8px;
+}
+
+.reservation-payment-progress__select,
+.reservation-payment-progress__input {
+  height: 40px;
+  font-size: 0.9rem;
+}
+
+.reservation-payment-progress__hint {
+  font-size: 0.75rem;
+  color: rgba(71, 85, 105, 0.8);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-progress__hint {
+  color: rgba(203, 213, 225, 0.7);
+}
+
 @media (max-width: 768px) {
   .reservation-meta-card--narrow {
     min-width: 100%;
@@ -3403,6 +3466,10 @@ body[dir="ltr"] .reservation-field textarea {
   .reservation-meta-card--billing {
     max-width: 100%;
     flex: 1 1 100%;
+  }
+
+  .reservation-payment-progress__grid {
+    grid-template-columns: 1fr;
   }
 
 }

@@ -13,6 +13,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   const statusPendingText = t('reservations.list.status.pending', '⏳ غير مؤكد');
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
+  const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
   const confirmLabel = t('reservations.list.actions.confirm', '✔️ تأكيد');
   const projectUnlinkedText = t('reservations.list.project.unlinked', 'غير مرتبط بمشروع');
   const projectMissingText = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
@@ -30,7 +31,11 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
-    const paid = reservation.paid === true || reservation.paid === 'paid';
+    const paidStatus = reservation.paidStatus
+      ?? reservation.paid_status
+      ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
+    const paid = paidStatus === 'paid';
+    const isPartial = paidStatus === 'partial';
 
     const {
       effectiveConfirmed,
@@ -38,19 +43,24 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     } = resolveReservationProjectState(reservation, project);
 
     const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
-    const paymentClass = paid ? 'status-paid' : 'status-unpaid';
+    const paymentClass = paid
+      ? 'status-paid'
+      : isPartial
+        ? 'status-partial'
+        : 'status-unpaid';
 
     let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
-    let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
+    const paymentLabel = paid ? paymentPaidText : isPartial ? paymentPartialText : paymentUnpaidText;
+    let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paymentLabel}</span>`;
 
-    let stateClass = paid ? ' tile-paid' : ' tile-unpaid';
+    let stateClass = paid ? ' tile-paid' : isPartial ? ' tile-partial' : ' tile-unpaid';
     if (completed) stateClass += ' tile-completed';
 
     let completedAttr = '';
 
     if (completed) {
       statusBadge = `<span class="reservation-chip status-chip status-completed">${statusConfirmedText}</span>`;
-      paymentBadge = `<span class="reservation-chip status-chip status-completed">${paid ? paymentPaidText : paymentUnpaidText}</span>`;
+      paymentBadge = `<span class="reservation-chip status-chip status-completed">${paymentLabel}</span>`;
       const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
       const ribbonTextAttr = ribbonTextRaw.replace(/"/g, '&quot;');
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
