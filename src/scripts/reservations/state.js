@@ -76,12 +76,63 @@ export function normalizeBarcodeValue(value) {
   return normalizeNumbers(String(value || '')).trim().toLowerCase();
 }
 
+const MAX_DATE_MS = 8640000000000000;
+
+function parseDateFlexible(input) {
+  if (!input && input !== 0) return null;
+
+  if (input instanceof Date) {
+    const timestamp = input.getTime();
+    return Number.isNaN(timestamp) ? null : new Date(timestamp);
+  }
+
+  if (typeof input === 'number') {
+    if (!Number.isFinite(input)) return null;
+    const date = new Date(input);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  let raw = String(input ?? '').trim();
+  if (!raw) return null;
+
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric)) {
+      const byNumber = new Date(numeric);
+      if (!Number.isNaN(byNumber.getTime())) {
+        return byNumber;
+      }
+    }
+  }
+
+  if (!raw.includes('T') && raw.includes(' ')) {
+    const firstSpace = raw.indexOf(' ');
+    raw = `${raw.slice(0, firstSpace)}T${raw.slice(firstSpace + 1).trimStart()}`;
+  } else if (raw.includes(' ')) {
+    raw = raw.replace(' ', 'T');
+  }
+
+  const direct = new Date(raw);
+  if (!Number.isNaN(direct.getTime())) {
+    return direct;
+  }
+
+  if (!raw.endsWith('Z') && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+    const utc = new Date(`${raw}Z`);
+    if (!Number.isNaN(utc.getTime())) {
+      return utc;
+    }
+  }
+
+  return null;
+}
+
 export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservationId = null) {
   if (!barcode || !startIso || !endIso) return false;
 
-  const start = new Date(startIso);
-  const end = new Date(endIso);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
+  const start = parseDateFlexible(startIso);
+  const end = parseDateFlexible(endIso);
+  if (!start || !end) return false;
   if (start >= end) return false;
 
   const normalizedCode = normalizeBarcodeValue(barcode);
@@ -105,9 +156,9 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
     if (!reservation.start || !reservation.end) return false;
 
-    const resStart = new Date(reservation.start);
-    const resEnd = new Date(reservation.end);
-    if (Number.isNaN(resStart.getTime()) || Number.isNaN(resEnd.getTime())) return false;
+    const resStart = parseDateFlexible(reservation.start);
+    const resEnd = parseDateFlexible(reservation.end);
+    if (!resStart || !resEnd) return false;
 
     const overlaps = resStart < end && resEnd > start;
     if (!overlaps) return false;
@@ -136,7 +187,7 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
     }
 
     const effectiveStart = maintenanceStart ?? new Date(0);
-    const effectiveEnd = maintenanceEnd ?? new Date(8640000000000000);
+    const effectiveEnd = maintenanceEnd ?? new Date(MAX_DATE_MS);
 
     return effectiveStart < end && effectiveEnd > start;
   });
@@ -367,24 +418,12 @@ function hasMaintenanceTicketResolved(ticket) {
 
 function parseFirstValidDate(candidates = []) {
   for (const candidate of candidates) {
-    const parsed = parseDateSafe(candidate);
+    const parsed = parseDateFlexible(candidate);
     if (parsed) {
       return parsed;
     }
   }
   return null;
-}
-
-function parseDateSafe(value) {
-  if (!value) return null;
-
-  if (value instanceof Date) {
-    const timestamp = value.getTime();
-    return Number.isNaN(timestamp) ? null : new Date(timestamp);
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function buildEquipmentIndexById(list) {
