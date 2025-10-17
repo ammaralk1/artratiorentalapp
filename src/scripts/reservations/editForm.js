@@ -416,9 +416,8 @@ export function updateEditReservationSummary() {
     companySharePercent = getCompanySharePercent('edit-res-company-share');
   }
 
-  const { items: editingItems = [] } = getEditingState();
+  const { items: editingItems = [], payments: editingPayments = [] } = getEditingState();
   const { start, end } = getEditReservationDateRange();
-  const { payments: editingPayments = [] } = getEditingState();
 
   const html = renderEditSummary({
     items: editingItems,

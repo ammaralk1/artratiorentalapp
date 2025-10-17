@@ -69,7 +69,9 @@ function calculateTechnicianDayRates(ids = []) {
 
   return ids.reduce((acc, technicianId) => {
     const technician = technicianMap.get(String(technicianId));
-    if (!technician) return acc;
+    if (!technician) {
+      return acc;
+    }
     const costRate = resolveTechnicianCostRate(technician);
     const totalRate = resolveTechnicianTotalRate(technician);
     return {
