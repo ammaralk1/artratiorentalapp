@@ -549,6 +549,27 @@ function extractPaymentHistorySource(source) {
   }
 
   if (source && typeof source === 'object') {
+    const directArrayKeys = [
+      'data',
+      'items',
+      'records',
+      'history',
+      'list',
+      'entries',
+      'payment_history',
+      'paymentHistory',
+      'payment_records',
+      'paymentRecords',
+      'payments',
+      'payment',
+    ];
+
+    for (const key of directArrayKeys) {
+      if (Array.isArray(source[key])) {
+        return source[key];
+      }
+    }
+
     const candidates = [
       source.data,
       source.items,
@@ -558,10 +579,38 @@ function extractPaymentHistorySource(source) {
       source.entries,
       source.payment_history,
       source.paymentHistory,
+      source.payment_records,
+      source.paymentRecords,
+      source.payments,
+      source.payment,
     ];
     const nested = candidates.find((entry) => Array.isArray(entry));
     if (Array.isArray(nested)) {
       return nested;
+    }
+
+    const valueArray = Object.values(source);
+    if (valueArray.length && valueArray.every((value) => value && typeof value === 'object')) {
+      const maybeArray = valueArray.map((value) => value);
+      if (maybeArray.every((value) => !Array.isArray(value))) {
+        return maybeArray;
+      }
+    }
+
+    const singleEntryKeys = [
+      'amount',
+      'payment_amount',
+      'value',
+      'payment_value',
+      'percentage',
+      'payment_percentage',
+      'type',
+      'payment_type',
+      'method',
+      'paymentMethod',
+    ];
+    if (singleEntryKeys.some((key) => key in source)) {
+      return [source];
     }
   }
 
