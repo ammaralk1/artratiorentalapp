@@ -201,7 +201,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const notesFallback = t('reservations.list.noNotes', 'لا توجد ملاحظات');
   const itemsCountLabel = t('reservations.details.labels.itemsCount', 'عدد المعدات');
   const itemsTotalLabel = t('reservations.details.labels.itemsTotal', 'إجمالي المعدات');
-  const paymentStatusLabel = t('reservations.details.labels.paymentStatus', 'حالة الدفع');
   const paymentHistoryTitle = t('reservations.paymentHistory.title', 'سجل الدفعات');
   const paymentHistoryEmpty = t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
@@ -230,9 +229,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const netProfitDisplay = normalizeNumbers(netProfitValue.toFixed(2));
 
   const summaryDetails = [
-    { icon: '💳', label: paymentStatusLabel, value: paymentStatusText },
-    { icon: '📦', label: itemsCountLabel, value: itemsCountText },
-    { icon: '⏱️', label: durationLabel, value: rentalDaysDisplay },
     { icon: '💼', label: itemsTotalLabel, value: `${equipmentTotalDisplay} ${currencyLabel}` }
   ];
 
@@ -361,6 +357,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   infoRows.push(renderInfoRow('📞', contactLabel, customer?.phone || '—'));
   infoRows.push(renderInfoRow('🗓️', startLabel, startDisplay));
   infoRows.push(renderInfoRow('🗓️', endLabel, endDisplay));
+  infoRows.push(renderInfoRow('📦', itemsCountLabel, itemsCountText));
+  infoRows.push(renderInfoRow('⏱️', durationLabel, rentalDaysDisplay));
   infoRows.push(renderInfoRow('📝', notesLabel, notesDisplay));
   if (projectRowHtml) {
     infoRows.push(projectRowHtml);
@@ -484,17 +482,17 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           <h6>${bookingSectionTitle}</h6>
           ${infoRowsHtml}
         </div>
-        <div class="reservation-summary-card">
-          <div class="summary-icon">💳</div>
-          <div class="summary-body">
-            <h6 class="summary-heading">${paymentSummaryTitle}</h6>
-            <div class="summary-details">
-              ${summaryDetailsHtml}
-            </div>
-            <div class="reservation-payment-history-modal">
-              <h6 class="history-heading">${paymentHistoryTitle}</h6>
-              ${paymentHistoryHtml}
-            </div>
+      </div>
+      <div class="reservation-summary-card">
+        <div class="summary-icon">💳</div>
+        <div class="summary-body">
+          <h6 class="summary-heading">${paymentSummaryTitle}</h6>
+          <div class="summary-details">
+            ${summaryDetailsHtml}
+          </div>
+          <div class="reservation-payment-history-modal">
+            <h6 class="history-heading">${paymentHistoryTitle}</h6>
+            ${paymentHistoryHtml}
           </div>
         </div>
       </div>
