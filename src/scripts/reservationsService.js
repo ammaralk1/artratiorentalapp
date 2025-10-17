@@ -19,6 +19,11 @@ export function setReservationsState(reservations) {
   reservationsState = Array.isArray(reservations)
     ? reservations.map(toInternalReservation)
     : [];
+  if (reservationsState.length) {
+    console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
+  } else {
+    console.debug('[reservationsService] setReservationsState empty state');
+  }
   saveData({ reservations: reservationsState });
   return reservationsState;
 }
@@ -95,6 +100,7 @@ export async function updateReservationApi(id, payload) {
     body: payload,
   });
   const updated = mapReservationFromApi(response?.data ?? {});
+  console.debug('[reservationsService] updateReservationApi mapped history', updated.paymentHistory);
   if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
     updated.companySharePercent = Number(payload.company_share_percent) || 0;
   }
@@ -102,6 +108,7 @@ export async function updateReservationApi(id, payload) {
     const fallbackHistory = normalizePaymentHistoryCollection(payload.payment_history);
     if (fallbackHistory.length) {
       updated.paymentHistory = fallbackHistory;
+      console.debug('[reservationsService] updateReservationApi applied fallback history', updated.paymentHistory);
     }
   }
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
