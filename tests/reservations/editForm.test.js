@@ -16,6 +16,12 @@ const getEditingStateMock = vi.fn();
 const setEditingStateMock = vi.fn();
 const clearEditingStateMock = vi.fn();
 const saveReservationChangesMock = vi.fn();
+const getEditingPaymentsMock = vi.fn(() => []);
+const setEditingPaymentsMock = vi.fn();
+const addEditingPaymentMock = vi.fn();
+const removeEditingPaymentMock = vi.fn();
+const getEditPaymentProgressTypeMock = vi.fn(() => 'amount');
+const parseEditPaymentProgressValueMock = vi.fn(() => 100);
 const normalizeBarcodeValueMock = vi.fn();
 const combineDateTimeMock = vi.fn();
 const hasEquipmentConflictMock = vi.fn();
@@ -31,7 +37,8 @@ vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
 vi.mock('../../src/scripts/utils.js', () => ({
   showToast: showToastMock,
-  normalizeNumbers: normalizeNumbersMock
+  normalizeNumbers: normalizeNumbersMock,
+  formatDateTime: vi.fn(() => '2024-01-01 12:00')
 }));
 vi.mock('../../src/scripts/reservationsEquipment.js', () => ({
   resolveItemImage: resolveItemImageMock,
@@ -49,7 +56,13 @@ vi.mock('../../src/scripts/reservationsEdit.js', () => ({
   getEditingState: getEditingStateMock,
   setEditingState: setEditingStateMock,
   clearEditingState: clearEditingStateMock,
-  saveReservationChanges: saveReservationChangesMock
+  saveReservationChanges: saveReservationChangesMock,
+  getEditingPayments: getEditingPaymentsMock,
+  setEditingPayments: setEditingPaymentsMock,
+  addEditingPayment: addEditingPaymentMock,
+  removeEditingPayment: removeEditingPaymentMock,
+  getEditPaymentProgressType: getEditPaymentProgressTypeMock,
+  parseEditPaymentProgressValue: parseEditPaymentProgressValueMock
 }));
 vi.mock('../../src/scripts/reservations/list/index.js', () => ({}));
 vi.mock('../../src/scripts/reservations/state.js', () => ({
@@ -100,6 +113,12 @@ describe('reservations/editForm module', () => {
     renderEditSummaryMock.mockReset().mockReturnValue('<div>summary</div>');
     getEditingStateMock.mockReset().mockReturnValue({ index: 0, items: [] });
     setEditingStateMock.mockReset();
+    getEditingPaymentsMock.mockReset().mockReturnValue([]);
+    setEditingPaymentsMock.mockReset();
+    addEditingPaymentMock.mockReset();
+    removeEditingPaymentMock.mockReset();
+    getEditPaymentProgressTypeMock.mockReset().mockReturnValue('amount');
+    parseEditPaymentProgressValueMock.mockReset().mockReturnValue(100);
     normalizeBarcodeValueMock.mockReset().mockImplementation((value) => String(value || '').trim().toUpperCase());
     combineDateTimeMock.mockReset().mockImplementation((date, time) => `${date}T${time}`);
     hasEquipmentConflictMock.mockReset().mockReturnValue(false);
@@ -157,6 +176,61 @@ describe('reservations/editForm module', () => {
     ]);
     expect(container.querySelector('.reservation-item-title')?.textContent).toContain('Camera');
     expect(container.querySelector('[data-action="increase-edit-group"]')).toBeTruthy();
+  });
+
+  it('handleAddPaymentHistoryEntry registers payments when value is valid', async () => {
+    const typeSelect = document.createElement('select');
+    typeSelect.id = 'edit-res-payment-progress-type';
+    typeSelect.innerHTML = '<option value="amount" selected>Amount</option>';
+
+    const valueInput = document.createElement('input');
+    valueInput.id = 'edit-res-payment-progress-value';
+
+    const addButton = document.createElement('button');
+    addButton.id = 'edit-res-payment-add';
+    addButton.type = 'button';
+
+    const historyContainer = document.createElement('div');
+    historyContainer.id = 'edit-res-payment-history';
+
+    const summaryContainer = document.createElement('div');
+    summaryContainer.id = 'edit-res-summary';
+
+    document.body.append(typeSelect, valueInput, addButton, historyContainer, summaryContainer);
+
+    const paymentSnapshot = [{
+      type: 'amount',
+      amount: 150,
+      percentage: 10,
+      recordedAt: '2024-01-01T00:00:00.000Z'
+    }];
+    getEditingPaymentsMock.mockReturnValue(paymentSnapshot);
+    parseEditPaymentProgressValueMock.mockReturnValue(150);
+
+    renderEditSummaryMock.mockImplementation(() => {
+      renderEditSummaryMock.lastResult = {
+        total: 1500,
+        paymentStatus: 'partial',
+        paymentProgressType: 'amount',
+        paymentProgressValue: 150,
+        paidAmount: 150,
+        paidPercent: 10
+      };
+      return '<div>summary</div>';
+    });
+
+    const module = await import('../../src/scripts/reservations/editForm.js');
+
+    module.updateEditReservationSummary();
+
+    valueInput.value = '150';
+    addButton.click();
+
+    expect(getEditPaymentProgressTypeMock).toHaveBeenCalled();
+    expect(parseEditPaymentProgressValueMock).toHaveBeenCalled();
+    expect(addEditingPaymentMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'amount', amount: 150 }));
+    expect(setEditingPaymentsMock).toHaveBeenCalledWith(paymentSnapshot);
+    expect(showToastMock).toHaveBeenCalledWith('✅ تم تسجيل الدفعة');
   });
 
   it('renderEditReservationItems binds remove buttons to handler', async () => {
