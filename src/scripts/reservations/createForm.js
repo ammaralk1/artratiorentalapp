@@ -924,7 +924,7 @@ function addDraftEquipmentByBarcode(rawCode, inputElement) {
   }
 
   const availability = getEquipmentAvailabilityStatus(item);
-  if (availability !== 'available') {
+  if (availability === 'maintenance' || availability === 'retired') {
     showToast(getEquipmentUnavailableMessage(availability));
     return false;
   }
@@ -965,7 +965,7 @@ function addDraftEquipmentByDescription(inputElement) {
 
   const latestRecord = getEquipmentRecordByBarcode(equipmentItem.barcode);
   const availability = getEquipmentAvailabilityStatus(latestRecord || equipmentItem);
-  if (availability !== 'available') {
+  if (availability === 'maintenance' || availability === 'retired') {
     showToast(getEquipmentUnavailableMessage(availability));
     return;
   }

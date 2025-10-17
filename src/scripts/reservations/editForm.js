@@ -466,7 +466,7 @@ export function addEquipmentToEditingReservation(barcodeInput) {
   }
 
   const availability = getEquipmentAvailabilityStatus(equipmentItem);
-  if (availability !== 'available') {
+  if (availability === 'maintenance' || availability === 'retired') {
     showToast(getEquipmentUnavailableMessage(availability));
     return;
   }
@@ -534,7 +534,7 @@ export function addEquipmentToEditingByDescription(inputElement) {
   }
 
   const availability = getEquipmentAvailabilityStatus(equipmentItem);
-  if (availability !== 'available') {
+  if (availability === 'maintenance' || availability === 'retired') {
     showToast(getEquipmentUnavailableMessage(availability));
     return;
   }
