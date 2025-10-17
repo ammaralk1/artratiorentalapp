@@ -257,11 +257,19 @@ export function toInternalReservation(raw = {}) {
     companyShareEnabled = true;
   }
 
-  const rawHistory = Array.isArray(raw.payment_history)
-    ? raw.payment_history
-    : Array.isArray(raw.paymentHistory)
-      ? raw.paymentHistory
-      : [];
+  const candidateHistories = [
+    raw.payment_history,
+    raw.paymentHistory,
+    raw.payments,
+    raw.payment_records,
+    raw.paymentRecords,
+    raw.payment_logs,
+    raw.paymentLogs,
+    raw.paymenthistory,
+    raw.paymentHistoryList,
+  ];
+
+  const rawHistory = candidateHistories.find((entry) => Array.isArray(entry)) || [];
   const paymentHistory = normalizePaymentHistoryCollection(rawHistory);
 
   const paymentProgress = calculatePaymentProgress({
@@ -384,12 +392,38 @@ export function buildReservationPayload({
       : null,
     payment_history: Array.isArray(paymentHistory)
       ? paymentHistory.map((entry) => ({
-          type: entry?.type === 'amount' || entry?.type === 'percent' ? entry.type : null,
+          type: normalizePaymentType(entry?.type ?? entry?.payment_type ?? entry?.method ?? entry?.paymentMethod),
           value: entry?.value != null ? toNumber(entry.value) : null,
-          amount: entry?.amount != null ? toNumber(entry.amount) : null,
-          percentage: entry?.percentage != null ? Number(entry.percentage) : null,
-          note: entry?.note ?? null,
-          recorded_at: entry?.recordedAt ?? entry?.recorded_at ?? new Date().toISOString(),
+          amount: entry?.amount != null ? toNumber(entry.amount) : (entry?.payment_amount != null ? toNumber(entry.payment_amount) : null),
+          percentage: entry?.percentage != null
+            ? Number(entry.percentage)
+            : (entry?.payment_percentage != null ? Number(entry.payment_percentage) : null),
+          note: entry?.note ?? entry?.notes ?? entry?.comment ?? entry?.payment_note ?? null,
+          recorded_at: entry?.recordedAt
+            ?? entry?.recorded_at
+            ?? entry?.createdAt
+            ?? entry?.created_at
+            ?? entry?.payment_date
+            ?? entry?.date
+            ?? new Date().toISOString(),
+        }))
+      : [],
+    payments: Array.isArray(paymentHistory)
+      ? paymentHistory.map((entry) => ({
+          type: normalizePaymentType(entry?.type ?? entry?.payment_type ?? entry?.method ?? entry?.paymentMethod),
+          value: entry?.value != null ? toNumber(entry.value) : null,
+          amount: entry?.amount != null ? toNumber(entry.amount) : (entry?.payment_amount != null ? toNumber(entry.payment_amount) : null),
+          percentage: entry?.percentage != null
+            ? Number(entry.percentage)
+            : (entry?.payment_percentage != null ? Number(entry.payment_percentage) : null),
+          note: entry?.note ?? entry?.notes ?? entry?.comment ?? entry?.payment_note ?? null,
+          recorded_at: entry?.recordedAt
+            ?? entry?.recorded_at
+            ?? entry?.createdAt
+            ?? entry?.created_at
+            ?? entry?.payment_date
+            ?? entry?.date
+            ?? new Date().toISOString(),
         }))
       : [],
     confirmed: confirmed === undefined ? null : Boolean(confirmed),
@@ -431,10 +465,31 @@ function normalizePaymentHistoryCollection(source) {
         return null;
       }
 
-      const type = entry.type === 'amount' || entry.type === 'percent' ? entry.type : null;
-      const valueRaw = entry.value != null ? Number.parseFloat(normalizeNumbers(String(entry.value))) : null;
-      const amountRaw = entry.amount != null ? Number.parseFloat(normalizeNumbers(String(entry.amount))) : null;
-      const percentRaw = entry.percentage != null ? Number.parseFloat(normalizeNumbers(String(entry.percentage))) : null;
+      const rawType = entry.type
+        ?? entry.payment_type
+        ?? entry.paymentType
+        ?? entry.method
+        ?? entry.paymentMethod
+        ?? entry.kind
+        ?? null;
+      const type = normalizePaymentType(rawType);
+
+      const valueCandidate = entry.value
+        ?? entry.payment_value
+        ?? entry.paymentValue
+        ?? entry.amount
+        ?? entry.payment_amount
+        ?? entry.percentage
+        ?? entry.payment_percentage
+        ?? null;
+
+      const valueRaw = valueCandidate != null ? Number.parseFloat(normalizeNumbers(String(valueCandidate))) : null;
+      const amountRaw = entry.amount != null
+        ? Number.parseFloat(normalizeNumbers(String(entry.amount)))
+        : (entry.payment_amount != null ? Number.parseFloat(normalizeNumbers(String(entry.payment_amount))) : null);
+      const percentRaw = entry.percentage != null
+        ? Number.parseFloat(normalizeNumbers(String(entry.percentage)))
+        : (entry.payment_percentage != null ? Number.parseFloat(normalizeNumbers(String(entry.payment_percentage))) : null);
 
       const resolvedAmount = Number.isFinite(amountRaw)
         ? amountRaw
@@ -453,16 +508,37 @@ function normalizePaymentHistoryCollection(source) {
           ? resolvedPercent
           : Number.isFinite(valueRaw) ? valueRaw : null;
 
+      const note = entry.note ?? entry.notes ?? entry.comment ?? entry.payment_note ?? null;
+      const recordedAt = entry.recordedAt
+        ?? entry.recorded_at
+        ?? entry.payment_date
+        ?? entry.date
+        ?? entry.createdAt
+        ?? entry.created_at
+        ?? null;
+
       return {
         type: resolvedType,
         value: resolvedValue,
         amount: resolvedAmount,
         percentage: resolvedPercent,
-        note: entry.note ?? null,
-        recordedAt: entry.recordedAt ?? entry.recorded_at ?? null,
+        note,
+        recordedAt,
       };
     })
     .filter((entry) => entry && entry.type);
+}
+
+function normalizePaymentType(value) {
+  if (!value) return null;
+  const normalized = String(value).trim().toLowerCase();
+  if (['amount', 'fixed', 'cash', 'value', 'money', 'sar', 'riyals'].includes(normalized)) {
+    return 'amount';
+  }
+  if (['percent', 'percentage', 'ratio'].includes(normalized)) {
+    return 'percent';
+  }
+  return null;
 }
 
 function toNumber(value) {
