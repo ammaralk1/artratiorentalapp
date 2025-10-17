@@ -266,11 +266,20 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   `).join('');
 
   console.debug('[reservations/details] payment history raw', reservation.paymentHistory, reservation.payment_history);
-  const paymentHistory = Array.isArray(reservation.paymentHistory)
-    ? reservation.paymentHistory
-    : Array.isArray(reservation.payment_history)
-      ? reservation.payment_history
-      : [];
+  let originalHistory = [];
+  if (Array.isArray(reservation.paymentHistory)) {
+    originalHistory = reservation.paymentHistory;
+  } else if (Array.isArray(reservation.payment_history)) {
+    originalHistory = reservation.payment_history;
+  }
+
+  const fallbackHistory = Array.isArray(reservation.paymentLogs)
+    ? reservation.paymentLogs
+    : []; // تعويض لأي مصادر أخرى لاحقاً
+
+  const paymentHistory = Array.isArray(originalHistory)
+    ? originalHistory
+    : fallbackHistory;
 
   const paymentHistoryHtml = paymentHistory.length
     ? `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
