@@ -312,6 +312,7 @@ export function toInternalReservation(raw = {}) {
     paymentProgressType: paymentProgress.paymentProgressType,
     paymentProgressValue: paymentProgress.paymentProgressValue,
     paymentHistory,
+    payment_history: paymentHistory,
     totalAmount,
     cost: totalAmount,
     projectId: raw.project_id ?? raw.projectId ?? null,
