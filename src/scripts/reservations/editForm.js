@@ -185,6 +185,8 @@ function renderEditPaymentHistory() {
       </table>
     </div>
   `;
+
+  setupPaymentHistoryEvents();
 }
 
 function handleAddPaymentHistoryEntry() {
@@ -197,11 +199,29 @@ function handleAddPaymentHistoryEntry() {
     return;
   }
 
+  const summarySnapshot = renderEditSummary.lastResult;
+  const total = summarySnapshot?.total ?? 0;
+
+  let amount = null;
+  let percentage = null;
+
+  if (type === 'amount') {
+    amount = value;
+    if (total > 0) {
+      percentage = (value / total) * 100;
+    }
+  } else {
+    percentage = value;
+    if (total > 0) {
+      amount = (value / 100) * total;
+    }
+  }
+
   const entry = {
     type,
     value,
-    amount: type === 'amount' ? value : null,
-    percentage: type === 'percent' ? value : null,
+    amount: amount != null ? Number(amount.toFixed(2)) : null,
+    percentage: percentage != null ? Number(percentage.toFixed(2)) : null,
     recordedAt: new Date().toISOString(),
   };
 
@@ -215,6 +235,30 @@ function handleAddPaymentHistoryEntry() {
   }
 
   showToast(t('reservations.toast.paymentAdded', '✅ تم تسجيل الدفعة'));
+}
+
+function setupPaymentHistoryEvents() {
+  const addButton = document.getElementById('edit-res-payment-add');
+  if (addButton && !addButton.dataset.listenerAttached) {
+    addButton.addEventListener('click', handleAddPaymentHistoryEntry);
+    addButton.dataset.listenerAttached = 'true';
+  }
+
+  const historyContainer = document.getElementById('edit-res-payment-history');
+  if (historyContainer && !historyContainer.dataset.listenerAttached) {
+    historyContainer.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action="remove-payment"]');
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      if (Number.isNaN(index)) return;
+      removeEditingPayment(index);
+      setEditingPayments(getEditingPayments());
+      renderEditPaymentHistory();
+      updateEditReservationSummary();
+      showToast(t('reservations.toast.paymentRemoved', '🗑️ تم حذف الدفعة'));
+    });
+    historyContainer.dataset.listenerAttached = 'true';
+  }
 }
 
 function decreaseEditReservationGroup(groupKey) {
@@ -587,4 +631,5 @@ if (typeof document !== 'undefined') {
 
 if (typeof window !== 'undefined') {
   window.getEditReservationDateRange = getEditReservationDateRange;
+  window.renderEditPaymentHistory = renderEditPaymentHistory;
 }

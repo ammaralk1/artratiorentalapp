@@ -63,6 +63,12 @@ export async function createReservationApi(payload) {
   if (!Number.isFinite(created.companySharePercent) && payload?.company_share_percent != null) {
     created.companySharePercent = Number(payload.company_share_percent) || 0;
   }
+  if ((!Array.isArray(created.paymentHistory) || created.paymentHistory.length === 0) && Array.isArray(payload?.payment_history)) {
+    const fallbackHistory = normalizePaymentHistoryCollection(payload.payment_history);
+    if (fallbackHistory.length) {
+      created.paymentHistory = fallbackHistory;
+    }
+  }
   if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
       items: created.items || [],
@@ -91,6 +97,12 @@ export async function updateReservationApi(id, payload) {
   const updated = mapReservationFromApi(response?.data ?? {});
   if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
     updated.companySharePercent = Number(payload.company_share_percent) || 0;
+  }
+  if ((!Array.isArray(updated.paymentHistory) || updated.paymentHistory.length === 0) && Array.isArray(payload?.payment_history)) {
+    const fallbackHistory = normalizePaymentHistoryCollection(payload.payment_history);
+    if (fallbackHistory.length) {
+      updated.paymentHistory = fallbackHistory;
+    }
   }
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
@@ -250,14 +262,7 @@ export function toInternalReservation(raw = {}) {
     : Array.isArray(raw.paymentHistory)
       ? raw.paymentHistory
       : [];
-  const paymentHistory = rawHistory.map((entry) => ({
-    type: entry?.type === 'amount' || entry?.type === 'percent' ? entry.type : null,
-    value: entry?.value != null ? Number.parseFloat(normalizeNumbers(String(entry.value))) : null,
-    amount: entry?.amount != null ? Number.parseFloat(normalizeNumbers(String(entry.amount))) : null,
-    percentage: entry?.percentage != null ? Number.parseFloat(normalizeNumbers(String(entry.percentage))) : null,
-    note: entry?.note ?? null,
-    recordedAt: entry?.recordedAt ?? entry?.recorded_at ?? null,
-  })).filter((entry) => entry.type || Number.isFinite(entry.amount) || Number.isFinite(entry.percentage));
+  const paymentHistory = normalizePaymentHistoryCollection(rawHistory);
 
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
@@ -413,6 +418,51 @@ export function buildReservationPayload({
         })
       : [],
   };
+}
+
+function normalizePaymentHistoryCollection(source) {
+  if (!Array.isArray(source)) {
+    return [];
+  }
+
+  return source
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return null;
+      }
+
+      const type = entry.type === 'amount' || entry.type === 'percent' ? entry.type : null;
+      const valueRaw = entry.value != null ? Number.parseFloat(normalizeNumbers(String(entry.value))) : null;
+      const amountRaw = entry.amount != null ? Number.parseFloat(normalizeNumbers(String(entry.amount))) : null;
+      const percentRaw = entry.percentage != null ? Number.parseFloat(normalizeNumbers(String(entry.percentage))) : null;
+
+      const resolvedAmount = Number.isFinite(amountRaw)
+        ? amountRaw
+        : (type === 'amount' && Number.isFinite(valueRaw) ? valueRaw : null);
+
+      const resolvedPercent = Number.isFinite(percentRaw)
+        ? percentRaw
+        : (type === 'percent' && Number.isFinite(valueRaw) ? valueRaw : null);
+
+      const resolvedType = type
+        ?? (resolvedAmount != null ? 'amount' : (resolvedPercent != null ? 'percent' : null));
+
+      const resolvedValue = resolvedType === 'amount'
+        ? resolvedAmount
+        : resolvedType === 'percent'
+          ? resolvedPercent
+          : Number.isFinite(valueRaw) ? valueRaw : null;
+
+      return {
+        type: resolvedType,
+        value: resolvedValue,
+        amount: resolvedAmount,
+        percentage: resolvedPercent,
+        note: entry.note ?? null,
+        recordedAt: entry.recordedAt ?? entry.recorded_at ?? null,
+      };
+    })
+    .filter((entry) => entry && entry.type);
 }
 
 function toNumber(value) {
