@@ -943,7 +943,7 @@ export function syncEquipmentStatuses() {
     const itemCode = normalizeNumbers(String(item.barcode ?? "")).trim().toLowerCase();
     const inMaintenance = itemCode && maintenanceSet.has(itemCode);
 
-    let newStatus = inMaintenance ? "maintenance" : itemStatus;
+    let newStatus = inMaintenance ? "maintenance" : "available";
 
     if (!inMaintenance && itemCode) {
       for (const reservation of reservations || []) {
@@ -966,7 +966,7 @@ export function syncEquipmentStatuses() {
       return { ...item, status: newStatus };
     }
 
-    return { ...item, status: itemStatus };
+    return { ...item, status: newStatus };
   });
 
   if (changed) {
