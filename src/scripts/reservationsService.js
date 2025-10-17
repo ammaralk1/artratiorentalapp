@@ -267,9 +267,10 @@ export function toInternalReservation(raw = {}) {
     raw.paymentLogs,
     raw.paymenthistory,
     raw.paymentHistoryList,
+    raw.payment,
   ];
 
-  const rawHistory = candidateHistories.find((entry) => Array.isArray(entry)) || [];
+  const rawHistory = extractPaymentHistoryFromCandidates(candidateHistories);
   const paymentHistory = normalizePaymentHistoryCollection(rawHistory);
 
   const paymentProgress = calculatePaymentProgress({
@@ -455,11 +456,12 @@ export function buildReservationPayload({
 }
 
 function normalizePaymentHistoryCollection(source) {
-  if (!Array.isArray(source)) {
+  const collection = extractPaymentHistorySource(source);
+  if (!Array.isArray(collection) || collection.length === 0) {
     return [];
   }
 
-  return source
+  return collection
     .map((entry) => {
       if (!entry || typeof entry !== 'object') {
         return null;
@@ -539,6 +541,51 @@ function normalizePaymentType(value) {
     return 'percent';
   }
   return null;
+}
+
+function extractPaymentHistorySource(source) {
+  if (Array.isArray(source)) {
+    return source;
+  }
+
+  if (source && typeof source === 'object') {
+    const candidates = [
+      source.data,
+      source.items,
+      source.records,
+      source.history,
+      source.list,
+      source.entries,
+      source.payment_history,
+      source.paymentHistory,
+    ];
+    const nested = candidates.find((entry) => Array.isArray(entry));
+    if (Array.isArray(nested)) {
+      return nested;
+    }
+  }
+
+  if (typeof source === 'string') {
+    try {
+      const parsed = JSON.parse(source);
+      return extractPaymentHistorySource(parsed);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function extractPaymentHistoryFromCandidates(candidates = []) {
+  if (!Array.isArray(candidates)) return [];
+  for (const candidate of candidates) {
+    const extracted = extractPaymentHistorySource(candidate);
+    if (Array.isArray(extracted) && extracted.length) {
+      return extracted;
+    }
+  }
+  return [];
 }
 
 function toNumber(value) {
