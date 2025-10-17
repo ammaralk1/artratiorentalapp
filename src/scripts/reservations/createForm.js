@@ -1014,6 +1014,8 @@ function addDraftEquipmentByDescription(inputElement) {
   renderReservationItems();
   renderDraftReservationSummary();
 
+  showToast(t('reservations.toast.equipmentAdded', '✅ تم إضافة المعدة بنجاح'));
+
   inputElement.value = '';
 }
 
