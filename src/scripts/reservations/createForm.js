@@ -1432,7 +1432,7 @@ async function handleReservationSubmit() {
 
   for (const item of draftItems) {
     const status = getEquipmentAvailabilityStatus(item.barcode);
-    if (status !== 'available') {
+    if (status === 'maintenance' || status === 'retired') {
       showToast(getEquipmentUnavailableMessage(status));
       return;
     }
