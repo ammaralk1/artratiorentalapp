@@ -141,6 +141,7 @@ function renderEditPaymentHistory() {
   const payments = getEditingPayments();
   if (!Array.isArray(payments) || payments.length === 0) {
     container.innerHTML = `<div class="reservation-payment-history__empty">${t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة لهذا الحجز')}</div>`;
+    setupPaymentHistoryEvents();
     return;
   }
 
