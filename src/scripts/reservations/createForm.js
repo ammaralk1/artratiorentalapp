@@ -1281,8 +1281,16 @@ function setupSummaryEvents() {
 
   const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
   if (paymentProgressTypeSelect && !paymentProgressTypeSelect.dataset.listenerAttached) {
-    paymentProgressTypeSelect.addEventListener('change', renderDraftReservationSummary);
+    if (paymentProgressTypeSelect.dataset.userSelected !== 'true') {
+      paymentProgressTypeSelect.value = 'percent';
+    }
+    paymentProgressTypeSelect.addEventListener('change', (event) => {
+      paymentProgressTypeSelect.dataset.userSelected = 'true';
+      renderDraftReservationSummary();
+    });
     paymentProgressTypeSelect.dataset.listenerAttached = 'true';
+  } else if (paymentProgressTypeSelect && paymentProgressTypeSelect.dataset.userSelected !== 'true' && !paymentProgressTypeSelect.value) {
+    paymentProgressTypeSelect.value = 'percent';
   }
 
   const paymentProgressValueInput = document.getElementById('res-payment-progress-value');

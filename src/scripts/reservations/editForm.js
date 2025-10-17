@@ -196,35 +196,75 @@ function handleAddPaymentHistoryEntry() {
   const typeSelect = document.getElementById('edit-res-payment-progress-type');
   const valueInput = document.getElementById('edit-res-payment-progress-value');
   const type = getEditPaymentProgressType(typeSelect);
-  const value = parseEditPaymentProgressValue(valueInput);
+  let value = parseEditPaymentProgressValue(valueInput);
   if (!Number.isFinite(value) || value <= 0) {
     showToast(t('reservations.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
     return;
   }
 
   const summarySnapshot = renderEditSummary.lastResult;
-  const total = summarySnapshot?.total ?? 0;
+  const total = Number(summarySnapshot?.total) || 0;
+  const alreadyPaidPercent = Number(summarySnapshot?.paidPercent) || 0;
+  const alreadyPaidAmount = Number(summarySnapshot?.paidAmount) || 0;
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
 
   let amount = null;
   let percentage = null;
 
-  if (type === 'amount') {
-    amount = value;
-    if (total > 0) {
-      percentage = (value / total) * 100;
+  if (type === 'percent') {
+    const remainingPercent = Math.max(0, 100 - alreadyPaidPercent);
+    if (remainingPercent <= 0.0001) {
+      showToast(t('reservations.toast.paymentNoRemainingBalance', '⚠️ تم تسجيل كامل قيمة الحجز، لا يمكن إضافة دفعة جديدة'));
+      return;
     }
-  } else {
-    percentage = value;
+
+    const cappedPercent = Math.min(value, remainingPercent);
+    if (cappedPercent !== value) {
+      const formattedPercent = normalizeNumbers(cappedPercent.toFixed(2));
+      showToast(
+        t('reservations.toast.paymentCappedPercent', 'ℹ️ تم ضبط الدفعة إلى {value}% لاستكمال 100%').replace('{value}', formattedPercent)
+      );
+      value = cappedPercent;
+    }
+
+    percentage = Number(value.toFixed(2));
     if (total > 0) {
       amount = (value / 100) * total;
     }
+  } else {
+    const remainingAmount = Math.max(0, total - alreadyPaidAmount);
+    if (remainingAmount <= 0.0001) {
+      showToast(t('reservations.toast.paymentNoRemainingBalance', '⚠️ تم تسجيل كامل قيمة الحجز، لا يمكن إضافة دفعة جديدة'));
+      return;
+    }
+
+    const cappedAmount = Math.min(value, remainingAmount);
+    if (cappedAmount !== value) {
+      const formattedAmount = `${normalizeNumbers(cappedAmount.toFixed(2))} ${currencyLabel}`;
+      showToast(
+        t('reservations.toast.paymentCappedAmount', 'ℹ️ تم ضبط الدفعة إلى {amount} لاستكمال المبلغ المتبقي').replace('{amount}', formattedAmount)
+      );
+      value = cappedAmount;
+    }
+
+    amount = Number(value.toFixed(2));
+    if (total > 0) {
+      percentage = (amount / total) * 100;
+    }
+  }
+
+  if (amount != null) {
+    amount = Number(amount.toFixed(2));
+  }
+  if (percentage != null) {
+    percentage = Number(percentage.toFixed(2));
   }
 
   const entry = {
     type,
     value,
-    amount: amount != null ? Number(amount.toFixed(2)) : null,
-    percentage: percentage != null ? Number(percentage.toFixed(2)) : null,
+    amount,
+    percentage,
     recordedAt: new Date().toISOString(),
   };
 

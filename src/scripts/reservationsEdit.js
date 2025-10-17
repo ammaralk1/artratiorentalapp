@@ -435,11 +435,13 @@ export function editReservation(index, {
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
   let resolvedProgressType = reservation.paymentProgressType;
-  if (!resolvedProgressType) {
-    if (Number.isFinite(Number(reservation.paidAmount)) && reservation.paidAmount > 0) {
-      resolvedProgressType = 'amount';
-    } else if (Number.isFinite(Number(reservation.paidPercent)) && reservation.paidPercent > 0) {
+  const hasPercentHistory = Number.isFinite(Number(reservation.paidPercent)) && Number(reservation.paidPercent) > 0;
+  const hasAmountHistory = Number.isFinite(Number(reservation.paidAmount)) && Number(reservation.paidAmount) > 0;
+  if (resolvedProgressType !== 'amount' && resolvedProgressType !== 'percent') {
+    if (hasPercentHistory) {
       resolvedProgressType = 'percent';
+    } else if (hasAmountHistory) {
+      resolvedProgressType = 'amount';
     } else {
       resolvedProgressType = 'percent';
     }
@@ -788,7 +790,10 @@ export function setupEditReservationModalEvents(context = {}) {
 
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   if (paymentProgressTypeSelect && !paymentProgressTypeSelect.dataset.listenerAttached) {
-    paymentProgressTypeSelect.addEventListener('change', () => updateEditReservationSummary?.());
+    paymentProgressTypeSelect.addEventListener('change', () => {
+      paymentProgressTypeSelect.dataset.userSelected = 'true';
+      updateEditReservationSummary?.();
+    });
     paymentProgressTypeSelect.dataset.listenerAttached = 'true';
   }
 
