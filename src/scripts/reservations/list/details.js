@@ -277,7 +277,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ? reservation.paymentLogs
     : []; // تعويض لأي مصادر أخرى لاحقاً
 
-  const paymentHistory = Array.isArray(originalHistory)
+  const paymentHistory = Array.isArray(originalHistory) && originalHistory.length > 0
     ? originalHistory
     : fallbackHistory;
 
