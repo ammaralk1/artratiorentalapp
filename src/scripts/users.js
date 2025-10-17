@@ -1,3 +1,4 @@
+import '../styles/app.css';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout, getCurrentUser } from './auth.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -229,16 +230,18 @@ function roleBadge(role) {
     manager: t('users.badges.role.manager', 'Manager'),
     technician: t('users.badges.role.technician', 'Technician'),
   };
+
   const badgeClass = normalized === 'admin'
-    ? 'bg-danger-subtle text-danger'
+    ? 'badge badge-outline badge-error'
     : normalized === 'manager'
-      ? 'bg-primary-subtle text-primary'
-      : 'bg-secondary-subtle text-body';
-  return `<span class="badge ${badgeClass}">${escapeHtml(labels[normalized] || role || '')}</span>`;
+      ? 'badge badge-outline badge-primary'
+      : 'badge badge-outline';
+
+  return `<span class="${badgeClass}">${escapeHtml(labels[normalized] || role || '')}</span>`;
 }
 
 function currentUserBadge() {
-  return `<span class="badge bg-info-subtle text-info">${escapeHtml(t('users.badges.currentUser', '🧑‍💻 Current account'))}</span>`;
+  return `<span class="badge badge-outline badge-info">${escapeHtml(t('users.badges.currentUser', '🧑‍💻 Current account'))}</span>`;
 }
 
 function buildUsersTableRow(user) {
@@ -256,17 +259,17 @@ function buildUsersTableRow(user) {
 
   return `
     <tr data-user-id="${user.id}">
-      <td class="fw-semibold">${username}${selfBadge}</td>
+      <td class="font-semibold text-base-content">${username}${selfBadge}</td>
       <td>${roleBadge(user.role)}</td>
       <td>${lastLogin}</td>
       <td>${createdAt}</td>
-      <td><span class="badge bg-light text-body">${sessions}</span></td>
-      <td><span class="badge bg-light text-body">${activity}</span></td>
+      <td><span class="badge badge-outline badge-primary badge-sm">${sessions}</span></td>
+      <td><span class="badge badge-outline badge-secondary badge-sm">${activity}</span></td>
       <td>
-        <div class="btn-group btn-group-sm" role="group">
-          <button type="button" class="btn btn-outline-primary" data-action="logs" data-id="${user.id}" title="${logsLabel}">📜</button>
-          <button type="button" class="btn btn-outline-secondary" data-action="edit" data-id="${user.id}" title="${editLabel}">✏️</button>
-          <button type="button" class="btn btn-outline-danger" data-action="delete" data-id="${user.id}" ${disableDelete} title="${deleteLabel}">🗑️</button>
+        <div class="flex flex-wrap items-center gap-1.5" role="group">
+          <button type="button" class="btn btn-ghost btn-sm" data-action="logs" data-id="${user.id}" title="${logsLabel}">📜</button>
+          <button type="button" class="btn btn-outline btn-sm" data-action="edit" data-id="${user.id}" title="${editLabel}">✏️</button>
+          <button type="button" class="btn btn-outline btn-error btn-sm" data-action="delete" data-id="${user.id}" ${disableDelete} title="${deleteLabel}">🗑️</button>
         </div>
       </td>
     </tr>
