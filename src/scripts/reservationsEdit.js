@@ -109,7 +109,7 @@ function ensureModalInstance(modalElement, factory) {
   return null;
 }
 
-function getEditPaymentProgressType(select, fallback = 'percent') {
+export function getEditPaymentProgressType(select, fallback = 'percent') {
   const value = select?.value;
   if (value === 'amount' || value === 'percent') {
     return value;
@@ -117,7 +117,7 @@ function getEditPaymentProgressType(select, fallback = 'percent') {
   return fallback;
 }
 
-function parseEditPaymentProgressValue(input) {
+export function parseEditPaymentProgressValue(input) {
   if (!input) return null;
   const raw = normalizeNumbers(String(input.value || '')).replace('%', '').trim();
   if (!raw) return null;

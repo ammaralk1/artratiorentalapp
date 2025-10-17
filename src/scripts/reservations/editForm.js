@@ -21,6 +21,8 @@ import {
   addEditingPayment,
   removeEditingPayment,
   setEditingPayments,
+  getEditPaymentProgressType,
+  parseEditPaymentProgressValue,
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
 import {
