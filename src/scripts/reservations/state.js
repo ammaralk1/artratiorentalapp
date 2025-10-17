@@ -1,5 +1,6 @@
 import { loadData } from '../storage.js';
 import { normalizeNumbers } from '../utils.js';
+import { categorizeMaintenanceStatus } from '../maintenanceService.js';
 
 let selectedItems = [];
 let cachedCustomers = [];
@@ -82,12 +83,19 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
   const start = new Date(startIso);
   const end = new Date(endIso);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
+  if (start >= end) return false;
 
-  const { reservations = [] } = loadData();
   const normalizedCode = normalizeBarcodeValue(barcode);
+  if (!normalizedCode) return false;
+
+  const snapshot = loadData() || {};
+  const reservations = Array.isArray(snapshot.reservations) ? snapshot.reservations : [];
+  const maintenance = Array.isArray(snapshot.maintenance) ? snapshot.maintenance : [];
+  const equipmentList = Array.isArray(snapshot.equipment) ? snapshot.equipment : [];
+  const equipmentIndex = buildEquipmentIndexById(equipmentList);
   const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
 
-  return reservations.some((reservation) => {
+  const reservationConflict = reservations.some((reservation) => {
     if (!reservation || !Array.isArray(reservation.items) || reservation.items.length === 0) {
       return false;
     }
@@ -107,6 +115,244 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
     return reservation.items.some((item) => normalizeBarcodeValue(item?.barcode) === normalizedCode);
   });
+
+  if (reservationConflict) {
+    return true;
+  }
+
+  return maintenance.some((ticket) =>
+    doesMaintenanceTicketConflict(ticket, normalizedCode, start, end, equipmentIndex)
+  );
+}
+
+function doesMaintenanceTicketConflict(ticket, normalizedBarcode, windowStart, windowEnd, equipmentIndex) {
+  if (!ticket) return false;
+  if (!isMaintenanceTicketBlocking(ticket)) return false;
+
+  const ticketBarcodes = resolveMaintenanceTicketBarcodes(ticket, equipmentIndex);
+  if (!ticketBarcodes.has(normalizedBarcode)) return false;
+
+  const { start, end } = resolveMaintenanceInterval(ticket);
+  const effectiveStart = start ?? new Date(0);
+
+  if (effectiveStart >= windowEnd) {
+    return false;
+  }
+
+  if (end && end <= windowStart) {
+    return false;
+  }
+
+  return true;
+}
+
+function isMaintenanceTicketBlocking(ticket) {
+  const statusCandidates = [
+    ticket?.statusRaw,
+    ticket?.status,
+    ticket?.status_label,
+    ticket?.statusLabel,
+  ];
+
+  for (const candidate of statusCandidates) {
+    const category = categorizeMaintenanceStatus(candidate);
+    const normalized = String(category || candidate || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+    if (!normalized) continue;
+
+    if (
+      normalized === 'completed' ||
+      normalized === 'cancelled' ||
+      normalized === 'closed' ||
+      normalized === 'resolved' ||
+      normalized === 'done' ||
+      normalized === 'finished'
+    ) {
+      return false;
+    }
+
+    if (
+      normalized === 'open' ||
+      normalized === 'in_progress' ||
+      normalized === 'in-progress' ||
+      normalized === 'inprogress' ||
+      normalized === 'pending' ||
+      normalized === 'scheduled' ||
+      normalized === 'active'
+    ) {
+      return true;
+    }
+
+    if (
+      normalized.includes('complete') ||
+      normalized.includes('close') ||
+      normalized.includes('cancel') ||
+      normalized.includes('finish') ||
+      normalized.includes('resolve')
+    ) {
+      return false;
+    }
+
+    if (
+      normalized.includes('progress') ||
+      normalized.includes('open') ||
+      normalized.includes('ongoing')
+    ) {
+      return true;
+    }
+  }
+
+  return true;
+}
+
+function resolveMaintenanceTicketBarcodes(ticket, equipmentIndex) {
+  const barcodes = new Set();
+
+  const directCandidates = [
+    ticket?.equipmentBarcode,
+    ticket?.equipment_barcode,
+    ticket?.barcode,
+  ];
+
+  directCandidates.forEach((value) => {
+    const normalized = normalizeBarcodeValue(value);
+    if (normalized) {
+      barcodes.add(normalized);
+    }
+  });
+
+  const equipmentObject = ticket?.equipment && typeof ticket.equipment === 'object' ? ticket.equipment : null;
+  if (equipmentObject) {
+    const equipmentBarcode = normalizeBarcodeValue(
+      equipmentObject.barcode ??
+        equipmentObject.equipmentBarcode ??
+        equipmentObject.code ??
+        equipmentObject.serial ??
+        equipmentObject.serialNumber ??
+        equipmentObject.serial_number
+    );
+    if (equipmentBarcode) {
+      barcodes.add(equipmentBarcode);
+    }
+  }
+
+  const equipmentIdCandidates = [
+    ticket?.equipmentId,
+    ticket?.equipment_id,
+    equipmentObject?.id,
+    equipmentObject?.equipmentId,
+    equipmentObject?.equipment_id,
+  ];
+
+  equipmentIdCandidates
+    .map((value) => (value != null ? String(value) : ''))
+    .filter(Boolean)
+    .forEach((key) => {
+      const record = equipmentIndex.get(key);
+      if (!record) return;
+      const recordBarcode = normalizeBarcodeValue(
+        record?.barcode ??
+          record?.equipmentBarcode ??
+          record?.code ??
+          record?.serial ??
+          record?.serialNumber ??
+          record?.serial_number
+      );
+      if (recordBarcode) {
+        barcodes.add(recordBarcode);
+      }
+    });
+
+  return barcodes;
+}
+
+function resolveMaintenanceInterval(ticket) {
+  const start = parseFirstValidDate([
+    ticket?.scheduledAt,
+    ticket?.scheduled_at,
+    ticket?.startAt,
+    ticket?.start_at,
+    ticket?.reportedAt,
+    ticket?.reported_at,
+    ticket?.createdAt,
+    ticket?.created_at,
+    ticket?.startDate,
+    ticket?.start_date,
+  ]);
+
+  const end = parseFirstValidDate([
+    ticket?.resolvedAt,
+    ticket?.resolved_at,
+    ticket?.closedAt,
+    ticket?.closed_at,
+    ticket?.completedAt,
+    ticket?.completed_at,
+    ticket?.endAt,
+    ticket?.end_at,
+    ticket?.endDate,
+    ticket?.end_date,
+    ticket?.expectedCompletionAt,
+    ticket?.expected_completion_at,
+    ticket?.dueAt,
+    ticket?.due_at,
+  ]);
+
+  return { start, end };
+}
+
+function parseFirstValidDate(candidates = []) {
+  for (const candidate of candidates) {
+    const parsed = parseDateSafe(candidate);
+    if (parsed) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function parseDateSafe(value) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    const timestamp = value.getTime();
+    return Number.isNaN(timestamp) ? null : new Date(timestamp);
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function buildEquipmentIndexById(list) {
+  const index = new Map();
+  if (!Array.isArray(list)) {
+    return index;
+  }
+
+  list.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+
+    const idCandidates = [
+      item?.id,
+      item?.ID,
+      item?.equipment_id,
+      item?.equipmentId,
+      item?.item_id,
+      item?.itemId,
+      item?.uuid,
+      item?.UUID,
+    ];
+
+    idCandidates
+      .map((value) => (value != null ? String(value) : ''))
+      .filter(Boolean)
+      .forEach((key) => {
+        if (!index.has(key)) {
+          index.set(key, item);
+        }
+      });
+  });
+
+  return index;
 }
 
 export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreReservationId = null) {
