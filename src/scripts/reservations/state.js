@@ -125,7 +125,20 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
     }
 
     const ticketBarcodes = resolveMaintenanceTicketBarcodes(ticket, equipmentIndex);
-    return ticketBarcodes.has(normalizedCode);
+    if (!ticketBarcodes.has(normalizedCode)) {
+      return false;
+    }
+
+    const { start: maintenanceStart, end: maintenanceEnd } = resolveMaintenanceInterval(ticket);
+
+    if (!maintenanceStart && !maintenanceEnd) {
+      return true;
+    }
+
+    const effectiveStart = maintenanceStart ?? new Date(0);
+    const effectiveEnd = maintenanceEnd ?? new Date(8640000000000000);
+
+    return effectiveStart < end && effectiveEnd > start;
   });
 }
 
@@ -137,6 +150,10 @@ function isMaintenanceTicketBlocking(ticket) {
     ticket?.statusLabel,
     ticket?.status_label,
   ];
+
+  if (hasMaintenanceTicketResolved(ticket)) {
+    return false;
+  }
 
   for (const candidate of statusCandidates) {
     const normalized = normalizeMaintenanceStatus(candidate);
@@ -287,6 +304,87 @@ function resolveMaintenanceTicketBarcodes(ticket, equipmentIndex) {
     });
 
   return barcodes;
+}
+
+function resolveMaintenanceInterval(ticket) {
+  const start = parseFirstValidDate([
+    ticket?.scheduledAt,
+    ticket?.scheduled_at,
+    ticket?.startAt,
+    ticket?.start_at,
+    ticket?.startDate,
+    ticket?.start_date,
+    ticket?.reportedAt,
+    ticket?.reported_at,
+    ticket?.createdAt,
+    ticket?.created_at,
+  ]);
+
+  const end = parseFirstValidDate([
+    ticket?.resolvedAt,
+    ticket?.resolved_at,
+    ticket?.closedAt,
+    ticket?.closed_at,
+    ticket?.completedAt,
+    ticket?.completed_at,
+    ticket?.finishedAt,
+    ticket?.finished_at,
+    ticket?.endAt,
+    ticket?.end_at,
+    ticket?.endDate,
+    ticket?.end_date,
+    ticket?.expectedCompletionAt,
+    ticket?.expected_completion_at,
+    ticket?.dueAt,
+    ticket?.due_at,
+  ]);
+
+  return { start, end };
+}
+
+function hasMaintenanceTicketResolved(ticket) {
+  return Boolean(
+    parseFirstValidDate([
+      ticket?.resolvedAt,
+      ticket?.resolved_at,
+      ticket?.closedAt,
+      ticket?.closed_at,
+      ticket?.completedAt,
+      ticket?.completed_at,
+      ticket?.finishedAt,
+      ticket?.finished_at,
+      ticket?.endAt,
+      ticket?.end_at,
+      ticket?.endDate,
+      ticket?.end_date,
+      ticket?.expectedCompletionAt,
+      ticket?.expected_completion_at,
+      ticket?.dueAt,
+      ticket?.due_at,
+    ])
+  );
+}
+
+function parseFirstValidDate(candidates = []) {
+  for (const candidate of candidates) {
+    const parsed = parseDateSafe(candidate);
+    if (parsed) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function parseDateSafe(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    const timestamp = value.getTime();
+    return Number.isNaN(timestamp) ? null : new Date(timestamp);
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function buildEquipmentIndexById(list) {
