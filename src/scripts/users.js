@@ -4,8 +4,10 @@ import { checkAuth, logout, getCurrentUser } from './auth.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { showToast, formatDateTime, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
+import { initDashboardShell } from './dashboardShell.js';
 
 applyStoredTheme();
+initDashboardShell();
 
 const state = {
   users: [],
