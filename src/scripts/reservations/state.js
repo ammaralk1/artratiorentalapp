@@ -1,6 +1,5 @@
 import { loadData } from '../storage.js';
 import { normalizeNumbers } from '../utils.js';
-import { categorizeMaintenanceStatus } from '../maintenanceService.js';
 
 let selectedItems = [];
 let cachedCustomers = [];
@@ -120,91 +119,113 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
     return true;
   }
 
-  return maintenance.some((ticket) =>
-    doesMaintenanceTicketConflict(ticket, normalizedCode, start, end, equipmentIndex)
-  );
-}
+  return maintenance.some((ticket) => {
+    if (!isMaintenanceTicketBlocking(ticket)) {
+      return false;
+    }
 
-function doesMaintenanceTicketConflict(ticket, normalizedBarcode, windowStart, windowEnd, equipmentIndex) {
-  if (!ticket) return false;
-  if (!isMaintenanceTicketBlocking(ticket)) return false;
-
-  const ticketBarcodes = resolveMaintenanceTicketBarcodes(ticket, equipmentIndex);
-  if (!ticketBarcodes.has(normalizedBarcode)) return false;
-
-  const { start, end } = resolveMaintenanceInterval(ticket);
-  const effectiveStart = start ?? new Date(0);
-
-  if (effectiveStart >= windowEnd) {
-    return false;
-  }
-
-  if (end && end <= windowStart) {
-    return false;
-  }
-
-  return true;
+    const ticketBarcodes = resolveMaintenanceTicketBarcodes(ticket, equipmentIndex);
+    return ticketBarcodes.has(normalizedCode);
+  });
 }
 
 function isMaintenanceTicketBlocking(ticket) {
   const statusCandidates = [
     ticket?.statusRaw,
+    ticket?.status_raw,
     ticket?.status,
-    ticket?.status_label,
     ticket?.statusLabel,
+    ticket?.status_label,
   ];
 
   for (const candidate of statusCandidates) {
-    const category = categorizeMaintenanceStatus(candidate);
-    const normalized = String(category || candidate || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '_');
-    if (!normalized) continue;
+    const normalized = normalizeMaintenanceStatus(candidate);
 
-    if (
-      normalized === 'completed' ||
-      normalized === 'cancelled' ||
-      normalized === 'closed' ||
-      normalized === 'resolved' ||
-      normalized === 'done' ||
-      normalized === 'finished'
-    ) {
+    if (!normalized) {
+      continue;
+    }
+
+    if (normalized === 'completed' || normalized === 'cancelled' || normalized === 'closed') {
       return false;
     }
 
-    if (
-      normalized === 'open' ||
-      normalized === 'in_progress' ||
-      normalized === 'in-progress' ||
-      normalized === 'inprogress' ||
-      normalized === 'pending' ||
-      normalized === 'scheduled' ||
-      normalized === 'active'
-    ) {
-      return true;
-    }
-
-    if (
-      normalized.includes('complete') ||
-      normalized.includes('close') ||
-      normalized.includes('cancel') ||
-      normalized.includes('finish') ||
-      normalized.includes('resolve')
-    ) {
-      return false;
-    }
-
-    if (
-      normalized.includes('progress') ||
-      normalized.includes('open') ||
-      normalized.includes('ongoing')
-    ) {
+    if (normalized === 'open' || normalized === 'in_progress') {
       return true;
     }
   }
 
   return true;
+}
+
+function normalizeMaintenanceStatus(value) {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+
+  if (!normalized) {
+    return '';
+  }
+
+  if (
+    normalized === 'completed' ||
+    normalized === 'done' ||
+    normalized === 'finished' ||
+    normalized === 'resolved' ||
+    normalized === 'closed' ||
+    normalized === 'مكتمل' ||
+    normalized === 'مغلق'
+  ) {
+    return 'completed';
+  }
+
+  if (normalized === 'cancelled' || normalized === 'canceled' || normalized === 'ملغي') {
+    return 'cancelled';
+  }
+
+  if (
+    normalized === 'in_progress' ||
+    normalized === 'in-progress' ||
+    normalized === 'قيد_التنفيذ' ||
+    normalized === 'جاري_العمل' ||
+    normalized === 'inprogress'
+  ) {
+    return 'in_progress';
+  }
+
+  if (
+    normalized === 'open' ||
+    normalized === 'قيد_الصيانة' ||
+    normalized === 'قيد_الانتظار' ||
+    normalized === 'pending' ||
+    normalized === 'scheduled' ||
+    normalized === 'active'
+  ) {
+    return 'open';
+  }
+
+  if (
+    normalized.includes('progress') ||
+    normalized.includes('ongoing') ||
+    normalized.includes('تنفيذ')
+  ) {
+    return 'in_progress';
+  }
+
+  if (
+    normalized.includes('close') ||
+    normalized.includes('complete') ||
+    normalized.includes('finish') ||
+    normalized.includes('resolve')
+  ) {
+    return 'completed';
+  }
+
+  if (normalized.includes('cancel')) {
+    return 'cancelled';
+  }
+
+  return 'open';
 }
 
 function resolveMaintenanceTicketBarcodes(ticket, equipmentIndex) {
@@ -266,60 +287,6 @@ function resolveMaintenanceTicketBarcodes(ticket, equipmentIndex) {
     });
 
   return barcodes;
-}
-
-function resolveMaintenanceInterval(ticket) {
-  const start = parseFirstValidDate([
-    ticket?.scheduledAt,
-    ticket?.scheduled_at,
-    ticket?.startAt,
-    ticket?.start_at,
-    ticket?.reportedAt,
-    ticket?.reported_at,
-    ticket?.createdAt,
-    ticket?.created_at,
-    ticket?.startDate,
-    ticket?.start_date,
-  ]);
-
-  const end = parseFirstValidDate([
-    ticket?.resolvedAt,
-    ticket?.resolved_at,
-    ticket?.closedAt,
-    ticket?.closed_at,
-    ticket?.completedAt,
-    ticket?.completed_at,
-    ticket?.endAt,
-    ticket?.end_at,
-    ticket?.endDate,
-    ticket?.end_date,
-    ticket?.expectedCompletionAt,
-    ticket?.expected_completion_at,
-    ticket?.dueAt,
-    ticket?.due_at,
-  ]);
-
-  return { start, end };
-}
-
-function parseFirstValidDate(candidates = []) {
-  for (const candidate of candidates) {
-    const parsed = parseDateSafe(candidate);
-    if (parsed) {
-      return parsed;
-    }
-  }
-  return null;
-}
-
-function parseDateSafe(value) {
-  if (!value) return null;
-  if (value instanceof Date) {
-    const timestamp = value.getTime();
-    return Number.isNaN(timestamp) ? null : new Date(timestamp);
-  }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function buildEquipmentIndexById(list) {
