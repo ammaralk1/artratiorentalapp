@@ -12,6 +12,7 @@ import {
 } from './reservationsSummary.js';
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
+import { renderEquipment, syncEquipmentStatuses } from './equipment.js';
 import {
   getReservationsState,
   updateReservationApi,
@@ -729,6 +730,8 @@ export async function saveReservationChanges({
   try {
     const updatedReservation = await updateReservationApi(reservation.id || reservation.reservationId, payload);
     await refreshReservationsFromApi();
+    syncEquipmentStatuses();
+    renderEquipment();
     showToast(t('reservations.toast.updated', '✅ تم حفظ التعديلات على الحجز'));
 
     updateEditReservationSummary?.();

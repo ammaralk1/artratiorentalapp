@@ -5,6 +5,7 @@ const actionMocks = vi.hoisted(() => ({
   saveData: vi.fn(),
   showToast: vi.fn(),
   syncEquipmentStatuses: vi.fn(),
+  renderEquipment: vi.fn(),
   syncTechniciansStatuses: vi.fn()
 }));
 
@@ -28,7 +29,8 @@ vi.mock('../../src/scripts/utils.js', async () => {
 });
 
 vi.mock('../../src/scripts/equipment.js', () => ({
-  syncEquipmentStatuses: actionMocks.syncEquipmentStatuses
+  syncEquipmentStatuses: actionMocks.syncEquipmentStatuses,
+  renderEquipment: actionMocks.renderEquipment
 }));
 
 vi.mock('../../src/scripts/technicians.js', () => ({
@@ -56,6 +58,7 @@ describe('reservationsActions module', () => {
     actionMocks.saveData.mockReset();
     actionMocks.showToast.mockReset();
     actionMocks.syncEquipmentStatuses.mockReset();
+    actionMocks.renderEquipment.mockReset();
     actionMocks.syncTechniciansStatuses.mockReset();
 
     reservationsService.setReservationsState([]);
@@ -122,6 +125,7 @@ describe('reservationsActions module', () => {
     expect(reservationsService.getReservationsState()).toEqual([expect.objectContaining({ id: 'r2' })]);
     expect(actionMocks.saveData).toHaveBeenCalledWith({ reservations: expect.arrayContaining([expect.objectContaining({ id: 'r2' })]) });
     expect(actionMocks.syncEquipmentStatuses).toHaveBeenCalledTimes(1);
+    expect(actionMocks.renderEquipment).toHaveBeenCalledTimes(1);
     expect(actionMocks.syncTechniciansStatuses).toHaveBeenCalledTimes(1);
     expect(afterChange).toHaveBeenCalledTimes(1);
     expect(actionMocks.showToast).toHaveBeenCalledWith('🗑️ تم حذف الحجز');
@@ -140,6 +144,7 @@ describe('reservationsActions module', () => {
     expect(reservationsService.getReservationsState()[0].confirmed).toBe(true);
     expect(actionMocks.saveData).toHaveBeenCalledWith({ reservations: reservationsService.getReservationsState() });
     expect(actionMocks.syncEquipmentStatuses).toHaveBeenCalledTimes(1);
+    expect(actionMocks.renderEquipment).toHaveBeenCalledTimes(1);
     expect(actionMocks.syncTechniciansStatuses).toHaveBeenCalledTimes(1);
     expect(afterChange).toHaveBeenCalledTimes(1);
     expect(actionMocks.showToast).toHaveBeenCalledWith('✅ تم تأكيد الحجز');

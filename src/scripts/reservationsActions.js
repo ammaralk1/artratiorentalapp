@@ -1,5 +1,5 @@
 import { showToast } from './utils.js';
-import { syncEquipmentStatuses } from './equipment.js';
+import { syncEquipmentStatuses, renderEquipment } from './equipment.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { t } from './language.js';
 import { userCanManageDestructiveActions, notifyPermissionDenied } from './auth.js';
@@ -15,6 +15,7 @@ import { resolveReservationProjectState } from './reservationsShared.js';
 function runSharedRefresh() {
   const run = () => {
     syncEquipmentStatuses();
+    renderEquipment();
     syncTechniciansStatuses();
   };
 
