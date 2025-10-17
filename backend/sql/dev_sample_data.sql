@@ -121,6 +121,10 @@ CREATE TABLE reservations (
   discount_type VARCHAR(50) NOT NULL DEFAULT 'percent',
   apply_tax TINYINT(1) NOT NULL DEFAULT 0,
   paid_status VARCHAR(50) NOT NULL DEFAULT 'unpaid',
+  paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+  paid_percentage DECIMAL(8,2) NOT NULL DEFAULT 0,
+  payment_progress_type VARCHAR(20) DEFAULT NULL,
+  payment_progress_value DECIMAL(12,2) DEFAULT NULL,
   confirmed TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -147,6 +151,20 @@ CREATE TABLE reservation_technicians (
   hours_worked DECIMAL(8,2) NOT NULL DEFAULT 0,
   FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
   FOREIGN KEY (technician_id) REFERENCES technicians(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE reservation_payments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reservation_id BIGINT UNSIGNED NOT NULL,
+  payment_type VARCHAR(20) NOT NULL,
+  value DECIMAL(12,2) DEFAULT NULL,
+  amount DECIMAL(12,2) DEFAULT NULL,
+  percentage DECIMAL(8,2) DEFAULT NULL,
+  note TEXT,
+  recorded_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE maintenance_requests (
@@ -189,9 +207,32 @@ INSERT INTO project_expenses (project_id, label, amount) VALUES
 (1, 'نقل المعدات', 1800.00),
 (1, 'تصاريح بلدية', 950.00);
 
-INSERT INTO reservations (reservation_code, customer_id, title, start_datetime, end_datetime, status, location, notes, total_amount, project_id, discount, discount_type, apply_tax, paid_status, confirmed) VALUES
-('RSV-0001', 1, 'تحضير الحفل الرئيسي', '2025-09-19 10:00:00', '2025-09-19 22:00:00', 'confirmed', 'قاعة الملك فهد للمؤتمرات', 'تحضير المسرح والإضاءة', 28000, 1, 0, 'percent', 1, 'partial', 1),
-('RSV-0002', 2, 'فعالية ترويجية صغيرة', '2025-10-01 09:00:00', '2025-10-01 18:00:00', 'pending', 'فندق الهيلتون', 'عرض صوتي وضوئي بسيط', 12000, NULL, 0, 'percent', 0, 'unpaid', 0);
+INSERT INTO reservations (
+  reservation_code,
+  customer_id,
+  title,
+  start_datetime,
+  end_datetime,
+  status,
+  location,
+  notes,
+  total_amount,
+  project_id,
+  discount,
+  discount_type,
+  apply_tax,
+  paid_status,
+  paid_amount,
+  paid_percentage,
+  payment_progress_type,
+  payment_progress_value,
+  confirmed
+) VALUES
+('RSV-0001', 1, 'تحضير الحفل الرئيسي', '2025-09-19 10:00:00', '2025-09-19 22:00:00', 'confirmed', 'قاعة الملك فهد للمؤتمرات', 'تحضير المسرح والإضاءة', 28000, 1, 0, 'percent', 1, 'partial', 12000, 42.86, 'amount', 12000, 1),
+('RSV-0002', 2, 'فعالية ترويجية صغيرة', '2025-10-01 09:00:00', '2025-10-01 18:00:00', 'pending', 'فندق الهيلتون', 'عرض صوتي وضوئي بسيط', 12000, NULL, 0, 'percent', 0, 'unpaid', 0, 0, 'percent', NULL, 0);
+
+INSERT INTO reservation_payments (reservation_id, payment_type, value, amount, percentage, note, recorded_at) VALUES
+(1, 'amount', 12000, 12000, 42.86, 'دفعة مقدمة من العميل', '2025-08-30 12:00:00');
 
 INSERT INTO reservation_equipment (reservation_id, equipment_id, quantity, unit_price, notes) VALUES
 (1, 1, 4, 4500, 'تركيب كامل مع مشغل'),

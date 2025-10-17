@@ -171,6 +171,9 @@ function handleReservationsCreate(PDO $pdo): void
         $reservationId = insertReservation($pdo, $data);
         upsertReservationItems($pdo, $reservationId, $data['items'] ?? []);
         upsertReservationTechnicians($pdo, $reservationId, $data['technicians'] ?? []);
+        if (array_key_exists('payments', $data)) {
+            upsertReservationPayments($pdo, $reservationId, $data['payments']);
+        }
 
         $pdo->commit();
 
@@ -222,6 +225,10 @@ function handleReservationsUpdate(PDO $pdo): void
 
         if (array_key_exists('technicians', $data)) {
             upsertReservationTechnicians($pdo, $id, $data['technicians']);
+        }
+
+        if (array_key_exists('payments', $data)) {
+            upsertReservationPayments($pdo, $id, $data['payments']);
         }
 
         $pdo->commit();
@@ -321,6 +328,15 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
     $discount = isset($payload['discount']) ? (float) $payload['discount'] : 0;
     $discountType = isset($payload['discount_type']) ? trim((string) $payload['discount_type']) : null;
     $applyTax = isset($payload['apply_tax']) ? (bool) $payload['apply_tax'] : false;
+    $paidAmount = array_key_exists('paid_amount', $payload) ? parseDecimalValue($payload['paid_amount']) : null;
+    $paidPercentage = array_key_exists('paid_percentage', $payload) ? parseDecimalValue($payload['paid_percentage']) : null;
+    $paymentProgressType = array_key_exists('payment_progress_type', $payload)
+        ? trim((string) $payload['payment_progress_type'])
+        : null;
+    $paymentProgressValue = array_key_exists('payment_progress_value', $payload)
+        ? parseDecimalValue($payload['payment_progress_value'])
+        : null;
+    $rawPaymentHistory = $payload['payment_history'] ?? ($payload['paymentHistory'] ?? null);
     $paidStatus = isset($payload['paid_status']) ? trim((string) $payload['paid_status']) : null;
     $confirmed = isset($payload['confirmed']) ? (bool) $payload['confirmed'] : null;
     $rawProjectId = $payload['project_id'] ?? null;
@@ -386,6 +402,32 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $errors['discount_type'] = 'Discount type must be percent or amount';
     }
 
+    if ($paidAmount !== null && $paidAmount < 0) {
+        $errors['paid_amount'] = 'Paid amount must be zero or greater';
+    }
+
+    if ($paidPercentage !== null && ($paidPercentage < 0 || $paidPercentage > 100)) {
+        $errors['paid_percentage'] = 'Paid percentage must be between 0 and 100';
+    }
+
+    $normalizedProgressType = null;
+    if ($paymentProgressType !== null && $paymentProgressType !== '') {
+        $candidateType = strtolower($paymentProgressType);
+        if (!in_array($candidateType, ['amount', 'percent'], true)) {
+            $errors['payment_progress_type'] = 'Payment progress type must be amount or percent';
+        } else {
+            $normalizedProgressType = $candidateType;
+        }
+    }
+
+    if ($paymentProgressValue !== null && $paymentProgressValue < 0) {
+        $errors['payment_progress_value'] = 'Payment progress value must be zero or greater';
+    }
+
+    if ($normalizedProgressType === 'percent' && $paymentProgressValue !== null && $paymentProgressValue > 100) {
+        $errors['payment_progress_value'] = 'Payment progress percentage cannot exceed 100';
+    }
+
     if ($paidStatus !== null) {
         $normalizedPaid = normalisePaidStatus($paidStatus);
         if ($normalizedPaid === null) {
@@ -395,6 +437,15 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
 
     if ($projectId !== null && !projectExists($pdo, $projectId)) {
         $errors['project_id'] = 'Project not found';
+    }
+
+    $normalizedPayments = null;
+    if ($rawPaymentHistory !== null) {
+        $normalizedPayments = normalisePaymentHistoryPayload($rawPaymentHistory, $errors);
+    }
+
+    if ($normalizedPayments === null && !$isUpdate) {
+        $normalizedPayments = [];
     }
 
     $items = array_key_exists('items', $payload) ? $payload['items'] : null;
@@ -519,6 +570,22 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $data['paid_status'] = normalisePaidStatus($paidStatus ?? 'unpaid') ?? 'unpaid';
     }
 
+    if (!$isUpdate || array_key_exists('paid_amount', $payload)) {
+        $data['paid_amount'] = $paidAmount !== null ? round($paidAmount, 2) : 0;
+    }
+
+    if (!$isUpdate || array_key_exists('paid_percentage', $payload)) {
+        $data['paid_percentage'] = $paidPercentage !== null ? round($paidPercentage, 2) : 0;
+    }
+
+    if (!$isUpdate || array_key_exists('payment_progress_type', $payload)) {
+        $data['payment_progress_type'] = $normalizedProgressType;
+    }
+
+    if (!$isUpdate || array_key_exists('payment_progress_value', $payload)) {
+        $data['payment_progress_value'] = $paymentProgressValue !== null ? round($paymentProgressValue, 2) : null;
+    }
+
     if (!$isUpdate || array_key_exists('confirmed', $payload)) {
         $data['confirmed'] = $confirmed === null ? null : ($confirmed ? 1 : 0);
     }
@@ -529,6 +596,10 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
 
     if (!$isUpdate || array_key_exists('technicians', $payload)) {
         $data['technicians'] = $technicians ?? [];
+    }
+
+    if (!$isUpdate || array_key_exists('payment_history', $payload) || array_key_exists('paymentHistory', $payload)) {
+        $data['payments'] = $normalizedPayments ?? [];
     }
 
     return [$data, $errors];
@@ -555,6 +626,146 @@ function readJsonPayload(): array
     }
 
     return $data;
+}
+
+function normalisePaymentHistoryPayload(mixed $payload, array &$errors): array
+{
+    if ($payload === null) {
+        return [];
+    }
+
+    if (!is_array($payload)) {
+        $errors['payment_history'] = 'Payment history must be an array';
+        return [];
+    }
+
+    $normalized = [];
+
+    foreach ($payload as $index => $entry) {
+        if (!is_array($entry)) {
+            $errors[sprintf('payment_history.%d', $index)] = 'Payment entry must be an object';
+            continue;
+        }
+
+        $typeRaw = $entry['type'] ?? $entry['payment_type'] ?? null;
+        $type = $typeRaw !== null ? strtolower(trim((string) $typeRaw)) : null;
+
+        if (!in_array($type, ['amount', 'percent'], true)) {
+            $errors[sprintf('payment_history.%d.type', $index)] = 'Payment type must be amount or percent';
+            continue;
+        }
+
+        $value = parseDecimalValue($entry['value'] ?? null);
+        $amount = parseDecimalValue($entry['amount'] ?? null);
+        $percentage = parseDecimalValue($entry['percentage'] ?? null);
+
+        if ($type === 'amount' && $amount === null && $value !== null) {
+            $amount = $value;
+        }
+
+        if ($type === 'percent' && $percentage === null && $value !== null) {
+            $percentage = $value;
+        }
+
+        if ($amount !== null && $amount < 0) {
+            $errors[sprintf('payment_history.%d.amount', $index)] = 'Payment amount must be zero or greater';
+            continue;
+        }
+
+        if ($percentage !== null && ($percentage < 0 || $percentage > 100)) {
+            $errors[sprintf('payment_history.%d.percentage', $index)] = 'Payment percentage must be between 0 and 100';
+            continue;
+        }
+
+        if ($amount === null && $percentage === null && $value === null) {
+            $errors[sprintf('payment_history.%d.value', $index)] = 'Payment entry requires amount or percentage';
+            continue;
+        }
+
+        $noteRaw = isset($entry['note']) ? trim((string) $entry['note']) : null;
+        if ($noteRaw !== null && $noteRaw !== '' && mb_strlen($noteRaw) > 500) {
+            $errors[sprintf('payment_history.%d.note', $index)] = 'Payment note must be 500 characters or less';
+            continue;
+        }
+        $note = $noteRaw === '' ? null : $noteRaw;
+
+        $recordedAtRaw = $entry['recorded_at'] ?? $entry['recordedAt'] ?? null;
+        if ($recordedAtRaw) {
+            $timestamp = strtotime((string) $recordedAtRaw);
+            if ($timestamp === false) {
+                $errors[sprintf('payment_history.%d.recorded_at', $index)] = 'Payment recorded_at must be a valid date/time';
+                continue;
+            }
+            $recordedAt = date('Y-m-d H:i:s', $timestamp);
+        } else {
+            $recordedAt = date('Y-m-d H:i:s');
+        }
+
+        $valueForStorage = $value;
+        if ($valueForStorage === null) {
+            $valueForStorage = $type === 'amount' ? $amount : ($type === 'percent' ? $percentage : null);
+        }
+
+        $normalized[] = [
+            'payment_type' => $type,
+            'value' => $valueForStorage,
+            'amount' => $amount,
+            'percentage' => $percentage,
+            'note' => $note,
+            'recorded_at' => $recordedAt,
+        ];
+    }
+
+    return $normalized;
+}
+
+function parseDecimalValue(mixed $value): ?float
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    if (is_numeric($value)) {
+        return round((float) $value, 2);
+    }
+
+    $stringValue = normalizeLocalizedDigits((string) $value);
+    $stringValue = str_replace(',', '.', $stringValue);
+    $stringValue = preg_replace('/[^0-9\-\.]/u', '', $stringValue);
+
+    if ($stringValue === '' || !is_numeric($stringValue)) {
+        return null;
+    }
+
+    return round((float) $stringValue, 2);
+}
+
+function normalizeLocalizedDigits(string $value): string
+{
+    $map = [
+        '٠' => '0',
+        '١' => '1',
+        '٢' => '2',
+        '٣' => '3',
+        '٤' => '4',
+        '٥' => '5',
+        '٦' => '6',
+        '٧' => '7',
+        '٨' => '8',
+        '٩' => '9',
+        '۰' => '0',
+        '۱' => '1',
+        '۲' => '2',
+        '۳' => '3',
+        '۴' => '4',
+        '۵' => '5',
+        '۶' => '6',
+        '۷' => '7',
+        '۸' => '8',
+        '۹' => '9',
+    ];
+
+    return strtr($value, $map);
 }
 
 function normalizeReservationCode(?string $code): ?string
@@ -638,6 +849,10 @@ function insertReservation(PDO $pdo, array $data): int
         discount_type,
         apply_tax,
         paid_status,
+        paid_amount,
+        paid_percentage,
+        payment_progress_type,
+        payment_progress_value,
         confirmed
     ) VALUES (
         :reservation_code,
@@ -654,6 +869,10 @@ function insertReservation(PDO $pdo, array $data): int
         :discount_type,
         :apply_tax,
         :paid_status,
+        :paid_amount,
+        :paid_percentage,
+        :payment_progress_type,
+        :payment_progress_value,
         :confirmed
     )';
 
@@ -673,6 +892,10 @@ function insertReservation(PDO $pdo, array $data): int
         'discount_type' => $data['discount_type'] ?? 'percent',
         'apply_tax' => !empty($data['apply_tax']) ? 1 : 0,
         'paid_status' => normalisePaidStatus($data['paid_status'] ?? 'unpaid') ?? 'unpaid',
+        'paid_amount' => isset($data['paid_amount']) ? (float) $data['paid_amount'] : 0,
+        'paid_percentage' => isset($data['paid_percentage']) ? (float) $data['paid_percentage'] : 0,
+        'payment_progress_type' => $data['payment_progress_type'] ?? null,
+        'payment_progress_value' => $data['payment_progress_value'] ?? null,
         'confirmed' => isset($data['confirmed']) ? (int) !empty($data['confirmed']) : 0,
     ]);
 
@@ -689,7 +912,7 @@ function updateReservation(PDO $pdo, int $id, array $data): void
     $params = ['id' => $id];
 
     foreach ($data as $column => $value) {
-        if ($column === 'items' || $column === 'technicians') {
+        if ($column === 'items' || $column === 'technicians' || $column === 'payments') {
             continue;
         }
         $fields[] = sprintf('%s = :%s', $column, $column);
@@ -788,6 +1011,47 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
     }
 }
 
+function upsertReservationPayments(PDO $pdo, int $reservationId, array $payments): void
+{
+    $pdo->prepare('DELETE FROM reservation_payments WHERE reservation_id = :id')->execute(['id' => $reservationId]);
+
+    if (!$payments) {
+        return;
+    }
+
+    $sql = 'INSERT INTO reservation_payments (
+        reservation_id,
+        payment_type,
+        value,
+        amount,
+        percentage,
+        note,
+        recorded_at
+    ) VALUES (
+        :reservation_id,
+        :payment_type,
+        :value,
+        :amount,
+        :percentage,
+        :note,
+        :recorded_at
+    )';
+
+    $statement = $pdo->prepare($sql);
+
+    foreach ($payments as $payment) {
+        $statement->execute([
+            'reservation_id' => $reservationId,
+            'payment_type' => $payment['payment_type'],
+            'value' => $payment['value'],
+            'amount' => $payment['amount'],
+            'percentage' => $payment['percentage'],
+            'note' => $payment['note'] ?? null,
+            'recorded_at' => $payment['recorded_at'] ?? null,
+        ]);
+    }
+}
+
 function fetchReservationById(PDO $pdo, int $id): array|false
 {
     $statement = $pdo->prepare(
@@ -817,9 +1081,19 @@ function decorateReservation(PDO $pdo, array $reservation): array
     $reservation['confirmed'] = isset($reservation['confirmed'])
         ? (bool) $reservation['confirmed']
         : ($reservation['status'] === 'confirmed' || $reservation['status'] === 'in_progress' || $reservation['status'] === 'completed');
+    $reservation['total_amount'] = isset($reservation['total_amount']) ? (float) $reservation['total_amount'] : 0;
+    $reservation['paid_amount'] = isset($reservation['paid_amount']) ? (float) $reservation['paid_amount'] : 0;
+    $reservation['paid_percentage'] = isset($reservation['paid_percentage']) ? (float) $reservation['paid_percentage'] : 0;
+    $reservation['payment_progress_type'] = $reservation['payment_progress_type'] ?? null;
+    $reservation['payment_progress_value'] = isset($reservation['payment_progress_value'])
+        ? (float) $reservation['payment_progress_value']
+        : null;
 
     $reservation['items'] = fetchReservationItems($pdo, (int) $reservation['id']);
     $reservation['technicians'] = fetchReservationTechnicians($pdo, (int) $reservation['id']);
+    $payments = fetchReservationPayments($pdo, (int) $reservation['id']);
+    $reservation['payment_history'] = $payments;
+    $reservation['paymentHistory'] = $payments;
 
     return $reservation;
 }
@@ -868,6 +1142,38 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
         ];
     }
     return $techs;
+}
+
+function fetchReservationPayments(PDO $pdo, int $reservationId): array
+{
+    $statement = $pdo->prepare(
+        'SELECT id, payment_type, value, amount, percentage, note, recorded_at
+         FROM reservation_payments
+         WHERE reservation_id = :id
+         ORDER BY COALESCE(recorded_at, created_at), id'
+    );
+    $statement->execute(['id' => $reservationId]);
+
+    $payments = [];
+    while ($row = $statement->fetch()) {
+        $amount = $row['amount'] !== null ? (float) $row['amount'] : null;
+        $percentage = $row['percentage'] !== null ? (float) $row['percentage'] : null;
+        $value = $row['value'] !== null ? (float) $row['value'] : null;
+        $recordedAt = $row['recorded_at'] ?? null;
+
+        $payments[] = [
+            'id' => (int) $row['id'],
+            'type' => $row['payment_type'],
+            'value' => $value,
+            'amount' => $amount,
+            'percentage' => $percentage,
+            'note' => $row['note'] ?? null,
+            'recorded_at' => $recordedAt,
+            'recordedAt' => $recordedAt,
+        ];
+    }
+
+    return $payments;
 }
 
 function customerExists(PDO $pdo, int $id): bool
