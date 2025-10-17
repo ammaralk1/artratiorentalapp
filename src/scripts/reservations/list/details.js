@@ -265,6 +265,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     </div>
   `).join('');
 
+  console.debug('[reservations/details] payment history raw', reservation.paymentHistory, reservation.payment_history);
   const paymentHistory = Array.isArray(reservation.paymentHistory)
     ? reservation.paymentHistory
     : Array.isArray(reservation.payment_history)
