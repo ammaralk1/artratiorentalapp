@@ -1219,7 +1219,8 @@ function renderDraftReservationSummary() {
     paymentProgressValue,
     start,
     end,
-    companySharePercent: sharePercentForSummary
+    companySharePercent: sharePercentForSummary,
+    paymentHistory: []
   });
 
   const summaryResult = renderDraftSummary.lastResult;
@@ -1498,9 +1499,20 @@ async function handleReservationSubmit() {
     totalAmount: totalCost,
     progressType: paymentProgressType,
     progressValue: paymentProgressValue,
+    history: [],
   });
   if (paymentProgressValueInput) {
     setPaymentProgressInputValue(paymentProgressValueInput, paymentProgress.paymentProgressValue);
+  }
+  const initialPaymentHistory = [];
+  if (paymentProgress.paymentProgressValue != null && paymentProgress.paymentProgressValue > 0) {
+    initialPaymentHistory.push({
+      type: paymentProgress.paymentProgressType || paymentProgressType,
+      value: paymentProgress.paymentProgressValue,
+      amount: paymentProgress.paidAmount,
+      percentage: paymentProgress.paidPercent,
+      recordedAt: new Date().toISOString(),
+    });
   }
   const effectivePaidStatus = determinePaymentStatus({
     manualStatus: paidStatus,
@@ -1540,6 +1552,7 @@ async function handleReservationSubmit() {
     paidPercentage: paymentProgress.paidPercent,
     paymentProgressType: paymentProgress.paymentProgressType,
     paymentProgressValue: paymentProgress.paymentProgressValue,
+    paymentHistory: initialPaymentHistory,
   });
 
   try {

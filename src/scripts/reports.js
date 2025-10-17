@@ -2175,7 +2175,18 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const statusInfo = computeReportStatus(reservation);
   const statusLabel = getReservationStatusLabel(statusInfo.statusValue);
   const statusChip = createStatusChip(statusInfo.statusValue, statusLabel);
-  const paymentChip = createPaymentChip(statusInfo.paidStatus);
+  const normalizedPaymentHistory = Array.isArray(reservation.paymentHistory)
+    ? reservation.paymentHistory
+    : Array.isArray(reservation.payment_history)
+      ? reservation.payment_history
+      : [];
+  const paymentChip = createPaymentChip(statusInfo.paidStatus, normalizedPaymentHistory);
+  const historyCount = normalizedPaymentHistory.length;
+  let paymentHtml = paymentChip.html;
+  if (historyCount > 0) {
+    const historyLabel = translate('reservations.paymentHistory.countLabel', '{count} دفعة', '{count} payments').replace('{count}', formatNumber(historyCount));
+    paymentHtml = `<div class="reports-payment-cell">${paymentChip.html}<small class="reports-payment-subtext">${escapeHtml(historyLabel)}</small></div>`;
+  }
   const dateLabel = formatDateTime(reservation?.start);
   const financials = computeReservationFinancials(reservation);
   const totalLabel = formatCurrency(financials.finalTotal);
@@ -2192,7 +2203,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     customer: { html: customerHtml, text: customerPlain },
     date: { html: escapeHtml(dateLabel), text: dateLabel },
     status: statusChip,
-    payment: paymentChip,
+    payment: { html: paymentHtml, text: paymentChip.text },
     total: { html: escapeHtml(totalLabel), text: totalLabel },
     share: { html: escapeHtml(shareLabel), text: shareLabel },
     net: { html: escapeHtml(netLabel), text: netLabel }
@@ -2230,11 +2241,30 @@ function createStatusChip(statusValue, label) {
   return { html: chipHtml, text: safeLabel };
 }
 
-function createPaymentChip(paymentStatus) {
+function createPaymentChip(paymentStatus, history = []) {
   const label = paymentLabelText(paymentStatus);
   const normalized = String(paymentStatus ?? '').toLowerCase();
   const slug = normalized === 'paid' ? 'paid' : normalized === 'partial' ? 'partial' : 'unpaid';
-  const chipHtml = `<span class="reservation-chip status-${slug}">${escapeHtml(label)}</span>`;
+  let tooltip = '';
+  const currencyLabel = translate('reservations.create.summary.currency', 'ريال', 'SR');
+
+  if (Array.isArray(history) && history.length) {
+    tooltip = history.map((entry) => {
+      const date = entry?.recordedAt ? normalizeNumbers(String(entry.recordedAt).split('T')[0]) : '—';
+      const amount = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
+        ? `${normalizeNumbers(Number(entry.amount).toFixed(2))} ${currencyLabel}`
+        : '';
+      const percent = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
+        ? `${normalizeNumbers(Number(entry.percentage).toFixed(2))}%`
+        : '';
+      const pieces = [date];
+      if (amount) pieces.push(`${amount}`);
+      if (percent) pieces.push(percent);
+      return pieces.filter(Boolean).join(' • ');
+    }).join('\n');
+  }
+  const titleAttr = tooltip ? ` title="${escapeAttribute(tooltip)}"` : '';
+  const chipHtml = `<span class="reservation-chip status-${slug}"${titleAttr}>${escapeHtml(label)}</span>`;
   return { html: chipHtml, text: label };
 }
 

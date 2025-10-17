@@ -245,12 +245,27 @@ export function toInternalReservation(raw = {}) {
     companyShareEnabled = true;
   }
 
+  const rawHistory = Array.isArray(raw.payment_history)
+    ? raw.payment_history
+    : Array.isArray(raw.paymentHistory)
+      ? raw.paymentHistory
+      : [];
+  const paymentHistory = rawHistory.map((entry) => ({
+    type: entry?.type === 'amount' || entry?.type === 'percent' ? entry.type : null,
+    value: entry?.value != null ? Number.parseFloat(normalizeNumbers(String(entry.value))) : null,
+    amount: entry?.amount != null ? Number.parseFloat(normalizeNumbers(String(entry.amount))) : null,
+    percentage: entry?.percentage != null ? Number.parseFloat(normalizeNumbers(String(entry.percentage))) : null,
+    note: entry?.note ?? null,
+    recordedAt: entry?.recordedAt ?? entry?.recorded_at ?? null,
+  })).filter((entry) => entry.type || Number.isFinite(entry.amount) || Number.isFinite(entry.percentage));
+
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
     progressType: raw.payment_progress_type ?? raw.paymentProgressType ?? null,
     progressValue: raw.payment_progress_value ?? raw.paymentProgressValue ?? null,
     paidAmount: raw.paid_amount ?? raw.paidAmount ?? null,
     paidPercent: raw.paid_percentage ?? raw.paidPercentage ?? null,
+    history: paymentHistory,
   });
   paidStatus = determinePaymentStatus({
     manualStatus: paidStatus,
@@ -282,6 +297,7 @@ export function toInternalReservation(raw = {}) {
     paidPercent: paymentProgress.paidPercent,
     paymentProgressType: paymentProgress.paymentProgressType,
     paymentProgressValue: paymentProgress.paymentProgressValue,
+    paymentHistory,
     totalAmount,
     cost: totalAmount,
     projectId: raw.project_id ?? raw.projectId ?? null,
@@ -338,6 +354,7 @@ export function buildReservationPayload({
   paidPercentage,
   paymentProgressType,
   paymentProgressValue,
+  paymentHistory,
 }) {
   return {
     reservation_code: reservationCode ?? null,
@@ -360,6 +377,16 @@ export function buildReservationPayload({
     payment_progress_value: Number.isFinite(paymentProgressValue)
       ? Number(paymentProgressValue.toFixed(2))
       : null,
+    payment_history: Array.isArray(paymentHistory)
+      ? paymentHistory.map((entry) => ({
+          type: entry?.type === 'amount' || entry?.type === 'percent' ? entry.type : null,
+          value: entry?.value != null ? toNumber(entry.value) : null,
+          amount: entry?.amount != null ? toNumber(entry.amount) : null,
+          percentage: entry?.percentage != null ? Number(entry.percentage) : null,
+          note: entry?.note ?? null,
+          recorded_at: entry?.recordedAt ?? entry?.recorded_at ?? new Date().toISOString(),
+        }))
+      : [],
     confirmed: confirmed === undefined ? null : Boolean(confirmed),
     items: Array.isArray(items)
       ? items.map((item) => ({

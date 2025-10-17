@@ -202,6 +202,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const itemsCountLabel = t('reservations.details.labels.itemsCount', 'عدد المعدات');
   const itemsTotalLabel = t('reservations.details.labels.itemsTotal', 'إجمالي المعدات');
   const paymentStatusLabel = t('reservations.details.labels.paymentStatus', 'حالة الدفع');
+  const paymentHistoryTitle = t('reservations.paymentHistory.title', 'سجل الدفعات');
+  const paymentHistoryEmpty = t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
 
   const paidStatus = reservation.paidStatus
@@ -262,6 +264,41 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       <span class="summary-details-value">${value}</span>
     </div>
   `).join('');
+
+  const paymentHistory = Array.isArray(reservation.paymentHistory)
+    ? reservation.paymentHistory
+    : Array.isArray(reservation.payment_history)
+      ? reservation.payment_history
+      : [];
+
+  const paymentHistoryHtml = paymentHistory.length
+    ? `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
+        const entryType = entry?.type === 'amount'
+          ? t('reservations.paymentHistory.type.amount', 'دفعة مالية')
+          : entry?.type === 'percent'
+            ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
+            : t('reservations.paymentHistory.type.unknown', 'دفعة');
+        const entryAmount = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
+          ? `${normalizeNumbers(Number(entry.amount).toFixed(2))} ${currencyLabel}`
+          : '—';
+        const entryPercent = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
+          ? `${normalizeNumbers(Number(entry.percentage).toFixed(2))}%`
+          : '—';
+        const entryDate = entry?.recordedAt ? normalizeNumbers(formatDateTime(entry.recordedAt)) : '—';
+        const noteHtml = entry?.note ? `<div class="payment-history-note">${escapeHtml(normalizeNumbers(entry.note))}</div>` : '';
+        return `
+          <li>
+            <div class="payment-history-entry">
+              <span class="payment-history-entry__type">${escapeHtml(entryType)}</span>
+              <span class="payment-history-entry__amount">${entryAmount}</span>
+              <span class="payment-history-entry__percent">${entryPercent}</span>
+              <span class="payment-history-entry__date">${entryDate}</span>
+            </div>
+            ${noteHtml}
+          </li>
+        `;
+      }).join('')}</ul>`
+    : `<div class="reservation-payment-history-empty">${escapeHtml(paymentHistoryEmpty)}</div>`;
 
   const statusChipsData = [
     {
@@ -443,6 +480,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             <h6 class="summary-heading">${paymentSummaryTitle}</h6>
             <div class="summary-details">
               ${summaryDetailsHtml}
+            </div>
+            <div class="reservation-payment-history-modal">
+              <h6 class="history-heading">${paymentHistoryTitle}</h6>
+              ${paymentHistoryHtml}
             </div>
           </div>
         </div>

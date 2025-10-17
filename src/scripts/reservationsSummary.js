@@ -124,6 +124,7 @@ export function calculatePaymentProgress({
   progressValue = null,
   paidAmount = null,
   paidPercent = null,
+  history = [],
 } = {}) {
   const total = Number.isFinite(Number(totalAmount)) ? Number(totalAmount) : 0;
   const normalizedType = progressType === 'amount'
@@ -135,6 +136,50 @@ export function calculatePaymentProgress({
   let amount = parseNumericValue(paidAmount);
   let percent = parseNumericValue(paidPercent);
   const value = parseNumericValue(progressValue);
+
+  let historyAmount = 0;
+  let historyPercent = 0;
+
+  if (Array.isArray(history) && history.length) {
+    history.forEach((entry) => {
+      if (!entry) return;
+      const type = entry.type === 'amount' || entry.type === 'percent' ? entry.type : null;
+      const normalizedValue = parseNumericValue(entry.value);
+      const normalizedAmount = parseNumericValue(entry.amount);
+      const normalizedPercent = parseNumericValue(entry.percentage);
+
+      if (type === 'amount') {
+        const resolved = normalizedAmount != null ? normalizedAmount : normalizedValue;
+        if (resolved != null) {
+          historyAmount += resolved;
+          if (total > 0) {
+            historyPercent += (resolved / total) * 100;
+          }
+        }
+      } else if (type === 'percent') {
+        const resolved = normalizedPercent != null ? normalizedPercent : normalizedValue;
+        if (resolved != null) {
+          historyPercent += resolved;
+          if (total > 0) {
+            historyAmount += (resolved / 100) * total;
+          }
+        }
+      } else {
+        if (normalizedAmount != null) {
+          historyAmount += normalizedAmount;
+          if (total > 0) {
+            historyPercent += (normalizedAmount / total) * 100;
+          }
+        }
+        if (normalizedPercent != null) {
+          historyPercent += normalizedPercent;
+          if (total > 0) {
+            historyAmount += (normalizedPercent / 100) * total;
+          }
+        }
+      }
+    });
+  }
 
   if (normalizedType === 'amount' && value != null) {
     amount = value;
@@ -156,6 +201,11 @@ export function calculatePaymentProgress({
   if ((percent == null || percent <= 0) && amount != null && amount > 0 && total > 0) {
     percent = (amount / total) * 100;
   }
+
+  const baseAmount = amount ?? 0;
+  const basePercent = percent ?? 0;
+  amount = baseAmount + historyAmount;
+  percent = basePercent + historyPercent;
 
   amount = clampNumber(amount ?? 0, { min: 0, max: total > 0 ? total : Number.POSITIVE_INFINITY, precision: 2 });
   percent = clampNumber(percent ?? 0, { min: 0, max: 100, precision: 2 });
@@ -449,6 +499,7 @@ export function renderDraftSummary({
   start,
   end,
   companySharePercent = null,
+  paymentHistory = [],
 }) {
   const technicianIds = getSelectedTechnicians();
   const techniciansCount = technicianIds.length;
@@ -467,6 +518,7 @@ export function renderDraftSummary({
     totalAmount: breakdown.finalTotal,
     progressType: paymentProgressType,
     progressValue: paymentProgressValue,
+    history: paymentHistory,
   });
   const paymentStatus = determinePaymentStatus({
     manualStatus: paidStatus,
@@ -516,6 +568,7 @@ export function renderEditSummary({
   start,
   end,
   companySharePercent = null,
+  paymentHistory = [],
 }) {
   const technicianIds = getEditingTechnicians();
   const techniciansCount = technicianIds.length;
@@ -534,6 +587,7 @@ export function renderEditSummary({
     totalAmount: breakdown.finalTotal,
     progressType: paymentProgressType,
     progressValue: paymentProgressValue,
+    history: paymentHistory,
   });
   const paymentStatus = determinePaymentStatus({
     manualStatus: paidStatus,

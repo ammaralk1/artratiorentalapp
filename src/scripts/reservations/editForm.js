@@ -1,6 +1,6 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
-import { showToast, normalizeNumbers } from '../utils.js';
+import { showToast, normalizeNumbers, formatDateTime } from '../utils.js';
 import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
 import {
   resolveItemImage,
@@ -16,7 +16,11 @@ import {
   getEditingState,
   setEditingState,
   clearEditingState,
-  saveReservationChanges
+  saveReservationChanges,
+  getEditingPayments,
+  addEditingPayment,
+  removeEditingPayment,
+  setEditingPayments,
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
 import {
@@ -115,6 +119,102 @@ export function renderEditReservationItems(items = []) {
     .join('');
 
   ensureGroupHandler(container);
+}
+
+function formatPaymentTypeLabel(type) {
+  switch (type) {
+    case 'amount':
+      return t('reservations.paymentHistory.type.amount', '💵 دفعة مالية');
+    case 'percent':
+      return t('reservations.paymentHistory.type.percent', '٪ دفعة نسبة');
+    default:
+      return t('reservations.paymentHistory.type.unknown', 'دفعة');
+  }
+}
+
+function renderEditPaymentHistory() {
+  const container = document.getElementById('edit-res-payment-history');
+  if (!container) return;
+
+  const payments = getEditingPayments();
+  if (!Array.isArray(payments) || payments.length === 0) {
+    container.innerHTML = `<div class="reservation-payment-history__empty">${t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة لهذا الحجز')}</div>`;
+    return;
+  }
+
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const rows = payments.map((payment, index) => {
+    const amountDisplay = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
+      ? `${normalizeNumbers(Number(payment.amount).toFixed(2))} ${currencyLabel}`
+      : '—';
+    const percentDisplay = Number.isFinite(Number(payment?.percentage)) && Number(payment.percentage) > 0
+      ? `${normalizeNumbers(Number(payment.percentage).toFixed(2))}%`
+      : '—';
+    const recordedAt = payment?.recordedAt ? normalizeNumbers(formatDateTime(payment.recordedAt)) : '—';
+    const typeLabel = formatPaymentTypeLabel(payment?.type);
+    const noteDisplay = payment?.note ? normalizeNumbers(payment.note) : '';
+
+    return `
+      <tr>
+        <td>${typeLabel}</td>
+        <td>${amountDisplay}</td>
+        <td>${percentDisplay}</td>
+        <td>${recordedAt}</td>
+        <td>${noteDisplay}</td>
+        <td class="reservation-payment-history__actions">
+          <button type="button" class="btn btn-link btn-sm reservation-payment-history__remove" data-action="remove-payment" data-index="${index}" aria-label="${t('reservations.paymentHistory.actions.delete', 'حذف الدفعة')}">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="reservation-payment-history__table-wrapper">
+      <table class="table table-sm reservation-payment-history__table">
+        <thead>
+          <tr>
+            <th>${t('reservations.paymentHistory.headers.method', 'نوع الدفعة')}</th>
+            <th>${t('reservations.paymentHistory.headers.amount', 'المبلغ')}</th>
+            <th>${t('reservations.paymentHistory.headers.percent', 'النسبة')}</th>
+            <th>${t('reservations.paymentHistory.headers.date', 'التاريخ')}</th>
+            <th>${t('reservations.paymentHistory.headers.note', 'ملاحظات')}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function handleAddPaymentHistoryEntry() {
+  const typeSelect = document.getElementById('edit-res-payment-progress-type');
+  const valueInput = document.getElementById('edit-res-payment-progress-value');
+  const type = getEditPaymentProgressType(typeSelect);
+  const value = parseEditPaymentProgressValue(valueInput);
+  if (!Number.isFinite(value) || value <= 0) {
+    showToast(t('reservations.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
+    return;
+  }
+
+  const entry = {
+    type,
+    value,
+    amount: type === 'amount' ? value : null,
+    percentage: type === 'percent' ? value : null,
+    recordedAt: new Date().toISOString(),
+  };
+
+  addEditingPayment(entry);
+  setEditingPayments(getEditingPayments());
+  renderEditPaymentHistory();
+  updateEditReservationSummary();
+
+  if (valueInput) {
+    valueInput.value = '';
+  }
+
+  showToast(t('reservations.toast.paymentAdded', '✅ تم تسجيل الدفعة'));
 }
 
 function decreaseEditReservationGroup(groupKey) {
@@ -241,6 +341,8 @@ export function updateEditReservationSummary() {
   const summaryEl = document.getElementById('edit-res-summary');
   if (!summaryEl) return;
 
+  renderEditPaymentHistory();
+
   const discountInput = document.getElementById('edit-res-discount');
   const discountTypeSelect = document.getElementById('edit-res-discount-type');
   const paidSelect = document.getElementById('edit-res-paid');
@@ -272,11 +374,7 @@ export function updateEditReservationSummary() {
 
   const { items: editingItems = [] } = getEditingState();
   const { start, end } = getEditReservationDateRange();
-  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
-  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
-  const paymentProgressType = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
-  const progressRaw = normalizeNumbers(String(paymentProgressValueInput?.value || '')).replace('%', '').trim();
-  const paymentProgressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+  const { payments: editingPayments = [] } = getEditingState();
 
   const html = renderEditSummary({
     items: editingItems,
@@ -284,24 +382,15 @@ export function updateEditReservationSummary() {
     discountType,
     applyTax,
     paidStatus,
-    paymentProgressType,
-    paymentProgressValue,
     start,
     end,
     companySharePercent,
+    paymentHistory: editingPayments,
   });
 
   summaryEl.innerHTML = html;
 
   const summaryResult = renderEditSummary.lastResult;
-
-  if (summaryResult && paymentProgressValueInput) {
-    if (summaryResult.paymentProgressValue != null && Number.isFinite(summaryResult.paymentProgressValue) && summaryResult.paymentProgressValue > 0) {
-      paymentProgressValueInput.value = normalizeNumbers(String(summaryResult.paymentProgressValue));
-    } else {
-      paymentProgressValueInput.value = '';
-    }
-  }
 
   if (summaryResult && paidSelect) {
     paidSelect.value = summaryResult.paymentStatus;

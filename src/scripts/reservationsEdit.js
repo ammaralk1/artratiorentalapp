@@ -22,6 +22,7 @@ import {
 
 let editingIndex = null;
 let editingItems = [];
+let editingPayments = [];
 let modalInstance = null;
 let modalEventsContext = {};
 let isSyncingShareTaxEdit = false;
@@ -57,18 +58,38 @@ function isReservationConfirmed() {
 }
 
 export function getEditingState() {
-  return { index: editingIndex, items: editingItems };
+  return { index: editingIndex, items: editingItems, payments: editingPayments };
 }
 
-export function setEditingState(index, items) {
+export function setEditingState(index, items, payments = editingPayments) {
   editingIndex = typeof index === 'number' ? index : null;
   editingItems = Array.isArray(items) ? [...items] : [];
+  editingPayments = Array.isArray(payments) ? [...payments] : [];
 }
 
 export function clearEditingState() {
   editingIndex = null;
   editingItems = [];
   resetEditingTechnicians();
+  editingPayments = [];
+}
+
+export function getEditingPayments() {
+  return [...editingPayments];
+}
+
+export function setEditingPayments(payments) {
+  editingPayments = Array.isArray(payments) ? [...payments] : [];
+}
+
+export function addEditingPayment(entry) {
+  if (!entry) return;
+  editingPayments = [...editingPayments, entry];
+}
+
+export function removeEditingPayment(index) {
+  if (!Number.isInteger(index) || index < 0) return;
+  editingPayments = editingPayments.filter((_, idx) => idx !== index);
 }
 
 function ensureModalInstance(modalElement, factory) {
@@ -123,6 +144,45 @@ function escapeHtml(value = '') {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function normalizePaymentHistoryEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const type = entry.type === 'amount' || entry.type === 'percent' ? entry.type : null;
+  const normalizedValue = Number.parseFloat(normalizeNumbers(String(entry.value ?? '')));
+  const normalizedAmount = Number.parseFloat(normalizeNumbers(String(entry.amount ?? '')));
+  const normalizedPercent = Number.parseFloat(normalizeNumbers(String(entry.percentage ?? '')));
+  const resolvedAmount = Number.isFinite(normalizedAmount)
+    ? normalizedAmount
+    : (type === 'amount' && Number.isFinite(normalizedValue) ? normalizedValue : null);
+  const resolvedPercent = Number.isFinite(normalizedPercent)
+    ? normalizedPercent
+    : (type === 'percent' && Number.isFinite(normalizedValue) ? normalizedValue : null);
+
+  const resolvedType = type
+    ?? (Number.isFinite(resolvedAmount) ? 'amount' : (Number.isFinite(resolvedPercent) ? 'percent' : null));
+
+  const valueForStorage = resolvedType === 'amount'
+    ? resolvedAmount ?? null
+    : resolvedType === 'percent'
+      ? resolvedPercent ?? null
+      : Number.isFinite(normalizedValue) ? normalizedValue : null;
+
+  const recordedAt = entry.recordedAt
+    ?? entry.recorded_at
+    ?? new Date().toISOString();
+
+  return {
+    type: resolvedType,
+    value: valueForStorage,
+    amount: Number.isFinite(resolvedAmount) ? resolvedAmount : null,
+    percentage: Number.isFinite(resolvedPercent) ? resolvedPercent : null,
+    note: entry.note ?? null,
+    recordedAt,
+  };
 }
 
 function populateEditProjectSelect(projects = [], reservation = null) {
@@ -293,7 +353,16 @@ export function editReservation(index, {
       }))
     : [];
 
-  setEditingState(index, normalizedItems);
+  const rawPayments = Array.isArray(reservation.paymentHistory)
+    ? reservation.paymentHistory
+    : Array.isArray(reservation.payment_history)
+      ? reservation.payment_history
+      : [];
+  const normalizedPayments = rawPayments
+    .map((entry) => normalizePaymentHistoryEntry(entry))
+    .filter(Boolean);
+
+  setEditingState(index, normalizedItems, normalizedPayments);
 
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
   const customer = customers?.find?.((c) => String(c.id) === String(reservation.customerId));
@@ -564,14 +633,28 @@ export async function saveReservationChanges({
     }
   );
 
+  let paymentHistory = getEditingPayments();
+
+  if (Number.isFinite(paymentProgressValue) && paymentProgressValue > 0) {
+    const pendingEntry = normalizePaymentHistoryEntry({
+      type: paymentProgressType,
+      value: paymentProgressValue,
+      recordedAt: new Date().toISOString(),
+    });
+    if (pendingEntry) {
+      paymentHistory = [...paymentHistory, pendingEntry];
+      setEditingPayments(paymentHistory);
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.value = '';
+    }
+  }
+
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
-    progressType: paymentProgressType,
-    progressValue: paymentProgressValue,
+    history: paymentHistory,
   });
-  if (paymentProgressValueInput) {
-    setEditPaymentProgressValue(paymentProgressValueInput, paymentProgress.paymentProgressValue);
-  }
+
   const effectivePaidStatus = determinePaymentStatus({
     manualStatus: paidStatus,
     paidAmount: paymentProgress.paidAmount,
@@ -616,6 +699,7 @@ export async function saveReservationChanges({
     paidPercentage: paymentProgress.paidPercent,
     paymentProgressType: paymentProgress.paymentProgressType,
     paymentProgressValue: paymentProgress.paymentProgressValue,
+    paymentHistory,
   });
 
   try {
@@ -685,9 +769,57 @@ export function setupEditReservationModalEvents(context = {}) {
   if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
     paymentProgressValueInput.addEventListener('input', () => {
       paymentProgressValueInput.value = normalizeNumbers(paymentProgressValueInput.value);
-      updateEditReservationSummary?.();
     });
     paymentProgressValueInput.dataset.listenerAttached = 'true';
+  }
+
+  const addPaymentButton = document.getElementById('edit-res-payment-add');
+  if (addPaymentButton && !addPaymentButton.dataset.listenerAttached) {
+    addPaymentButton.addEventListener('click', () => {
+      const typeSelect = document.getElementById('edit-res-payment-progress-type');
+      const valueInput = document.getElementById('edit-res-payment-progress-value');
+      const type = getEditPaymentProgressType(typeSelect);
+      const value = parseEditPaymentProgressValue(valueInput);
+      if (!Number.isFinite(value) || value <= 0) {
+        showToast(t('reservations.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
+        return;
+      }
+
+      const entry = normalizePaymentHistoryEntry({
+        type,
+        value,
+        recordedAt: new Date().toISOString(),
+      });
+
+      if (!entry) {
+        showToast(t('reservations.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
+        return;
+      }
+
+      addEditingPayment(entry);
+      setEditingPayments(getEditingPayments());
+      updateEditReservationSummary?.();
+      if (valueInput) {
+        valueInput.value = '';
+      }
+      showToast(t('reservations.toast.paymentAdded', '✅ تم تسجيل الدفعة'));
+    });
+    addPaymentButton.dataset.listenerAttached = 'true';
+  }
+
+  const paymentHistoryContainer = document.getElementById('edit-res-payment-history');
+  if (paymentHistoryContainer && !paymentHistoryContainer.dataset.listenerAttached) {
+    paymentHistoryContainer.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action="remove-payment"]');
+      if (!button) return;
+      const index = Number(button.dataset.index);
+      if (Number.isNaN(index)) return;
+      removeEditingPayment(index);
+      setEditingPayments(getEditingPayments());
+      updateEditReservationSummary?.();
+      showToast(t('reservations.toast.paymentRemoved', '🗑️ تم حذف الدفعة'));
+    });
+    paymentHistoryContainer.dataset.listenerAttached = 'true';
   }
 
   const projectSelect = document.getElementById('edit-res-project');
