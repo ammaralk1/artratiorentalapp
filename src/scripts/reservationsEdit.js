@@ -434,31 +434,52 @@ export function editReservation(index, {
 
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
-  let resolvedProgressType = reservation.paymentProgressType;
-  const hasPercentHistory = Number.isFinite(Number(reservation.paidPercent)) && Number(reservation.paidPercent) > 0;
-  const hasAmountHistory = Number.isFinite(Number(reservation.paidAmount)) && Number(reservation.paidAmount) > 0;
-  if (resolvedProgressType !== 'amount' && resolvedProgressType !== 'percent') {
-    if (hasPercentHistory) {
-      resolvedProgressType = 'percent';
-    } else if (hasAmountHistory) {
-      resolvedProgressType = 'amount';
-    } else {
-      resolvedProgressType = 'percent';
-    }
-  }
+
+  const normalizeProgressType = (value) => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    return normalized === 'amount' || normalized === 'percent' ? normalized : null;
+  };
+
+  const parseNumericValue = (value) => {
+    if (value == null || value === '') return null;
+    const normalized = normalizeNumbers(String(value)).replace('%', '').trim();
+    if (!normalized) return null;
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const totalAmountNumber = parseNumericValue(reservation.totalAmount);
+  const paidAmountNumber = parseNumericValue(reservation.paidAmount);
+  const paidPercentNumber = parseNumericValue(reservation.paidPercent);
+
+  let resolvedProgressType = normalizeProgressType(reservation.paymentProgressType) || 'percent';
+
   if (paymentProgressTypeSelect) {
     paymentProgressTypeSelect.value = resolvedProgressType;
+    if (paymentProgressTypeSelect.dataset) {
+      delete paymentProgressTypeSelect.dataset.userSelected;
+    }
   }
-  let resolvedProgressValue = reservation.paymentProgressValue;
+
+  let resolvedProgressValue = parseNumericValue(reservation.paymentProgressValue);
   if (resolvedProgressType === 'amount') {
-    if (resolvedProgressValue == null || resolvedProgressValue === '') {
-      resolvedProgressValue = reservation.paidAmount ?? null;
+    if (resolvedProgressValue == null) {
+      resolvedProgressValue = paidAmountNumber;
     }
   } else {
-    if (resolvedProgressValue == null || resolvedProgressValue === '') {
-      resolvedProgressValue = reservation.paidPercent ?? null;
+    if (resolvedProgressValue == null) {
+      resolvedProgressValue = paidPercentNumber;
+    }
+    if ((resolvedProgressValue == null || !Number.isFinite(resolvedProgressValue))
+      && Number.isFinite(paidAmountNumber)
+      && Number.isFinite(totalAmountNumber)
+      && totalAmountNumber > 0) {
+      resolvedProgressValue = (paidAmountNumber / totalAmountNumber) * 100;
+      resolvedProgressValue = Math.round(resolvedProgressValue * 100) / 100;
     }
   }
+
   setEditPaymentProgressValue(paymentProgressValueInput, resolvedProgressValue);
 
   setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
