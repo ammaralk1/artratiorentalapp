@@ -438,66 +438,15 @@ export function editReservation(index, {
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
 
-  const normalizeProgressType = (value) => {
-    if (typeof value !== 'string') return null;
-    const normalized = value.trim().toLowerCase();
-    return normalized === 'amount' || normalized === 'percent' ? normalized : null;
-  };
-
-  const parseNumericValue = (value) => {
-    if (value == null || value === '') return null;
-    const normalized = normalizeNumbers(String(value)).replace('%', '').trim();
-    if (!normalized) return null;
-    const parsed = Number.parseFloat(normalized);
-    return Number.isFinite(parsed) ? parsed : null;
-  };
-
-  const totalAmountNumber = parseNumericValue(reservation.totalAmount);
-  const paidAmountNumber = parseNumericValue(reservation.paidAmount);
-  const paidPercentNumber = parseNumericValue(reservation.paidPercent);
-  const originalProgressType = normalizeProgressType(reservation.paymentProgressType);
   if (paymentProgressTypeSelect?.dataset?.userSelected) {
     delete paymentProgressTypeSelect.dataset.userSelected;
   }
 
-  let resolvedProgressType = 'percent';
-
   if (paymentProgressTypeSelect) {
-    paymentProgressTypeSelect.value = resolvedProgressType;
+    paymentProgressTypeSelect.value = 'percent';
   }
 
-  let resolvedProgressValue = parseNumericValue(reservation.paymentProgressValue);
-  const hasTotalAmount = Number.isFinite(totalAmountNumber) && totalAmountNumber > 0;
-
-  if (resolvedProgressType === 'amount') {
-    if (!Number.isFinite(resolvedProgressValue)) {
-      resolvedProgressValue = Number.isFinite(paidAmountNumber) ? paidAmountNumber : null;
-    }
-  } else {
-    const shouldConvertAmountToPercent = Number.isFinite(resolvedProgressValue)
-      && originalProgressType === 'amount'
-      && hasTotalAmount;
-
-    if (shouldConvertAmountToPercent) {
-      resolvedProgressValue = (resolvedProgressValue / totalAmountNumber) * 100;
-    }
-
-    if (!Number.isFinite(resolvedProgressValue) && Number.isFinite(paidPercentNumber)) {
-      resolvedProgressValue = paidPercentNumber;
-    }
-
-    if (!Number.isFinite(resolvedProgressValue)
-      && Number.isFinite(paidAmountNumber)
-      && hasTotalAmount) {
-      resolvedProgressValue = (paidAmountNumber / totalAmountNumber) * 100;
-    }
-
-    if (Number.isFinite(resolvedProgressValue)) {
-      resolvedProgressValue = Math.round(resolvedProgressValue * 100) / 100;
-    }
-  }
-
-  setEditPaymentProgressValue(paymentProgressValueInput, resolvedProgressValue);
+  setEditPaymentProgressValue(paymentProgressValueInput, null);
 
   setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
 
