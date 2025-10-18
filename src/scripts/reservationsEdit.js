@@ -430,6 +430,9 @@ export function editReservation(index, {
     ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
   if (paidSelect) {
     paidSelect.value = initialPaidStatus;
+    if (paidSelect.dataset) {
+      delete paidSelect.dataset.userSelected;
+    }
   }
 
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
@@ -537,7 +540,8 @@ export async function saveReservationChanges({
   const discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
   const confirmed = isReservationConfirmed();
   const paymentSelect = document.getElementById('edit-res-paid');
-  const paidStatus = paymentSelect?.value || 'unpaid';
+  const manualPaidOverride = paymentSelect?.dataset?.userSelected === 'true';
+  const paidStatus = manualPaidOverride ? (paymentSelect?.value || 'unpaid') : 'unpaid';
   const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
   const paymentProgressType = getEditPaymentProgressType(paymentProgressTypeSelect);
@@ -723,8 +727,11 @@ export async function saveReservationChanges({
     paidPercent: paymentProgress.paidPercent,
     totalAmount,
   });
-  if (paymentSelect) {
+  if (paymentSelect && !manualPaidOverride) {
     paymentSelect.value = effectivePaidStatus;
+    if (paymentSelect.dataset) {
+      delete paymentSelect.dataset.userSelected;
+    }
   }
 
   let statusForPayload = reservation.status ?? 'pending';

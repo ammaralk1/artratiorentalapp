@@ -441,11 +441,15 @@ export function updateEditReservationSummary() {
   const discountTypeSelect = document.getElementById('edit-res-discount-type');
   const paidSelect = document.getElementById('edit-res-paid');
   if (paidSelect && !paidSelect.dataset.listenerAttached) {
-    paidSelect.addEventListener('change', updateEditReservationSummary);
+    paidSelect.addEventListener('change', () => {
+      if (paidSelect.dataset) {
+        paidSelect.dataset.userSelected = 'true';
+      }
+      updatePaymentStatusAppearance(paidSelect);
+      updateEditReservationSummary();
+    });
     paidSelect.dataset.listenerAttached = 'true';
   }
-
-  updatePaymentStatusAppearance(paidSelect);
 
   const rawDiscount = normalizeNumbers(discountInput?.value || '0');
   if (discountInput) discountInput.value = rawDiscount;
@@ -455,8 +459,8 @@ export function updateEditReservationSummary() {
   const projectLinked = Boolean(document.getElementById('edit-res-project')?.value);
   const taxCheckbox = document.getElementById('edit-res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
-  const paidStatus = paidSelect?.value || 'unpaid';
-  updatePaymentStatusAppearance(paidSelect, paidStatus);
+  const manualPaymentOverride = paidSelect?.dataset?.userSelected === 'true';
+  const paidStatus = manualPaymentOverride ? (paidSelect?.value || 'unpaid') : 'unpaid';
   if (applyTax) {
     ensureCompanyShareEnabled('edit-res-company-share');
   }
@@ -486,8 +490,20 @@ export function updateEditReservationSummary() {
   const summaryResult = renderEditSummary.lastResult;
 
   if (summaryResult && paidSelect) {
-    paidSelect.value = summaryResult.paymentStatus;
-    updatePaymentStatusAppearance(paidSelect, summaryResult.paymentStatus);
+    const calculatedStatus = summaryResult.paymentStatus;
+    if (!manualPaymentOverride) {
+      if (paidSelect.value !== calculatedStatus) {
+        paidSelect.value = calculatedStatus;
+      }
+      if (paidSelect.dataset) {
+        delete paidSelect.dataset.userSelected;
+      }
+      updatePaymentStatusAppearance(paidSelect, calculatedStatus);
+    } else {
+      updatePaymentStatusAppearance(paidSelect, paidSelect.value);
+    }
+  } else if (paidSelect) {
+    updatePaymentStatusAppearance(paidSelect, paidSelect.value);
   }
 }
 
