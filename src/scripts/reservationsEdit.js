@@ -452,30 +452,44 @@ export function editReservation(index, {
   const totalAmountNumber = parseNumericValue(reservation.totalAmount);
   const paidAmountNumber = parseNumericValue(reservation.paidAmount);
   const paidPercentNumber = parseNumericValue(reservation.paidPercent);
+  const originalProgressType = normalizeProgressType(reservation.paymentProgressType);
+  if (paymentProgressTypeSelect?.dataset?.userSelected) {
+    delete paymentProgressTypeSelect.dataset.userSelected;
+  }
 
-  let resolvedProgressType = normalizeProgressType(reservation.paymentProgressType) || 'percent';
+  let resolvedProgressType = 'percent';
 
   if (paymentProgressTypeSelect) {
     paymentProgressTypeSelect.value = resolvedProgressType;
-    if (paymentProgressTypeSelect.dataset) {
-      delete paymentProgressTypeSelect.dataset.userSelected;
-    }
   }
 
   let resolvedProgressValue = parseNumericValue(reservation.paymentProgressValue);
+  const hasTotalAmount = Number.isFinite(totalAmountNumber) && totalAmountNumber > 0;
+
   if (resolvedProgressType === 'amount') {
-    if (resolvedProgressValue == null) {
-      resolvedProgressValue = paidAmountNumber;
+    if (!Number.isFinite(resolvedProgressValue)) {
+      resolvedProgressValue = Number.isFinite(paidAmountNumber) ? paidAmountNumber : null;
     }
   } else {
-    if (resolvedProgressValue == null) {
+    const shouldConvertAmountToPercent = Number.isFinite(resolvedProgressValue)
+      && originalProgressType === 'amount'
+      && hasTotalAmount;
+
+    if (shouldConvertAmountToPercent) {
+      resolvedProgressValue = (resolvedProgressValue / totalAmountNumber) * 100;
+    }
+
+    if (!Number.isFinite(resolvedProgressValue) && Number.isFinite(paidPercentNumber)) {
       resolvedProgressValue = paidPercentNumber;
     }
-    if ((resolvedProgressValue == null || !Number.isFinite(resolvedProgressValue))
+
+    if (!Number.isFinite(resolvedProgressValue)
       && Number.isFinite(paidAmountNumber)
-      && Number.isFinite(totalAmountNumber)
-      && totalAmountNumber > 0) {
+      && hasTotalAmount) {
       resolvedProgressValue = (paidAmountNumber / totalAmountNumber) * 100;
+    }
+
+    if (Number.isFinite(resolvedProgressValue)) {
       resolvedProgressValue = Math.round(resolvedProgressValue * 100) / 100;
     }
   }

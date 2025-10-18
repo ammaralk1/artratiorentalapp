@@ -277,6 +277,13 @@ function handleAddPaymentHistoryEntry() {
     valueInput.value = '';
   }
 
+  if (typeSelect) {
+    typeSelect.value = 'percent';
+    if (typeSelect.dataset) {
+      delete typeSelect.dataset.userSelected;
+    }
+  }
+
   showToast(t('reservations.toast.paymentAdded', '✅ تم تسجيل الدفعة'));
 }
 
