@@ -44,7 +44,7 @@ body.dark-mode {
 
 
 .reports-page {
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-page [class*="bg-base-100"],
@@ -86,7 +86,7 @@ body.dark-mode.reports-page {
   flex-direction: column;
   gap: 32px;
   padding: 12px 18px;
-  color: var(--reports-text);
+  color: var(--clr-text);
   background: transparent;
 }
 
@@ -101,13 +101,23 @@ body.dark-mode.reports-page {
 .reports-chart-card,
 .reports-table-card,
 .reports-empty-state {
-  background: var(--reports-surface) !important;
-  background-color: var(--reports-surface) !important;
-  border: 1px solid var(--reports-border) !important;
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95)) !important;
+  border: 1px solid rgba(76, 110, 245, 0.12) !important;
   border-radius: var(--reports-radius-lg);
-  box-shadow: var(--reports-shadow);
-  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+  color: var(--clr-text);
   transition: var(--reports-transition);
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-surface-card,
+:is(html.dark-mode, body.dark-mode) .reports-kpi-card,
+:is(html.dark-mode, body.dark-mode) .reports-chart-card,
+:is(html.dark-mode, body.dark-mode) .reports-table-card,
+:is(html.dark-mode, body.dark-mode) .reports-empty-state {
+  background: rgba(24, 33, 59, 0.92) !important;
+  border: 1px solid rgba(93, 133, 255, 0.2) !important;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
+  color: var(--clr-text);
 }
 
 .reports-wrapper--reservations .reports-surface-card {
@@ -127,7 +137,8 @@ body.dark-mode.reports-page {
 }
 
 .reports-surface-card {
-  padding: 28px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .reports-header-card {
@@ -160,13 +171,13 @@ body.dark-mode.reports-page {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-wrapper--reservations :where(h1, h2, h3, h4, h5, h6) {
   margin: 0;
   font-weight: 700;
-  color: var(--reports-text);
+  color: var(--clr-text);
   letter-spacing: 0.01em;
 }
 
@@ -175,28 +186,28 @@ body.dark-mode.reports-page {
 }
 
 .reports-wrapper--reservations :where(p, span, label) {
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-wrapper--reservations .reports-filter-label,
 .reports-wrapper--reservations .reports-column-summary .reports-filter-label {
-  color: var(--reports-text);
+  color: var(--clr-text);
   font-weight: 700;
 }
 
 .reports-wrapper--reservations .reports-filter-control,
 .reports-wrapper--reservations .reports-column-toggle-label,
 .reports-wrapper--reservations .reports-card-hint {
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-wrapper--reservations .reports-kpi-label {
-  color: var(--reports-muted);
+  color: var(--clr-muted);
   font-weight: 600;
 }
 
 .reports-wrapper--reservations .reports-kpi-value {
-  color: var(--reports-text);
+  color: var(--clr-text);
   font-weight: 700;
 }
 
@@ -219,7 +230,7 @@ body.dark-mode.reports-page {
 
 .reports-subtitle {
   margin: 0;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
   font-size: 0.95rem;
 }
 
@@ -294,7 +305,7 @@ body[dir="rtl"] .reports-filters {
 
 .reports-status-label {
   font-size: 0.85rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-status-chips {
@@ -413,15 +424,15 @@ body[dir="rtl"] .reports-filters {
 .reports-filter-label {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-filter-control {
   border-radius: 14px;
-  border: 1px solid var(--reports-border);
+  border: 1px solid rgba(76, 110, 245, 0.2);
   padding: 10px 14px;
-  background-color: var(--reports-surface);
-  color: var(--reports-text);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--clr-text);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   min-height: 42px;
 }
@@ -430,6 +441,12 @@ body[dir="rtl"] .reports-filters {
   outline: none;
   border-color: var(--reports-accent);
   box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.25);
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-filter-control {
+  background: rgba(24, 33, 59, 0.88);
+  border-color: rgba(93, 133, 255, 0.26);
+  color: var(--clr-text);
 }
 
 .reports-custom-range {
@@ -557,7 +574,7 @@ body[dir="rtl"] .reports-filters {
 
 .reports-actions .btn-outline {
   border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.45);
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-actions .btn-outline:hover,
@@ -638,26 +655,26 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-label {
   margin: 0;
   font-weight: 600;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-kpi-value {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-kpi-meta {
   font-size: 0.85rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-kpi-details {
   margin-top: 8px;
   display: grid;
   gap: 6px;
-  border-top: 1px dashed rgba(71, 85, 105, 0.25);
+  border-top: 1px dashed rgba(76, 110, 245, 0.18);
   padding-top: 8px;
 }
 
@@ -670,7 +687,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   justify-content: space-between;
   gap: 12px;
   font-size: 0.85rem;
-  color: rgba(71, 85, 105, 0.9);
+  color: var(--clr-muted);
 }
 
 .reports-kpi-detail-label {
@@ -681,19 +698,19 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 .reports-kpi-detail-value {
   font-weight: 600;
-  color: rgba(30, 41, 59, 0.95);
+  color: var(--clr-text);
 }
 
-html.dark .reports-kpi-details {
-  border-color: rgba(148, 163, 184, 0.35);
+:is(html.dark-mode, body.dark-mode) .reports-kpi-details {
+  border-color: rgba(93, 133, 255, 0.26);
 }
 
-html.dark .reports-kpi-detail-row {
-  color: rgba(203, 213, 225, 0.85);
+:is(html.dark-mode, body.dark-mode) .reports-kpi-detail-row {
+  color: var(--clr-muted);
 }
 
-html.dark .reports-kpi-detail-value {
-  color: rgba(226, 232, 240, 0.95);
+:is(html.dark-mode, body.dark-mode) .reports-kpi-detail-value {
+  color: var(--clr-text);
 }
 
 .reports-analytics-grid {
@@ -815,12 +832,12 @@ body[dir="ltr"] .reports-card-text {
 
 .reports-card-header h4 {
   margin: 0;
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-card-hint {
   font-size: 0.85rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-card-body {
@@ -848,7 +865,7 @@ body[dir="ltr"] .reports-card-text {
   gap: 10px;
   border-radius: inherit;
   background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.05);
-  color: var(--reports-muted);
+  color: var(--clr-muted);
   text-align: center;
   padding: 24px;
   z-index: 1;
@@ -897,13 +914,13 @@ body[dir="ltr"] .reports-card-text {
 
 .reports-chart-bar .label {
   font-size: 0.85rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-chart-bar .value {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-status-section {
@@ -915,7 +932,7 @@ body[dir="ltr"] .reports-card-text {
 .reports-status-section h5 {
   margin: 0;
   font-size: 1rem;
-  color: var(--reports-text);
+  color: var(--clr-text);
 }
 
 .reports-status-progress {
@@ -934,7 +951,7 @@ body[dir="ltr"] .reports-card-text {
   display: flex;
   justify-content: space-between;
   font-size: 0.9rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-progress-bar {
@@ -981,53 +998,42 @@ body[dir="ltr"] .reports-card-text {
 
 .reports-table-card .reports-table-wrapper {
   position: relative;
-  border-radius: 1.75rem;
-  border: 1px solid rgba(148, 163, 255, 0.32);
-  background: linear-gradient(140deg, rgba(248, 250, 255, 0.96) 0%, rgba(236, 242, 255, 0.92) 48%, rgba(225, 233, 255, 0.9) 100%);
-  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.16);
+  border-radius: 18px;
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.12), rgba(238, 243, 255, 0.95));
+  box-shadow: var(--shadow-sm);
   padding: 0;
   overflow: hidden;
-  overflow-x: clip;
-  isolation: isolate;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .reports-table-card .reports-table-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: -16% -18% 42% -20%;
-  background: radial-gradient(circle at top left, rgba(148, 173, 255, 0.38), rgba(104, 132, 242, 0.16) 46%, rgba(236, 242, 255, 0) 76%);
-  opacity: 0.78;
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .reports-table-card .reports-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.97rem;
-  color: #1f2937;
-  background: #ffffff;
-  position: relative;
-  z-index: 1;
+  font-size: 0.95rem;
+  color: var(--clr-text);
+  background: transparent;
 }
 
 .reports-table-card .reports-table thead th {
-  background: linear-gradient(135deg, rgba(226, 232, 255, 0.92), rgba(210, 220, 255, 0.86));
-  color: #1e293b;
+  background: rgba(76, 110, 245, 0.12);
+  color: var(--clr-text);
   font-weight: 700;
-  padding: 1.05rem 1.35rem;
-  border: 1px solid rgba(162, 178, 255, 0.35);
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(76, 110, 245, 0.18);
   text-align: center;
   letter-spacing: 0.01em;
-  box-shadow: inset 0 -1px 0 rgba(148, 163, 255, 0.38);
 }
 
 .reports-table-card .reports-table tbody td {
-  padding: 1rem 1.35rem;
-  border: 1px solid rgba(209, 217, 255, 0.4);
-  background: #ffffff;
-  color: #1f2937;
+  padding: 0.9rem 1.25rem;
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  background: transparent;
+  color: var(--clr-text);
   font-weight: 500;
 }
 
@@ -1061,40 +1067,38 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-table-card .reports-table tbody tr:hover {
-  background: linear-gradient(90deg, rgba(236, 242, 255, 0.72), rgba(221, 230, 255, 0.62));
+  background: rgba(76, 110, 245, 0.08);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table-wrapper {
-  border-color: rgba(59, 130, 246, 0.28);
-  background: linear-gradient(145deg, rgba(14, 27, 58, 0.92) 0%, rgba(20, 36, 72, 0.9) 52%, rgba(12, 23, 52, 0.92) 100%);
-  box-shadow: 0 24px 48px rgba(3, 8, 26, 0.6);
+  border-color: rgba(93, 133, 255, 0.24);
+  background: rgba(24, 33, 59, 0.92);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.25);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table-wrapper::before {
-  inset: -14% -18% 48% -20%;
-  background: radial-gradient(circle at top left, rgba(82, 124, 240, 0.4), rgba(32, 58, 142, 0.16) 48%, transparent 76%);
-  opacity: 0.7;
+  display: none;
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table {
-  background: rgba(5, 10, 24, 0.98);
-  color: #ffffff;
+  background: transparent;
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table thead th {
-  background: rgba(8, 16, 34, 0.98);
-  border-color: rgba(62, 90, 170, 0.32);
-  color: #ffffff;
+  background: rgba(93, 133, 255, 0.18);
+  border-color: rgba(93, 133, 255, 0.32);
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table tbody td {
-  background: rgba(5, 10, 24, 0.98);
-  border-color: rgba(60, 88, 168, 0.24);
-  color: #ffffff;
+  background: transparent;
+  border-color: rgba(93, 133, 255, 0.22);
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-table-card .reports-table tbody tr:hover {
-  background: linear-gradient(90deg, rgba(12, 24, 52, 0.92), rgba(24, 42, 82, 0.88));
+  background: rgba(93, 133, 255, 0.16);
 }
 
 .reports-empty-state {
@@ -1103,10 +1107,10 @@ body[dir="ltr"] .reports-card-text {
   align-items: center;
   gap: 12px;
   padding: 32px;
-  border: 1px dashed rgba(var(--reports-accent-rgb, 76, 110, 245), 0.28);
-  background: rgba(248, 250, 255, 0.62);
+  border: 1px dashed rgba(76, 110, 245, 0.24);
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.1), rgba(238, 243, 255, 0.9));
   text-align: center;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 .reports-empty-state.active {
@@ -1118,19 +1122,19 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-empty-subtitle {
-  color: var(--reports-muted);
+  color: var(--clr-muted);
   font-size: 0.95rem;
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-empty-state {
-  border-color: rgba(var(--reports-accent-rgb, 147, 197, 253), 0.42);
-  background: rgba(15, 23, 42, 0.75);
-  color: rgba(226, 232, 240, 0.78);
+  border-color: rgba(93, 133, 255, 0.3);
+  background: rgba(24, 33, 59, 0.88);
+  color: var(--clr-text);
 }
 
 .reports-progress-meta {
   font-size: 0.85rem;
-  color: var(--reports-muted);
+  color: var(--clr-muted);
 }
 
 @media (max-width: 992px) {
