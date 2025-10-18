@@ -1124,8 +1124,8 @@ body[dir="rtl"] .reservation-modal-id {
 
 .reservation-summary-card .summary-details,
 .reservation-summary-card .reservation-payment-history-modal {
-  flex: 1 1 260px;
-  min-width: min(100%, 240px);
+  flex: 1 1 320px;
+  min-width: min(100%, 280px);
 }
 
 .reservation-summary-card .summary-details {
@@ -1138,10 +1138,10 @@ body[dir="rtl"] .reservation-modal-id {
 .reservation-summary-card .reservation-payment-history-modal {
   background: rgba(255, 255, 255, 0.7);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 16px 18px;
   box-shadow: inset 0 0 0 1px rgba(76, 110, 245, 0.08);
-  margin-top: 0;
-  padding-top: 0;
+  margin-top: 6px;
+  padding-top: 12px;
   border-top: none;
 }
 
@@ -1152,6 +1152,7 @@ body[dir="rtl"] .reservation-modal-id {
 
 .reservation-summary-card .reservation-payment-history-modal .history-heading {
   margin-top: 0;
+  margin-bottom: 10px;
   text-align: right;
 }
 
