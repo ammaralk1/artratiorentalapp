@@ -1152,6 +1152,7 @@ body[dir="rtl"] .reservation-modal-id {
 
 .reservation-summary-card .reservation-payment-history-modal .history-heading {
   margin-top: 0;
+  text-align: right;
 }
 
 @media (max-width: 720px) {
