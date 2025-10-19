@@ -465,7 +465,9 @@ select.form-select option {
 
 /* Projects form layout tweaks */
 .project-form-primary-row {
-  row-gap: 1.25rem;
+  row-gap: 1rem;
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: 0.9rem;
 }
 
 .project-form .form-control-dropdown {
@@ -524,12 +526,12 @@ select.form-select option {
 
 @media (min-width: 992px) {
   .project-form-primary-row .project-field-narrow {
-    flex: 0 0 220px !important;
-    max-width: 220px !important;
+    flex: 0 0 240px !important;
+    max-width: 260px !important;
   }
 
   .project-field-compact {
-    flex: 0 0 240px !important;
+    flex: 0 0 230px !important;
     max-width: 240px !important;
   }
 
@@ -539,7 +541,7 @@ select.form-select option {
 
   .project-client-field {
     flex: 0 0 180px !important;
-    max-width: 180px !important;
+    max-width: 200px !important;
   }
 
   .project-title-field {
@@ -548,7 +550,7 @@ select.form-select option {
   }
 
   .project-company-field {
-    flex: 1 1 auto !important;
+    flex: 1 1 260px !important;
     min-width: 260px;
   }
 }
@@ -559,13 +561,17 @@ select.form-select option {
   }
 
   .project-form-primary-row .project-field-narrow {
-    flex: 0 0 240px !important;
-    max-width: 240px !important;
+    flex: 0 0 260px !important;
+    max-width: 280px !important;
   }
 
   .project-client-field {
     flex: 0 0 200px !important;
-    max-width: 200px !important;
+    max-width: 210px !important;
+  }
+
+  .project-company-field {
+    flex: 1 1 300px !important;
   }
 }
 
