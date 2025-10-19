@@ -26,7 +26,6 @@ import {
 } from './formatting.js';
 import {
   combineProjectDateTime,
-  formatDateRange,
   setDateInputValue,
   setTimeInputValue,
   splitDateTimeParts
@@ -205,20 +204,20 @@ export function openProjectDetails(projectId) {
       label: t('projects.details.type', 'نوع المشروع'),
       value: typeLabel
     },
-    {
-      icon: '📅',
-      label: t('projects.details.range', 'الفترة الزمنية'),
-      value: formatDateRange(project.start, project.end)
-    }
+    resolveProjectScheduleItem('start', project.start),
+    resolveProjectScheduleItem('end', project.end)
   ].filter(Boolean);
 
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
       <ul class="project-details-outline__list">
-        ${projectInfoItems.map(({ icon, label, value }) => `
+        ${projectInfoItems.map(({ icon, label, value, meta }) => `
           <li>
             <span class="project-details-outline__label">${escapeHtml(icon)} ${escapeHtml(label)}</span>
-            <span class="project-details-outline__value">${escapeHtml(value)}</span>
+            <span class="project-details-outline__value-group">
+              <span class="project-details-outline__value">${escapeHtml(value)}</span>
+              ${meta ? `<span class="project-details-outline__meta">${escapeHtml(meta)}</span>` : ''}
+            </span>
           </li>
         `).join('')}
       </ul>
@@ -1564,6 +1563,35 @@ function resolveRecordedAt(raw) {
     return new Date().toISOString();
   }
   return candidate.toISOString();
+}
+
+function resolveProjectScheduleItem(kind, value) {
+  if (!value) return null;
+
+  const { date, time } = splitDateAndTime(formatDateTime(value));
+  const isStart = kind === 'start';
+  const icon = isStart ? '⏱️' : '⌛';
+  const label = isStart
+    ? t('projects.details.labels.start', 'بداية الحجز')
+    : t('projects.details.labels.end', 'نهاية الحجز');
+
+  return {
+    icon,
+    label,
+    value: date,
+    meta: time
+  };
+}
+
+function splitDateAndTime(formatted) {
+  if (!formatted || formatted === '—') {
+    return { date: '—', time: '' };
+  }
+
+  const parts = formatted.split(' ').filter(Boolean);
+  const date = parts.shift() || '—';
+  const time = parts.join(' ');
+  return { date, time };
 }
 
 function getProjectTypeLabel(type) {
