@@ -141,7 +141,8 @@ registerTranslations({
     'projects.table.emptyInitial': 'لم يتم إنشاء مشاريع بعد.',
     'projects.table.emptyFiltered': 'لا توجد مشاريع مطابقة.',
 
-    'projects.modal.title': 'تفاصيل المشروع',
+    'projects.modal.title': 'معلومات المشروع',
+    'projects.details.overview.heading': 'معلومات المشروع',
 
     'projects.reports.pageTitle': 'تقارير المشاريع - نظام التأجير',
     'projects.reports.title': 'لوحة تقارير المشاريع',
@@ -469,7 +470,8 @@ registerTranslations({
     'projects.table.emptyInitial': 'No projects have been created yet.',
     'projects.table.emptyFiltered': 'No matching projects found.',
 
-    'projects.modal.title': 'Project Details',
+    'projects.modal.title': 'Project Information',
+    'projects.details.overview.heading': 'Project Information',
 
     'projects.reports.pageTitle': 'Project Reports - Rental System',
     'projects.reports.title': 'Project Reporting Dashboard',
