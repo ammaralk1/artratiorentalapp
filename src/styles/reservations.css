@@ -3550,6 +3550,10 @@ body[dir="ltr"] .reservation-field textarea {
   margin: 0;
 }
 
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__title {
+  color: rgba(226, 232, 240, 0.95);
+}
+
 .reservation-payment-history {
   max-height: 220px;
   overflow-y: auto;
@@ -3587,6 +3591,15 @@ body[dir="ltr"] .reservation-field textarea {
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history-block {
   background: rgba(30, 41, 59, 0.75);
   border-color: rgba(148, 191, 255, 0.28);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__table {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__table th,
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__table td {
+  border-color: rgba(148, 191, 255, 0.18);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__empty {
