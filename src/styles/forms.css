@@ -544,18 +544,18 @@ select.form-select option {
     min-width: 200px;
   }
 
-  .project-field-narrow.project-type-field {
-    flex: 0 0 20%;
-    max-width: 20%;
+  .project-row--type-title .project-type-field {
+    flex: 0 0 22%;
+    max-width: 22%;
   }
 
-  .project-title-field {
-    flex: 0 0 80%;
-    max-width: 80%;
+  .project-row--type-title .project-title-field {
+    flex: 1 1 0;
+    max-width: 78%;
   }
 
-  .project-client-field,
-  .project-company-field {
+  .project-row--client .project-client-field,
+  .project-row--client .project-company-field {
     flex: 0 0 50%;
     max-width: 50%;
   }
@@ -580,18 +580,18 @@ select.form-select option {
     min-width: 220px;
   }
 
-  .project-field-narrow.project-type-field {
-    flex: 0 0 18%;
-    max-width: 18%;
+  .project-row--type-title .project-type-field {
+    flex: 0 0 20%;
+    max-width: 20%;
   }
 
-  .project-title-field {
-    flex: 0 0 82%;
-    max-width: 82%;
+  .project-row--type-title .project-title-field {
+    flex: 1 1 0;
+    max-width: 80%;
   }
 
-  .project-client-field,
-  .project-company-field {
+  .project-row--client .project-client-field,
+  .project-row--client .project-company-field {
     flex: 0 0 50%;
     max-width: 50%;
   }
