@@ -114,6 +114,20 @@ CREATE TABLE project_expenses (
   FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE project_payments (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  project_id BIGINT UNSIGNED NOT NULL,
+  payment_type VARCHAR(20) NOT NULL,
+  value DECIMAL(12,2) DEFAULT NULL,
+  amount DECIMAL(12,2) DEFAULT NULL,
+  percentage DECIMAL(8,2) DEFAULT NULL,
+  note VARCHAR(500) DEFAULT NULL,
+  recorded_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE reservations (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   reservation_code VARCHAR(50) NOT NULL UNIQUE,
@@ -265,6 +279,9 @@ INSERT INTO project_equipment (project_id, equipment_id, quantity) VALUES
 INSERT INTO project_expenses (project_id, label, amount) VALUES
 (1, 'نقل المعدات', 1800.00),
 (1, 'تصاريح بلدية', 950.00);
+
+INSERT INTO project_payments (project_id, payment_type, value, amount, percentage, note, recorded_at) VALUES
+(1, 'amount', 20000, 20000, NULL, 'دفعة مقدمة', '2025-08-15 12:00:00');
 
 INSERT INTO reservations (
   reservation_code,

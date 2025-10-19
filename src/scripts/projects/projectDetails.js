@@ -98,7 +98,21 @@ export function openProjectDetails(projectId) {
   const reservationsChipText = t('projects.details.chips.reservations', '{count} حجوزات')
     .replace('{count}', normalizeNumbers(String(reservationsCount)));
   const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
-  const paymentStatusValue = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
+  const paymentHistory = Array.isArray(project.paymentHistory) ? project.paymentHistory : [];
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount: overallTotal,
+    paidAmount: project.paidAmount,
+    paidPercent: project.paidPercent,
+    progressType: project.paymentProgressType,
+    progressValue: project.paymentProgressValue,
+    history: paymentHistory,
+  });
+  const paymentStatusValue = determinePaymentStatus({
+    manualStatus: paymentStatusRaw || 'unpaid',
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount: overallTotal,
+  });
   const paymentStatusText = t(
     `projects.paymentStatus.${paymentStatusValue}`,
     paymentStatusValue === 'paid' ? 'Paid' : paymentStatusValue === 'partial' ? 'Partial' : 'Unpaid'
@@ -108,6 +122,13 @@ export function openProjectDetails(projectId) {
     : paymentStatusValue === 'partial'
       ? 'status-partial'
       : 'status-unpaid';
+  const paidAmountValue = Number.isFinite(Number(paymentProgress.paidAmount)) ? Number(paymentProgress.paidAmount) : 0;
+  const paidPercentValue = Number.isFinite(Number(paymentProgress.paidPercent)) ? Number(paymentProgress.paidPercent) : 0;
+  const remainingAmountValue = Math.max(0, Number((overallTotal - paidAmountValue).toFixed(2)));
+  const paidAmountDisplay = formatCurrency(paidAmountValue);
+  const paidPercentDisplay = `${normalizeNumbers(paidPercentValue.toFixed(2))}%`;
+  const remainingDisplay = formatCurrency(remainingAmountValue);
+  const paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory);
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
@@ -138,6 +159,21 @@ export function openProjectDetails(projectId) {
       icon: '💰',
       label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'),
       value: formatCurrency(overallTotal)
+    },
+    {
+      icon: '💳',
+      label: t('projects.details.summary.paidAmount', 'إجمالي المدفوع'),
+      value: paidAmountDisplay
+    },
+    {
+      icon: '📊',
+      label: t('projects.details.summary.paidPercent', 'نسبة المدفوع'),
+      value: paidPercentDisplay
+    },
+    {
+      icon: '💸',
+      label: t('projects.details.summary.remainingAmount', 'المتبقي للدفع'),
+      value: remainingDisplay
     }
   ];
 
@@ -213,6 +249,30 @@ export function openProjectDetails(projectId) {
           <span>${escapeHtml(reservationsLabel)}</span>
           <strong>${formatCurrency(reservationsTotal)}</strong>
         </div>
+      </div>
+    </section>
+    <section class="project-details-section">
+      <h5>${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h5>
+      <div class="project-details-grid">
+        <div class="project-details-grid-item">
+          <span>${escapeHtml(t('projects.details.paymentOverview.total', 'الإجمالي الكلي'))}</span>
+          <strong>${escapeHtml(formatCurrency(overallTotal))}</strong>
+        </div>
+        <div class="project-details-grid-item">
+          <span>${escapeHtml(t('projects.details.paymentOverview.paid', 'المدفوع'))}</span>
+          <strong>${escapeHtml(paidAmountDisplay)}</strong>
+        </div>
+        <div class="project-details-grid-item">
+          <span>${escapeHtml(t('projects.details.paymentOverview.percent', 'نسبة المدفوع'))}</span>
+          <strong>${escapeHtml(paidPercentDisplay)}</strong>
+        </div>
+        <div class="project-details-grid-item">
+          <span>${escapeHtml(t('projects.details.paymentOverview.remaining', 'المتبقي'))}</span>
+          <strong>${escapeHtml(remainingDisplay)}</strong>
+        </div>
+      </div>
+      <div class="reservation-payment-history-modal mt-3">
+        ${paymentHistoryMarkup}
       </div>
     </section>
     ${buildProjectReservationsSection(project)}
@@ -325,10 +385,38 @@ export function startProjectEdit(project) {
       }))
     : [];
 
+  const normalizedPayments = Array.isArray(resolved.paymentHistory)
+    ? resolved.paymentHistory.map((entry, index) => ({
+        type: entry?.type === 'percent' ? 'percent' : 'amount',
+        amount: Number.isFinite(Number(entry?.amount)) ? Number(entry.amount) : null,
+        percentage: Number.isFinite(Number(entry?.percentage)) ? Number(entry.percentage) : null,
+        value: Number.isFinite(Number(entry?.value)) ? Number(entry.value) : null,
+        note: entry?.note ?? null,
+        recordedAt: entry?.recordedAt ?? entry?.recorded_at ?? new Date().toISOString(),
+        key: `payment-${resolved.id}-${index}`,
+      }))
+    : [];
+
+  const historyPaidAmount = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0);
+  const historyPaidPercent = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.percentage) || 0), 0);
+
+  let basePaidAmount = Number.isFinite(Number(resolved.paidAmount)) ? Number(resolved.paidAmount) : 0;
+  let basePaidPercent = Number.isFinite(Number(resolved.paidPercent)) ? Number(resolved.paidPercent) : 0;
+
+  if (historyPaidAmount > 0 && Math.abs(basePaidAmount - historyPaidAmount) < 0.01) {
+    basePaidAmount = 0;
+  }
+  if (historyPaidPercent > 0 && Math.abs(basePaidPercent - historyPaidPercent) < 0.01) {
+    basePaidPercent = 0;
+  }
+
   const editState = {
     clientName,
     clientCompany,
-    expenses: normalizedExpenses
+    expenses: normalizedExpenses,
+    payments: normalizedPayments,
+    basePaidAmount,
+    basePaidPercent
   };
 
   dom.detailsBody.dataset.mode = 'edit';
@@ -363,8 +451,231 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const discountTypeSelect = form.querySelector('#project-edit-discount-type');
   const paymentProgressTypeSelect = form.querySelector('#project-edit-payment-progress-type');
   const paymentProgressValueInput = form.querySelector('#project-edit-payment-progress-value');
+  const paymentAddButton = form.querySelector('#project-edit-payment-add');
+  const paymentHistoryContainer = form.querySelector('#project-edit-payment-history');
+  const paymentSummaryContainer = form.querySelector('#project-edit-payment-summary');
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
 
   let isSyncingShareTax = false;
+
+  const ensurePayments = () => {
+    if (!Array.isArray(editState.payments)) {
+      editState.payments = [];
+    }
+    return editState.payments;
+  };
+
+  const computeFinanceContext = () => {
+    const equipmentEstimate = Number(project.equipmentEstimate) || 0;
+    const expensesTotal = Array.isArray(editState.expenses)
+      ? editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0)
+      : 0;
+    const discountTypeValue = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const discountRaw = normalizeNumbers(discountInput?.value || '0');
+    let discountValue = Number.parseFloat(discountRaw);
+    if (!Number.isFinite(discountValue) || discountValue < 0) {
+      discountValue = 0;
+    }
+
+    const applyTax = taxCheckbox?.checked === true;
+    const companyShareEnabled = shareCheckbox?.checked === true;
+    let companySharePercent = companyShareEnabled ? getProjectCompanySharePercent(shareCheckbox) : null;
+    if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
+      companySharePercent = companyShareEnabled ? DEFAULT_COMPANY_SHARE_PERCENT : null;
+    }
+
+    const finance = calculateProjectFinancials({
+      equipmentEstimate,
+      expensesTotal,
+      discountValue,
+      discountType: discountTypeValue,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent,
+    });
+
+    return {
+      equipmentEstimate,
+      expensesTotal,
+      discountValue,
+      discountTypeValue,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent,
+      finance,
+    };
+  };
+
+  const computePaymentSnapshot = () => {
+    const context = computeFinanceContext();
+    const payments = ensurePayments();
+    const progress = calculatePaymentProgress({
+      totalAmount: context.finance.totalWithTax,
+      paidAmount: editState.basePaidAmount || 0,
+      paidPercent: editState.basePaidPercent || 0,
+      history: payments,
+    });
+
+    return {
+      ...context,
+      payments,
+      progress,
+    };
+  };
+
+  const renderPaymentHistory = () => {
+    if (!paymentHistoryContainer) return;
+    paymentHistoryContainer.innerHTML = buildProjectEditPaymentHistoryMarkup(ensurePayments());
+  };
+
+  const renderPaymentSummary = () => {
+    if (!paymentSummaryContainer) return;
+    const { finance, progress } = computePaymentSnapshot();
+    const total = Number.isFinite(Number(finance.totalWithTax)) ? Number(finance.totalWithTax) : 0;
+    const paidAmount = Number.isFinite(Number(progress.paidAmount)) ? Number(progress.paidAmount) : 0;
+    const paidPercent = Number.isFinite(Number(progress.paidPercent)) ? Number(progress.paidPercent) : 0;
+    const remainingAmount = Math.max(0, Math.round((total - paidAmount) * 100) / 100);
+
+    const summaryRows = [
+      {
+        label: t('projects.form.paymentSummary.total', 'الإجمالي الكلي'),
+        value: formatCurrency(total),
+      },
+      {
+        label: t('projects.form.paymentSummary.paidAmount', 'إجمالي المدفوع'),
+        value: formatCurrency(paidAmount),
+      },
+      {
+        label: t('projects.form.paymentSummary.paidPercent', 'نسبة الدفعات'),
+        value: `${normalizeNumbers(paidPercent.toFixed(2))}%`,
+      },
+      {
+        label: t('projects.form.paymentSummary.remaining', 'المتبقي'),
+        value: formatCurrency(remainingAmount),
+      },
+    ];
+
+    paymentSummaryContainer.innerHTML = summaryRows
+      .map(({ label, value }) => `
+        <div class="project-details-grid-item">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `)
+      .join('');
+  };
+
+  const syncPaymentStatusValue = (trigger = 'auto') => {
+    if (!paymentStatusSelect) return;
+    const manualSelected = paymentStatusSelect.dataset?.userSelected === 'true';
+    if (trigger === 'auto' && manualSelected) {
+      return;
+    }
+
+    const { finance, progress } = computePaymentSnapshot();
+    const resolvedStatus = determinePaymentStatus({
+      manualStatus: manualSelected ? paymentStatusSelect.value : project.paymentStatus || 'unpaid',
+      paidAmount: progress.paidAmount,
+      paidPercent: progress.paidPercent,
+      totalAmount: finance.totalWithTax,
+    });
+
+    if (!manualSelected) {
+      paymentStatusSelect.value = resolvedStatus;
+    }
+  };
+
+  const refreshPaymentUi = () => {
+    renderPaymentHistory();
+    renderPaymentSummary();
+    syncPaymentStatusValue('auto');
+  };
+
+  const PAYMENT_TOLERANCE = 0.0001;
+
+  const addPaymentEntry = () => {
+    const type = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const rawValue = normalizeNumbers(paymentProgressValueInput?.value || '').replace('%', '').trim();
+    let value = Number.parseFloat(rawValue);
+
+    if (!Number.isFinite(value) || value <= 0) {
+      showToast(t('projects.toast.paymentInvalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'));
+      paymentProgressValueInput?.focus();
+      return;
+    }
+
+    const snapshot = computePaymentSnapshot();
+    const totalAmount = Number.isFinite(Number(snapshot.finance.totalWithTax)) ? Number(snapshot.finance.totalWithTax) : 0;
+
+    if (totalAmount <= 0) {
+      showToast(t('projects.toast.paymentTotalMissing', '⚠️ يرجى التأكد من إدخال البيانات المالية للمشروع قبل تسجيل الدفعة'));
+      return;
+    }
+
+    const alreadyPaidAmount = Number(snapshot.progress.paidAmount) || 0;
+    const alreadyPaidPercent = Number(snapshot.progress.paidPercent) || 0;
+
+    let amount = null;
+    let percentage = null;
+
+    if (type === 'percent') {
+      const remainingPercent = Math.max(0, 100 - alreadyPaidPercent);
+      if (remainingPercent <= PAYMENT_TOLERANCE) {
+        showToast(t('projects.toast.paymentNoRemainingBalance', '⚠️ تم تسجيل كامل قيمة المشروع، لا يمكن إضافة دفعة جديدة'));
+        return;
+      }
+
+      if (value > remainingPercent) {
+        value = remainingPercent;
+        const adjustedPercent = normalizeNumbers(value.toFixed(2));
+        showToast(t('projects.toast.paymentCappedPercent', 'ℹ️ تم ضبط الدفعة إلى {value}% لاستكمال 100%').replace('{value}', adjustedPercent));
+      }
+
+      percentage = Math.round(value * 100) / 100;
+      if (totalAmount > 0) {
+        amount = Math.round(((percentage / 100) * totalAmount) * 100) / 100;
+      }
+    } else {
+      const remainingAmount = Math.max(0, totalAmount - alreadyPaidAmount);
+      if (remainingAmount <= PAYMENT_TOLERANCE) {
+        showToast(t('projects.toast.paymentNoRemainingBalance', '⚠️ تم تسجيل كامل قيمة المشروع، لا يمكن إضافة دفعة جديدة'));
+        return;
+      }
+
+      if (value > remainingAmount) {
+        value = remainingAmount;
+        const adjustedAmount = `${normalizeNumbers(value.toFixed(2))} ${currencyLabel}`;
+        showToast(t('projects.toast.paymentCappedAmount', 'ℹ️ تم ضبط الدفعة إلى {amount} لاستكمال المبلغ المتبقي').replace('{amount}', adjustedAmount));
+      }
+
+      amount = Math.round(value * 100) / 100;
+      if (totalAmount > 0) {
+        percentage = Math.round(((amount / totalAmount) * 100) * 100) / 100;
+      }
+    }
+
+    const entry = {
+      type,
+      amount: amount != null ? amount : null,
+      percentage: percentage != null ? percentage : null,
+      value: type === 'amount'
+        ? amount
+        : percentage,
+      note: null,
+      recordedAt: new Date().toISOString(),
+    };
+
+    editState.payments = [...ensurePayments(), entry];
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.value = '';
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.value = 'percent';
+    }
+
+    refreshPaymentUi();
+    showToast(t('projects.toast.paymentAdded', '✅ تم تسجيل الدفعة'));
+  };
 
   const syncShareAndTax = (source) => {
     if (!taxCheckbox || !shareCheckbox) return;
@@ -399,14 +710,25 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   }
 
   renderExpenses();
+  refreshPaymentUi();
 
   if (discountInput && !discountInput.dataset.listenerAttached) {
     discountInput.addEventListener('input', (event) => {
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;
       input.value = normalizeNumbers(input.value || '');
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
     });
     discountInput.dataset.listenerAttached = 'true';
+  }
+
+  if (discountTypeSelect && !discountTypeSelect.dataset.listenerAttached) {
+    discountTypeSelect.addEventListener('change', () => {
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
+    });
+    discountTypeSelect.dataset.listenerAttached = 'true';
   }
 
   if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
@@ -426,12 +748,20 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   }
 
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
-    shareCheckbox.addEventListener('change', () => syncShareAndTax('share'));
+    shareCheckbox.addEventListener('change', () => {
+      syncShareAndTax('share');
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
+    });
     shareCheckbox.dataset.listenerAttached = 'true';
   }
 
   if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
-    taxCheckbox.addEventListener('change', () => syncShareAndTax('tax'));
+    taxCheckbox.addEventListener('change', () => {
+      syncShareAndTax('tax');
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
+    });
     taxCheckbox.dataset.listenerAttached = 'true';
   }
 
@@ -440,6 +770,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   }
 
   syncShareAndTax(shareCheckbox?.checked ? 'share' : 'tax');
+  renderPaymentSummary();
+  syncPaymentStatusValue('auto');
 
   if (addExpenseBtn) {
     addExpenseBtn.addEventListener('click', (event) => {
@@ -469,6 +801,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       if (expenseLabelInput) expenseLabelInput.value = '';
       if (expenseAmountInput) expenseAmountInput.value = '';
       renderExpenses();
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
     });
   }
 
@@ -479,7 +813,33 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       const { id } = removeBtn.dataset;
       editState.expenses = editState.expenses.filter((expense) => String(expense.id) !== String(id));
       renderExpenses();
+      renderPaymentSummary();
+      syncPaymentStatusValue('auto');
     });
+  }
+
+  if (paymentAddButton && !paymentAddButton.dataset.listenerAttached) {
+    paymentAddButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      addPaymentEntry();
+    });
+    paymentAddButton.dataset.listenerAttached = 'true';
+  }
+
+  if (paymentHistoryContainer && !paymentHistoryContainer.dataset.listenerAttached) {
+    paymentHistoryContainer.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-action="remove-payment"]');
+      if (!button) return;
+      const index = Number.parseInt(button.dataset.index || '-1', 10);
+      if (!Number.isInteger(index) || index < 0) return;
+      const payments = ensurePayments();
+      if (index >= payments.length) return;
+      const next = payments.filter((_, entryIndex) => entryIndex !== index);
+      editState.payments = next;
+      refreshPaymentUi();
+      showToast(t('projects.toast.paymentRemoved', '🗑️ تم حذف الدفعة'));
+    });
+    paymentHistoryContainer.dataset.listenerAttached = 'true';
   }
 
   form.addEventListener('submit', async (event) => {
@@ -499,7 +859,6 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const normalizedPaymentStatus = ['paid', 'partial'].includes(selectedPaymentStatus)
       ? selectedPaymentStatus
       : 'unpaid';
-    const applyTax = taxCheckbox?.checked === true;
 
     if (!title || !projectType || !startDateValue) {
       showToast(t('projects.toast.missingRequiredFields', '⚠️ يرجى تعبئة البيانات المطلوبة'));
@@ -527,44 +886,95 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       return;
     }
 
-    const equipmentEstimate = Number(project.equipmentEstimate) || 0;
-    const expensesTotal = editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-    const discountTypeValue = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
-    const discountRaw = normalizeNumbers(discountInput?.value || '0');
-    let discountValue = Number.parseFloat(discountRaw);
-    if (!Number.isFinite(discountValue) || discountValue < 0) {
-      discountValue = 0;
-    }
-
-    const companyShareEnabled = shareCheckbox?.checked === true;
-    let companySharePercent = companyShareEnabled ? getProjectCompanySharePercent(shareCheckbox) : null;
-    if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
-      companySharePercent = companyShareEnabled ? DEFAULT_COMPANY_SHARE_PERCENT : null;
-    }
-
-    const finance = calculateProjectFinancials({
+    const financeContext = computeFinanceContext();
+    const {
       equipmentEstimate,
       expensesTotal,
       discountValue,
-      discountType: discountTypeValue,
-      applyTax,
-      companyShareEnabled,
+      discountTypeValue,
+      applyTax: computedApplyTax,
+      companyShareEnabled: contextShareEnabled,
       companySharePercent,
-    });
+      finance,
+    } = financeContext;
 
     const progressType = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
     const progressRaw = normalizeNumbers(paymentProgressValueInput?.value || '');
-    const progressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+    let progressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+
+    let paymentHistory = [...ensurePayments()];
+
+    if (Number.isFinite(progressValue) && progressValue > 0 && Number.isFinite(Number(finance.totalWithTax))) {
+      const baseSnapshot = calculatePaymentProgress({
+        totalAmount: finance.totalWithTax,
+        paidAmount: editState.basePaidAmount || 0,
+        paidPercent: editState.basePaidPercent || 0,
+        history: paymentHistory,
+      });
+
+      const recordedAt = new Date().toISOString();
+
+      if (progressType === 'percent') {
+        const remainingPercent = Math.max(0, 100 - (baseSnapshot.paidPercent || 0));
+        if (remainingPercent > PAYMENT_TOLERANCE) {
+          const adjustedPercent = Math.min(progressValue, remainingPercent);
+          const percentValue = Math.round(adjustedPercent * 100) / 100;
+          const amountValue = finance.totalWithTax > 0
+            ? Math.round(((percentValue / 100) * finance.totalWithTax) * 100) / 100
+            : null;
+          paymentHistory = [...paymentHistory, {
+            type: 'percent',
+            amount: amountValue,
+            percentage: percentValue,
+            value: percentValue,
+            note: null,
+            recordedAt,
+          }];
+        }
+      } else {
+        const remainingAmount = Math.max(0, finance.totalWithTax - (baseSnapshot.paidAmount || 0));
+        if (remainingAmount > PAYMENT_TOLERANCE) {
+          const adjustedAmount = Math.min(progressValue, remainingAmount);
+          const amountValue = Math.round(adjustedAmount * 100) / 100;
+          const percentValue = finance.totalWithTax > 0
+            ? Math.round(((amountValue / finance.totalWithTax) * 100) * 100) / 100
+            : null;
+          paymentHistory = [...paymentHistory, {
+            type: 'amount',
+            amount: amountValue,
+            percentage: percentValue,
+            value: amountValue,
+            note: null,
+            recordedAt,
+          }];
+        }
+      }
+
+      if (paymentHistory !== editState.payments) {
+        editState.payments = paymentHistory;
+        refreshPaymentUi();
+      }
+
+      if (paymentProgressValueInput) {
+        paymentProgressValueInput.value = '';
+      }
+      if (paymentProgressTypeSelect) {
+        paymentProgressTypeSelect.value = 'percent';
+      }
+
+      progressValue = null;
+    }
+
     const paymentProgress = calculatePaymentProgress({
       totalAmount: finance.totalWithTax,
-      progressType,
-      progressValue,
-      history: [],
+      paidAmount: editState.basePaidAmount || 0,
+      paidPercent: editState.basePaidPercent || 0,
+      history: paymentHistory,
     });
 
     const manualStatusSelected = paymentStatusSelect?.dataset?.userSelected === 'true';
     const effectivePaymentStatus = determinePaymentStatus({
-      manualStatus: manualStatusSelected ? normalizedPaymentStatus : null,
+      manualStatus: manualStatusSelected ? normalizedPaymentStatus : project.paymentStatus || normalizedPaymentStatus,
       paidAmount: paymentProgress.paidAmount,
       paidPercent: paymentProgress.paidPercent,
       totalAmount: finance.totalWithTax,
@@ -578,6 +988,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       delete paymentStatusSelect.dataset.userSelected;
     }
 
+    editState.payments = paymentHistory;
+
     const payload = buildProjectPayload({
       projectCode: project.projectCode,
       title,
@@ -587,14 +999,14 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       description: descriptionValue,
       start: startIso,
       end: endIso || null,
-      applyTax,
+      applyTax: computedApplyTax,
       paymentStatus: paymentStatusValue,
       equipmentEstimate,
       expenses: editState.expenses,
       discount: discountValue,
       discountType: discountTypeValue,
-      companyShareEnabled: companyShareEnabled && applyTax,
-      companySharePercent: companyShareEnabled && applyTax ? companySharePercent : null,
+      companyShareEnabled: contextShareEnabled && computedApplyTax,
+      companySharePercent: contextShareEnabled && computedApplyTax ? companySharePercent : null,
       companyShareAmount: finance.companyShareAmount,
       taxAmount: finance.taxAmount,
       totalWithTax: finance.totalWithTax,
@@ -605,6 +1017,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       paidPercentage: paymentProgress.paidPercent,
       paymentProgressType: paymentProgress.paymentProgressType,
       paymentProgressValue: paymentProgress.paymentProgressValue,
+      payments: paymentHistory,
     });
 
     form.dataset.submitting = 'true';
@@ -813,16 +1226,29 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         </div>
         <div class="col-md-4">
           <label class="form-label" for="project-edit-payment-progress-value">${escapeHtml(t('projects.form.paymentProgress.label', '💰 الدفعة المستلمة'))}</label>
-          <div class="input-group">
-            <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select">
-              <option value="amount" ${paymentProgressType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.amount', '💵 مبلغ'))}</option>
-              <option value="percent" ${paymentProgressType !== 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.percent', '٪ نسبة'))}</option>
-            </select>
-            <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
+          <div class="reservation-payment-progress reservation-payment-progress--flush">
+            <div class="reservation-payment-progress__grid">
+              <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select">
+                <option value="amount" ${paymentProgressType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.amount', '💵 مبلغ'))}</option>
+                <option value="percent" ${paymentProgressType !== 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.percent', '٪ نسبة'))}</option>
+              </select>
+              <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
+            </div>
+            <div class="reservation-payment-progress__actions">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="project-edit-payment-add">${escapeHtml(t('reservations.paymentHistory.actions.add', '➕ إضافة دفعة'))}</button>
+              <small class="form-text reservation-payment-progress__hint">${escapeHtml(t('projects.form.paymentProgress.hint', 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع'))}</small>
+            </div>
           </div>
-          <small class="text-muted" data-i18n-key="projects.form.paymentProgress.hint">${escapeHtml(t('projects.form.paymentProgress.hint', 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع'))}</small>
         </div>
       </div>
+
+      <section class="project-edit-payment-history mt-4">
+        <div class="reservation-payment-history__header">
+          <h6 class="reservation-payment-history__title">${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h6>
+        </div>
+        <div id="project-edit-payment-summary" class="project-details-grid mb-3"></div>
+        <div id="project-edit-payment-history" class="reservation-payment-history"></div>
+      </section>
 
       <section class="project-edit-expenses mt-4">
         <h6>${escapeHtml(t('projects.form.labels.expenses', 'المصاريف'))}</h6>
@@ -884,6 +1310,99 @@ function buildProjectEditExpensesMarkup(expenses = []) {
       `;
     })
     .join('');
+}
+
+function buildProjectPaymentHistoryMarkup(paymentHistory = []) {
+  if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) {
+    const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
+    return `<div class="reservation-payment-history-empty">${emptyText}</div>`;
+  }
+
+  return `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
+    const typeLabel = entry?.type === 'percent'
+      ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
+      : entry?.type === 'amount'
+        ? t('reservations.paymentHistory.type.amount', 'دفعة مالية')
+        : t('reservations.paymentHistory.type.unknown', 'دفعة');
+    const amountDisplay = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
+      ? escapeHtml(formatCurrency(Number(entry.amount)))
+      : '—';
+    const percentDisplay = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
+      ? `${normalizeNumbers(Number(entry.percentage).toFixed(2))}%`
+      : '—';
+    const dateDisplay = entry?.recordedAt
+      ? normalizeNumbers(formatDateTime(entry.recordedAt))
+      : '—';
+    const noteHtml = entry?.note
+      ? `<div class="payment-history-note">${escapeHtml(normalizeNumbers(entry.note))}</div>`
+      : '';
+    return `
+      <li>
+        <div class="payment-history-entry">
+          <span class="payment-history-entry__type">${escapeHtml(typeLabel)}</span>
+          <span class="payment-history-entry__amount">${amountDisplay}</span>
+          <span class="payment-history-entry__percent">${percentDisplay}</span>
+          <span class="payment-history-entry__date">${dateDisplay}</span>
+        </div>
+        ${noteHtml}
+      </li>
+    `;
+  }).join('')}</ul>`;
+}
+
+function buildProjectEditPaymentHistoryMarkup(payments = []) {
+  if (!Array.isArray(payments) || payments.length === 0) {
+    const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
+    return `<div class="reservation-payment-history__empty">${emptyText}</div>`;
+  }
+
+  const rows = payments.map((payment, index) => {
+    const typeLabel = payment?.type === 'percent'
+      ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
+      : t('reservations.paymentHistory.type.amount', 'دفعة مالية');
+    const amountDisplay = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
+      ? escapeHtml(formatCurrency(Number(payment.amount)))
+      : '—';
+    const percentDisplay = Number.isFinite(Number(payment?.percentage)) && Number(payment.percentage) > 0
+      ? `${normalizeNumbers(Number(payment.percentage).toFixed(2))}%`
+      : '—';
+    const dateDisplay = payment?.recordedAt
+      ? normalizeNumbers(formatDateTime(payment.recordedAt))
+      : '—';
+    const noteDisplay = payment?.note ? escapeHtml(normalizeNumbers(payment.note)) : '';
+    const removeLabel = escapeHtml(t('reservations.paymentHistory.actions.delete', 'حذف الدفعة'));
+
+    return `
+      <tr>
+        <td>${escapeHtml(typeLabel)}</td>
+        <td>${amountDisplay}</td>
+        <td>${percentDisplay}</td>
+        <td>${dateDisplay}</td>
+        <td>${noteDisplay}</td>
+        <td class="reservation-payment-history__actions">
+          <button type="button" class="btn btn-link btn-sm reservation-payment-history__remove" data-action="remove-payment" data-index="${index}" aria-label="${removeLabel}">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="reservation-payment-history__table-wrapper">
+      <table class="table table-sm reservation-payment-history__table">
+        <thead>
+          <tr>
+            <th>${escapeHtml(t('reservations.paymentHistory.headers.method', 'نوع الدفعة'))}</th>
+            <th>${escapeHtml(t('reservations.paymentHistory.headers.amount', 'المبلغ'))}</th>
+            <th>${escapeHtml(t('reservations.paymentHistory.headers.percent', 'النسبة'))}</th>
+            <th>${escapeHtml(t('reservations.paymentHistory.headers.date', 'التاريخ'))}</th>
+            <th>${escapeHtml(t('reservations.paymentHistory.headers.note', 'ملاحظات'))}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 function getProjectTypeLabel(type) {

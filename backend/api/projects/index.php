@@ -183,6 +183,10 @@ function handleProjectsCreate(PDO $pdo): void
             syncProjectExpenses($pdo, $projectId, $result['expenses']);
         }
 
+        if (!empty($result['payments'])) {
+            syncProjectPayments($pdo, $projectId, $result['payments']);
+        }
+
         $pdo->commit();
 
         $project = fetchProjectById($pdo, $projectId);
@@ -249,6 +253,10 @@ function handleProjectsUpdate(PDO $pdo): void
             syncProjectExpenses($pdo, $id, $result['expenses']);
         }
 
+        if ($result['payments'] !== null) {
+            syncProjectPayments($pdo, $id, $result['payments']);
+        }
+
         $pdo->commit();
 
         $project = fetchProjectById($pdo, $id);
@@ -307,6 +315,9 @@ function handleProjectsDelete(PDO $pdo): void
         $statement->execute(['id' => $id]);
 
         $statement = $pdo->prepare('DELETE FROM project_expenses WHERE project_id = :id');
+        $statement->execute(['id' => $id]);
+
+        $statement = $pdo->prepare('DELETE FROM project_payments WHERE project_id = :id');
         $statement->execute(['id' => $id]);
 
         $statement = $pdo->prepare('DELETE FROM projects WHERE id = :id');
@@ -525,6 +536,17 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         }
     }
 
+    $paymentsExists = array_key_exists('payments', $payload)
+        || array_key_exists('payment_history', $payload)
+        || array_key_exists('paymentHistory', $payload);
+    $rawPaymentsPayload = $paymentsExists
+        ? ($payload['payments'] ?? ($payload['payment_history'] ?? ($payload['paymentHistory'] ?? [])))
+        : null;
+    $normalizedPayments = null;
+    if ($paymentsExists) {
+        $normalizedPayments = normaliseProjectPaymentsPayload($rawPaymentsPayload, $errors);
+    }
+
     $expensesTotalExists = array_key_exists('expenses_total', $payload) || (!$isUpdate && $expensesExists);
     $expensesTotalPayload = $expensesTotalExists ? (float) ($payload['expenses_total'] ?? 0) : null;
     if ($expensesTotalExists) {
@@ -624,6 +646,7 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
                 'technicians' => null,
                 'equipment' => null,
                 'expenses' => null,
+                'payments' => null,
             ],
             $errors,
         ];
@@ -714,6 +737,7 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
             'technicians' => $techniciansExists ? ($normalizedTechnicians ?? []) : null,
             'equipment' => $equipmentExists ? ($normalizedEquipment ?? []) : null,
             'expenses' => $expensesExists ? ($normalizedExpenses ?? []) : null,
+            'payments' => $paymentsExists ? ($normalizedPayments ?? []) : null,
         ],
         $errors,
     ];
@@ -831,6 +855,7 @@ function fetchProjectById(PDO $pdo, int $id): ?array
 function mapProjectRow(PDO $pdo, array $row): array
 {
     $projectId = (int) $row['id'];
+    $payments = fetchProjectPayments($pdo, $projectId);
 
     return [
         'id' => $projectId,
@@ -863,6 +888,8 @@ function mapProjectRow(PDO $pdo, array $row): array
         'technicians' => fetchProjectTechnicians($pdo, $projectId),
         'equipment' => fetchProjectEquipment($pdo, $projectId),
         'expenses' => fetchProjectExpenses($pdo, $projectId),
+        'payment_history' => $payments,
+        'paymentHistory' => $payments,
     ];
 }
 
@@ -885,6 +912,188 @@ function fetchProjectTechnicians(PDO $pdo, int $projectId): array
     }
 
     return $technicians;
+}
+
+function fetchProjectPayments(PDO $pdo, int $projectId): array
+{
+    $statement = $pdo->prepare(
+        'SELECT id, payment_type, value, amount, percentage, note, recorded_at
+         FROM project_payments
+         WHERE project_id = :project_id
+         ORDER BY recorded_at ASC, id ASC'
+    );
+    $statement->execute(['project_id' => $projectId]);
+
+    $payments = [];
+    while ($row = $statement->fetch()) {
+        $payments[] = [
+            'id' => (int) $row['id'],
+            'type' => $row['payment_type'],
+            'value' => isset($row['value']) ? (float) $row['value'] : null,
+            'amount' => isset($row['amount']) ? (float) $row['amount'] : null,
+            'percentage' => isset($row['percentage']) ? (float) $row['percentage'] : null,
+            'note' => $row['note'],
+            'recordedAt' => $row['recorded_at'],
+            'recorded_at' => $row['recorded_at'],
+        ];
+    }
+
+    return $payments;
+}
+
+function syncProjectPayments(PDO $pdo, int $projectId, array $payments): void
+{
+    $pdo->prepare('DELETE FROM project_payments WHERE project_id = :id')->execute(['id' => $projectId]);
+
+    if (!$payments) {
+        return;
+    }
+
+    $insert = $pdo->prepare(
+        'INSERT INTO project_payments (
+            project_id,
+            payment_type,
+            value,
+            amount,
+            percentage,
+            note,
+            recorded_at
+        ) VALUES (
+            :project_id,
+            :payment_type,
+            :value,
+            :amount,
+            :percentage,
+            :note,
+            :recorded_at
+        )'
+    );
+
+    foreach ($payments as $payment) {
+        $insert->execute([
+            'project_id' => $projectId,
+            'payment_type' => $payment['payment_type'],
+            'value' => $payment['value'],
+            'amount' => $payment['amount'],
+            'percentage' => $payment['percentage'],
+            'note' => $payment['note'] ?? null,
+            'recorded_at' => $payment['recorded_at'] ?? date('Y-m-d H:i:s'),
+        ]);
+    }
+}
+
+function normaliseProjectPaymentsPayload(mixed $payload, array &$errors): array
+{
+    if ($payload === null) {
+        return [];
+    }
+
+    if (!is_array($payload)) {
+        $errors['payments'] = 'Payments must be an array';
+        return [];
+    }
+
+    $normalized = [];
+
+    foreach ($payload as $index => $entry) {
+        if (!is_array($entry)) {
+            $errors[sprintf('payments.%d', $index)] = 'Payment entry must be an object';
+            continue;
+        }
+
+        $typeRaw = $entry['type'] ?? $entry['payment_type'] ?? null;
+        $type = $typeRaw !== null ? strtolower(trim((string) $typeRaw)) : null;
+
+        if (!in_array($type, ['amount', 'percent'], true)) {
+            $errors[sprintf('payments.%d.type', $index)] = 'Payment type must be amount or percent';
+            continue;
+        }
+
+        $value = parseProjectDecimalValue($entry['value'] ?? null);
+        $amount = parseProjectDecimalValue($entry['amount'] ?? null);
+        $percentage = parseProjectDecimalValue($entry['percentage'] ?? null);
+
+        if ($type === 'amount' && $amount === null && $value !== null) {
+            $amount = $value;
+        }
+
+        if ($type === 'percent' && $percentage === null && $value !== null) {
+            $percentage = $value;
+        }
+
+        if ($amount !== null && $amount < 0) {
+            $errors[sprintf('payments.%d.amount', $index)] = 'Payment amount must be zero or greater';
+            continue;
+        }
+
+        if ($percentage !== null && ($percentage < 0 || $percentage > 100)) {
+            $errors[sprintf('payments.%d.percentage', $index)] = 'Payment percentage must be between 0 and 100';
+            continue;
+        }
+
+        if ($amount === null && $percentage === null && $value === null) {
+            $errors[sprintf('payments.%d.value', $index)] = 'Payment entry requires amount or percentage';
+            continue;
+        }
+
+        $noteRaw = isset($entry['note']) ? trim((string) $entry['note']) : null;
+        if ($noteRaw !== null && $noteRaw !== '' && mb_strlen($noteRaw) > 500) {
+            $errors[sprintf('payments.%d.note', $index)] = 'Payment note must be 500 characters or less';
+            continue;
+        }
+        $note = $noteRaw === '' ? null : $noteRaw;
+
+        $recordedAtRaw = $entry['recorded_at'] ?? $entry['recordedAt'] ?? null;
+        if ($recordedAtRaw) {
+            $timestamp = strtotime((string) $recordedAtRaw);
+            if ($timestamp === false) {
+                $errors[sprintf('payments.%d.recorded_at', $index)] = 'Payment recorded_at must be a valid date/time';
+                continue;
+            }
+            $recordedAt = date('Y-m-d H:i:s', $timestamp);
+        } else {
+            $recordedAt = date('Y-m-d H:i:s');
+        }
+
+        $valueForStorage = $value;
+        if ($valueForStorage === null) {
+            $valueForStorage = $type === 'amount' ? $amount : ($type === 'percent' ? $percentage : null);
+        }
+
+        $normalized[] = [
+            'payment_type' => $type,
+            'value' => $valueForStorage,
+            'amount' => $amount,
+            'percentage' => $percentage,
+            'note' => $note,
+            'recorded_at' => $recordedAt,
+        ];
+    }
+
+    return $normalized;
+}
+
+function parseProjectDecimalValue(mixed $value): ?float
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+
+    if (is_numeric($value)) {
+        return (float) $value;
+    }
+
+    if (is_string($value)) {
+        $normalized = str_replace(['%', '٬', '،', ',', ' '], '', $value);
+        if ($normalized === '') {
+            return null;
+        }
+        if (is_numeric($normalized)) {
+            return (float) $normalized;
+        }
+    }
+
+    return null;
 }
 
 function fetchProjectEquipment(PDO $pdo, int $projectId): array

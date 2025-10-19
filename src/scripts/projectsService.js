@@ -1,5 +1,6 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
+import { normalizeNumbers } from './utils.js';
 
 const initialProjectsData = loadData() || {};
 let projectsState = (initialProjectsData.projects || []).map(mapLegacyProject);
@@ -134,6 +135,8 @@ export function buildProjectPayload({
   confirmed = false,
   technicians = [],
   equipment = [],
+  payments,
+  paymentHistory,
 } = {}) {
   const technicianIds = Array.isArray(technicians)
     ? technicians
@@ -219,6 +222,19 @@ export function buildProjectPayload({
     payload.project_code = String(projectCode).trim();
   }
 
+  const paymentsSource = payments !== undefined ? payments : paymentHistory;
+  if (paymentsSource !== undefined) {
+    const normalizedPayments = normalizeProjectPaymentsCollection(paymentsSource) || [];
+    payload.payments = normalizedPayments.map((entry) => ({
+      type: entry.type,
+      amount: entry.amount != null ? entry.amount : null,
+      percentage: entry.percentage != null ? entry.percentage : null,
+      value: entry.value != null ? entry.value : null,
+      note: entry.note ?? null,
+      recorded_at: entry.recordedAt ?? null,
+    }));
+  }
+
   if (!payload.end_datetime) {
     delete payload.end_datetime;
   }
@@ -279,6 +295,9 @@ function toInternalProject(raw = {}) {
       || String(shareEnabledFlag).toLowerCase() === 'true'
     : rawSharePercent > 0;
 
+  const paymentsRaw = raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? null;
+  const paymentHistory = normalizeProjectPaymentsCollection(paymentsRaw);
+
   return {
     id: idValue != null ? String(idValue) : '',
     projectId: idValue != null ? Number(idValue) : null,
@@ -312,9 +331,117 @@ function toInternalProject(raw = {}) {
     techniciansDetails: techniciansRaw.map((item) => (typeof item === 'object' ? item : { id: item })),
     equipment,
     expenses,
+    paymentHistory,
   };
 }
 
 export function isApiError(error) {
   return error instanceof ApiError;
+}
+
+function parseProjectPaymentNumber(value) {
+  if (value == null || value === '') return null;
+  const normalized = normalizeNumbers(String(value)).replace(/[^\d.,-]/g, '').trim();
+  if (!normalized) return null;
+
+  let sanitized = normalized;
+  const hasComma = sanitized.includes(',');
+  const hasDot = sanitized.includes('.');
+  if (hasComma) {
+    sanitized = hasDot ? sanitized.replace(/,/g, '') : sanitized.replace(/,/g, '.');
+  }
+
+  const parsed = Number.parseFloat(sanitized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeProjectPaymentEntry(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+
+  const typeRaw = entry.type ?? entry.payment_type ?? entry.paymentType ?? entry.kind ?? null;
+  let type = typeof typeRaw === 'string' ? typeRaw.trim().toLowerCase() : null;
+  if (type === 'percentage') {
+    type = 'percent';
+  }
+
+  const valueCandidate = parseProjectPaymentNumber(entry.value);
+  let amount = parseProjectPaymentNumber(entry.amount);
+  let percentage = parseProjectPaymentNumber(entry.percentage);
+
+  if (type === 'amount' && amount == null && valueCandidate != null) {
+    amount = valueCandidate;
+  } else if (type === 'percent' && percentage == null && valueCandidate != null) {
+    percentage = valueCandidate;
+  }
+
+  if (!type) {
+    if (amount != null && amount >= 0) {
+      type = 'amount';
+    } else if (percentage != null && percentage >= 0) {
+      type = 'percent';
+    } else if (valueCandidate != null && valueCandidate >= 0) {
+      type = 'amount';
+      amount = valueCandidate;
+    } else {
+      return null;
+    }
+  }
+
+  if (type === 'amount') {
+    if (amount == null || !Number.isFinite(amount) || amount < 0) {
+      return null;
+    }
+    amount = Math.round(amount * 100) / 100;
+  }
+
+  if (type === 'percent') {
+    if (percentage == null || !Number.isFinite(percentage) || percentage < 0) {
+      return null;
+    }
+    percentage = Math.min(100, Math.round(percentage * 100) / 100);
+  }
+
+  const noteRaw = entry.note ?? entry.memo ?? entry.description ?? null;
+  const note = noteRaw != null ? String(noteRaw).trim() : null;
+  const recordedAtRaw = entry.recordedAt ?? entry.recorded_at ?? entry.date ?? null;
+  let recordedAt = null;
+  if (recordedAtRaw) {
+    const parsedDate = new Date(recordedAtRaw);
+    if (!Number.isNaN(parsedDate.getTime())) {
+      recordedAt = parsedDate.toISOString();
+    }
+  }
+  if (!recordedAt) {
+    recordedAt = new Date().toISOString();
+  }
+
+  const value = type === 'amount'
+    ? amount
+    : type === 'percent'
+      ? percentage
+      : valueCandidate;
+
+  return {
+    type,
+    amount: amount != null ? amount : null,
+    percentage: percentage != null ? percentage : null,
+    value: value != null ? Math.round(value * 100) / 100 : null,
+    note: note && note.length ? note.slice(0, 500) : null,
+    recordedAt,
+  };
+}
+
+function normalizeProjectPaymentsCollection(source) {
+  if (source === undefined) {
+    return undefined;
+  }
+  if (source === null) {
+    return [];
+  }
+  if (!Array.isArray(source)) {
+    return [];
+  }
+  return source
+    .map((entry) => normalizeProjectPaymentEntry(entry))
+    .filter(Boolean);
 }
