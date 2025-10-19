@@ -284,6 +284,7 @@ export function openProjectDetails(projectId) {
           ${projectCodeBadgeHtml}
         </div>
       </header>
+      <h6 class="project-details-info-heading">${escapeHtml(t('projects.details.overview.heading', 'معلومات المشروع'))}</h6>
       <div class="project-summary">
         <div class="project-summary-left">
           ${projectInfoOutlineHtml}
