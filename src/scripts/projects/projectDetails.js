@@ -180,10 +180,10 @@ export function openProjectDetails(projectId) {
     </div>
   `).join('');
 
-  const projectCodeOutlineHtml = `
-    <div class="project-details-outline">
-      <h6>${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}</h6>
-      <div class="project-details-outline__value">#${escapeHtml(projectCodeDisplay)}</div>
+  const projectCodeBadgeHtml = `
+    <div class="project-details-code-badge" title="${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}">
+      <span class="project-details-code-badge__icon">📁</span>
+      <span class="project-details-code-badge__text">#${escapeHtml(projectCodeDisplay)}</span>
     </div>
   `;
 
@@ -240,14 +240,17 @@ export function openProjectDetails(projectId) {
   dom.detailsBody.innerHTML = `
     <section class="project-details-primary">
       <header class="project-details-header">
-        <div>
+        <div class="project-details-header__left">
+          <span class="project-details-subtitle">${escapeHtml(t('projects.details.header', 'تفاصيل المشروع'))}</span>
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
+        </div>
+        <div class="project-details-header__right">
+          ${projectCodeBadgeHtml}
         </div>
       </header>
       <div class="project-summary">
         <div class="project-summary-left">
-          ${projectCodeOutlineHtml}
           ${projectInfoOutlineHtml}
         </div>
         <div class="project-summary-right">
