@@ -98,13 +98,14 @@ export function openProjectDetails(projectId) {
   const reservationsChipText = t('projects.details.chips.reservations', '{count} حجوزات')
     .replace('{count}', normalizeNumbers(String(reservationsCount)));
   const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
-  const paymentHistory = Array.isArray(project.paymentHistory) ? project.paymentHistory : [];
+  const paymentHistory = normalizeProjectPaymentHistoryForView(project);
+  const hasPaymentHistory = paymentHistory.length > 0;
+  const basePaidAmount = hasPaymentHistory ? 0 : Number(project.paidAmount) || 0;
+  const basePaidPercent = hasPaymentHistory ? 0 : Number(project.paidPercent) || 0;
   const paymentProgress = calculatePaymentProgress({
     totalAmount: overallTotal,
-    paidAmount: project.paidAmount,
-    paidPercent: project.paidPercent,
-    progressType: project.paymentProgressType,
-    progressValue: project.paymentProgressValue,
+    paidAmount: basePaidAmount,
+    paidPercent: basePaidPercent,
     history: paymentHistory,
   });
   const paymentStatusValue = determinePaymentStatus({
@@ -1431,6 +1432,113 @@ function buildProjectEditPaymentHistoryMarkup(payments = []) {
       </table>
     </div>
   `;
+}
+
+function normalizeProjectPaymentHistoryForView(project = {}) {
+  const rawHistory = Array.isArray(project.paymentHistory)
+    ? project.paymentHistory
+    : Array.isArray(project.payment_history)
+      ? project.payment_history
+      : [];
+
+  const normalized = rawHistory
+    .map(normalizePaymentHistoryEntryForView)
+    .filter(Boolean);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  const basePercent = parsePaymentNumber(project.paidPercent ?? project.paid_percent);
+  const baseAmount = parsePaymentNumber(project.paidAmount ?? project.paid_amount);
+  const recordedAtRaw = project.updatedAt
+    ?? project.updated_at
+    ?? project.createdAt
+    ?? project.created_at
+    ?? null;
+  const recordedAt = resolveRecordedAt(recordedAtRaw);
+
+  if (basePercent != null && basePercent > 0) {
+    return [
+      {
+        type: 'percent',
+        amount: baseAmount != null && baseAmount > 0 ? baseAmount : null,
+        percentage: basePercent,
+        value: basePercent,
+        note: null,
+        recordedAt,
+      }
+    ];
+  }
+
+  if (baseAmount != null && baseAmount > 0) {
+    return [
+      {
+        type: 'amount',
+        amount: baseAmount,
+        percentage: null,
+        value: baseAmount,
+        note: null,
+        recordedAt,
+      }
+    ];
+  }
+
+  return [];
+}
+
+function normalizePaymentHistoryEntryForView(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+
+  const typeRaw = entry.type ?? entry.payment_type ?? entry.paymentType ?? null;
+  let type = typeof typeRaw === 'string' ? typeRaw.toLowerCase().trim() : null;
+  if (type !== 'percent') {
+    type = 'amount';
+  }
+
+  const amount = parsePaymentNumber(entry.amount ?? (type === 'amount' ? entry.value : null));
+  const percentage = parsePaymentNumber(entry.percentage ?? (type === 'percent' ? entry.value : null));
+  const value = type === 'percent'
+    ? (percentage != null ? percentage : null)
+    : (amount != null ? amount : null);
+  const note = entry.note ?? entry.memo ?? null;
+  const recordedAt = resolveRecordedAt(entry.recordedAt ?? entry.recorded_at ?? entry.date ?? entry.created_at ?? null);
+
+  if (type === 'amount' && amount == null) {
+    return null;
+  }
+
+  if (type === 'percent' && percentage == null) {
+    return null;
+  }
+
+  return {
+    type,
+    amount: amount != null ? amount : null,
+    percentage: percentage != null ? percentage : null,
+    value,
+    note: note && String(note).trim().length ? String(note).trim() : null,
+    recordedAt,
+  };
+}
+
+function parsePaymentNumber(value) {
+  if (value == null || value === '') return null;
+  const normalized = normalizeNumbers(String(value)).replace(/%/g, '').trim();
+  if (!normalized) return null;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolveRecordedAt(raw) {
+  if (!raw) {
+    return new Date().toISOString();
+  }
+  const candidate = new Date(raw);
+  if (Number.isNaN(candidate.getTime())) {
+    return new Date().toISOString();
+  }
+  return candidate.toISOString();
 }
 
 function getProjectTypeLabel(type) {
