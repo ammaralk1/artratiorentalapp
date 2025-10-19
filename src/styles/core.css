@@ -1070,6 +1070,10 @@ body.dark-mode .project-reservations-empty.alert {
   color: var(--clr-text);
 }
 
+.project-details-outline__title + .project-details-outline__list {
+  margin-top: 8px;
+}
+
 body[dir="rtl"] .project-details-outline__header {
   flex-direction: row-reverse;
 }

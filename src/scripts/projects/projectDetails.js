@@ -242,8 +242,11 @@ export function openProjectDetails(projectId) {
     resolveProjectScheduleItem('end', project.end)
   ].filter(Boolean);
 
+  const projectInfoTitle = t('projects.details.overview.heading', 'معلومات المشروع');
+
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
+      <h6 class="project-details-outline__title">${escapeHtml(projectInfoTitle)}</h6>
       <ul class="project-details-outline__list">
         ${projectInfoItems.map(({ icon, label, value, meta }) => `
           <li>
