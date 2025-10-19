@@ -245,11 +245,6 @@
     @apply flex flex-col gap-4 w-full;
   }
 
-  .dashboard-metrics-grid {
-    @apply w-full;
-    align-items: stretch;
-  }
-
   .summary-card {
     @apply relative flex flex-col items-center justify-center gap-2 rounded-3xl text-center transition-transform duration-200;
     padding: clamp(0.95rem, 2vw, 1.4rem);
@@ -1138,6 +1133,21 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+
+  .projects-page .dashboard-tabbar .tab-buttons-horizontal {
+    @apply justify-center;
+  }
+
+  .projects-page .dashboard-tabbar .tab-buttons {
+    justify-content: center;
+  }
+
+  @media (min-width: 1024px) {
+    .projects-page .dashboard-tabbar:not(.p-3) .tab-buttons {
+      width: fit-content;
+      margin-inline: auto;
+    }
   }
 
   .dashboard-tabbar .tab-buttons::-webkit-scrollbar {

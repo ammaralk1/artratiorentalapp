@@ -69,10 +69,10 @@ export function activateTab(targetId, triggerButton) {
   if (!targetId || !dom.tabPanes || !dom.tabButtons) return;
 
   dom.tabButtons.forEach((btn) => {
-    if (btn === triggerButton) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
+    const isActive = btn === triggerButton;
+    btn.classList.toggle('active', isActive);
+    if (btn.classList.contains('tab-button')) {
+      btn.classList.toggle('tab-active', isActive);
     }
   });
 
@@ -127,10 +127,10 @@ export function activateProjectSubTab(targetId, triggerButton) {
   if (!targetId || !dom.projectSubTabButtons || !dom.projectSubTabPanes) return;
 
   dom.projectSubTabButtons.forEach((btn) => {
-    if (btn === triggerButton) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
+    const isActive = btn === triggerButton;
+    btn.classList.toggle('active', isActive);
+    if (btn.classList.contains('tab')) {
+      btn.classList.toggle('tab-active', isActive);
     }
   });
 
