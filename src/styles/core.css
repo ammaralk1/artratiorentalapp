@@ -1034,7 +1034,7 @@ body.dark-mode .project-reservations-empty.alert {
   gap: 16px;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
   .project-summary {
     flex-direction: row;
   }
