@@ -182,7 +182,7 @@ export function openProjectDetails(projectId) {
 
   const projectCodeBadgeHtml = `
     <div class="project-details-code-badge" title="${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}">
-      <span class="project-details-code-badge__icon">📁</span>
+      <span class="project-details-code-badge__icon" aria-hidden="true">📁</span>
       <span class="project-details-code-badge__text">#${escapeHtml(projectCodeDisplay)}</span>
     </div>
   `;
@@ -214,7 +214,6 @@ export function openProjectDetails(projectId) {
 
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
-      <h6>${escapeHtml(t('projects.details.overview.title', 'بيانات المشروع'))}</h6>
       <ul class="project-details-outline__list">
         ${projectInfoItems.map(({ icon, label, value }) => `
           <li>

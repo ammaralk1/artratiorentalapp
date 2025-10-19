@@ -1322,6 +1322,63 @@ body[dir="rtl"] .project-expense-amount {
   color: rgba(148, 191, 255, 0.85);
 }
 
+.project-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.project-details-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-details-header__right {
+  display: flex;
+  align-items: flex-start;
+}
+
+.project-details-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--clr-muted);
+  letter-spacing: 0.02em;
+}
+
+.project-details-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 110, 245, 0.2);
+  background: rgba(248, 250, 255, 0.85);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--clr-text);
+  box-shadow: var(--shadow-xs);
+}
+
+.project-details-code-badge__icon {
+  font-size: 1rem;
+}
+
+.project-details-code-badge__text {
+  font-variant-numeric: tabular-nums;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-code-badge {
+  background: rgba(15, 23, 42, 0.65);
+  border-color: rgba(96, 165, 250, 0.35);
+  color: rgba(226, 232, 240, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-subtitle {
+  color: rgba(148, 191, 255, 0.85);
+}
+
 :is(html.dark-mode, body.dark-mode) .project-details-summary {
   background: rgba(24, 33, 59, 0.9);
   border-color: rgba(93, 133, 255, 0.22);
