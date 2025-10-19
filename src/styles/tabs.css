@@ -238,10 +238,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .reservations-subtabs-container .sub-tab-button.tab.tab-active,
 .dashboard-subtabbar .sub-tab-button.tab.tab-active {
-  background: linear-gradient(140deg, rgba(76, 110, 245, 0.94), rgba(93, 139, 255, 0.92));
+  background: linear-gradient(140deg, rgba(76, 110, 245, 0.82), rgba(93, 139, 255, 0.78));
   color: #ffffff;
-  border-color: rgba(76, 110, 245, 0.35);
-  box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32), 0 0 22px rgba(76, 110, 245, 0.18);
+  border-color: rgba(76, 110, 245, 0.28);
+  box-shadow: 0 22px 44px rgba(37, 99, 235, 0.26), 0 0 0 6px rgba(76, 110, 245, 0.12), 0 0 36px rgba(135, 167, 255, 0.24);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
@@ -266,7 +266,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active {
-  box-shadow: 0 26px 48px rgba(37, 99, 235, 0.42), 0 0 28px rgba(148, 197, 255, 0.35);
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.78), rgba(37, 99, 235, 0.74));
+  box-shadow: 0 24px 46px rgba(15, 23, 42, 0.58), 0 0 0 6px rgba(96, 165, 250, 0.18), 0 0 38px rgba(148, 197, 255, 0.45);
 }
 
 .sub-tab-button:not(.tab) {
