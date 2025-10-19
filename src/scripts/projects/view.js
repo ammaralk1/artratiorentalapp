@@ -430,9 +430,6 @@ function renderFocusCard(project, category) {
     ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
     : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
 
-  const highlightLabel = t('projects.focus.actions.highlight', '🔍 عرض في القائمة');
-  const viewLabel = t('projects.focus.actions.view', '👁️ عرض التفاصيل');
-
   return `
     <div class="project-card-grid__item">
       <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
@@ -466,10 +463,8 @@ function renderFocusCard(project, category) {
             </div>
           </div>
         </div>
-        <div class="project-focus-card__actions">
+        <div class="project-focus-card__actions project-focus-card__actions--single">
           ${confirmationControl}
-          <button class="btn btn-sm btn-outline-secondary" data-action="highlight" data-id="${projectIdAttr}">${escapeHtml(highlightLabel)}</button>
-          <button class="btn btn-sm btn-primary" data-action="view" data-id="${projectIdAttr}">${escapeHtml(viewLabel)}</button>
         </div>
       </article>
     </div>

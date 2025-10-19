@@ -486,6 +486,10 @@ html.dark-mode .projects-hero-text {
   font-weight: 600;
 }
 
+.project-focus-card__actions--single {
+  justify-content: center;
+}
+
 .project-focus-card__payment-chip {
   display: inline-flex;
   align-items: center;
