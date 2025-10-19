@@ -667,10 +667,8 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   const crewLabel = t('projects.details.reservations.crew', '{count} من الطاقم')
     .replace('{count}', normalizeNumbers(String((reservation.technicians || []).length)));
 
-  const viewLabel = t('projects.details.reservations.view', '👁️ عرض الحجز');
-
   return `
-    <article class="project-reservation-card" data-reservation-index="${index}">
+    <article class="project-reservation-card" data-action="view-reservation" data-index="${index}" data-reservation-index="${index}" data-project-id="${project ? project.id : ''}" role="button" tabindex="0">
       <div class="project-reservation-card__header">
         <span class="project-reservation-card__id">#${escapeHtml(reservationId)}</span>
         <div class="project-reservation-card__badges">
@@ -686,9 +684,6 @@ export function buildProjectReservationCard(reservation, index, project = null) 
           <span>📦 ${escapeHtml(itemsLabel)}</span>
           <span>😎 ${escapeHtml(crewLabel)}</span>
         </div>
-      </div>
-      <div class="project-reservation-card__footer">
-        <button class="btn btn-sm btn-outline-primary" data-action="view-reservation" data-index="${index}" data-project-id="${project ? project.id : ''}">${escapeHtml(viewLabel)}</button>
       </div>
     </article>
   `;

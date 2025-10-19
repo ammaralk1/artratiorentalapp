@@ -438,13 +438,22 @@ export function bindProjectDetailsEvents(project) {
     reservationContainer.addEventListener('click', (event) => {
       const actionButton = event.target.closest('[data-action="view-reservation"]');
       if (!actionButton) return;
-      const index = Number.parseInt(actionButton.dataset.index || '-1', 10);
+      const indexAttr = actionButton.dataset.index || actionButton.dataset.reservationIndex;
+      const index = Number.parseInt(indexAttr || '-1', 10);
       if (!Number.isInteger(index) || index < 0) return;
       if (typeof window.showReservationDetails === 'function') {
         window.showReservationDetails(index);
       } else {
         window.location.href = 'dashboard.html#reservations';
       }
+    });
+
+    reservationContainer.addEventListener('keydown', (event) => {
+      if (!['Enter', ' '].includes(event.key)) return;
+      const card = event.target.closest('[data-action="view-reservation"]');
+      if (!card) return;
+      event.preventDefault();
+      card.click();
     });
   }
 }

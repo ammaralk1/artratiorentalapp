@@ -1331,6 +1331,8 @@ body[dir="rtl"] .project-expense-amount {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: flex-end;
+  text-align: right;
 }
 
 .project-details-header {
@@ -1487,11 +1489,17 @@ body[dir="rtl"] .project-details-list li {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  cursor: pointer;
 }
 
 .project-reservation-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(76, 110, 245, 0.12);
+}
+
+.project-reservation-card:focus-visible {
+  outline: 2px solid rgba(76, 110, 245, 0.65);
+  outline-offset: 3px;
 }
 
 .project-reservation-card__header {
@@ -1525,14 +1533,7 @@ body[dir="rtl"] .project-details-list li {
   color: var(--clr-muted);
 }
 
-.project-reservation-card__footer {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.project-reservation-card__footer .btn {
-  font-size: 0.8rem;
-}
+/* footer removed */
 
 @media (max-width: 768px) {
   .project-reservation-card {
