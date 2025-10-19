@@ -120,7 +120,8 @@ export function setupProjectCustomerAutocomplete() {
 
 export function clearProjectCustomerSuggestions() {
   if (!dom.clientSuggestions) return;
-  dom.clientSuggestions.style.display = 'none';
+  dom.clientSuggestions.classList.remove('is-visible');
+  dom.clientSuggestions.hidden = true;
   dom.clientSuggestions.innerHTML = '';
 }
 
@@ -155,7 +156,9 @@ export function renderProjectCustomerSuggestions() {
       `;
     })
     .join('');
-  dom.clientSuggestions.style.display = 'block';
+  dom.clientSuggestions.hidden = false;
+  dom.clientSuggestions.classList.add('is-visible');
+  dom.clientSuggestions.scrollTop = 0;
 
   dom.clientSuggestions.querySelectorAll('.suggestion-item').forEach((item) => {
     item.addEventListener('mousedown', (event) => {
