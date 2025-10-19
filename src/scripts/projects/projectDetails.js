@@ -338,6 +338,11 @@ export function openProjectDetails(projectId) {
       </div>
     </section>
     ${buildProjectReservationsSection(project)}
+    <div class="project-details-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        ${escapeHtml(t('actions.close', 'إغلاق'))}
+      </button>
+    </div>
   `;
 
   bindProjectDetailsEvents(project);

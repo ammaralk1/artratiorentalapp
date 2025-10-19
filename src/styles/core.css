@@ -1384,6 +1384,12 @@ body[dir="rtl"] .project-expense-amount {
   text-align: end;
 }
 
+.project-details-footer {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-start;
+}
+
 body[dir="rtl"] .project-details-header__info {
   align-items: flex-end;
   text-align: left;
@@ -1391,6 +1397,10 @@ body[dir="rtl"] .project-details-header__info {
 
 body[dir="rtl"] .project-details-chips {
   justify-content: flex-start;
+}
+
+body[dir="rtl"] .project-details-footer {
+  justify-content: flex-end;
 }
 
 body[dir="rtl"] .project-details-header__code {

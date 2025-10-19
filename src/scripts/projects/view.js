@@ -703,42 +703,15 @@ export function buildProjectReservationsSection(project) {
     });
 
   const title = t('projects.details.reservations.title', 'الحجوزات المرتبطة');
-  const createLabel = t('projects.details.reservations.create', '➕ إنشاء حجز مرتبط');
   const emptyText = t('projects.details.reservations.empty', 'لا توجد حجوزات مرتبطة بهذا المشروع بعد.');
-  const countTemplate = t('projects.details.reservations.count', '{count} حجوزات');
-  const countBadge = reservations.length
-    ? `<span class="badge project-reservations-count">${escapeHtml(countTemplate.replace('{count}', normalizeNumbers(String(reservations.length))))}</span>`
-    : '';
-  const hasReservations = reservations.length > 0;
-  const projectIdAttr = escapeHtml(String(project.id));
-  const createButtonAttributes = [
-    'type="button"',
-    'class="btn btn-sm btn-secondary"',
-    'data-action="create-reservation"',
-    `data-project-id="${projectIdAttr}"`
-  ];
-  if (hasReservations) {
-    createButtonAttributes.push('disabled', 'aria-disabled="true"');
-  }
-  const createButton = `<button ${createButtonAttributes.join(' ')}>${escapeHtml(createLabel)}</button>`;
-  const editLabel = t('projects.details.actions.edit', 'تعديل المشروع');
-  const deleteLabel = t('projects.details.actions.delete', 'حذف المشروع');
-  const editButton = `<button type="button" class="btn btn-sm btn-primary" data-action="edit-project" data-project-id="${projectIdAttr}">${escapeHtml(editLabel)}</button>`;
-  const deleteButton = `<button type="button" class="btn btn-sm btn-danger" data-action="delete-project" data-project-id="${projectIdAttr}">${escapeHtml(deleteLabel)}</button>`;
-  const actionsMarkup = `<div class="project-reservations-actions d-flex flex-wrap gap-2 justify-content-end">${deleteButton}${editButton}${createButton}</div>`;
-
   const listMarkup = reservations.length
     ? `<div class="project-reservations-list">${reservations.map(({ reservation, index }) => buildProjectReservationCard(reservation, index, project)).join('')}</div>`
     : `<div class="alert alert-info project-reservations-empty mb-0">${escapeHtml(emptyText)}</div>`;
 
   return `
     <section class="project-reservations-section">
-      <div class="project-reservations-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
-        <div class="d-flex align-items-center gap-2">
-          <h6 class="mb-0">${escapeHtml(title)}</h6>
-          ${countBadge}
-        </div>
-        ${actionsMarkup}
+      <div class="project-reservations-header d-flex align-items-center gap-2 flex-wrap">
+        <h6 class="mb-0">${escapeHtml(title)}</h6>
       </div>
       ${listMarkup}
     </section>

@@ -469,32 +469,14 @@ export function buildProjectReservationsSection({ reservations = [], project = n
 
   const title = t('projects.details.reservations.title', 'الحجوزات المرتبطة');
   const emptyText = t('projects.details.reservations.empty', 'لا توجد حجوزات مرتبطة بهذا المشروع بعد.');
-  const countTemplate = t('projects.details.reservations.count', '{count} حجوزات');
-  const countBadge = sorted.length
-    ? `<span class="badge project-reservations-count">${escapeHtml(countTemplate.replace('{count}', normalizeNumbers(String(sorted.length))))}</span>`
-    : '';
-
-  const projectId = project ? getProjectIdentifier(project) : null;
-  const editLabel = t('projects.details.actions.edit', '✏️ تعديل المشروع');
-  const editButton = projectId
-    ? `<button type="button" class="btn btn-sm btn-warning" data-action="edit-project" data-project-id="${escapeHtml(String(projectId))}">${escapeHtml(editLabel)}</button>`
-    : '';
-  const actionsMarkup = editButton
-    ? `<div class="d-flex flex-wrap gap-2">${editButton}</div>`
-    : '';
-
   const listMarkup = sorted.length
     ? `<div class="project-reservations-list">${sorted.map(({ reservation, index }) => buildProjectReservationCard(reservation, index, project)).join('')}</div>`
     : `<div class="alert alert-info project-reservations-empty mb-0">${escapeHtml(emptyText)}</div>`;
 
   return `
     <section class="project-reservations-section">
-      <div class="project-reservations-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
-        <div class="d-flex align-items-center gap-2">
-          <h6 class="mb-0">${escapeHtml(title)}</h6>
-          ${countBadge}
-        </div>
-        ${actionsMarkup}
+      <div class="project-reservations-header d-flex align-items-center gap-2 flex-wrap">
+        <h6 class="mb-0">${escapeHtml(title)}</h6>
       </div>
       ${listMarkup}
     </section>
