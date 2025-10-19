@@ -1356,7 +1356,7 @@ body[dir="rtl"] .project-expense-amount {
 .project-details-code-badge {
   display: inline-flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 4px;
   padding: 10px 18px;
   border-radius: 16px;
@@ -1366,9 +1366,9 @@ body[dir="rtl"] .project-expense-amount {
   box-shadow: var(--shadow-xs);
 }
 
-body[dir="rtl"] .project-details-code-badge {
-  align-items: flex-end;
+.project-details-code-badge {
   text-align: right;
+  align-self: flex-end;
 }
 
 .project-details-code-badge__label {
