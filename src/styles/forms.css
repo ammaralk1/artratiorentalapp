@@ -539,6 +539,16 @@ select.form-select option {
   max-width: 100%;
 }
 
+.project-expense-action-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.project-expense-action-col .selected-list {
+  margin-bottom: 0;
+}
+
 @media (min-width: 992px) {
   .project-form-primary-row {
     --bs-gutter-x: 1.25rem;
