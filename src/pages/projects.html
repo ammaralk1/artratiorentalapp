@@ -190,22 +190,23 @@
               </svg>
             </button>
             <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                  <div class="space-y-1 text-start">
-                    <p class="text-sm text-base-content/60">👋 هذه مساحة موحدة لإدارة جميع تفاصيل مشاريعك.</p>
-                    <p class="text-base text-base-content/70">يمكنك إنشاء المشاريع، متابعة التقدم، ومراجعة التقارير من مكان واحد.</p>
+              <div class="dashboard-metrics-card">
+                <div class="dashboard-metrics-grid grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div class="summary-stat">
+                    <div class="summary-value" id="projects-count">0</div>
+                    <div class="summary-label" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
                   </div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
+                  <div class="summary-stat">
+                    <div class="summary-value" id="projects-upcoming">0</div>
+                    <div class="summary-label" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
                   </div>
-                </div>
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div class="glass-card p-4">
-                    <p class="text-sm font-semibold text-base-content/70">✨ احفظ تفاصيل المشروع مبكرًا لتوزيع الطاقم والمعدات بسهولة.</p>
+                  <div class="summary-stat">
+                    <div class="summary-value" id="projects-expenses">0</div>
+                    <div class="summary-label" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
                   </div>
-                  <div class="glass-card p-4">
-                    <p class="text-sm font-semibold text-base-content/70">📈 استخدم تقارير المشاريع لمتابعة الأداء المالي والعملي بسرعة.</p>
+                  <div class="summary-stat">
+                    <div class="summary-value" id="projects-budget">0</div>
+                    <div class="summary-label" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
                   </div>
                 </div>
               </div>
@@ -235,28 +236,6 @@
             <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
           </label>
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-        </div>
-      </div>
-      <div class="dashboard-header-metrics">
-        <div class="glass-card dashboard-header-metrics-card">
-          <div class="dashboard-header-metrics-grid grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="summary-stat">
-              <div class="summary-value" id="projects-count">0</div>
-              <div class="summary-label" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
-            </div>
-            <div class="summary-stat">
-              <div class="summary-value" id="projects-upcoming">0</div>
-              <div class="summary-label" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
-            </div>
-            <div class="summary-stat">
-              <div class="summary-value" id="projects-expenses">0</div>
-              <div class="summary-label" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
-            </div>
-            <div class="summary-stat">
-              <div class="summary-value" id="projects-budget">0</div>
-              <div class="summary-label" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
-            </div>
-          </div>
         </div>
       </div>
     </header>

@@ -241,22 +241,16 @@
     }
   }
 
-  .dashboard-header-metrics {
-    width: min(100%, 336rem);
-    margin: 0 auto;
-    padding: 0 clamp(1rem, 4vw, 2.75rem) clamp(1rem, 3vw, 2.25rem);
+  .dashboard-metrics-card {
+    @apply flex flex-col gap-4 w-full;
   }
 
-  .dashboard-header-metrics-card {
-    @apply flex flex-col gap-4;
-  }
-
-  .dashboard-header-metrics-grid {
+  .dashboard-metrics-grid {
     @apply w-full;
     align-items: stretch;
   }
 
-  .dashboard-header-metrics-card .summary-stat {
+  .dashboard-metrics-card .summary-stat {
     @apply flex flex-col items-center justify-center gap-2 text-center rounded-2xl;
     padding: clamp(0.85rem, 2vw, 1.25rem);
     border: 1px solid rgba(76, 110, 245, 0.16);
@@ -264,27 +258,27 @@
     box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
   }
 
-  .dashboard-header-metrics-card .summary-value {
+  .dashboard-metrics-card .summary-value {
     @apply text-2xl font-bold tracking-tight;
     color: hsl(var(--bc));
   }
 
-  .dashboard-header-metrics-card .summary-label {
+  .dashboard-metrics-card .summary-label {
     @apply text-sm font-semibold tracking-tight;
     color: hsl(var(--bc) / 0.68);
   }
 
-  :where(html.dark, body.dark) .dashboard-header-metrics-card .summary-stat {
+  :where(html.dark, body.dark) .dashboard-metrics-card .summary-stat {
     border-color: rgba(96, 165, 250, 0.28);
     background: linear-gradient(135deg, rgba(15, 24, 45, 0.95), rgba(20, 30, 60, 0.85));
     box-shadow: 0 20px 40px rgba(3, 8, 22, 0.55);
   }
 
-  :where(html.dark, body.dark) .dashboard-header-metrics-card .summary-label {
+  :where(html.dark, body.dark) .dashboard-metrics-card .summary-label {
     color: rgba(203, 213, 225, 0.78);
   }
 
-  :where(html.dark, body.dark) .dashboard-header-metrics-card .summary-value {
+  :where(html.dark, body.dark) .dashboard-metrics-card .summary-value {
     color: rgba(224, 231, 255, 0.98);
   }
 
