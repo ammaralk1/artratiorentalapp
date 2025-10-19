@@ -1070,6 +1070,14 @@ body.dark-mode .project-reservations-empty.alert {
   color: var(--clr-text);
 }
 
+body[dir="rtl"] .project-details-outline__header {
+  flex-direction: row-reverse;
+}
+
+body[dir="rtl"] .project-details-outline__title {
+  text-align: right;
+}
+
 .project-details-outline h6 {
   font-weight: 700;
   font-size: 1rem;

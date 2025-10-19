@@ -224,10 +224,12 @@ export function openProjectDetails(projectId) {
     resolveProjectScheduleItem('end', project.end)
   ].filter(Boolean);
 
+  const projectInfoTitle = t('projects.details.overview.heading', 'تفاصيل الحجز');
+
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
       <div class="project-details-outline__header">
-        <h6 class="project-details-outline__title">${escapeHtml(t('projects.details.overview.title', 'تفاصيل الحجز'))}</h6>
+        <h6 class="project-details-outline__title">${escapeHtml(projectInfoTitle)}</h6>
         ${projectCodeBadgeHtml}
       </div>
       <ul class="project-details-outline__list">
