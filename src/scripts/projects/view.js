@@ -718,7 +718,7 @@ export function buildProjectReservationsSection(project) {
   const projectIdAttr = escapeHtml(String(project.id));
   const createButtonAttributes = [
     'type="button"',
-    'class="btn btn-sm btn-primary"',
+    'class="btn btn-sm btn-outline-primary"',
     'data-action="create-reservation"',
     `data-project-id="${projectIdAttr}"`
   ];
@@ -726,9 +726,11 @@ export function buildProjectReservationsSection(project) {
     createButtonAttributes.push('disabled', 'aria-disabled="true"');
   }
   const createButton = `<button ${createButtonAttributes.join(' ')}>${escapeHtml(createLabel)}</button>`;
-  const editLabel = t('projects.details.actions.edit', '✏️ تعديل المشروع');
-  const editButton = `<button type="button" class="btn btn-sm btn-warning" data-action="edit-project" data-project-id="${projectIdAttr}">${escapeHtml(editLabel)}</button>`;
-  const actionsMarkup = `<div class="d-flex flex-wrap gap-2">${createButton}${editButton}</div>`;
+  const editLabel = t('projects.details.actions.edit', 'تعديل المشروع');
+  const deleteLabel = t('projects.details.actions.delete', 'حذف المشروع');
+  const editButton = `<button type="button" class="btn btn-sm btn-primary" data-action="edit-project" data-project-id="${projectIdAttr}">${escapeHtml(editLabel)}</button>`;
+  const deleteButton = `<button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-project" data-project-id="${projectIdAttr}">${escapeHtml(deleteLabel)}</button>`;
+  const actionsMarkup = `<div class="project-reservations-actions d-flex flex-wrap gap-2 justify-content-end">${createButton}${editButton}${deleteButton}</div>`;
 
   const listMarkup = reservations.length
     ? `<div class="project-reservations-list">${reservations.map(({ reservation, index }) => buildProjectReservationCard(reservation, index, project)).join('')}</div>`

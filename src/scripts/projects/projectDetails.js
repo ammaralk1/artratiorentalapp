@@ -49,7 +49,8 @@ import {
 } from './form.js';
 import {
   handleProjectReservationSync,
-  updateLinkedReservationsConfirmation
+  updateLinkedReservationsConfirmation,
+  removeProject
 } from './actions.js';
 
 export function openProjectDetails(projectId) {
@@ -395,6 +396,7 @@ export function bindProjectDetailsEvents(project) {
   if (!dom.detailsBody) return;
   const createBtn = dom.detailsBody.querySelector('[data-action="create-reservation"]');
   const editBtn = dom.detailsBody.querySelector('[data-action="edit-project"]');
+  const deleteBtn = dom.detailsBody.querySelector('[data-action="delete-project"]');
   const reservationContainer = dom.detailsBody.querySelector('.project-reservations-list');
 
   if (createBtn && project) {
@@ -408,6 +410,27 @@ export function bindProjectDetailsEvents(project) {
     editBtn.addEventListener('click', (event) => {
       event.preventDefault();
       startProjectEdit(project);
+    });
+  }
+
+  if (deleteBtn && project) {
+    deleteBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        await removeProject(project.id);
+        const stillExists = state.projects.some((entry) => String(entry.id) === String(project.id));
+        if (!stillExists && dom.detailsModalEl) {
+          const instance = window.bootstrap?.Modal.getInstance(dom.detailsModalEl);
+          instance?.hide();
+        }
+      } finally {
+        const stillExists = state.projects.some((entry) => String(entry.id) === String(project.id));
+        if (stillExists) {
+          button.disabled = false;
+        }
+      }
     });
   }
 
