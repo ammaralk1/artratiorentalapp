@@ -90,6 +90,12 @@ body.dark-mode.reports-page {
   background: transparent;
 }
 
+.reports-wrapper--projects {
+  width: min(100%, 1140px);
+  margin-inline: auto;
+  padding-inline: clamp(0.75rem, 3vw, 1.75rem);
+}
+
 .reports-wrapper--reservations {
   gap: 20px;
   align-items: center;
