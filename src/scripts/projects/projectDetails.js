@@ -244,7 +244,6 @@ export function openProjectDetails(projectId) {
     <div class="project-details-outline">
       <div class="project-details-outline__header">
         <h6 class="project-details-outline__title">${escapeHtml(projectInfoTitle)}</h6>
-        ${projectCodeBadgeHtml}
       </div>
       <ul class="project-details-outline__list">
         ${projectInfoItems.map(({ icon, label, value, meta }) => `
@@ -275,6 +274,8 @@ export function openProjectDetails(projectId) {
     <section class="project-details-primary">
       <header class="project-details-header">
         <div class="project-details-header__left">
+          <span class="project-details-subtitle">${escapeHtml(t('projects.details.header', 'تفاصيل المشروع'))}</span>
+          ${projectCodeBadgeHtml}
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
         </div>

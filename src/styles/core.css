@@ -1148,6 +1148,10 @@ body[dir="rtl"] .project-details-outline__title {
   color: rgba(226, 232, 240, 0.95);
 }
 
+:is(html.dark-mode, body.dark-mode) .project-details-subtitle {
+  color: rgba(148, 191, 255, 0.85);
+}
+
 :is(html.dark-mode, body.dark-mode) .project-details-outline__value {
   color: rgba(226, 232, 240, 0.95);
 }
@@ -1323,6 +1327,13 @@ body[dir="rtl"] .project-expense-amount {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.project-details-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--clr-muted);
+  letter-spacing: 0.02em;
 }
 
 .project-details-code-badge {
