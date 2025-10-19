@@ -553,6 +553,10 @@ select.form-select option {
     flex: 0 0 200px;
     max-width: 200px;
   }
+
+  .project-form .row > [class*="col-"] {
+    width: auto;
+  }
 }
 
 @media (min-width: 1200px) {
@@ -572,6 +576,10 @@ select.form-select option {
   .project-field-time {
     flex: 0 0 180px;
     max-width: 180px;
+  }
+
+  .project-form .row > [class*="col-"] {
+    width: auto;
   }
 }
 
