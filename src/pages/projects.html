@@ -339,7 +339,7 @@
                   <h4 class="mb-3" data-i18n data-i18n-key="projects.form.title">إنشاء مشروع جديد</h4>
                   <form id="project-form" class="project-form">
                     <div class="row g-3 align-items-end project-form-primary-row">
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-2 project-field-narrow">
+                      <div class="col-12 col-sm-6 col-lg-2 project-field-narrow project-type-field">
                         <label class="form-label" for="project-type" data-i18n data-i18n-key="projects.form.labels.type">نوع المشروع</label>
                         <select id="project-type" class="form-select select select-bordered w-full" required>
                           <option value="" data-i18n data-i18n-key="projects.form.placeholders.type">اختر نوع المشروع</option>
@@ -349,18 +349,18 @@
                           <option value="social" data-i18n data-i18n-key="projects.form.types.social">تصوير للتواصل الاجتماعي</option>
                         </select>
                       </div>
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                      <div class="col-12 col-sm-6 col-lg-3 project-title-field">
                         <label class="form-label" for="project-title" data-i18n data-i18n-key="projects.form.labels.title">اسم المشروع</label>
                         <input type="text" id="project-title" class="form-control input input-bordered w-full" required placeholder="مثال: تصوير منتج جديد" data-i18n data-i18n-placeholder-key="projects.form.placeholders.title">
                       </div>
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-3">
+                      <div class="col-12 col-sm-6 col-lg-2 project-client-field">
                         <label class="form-label" for="project-client" data-i18n data-i18n-key="projects.form.labels.client">اسم العميل</label>
                         <div class="form-control-dropdown">
                           <input type="text" id="project-client" class="form-control input input-bordered w-full" placeholder="ابحث عن عميل مسجل أو أضف جديدًا" autocomplete="off" data-i18n data-i18n-placeholder-key="projects.form.placeholders.client">
                           <div class="project-customer-suggestions list-group" id="project-customer-suggestions" role="listbox" hidden></div>
                         </div>
                       </div>
-                      <div class="col-12 col-sm-6 col-md-3 col-lg-4">
+                      <div class="col-12 col-sm-6 col-lg-5 project-company-field">
                         <label class="form-label" for="project-client-company" data-i18n data-i18n-key="projects.form.labels.company">الشركة</label>
                         <input type="text" id="project-client-company" class="form-control input input-bordered w-full" placeholder="مثال: شركة الإنتاج العربية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.company">
                       </div>
@@ -403,8 +403,8 @@
                         <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">المبلغ (SR)</label>
                         <input type="text" id="project-expense-amount" class="form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
                       </div>
-                      <div class="col-md-3">
-                        <button type="button" id="add-expense-btn" class="btn btn-outline-secondary w-100" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة مصروف</button>
+                      <div class="col-md-3 col-lg-2 d-flex align-items-end">
+                        <button type="button" id="add-expense-btn" class="btn btn-primary project-expense-add-btn" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة مصروف</button>
                       </div>
                       <div class="col-12">
                         <div class="selected-list mb-3" id="project-expense-list" data-empty="لم يتم تسجيل أي مصروف" data-empty-key="projects.selected.emptyExpenses"></div>
