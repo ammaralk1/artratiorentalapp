@@ -554,10 +554,14 @@ select.form-select option {
     max-width: 78%;
   }
 
-  .project-row--client .project-client-field,
+  .project-row--client .project-client-field {
+    flex: 0 0 32%;
+    max-width: 32%;
+  }
+
   .project-row--client .project-company-field {
-    flex: 0 0 50%;
-    max-width: 50%;
+    flex: 0 0 68%;
+    max-width: 68%;
   }
 
   .project-field-date,
@@ -590,10 +594,14 @@ select.form-select option {
     max-width: 80%;
   }
 
-  .project-row--client .project-client-field,
+  .project-row--client .project-client-field {
+    flex: 0 0 30%;
+    max-width: 30%;
+  }
+
   .project-row--client .project-company-field {
-    flex: 0 0 50%;
-    max-width: 50%;
+    flex: 0 0 70%;
+    max-width: 70%;
   }
 
   .project-field-date,
