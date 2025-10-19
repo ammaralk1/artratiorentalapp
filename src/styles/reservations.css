@@ -3595,11 +3595,13 @@ body[dir="ltr"] .reservation-field textarea {
 
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__table {
   color: rgba(226, 232, 240, 0.92);
+  background-color: transparent;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__table th,
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__table td {
   border-color: rgba(148, 191, 255, 0.18);
+  background-color: transparent;
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__empty {
@@ -4855,4 +4857,8 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 .payment-history-entry__percent,
 .payment-history-entry__date {
   font-size: 0.85rem;
+}
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__table tbody tr:nth-child(even),
+:is(html.dark-mode, body.dark-mode) .reservation-payment-history__table tbody tr:nth-child(odd) {
+  background-color: transparent;
 }
