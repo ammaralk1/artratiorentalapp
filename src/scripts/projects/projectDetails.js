@@ -63,6 +63,12 @@ export function openProjectDetails(projectId) {
   const descriptionRaw = project.description?.trim();
   const descriptionDisplay = descriptionRaw || t('projects.fallback.noDescription', 'لا يوجد وصف');
   const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
+  const clientPhoneRaw = client?.phone ? String(client.phone).trim() : '';
+  const clientPhone = clientPhoneRaw
+    ? normalizeNumbers(clientPhoneRaw)
+    : t('projects.details.client.noPhone', 'لا يوجد رقم متاح');
+  const clientEmailRaw = client?.email ? String(client.email).trim() : '';
+  const clientEmail = clientEmailRaw || t('projects.details.client.noEmail', 'لا يوجد بريد متاح');
   const projectCompany = (project.clientCompany || client?.companyName || '').trim();
   const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeDisplay = normalizeNumbers(projectCodeValue);
@@ -192,6 +198,16 @@ export function openProjectDetails(projectId) {
       label: t('projects.details.client', 'العميل'),
       value: clientName
     },
+    {
+      icon: '📞',
+      label: t('projects.details.labels.clientPhone', 'رقم العميل'),
+      value: clientPhone
+    },
+    {
+      icon: '✉️',
+      label: t('projects.details.labels.clientEmail', 'البريد الإلكتروني'),
+      value: clientEmail
+    },
     projectCompany
       ? {
           icon: '🏢',
@@ -210,6 +226,10 @@ export function openProjectDetails(projectId) {
 
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
+      <div class="project-details-outline__header">
+        <h6 class="project-details-outline__title">${escapeHtml(t('projects.details.overview.title', 'تفاصيل الحجز'))}</h6>
+        ${projectCodeBadgeHtml}
+      </div>
       <ul class="project-details-outline__list">
         ${projectInfoItems.map(({ icon, label, value, meta }) => `
           <li>
@@ -239,12 +259,8 @@ export function openProjectDetails(projectId) {
     <section class="project-details-primary">
       <header class="project-details-header">
         <div class="project-details-header__left">
-          <span class="project-details-subtitle">${escapeHtml(t('projects.details.header', 'تفاصيل المشروع'))}</span>
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
-        </div>
-        <div class="project-details-header__right">
-          ${projectCodeBadgeHtml}
         </div>
       </header>
       <div class="project-summary">

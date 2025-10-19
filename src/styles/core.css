@@ -1056,6 +1056,20 @@ body.dark-mode .project-reservations-empty.alert {
   gap: 12px;
 }
 
+.project-details-outline__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-details-outline__title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0;
+  color: var(--clr-text);
+}
+
 .project-details-outline h6 {
   font-weight: 700;
   font-size: 1rem;
@@ -1080,8 +1094,8 @@ body.dark-mode .project-reservations-empty.alert {
 
 .project-details-outline__list li {
   display: flex;
-  align-items: center;
-  gap: 8px 16px;
+  align-items: flex-start;
+  gap: 6px 12px;
   font-size: 0.95rem;
   color: var(--clr-text);
   flex-wrap: wrap;
@@ -1097,8 +1111,8 @@ body.dark-mode .project-reservations-empty.alert {
 
 .project-details-outline__value-group {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -1120,6 +1134,10 @@ body.dark-mode .project-reservations-empty.alert {
 
 :is(html.dark-mode, body.dark-mode) .project-details-outline__label {
   color: rgba(191, 219, 254, 0.9);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-outline__title {
+  color: rgba(226, 232, 240, 0.95);
 }
 
 :is(html.dark-mode, body.dark-mode) .project-details-outline__value {
@@ -1297,18 +1315,6 @@ body[dir="rtl"] .project-expense-amount {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.project-details-header__right {
-  display: flex;
-  align-items: flex-start;
-}
-
-.project-details-subtitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--clr-muted);
-  letter-spacing: 0.02em;
 }
 
 .project-details-code-badge {
