@@ -55,8 +55,13 @@ export async function updateLinkedReservationsPaymentStatus(projectId, paymentSt
     return false;
   }
 
-  const shouldBePaid = paymentStatus === 'paid';
-  const desiredStatusValue = shouldBePaid ? 'paid' : 'unpaid';
+  const normalizedStatus = typeof paymentStatus === 'string' ? paymentStatus.toLowerCase() : 'unpaid';
+  const shouldBePaid = normalizedStatus === 'paid';
+  const desiredStatusValue = shouldBePaid
+    ? 'paid'
+    : normalizedStatus === 'partial'
+      ? 'partial'
+      : 'unpaid';
   let changed = false;
 
   for (const reservation of targets) {

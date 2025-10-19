@@ -50,6 +50,12 @@ registerTranslations({
     'projects.form.linkedReservation.meta.crew': 'عدد الفريق: {count}',
     'projects.form.linkedReservation.meta.crewNames': 'أسماء الفريق: {names}',
     'projects.form.linkedReservation.meta.total': 'إجمالي الحجز: {amount}',
+    'projects.form.labels.discount': 'الخصم',
+    'projects.form.labels.companyShare': 'نسبة الشركة والضريبة',
+    'projects.form.labels.applyTax': 'تطبيق الضريبة 15٪',
+    'projects.form.discount.percent': '٪ نسبة',
+    'projects.form.discount.amount': '💵 مبلغ',
+    'projects.form.companyShareToggle': 'إضافة نسبة الشركة (10٪)',
 
     'projects.form.selectClient': 'اختر العميل',
     'projects.form.selectTechnician': 'اختر عضو الطاقم',
@@ -68,8 +74,15 @@ registerTranslations({
     'projects.form.taxLabel': 'شامل الضريبة (15٪)',
     'projects.form.paymentStatus.paid': 'مدفوع',
     'projects.form.paymentStatus.unpaid': 'غير مدفوع',
+    'projects.form.paymentStatus.partial': 'مدفوع جزئياً',
+    'projects.form.paymentProgress.label': '💰 الدفعة المستلمة',
+    'projects.form.paymentProgress.amount': '💵 مبلغ',
+    'projects.form.paymentProgress.percent': '٪ نسبة',
+    'projects.form.paymentProgress.placeholder': '0',
+    'projects.form.paymentProgress.hint': 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع',
     'projects.paymentStatus.paid': 'مدفوع',
     'projects.paymentStatus.unpaid': 'غير مدفوع',
+    'projects.paymentStatus.partial': 'مدفوع جزئياً',
 
     'projects.selected.emptyTechnicians': 'لم يتم اختيار أي عضو بعد',
     'projects.selected.emptyEquipment': 'لم يتم اختيار أي معدات',
@@ -95,6 +108,7 @@ registerTranslations({
     'projects.focus.toastNotFound': '⚠️ تعذّر العثور على المشروع في القائمة',
 
     'projects.toast.linkReservationFailed': '⚠️ تعذّر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا',
+    'projects.toast.companyShareRequiresTax': '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة',
 
     'projects.timeline.title': 'الجدول الزمني للمشاريع',
     'projects.timeline.legend': 'يُظهر الشريط مواعيد البداية والنهاية، والألوان تُمثّل حالة المشروع.',
@@ -363,6 +377,12 @@ registerTranslations({
     'projects.form.linkedReservation.meta.crew': 'Crew count: {count}',
     'projects.form.linkedReservation.meta.crewNames': 'Crew names: {names}',
     'projects.form.linkedReservation.meta.total': 'Reservation total: {amount}',
+    'projects.form.labels.discount': 'Discount',
+    'projects.form.labels.companyShare': 'Company share & VAT',
+    'projects.form.labels.applyTax': 'Apply VAT 15%',
+    'projects.form.discount.percent': '% Percent',
+    'projects.form.discount.amount': '💵 Amount',
+    'projects.form.companyShareToggle': 'Include company share (10%)',
 
     'projects.form.selectClient': 'Select client',
     'projects.form.selectTechnician': 'Select crew member',
@@ -381,8 +401,15 @@ registerTranslations({
     'projects.form.taxLabel': 'Include VAT (15%)',
     'projects.form.paymentStatus.paid': 'Paid',
     'projects.form.paymentStatus.unpaid': 'Unpaid',
+    'projects.form.paymentStatus.partial': 'Partially Paid',
+    'projects.form.paymentProgress.label': '💰 Received Payment',
+    'projects.form.paymentProgress.amount': '💵 Amount',
+    'projects.form.paymentProgress.percent': '% Percent',
+    'projects.form.paymentProgress.placeholder': '0',
+    'projects.form.paymentProgress.hint': 'Enter the amount or percentage received from the project total',
     'projects.paymentStatus.paid': 'Paid',
     'projects.paymentStatus.unpaid': 'Unpaid',
+    'projects.paymentStatus.partial': 'Partially Paid',
 
     'projects.selected.emptyTechnicians': 'No crew members selected yet',
     'projects.selected.emptyEquipment': 'No equipment selected',
@@ -408,6 +435,7 @@ registerTranslations({
     'projects.focus.toastNotFound': '⚠️ Could not find this project in the list',
 
     'projects.toast.linkReservationFailed': '⚠️ Unable to link some reservations to the project. Please review them manually.',
+    'projects.toast.companyShareRequiresTax': '⚠️ Company share requires VAT to be enabled first.',
 
     'projects.timeline.title': 'Projects Timeline',
     'projects.timeline.legend': 'The bar shows project start and end, with colors reflecting status.',

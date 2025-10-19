@@ -35,6 +35,11 @@ export function cacheDom() {
   dom.expenseAmount = document.getElementById('project-expense-amount');
   dom.addExpenseBtn = document.getElementById('add-expense-btn');
   dom.expenseList = document.getElementById('project-expense-list');
+  dom.discountType = document.getElementById('project-discount-type');
+  dom.discountValue = document.getElementById('project-discount');
+  dom.companyShare = document.getElementById('project-company-share');
+  dom.paymentProgressType = document.getElementById('project-payment-progress-type');
+  dom.paymentProgressValue = document.getElementById('project-payment-progress-value');
   dom.taxCheckbox = document.getElementById('project-tax');
   dom.linkedReservationBtn = document.getElementById('project-linked-reservation-btn');
   dom.submitBtn = dom.form?.querySelector('[type="submit"]');

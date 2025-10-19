@@ -7,7 +7,12 @@ import {
   updateProjectApi
 } from '../projectsService.js';
 import { getReservationsState } from '../reservationsService.js';
-import { calculateReservationTotal } from '../reservationsSummary.js';
+import {
+  calculateReservationTotal,
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus,
+} from '../reservationsSummary.js';
 import { normalizeNumbers, showToast } from '../utils.js';
 import { state, dom } from './state.js';
 import {
@@ -37,7 +42,10 @@ import {
   updateSummary
 } from './view.js';
 import {
-  mapProjectEquipmentToApi
+  mapProjectEquipmentToApi,
+  calculateProjectFinancials,
+  ensureProjectCompanyShareEnabled,
+  getProjectCompanySharePercent,
 } from './form.js';
 import {
   handleProjectReservationSync,
@@ -89,9 +97,17 @@ export function openProjectDetails(projectId) {
   const vatChipClass = applyTax ? 'status-paid' : 'status-unpaid';
   const reservationsChipText = t('projects.details.chips.reservations', '{count} حجوزات')
     .replace('{count}', normalizeNumbers(String(reservationsCount)));
-  const paymentStatusValue = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
-  const paymentStatusText = t(`projects.paymentStatus.${paymentStatusValue}`, paymentStatusValue === 'paid' ? 'Paid' : 'Unpaid');
-  const paymentStatusChipClass = paymentStatusValue === 'paid' ? 'status-paid' : 'status-unpaid';
+  const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
+  const paymentStatusValue = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
+  const paymentStatusText = t(
+    `projects.paymentStatus.${paymentStatusValue}`,
+    paymentStatusValue === 'paid' ? 'Paid' : paymentStatusValue === 'partial' ? 'Partial' : 'Unpaid'
+  );
+  const paymentStatusChipClass = paymentStatusValue === 'paid'
+    ? 'status-paid'
+    : paymentStatusValue === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
@@ -340,6 +356,42 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const startTimeInput = form.querySelector('[name="project-start-time"]');
   const endDateInput = form.querySelector('[name="project-end-date"]');
   const endTimeInput = form.querySelector('[name="project-end-time"]');
+  const paymentStatusSelect = form.querySelector('[name="project-payment-status"]');
+  const taxCheckbox = form.querySelector('#project-edit-tax');
+  const shareCheckbox = form.querySelector('#project-edit-company-share');
+  const discountInput = form.querySelector('#project-edit-discount');
+  const discountTypeSelect = form.querySelector('#project-edit-discount-type');
+  const paymentProgressTypeSelect = form.querySelector('#project-edit-payment-progress-type');
+  const paymentProgressValueInput = form.querySelector('#project-edit-payment-progress-value');
+
+  let isSyncingShareTax = false;
+
+  const syncShareAndTax = (source) => {
+    if (!taxCheckbox || !shareCheckbox) return;
+    if (isSyncingShareTax) return;
+    isSyncingShareTax = true;
+
+    if (source === 'share') {
+      if (shareCheckbox.checked) {
+        if (!taxCheckbox.checked) {
+          taxCheckbox.checked = true;
+        }
+        ensureProjectCompanyShareEnabled(shareCheckbox);
+      } else {
+        if (taxCheckbox.checked) {
+          taxCheckbox.checked = false;
+        }
+      }
+    } else if (source === 'tax') {
+      if (taxCheckbox.checked) {
+        ensureProjectCompanyShareEnabled(shareCheckbox);
+      } else if (shareCheckbox.checked) {
+        shareCheckbox.checked = false;
+      }
+    }
+
+    isSyncingShareTax = false;
+  };
 
   function renderExpenses() {
     if (!expensesContainer) return;
@@ -347,6 +399,47 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   }
 
   renderExpenses();
+
+  if (discountInput && !discountInput.dataset.listenerAttached) {
+    discountInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    discountInput.dataset.listenerAttached = 'true';
+  }
+
+  if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
+    paymentProgressValueInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    paymentProgressValueInput.dataset.listenerAttached = 'true';
+  }
+
+  if (paymentStatusSelect && !paymentStatusSelect.dataset.listenerAttached) {
+    paymentStatusSelect.addEventListener('change', () => {
+      paymentStatusSelect.dataset.userSelected = 'true';
+    });
+    paymentStatusSelect.dataset.listenerAttached = 'true';
+  }
+
+  if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
+    shareCheckbox.addEventListener('change', () => syncShareAndTax('share'));
+    shareCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
+    taxCheckbox.addEventListener('change', () => syncShareAndTax('tax'));
+    taxCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  if (shareCheckbox?.checked) {
+    ensureProjectCompanyShareEnabled(shareCheckbox);
+  }
+
+  syncShareAndTax(shareCheckbox?.checked ? 'share' : 'tax');
 
   if (addExpenseBtn) {
     addExpenseBtn.addEventListener('click', (event) => {
@@ -396,15 +489,16 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const titleInput = form.querySelector('[name="project-title"]');
     const typeSelect = form.querySelector('[name="project-type"]');
     const descriptionInput = form.querySelector('[name="project-description"]');
-    const paymentStatusSelect = form.querySelector('[name="project-payment-status"]');
-    const taxCheckbox = form.querySelector('[name="project-apply-tax"]');
 
     const title = titleInput?.value.trim() || '';
     const projectType = typeSelect?.value || '';
     const startDateValue = startDateInput?.value.trim() || '';
     const startTimeValue = startTimeInput?.value.trim() || '';
     const descriptionValue = descriptionInput?.value.trim() || '';
-    const paymentStatusValue = paymentStatusSelect?.value === 'paid' ? 'paid' : 'unpaid';
+    const selectedPaymentStatus = (paymentStatusSelect?.value || 'unpaid').toLowerCase();
+    const normalizedPaymentStatus = ['paid', 'partial'].includes(selectedPaymentStatus)
+      ? selectedPaymentStatus
+      : 'unpaid';
     const applyTax = taxCheckbox?.checked === true;
 
     if (!title || !projectType || !startDateValue) {
@@ -435,9 +529,54 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
     const equipmentEstimate = Number(project.equipmentEstimate) || 0;
     const expensesTotal = editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-    const subtotal = equipmentEstimate + expensesTotal;
-    const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
-    const totalWithTax = applyTax ? Number((subtotal + taxAmount).toFixed(2)) : subtotal;
+    const discountTypeValue = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const discountRaw = normalizeNumbers(discountInput?.value || '0');
+    let discountValue = Number.parseFloat(discountRaw);
+    if (!Number.isFinite(discountValue) || discountValue < 0) {
+      discountValue = 0;
+    }
+
+    const companyShareEnabled = shareCheckbox?.checked === true;
+    let companySharePercent = companyShareEnabled ? getProjectCompanySharePercent(shareCheckbox) : null;
+    if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
+      companySharePercent = companyShareEnabled ? DEFAULT_COMPANY_SHARE_PERCENT : null;
+    }
+
+    const finance = calculateProjectFinancials({
+      equipmentEstimate,
+      expensesTotal,
+      discountValue,
+      discountType: discountTypeValue,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent,
+    });
+
+    const progressType = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const progressRaw = normalizeNumbers(paymentProgressValueInput?.value || '');
+    const progressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+    const paymentProgress = calculatePaymentProgress({
+      totalAmount: finance.totalWithTax,
+      progressType,
+      progressValue,
+      history: [],
+    });
+
+    const manualStatusSelected = paymentStatusSelect?.dataset?.userSelected === 'true';
+    const effectivePaymentStatus = determinePaymentStatus({
+      manualStatus: manualStatusSelected ? normalizedPaymentStatus : null,
+      paidAmount: paymentProgress.paidAmount,
+      paidPercent: paymentProgress.paidPercent,
+      totalAmount: finance.totalWithTax,
+    });
+    const paymentStatusValue = manualStatusSelected ? normalizedPaymentStatus : effectivePaymentStatus;
+
+    if (!manualStatusSelected && paymentStatusSelect) {
+      paymentStatusSelect.value = paymentStatusValue;
+    }
+    if (paymentStatusSelect?.dataset) {
+      delete paymentStatusSelect.dataset.userSelected;
+    }
 
     const payload = buildProjectPayload({
       projectCode: project.projectCode,
@@ -452,11 +591,20 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       paymentStatus: paymentStatusValue,
       equipmentEstimate,
       expenses: editState.expenses,
-      taxAmount,
-      totalWithTax,
+      discount: discountValue,
+      discountType: discountTypeValue,
+      companyShareEnabled: companyShareEnabled && applyTax,
+      companySharePercent: companyShareEnabled && applyTax ? companySharePercent : null,
+      companyShareAmount: finance.companyShareAmount,
+      taxAmount: finance.taxAmount,
+      totalWithTax: finance.totalWithTax,
       confirmed: project.confirmed,
       technicians: Array.isArray(project.technicians) ? project.technicians : [],
       equipment: mapProjectEquipmentToApi(project),
+      paidAmount: paymentProgress.paidAmount,
+      paidPercentage: paymentProgress.paidPercent,
+      paymentProgressType: paymentProgress.paymentProgressType,
+      paymentProgressValue: paymentProgress.paymentProgressValue,
     });
 
     form.dataset.submitting = 'true';
@@ -563,7 +711,38 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
   const { date: startDate, time: startTime } = splitDateTimeParts(project.start || '');
   const { date: endDate, time: endTime } = splitDateTimeParts(project.end || '');
   const applyTax = project.applyTax === true || project.applyTax === 'true';
-  const paymentStatusValue = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
+  const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
+  const paymentStatusValue = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
+  const discountType = project.discountType === 'amount' ? 'amount' : 'percent';
+  const discountValue = normalizeNumbers(String(project.discount ?? project.discountValue ?? 0));
+  const sharePercentRaw = project.companySharePercent
+    ?? project.company_share_percent
+    ?? project.companyShare
+    ?? project.company_share
+    ?? project.companyShareAmountPercent
+    ?? DEFAULT_COMPANY_SHARE_PERCENT;
+  const parsedSharePercent = Number.parseFloat(normalizeNumbers(String(sharePercentRaw))); 
+  const companySharePercent = Number.isFinite(parsedSharePercent) && parsedSharePercent > 0
+    ? parsedSharePercent
+    : DEFAULT_COMPANY_SHARE_PERCENT;
+  const companyShareEnabled = project.companyShareEnabled === true
+    || project.companyShareEnabled === 'true'
+    || (project.company_share_enabled === true)
+    || (project.company_share_enabled === 'true')
+    || (applyTax && Number.isFinite(parsedSharePercent) && parsedSharePercent > 0);
+  const paymentProgressType = project.paymentProgressType === 'amount' ? 'amount'
+    : project.paymentProgressType === 'percent' ? 'percent'
+    : project.payment_progress_type === 'amount' ? 'amount'
+    : project.payment_progress_type === 'percent' ? 'percent'
+    : 'percent';
+  const paymentProgressValue = normalizeNumbers(
+    String(
+      project.paymentProgressValue
+      ?? project.payment_progress_value
+      ?? (paymentProgressType === 'amount' ? project.paidAmount ?? project.paid_amount : project.paidPercent ?? project.paid_percent)
+      ?? ''
+    )
+  );
 
   return `
     <form id="project-details-edit-form" class="project-edit-form">
@@ -600,14 +779,48 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         </div>
         <div class="col-md-6">
           <label class="form-label">${escapeHtml(t('projects.form.labels.paymentStatus', 'حالة الدفع'))}</label>
-          <select class="form-select" name="project-payment-status">
-            <option value="unpaid" ${paymentStatusValue === 'unpaid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.unpaid', 'قيد الانتظار'))}</option>
+          <select class="form-select" name="project-payment-status" id="project-edit-payment-status">
+            <option value="unpaid" ${paymentStatusValue === 'unpaid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.unpaid', 'غير مدفوع'))}</option>
+            <option value="partial" ${paymentStatusValue === 'partial' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.partial', 'مدفوع جزئياً'))}</option>
             <option value="paid" ${paymentStatusValue === 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.paid', 'مدفوع'))}</option>
           </select>
         </div>
-        <div class="col-md-6 d-flex align-items-center gap-2">
-          <input type="checkbox" class="form-check-input" name="project-apply-tax" id="project-apply-tax" ${applyTax ? 'checked' : ''}>
-          <label class="form-check-label" for="project-apply-tax">${escapeHtml(t('projects.form.labels.applyTax', 'تطبيق الضريبة 15٪'))}</label>
+      </div>
+
+      <div class="row g-3 align-items-start mt-3">
+        <div class="col-md-4">
+          <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
+          <div class="input-group">
+            <select id="project-edit-discount-type" name="project-discount-type" class="form-select">
+              <option value="percent" ${discountType === 'percent' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.percent', '٪ نسبة'))}</option>
+              <option value="amount" ${discountType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.amount', '💵 مبلغ'))}</option>
+            </select>
+            <input type="text" id="project-edit-discount" name="project-discount" class="form-control" value="${escapeHtml(discountValue)}" placeholder="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label d-block" for="project-edit-company-share">${escapeHtml(t('projects.form.labels.companyShare', 'نسبة الشركة والضريبة'))}</label>
+          <div class="d-flex flex-column gap-2">
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="project-edit-company-share" name="project-company-share" data-company-share="${escapeHtml(String(companySharePercent))}" ${companyShareEnabled ? 'checked' : ''}>
+              <label class="form-check-label" for="project-edit-company-share">${escapeHtml(t('projects.form.companyShareToggle', 'إضافة نسبة الشركة (10٪)'))}</label>
+            </div>
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="project-edit-tax" name="project-apply-tax" ${applyTax ? 'checked' : ''}>
+              <label class="form-check-label" for="project-edit-tax">${escapeHtml(t('projects.form.taxLabel', 'شامل الضريبة (15٪)'))}</label>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="project-edit-payment-progress-value">${escapeHtml(t('projects.form.paymentProgress.label', '💰 الدفعة المستلمة'))}</label>
+          <div class="input-group">
+            <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select">
+              <option value="amount" ${paymentProgressType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.amount', '💵 مبلغ'))}</option>
+              <option value="percent" ${paymentProgressType !== 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.percent', '٪ نسبة'))}</option>
+            </select>
+            <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
+          </div>
+          <small class="text-muted" data-i18n-key="projects.form.paymentProgress.hint">${escapeHtml(t('projects.form.paymentProgress.hint', 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع'))}</small>
         </div>
       </div>
 

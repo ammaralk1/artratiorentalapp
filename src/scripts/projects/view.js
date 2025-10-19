@@ -325,10 +325,20 @@ function renderFocusCard(project, category) {
     ? truncateText(description, 110)
     : t('projects.fallback.noDescription', 'لا يوجد وصف');
   const typeLabel = getProjectTypeLabel(project.type);
-  const paymentStatus = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
-  const paymentStatusLabel = t(`projects.paymentStatus.${paymentStatus}`, paymentStatus === 'paid' ? 'Paid' : 'Unpaid');
-  const paymentChipClass = paymentStatus === 'paid' ? 'status-paid' : 'status-unpaid';
-  const cardPaymentClass = paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid';
+  const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
+  const paymentStatus = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
+  const paymentStatusLabel = t(
+    `projects.paymentStatus.${paymentStatus}`,
+    paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'
+  );
+  const paymentChipClass = paymentStatus === 'paid'
+    ? 'status-paid'
+    : paymentStatus === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
+  const cardPaymentClass = paymentStatus === 'paid'
+    ? 'project-focus-card--paid'
+    : 'project-focus-card--unpaid';
   const isConfirmed = project.confirmed === true || project.confirmed === 'true';
   const projectIdAttr = escapeHtml(String(project.id));
   const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
@@ -523,18 +533,46 @@ export function getProjectExpenses(project) {
 export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = getProjectExpenses(project);
-  const subtotalRaw = equipmentEstimate + expensesTotal;
-  const subtotal = Number(subtotalRaw.toFixed(2));
+  const baseSubtotal = equipmentEstimate + expensesTotal;
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
 
-  let taxAmount = applyTax ? Number(project?.taxAmount) : 0;
-  if (applyTax) {
-    if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-      taxAmount = Number((subtotal * PROJECT_TAX_RATE).toFixed(2));
-    }
-  } else {
+  const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  let discountAmount = discountType === 'amount'
+    ? discountValue
+    : baseSubtotal * (discountValue / 100);
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > baseSubtotal) {
+    discountAmount = baseSubtotal;
+  }
+
+  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+
+  const companyShareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true';
+  const rawSharePercent = Number.parseFloat(
+    project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+  ) || 0;
+  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
+  const companyShareAmount = sharePercent > 0
+    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
+    : 0;
+
+  const subtotal = subtotalAfterDiscount + companyShareAmount;
+
+  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
     taxAmount = 0;
   }
+  taxAmount = Number(taxAmount.toFixed(2));
 
   let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
   if (applyTax) {
@@ -548,6 +586,10 @@ export function resolveProjectTotals(project) {
   return {
     equipmentEstimate,
     expensesTotal,
+    baseSubtotal,
+    discountAmount,
+    subtotalAfterDiscount,
+    companyShareAmount,
     subtotal,
     applyTax,
     taxAmount,

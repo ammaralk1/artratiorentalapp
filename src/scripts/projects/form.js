@@ -8,6 +8,7 @@ import {
   updateProjectApi
 } from '../projectsService.js';
 import { getReservationsState, refreshReservationsFromApi, updateReservationApi } from '../reservationsService.js';
+import { DEFAULT_COMPANY_SHARE_PERCENT, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
 import {
   generateProjectCode,
   normalizeNumbers,
@@ -43,6 +44,138 @@ let isProjectSubmitInProgress = false;
 const PROJECT_FORM_DRAFT_STORAGE_KEY = 'projects:create:draft';
 const DEFAULT_LINKED_RESERVATION_RETURN_URL = 'projects.html#projects-section';
 
+let isProjectShareTaxSyncing = false;
+
+function resolveShareElement(target) {
+  if (!target) return null;
+  if (target instanceof HTMLElement) return target;
+  if (typeof target === 'string') {
+    return document.getElementById(target);
+  }
+  return null;
+}
+
+export function getProjectCompanySharePercent(target = dom.companyShare) {
+  const element = resolveShareElement(target);
+  if (!element || element.checked !== true) {
+    return null;
+  }
+  const rawValue = element.dataset.companyShare ?? element.value ?? DEFAULT_COMPANY_SHARE_PERCENT;
+  const normalized = normalizeNumbers(String(rawValue).replace('%', '').trim());
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_COMPANY_SHARE_PERCENT;
+  }
+  return parsed;
+}
+
+export function ensureProjectCompanyShareEnabled(target = dom.companyShare, fallback = DEFAULT_COMPANY_SHARE_PERCENT) {
+  const element = resolveShareElement(target);
+  if (!element) return;
+  const rawValue = element.dataset.companyShare ?? element.value ?? fallback;
+  const normalized = normalizeNumbers(String(rawValue).replace('%', '').trim());
+  let parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    parsed = fallback;
+  }
+  element.dataset.companyShare = String(parsed);
+  element.checked = true;
+}
+
+function syncProjectTaxAndShare(source) {
+  const taxCheckbox = dom.taxCheckbox;
+  const shareCheckbox = dom.companyShare;
+
+  if (!taxCheckbox || !shareCheckbox) return;
+  if (isProjectShareTaxSyncing) return;
+
+  isProjectShareTaxSyncing = true;
+
+  const showShareWarning = () => {
+    showToast(t('projects.toast.companyShareRequiresTax', '⚠️ لا يمكن تفعيل نسبة الشركة بدون تفعيل الضريبة'));
+  };
+
+  if (source === 'share') {
+    if (shareCheckbox.checked) {
+      if (taxCheckbox.disabled) {
+        shareCheckbox.checked = false;
+        showShareWarning();
+        isProjectShareTaxSyncing = false;
+        return;
+      }
+      if (!taxCheckbox.checked) {
+        taxCheckbox.checked = true;
+      }
+      ensureProjectCompanyShareEnabled(shareCheckbox);
+    } else {
+      if (taxCheckbox.checked && !taxCheckbox.disabled) {
+        taxCheckbox.checked = false;
+      }
+    }
+  } else if (source === 'tax') {
+    if (taxCheckbox.checked) {
+      ensureProjectCompanyShareEnabled(shareCheckbox);
+    } else if (shareCheckbox.checked) {
+      shareCheckbox.checked = false;
+    }
+  }
+
+  isProjectShareTaxSyncing = false;
+}
+
+export function calculateProjectFinancials({
+  equipmentEstimate = 0,
+  expensesTotal = 0,
+  discountValue = 0,
+  discountType = 'percent',
+  applyTax = false,
+  companyShareEnabled = false,
+  companySharePercent = null,
+} = {}) {
+  const baseSubtotal = Number(equipmentEstimate) + Number(expensesTotal);
+  const normalizedDiscountValue = Number.isFinite(Number(discountValue)) ? Number(discountValue) : 0;
+  let discountAmount = 0;
+  if (discountType === 'amount') {
+    discountAmount = normalizedDiscountValue;
+  } else {
+    discountAmount = baseSubtotal * (normalizedDiscountValue / 100);
+  }
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > baseSubtotal) {
+    discountAmount = baseSubtotal;
+  }
+
+  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+
+  const sharePercent = companyShareEnabled && applyTax && Number.isFinite(Number(companySharePercent)) && Number(companySharePercent) > 0
+    ? Number(companySharePercent)
+    : 0;
+  const companyShareAmount = sharePercent > 0
+    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
+    : 0;
+
+  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
+  let taxAmount = applyTax ? taxableAmount * PROJECT_TAX_RATE : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+  taxAmount = Number(taxAmount.toFixed(2));
+
+  const totalWithTax = Number((taxableAmount + taxAmount).toFixed(2));
+
+  return {
+    baseSubtotal,
+    discountAmount,
+    subtotalAfterDiscount,
+    companyShareAmount,
+    taxableAmount,
+    taxAmount,
+    totalWithTax,
+  };
+}
+
 export function bindFormEvents() {
   if (dom.form && !dom.form.dataset.listenerAttached) {
     dom.form.addEventListener('submit', handleSubmitProject);
@@ -66,6 +199,8 @@ export function bindFormEvents() {
     dom.form.dataset.resetListenerAttached = 'true';
   }
 
+  bindBillingEvents();
+
   if (dom.search && !dom.search.dataset.listenerAttached) {
     dom.search.addEventListener('input', () => {
       state.filters.search = normalizeNumbers(dom.search.value || '').trim().toLowerCase();
@@ -86,9 +221,21 @@ export function resetProjectFormState() {
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = '';
   if (dom.taxCheckbox) dom.taxCheckbox.checked = false;
+  if (dom.discountType) dom.discountType.value = 'percent';
+  if (dom.discountValue) dom.discountValue.value = '';
+  if (dom.companyShare) {
+    dom.companyShare.checked = false;
+    dom.companyShare.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
+  }
   if (dom.paymentStatus) dom.paymentStatus.value = 'unpaid';
+  if (dom.paymentStatus?.dataset) {
+    delete dom.paymentStatus.dataset.userSelected;
+  }
+  if (dom.paymentProgressType) dom.paymentProgressType.value = 'percent';
+  if (dom.paymentProgressValue) dom.paymentProgressValue.value = '';
   refreshProjectSubmitButton();
   renderLinkedReservationDraftSummary();
+  syncProjectTaxAndShare('tax');
 }
 
 export function bindSelectionEvents() {
@@ -128,6 +275,49 @@ export function bindSelectionRemovalEvents() {
       updateSummary();
     }
   });
+}
+
+function bindBillingEvents() {
+  if (dom.discountValue && dom.discountValue.dataset.listenerAttached !== 'true') {
+    dom.discountValue.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    dom.discountValue.dataset.listenerAttached = 'true';
+  }
+
+  if (dom.companyShare && dom.companyShare.dataset.listenerAttached !== 'true') {
+    dom.companyShare.addEventListener('change', () => {
+      syncProjectTaxAndShare('share');
+    });
+    dom.companyShare.dataset.listenerAttached = 'true';
+  }
+
+  if (dom.taxCheckbox && dom.taxCheckbox.dataset.projectListenerAttached !== 'true') {
+    dom.taxCheckbox.addEventListener('change', () => {
+      syncProjectTaxAndShare('tax');
+    });
+    dom.taxCheckbox.dataset.projectListenerAttached = 'true';
+  }
+
+  if (dom.paymentStatus && dom.paymentStatus.dataset.billingListenerAttached !== 'true') {
+    dom.paymentStatus.addEventListener('change', () => {
+      dom.paymentStatus.dataset.userSelected = 'true';
+    });
+    dom.paymentStatus.dataset.billingListenerAttached = 'true';
+  }
+
+  if (dom.paymentProgressValue && dom.paymentProgressValue.dataset.listenerAttached !== 'true') {
+    dom.paymentProgressValue.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    dom.paymentProgressValue.dataset.listenerAttached = 'true';
+  }
+
+  syncProjectTaxAndShare(dom.companyShare?.checked ? 'share' : 'tax');
 }
 
 export function bindExpenseEvents() {
@@ -467,11 +657,62 @@ async function handleSubmitProject(event) {
   const expensesTotal = calculateExpensesTotal();
   const equipmentEstimate = calculateEquipmentEstimate();
   const applyTax = dom.taxCheckbox?.checked === true;
-  const selectedPaymentStatus = dom.paymentStatus?.value || 'unpaid';
-  const paymentStatus = selectedPaymentStatus === 'paid' ? 'paid' : 'unpaid';
-  const subtotal = equipmentEstimate + expensesTotal;
-  const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const totalWithTax = Number((subtotal + taxAmount).toFixed(2));
+  const discountType = dom.discountType?.value === 'amount' ? 'amount' : 'percent';
+  const discountRaw = normalizeNumbers(dom.discountValue?.value || '0');
+  let discountValue = Number.parseFloat(discountRaw);
+  if (!Number.isFinite(discountValue) || discountValue < 0) {
+    discountValue = 0;
+  }
+
+  const shareCheckbox = dom.companyShare;
+  const companyShareEnabled = shareCheckbox?.checked === true;
+  let companySharePercent = companyShareEnabled
+    ? Number.parseFloat(normalizeNumbers(String(shareCheckbox.dataset.companyShare ?? shareCheckbox.value ?? DEFAULT_COMPANY_SHARE_PERCENT)))
+    : null;
+  if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
+    companySharePercent = companyShareEnabled ? DEFAULT_COMPANY_SHARE_PERCENT : null;
+  }
+
+  const finance = calculateProjectFinancials({
+    equipmentEstimate,
+    expensesTotal,
+    discountValue,
+    discountType,
+    applyTax,
+    companyShareEnabled,
+    companySharePercent,
+  });
+
+  const paymentProgressType = dom.paymentProgressType?.value === 'amount' ? 'amount' : 'percent';
+  const progressRaw = normalizeNumbers(dom.paymentProgressValue?.value || '');
+  const progressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount: finance.totalWithTax,
+    progressType: paymentProgressType,
+    progressValue,
+    history: [],
+  });
+
+  const manualStatusSelected = dom.paymentStatus?.dataset?.userSelected === 'true';
+  const selectedPaymentStatus = (dom.paymentStatus?.value || 'unpaid').toLowerCase();
+  const normalizedSelectedStatus = ['paid', 'partial'].includes(selectedPaymentStatus) ? selectedPaymentStatus : 'unpaid';
+
+  const inferredPaymentStatus = determinePaymentStatus({
+    manualStatus: manualStatusSelected ? normalizedSelectedStatus : null,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount: finance.totalWithTax,
+  });
+
+  const paymentStatus = manualStatusSelected ? normalizedSelectedStatus : inferredPaymentStatus;
+
+  if (!manualStatusSelected && dom.paymentStatus) {
+    dom.paymentStatus.value = paymentStatus;
+  }
+  if (dom.paymentStatus?.dataset) {
+    delete dom.paymentStatus.dataset.userSelected;
+  }
 
   const { items: equipmentForApi, missing } = resolveSelectedEquipmentForApi();
   if (missing.length) {
@@ -509,11 +750,20 @@ async function handleSubmitProject(event) {
       label: expense.label,
       amount: expense.amount,
     })),
-    taxAmount,
-    totalWithTax,
+    discount: discountValue,
+    discountType,
+    companyShareEnabled: companyShareEnabled && applyTax,
+    companySharePercent: companyShareEnabled && applyTax ? companySharePercent : null,
+    companyShareAmount: finance.companyShareAmount,
+    taxAmount: finance.taxAmount,
+    totalWithTax: finance.totalWithTax,
     confirmed: existingProject?.confirmed ?? false,
     technicians: state.selectedTechnicians,
     equipment: equipmentForApi,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercentage: paymentProgress.paidPercent,
+    paymentProgressType: paymentProgress.paymentProgressType,
+    paymentProgressValue: paymentProgress.paymentProgressValue,
   });
 
   isProjectSubmitInProgress = true;
@@ -614,6 +864,12 @@ function captureProjectFormDraft() {
     clientCompany: dom.clientCompany?.value || '',
     paymentStatus: dom.paymentStatus?.value || 'unpaid',
     taxChecked: dom.taxCheckbox?.checked === true,
+    discountType: dom.discountType?.value || 'percent',
+    discountValue: dom.discountValue?.value || '',
+    companyShareEnabled: dom.companyShare?.checked === true,
+    companySharePercent: dom.companyShare?.dataset.companyShare || dom.companyShare?.value || String(DEFAULT_COMPANY_SHARE_PERCENT),
+    paymentProgressType: dom.paymentProgressType?.value || 'percent',
+    paymentProgressValue: dom.paymentProgressValue?.value || '',
     startDate: dom.startDate?.value || '',
     startTime: dom.startTime?.value || '',
     endDate: dom.endDate?.value || '',
@@ -647,6 +903,22 @@ export function restoreProjectFormDraft() {
   if (dom.clientCompany) dom.clientCompany.value = draft.clientCompany || '';
   if (dom.paymentStatus && draft.paymentStatus) dom.paymentStatus.value = draft.paymentStatus;
   if (dom.taxCheckbox) dom.taxCheckbox.checked = draft.taxChecked === true;
+  if (dom.discountType && draft.discountType) dom.discountType.value = draft.discountType;
+  if (dom.discountValue) dom.discountValue.value = draft.discountValue || '';
+  if (dom.companyShare) {
+    if (draft.companySharePercent) {
+      dom.companyShare.dataset.companyShare = String(draft.companySharePercent);
+    } else {
+      dom.companyShare.dataset.companyShare = String(DEFAULT_COMPANY_SHARE_PERCENT);
+    }
+    dom.companyShare.checked = draft.companyShareEnabled === true;
+  }
+  if (dom.paymentProgressType && draft.paymentProgressType) {
+    dom.paymentProgressType.value = draft.paymentProgressType;
+  }
+  if (dom.paymentProgressValue) {
+    dom.paymentProgressValue.value = draft.paymentProgressValue || '';
+  }
   if (dom.startDate) dom.startDate.value = draft.startDate || '';
   if (dom.startTime) dom.startTime.value = draft.startTime || '';
   if (dom.endDate) dom.endDate.value = draft.endDate || '';
@@ -659,6 +931,7 @@ export function restoreProjectFormDraft() {
     ? draft.equipment.map((item) => ({ ...item }))
     : [];
 
+  syncProjectTaxAndShare('tax');
   renderLinkedReservationDraftSummary();
   return true;
 }

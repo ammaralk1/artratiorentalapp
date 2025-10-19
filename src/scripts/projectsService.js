@@ -122,6 +122,15 @@ export function buildProjectPayload({
   expenses = [],
   taxAmount = 0,
   totalWithTax = 0,
+  discount = 0,
+  discountType = 'percent',
+  companyShareEnabled = false,
+  companySharePercent = null,
+  companyShareAmount = 0,
+  paidAmount = null,
+  paidPercentage = null,
+  paymentProgressType = null,
+  paymentProgressValue = null,
   confirmed = false,
   technicians = [],
   equipment = [],
@@ -182,6 +191,30 @@ export function buildProjectPayload({
     expenses: normalizedExpenses,
   };
 
+  const normalizedDiscount = Math.max(0, Number.parseFloat(discount) || 0);
+  payload.discount = normalizedDiscount;
+  payload.discount_type = discountType === 'amount' ? 'amount' : 'percent';
+
+  const sharePercentValue = Number.parseFloat(companySharePercent);
+  const shareEnabled = Boolean(companyShareEnabled) && Number.isFinite(sharePercentValue) && sharePercentValue > 0;
+  payload.company_share_enabled = shareEnabled;
+  payload.company_share_percent = shareEnabled ? sharePercentValue : 0;
+  payload.company_share_amount = shareEnabled ? Math.max(0, Number.parseFloat(companyShareAmount) || 0) : 0;
+
+  if (Number.isFinite(Number(paidAmount))) {
+    payload.paid_amount = Math.max(0, Number.parseFloat(paidAmount) || 0);
+  }
+  if (Number.isFinite(Number(paidPercentage))) {
+    payload.paid_percentage = Math.max(0, Number.parseFloat(paidPercentage) || 0);
+  }
+
+  if (paymentProgressType === 'amount' || paymentProgressType === 'percent') {
+    payload.payment_progress_type = paymentProgressType;
+  }
+  if (paymentProgressValue != null && paymentProgressValue !== '') {
+    payload.payment_progress_value = Number.parseFloat(paymentProgressValue) || 0;
+  }
+
   if (projectCode) {
     payload.project_code = String(projectCode).trim();
   }
@@ -238,6 +271,14 @@ function toInternalProject(raw = {}) {
     amount: Number.parseFloat(expense?.amount ?? 0) || 0,
   }));
 
+  const rawSharePercent = Number.parseFloat(raw.company_share_percent ?? raw.companySharePercent ?? 0) || 0;
+  const shareEnabledFlag = raw.company_share_enabled ?? raw.companyShareEnabled;
+  const companyShareEnabled = shareEnabledFlag != null
+    ? shareEnabledFlag === true
+      || shareEnabledFlag === 1
+      || String(shareEnabledFlag).toLowerCase() === 'true'
+    : rawSharePercent > 0;
+
   return {
     id: idValue != null ? String(idValue) : '',
     projectId: idValue != null ? Number(idValue) : null,
@@ -255,6 +296,15 @@ function toInternalProject(raw = {}) {
     expensesTotal: Number.parseFloat(raw.expenses_total ?? raw.expensesTotal ?? 0) || 0,
     taxAmount: Number.parseFloat(raw.tax_amount ?? raw.taxAmount ?? 0) || 0,
     totalWithTax: Number.parseFloat(raw.total_with_tax ?? raw.totalWithTax ?? 0) || 0,
+    discount: Number.parseFloat(raw.discount ?? raw.discount_value ?? 0) || 0,
+    discountType: raw.discount_type ?? raw.discountType ?? 'percent',
+    companyShareEnabled,
+    companySharePercent: companyShareEnabled ? rawSharePercent : 0,
+    companyShareAmount: Number.parseFloat(raw.company_share_amount ?? raw.companyShareAmount ?? 0) || 0,
+    paidAmount: Number.parseFloat(raw.paid_amount ?? raw.paidAmount ?? 0) || 0,
+    paidPercent: Number.parseFloat(raw.paid_percentage ?? raw.paidPercent ?? 0) || 0,
+    paymentProgressType: raw.payment_progress_type ?? raw.paymentProgressType ?? null,
+    paymentProgressValue: raw.payment_progress_value ?? raw.paymentProgressValue ?? null,
     confirmed: Boolean(raw.confirmed ?? false),
     createdAt: raw.created_at ?? raw.createdAt ?? null,
     updatedAt: raw.updated_at ?? raw.updatedAt ?? null,

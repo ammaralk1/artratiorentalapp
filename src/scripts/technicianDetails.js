@@ -18,6 +18,16 @@ import {
 } from "./projectFocusTemplates.js";
 import { calculateProjectExpenses } from "./projectsCommon.js";
 import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
+import {
+  calculateProjectFinancials,
+  ensureProjectCompanyShareEnabled,
+  getProjectCompanySharePercent
+} from "./projects/form.js";
+import {
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus
+} from "./reservationsSummary.js";
 import { resolveReservationProjectState } from "./reservationsShared.js";
 
 let lastTechnicianFilters = {};
@@ -739,13 +749,17 @@ function openTechnicianProjectEdit(project) {
 }
 
 function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany = '', expenses = [] } = {}) {
+  const modalBody = technicianProjectsContext.modal?.body;
+  if (!project || !modalBody) return;
+
+  const form = modalBody.querySelector('#project-details-edit-form');
+  if (!form) return;
+
   const editState = {
     clientName,
     clientCompany,
     expenses: Array.isArray(expenses) ? [...expenses] : []
   };
-  const form = technicianProjectsContext.modal?.body?.querySelector('#project-details-edit-form');
-  if (!form) return;
 
   const cancelBtn = form.querySelector('[data-action="cancel-edit"]');
   if (cancelBtn) {
@@ -763,15 +777,49 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
   const startTimeInput = form.querySelector('[name="project-start-time"]');
   const endDateInput = form.querySelector('[name="project-end-date"]');
   const endTimeInput = form.querySelector('[name="project-end-time"]');
+  const paymentStatusSelect = form.querySelector('#project-edit-payment-status');
+  const taxCheckbox = form.querySelector('#project-edit-tax');
+  const shareCheckbox = form.querySelector('#project-edit-company-share');
+  const discountTypeSelect = form.querySelector('#project-edit-discount-type');
+  const discountInput = form.querySelector('#project-edit-discount');
+  const paymentProgressTypeSelect = form.querySelector('#project-edit-payment-progress-type');
+  const paymentProgressValueInput = form.querySelector('#project-edit-payment-progress-value');
 
-  function renderExpenses() {
+  let isSyncingShareTax = false;
+
+  const syncShareAndTax = (source) => {
+    if (!taxCheckbox || !shareCheckbox) return;
+    if (isSyncingShareTax) return;
+    isSyncingShareTax = true;
+
+    if (source === 'share') {
+      if (shareCheckbox.checked) {
+        if (!taxCheckbox.checked) {
+          taxCheckbox.checked = true;
+        }
+        ensureProjectCompanyShareEnabled(shareCheckbox, DEFAULT_COMPANY_SHARE_PERCENT);
+      } else if (taxCheckbox.checked) {
+        taxCheckbox.checked = false;
+      }
+    } else if (source === 'tax') {
+      if (taxCheckbox.checked) {
+        ensureProjectCompanyShareEnabled(shareCheckbox, DEFAULT_COMPANY_SHARE_PERCENT);
+      } else if (shareCheckbox.checked) {
+        shareCheckbox.checked = false;
+      }
+    }
+
+    isSyncingShareTax = false;
+  };
+
+  const renderExpenses = () => {
     if (!expensesContainer) return;
     expensesContainer.innerHTML = buildProjectEditExpensesMarkup(editState.expenses);
-  }
+  };
 
   renderExpenses();
 
-  if (addExpenseBtn) {
+  if (addExpenseBtn && !addExpenseBtn.dataset.listenerAttached) {
     addExpenseBtn.addEventListener('click', (event) => {
       event.preventDefault();
       const label = expenseLabelInput?.value.trim() || '';
@@ -800,9 +848,10 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
       if (expenseAmountInput) expenseAmountInput.value = '';
       renderExpenses();
     });
+    addExpenseBtn.dataset.listenerAttached = 'true';
   }
 
-  if (expensesContainer) {
+  if (expensesContainer && !expensesContainer.dataset.listenerAttached) {
     expensesContainer.addEventListener('click', (event) => {
       const removeBtn = event.target.closest('[data-action="remove-expense"]');
       if (!removeBtn) return;
@@ -810,7 +859,49 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
       editState.expenses = editState.expenses.filter((expense) => String(expense.id) !== String(id));
       renderExpenses();
     });
+    expensesContainer.dataset.listenerAttached = 'true';
   }
+
+  if (discountInput && !discountInput.dataset.listenerAttached) {
+    discountInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    discountInput.dataset.listenerAttached = 'true';
+  }
+
+  if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
+    paymentProgressValueInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    paymentProgressValueInput.dataset.listenerAttached = 'true';
+  }
+
+  if (paymentStatusSelect && !paymentStatusSelect.dataset.listenerAttached) {
+    paymentStatusSelect.addEventListener('change', () => {
+      paymentStatusSelect.dataset.userSelected = 'true';
+    });
+    paymentStatusSelect.dataset.listenerAttached = 'true';
+  }
+
+  if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
+    shareCheckbox.addEventListener('change', () => syncShareAndTax('share'));
+    shareCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
+    taxCheckbox.addEventListener('change', () => syncShareAndTax('tax'));
+    taxCheckbox.dataset.listenerAttached = 'true';
+  }
+
+  if (shareCheckbox?.checked) {
+    ensureProjectCompanyShareEnabled(shareCheckbox, DEFAULT_COMPANY_SHARE_PERCENT);
+  }
+
+  syncShareAndTax(shareCheckbox?.checked ? 'share' : 'tax');
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -819,15 +910,18 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
     const titleInput = form.querySelector('[name="project-title"]');
     const typeSelect = form.querySelector('[name="project-type"]');
     const descriptionInput = form.querySelector('[name="project-description"]');
-    const paymentStatusSelect = form.querySelector('[name="project-payment-status"]');
-    const taxCheckbox = form.querySelector('[name="project-apply-tax"]');
 
     const title = titleInput?.value.trim() || '';
     const projectType = typeSelect?.value || '';
     const startDateValue = startDateInput?.value.trim() || '';
     const startTimeValue = startTimeInput?.value.trim() || '';
     const descriptionValue = descriptionInput?.value.trim() || '';
-    const paymentStatusValue = paymentStatusSelect?.value === 'paid' ? 'paid' : 'unpaid';
+
+    const selectedPaymentStatusRaw = paymentStatusSelect?.value?.toLowerCase() || 'unpaid';
+    const normalizedPaymentStatus = ['paid', 'partial'].includes(selectedPaymentStatusRaw)
+      ? selectedPaymentStatusRaw
+      : 'unpaid';
+
     const applyTax = taxCheckbox?.checked === true;
 
     if (!title || !projectType || !startDateValue) {
@@ -859,10 +953,56 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
     }
 
     const equipmentEstimate = Number(project?.equipmentEstimate ?? project?.equipment_estimate ?? 0) || 0;
-    const expensesTotal = calculateProjectExpenses({ ...project, expenses: editState.expenses });
-    const subtotal = Number((equipmentEstimate + expensesTotal).toFixed(2));
-    const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
-    const totalWithTax = applyTax ? Number((subtotal + taxAmount).toFixed(2)) : subtotal;
+    const expensesTotal = editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+
+    const discountType = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const discountRaw = normalizeNumbers(discountInput?.value || '0');
+    let discountValue = Number.parseFloat(discountRaw);
+    if (!Number.isFinite(discountValue) || discountValue < 0) {
+      discountValue = 0;
+    }
+
+    const companyShareEnabled = shareCheckbox?.checked === true;
+    let companySharePercent = companyShareEnabled ? getProjectCompanySharePercent(shareCheckbox) : null;
+    if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
+      companySharePercent = companyShareEnabled && applyTax ? DEFAULT_COMPANY_SHARE_PERCENT : null;
+    }
+
+    const finance = calculateProjectFinancials({
+      equipmentEstimate,
+      expensesTotal,
+      discountValue,
+      discountType,
+      applyTax,
+      companyShareEnabled,
+      companySharePercent,
+    });
+
+    const paymentProgressType = paymentProgressTypeSelect?.value === 'amount' ? 'amount' : 'percent';
+    const progressRaw = normalizeNumbers(paymentProgressValueInput?.value || '');
+    const progressValue = progressRaw ? Number.parseFloat(progressRaw) : null;
+    const paymentProgress = calculatePaymentProgress({
+      totalAmount: finance.totalWithTax,
+      progressType: paymentProgressType,
+      progressValue,
+      history: [],
+    });
+
+    const manualStatusSelected = paymentStatusSelect?.dataset?.userSelected === 'true';
+    const effectivePaymentStatus = determinePaymentStatus({
+      manualStatus: manualStatusSelected ? normalizedPaymentStatus : null,
+      paidAmount: paymentProgress.paidAmount,
+      paidPercent: paymentProgress.paidPercent,
+      totalAmount: finance.totalWithTax,
+    });
+    const paymentStatusValue = manualStatusSelected ? normalizedPaymentStatus : effectivePaymentStatus;
+
+    if (!manualStatusSelected && paymentStatusSelect) {
+      paymentStatusSelect.value = paymentStatusValue;
+    }
+    if (paymentStatusSelect?.dataset) {
+      delete paymentStatusSelect.dataset.userSelected;
+    }
 
     const payload = buildProjectPayload({
       projectCode: project.projectCode,
@@ -877,11 +1017,20 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
       paymentStatus: paymentStatusValue,
       equipmentEstimate,
       expenses: editState.expenses,
-      taxAmount,
-      totalWithTax,
+      discount: discountValue,
+      discountType,
+      companyShareEnabled: companyShareEnabled && applyTax,
+      companySharePercent: companyShareEnabled && applyTax ? companySharePercent : null,
+      companyShareAmount: finance.companyShareAmount,
+      taxAmount: finance.taxAmount,
+      totalWithTax: finance.totalWithTax,
       confirmed: project.confirmed,
       technicians: Array.isArray(project?.technicians) ? project.technicians : [],
       equipment: Array.isArray(project?.equipment) ? project.equipment : [],
+      paidAmount: paymentProgress.paidAmount,
+      paidPercentage: paymentProgress.paidPercent,
+      paymentProgressType: paymentProgress.paymentProgressType,
+      paymentProgressValue: paymentProgress.paymentProgressValue,
     });
 
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -908,7 +1057,7 @@ function bindTechnicianProjectEditForm(project, { clientName = '', clientCompany
       const message = typeof error?.message === 'string'
         ? error.message
         : t('projects.toast.updateFailed', 'تعذر تحديث المشروع، حاول مرة أخرى');
-      showToast(message);
+      showToast(message, 'error');
     } finally {
       delete form.dataset.submitting;
       if (submitBtn) {

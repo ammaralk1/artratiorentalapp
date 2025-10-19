@@ -7,7 +7,7 @@ import {
   escapeHtml,
   formatCurrencyLocalized
 } from './projectsCommon.js';
-import { calculateReservationTotal } from './reservationsSummary.js';
+import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
 import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { getReservationsState, updateReservationApi } from './reservationsService.js';
 
@@ -576,18 +576,46 @@ export function renderProjectInfoRow(icon, label, value) {
 export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = calculateProjectExpenses(project);
-  const subtotalRaw = equipmentEstimate + expensesTotal;
-  const subtotal = Number(subtotalRaw.toFixed(2));
+  const baseSubtotal = equipmentEstimate + expensesTotal;
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
 
-  let taxAmount = applyTax ? Number(project?.taxAmount) : 0;
-  if (applyTax) {
-    if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-      taxAmount = Number((subtotal * PROJECT_TAX_RATE).toFixed(2));
-    }
-  } else {
+  const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  let discountAmount = discountType === 'amount'
+    ? discountValue
+    : baseSubtotal * (discountValue / 100);
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > baseSubtotal) {
+    discountAmount = baseSubtotal;
+  }
+
+  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+
+  const companyShareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true';
+  const rawSharePercent = Number.parseFloat(
+    project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+  ) || 0;
+  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
+  const companyShareAmount = sharePercent > 0
+    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
+    : 0;
+
+  const subtotal = subtotalAfterDiscount + companyShareAmount;
+
+  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
     taxAmount = 0;
   }
+  taxAmount = Number(taxAmount.toFixed(2));
 
   let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
   if (applyTax) {
@@ -601,6 +629,10 @@ export function resolveProjectTotals(project) {
   return {
     equipmentEstimate,
     expensesTotal,
+    baseSubtotal,
+    discountAmount,
+    subtotalAfterDiscount,
+    companyShareAmount,
     subtotal,
     applyTax,
     taxAmount,
@@ -692,9 +724,45 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
   const typeOptions = buildProjectTypeOptions(project?.type);
   const startParts = splitDateTimeParts(project?.start || '');
   const endParts = splitDateTimeParts(project?.end || '');
-  const paymentStatus = project?.paymentStatus === 'paid' ? 'paid' : 'unpaid';
+  const paymentStatusRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
+  const paymentStatus = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
   const descriptionValue = project?.description || '';
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  const discountValue = normalizeNumbers(String(project?.discount ?? project?.discountValue ?? 0));
+  const rawSharePercent = project?.companySharePercent
+    ?? project?.company_share_percent
+    ?? project?.companyShare
+    ?? project?.company_share
+    ?? DEFAULT_COMPANY_SHARE_PERCENT;
+  const sharePercentParsed = Number.parseFloat(normalizeNumbers(String(rawSharePercent)));
+  const companyShareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true'
+    || (applyTax && Number.isFinite(sharePercentParsed) && sharePercentParsed > 0);
+  const companySharePercent = Number.isFinite(sharePercentParsed) && sharePercentParsed > 0
+    ? sharePercentParsed
+    : DEFAULT_COMPANY_SHARE_PERCENT;
+  const paymentProgressType = project?.paymentProgressType === 'amount'
+    ? 'amount'
+    : project?.paymentProgressType === 'percent'
+      ? 'percent'
+      : project?.payment_progress_type === 'amount'
+        ? 'amount'
+        : project?.payment_progress_type === 'percent'
+          ? 'percent'
+          : 'percent';
+  const paymentProgressValue = normalizeNumbers(
+    String(
+      project?.paymentProgressValue
+      ?? project?.payment_progress_value
+      ?? (paymentProgressType === 'amount'
+        ? project?.paidAmount ?? project?.paid_amount
+        : project?.paidPercent ?? project?.paid_percent)
+      ?? ''
+    )
+  );
 
   const projectCodeLabel = t('projects.details.labels.code', 'رقم المشروع');
   const clientLabel = t('projects.form.labels.client', 'العميل');
@@ -788,20 +856,50 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
             </div>
           </div>
         </div>
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mt-4">
-          <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
-            <div>
-              <label class="form-label" for="project-edit-payment-status">${escapeHtml(t('projects.form.labels.paymentStatus', 'حالة الدفع'))}</label>
-              <select class="form-select" id="project-edit-payment-status" name="project-payment-status">
-                <option value="unpaid" ${paymentStatus !== 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentStatus.unpaid', 'غير مدفوع'))}</option>
-                <option value="paid" ${paymentStatus === 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentStatus.paid', 'مدفوع'))}</option>
-              </select>
+        <div class="row g-3 align-items-start mt-3">
+          <div class="col-md-4">
+            <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
+          <div class="input-group">
+            <select id="project-edit-discount-type" name="project-discount-type" class="form-select">
+              <option value="percent" ${discountType === 'percent' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.percent', '٪ نسبة'))}</option>
+              <option value="amount" ${discountType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.amount', '💵 مبلغ'))}</option>
+            </select>
+            <input type="text" id="project-edit-discount" name="project-discount" class="form-control" value="${escapeHtml(discountValue)}" placeholder="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label d-block" for="project-edit-company-share">${escapeHtml(t('projects.form.labels.companyShare', 'نسبة الشركة والضريبة'))}</label>
+          <div class="d-flex flex-column gap-2">
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" role="switch" id="project-edit-company-share" name="project-company-share" data-company-share="${escapeHtml(String(companySharePercent))}" ${companyShareEnabled ? 'checked' : ''}>
+              <label class="form-check-label" for="project-edit-company-share">${escapeHtml(t('projects.form.companyShareToggle', 'إضافة نسبة الشركة (10٪)'))}</label>
             </div>
-            <div class="form-check form-switch m-0 project-edit-tax">
+            <div class="form-check form-switch m-0">
               <input class="form-check-input" type="checkbox" role="switch" id="project-edit-tax" name="project-apply-tax" ${applyTax ? 'checked' : ''}>
               <label class="form-check-label" for="project-edit-tax">${escapeHtml(t('projects.form.taxLabel', 'شامل الضريبة (15٪)'))}</label>
             </div>
           </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="project-edit-payment-status">${escapeHtml(t('projects.form.labels.paymentStatus', 'حالة الدفع'))}</label>
+          <select class="form-select" id="project-edit-payment-status" name="project-payment-status">
+            <option value="unpaid" ${paymentStatus === 'unpaid' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentStatus.unpaid', 'غير مدفوع'))}</option>
+            <option value="partial" ${paymentStatus === 'partial' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentStatus.partial', 'مدفوع جزئياً'))}</option>
+            <option value="paid" ${paymentStatus === 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentStatus.paid', 'مدفوع'))}</option>
+          </select>
+          <label class="form-label mt-2" for="project-edit-payment-progress-value">${escapeHtml(t('projects.form.paymentProgress.label', '💰 الدفعة المستلمة'))}</label>
+          <div class="input-group">
+            <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select">
+              <option value="amount" ${paymentProgressType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.amount', '💵 مبلغ'))}</option>
+              <option value="percent" ${paymentProgressType !== 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.percent', '٪ نسبة'))}</option>
+            </select>
+            <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
+          </div>
+          <small class="text-muted">${escapeHtml(t('projects.form.paymentProgress.hint', 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع'))}</small>
+        </div>
+      </div>
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mt-4">
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary" data-action="cancel-edit">${escapeHtml(t('projects.details.edit.cancel', 'إلغاء'))}</button>
             <button type="submit" class="btn btn-sm btn-primary">${escapeHtml(t('projects.details.edit.save', '💾 حفظ التعديلات'))}</button>
