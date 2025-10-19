@@ -550,7 +550,7 @@ select.form-select option {
     max-width: 200px;
   }
 
-  .project-form .row > [class*="col-"] {
+  :where(.project-form .row > [class*="col-"]) {
     width: auto;
   }
 }
@@ -570,7 +570,7 @@ select.form-select option {
     max-width: 180px;
   }
 
-  .project-form .row > [class*="col-"] {
+  :where(.project-form .row > [class*="col-"]) {
     width: auto;
   }
 }
