@@ -46,6 +46,10 @@ registerTranslations({
     'projects.form.linkedReservation.empty': 'لم يتم إنشاء حجوزات مرتبطة بعد.',
     'projects.form.linkedReservation.pendingItem': 'سيتم ربط هذا الحجز تلقائيًا بعد حفظ المشروع.',
     'projects.form.linkedReservation.buttonDisabled': 'تم إنشاء حجز مرتبط لهذا المشروع. يمكنك متابعة التعديلات من شاشة الحجز.',
+    'projects.form.linkedReservation.meta.equipment': 'عدد المعدات: {count}',
+    'projects.form.linkedReservation.meta.crew': 'عدد الفريق: {count}',
+    'projects.form.linkedReservation.meta.crewNames': 'أسماء الفريق: {names}',
+    'projects.form.linkedReservation.meta.total': 'إجمالي الحجز: {amount}',
 
     'projects.form.selectClient': 'اختر العميل',
     'projects.form.selectTechnician': 'اختر عضو الطاقم',
@@ -355,6 +359,10 @@ registerTranslations({
     'projects.form.linkedReservation.empty': 'No linked reservations yet.',
     'projects.form.linkedReservation.pendingItem': 'This reservation will be linked automatically once the project is saved.',
     'projects.form.linkedReservation.buttonDisabled': 'A linked reservation was created. Manage further changes from the reservation itself.',
+    'projects.form.linkedReservation.meta.equipment': 'Equipment count: {count}',
+    'projects.form.linkedReservation.meta.crew': 'Crew count: {count}',
+    'projects.form.linkedReservation.meta.crewNames': 'Crew names: {names}',
+    'projects.form.linkedReservation.meta.total': 'Reservation total: {amount}',
 
     'projects.form.selectClient': 'Select client',
     'projects.form.selectTechnician': 'Select crew member',

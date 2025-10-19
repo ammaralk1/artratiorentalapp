@@ -1,4 +1,4 @@
-import { t } from '../language.js';
+import { t, getCurrentLanguage } from '../language.js';
 import { loadData } from '../storage.js';
 import {
   buildProjectPayload,
@@ -25,13 +25,13 @@ import { clearProjectDateInputs } from './dom.js';
 import {
   escapeHtml,
   formatCurrency,
-  getEmptyText,
-  formatDateTime
+  getEmptyText
 } from './formatting.js';
 import {
   renderProjects,
   renderFocusCards,
-  updateSummary
+  updateSummary,
+  resolveReservationNetTotal
 } from './view.js';
 import {
   handleProjectReservationSync,
@@ -794,6 +794,54 @@ function buildReservationLookup() {
   return index;
 }
 
+function resolveTechnicianDisplayName(entry) {
+  if (!entry || typeof entry !== 'object') return '';
+  const candidates = [
+    entry.name,
+    entry.full_name,
+    entry.fullName,
+    entry.technician_name,
+    entry.technicianName,
+    entry.label,
+    entry.displayName
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+}
+
+function getCrewNamesFromReservation(reservation) {
+  if (!reservation) return [];
+
+  const names = new Set();
+  const technicianDetails = Array.isArray(reservation.techniciansDetails) ? reservation.techniciansDetails : [];
+  technicianDetails.forEach((entry) => {
+    const name = resolveTechnicianDisplayName(entry);
+    if (name) {
+      names.add(name);
+    }
+  });
+
+  const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+  if (technicianIds.length) {
+    const technicians = Array.isArray(state.technicians) ? state.technicians : [];
+    technicianIds.forEach((id) => {
+      const technician = technicians.find((tech) => String(tech?.id) === String(id));
+      const name = technician?.name || technician?.full_name || '';
+      if (name) {
+        names.add(String(name).trim());
+      }
+    });
+  }
+
+  return Array.from(names);
+}
+
 function renderLinkedReservationDraftSummary() {
   const summaryEl = document.getElementById('project-linked-reservation-summary');
   if (!summaryEl) return;
@@ -831,21 +879,34 @@ function renderLinkedReservationDraftSummary() {
 
     const code = reservation.reservation_code || reservation.reservationId || reservation.id || id;
     const codeText = `#${normalizeNumbers(String(code))}`;
-    const customerName = reservation.customerName || reservation.customer_name || t('projects.fallback.unknownClient', 'عميل غير معروف');
-    const startIso = reservation.start_datetime || reservation.start || '';
-    const endIso = reservation.end_datetime || reservation.end || '';
-    const formattedStart = startIso ? formatDateTime(startIso) : '';
-    const formattedEnd = endIso ? formatDateTime(endIso) : '';
-    const statusKey = reservation.status ? `reservations.status.${reservation.status}` : null;
-    const statusLabel = statusKey ? t(statusKey, reservation.status) : '';
-
+    const items = Array.isArray(reservation.items) ? reservation.items : [];
+    const equipmentCount = items.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0) || items.length || 0;
+    const crewNames = getCrewNamesFromReservation(reservation);
+    const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+    const crewCount = technicianIds.length || crewNames.length || 0;
+    const totalValue = resolveReservationNetTotal(reservation);
     const metaParts = [];
-    if (formattedStart || formattedEnd) {
-      const range = formattedEnd ? `${formattedStart} → ${formattedEnd}` : formattedStart;
-      metaParts.push(range);
+
+    const equipmentLabel = t('projects.form.linkedReservation.meta.equipment', 'عدد المعدات: {count}')
+      .replace('{count}', normalizeNumbers(String(equipmentCount)));
+    metaParts.push(equipmentLabel);
+
+    const crewLabel = t('projects.form.linkedReservation.meta.crew', 'عدد الفريق: {count}')
+      .replace('{count}', normalizeNumbers(String(crewCount)));
+    metaParts.push(crewLabel);
+
+    if (crewNames.length) {
+      const separator = typeof getCurrentLanguage === 'function' && getCurrentLanguage() === 'en' ? ', ' : '، ';
+      const namesLabel = t('projects.form.linkedReservation.meta.crewNames', 'أسماء الفريق: {names}')
+        .replace('{names}', crewNames.join(separator));
+      metaParts.push(namesLabel);
     }
-    if (customerName) metaParts.push(customerName);
-    if (statusLabel) metaParts.push(statusLabel);
+
+    if (Number.isFinite(totalValue)) {
+      const totalLabel = t('projects.form.linkedReservation.meta.total', 'إجمالي الحجز: {amount}')
+        .replace('{amount}', formatCurrency(totalValue));
+      metaParts.push(totalLabel);
+    }
 
     return `
       <li class="project-linked-reservation__summary-item">
