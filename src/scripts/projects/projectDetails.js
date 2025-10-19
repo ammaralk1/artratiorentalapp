@@ -137,11 +137,6 @@ export function openProjectDetails(projectId) {
 
   const summaryDetails = [
     {
-      icon: '💳',
-      label: t('projects.details.summary.paymentStatus', 'حالة الدفع'),
-      value: paymentStatusText
-    },
-    {
       icon: '💼',
       label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'),
       value: formatCurrency(projectTotal)
@@ -185,21 +180,51 @@ export function openProjectDetails(projectId) {
     </div>
   `).join('');
 
-  const infoRows = [];
-  infoRows.push({ icon: '🆔', label: t('projects.details.labels.code', 'رقم المشروع'), value: `#${projectCodeDisplay}` });
-  infoRows.push({ icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName });
-  if (projectCompany) {
-    infoRows.push({ icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: projectCompany });
-  }
-  infoRows.push({ icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: typeLabel });
-  infoRows.push({ icon: '📅', label: t('projects.details.range', 'الفترة الزمنية'), value: formatDateRange(project.start, project.end) });
-
-  const infoRowsHtml = infoRows.map(({ icon, label, value }) => `
-    <div class="project-info-row">
-      <span>${icon} ${escapeHtml(label)}</span>
-      <span>${escapeHtml(value)}</span>
+  const projectCodeOutlineHtml = `
+    <div class="project-details-outline">
+      <h6>${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}</h6>
+      <div class="project-details-outline__value">#${escapeHtml(projectCodeDisplay)}</div>
     </div>
-  `).join('');
+  `;
+
+  const projectInfoItems = [
+    {
+      icon: '👤',
+      label: t('projects.details.client', 'العميل'),
+      value: clientName
+    },
+    projectCompany
+      ? {
+          icon: '🏢',
+          label: t('projects.details.company', 'شركة العميل'),
+          value: projectCompany
+        }
+      : null,
+    {
+      icon: '🏷️',
+      label: t('projects.details.type', 'نوع المشروع'),
+      value: typeLabel
+    },
+    {
+      icon: '📅',
+      label: t('projects.details.range', 'الفترة الزمنية'),
+      value: formatDateRange(project.start, project.end)
+    }
+  ].filter(Boolean);
+
+  const projectInfoOutlineHtml = `
+    <div class="project-details-outline">
+      <h6>${escapeHtml(t('projects.details.overview.title', 'بيانات المشروع'))}</h6>
+      <ul class="project-details-outline__list">
+        ${projectInfoItems.map(({ icon, label, value }) => `
+          <li>
+            <span class="project-details-outline__label">${escapeHtml(icon)} ${escapeHtml(label)}</span>
+            <span class="project-details-outline__value">${escapeHtml(value)}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `;
 
   const chips = [
     `<span class="reservation-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>`,
@@ -219,16 +244,14 @@ export function openProjectDetails(projectId) {
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="open-reservation" data-project-id="${project.id}">
-          ${escapeHtml(t('projects.details.actions.viewReservations', '📋 إدارة الحجوزات'))}
-        </button>
       </header>
       <div class="project-summary">
         <div class="project-summary-left">
-          ${infoRowsHtml}
+          ${projectCodeOutlineHtml}
+          ${projectInfoOutlineHtml}
         </div>
         <div class="project-summary-right">
-          <div class="project-summary-card">
+          <div class="project-summary-card project-details-outline">
             <h6>${escapeHtml(t('projects.details.summary.title', 'ملخص مالي'))}</h6>
             ${summaryDetailsHtml}
           </div>
