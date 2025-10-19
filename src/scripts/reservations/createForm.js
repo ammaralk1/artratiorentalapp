@@ -1305,6 +1305,11 @@ function setupSummaryEvents() {
   const taxCheckbox = document.getElementById('res-tax');
   if (taxCheckbox && !taxCheckbox.dataset.listenerAttached) {
     taxCheckbox.addEventListener('change', () => {
+      if (isLinkedProjectSelected()) {
+        taxCheckbox.checked = false;
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       syncCreateTaxAndShare('tax');
     });
     taxCheckbox.dataset.listenerAttached = 'true';
@@ -1313,6 +1318,11 @@ function setupSummaryEvents() {
   const shareCheckbox = document.getElementById('res-company-share');
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
     shareCheckbox.addEventListener('change', () => {
+      if (isLinkedProjectSelected()) {
+        shareCheckbox.checked = false;
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       syncCreateTaxAndShare('share');
     });
     shareCheckbox.dataset.listenerAttached = 'true';
@@ -1321,6 +1331,12 @@ function setupSummaryEvents() {
   const paymentSelect = document.getElementById('res-payment-status');
   if (paymentSelect && !paymentSelect.dataset.listenerAttached) {
     paymentSelect.addEventListener('change', () => {
+      if (isLinkedProjectSelected()) {
+        paymentSelect.value = 'unpaid';
+        updatePaymentStatusAppearance(paymentSelect, 'unpaid');
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       updatePaymentStatusAppearance(paymentSelect);
       renderDraftReservationSummary();
     });
@@ -1333,6 +1349,11 @@ function setupSummaryEvents() {
       paymentProgressTypeSelect.value = 'percent';
     }
     paymentProgressTypeSelect.addEventListener('change', (event) => {
+      if (isLinkedProjectSelected()) {
+        paymentProgressTypeSelect.value = 'percent';
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       paymentProgressTypeSelect.dataset.userSelected = 'true';
       renderDraftReservationSummary();
     });
@@ -1344,6 +1365,11 @@ function setupSummaryEvents() {
   const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
   if (paymentProgressValueInput && !paymentProgressValueInput.dataset.listenerAttached) {
     paymentProgressValueInput.addEventListener('input', (event) => {
+      if (isLinkedProjectSelected()) {
+        paymentProgressValueInput.value = '';
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       event.target.value = normalizeNumbers(event.target.value);
       renderDraftReservationSummary();
     });
@@ -1518,6 +1544,59 @@ async function handleReservationSubmit() {
   const taxCheckbox = document.getElementById('res-tax');
   const shareCheckbox = document.getElementById('res-company-share');
   const projectLinked = Boolean(projectIdValue);
+  if (projectLinked) {
+    if (taxCheckbox) {
+      taxCheckbox.checked = false;
+      taxCheckbox.disabled = true;
+      taxCheckbox.classList.add('disabled');
+      taxCheckbox.title = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تعديل الضريبة من شاشة الحجز المرتبط. عدّل المشروع بدلًا من ذلك.');
+    }
+    if (shareCheckbox) {
+      shareCheckbox.checked = false;
+      shareCheckbox.disabled = true;
+      shareCheckbox.classList.add('disabled');
+      shareCheckbox.title = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تعديل نسبة الشركة من شاشة الحجز المرتبط. عدّل المشروع بدلًا من ذلك.');
+    }
+    if (paymentSelect) {
+      paymentSelect.value = 'unpaid';
+      paymentSelect.disabled = true;
+      updatePaymentStatusAppearance(paymentSelect, 'unpaid');
+      paymentSelect.title = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تغيير حالة الدفع من شاشة الحجز المرتبط. عدّل المشروع بدلًا من ذلك.');
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.disabled = true;
+      paymentProgressTypeSelect.classList.add('disabled');
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.value = '';
+      paymentProgressValueInput.disabled = true;
+      paymentProgressValueInput.classList.add('disabled');
+    }
+  } else {
+    if (taxCheckbox) {
+      taxCheckbox.disabled = false;
+      taxCheckbox.classList.remove('disabled');
+      taxCheckbox.title = '';
+    }
+    if (shareCheckbox) {
+      shareCheckbox.disabled = false;
+      shareCheckbox.classList.remove('disabled');
+      shareCheckbox.title = '';
+    }
+    if (paymentSelect) {
+      paymentSelect.disabled = false;
+      paymentSelect.title = '';
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.disabled = false;
+      paymentProgressTypeSelect.classList.remove('disabled');
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.disabled = false;
+      paymentProgressValueInput.classList.remove('disabled');
+    }
+  }
+
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
 
   const shareChecked = Boolean(shareCheckbox?.checked);
@@ -1594,23 +1673,23 @@ async function handleReservationSubmit() {
     notes,
     projectId: projectIdValue || null,
     totalAmount: totalCost,
-    discount,
-    discountType,
+    discount: projectLinked ? 0 : discount,
+    discountType: projectLinked ? 'percent' : discountType,
     applyTax,
-    paidStatus: effectivePaidStatus,
+    paidStatus: projectLinked ? 'unpaid' : effectivePaidStatus,
     confirmed: projectConfirmed,
     items: draftItems.map((item) => ({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
     })),
     technicians: technicianIds,
-    companySharePercent: companyShareEnabled ? companySharePercent : null,
-    companyShareEnabled,
-    paidAmount: paymentProgress.paidAmount,
-    paidPercentage: paymentProgress.paidPercent,
-    paymentProgressType: paymentProgress.paymentProgressType,
-    paymentProgressValue: paymentProgress.paymentProgressValue,
-    paymentHistory: initialPaymentHistory,
+    companySharePercent: projectLinked || !companyShareEnabled ? null : companySharePercent,
+    companyShareEnabled: projectLinked ? false : companyShareEnabled,
+    paidAmount: projectLinked ? 0 : paymentProgress.paidAmount,
+    paidPercentage: projectLinked ? 0 : paymentProgress.paidPercent,
+    paymentProgressType: projectLinked ? null : paymentProgress.paymentProgressType,
+    paymentProgressValue: projectLinked ? null : paymentProgress.paymentProgressValue,
+    paymentHistory: projectLinked ? [] : initialPaymentHistory,
   });
 
   try {
@@ -1630,6 +1709,10 @@ async function handleReservationSubmit() {
       ? error.message
       : t('reservations.toast.createFailed', 'تعذر إنشاء الحجز، حاول مرة أخرى');
     showToast(message, 'error');
+    if (projectLinked) {
+      showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ التعديلات من شاشة المشروع.'), 'error');
+      enableProjectSelection({ clearValue: false });
+    }
   }
 }
 
