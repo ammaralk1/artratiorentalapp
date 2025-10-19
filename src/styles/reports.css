@@ -715,6 +715,43 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   min-height: 260px;
 }
 
+.reports-chart-area .apexcharts-title-text,
+.reports-chart-area .apexcharts-legend-text,
+.reports-chart-area .apexcharts-data-labels text,
+.reports-chart-area .apexcharts-text,
+.reports-chart-area .apexcharts-tooltip,
+.reports-chart-area .apexcharts-tooltip-title {
+  font-family: "Tajawal", sans-serif;
+}
+
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-title-text,
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-legend-text,
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-data-labels text,
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-text {
+  fill: rgba(226, 232, 240, 0.92) !important;
+  color: rgba(226, 232, 240, 0.92) !important;
+}
+
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-legend-text {
+  opacity: 0.9;
+}
+
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip {
+  background: rgba(17, 24, 39, 0.92) !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  color: rgba(226, 232, 240, 0.95) !important;
+}
+
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip-title {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-bottom-color: rgba(148, 163, 184, 0.35) !important;
+  color: rgba(226, 232, 240, 0.95) !important;
+}
+
+:where(html.dark-mode, body.dark-mode) .reports-chart-area .apexcharts-tooltip * {
+  color: inherit !important;
+}
+
 .reports-breakdown-list {
   display: flex;
   flex-direction: column;
