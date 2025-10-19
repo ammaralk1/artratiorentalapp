@@ -1342,10 +1342,33 @@ body[dir="rtl"] .project-expense-amount {
   gap: 16px;
 }
 
-.project-details-header__left {
+.project-details-header__info {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: flex-start;
+  text-align: start;
+  min-width: 0;
+}
+
+.project-details-header__code {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+body[dir="rtl"] .project-details-header__info {
+  align-items: flex-start;
+  text-align: start;
+}
+
+body[dir="rtl"] .project-details-header__code {
+  order: -1;
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+  justify-content: flex-end;
 }
 
 .project-details-subtitle {
@@ -1366,11 +1389,7 @@ body[dir="rtl"] .project-expense-amount {
   background: rgba(248, 250, 255, 0.85);
   color: var(--clr-text);
   box-shadow: var(--shadow-xs);
-}
-
-.project-details-code-badge {
   text-align: right;
-  align-self: flex-end;
 }
 
 .project-details-code-badge__label {

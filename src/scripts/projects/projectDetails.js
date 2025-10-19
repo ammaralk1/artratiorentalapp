@@ -276,10 +276,12 @@ export function openProjectDetails(projectId) {
   dom.detailsBody.innerHTML = `
     <section class="project-details-primary">
       <header class="project-details-header">
-        <div class="project-details-header__left">
-          ${projectCodeBadgeHtml}
+        <div class="project-details-header__info">
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
+        </div>
+        <div class="project-details-header__code">
+          ${projectCodeBadgeHtml}
         </div>
       </header>
       <div class="project-summary">
