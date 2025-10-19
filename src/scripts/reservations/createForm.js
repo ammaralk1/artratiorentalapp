@@ -41,6 +41,9 @@ import {
   isApiError,
 } from '../reservationsService.js';
 
+const DEFAULT_PROJECT_FORM_DRAFT_KEY = 'projects:create:draft';
+const DEFAULT_PROJECT_FORM_RETURN_URL = 'projects.html#projects-section';
+
 let afterSubmitCallback = null;
 let cachedProjects = [];
 
@@ -48,6 +51,7 @@ let customerOptionMap = new Map();
 let projectOptionMap = new Map();
 let equipmentDescriptionOptionMap = new Map();
 let isSyncingShareTaxCreate = false;
+let linkedProjectReturnContext = null;
 
 function escapeHtml(value = '') {
   return String(value)
@@ -678,34 +682,67 @@ function applyPendingProjectContext() {
   const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash || ''}`;
   window.history.replaceState({}, document.title, newUrl);
 
-  if (!context || !context.projectId) return;
+  if (!context) return;
+
+  if (context.fromProjectForm) {
+    linkedProjectReturnContext = {
+      draftStorageKey: context.draftStorageKey || DEFAULT_PROJECT_FORM_DRAFT_KEY,
+      returnUrl: context.returnUrl || DEFAULT_PROJECT_FORM_RETURN_URL,
+    };
+  }
 
   const select = document.getElementById('res-project');
-  if (select) {
-    ensureProjectChoices({ selectedValue: String(context.projectId) });
-    updateCreateProjectTaxState();
+
+  if (context.projectId) {
+    if (select) {
+      ensureProjectChoices({ selectedValue: String(context.projectId) });
+      updateCreateProjectTaxState();
+    }
+    const project = findProjectById(context.projectId);
+    if (project) {
+      applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
+    } else {
+      renderDraftReservationSummary();
+    }
+  } else if (select) {
+    ensureProjectChoices({ selectedValue: '' });
   }
-  const project = findProjectById(context.projectId);
-  if (project) {
-    applyProjectContextToForm(project, { forceNotes: !!context.forceNotes });
-  } else {
-    renderDraftReservationSummary();
-  }
+
   if (context.start) {
     setDateTimeInputs('res-start', 'res-start-time', context.start);
   }
   if (context.end) {
     setDateTimeInputs('res-end', 'res-end-time', context.end);
   }
+
+  const customerInput = document.getElementById('res-customer-input');
+  const customerHidden = document.getElementById('res-customer');
+
   if (context.customerId) {
     const customers = getCachedCustomers() || [];
     const projectCustomer = customers.find((c) => String(c.id) === String(context.customerId));
     if (projectCustomer?.id != null) {
       ensureCustomerChoices({ selectedValue: String(projectCustomer.id) });
+      if (customerHidden) customerHidden.value = String(projectCustomer.id);
+      if (customerInput) customerInput.value = projectCustomer.customerName || projectCustomer.name || customerInput.value;
     }
-  } else {
+  } else if (context.customerName && customerInput) {
+    ensureCustomerChoices({ selectedValue: '' });
+    customerInput.value = context.customerName;
+    customerInput.dataset.selectedId = '';
+    if (customerHidden) customerHidden.value = '';
+  }
+
+  const notesInput = document.getElementById('res-notes');
+  if (notesInput && context.description && !notesInput.value) {
+    notesInput.value = context.description;
+  }
+
+  if (!context.projectId && !context.customerId && !context.customerName) {
     ensureCustomerChoices({ selectedValue: '' });
   }
+
+  renderDraftReservationSummary();
 }
 
 function getCreateReservationDateRange() {
@@ -1575,12 +1612,45 @@ async function handleReservationSubmit() {
     if (typeof afterSubmitCallback === 'function') {
       afterSubmitCallback({ type: 'created', reservation: createdReservation });
     }
+    handleLinkedProjectReturn(createdReservation);
   } catch (error) {
     console.error('❌ [reservations/createForm] Failed to create reservation', error);
     const message = isApiError(error)
       ? error.message
       : t('reservations.toast.createFailed', 'تعذر إنشاء الحجز، حاول مرة أخرى');
     showToast(message, 'error');
+  }
+}
+
+function handleLinkedProjectReturn(createdReservation) {
+  if (!linkedProjectReturnContext) return;
+
+  const {
+    draftStorageKey = DEFAULT_PROJECT_FORM_DRAFT_KEY,
+    returnUrl = DEFAULT_PROJECT_FORM_RETURN_URL
+  } = linkedProjectReturnContext;
+
+  const reservationId = createdReservation?.id ?? createdReservation?.reservationId ?? createdReservation?.reservation_code;
+
+  if (reservationId != null && typeof window !== 'undefined' && window.sessionStorage) {
+    try {
+      const raw = window.sessionStorage.getItem(draftStorageKey);
+      const draft = raw ? JSON.parse(raw) || {} : {};
+      const ids = Array.isArray(draft.linkedReservationIds) ? draft.linkedReservationIds : [];
+      const idValue = String(reservationId);
+      if (!ids.includes(idValue)) {
+        ids.push(idValue);
+      }
+      draft.linkedReservationIds = ids;
+      window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draft));
+    } catch (error) {
+      console.warn('⚠️ [reservations] Unable to persist linked reservation draft state', error);
+    }
+  }
+
+  linkedProjectReturnContext = null;
+  if (returnUrl) {
+    window.location.href = returnUrl;
   }
 }
 

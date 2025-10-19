@@ -36,6 +36,7 @@ export function cacheDom() {
   dom.addExpenseBtn = document.getElementById('add-expense-btn');
   dom.expenseList = document.getElementById('project-expense-list');
   dom.taxCheckbox = document.getElementById('project-tax');
+  dom.linkedReservationBtn = document.getElementById('project-linked-reservation-btn');
   dom.submitBtn = dom.form?.querySelector('[type="submit"]');
   dom.projectsTableBody = document.getElementById('project-table-body');
   dom.projectsCount = document.getElementById('projects-count');

@@ -7,7 +7,7 @@ import {
   isApiError as isProjectApiError,
   updateProjectApi
 } from '../projectsService.js';
-import { getReservationsState } from '../reservationsService.js';
+import { getReservationsState, refreshReservationsFromApi, updateReservationApi } from '../reservationsService.js';
 import {
   generateProjectCode,
   normalizeNumbers,
@@ -36,8 +36,11 @@ import {
   handleProjectReservationSync,
   removeProject
 } from './actions.js';
+import { updatePreferences } from '../preferencesService.js';
 
 let isProjectSubmitInProgress = false;
+const PROJECT_FORM_DRAFT_STORAGE_KEY = 'projects:create:draft';
+const DEFAULT_LINKED_RESERVATION_RETURN_URL = 'projects.html#projects-section';
 
 export function bindFormEvents() {
   if (dom.form && !dom.form.dataset.listenerAttached) {
@@ -56,6 +59,7 @@ export function bindFormEvents() {
         dom.type.value = '';
       }
       setProjectClientCompany(null);
+      clearProjectFormDraft();
       resetProjectFormState();
     });
     dom.form.dataset.resetListenerAttached = 'true';
@@ -527,6 +531,11 @@ async function handleSubmitProject(event) {
       showToast(t('projects.toast.saved', '✅ تم حفظ المشروع بنجاح'));
     }
 
+    const pendingLinkedReservations = await linkDraftReservationsToProject(projectIdentifier);
+    if (!pendingLinkedReservations) {
+      clearProjectFormDraft();
+    }
+
     state.editingProjectId = null;
     dom.form.reset();
     resetProjectFormState();
@@ -562,4 +571,190 @@ function combineDateTime(dateValue, timeValue) {
   const safeHours = hours.padStart(2, '0');
   const safeMinutes = minutes.padStart(2, '0');
   return `${dateValue}T${safeHours}:${safeMinutes}`;
+}
+
+function loadProjectFormDraft() {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+  const raw = window.sessionStorage.getItem(PROJECT_FORM_DRAFT_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const draft = JSON.parse(raw);
+    return draft && typeof draft === 'object' ? draft : null;
+  } catch (error) {
+    console.warn('⚠️ [projects] Failed to parse project form draft', error);
+    return null;
+  }
+}
+
+function saveProjectFormDraft(draft) {
+  if (typeof window === 'undefined' || !window.sessionStorage) return;
+  try {
+    window.sessionStorage.setItem(PROJECT_FORM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.warn('⚠️ [projects] Unable to persist project form draft', error);
+  }
+}
+
+function clearProjectFormDraft() {
+  if (typeof window === 'undefined' || !window.sessionStorage) return;
+  window.sessionStorage.removeItem(PROJECT_FORM_DRAFT_STORAGE_KEY);
+}
+
+function captureProjectFormDraft() {
+  const existingDraft = loadProjectFormDraft() || {};
+  return {
+    ...existingDraft,
+    type: dom.type?.value || '',
+    title: dom.title?.value || '',
+    client: dom.client?.value || '',
+    customerId: dom.client?.dataset.customerId || '',
+    clientCompany: dom.clientCompany?.value || '',
+    paymentStatus: dom.paymentStatus?.value || 'unpaid',
+    taxChecked: dom.taxCheckbox?.checked === true,
+    startDate: dom.startDate?.value || '',
+    startTime: dom.startTime?.value || '',
+    endDate: dom.endDate?.value || '',
+    endTime: dom.endTime?.value || '',
+    description: dom.description?.value || '',
+    expenses: Array.isArray(state.expenses) ? state.expenses.map((expense) => ({ ...expense })) : [],
+    technicians: Array.isArray(state.selectedTechnicians) ? [...state.selectedTechnicians] : [],
+    equipment: Array.isArray(state.selectedEquipment)
+      ? state.selectedEquipment.map((item) => ({ ...item }))
+      : [],
+    linkedReservationIds: Array.isArray(existingDraft.linkedReservationIds)
+      ? [...existingDraft.linkedReservationIds]
+      : [],
+    savedAt: Date.now()
+  };
+}
+
+export function restoreProjectFormDraft() {
+  const draft = loadProjectFormDraft();
+  if (!draft) return false;
+
+  if (dom.type) dom.type.value = draft.type || '';
+  if (dom.title) dom.title.value = draft.title || '';
+  if (dom.client) {
+    dom.client.value = draft.client || '';
+    dom.client.dataset.customerId = draft.customerId || '';
+  }
+  if (dom.clientCompany) dom.clientCompany.value = draft.clientCompany || '';
+  if (dom.paymentStatus && draft.paymentStatus) dom.paymentStatus.value = draft.paymentStatus;
+  if (dom.taxCheckbox) dom.taxCheckbox.checked = draft.taxChecked === true;
+  if (dom.startDate) dom.startDate.value = draft.startDate || '';
+  if (dom.startTime) dom.startTime.value = draft.startTime || '';
+  if (dom.endDate) dom.endDate.value = draft.endDate || '';
+  if (dom.endTime) dom.endTime.value = draft.endTime || '';
+  if (dom.description) dom.description.value = draft.description || '';
+
+  state.expenses = Array.isArray(draft.expenses) ? draft.expenses.map((expense) => ({ ...expense })) : [];
+  state.selectedTechnicians = Array.isArray(draft.technicians) ? [...draft.technicians] : [];
+  state.selectedEquipment = Array.isArray(draft.equipment)
+    ? draft.equipment.map((item) => ({ ...item }))
+    : [];
+
+  return true;
+}
+
+export function bindLinkedReservationButton() {
+  if (!dom.linkedReservationBtn || dom.linkedReservationBtn.dataset.listenerAttached === 'true') return;
+  dom.linkedReservationBtn.addEventListener('click', handleLinkedReservationButtonClick);
+  dom.linkedReservationBtn.dataset.listenerAttached = 'true';
+}
+
+function handleLinkedReservationButtonClick(event) {
+  event.preventDefault();
+
+  const draft = captureProjectFormDraft();
+
+  const hasClient = (draft.customerId && draft.customerId !== '') || (draft.client && draft.client.trim());
+  if (!hasClient) {
+    showToast(t('projects.form.linkedReservation.missingClient', '⚠️ يرجى اختيار العميل قبل إنشاء الحجز'));
+    return;
+  }
+
+  const hasStart = draft.startDate && draft.startTime;
+  const hasEnd = draft.endDate && draft.endTime;
+  if (!hasStart || !hasEnd) {
+    showToast(t('projects.form.linkedReservation.missingSchedule', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إنشاء الحجز'));
+    return;
+  }
+
+  saveProjectFormDraft(draft);
+
+  const context = buildLinkedReservationContext(draft);
+  let encodedContext = '';
+  try {
+    encodedContext = encodeURIComponent(JSON.stringify(context));
+  } catch (error) {
+    console.warn('⚠️ [projects] Unable to encode reservation context', error);
+  }
+
+  updatePreferences({
+    dashboardTab: 'reservations-tab',
+    dashboardSubTab: 'create-tab'
+  }).catch((error) => {
+    console.warn('⚠️ [projects] Failed to persist dashboard preference before redirect', error);
+  });
+
+  const search = encodedContext ? `?reservationProjectContext=${encodedContext}` : '';
+  window.location.href = `dashboard.html${search}#reservations`;
+}
+
+function buildLinkedReservationContext(draft) {
+  const start = combineDateTime(draft.startDate, draft.startTime) || null;
+  const end = combineDateTime(draft.endDate, draft.endTime) || null;
+  return {
+    fromProjectForm: true,
+    draftStorageKey: PROJECT_FORM_DRAFT_STORAGE_KEY,
+    returnUrl: DEFAULT_LINKED_RESERVATION_RETURN_URL,
+    start,
+    end,
+    customerId: draft.customerId || null,
+    customerName: draft.client || '',
+    clientCompany: draft.clientCompany || '',
+    projectTitle: draft.title || '',
+    projectType: draft.type || '',
+    description: draft.description || ''
+  };
+}
+
+async function linkDraftReservationsToProject(projectId) {
+  if (!projectId) return;
+  const draft = loadProjectFormDraft();
+  const reservationIds = Array.isArray(draft?.linkedReservationIds) ? draft.linkedReservationIds : [];
+  if (!reservationIds.length) return;
+
+  const pending = [];
+  let linkedAny = false;
+
+  for (const rawId of reservationIds) {
+    const reservationId = rawId != null ? String(rawId) : '';
+    if (!reservationId) continue;
+    try {
+      await updateReservationApi(reservationId, { project_id: projectId });
+      linkedAny = true;
+    } catch (error) {
+      console.error('❌ [projects] Failed to link reservation to project', reservationId, error);
+      pending.push(reservationId);
+    }
+  }
+
+  if (linkedAny) {
+    try {
+      await refreshReservationsFromApi();
+      state.reservations = getReservationsState();
+      document.dispatchEvent(new CustomEvent('reservations:changed'));
+    } catch (error) {
+      console.warn('⚠️ [projects] Failed to refresh reservations after linking', error);
+    }
+  }
+
+  const draftData = { linkedReservationIds: pending, savedAt: Date.now() };
+  saveProjectFormDraft(draftData);
+  if (pending.length) {
+    showToast(t('projects.toast.linkReservationFailed', '⚠️ تعذر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا'), 'error');
+  }
+
+  return pending.length;
 }

@@ -38,6 +38,12 @@ registerTranslations({
     'projects.form.placeholders.client': 'اكتب اسم العميل...',
     'projects.form.placeholders.expenseLabel': 'مثال: رسوم موقع التصوير',
 
+    'projects.form.linkedReservation.title': 'إنشاء حجز مرتبط',
+    'projects.form.linkedReservation.description': 'أنشئ حجزًا مرتبطًا بالمشروع الحالي وسيتم تعبئة تفاصيله تلقائيًا.',
+    'projects.form.linkedReservation.button': '➕ إنشاء حجز مرتبط',
+    'projects.form.linkedReservation.missingClient': '⚠️ يرجى اختيار العميل قبل إنشاء الحجز المرتبط',
+    'projects.form.linkedReservation.missingSchedule': '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إنشاء الحجز المرتبط',
+
     'projects.form.selectClient': 'اختر العميل',
     'projects.form.selectTechnician': 'اختر عضو الطاقم',
     'projects.form.selectEquipment': 'اختر المعدة',
@@ -80,6 +86,8 @@ registerTranslations({
     'projects.focus.actions.confirm': '✔️ تأكيد المشروع',
     'projects.focus.confirmed': '✅ مشروع مؤكد',
     'projects.focus.toastNotFound': '⚠️ تعذّر العثور على المشروع في القائمة',
+
+    'projects.toast.linkReservationFailed': '⚠️ تعذّر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا',
 
     'projects.timeline.title': 'الجدول الزمني للمشاريع',
     'projects.timeline.legend': 'يُظهر الشريط مواعيد البداية والنهاية، والألوان تُمثّل حالة المشروع.',
@@ -336,6 +344,12 @@ registerTranslations({
     'projects.form.placeholders.client': 'Type the client name...',
     'projects.form.placeholders.expenseLabel': 'Example: Location fee',
 
+    'projects.form.linkedReservation.title': 'Create Linked Reservation',
+    'projects.form.linkedReservation.description': 'Create a reservation for this project and we\'ll pre-fill the matching details.',
+    'projects.form.linkedReservation.button': '➕ Create Linked Reservation',
+    'projects.form.linkedReservation.missingClient': '⚠️ Please select the client before creating the linked reservation.',
+    'projects.form.linkedReservation.missingSchedule': '⚠️ Please provide both start and end date/time before creating the linked reservation.',
+
     'projects.form.selectClient': 'Select client',
     'projects.form.selectTechnician': 'Select crew member',
     'projects.form.selectEquipment': 'Select equipment',
@@ -378,6 +392,8 @@ registerTranslations({
     'projects.focus.actions.confirm': '✔️ Confirm project',
     'projects.focus.confirmed': '✅ Project confirmed',
     'projects.focus.toastNotFound': '⚠️ Could not find this project in the list',
+
+    'projects.toast.linkReservationFailed': '⚠️ Unable to link some reservations to the project. Please review them manually.',
 
     'projects.timeline.title': 'Projects Timeline',
     'projects.timeline.legend': 'The bar shows project start and end, with colors reflecting status.',

@@ -345,8 +345,8 @@
                 <div class="box project-form-card">
                   <h4 class="mb-3" data-i18n data-i18n-key="projects.form.title">إنشاء مشروع جديد</h4>
                   <form id="project-form" class="project-form">
-                    <div class="row g-3">
-                      <div class="col-md-6">
+                    <div class="row g-3 project-form-primary-row project-row--type-title">
+                      <div class="col-12 col-sm-4 col-lg-2 project-field-narrow project-type-field">
                         <label class="form-label" for="project-type" data-i18n data-i18n-key="projects.form.labels.type">نوع المشروع</label>
                         <select id="project-type" class="form-select select select-bordered w-full" required>
                           <option value="" data-i18n data-i18n-key="projects.form.placeholders.type">اختر نوع المشروع</option>
@@ -356,99 +356,74 @@
                           <option value="social" data-i18n data-i18n-key="projects.form.types.social">تصوير للتواصل الاجتماعي</option>
                         </select>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-8 col-lg-10 project-title-field">
                         <label class="form-label" for="project-title" data-i18n data-i18n-key="projects.form.labels.title">اسم المشروع</label>
                         <input type="text" id="project-title" class="form-control input input-bordered w-full" required placeholder="مثال: تصوير منتج جديد" data-i18n data-i18n-placeholder-key="projects.form.placeholders.title">
                       </div>
                     </div>
-                    
-                    <div class="row g-3 mt-0">
-                      <div class="col-md-6 position-relative">
+
+                    <div class="row g-3 project-form-primary-row project-row--client mt-0">
+                      <div class="col-12 col-sm-6 col-lg-4 col-xl-3 project-client-field">
                         <label class="form-label" for="project-client" data-i18n data-i18n-key="projects.form.labels.client">اسم العميل</label>
-                        <input type="text" id="project-client" class="form-control input input-bordered w-full" placeholder="ابحث عن عميل مسجل أو أضف جديدًا" autocomplete="off" data-i18n data-i18n-placeholder-key="projects.form.placeholders.client">
-                        <div class="project-customer-suggestions list-group" id="project-customer-suggestions" role="listbox"></div>
+                        <div class="form-control-dropdown">
+                          <input type="text" id="project-client" class="form-control input input-bordered w-full" placeholder="ابحث عن عميل مسجل أو أضف جديدًا" autocomplete="off" data-i18n data-i18n-placeholder-key="projects.form.placeholders.client">
+                          <div class="project-customer-suggestions list-group" id="project-customer-suggestions" role="listbox" hidden></div>
+                        </div>
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-6 col-lg-8 col-xl-9 project-company-field">
                         <label class="form-label" for="project-client-company" data-i18n data-i18n-key="projects.form.labels.company">الشركة</label>
                         <input type="text" id="project-client-company" class="form-control input input-bordered w-full" placeholder="مثال: شركة الإنتاج العربية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.company">
                       </div>
                     </div>
-
                     <div class="row g-3 mt-0">
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-date">
                         <label class="form-label" for="project-start-date" data-i18n data-i18n-key="projects.form.labels.startDate">📅 تاريخ البداية</label>
                         <input type="text" id="project-start-date" class="form-control input input-bordered w-full" placeholder="اختر تاريخ البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startDate">
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-date">
                         <label class="form-label" for="project-end-date" data-i18n data-i18n-key="projects.form.labels.endDate">📅 تاريخ النهاية</label>
                         <input type="text" id="project-end-date" class="form-control input input-bordered w-full" placeholder="اختر تاريخ النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endDate">
                       </div>
                     </div>
 
                     <div class="row g-3 mt-0">
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-time">
                         <label class="form-label" for="project-start-time" data-i18n data-i18n-key="projects.form.labels.startTime">⏰ وقت البداية</label>
                         <input type="text" id="project-start-time" class="form-control input input-bordered w-full" placeholder="اختر وقت البداية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.startTime">
                       </div>
-                      <div class="col-md-6">
+                      <div class="col-12 col-sm-6 col-lg-3 col-xl-2 project-field-compact project-field-time">
                         <label class="form-label" for="project-end-time" data-i18n data-i18n-key="projects.form.labels.endTime">⏰ وقت النهاية</label>
                         <input type="text" id="project-end-time" class="form-control input input-bordered w-full" placeholder="اختر وقت النهاية" data-i18n data-i18n-placeholder-key="projects.form.placeholders.endTime">
                       </div>
                     </div>
 
                     <div class="row g-3 mt-0">
-                      <div class="col-12">
+                      <div class="col-12 project-description-field">
                         <label class="form-label" for="project-description" data-i18n data-i18n-key="projects.form.labels.description">تفاصيل المشروع</label>
-                        <textarea id="project-description" class="form-control textarea textarea-bordered w-full" rows="3" placeholder="ملخص عن المشروع والمتطلبات" data-i18n data-i18n-placeholder-key="projects.form.placeholders.description"></textarea>
+                        <textarea id="project-description" class="form-control textarea textarea-bordered w-full project-description" rows="4" placeholder="ملخص عن المشروع والمتطلبات" data-i18n data-i18n-placeholder-key="projects.form.placeholders.description"></textarea>
                       </div>
                     </div>
 
-                    <hr>
-
-                    <div class="row g-3 align-items-end">
-                      <div class="col-md-6">
-                        <label class="form-label" for="project-technician-select" data-i18n data-i18n-key="projects.form.labels.technicians">طاقم العمل</label>
-                        <select id="project-technician-select" class="form-select select select-bordered w-full" data-placeholder="اختر أعضاء الطاقم" data-i18n data-i18n-placeholder-key="projects.form.placeholders.technicians"></select>
+                    <div class="box project-linked-reservation" id="project-linked-reservation">
+                      <div class="project-linked-reservation__content">
+                        <h5 class="mb-1" data-i18n data-i18n-key="projects.form.linkedReservation.title">إنشاء حجز مرتبط</h5>
+                        <p class="mb-0 text-sm text-muted" data-i18n data-i18n-key="projects.form.linkedReservation.description">أنشئ حجزًا مرتبطًا بالمشروع الحالي وسيتم تعبئة تفاصيله تلقائيًا.</p>
                       </div>
-                      <div class="col-md-3">
-                        <button type="button" id="add-technician-btn" class="btn btn-outline-secondary w-100" data-i18n data-i18n-key="projects.form.buttons.addTechnician">➕ إضافة عضو</button>
-                      </div>
-                      <div class="col-12">
-                        <div class="selected-list mb-3" id="project-technician-list" data-empty="لم يتم اختيار أي عضو" data-empty-key="projects.selected.emptyTechnicians"></div>
-                      </div>
+                      <button type="button" id="project-linked-reservation-btn" class="btn btn-outline-primary project-linked-reservation__action" data-i18n data-i18n-key="projects.form.linkedReservation.button">➕ إنشاء حجز مرتبط</button>
                     </div>
 
-                    <div class="row g-3 align-items-end">
-                      <div class="col-md-5">
-                        <label class="form-label" for="project-equipment-select" data-i18n data-i18n-key="projects.form.labels.equipment">المعدات</label>
-                        <select id="project-equipment-select" class="form-select select select-bordered w-full" data-placeholder="اختر المعدات" data-i18n data-i18n-placeholder-key="projects.form.placeholders.equipment"></select>
-                      </div>
-                      <div class="col-md-3">
-                        <label class="form-label" for="project-equipment-qty" data-i18n data-i18n-key="projects.form.labels.equipmentQty">الكمية</label>
-                        <input type="number" min="1" id="project-equipment-qty" class="form-control input input-bordered w-full" value="1">
-                      </div>
-                      <div class="col-md-4">
-                        <button type="button" id="add-equipment-btn" class="btn btn-outline-secondary w-100" data-i18n data-i18n-key="projects.form.buttons.addEquipment">➕ إضافة معدة</button>
-                      </div>
-                      <div class="col-12">
-                        <div class="selected-list mb-3" id="project-equipment-list" data-empty="لم يتم اختيار أي معدة" data-empty-key="projects.selected.emptyEquipment"></div>
-                      </div>
-                    </div>
-
-                    <div class="row g-3 align-items-end">
-                      <div class="col-md-6">
+                    <div class="row g-3 align-items-end project-expense-row">
+                      <div class="col-12 col-lg-5">
                         <label class="form-label" for="project-expense-label" data-i18n data-i18n-key="projects.form.labels.expenseLabel">اسم المصروف</label>
                         <input type="text" id="project-expense-label" class="form-control input input-bordered w-full" placeholder="مثال: رسوم موقع التصوير" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseLabel">
                       </div>
-                      <div class="col-md-3">
+                      <div class="col-12 col-lg-4">
                         <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">المبلغ (SR)</label>
                         <input type="text" id="project-expense-amount" class="form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
                       </div>
-                      <div class="col-md-3">
-                        <button type="button" id="add-expense-btn" class="btn btn-outline-secondary w-100" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة مصروف</button>
-                      </div>
-                      <div class="col-12">
-                        <div class="selected-list mb-3" id="project-expense-list" data-empty="لم يتم تسجيل أي مصروف" data-empty-key="projects.selected.emptyExpenses"></div>
+                      <div class="col-12 col-lg-3 project-expense-action-col">
+                        <button type="button" id="add-expense-btn" class="btn btn-primary project-expense-add-btn" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة مصروف</button>
+                        <div class="selected-list" id="project-expense-list" data-empty="لم يتم تسجيل أي مصروف" data-empty-key="projects.selected.emptyExpenses"></div>
                       </div>
                     </div>
 

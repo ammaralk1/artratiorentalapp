@@ -549,6 +549,23 @@ select.form-select option {
   margin-bottom: 0;
 }
 
+.project-linked-reservation {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.project-linked-reservation__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.project-linked-reservation__action {
+  align-self: stretch;
+}
+
 @media (min-width: 992px) {
   .project-form-primary-row {
     --bs-gutter-x: 1.25rem;
@@ -589,6 +606,17 @@ select.form-select option {
   }
 
   :where(.project-form .row > [class*="col-"]) {
+    width: auto;
+  }
+
+  .project-linked-reservation {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .project-linked-reservation__action {
+    align-self: center;
     width: auto;
   }
 }
@@ -634,6 +662,10 @@ select.form-select option {
 
   :where(.project-form .row > [class*="col-"]) {
     width: auto;
+  }
+
+  .project-linked-reservation {
+    padding-inline: 28px;
   }
 }
 

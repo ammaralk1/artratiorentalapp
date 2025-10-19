@@ -23,8 +23,10 @@ import {
   handleCustomersChanged,
   handleTechniciansUpdated,
   handleReservationsChanged,
+  bindLinkedReservationButton,
   renderSelections,
-  refreshProjectSubmitButton
+  refreshProjectSubmitButton,
+  restoreProjectFormDraft
 } from './form.js';
 import {
   openProjectDetails,
@@ -55,6 +57,7 @@ export function initProjectsPage() {
     bindSelectionEvents();
     bindSelectionRemovalEvents();
     bindExpenseEvents();
+    bindLinkedReservationButton();
     bindTableEvents({ onViewDetails: openProjectDetails });
     bindFocusCards({ onOpenProject: openProjectDetails });
 
@@ -84,6 +87,7 @@ async function initialiseProjectsData() {
   } finally {
     loadAllData();
     populateSelects();
+    restoreProjectFormDraft();
     renderSelections();
     renderProjects();
     updateSummary();
