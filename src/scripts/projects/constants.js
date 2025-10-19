@@ -8,7 +8,8 @@ export const PROJECT_SUB_TAB_PREFERENCE_KEY = 'projectsSubTab';
 export const PROJECT_SUB_TAB_ALIASES = {
   create: 'create-project-tab',
   list: 'projects-list-tab',
-  reports: 'projects-reports-tab'
+  reports: 'projects-reports-tab',
+  expenses: 'projects-expenses-tab'
 };
 
 export const statusFallbackLabels = {

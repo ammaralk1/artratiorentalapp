@@ -94,7 +94,7 @@
               <span data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</span>
             </span>
           </a>
-          <a class="tab-button" href="projects-expenses.html" data-close-sidebar data-i18n data-i18n-key="projects.subtabs.expenses">
+          <a class="tab-button" href="projects.html?subTab=expenses" data-close-sidebar data-i18n data-i18n-key="projects.subtabs.expenses">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -321,7 +321,7 @@
                       <button type="button" class="sub-tab-button tab tab-active active" data-project-subtab-target="create-project-tab" role="tab" aria-selected="true" aria-controls="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="false" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-reports-tab" role="tab" aria-selected="false" aria-controls="projects-reports-tab" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</button>
-                      <a class="sub-tab-button tab" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-expenses-tab" role="tab" aria-selected="false" aria-controls="projects-expenses-tab" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</button>
                     </div>
                   </div>
                   <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
@@ -724,6 +724,171 @@
                         <p data-i18n data-i18n-key="projects.reports.table.empty">لا توجد مشاريع مطابقة للبحث الحالي.</p>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tab-pane d-none space-y-6" id="projects-expenses-tab" data-project-subtab="projects-expenses-tab">
+                <div class="reports-wrapper reports-wrapper--projects">
+                  <div class="reports-surface-card glass-card expenses-hero-card">
+                    <div class="reports-card-title reports-header-leading">
+                      <span class="reports-card-icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                          <path d="M4 4h16v5h-16z"></path>
+                          <path d="M7 13h10"></path>
+                          <path d="M9 17h6"></path>
+                          <path d="M5 9v11h14v-11"></path>
+                        </svg>
+                      </span>
+                      <div class="reports-card-text">
+                        <h2 class="fw-bold mb-2" data-i18n data-i18n-key="projects.expenses.title">إدارة مصاريف المشاريع</h2>
+                        <p class="reports-subtitle" data-i18n data-i18n-key="projects.expenses.subtitle">تابع المصاريف المرتبطة بالحجوزات والمشاريع مع إمكانية الربط مع فواتير العملاء.</p>
+                      </div>
+                    </div>
+                    <div class="expenses-actions d-flex flex-wrap align-items-center gap-2">
+                      <button type="button" class="btn btn-primary" data-i18n data-i18n-key="projects.expenses.actions.addExpense">➕ إضافة مصروف</button>
+                      <button type="button" class="btn btn-outline-secondary" data-i18n data-i18n-key="projects.expenses.actions.importInvoice">🧾 رفع فاتورة</button>
+                    </div>
+                  </div>
+
+                  <div class="reports-kpi-grid expenses-kpi-grid" id="expenses-kpi-grid">
+                    <div class="reports-kpi-card glass-card">
+                      <div class="reports-kpi-icon" aria-hidden="true">💸</div>
+                      <div class="reports-kpi-content">
+                        <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.total">إجمالي المصاريف</p>
+                        <p class="reports-kpi-value" id="expenses-total-value">0 SR</p>
+                        <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.total.meta">المصاريف المسجلة خلال الفترة الحالية</span>
+                      </div>
+                    </div>
+                    <div class="reports-kpi-card glass-card">
+                      <div class="reports-kpi-icon" aria-hidden="true">🕒</div>
+                      <div class="reports-kpi-content">
+                        <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.pending">بانتظار الموافقة</p>
+                        <p class="reports-kpi-value" id="expenses-pending-value">0</p>
+                        <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.pending.meta">مصاريف تحتاج اعتماد المدير المالي</span>
+                      </div>
+                    </div>
+                    <div class="reports-kpi-card glass-card">
+                      <div class="reports-kpi-icon" aria-hidden="true">✅</div>
+                      <div class="reports-kpi-content">
+                        <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.approved">تمت الموافقة</p>
+                        <p class="reports-kpi-value" id="expenses-approved-value">0</p>
+                        <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.approved.meta">آخر المصروفات التي تم اعتمادها</span>
+                      </div>
+                    </div>
+                    <div class="reports-kpi-card glass-card">
+                      <div class="reports-kpi-icon" aria-hidden="true">📊</div>
+                      <div class="reports-kpi-content">
+                        <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.average">متوسط المصروف لكل مشروع</p>
+                        <p class="reports-kpi-value" id="expenses-average-value">0 SR</p>
+                        <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.average.meta">قيمة تقريبية استناداً للمشاريع النشطة</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="reports-detail-grid expenses-detail-grid">
+                    <div class="reports-chart-card glass-card">
+                      <div class="reports-card-header">
+                        <div class="reports-card-title">
+                          <span class="reports-card-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                              <path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9z"></path>
+                              <path d="M12 12l8 -4.5"></path>
+                              <path d="M12 12v9"></path>
+                              <path d="M12 12l-8 -4.5"></path>
+                            </svg>
+                          </span>
+                          <div class="reports-card-text">
+                            <h4 data-i18n data-i18n-key="projects.expenses.breakdown.title">توزيع المصاريف حسب التصنيف</h4>
+                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.breakdown.hint">راقب الصرف على المعدات، الطاقم، والتنقلات.</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="reports-card-body">
+                        <div class="reports-panel-empty" role="status">
+                          <span class="reports-empty-icon" aria-hidden="true">📊</span>
+                          <p class="reports-empty-title" data-i18n data-i18n-key="projects.expenses.breakdown.empty">لم يتم تسجيل مصاريف مصنفة حتى الآن.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="reports-chart-card glass-card">
+                      <div class="reports-card-header">
+                        <div class="reports-card-title">
+                          <span class="reports-card-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                              <path d="M4 19h16"></path>
+                              <path d="M7 19v-6"></path>
+                              <path d="M10 19v-3"></path>
+                              <path d="M13 19v-8"></path>
+                              <path d="M16 19v-5"></path>
+                              <path d="M5 13l2 -2l2 2l2 -2l2 2l2 -2l2 2"></path>
+                            </svg>
+                          </span>
+                          <div class="reports-card-text">
+                            <h4 data-i18n data-i18n-key="projects.expenses.timeline.title">المصاريف عبر الجدول الزمني</h4>
+                            <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.timeline.hint">سجل المصاريف خلال الأشهر الماضية لمراقبة الاتجاهات.</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="reports-card-body">
+                        <div class="reports-panel-empty" role="status">
+                          <span class="reports-empty-icon" aria-hidden="true">📈</span>
+                          <p class="reports-empty-title" data-i18n data-i18n-key="projects.expenses.timeline.empty">أضف مصروفات لعرض الرسم البياني التفاعلي.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="reports-table-card glass-card">
+                    <div class="reports-card-header">
+                      <div class="reports-card-title">
+                        <span class="reports-card-icon" aria-hidden="true">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                            <path d="M3 5h18"></path>
+                            <path d="M3 10h18"></path>
+                            <path d="M3 15h18"></path>
+                            <path d="M3 20h18"></path>
+                          </svg>
+                        </span>
+                        <div class="reports-card-text">
+                          <h4 data-i18n data-i18n-key="projects.expenses.table.title">سجل المصاريف التفصيلي</h4>
+                          <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.table.hint">استعرض المصاريف المرتبطة بكل مشروع مع حالة الموافقات.</span>
+                        </div>
+                      </div>
+                      <div class="reports-actions">
+                        <button type="button" class="btn btn-outline btn-sm" data-i18n data-i18n-key="projects.expenses.actions.export">⬇️ تصدير</button>
+                      </div>
+                    </div>
+                    <div class="table-responsive reports-table-wrapper">
+                      <table class="reports-table" id="project-expenses-table">
+                        <thead>
+                          <tr>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.project">المشروع</th>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.category">التصنيف</th>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.description">الوصف</th>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.amount">المبلغ</th>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.status">الحالة</th>
+                            <th data-i18n data-i18n-key="projects.expenses.table.columns.date">تاريخ التسجيل</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td colspan="6" class="text-base-content/60" data-i18n data-i18n-key="projects.expenses.table.empty">ستظهر المصاريف المسجلة هنا فور إضافتها.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="reports-empty-state expenses-placeholder" role="status">
+                    <div class="reports-empty-icon" aria-hidden="true">🧾</div>
+                    <h4 class="font-semibold text-lg" data-i18n data-i18n-key="projects.expenses.placeholder">ستتم إضافة لوحة مخصصة لربط مصاريف المشاريع بالحجوزات قريباً.</h4>
+                    <p class="reports-empty-subtitle" data-i18n data-i18n-key="projects.expenses.placeholderHint">جهز الفواتير والفئات الآن لتسريع الإطلاق القادم.</p>
                   </div>
                 </div>
               </div>

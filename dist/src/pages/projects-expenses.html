@@ -1,405 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="../../favicon.ico">
-  <title data-i18n data-i18n-key="projects.expenses.pageTitle">مصاريف المشاريع - نظام التأجير</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
-
-  <script src="../../js/godaddy-monitor.js" defer></script>
-  <script src="../../js/page-boot.js"></script>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/auth.js"></script>
-  <script type="module" crossorigin src="../../assets/projects2.js"></script>
-  <script type="module" crossorigin src="../../assets/projectsCommon.js"></script>
-  <link rel="stylesheet" crossorigin href="../../assets/index.css">
-  <link rel="stylesheet" crossorigin href="../../assets/reports.css">
-</head>
-<body class="page-shell theme-loading projects-page expenses-page" data-theme="light">
-  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
-    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
-      <div class="flex items-center gap-3">
-        <div class="sidebar-brand-logo">
-          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-        </div>
-        <div class="text-start sidebar-brand-text">
-          <p class="text-xs text-base-content/60">Art Ratio</p>
-          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
-        </div>
-      </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M18 6l-12 12"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-
-    <div class="sidebar-panel sidebar-panel--stats mt-6">
-      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
-      <div class="sidebar-stats" role="list">
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
-          <span id="sidebar-stat-projects" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
-          <span id="sidebar-stat-reservations" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
-          <span id="sidebar-stat-equipment" class="badge-soft">0</span>
-        </div>
-        <div class="sidebar-stats-row" role="listitem">
-          <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
-          <span id="sidebar-stat-technicians" class="badge-soft">0</span>
-        </div>
-      </div>
-    </div>
-
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام المشاريع">
-      <div class="sidebar-panel sidebar-panel--tabs">
-        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام المشاريع</p>
-        <div class="tab-buttons tab-buttons-vertical" role="tablist">
-          <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.projects">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
-                <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"></path>
-                <path d="M12 12l0 .01"></path>
-                <path d="M3 13a20 20 0 0 0 18 0"></path>
-              </svg>
-              <span data-i18n data-i18n-key="projects.nav.projects">إدارة المشاريع</span>
-            </span>
-          </a>
-          <a class="tab-button" href="projects.html?subTab=reports" data-close-sidebar data-i18n data-i18n-key="projects.subtabs.reports">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"></path>
-                <path d="M9 3a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z"></path>
-                <path d="M9 17v-5"></path>
-                <path d="M12 17v-1"></path>
-                <path d="M15 17v-3"></path>
-              </svg>
-              <span data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</span>
-            </span>
-          </a>
-          <a class="tab-button active" href="projects-expenses.html" data-close-sidebar data-i18n data-i18n-key="projects.subtabs.expenses">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M11 3h10v2l-2 5h-8l2 -5"></path>
-                <path d="M6 8h11v5h-11z"></path>
-                <path d="M4 18h16"></path>
-                <path d="M7 21h2"></path>
-                <path d="M15 21h2"></path>
-              </svg>
-              <span data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</span>
-            </span>
-          </a>
-          <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
-            <span class="flex items-center gap-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
-                <path d="M16 3v4"></path>
-                <path d="M8 3v4"></path>
-                <path d="M4 11h16"></path>
-                <path d="M8 15h2v2h-2z"></path>
-              </svg>
-              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
-            </span>
-          </a>
-        </div>
-      </div>
-    </nav>
-  </aside>
-
-  <div class="page-grid">
-    <header class="dashboard-header">
-      <div class="dashboard-header-nav">
-        <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
-            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-            </span>
-          </button>
-          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
-            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
-              <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
-            </div>
-            <div class="dashboard-hero-brand-text">
-              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
-              <p class="dashboard-hero-subtitle text-sm text-base-content/70" data-i18n data-i18n-key="projects.expenses.title">إدارة مصاريف المشاريع</p>
-            </div>
-          </a>
-        </div>
-        <div class="dashboard-header-center">
-          <div class="glass-card dashboard-hero-callout" data-i18n data-i18n-key="projects.expenses.subtitle">تابع المصاريف المرتبطة بالحجوزات والمشاريع مع إمكانية الربط مع فواتير العملاء.</div>
-        </div>
-        <div class="dashboard-header-end">
-          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
-            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
-            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 4v-1"></path>
-              <path d="M12 21v-1"></path>
-              <path d="M4 12h-1"></path>
-              <path d="M21 12h-1"></path>
-              <path d="M5.6 5.6l-.7 -.7"></path>
-              <path d="M18.4 18.4l-.7 -.7"></path>
-              <path d="M5.6 18.4l-.7 .7"></path>
-              <path d="M18.4 5.6l-.7 .7"></path>
-              <path d="M16 12a4 4 0 1 0 -4 4"></path>
-            </svg>
-            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
-            </svg>
-            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
-          </label>
-          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
-        </div>
-      </div>
-    </header>
-
-    <div class="flex flex-1 flex-col">
-      <main class="dashboard-main w-full">
-        <div class="dashboard-main-inner space-y-8">
-          <div class="tab-section-header">
-            <div class="space-y-1">
-              <h2 class="tab-section-title" data-i18n data-i18n-key="projects.expenses.title">إدارة مصاريف المشاريع</h2>
-              <p class="tab-section-subtitle text-base-content/70" data-i18n data-i18n-key="projects.expenses.subtitle">تابع المصاريف المرتبطة بالحجوزات والمشاريع مع إمكانية الربط مع فواتير العملاء.</p>
-            </div>
-          </div>
-
-          <div class="glass-card dashboard-tabbar hidden lg:block">
-            <div class="tab-buttons tab-buttons-horizontal" role="tablist" aria-label="أقسام المشاريع">
-              <a class="tab-button tab-active" href="projects.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.projects">المشاريع</a>
-              <a class="tab-button" href="customer.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.customers">العملاء</a>
-              <a class="tab-button" href="technician.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</a>
-            </div>
-          </div>
-
-          <div class="glass-card dashboard-tabbar p-3 lg:hidden">
-            <div class="tab-scroll" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
-                <span aria-hidden="true">‹</span>
-              </button>
-              <div class="tab-scroll-track" data-tab-scroll-track>
-                <div class="tab-buttons tab-buttons-horizontal" role="tablist" aria-label="أقسام المشاريع">
-                  <a class="tab-button tab-active" href="projects.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.projects">المشاريع</a>
-                  <a class="tab-button" href="customer.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.customers">العملاء</a>
-                  <a class="tab-button" href="technician.html" data-close-sidebar data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</a>
-                </div>
-              </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
-                <span aria-hidden="true">›</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="dashboard-subtabbar">
-            <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
-                <span aria-hidden="true">‹</span>
-              </button>
-              <div class="tab-scroll-track" data-tab-scroll-track>
-                <div class="sub-tab-buttons tabs tabs-boxed" role="tablist" aria-label="عناوين فرعية">
-                  <a class="tab" href="projects.html#tab=create" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</a>
-                  <a class="tab" href="projects.html#tab=list" data-i18n data-i18n-key="projects.subtabs.list">قائمة المشاريع</a>
-                  <a class="tab" href="projects.html?subTab=reports" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
-                  <a class="tab tab-active" href="projects-expenses.html" aria-current="page" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
-                </div>
-              </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
-                <span aria-hidden="true">›</span>
-              </button>
-            </div>
-          </div>
-
-          <section class="space-y-6">
-            <div class="reports-wrapper reports-wrapper--projects">
-              <div class="reports-surface-card box expenses-hero-card">
-                <div class="reports-card-title reports-header-leading">
-                  <span class="reports-card-icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M4 4h16v5h-16z"></path>
-                      <path d="M7 13h10"></path>
-                      <path d="M9 17h6"></path>
-                      <path d="M5 9v11h14v-11"></path>
-                    </svg>
-                  </span>
-                  <div class="reports-card-text">
-                    <h1 class="fw-bold mb-2" data-i18n data-i18n-key="projects.expenses.title">إدارة مصاريف المشاريع</h1>
-                    <p class="reports-subtitle" data-i18n data-i18n-key="projects.expenses.subtitle">تابع المصاريف المرتبطة بالحجوزات والمشاريع مع إمكانية الربط مع فواتير العملاء.</p>
-                  </div>
-                </div>
-                <div class="expenses-actions d-flex flex-wrap align-items-center gap-2">
-                  <button type="button" class="btn btn-primary" data-i18n data-i18n-key="projects.expenses.actions.addExpense">➕ إضافة مصروف</button>
-                  <button type="button" class="btn btn-outline-secondary" data-i18n data-i18n-key="projects.expenses.actions.importInvoice">🧾 رفع فاتورة</button>
-                </div>
-              </div>
-
-              <div class="reports-kpi-grid expenses-kpi-grid">
-              <div class="reports-kpi-card">
-                <div class="reports-kpi-icon" aria-hidden="true">💸</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.total">إجمالي المصاريف</p>
-                  <p class="reports-kpi-value" id="expenses-total-value">0 SR</p>
-                  <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.total.meta">المصاريف المسجلة خلال الفترة الحالية</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card">
-                <div class="reports-kpi-icon" aria-hidden="true">🕒</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.pending">بانتظار الموافقة</p>
-                  <p class="reports-kpi-value" id="expenses-pending-value">0</p>
-                  <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.pending.meta">مصاريف تحتاج اعتماد المدير المالي</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card">
-                <div class="reports-kpi-icon" aria-hidden="true">✅</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.approved">تمت الموافقة</p>
-                  <p class="reports-kpi-value" id="expenses-approved-value">0</p>
-                  <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.approved.meta">آخر المصروفات التي تم اعتمادها</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card">
-                <div class="reports-kpi-icon" aria-hidden="true">📊</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="projects.expenses.kpi.average">متوسط المصروف لكل مشروع</p>
-                  <p class="reports-kpi-value" id="expenses-average-value">0 SR</p>
-                  <span class="reports-kpi-meta" data-i18n data-i18n-key="projects.expenses.kpi.average.meta">قيمة تقريبية استناداً للمشاريع النشطة</span>
-                </div>
-              </div>
-            </div>
-
-              <div class="reports-detail-grid expenses-detail-grid">
-              <div class="reports-chart-card">
-                <div class="reports-card-header">
-                  <div class="reports-card-title">
-                    <span class="reports-card-icon" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9z"></path>
-                        <path d="M12 12l8 -4.5"></path>
-                        <path d="M12 12v9"></path>
-                        <path d="M12 12l-8 -4.5"></path>
-                      </svg>
-                    </span>
-                    <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="projects.expenses.breakdown.title">توزيع المصاريف حسب التصنيف</h4>
-                      <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.breakdown.hint">راقب الصرف على المعدات، الطاقم، والتنقلات.</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="reports-card-body">
-                  <div class="reports-panel-empty" role="status">
-                    <span class="reports-empty-icon" aria-hidden="true">📊</span>
-                    <p class="reports-empty-title" data-i18n data-i18n-key="projects.expenses.breakdown.empty">لم يتم تسجيل مصاريف مصنفة حتى الآن.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="reports-chart-card">
-                <div class="reports-card-header">
-                  <div class="reports-card-title">
-                    <span class="reports-card-icon" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M4 19h16"></path>
-                        <path d="M7 19v-6"></path>
-                        <path d="M10 19v-3"></path>
-                        <path d="M13 19v-8"></path>
-                        <path d="M16 19v-5"></path>
-                        <path d="M5 13l2 -2l2 2l2 -2l2 2l2 -2l2 2"></path>
-                      </svg>
-                    </span>
-                    <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="projects.expenses.timeline.title">المصاريف عبر الجدول الزمني</h4>
-                      <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.timeline.hint">سجل المصاريف خلال الأشهر الماضية لمراقبة الاتجاهات.</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="reports-card-body">
-                  <div class="reports-panel-empty" role="status">
-                    <span class="reports-empty-icon" aria-hidden="true">📈</span>
-                    <p class="reports-empty-title" data-i18n data-i18n-key="projects.expenses.timeline.empty">أضف مصروفات لعرض الرسم البياني التفاعلي.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-              <div class="reports-table-card">
-              <div class="reports-card-header">
-                <div class="reports-card-title">
-                  <span class="reports-card-icon" aria-hidden="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M3 5h18"></path>
-                      <path d="M3 10h18"></path>
-                      <path d="M3 15h18"></path>
-                      <path d="M3 20h18"></path>
-                    </svg>
-                  </span>
-                  <div class="reports-card-text">
-                    <h4 data-i18n data-i18n-key="projects.expenses.table.title">سجل المصاريف التفصيلي</h4>
-                    <span class="reports-card-hint" data-i18n data-i18n-key="projects.expenses.table.hint">استعرض المصاريف المرتبطة بكل مشروع مع حالة الموافقات.</span>
-                  </div>
-                </div>
-                <div class="reports-actions">
-                  <button type="button" class="btn btn-outline btn-sm" data-i18n data-i18n-key="projects.expenses.actions.export">⬇️ تصدير</button>
-                </div>
-              </div>
-              <div class="table-responsive reports-table-wrapper">
-                <table class="reports-table" id="project-expenses-table">
-                  <thead>
-                    <tr>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.project">المشروع</th>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.category">التصنيف</th>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.description">الوصف</th>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.amount">المبلغ</th>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.status">الحالة</th>
-                      <th data-i18n data-i18n-key="projects.expenses.table.columns.date">تاريخ التسجيل</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colspan="6" class="text-base-content/60" data-i18n data-i18n-key="projects.expenses.table.empty">ستظهر المصاريف المسجلة هنا فور إضافتها.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-              <div class="reports-empty-state expenses-placeholder" role="status">
-                <div class="reports-empty-icon" aria-hidden="true">🧾</div>
-                <h4 class="font-semibold text-lg" data-i18n data-i18n-key="projects.expenses.placeholder">ستتم إضافة لوحة مخصصة لربط مصاريف المشاريع بالحجوزات قريباً.</h4>
-                <p class="reports-empty-subtitle" data-i18n data-i18n-key="projects.expenses.placeholderHint">جهز الفواتير والفئات الآن لتسريع الإطلاق القادم.</p>
-              </div>
-            </div>
-          </section>
-        </div>
-      </main>
-    </div>
-  </div>
-
-</body>
-</html>

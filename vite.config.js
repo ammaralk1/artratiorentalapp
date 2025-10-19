@@ -20,7 +20,6 @@ export default defineConfig({
         customer: resolve(__dirname, 'src/pages/customer.html'),
         technician: resolve(__dirname, 'src/pages/technician.html'),
         projects: resolve(__dirname, 'src/pages/projects.html'),
-        projectsExpenses: resolve(__dirname, 'src/pages/projects-expenses.html'),
         users: resolve(__dirname, 'src/pages/users.html')
       },
       output: {
