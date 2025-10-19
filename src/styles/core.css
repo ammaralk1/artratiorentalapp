@@ -1354,6 +1354,13 @@ body[dir="rtl"] .project-expense-amount {
   flex: 1 1 auto;
 }
 
+.project-details-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
 .project-details-header__code {
   display: flex;
   flex-direction: column;
@@ -1378,8 +1385,12 @@ body[dir="rtl"] .project-expense-amount {
 }
 
 body[dir="rtl"] .project-details-header__info {
-  align-items: flex-start;
-  text-align: start;
+  align-items: flex-end;
+  text-align: left;
+}
+
+body[dir="rtl"] .project-details-chips {
+  justify-content: flex-start;
 }
 
 body[dir="rtl"] .project-details-header__code {
