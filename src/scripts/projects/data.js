@@ -128,6 +128,13 @@ export function clearProjectCustomerSuggestions() {
 export function renderProjectCustomerSuggestions() {
   if (!dom.client || !dom.clientSuggestions) return;
 
+  if (!Array.isArray(state.customers) || state.customers.length === 0) {
+    const snapshot = loadData();
+    if (Array.isArray(snapshot?.customers) && snapshot.customers.length) {
+      state.customers = snapshot.customers;
+    }
+  }
+
   const options = getProjectCustomerOptions();
   const searchValue = normalizeText(dom.client.value || '');
   const matches = !searchValue
