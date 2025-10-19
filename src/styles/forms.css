@@ -544,10 +544,6 @@ select.form-select option {
     min-width: 200px;
   }
 
-  .project-description-field {
-    max-width: 760px;
-  }
-
   .project-field-date,
   .project-field-time {
     flex: 0 0 200px;
@@ -566,10 +562,6 @@ select.form-select option {
 
   .project-type-field select {
     min-width: 220px;
-  }
-
-  .project-description-field {
-    max-width: 820px;
   }
 
   .project-field-date,
