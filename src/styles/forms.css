@@ -544,6 +544,22 @@ select.form-select option {
     min-width: 200px;
   }
 
+  .project-field-narrow.project-type-field {
+    flex: 0 0 20%;
+    max-width: 20%;
+  }
+
+  .project-title-field {
+    flex: 0 0 80%;
+    max-width: 80%;
+  }
+
+  .project-client-field,
+  .project-company-field {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
   .project-field-date,
   .project-field-time {
     flex: 0 0 200px;
@@ -562,6 +578,22 @@ select.form-select option {
 
   .project-type-field select {
     min-width: 220px;
+  }
+
+  .project-field-narrow.project-type-field {
+    flex: 0 0 18%;
+    max-width: 18%;
+  }
+
+  .project-title-field {
+    flex: 0 0 82%;
+    max-width: 82%;
+  }
+
+  .project-client-field,
+  .project-company-field {
+    flex: 0 0 50%;
+    max-width: 50%;
   }
 
   .project-field-date,
