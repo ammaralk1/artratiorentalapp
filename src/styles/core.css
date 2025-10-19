@@ -1329,45 +1329,6 @@ body[dir="rtl"] .project-expense-amount {
   gap: 6px;
 }
 
-.project-details-subtitle {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--clr-muted);
-  letter-spacing: 0.02em;
-}
-
-.project-details-code-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(76, 110, 245, 0.2);
-  background: rgba(248, 250, 255, 0.85);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--clr-text);
-  box-shadow: var(--shadow-xs);
-}
-
-.project-details-code-badge__icon {
-  font-size: 1rem;
-}
-
-.project-details-code-badge__text {
-  font-variant-numeric: tabular-nums;
-}
-
-:is(html.dark-mode, body.dark-mode) .project-details-code-badge {
-  background: rgba(15, 23, 42, 0.65);
-  border-color: rgba(96, 165, 250, 0.35);
-  color: rgba(226, 232, 240, 0.95);
-}
-
-:is(html.dark-mode, body.dark-mode) .project-details-subtitle {
-  color: rgba(148, 191, 255, 0.85);
-}
-
 .project-details-header {
   display: flex;
   justify-content: space-between;
@@ -1381,11 +1342,6 @@ body[dir="rtl"] .project-expense-amount {
   gap: 6px;
 }
 
-.project-details-header__right {
-  display: flex;
-  align-items: flex-start;
-}
-
 .project-details-subtitle {
   font-size: 0.85rem;
   font-weight: 600;
@@ -1395,30 +1351,48 @@ body[dir="rtl"] .project-expense-amount {
 
 .project-details-code-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(76, 110, 245, 0.2);
   background: rgba(248, 250, 255, 0.85);
-  font-size: 0.9rem;
-  font-weight: 600;
   color: var(--clr-text);
   box-shadow: var(--shadow-xs);
 }
 
-.project-details-code-badge__icon {
-  font-size: 1rem;
+.project-details-code-badge__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--clr-muted);
 }
 
-.project-details-code-badge__text {
+.project-details-code-badge__icon {
+  font-size: 0.95rem;
+}
+
+.project-details-code-badge__value {
+  font-size: 0.95rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: var(--clr-text);
 }
 
 :is(html.dark-mode, body.dark-mode) .project-details-code-badge {
   background: rgba(15, 23, 42, 0.65);
   border-color: rgba(96, 165, 250, 0.35);
-  color: rgba(226, 232, 240, 0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-code-badge__label {
+  color: rgba(148, 191, 255, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-code-badge__value {
+  color: rgba(226, 232, 240, 0.98);
 }
 
 :is(html.dark-mode, body.dark-mode) .project-details-subtitle {

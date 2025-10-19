@@ -199,10 +199,14 @@ export function openProjectDetails(projectId) {
     </div>
   `).join('');
 
+  const projectCodeLabel = t('projects.details.labels.code', 'رقم المشروع');
   const projectCodeBadgeHtml = `
-    <div class="project-details-code-badge" title="${escapeHtml(t('projects.details.labels.code', 'رقم المشروع'))}">
-      <span class="project-details-code-badge__icon" aria-hidden="true">📁</span>
-      <span class="project-details-code-badge__text">#${escapeHtml(projectCodeDisplay)}</span>
+    <div class="project-details-code-badge" title="${escapeHtml(projectCodeLabel)}">
+      <span class="project-details-code-badge__label">
+        <span class="project-details-code-badge__icon" aria-hidden="true">🗂️</span>
+        ${escapeHtml(projectCodeLabel)}
+      </span>
+      <span class="project-details-code-badge__value">${escapeHtml(projectCodeDisplay)}</span>
     </div>
   `;
 
@@ -270,7 +274,6 @@ export function openProjectDetails(projectId) {
       <header class="project-details-header">
         <div class="project-details-header__left">
           ${projectCodeBadgeHtml}
-          <span class="project-details-subtitle">${escapeHtml(t('projects.details.header', 'تفاصيل المشروع'))}</span>
           <h4 class="project-details-title">${escapeHtml(project.title)}</h4>
           <div class="project-details-chips">${chips}</div>
         </div>
