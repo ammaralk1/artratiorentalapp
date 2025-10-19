@@ -470,6 +470,10 @@ select.form-select option {
   --bs-gutter-y: 0.9rem;
 }
 
+.project-row--client {
+  flex-wrap: wrap;
+}
+
 .project-form .form-label {
   display: block;
   font-weight: 600;
@@ -540,6 +544,10 @@ select.form-select option {
     --bs-gutter-x: 1.25rem;
   }
 
+  .project-row--client {
+    flex-wrap: nowrap;
+  }
+
   .project-type-field select {
     min-width: 200px;
   }
@@ -578,6 +586,10 @@ select.form-select option {
 @media (min-width: 1200px) {
   .project-form-primary-row {
     --bs-gutter-x: 1.5rem;
+  }
+
+  .project-row--client {
+    flex-wrap: nowrap;
   }
 
   .project-type-field select {
