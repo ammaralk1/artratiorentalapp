@@ -219,34 +219,71 @@ function updateEditProjectTaxState() {
   const projectSelect = document.getElementById('edit-res-project');
   const taxCheckbox = document.getElementById('edit-res-tax');
   const shareCheckbox = document.getElementById('edit-res-company-share');
-  if (!taxCheckbox) return;
+  const discountInput = document.getElementById('edit-res-discount');
+  const discountTypeSelect = document.getElementById('edit-res-discount-type');
+  const message = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.');
 
   const isLinked = Boolean(projectSelect?.value);
   if (isLinked) {
-    taxCheckbox.checked = false;
-    taxCheckbox.disabled = true;
-    taxCheckbox.classList.add('disabled');
-    if (shareCheckbox && shareCheckbox.checked) {
-      shareCheckbox.checked = false;
+    if (taxCheckbox) {
+      taxCheckbox.checked = false;
+      taxCheckbox.disabled = true;
+      taxCheckbox.classList.add('disabled');
+      taxCheckbox.title = message;
     }
     if (shareCheckbox) {
+      if (shareCheckbox.checked) {
+        shareCheckbox.checked = false;
+      }
       shareCheckbox.disabled = true;
       shareCheckbox.classList.add('disabled');
+      shareCheckbox.title = message;
+    }
+    if (discountInput) {
+      discountInput.value = '0';
+      discountInput.disabled = true;
+      discountInput.classList.add('disabled', 'reservation-input-disabled');
+      discountInput.title = message;
+    }
+    if (discountTypeSelect) {
+      discountTypeSelect.value = 'percent';
+      discountTypeSelect.disabled = true;
+      discountTypeSelect.classList.add('disabled', 'reservation-input-disabled');
+      discountTypeSelect.title = message;
     }
   } else {
-    const wasDisabled = taxCheckbox.disabled;
-    taxCheckbox.disabled = false;
-    taxCheckbox.classList.remove('disabled');
-    if (wasDisabled) {
-      taxCheckbox.checked = false;
+    if (taxCheckbox) {
+      const wasDisabled = taxCheckbox.disabled;
+      taxCheckbox.disabled = false;
+      taxCheckbox.classList.remove('disabled');
+      taxCheckbox.title = '';
+      if (wasDisabled) {
+        taxCheckbox.checked = false;
+      }
     }
     if (shareCheckbox) {
       shareCheckbox.disabled = false;
       shareCheckbox.classList.remove('disabled');
+      shareCheckbox.title = '';
+    }
+    if (discountInput) {
+      discountInput.disabled = false;
+      discountInput.classList.remove('disabled', 'reservation-input-disabled');
+      discountInput.title = '';
+    }
+    if (discountTypeSelect) {
+      discountTypeSelect.disabled = false;
+      discountTypeSelect.classList.remove('disabled', 'reservation-input-disabled');
+      discountTypeSelect.title = '';
     }
   }
 
   syncEditTaxAndShare('tax');
+
+  const updateSummary = modalEventsContext?.updateEditReservationSummary;
+  if (typeof updateSummary === 'function') {
+    updateSummary();
+  }
 }
 
 function syncEditTaxAndShare(source) {
@@ -388,10 +425,15 @@ export function editReservation(index, {
   if (notesInput) notesInput.value = reservation.notes || '';
 
   const discountInput = document.getElementById('edit-res-discount');
-  if (discountInput) discountInput.value = normalizeNumbers(reservation.discount ?? 0);
+  if (discountInput) {
+    const initialDiscount = projectLinked ? 0 : (reservation.discount ?? 0);
+    discountInput.value = normalizeNumbers(initialDiscount);
+  }
 
   const discountTypeSelect = document.getElementById('edit-res-discount-type');
-  if (discountTypeSelect) discountTypeSelect.value = reservation.discountType || 'percent';
+  if (discountTypeSelect) {
+    discountTypeSelect.value = projectLinked ? 'percent' : (reservation.discountType || 'percent');
+  }
 
   const applyTaxFlag = reservation.projectId ? false : !!reservation.applyTax;
   const taxCheckbox = document.getElementById('edit-res-tax');
@@ -485,8 +527,8 @@ export async function saveReservationChanges({
   const endTime = document.getElementById('edit-res-end-time')?.value?.trim() || '00:00';
   const notes = document.getElementById('edit-res-notes')?.value || '';
   const discountRaw = normalizeNumbers(document.getElementById('edit-res-discount')?.value || '0');
-  const discount = parseFloat(discountRaw) || 0;
-  const discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
+  let discount = parseFloat(discountRaw) || 0;
+  let discountType = document.getElementById('edit-res-discount-type')?.value || 'percent';
   const confirmed = isReservationConfirmed();
   const paymentSelect = document.getElementById('edit-res-paid');
   const manualPaidOverride = paymentSelect?.dataset?.userSelected === 'true';
@@ -616,6 +658,11 @@ export async function saveReservationChanges({
   const companyShareEnabled = shareChecked && taxChecked && Number.isFinite(companySharePercent) && companySharePercent > 0;
 
   const applyTax = helperProjectLinked ? false : taxChecked;
+
+  if (helperProjectLinked) {
+    discount = 0;
+    discountType = 'percent';
+  }
 
   const totalAmount = calculateReservationTotal(
     editingItems,

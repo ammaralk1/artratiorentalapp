@@ -573,6 +573,8 @@ function updateCreateProjectTaxState() {
   const paymentSelect = document.getElementById('res-payment-status');
   const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
   const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
+  const discountInput = document.getElementById('res-discount');
+  const discountTypeSelect = document.getElementById('res-discount-type');
 
   const message = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.');
 
@@ -593,6 +595,12 @@ function updateCreateProjectTaxState() {
   }
   if (paymentProgressValueInput) {
     registerLinkedControlGuard(paymentProgressValueInput, isLinkedProjectSelected);
+  }
+  if (discountInput) {
+    registerLinkedControlGuard(discountInput, isLinkedProjectSelected);
+  }
+  if (discountTypeSelect) {
+    registerLinkedControlGuard(discountTypeSelect, isLinkedProjectSelected);
   }
 
   if (projectLinked) {
@@ -627,6 +635,18 @@ function updateCreateProjectTaxState() {
       paymentProgressValueInput.classList.add('reservation-input-disabled');
       paymentProgressValueInput.title = message;
     }
+    if (discountInput) {
+      discountInput.value = '0';
+      discountInput.disabled = true;
+      discountInput.classList.add('reservation-input-disabled');
+      discountInput.title = message;
+    }
+    if (discountTypeSelect) {
+      discountTypeSelect.value = 'percent';
+      discountTypeSelect.disabled = true;
+      discountTypeSelect.classList.add('reservation-input-disabled');
+      discountTypeSelect.title = message;
+    }
   } else {
     if (taxCheckbox) {
       const wasDisabled = taxCheckbox.disabled;
@@ -657,9 +677,20 @@ function updateCreateProjectTaxState() {
       paymentProgressValueInput.classList.remove('reservation-input-disabled');
       paymentProgressValueInput.title = '';
     }
+    if (discountInput) {
+      discountInput.disabled = false;
+      discountInput.classList.remove('reservation-input-disabled');
+      discountInput.title = '';
+    }
+    if (discountTypeSelect) {
+      discountTypeSelect.disabled = false;
+      discountTypeSelect.classList.remove('reservation-input-disabled');
+      discountTypeSelect.title = '';
+    }
   }
 
   syncCreateTaxAndShare('tax');
+  renderDraftReservationSummary();
 }
 
 function setupProjectSelection() {
@@ -1333,11 +1364,12 @@ function increaseReservationGroup(groupKey) {
 }
 
 function renderDraftReservationSummary() {
-  const rawValue = document.getElementById('res-discount')?.value || '0';
-  const discount = parseFloat(normalizeNumbers(rawValue)) || 0;
-
-  const discountType = document.getElementById('res-discount-type')?.value || 'percent';
   const projectLinked = Boolean(document.getElementById('res-project')?.value);
+  const rawValue = document.getElementById('res-discount')?.value || '0';
+  const discount = projectLinked ? 0 : (parseFloat(normalizeNumbers(rawValue)) || 0);
+
+  const discountTypeRaw = document.getElementById('res-discount-type')?.value || 'percent';
+  const discountType = projectLinked ? 'percent' : discountTypeRaw;
   const taxCheckbox = document.getElementById('res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const paymentSelect = document.getElementById('res-payment-status');
