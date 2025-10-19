@@ -541,7 +541,7 @@ select.form-select option {
   }
 
   .project-type-field select {
-    min-width: 240px;
+    min-width: 200px;
   }
 
   .project-description-field {
@@ -561,7 +561,7 @@ select.form-select option {
   }
 
   .project-type-field select {
-    min-width: 260px;
+    min-width: 220px;
   }
 
   .project-description-field {
