@@ -198,7 +198,6 @@
                   </div>
                   <div class="flex flex-wrap items-center gap-2">
                     <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
-                    <a href="projects-reports.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.reports">📊 تقارير المشاريع</a>
                   </div>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -238,6 +237,28 @@
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
       </div>
+      <div class="dashboard-header-metrics">
+        <div class="glass-card dashboard-header-metrics-card">
+          <div class="dashboard-header-metrics-grid grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="summary-stat">
+              <div class="summary-value" id="projects-count">0</div>
+              <div class="summary-label" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
+            </div>
+            <div class="summary-stat">
+              <div class="summary-value" id="projects-upcoming">0</div>
+              <div class="summary-label" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
+            </div>
+            <div class="summary-stat">
+              <div class="summary-value" id="projects-expenses">0</div>
+              <div class="summary-label" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
+            </div>
+            <div class="summary-stat">
+              <div class="summary-value" id="projects-budget">0</div>
+              <div class="summary-label" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
 
     <div class="flex flex-1 flex-col">
@@ -251,26 +272,6 @@
                 <p class="text-base text-base-content/70 projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
                 <div class="flex flex-wrap gap-3">
                   <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
-                  <a href="projects-reports.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.reports">📊 تقارير المشاريع</a>
-                  <a href="projects-expenses.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.expenses">💸 مصاريف المشاريع</a>
-                </div>
-              </div>
-              <div class="projects-hero-summary grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:max-w-2xl">
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-count">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-upcoming">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-expenses">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-budget">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
                 </div>
               </div>
             </div>

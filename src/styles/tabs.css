@@ -11,6 +11,8 @@
 .tab-buttons-horizontal {
   width: 100%;
   max-width: 100%;
+  justify-content: center;
+  margin-inline: auto;
 }
 
 body[dir="rtl"] .tab-buttons:not(.tab-buttons-horizontal),
@@ -27,6 +29,13 @@ body[dir="ltr"] .sub-tab-buttons {
   justify-content: flex-start;
   margin-right: auto;
   margin-left: 0;
+}
+
+body[dir="rtl"] .projects-subtabs .sub-tab-buttons,
+body[dir="ltr"] .projects-subtabs .sub-tab-buttons {
+  justify-content: center;
+  margin-inline: auto;
+  width: 100%;
 }
 
 .tab-button,
