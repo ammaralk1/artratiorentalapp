@@ -541,7 +541,7 @@ function renderKpis(projects) {
   ];
 
   dom.kpiGrid.innerHTML = cards.map(({ icon, label, value, meta }) => `
-    <div class="reports-kpi-card">
+    <div class="reports-kpi-card glass-card">
       <div class="reports-kpi-icon">${icon}</div>
       <div class="reports-kpi-content">
         <p class="reports-kpi-label">${escapeHtml(label)}</p>
