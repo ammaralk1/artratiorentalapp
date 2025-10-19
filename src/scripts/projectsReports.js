@@ -13,6 +13,7 @@ import { getReservationsState, refreshReservationsFromApi } from './reservations
 
 const PROJECT_TAX_RATE = 0.15;
 const charts = {};
+const APEX_CHART_SRC = 'https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js';
 let chartLoadingRequests = 0;
 
 const state = {
@@ -136,14 +137,50 @@ document.addEventListener('DOMContentLoaded', initReports);
 
 async function ensureChartLibrary() {
   if (ChartLib) return ChartLib;
+  if (typeof window === 'undefined') return null;
+  if (window.ApexCharts) {
+    ChartLib = window.ApexCharts;
+    return ChartLib;
+  }
   try {
-    const module = await import('https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js');
-    ChartLib = module.default;
+    await loadExternalScript(APEX_CHART_SRC);
+    ChartLib = window.ApexCharts || null;
   } catch (error) {
-    console.warn('Chart.js failed to load', error);
+    console.warn('ApexCharts failed to load', error);
     ChartLib = null;
   }
   return ChartLib;
+}
+
+function loadExternalScript(src) {
+  return new Promise((resolve, reject) => {
+    if (typeof document === 'undefined') {
+      reject(new Error('Document is not available to load scripts.'));
+      return;
+    }
+
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === 'true') {
+        resolve();
+        return;
+      }
+      existing.addEventListener('load', resolve, { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load script ${src}`)), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.loaded = 'false';
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Failed to load script ${src}`));
+    document.head.appendChild(script);
+  });
 }
 
 function cacheDom() {
@@ -595,53 +632,57 @@ function updateStatusChipsActive() {
 
 function renderStatusChart(projects) {
   if (!ChartLib) return;
-  const ctx = document.getElementById('reports-status-chart');
-  if (!ctx) return;
+  const container = document.getElementById('reports-status-chart');
+  if (!container) return;
 
   const statusOrder = ['upcoming', 'ongoing', 'completed'];
   const counts = statusOrder.map((status) => projects.filter((project) => project.status === status).length);
   const labels = statusOrder.map((status) => t(`projects.status.${status}`, status));
+  const total = counts.reduce((sum, value) => sum + value, 0);
+  const series = total > 0 ? counts : [];
 
-  const data = {
+  const options = {
+    chart: {
+      type: 'donut',
+      height: 320,
+      toolbar: { show: false }
+    },
     labels,
-    datasets: [
+    series,
+    colors: ['#3b82f6', '#fbbf24', '#22c55e'],
+    dataLabels: {
+      formatter: (val) => (Number.isFinite(val) ? `${Math.round(val)}%` : '0%')
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '13px'
+    },
+    stroke: { width: 0 },
+    tooltip: {
+      y: {
+        formatter: (value) => formatCompactNumber(value)
+      }
+    },
+    noData: {
+      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
+    },
+    responsive: [
       {
-        data: counts,
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.85)',
-          'rgba(250, 204, 21, 0.85)',
-          'rgba(34, 197, 94, 0.85)'
-        ],
-        borderColor: [
-          'rgba(37, 99, 235, 1)',
-          'rgba(217, 119, 6, 1)',
-          'rgba(22, 163, 74, 1)'
-        ],
-        borderWidth: 1
+        breakpoint: 1024,
+        options: {
+          chart: { height: 280 }
+        }
       }
     ]
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          usePointStyle: true
-        }
-      }
-    }
-  };
-
-  updateChartInstance('status', ctx, 'doughnut', data, options);
+  renderApexChart('status', container, options);
 }
 
 function renderTimelineChart(projects) {
   if (!ChartLib) return;
-  const ctx = document.getElementById('reports-timeline-chart');
-  if (!ctx) return;
+  const container = document.getElementById('reports-timeline-chart');
+  if (!container) return;
 
   const monthBuckets = new Map();
   const formatter = new Intl.DateTimeFormat(getChartLocale(), { month: 'short', year: 'numeric' });
@@ -664,47 +705,60 @@ function renderTimelineChart(projects) {
   const limitedKeys = sortedKeys.slice(-12);
   const labels = limitedKeys.map((key) => monthBuckets.get(key)?.label || key);
   const values = limitedKeys.map((key) => Math.round(monthBuckets.get(key)?.total || 0));
-
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: t('projects.reports.charts.timeline', 'Revenue over time'),
-        data: values,
-        borderColor: 'rgba(76, 110, 245, 0.95)',
-        backgroundColor: 'rgba(76, 110, 245, 0.25)',
-        fill: true,
-        tension: 0.35,
-        pointRadius: 4
-      }
-    ]
-  };
+  const series = values.length
+    ? [{ name: t('projects.reports.datasets.value', 'Total value'), data: values }]
+    : [];
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => formatCompactNumber(value)
-        }
+    chart: {
+      type: 'area',
+      height: 320,
+      toolbar: { show: false }
+    },
+    series,
+    xaxis: {
+      categories: labels,
+      labels: {
+        rotate: -35
       }
     },
-    plugins: {
-      legend: {
-        display: false
+    yaxis: {
+      labels: {
+        formatter: (value) => formatCompactNumber(value)
       }
+    },
+    dataLabels: { enabled: false },
+    stroke: {
+      curve: 'smooth',
+      width: 3
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 0.35,
+        opacityFrom: 0.5,
+        opacityTo: 0.05
+      }
+    },
+    markers: { size: 4 },
+    colors: ['#4c6ef5'],
+    tooltip: {
+      y: {
+        formatter: (value) => formatCompactNumber(value)
+      }
+    },
+    noData: {
+      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
     }
   };
 
-  updateChartInstance('timeline', ctx, 'line', data, options);
+  renderApexChart('timeline', container, options);
 }
 
 function renderExpenseChart(projects) {
   if (!ChartLib) return;
-  const ctx = document.getElementById('reports-expense-chart');
-  if (!ctx) return;
+  const container = document.getElementById('reports-expense-chart');
+  if (!container) return;
 
   const topProjects = [...projects]
     .sort((a, b) => b.overallTotal - a.overallTotal)
@@ -713,52 +767,58 @@ function renderExpenseChart(projects) {
   const labels = topProjects.map((project) => project.title || project.projectCode);
   const valueData = topProjects.map((project) => Math.round(project.overallTotal));
   const expenseData = topProjects.map((project) => Math.round(project.expensesTotal));
+  const series = labels.length
+    ? [
+        { name: t('projects.reports.datasets.value', 'Total value'), data: valueData },
+        { name: t('projects.reports.datasets.expenses', 'Expenses'), data: expenseData }
+      ]
+    : [];
 
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: t('projects.reports.datasets.value', 'Total value'),
-        data: valueData,
-        backgroundColor: 'rgba(76, 110, 245, 0.65)'
-      },
-      {
-        label: t('projects.reports.datasets.expenses', 'Expenses'),
-        data: expenseData,
-        backgroundColor: 'rgba(244, 114, 182, 0.55)'
-      }
-    ]
-  };
+  const chartHeight = Math.max(320, labels.length * 60 || 0);
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    scales: {
-      x: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => formatCompactNumber(value)
-        }
+    chart: {
+      type: 'bar',
+      height: chartHeight,
+      toolbar: { show: false }
+    },
+    series,
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        barHeight: '55%',
+        borderRadius: 8
       }
     },
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          usePointStyle: true
-        }
+    xaxis: {
+      categories: labels,
+      labels: {
+        formatter: (value) => formatCompactNumber(value)
       }
+    },
+    dataLabels: { enabled: false },
+    legend: {
+      position: 'bottom',
+      fontSize: '13px'
+    },
+    colors: ['#4c6ef5', '#f472b6'],
+    tooltip: {
+      y: {
+        formatter: (value) => formatCompactNumber(value)
+      }
+    },
+    noData: {
+      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
     }
   };
 
-  updateChartInstance('expenses', ctx, 'bar', data, options);
+  renderApexChart('expenses', container, options);
 }
 
 function renderClientsChart(projects) {
   if (!ChartLib) return;
-  const ctx = document.getElementById('reports-clients-chart');
-  if (!ctx) return;
+  const container = document.getElementById('reports-clients-chart');
+  if (!container) return;
 
   const clientTotals = new Map();
   projects.forEach((project) => {
@@ -773,46 +833,77 @@ function renderClientsChart(projects) {
 
   const labels = sortedClients.map(([client]) => client);
   const values = sortedClients.map(([, total]) => Math.round(total));
-
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: t('projects.reports.charts.clients', 'Top clients'),
-        data: values,
-        backgroundColor: 'rgba(59, 130, 246, 0.75)'
-      }
-    ]
-  };
+  const series = values.length
+    ? [{ name: t('projects.reports.datasets.value', 'Total value'), data: values }]
+    : [];
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => formatCompactNumber(value)
-        }
+    chart: {
+      type: 'bar',
+      height: 320,
+      toolbar: { show: false }
+    },
+    series,
+    plotOptions: {
+      bar: {
+        borderRadius: 6,
+        columnWidth: '60%'
       }
     },
-    plugins: {
-      legend: {
-        display: false
+    xaxis: {
+      categories: labels,
+      labels: {
+        rotate: -35
       }
+    },
+    yaxis: {
+      labels: {
+        formatter: (value) => formatCompactNumber(value)
+      }
+    },
+    dataLabels: { enabled: false },
+    colors: ['#3b82f6'],
+    tooltip: {
+      y: {
+        formatter: (value) => formatCompactNumber(value)
+      }
+    },
+    legend: { show: false },
+    noData: {
+      text: t('projects.reports.noData', 'لا توجد بيانات متاحة')
     }
   };
 
-  updateChartInstance('clients', ctx, 'bar', data, options);
+  renderApexChart('clients', container, options);
 }
 
-function updateChartInstance(key, ctx, type, data, options) {
-  if (!ChartLib || !ctx) return;
+function renderApexChart(key, element, options = {}) {
+  if (!ChartLib || !element) return;
   if (charts[key]) {
-    charts[key].destroy();
+    try {
+      charts[key].destroy();
+    } catch (error) {
+      console.warn(`⚠️ [projectsReports] Failed to destroy ${key} chart`, error);
+    }
     delete charts[key];
   }
-  charts[key] = new ChartLib(ctx, { type, data, options });
+
+  element.innerHTML = '';
+
+  const chartOptions = { ...options };
+  if (!Array.isArray(chartOptions.series)) {
+    chartOptions.series = [];
+  }
+
+  try {
+    const chart = new ChartLib(element, chartOptions);
+    charts[key] = chart;
+    chart.render().catch((error) => {
+      console.error(`❌ [projectsReports] Failed to render ${key} chart`, error);
+    });
+  } catch (error) {
+    console.error(`❌ [projectsReports] Failed to render ${key} chart`, error);
+  }
 }
 
 function renderTable(projects) {
