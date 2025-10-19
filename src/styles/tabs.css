@@ -61,7 +61,7 @@ body[dir="ltr"] .sub-tab-buttons {
 .sub-tab-button.tab-active {
   background: linear-gradient(135deg, #4c6ef5, #5a8dff);
   color: #fff;
-  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.25);
+  box-shadow: 0 10px 24px rgba(76, 110, 245, 0.28), 0 0 18px rgba(140, 170, 255, 0.25);
   border-color: transparent;
 }
 
@@ -84,7 +84,7 @@ body[dir="ltr"] .sub-tab-buttons {
 :is(html.dark-mode, body.dark-mode) .sub-tab-button.active,
 :is(html.dark-mode, body.dark-mode) .sub-tab-button.tab-active {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 18px 32px rgba(37, 99, 235, 0.38), 0 0 24px rgba(96, 165, 250, 0.32);
 }
 
 body.tabs-loading .tab-buttons,
@@ -228,23 +228,6 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   isolation: isolate;
 }
 
-.reservations-subtabs-container .sub-tab-button.tab::after,
-.dashboard-subtabbar .sub-tab-button.tab::after {
-  content: "";
-  position: absolute;
-  inset-inline: clamp(1.1rem, 3.5vw, 1.8rem);
-  inset-block-end: clamp(0.35rem, 1.2vw, 0.6rem);
-  height: 0.45rem;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.65), rgba(129, 140, 248, 0.85));
-  opacity: 0;
-  transform: scaleX(0.6);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-  filter: blur(0.5px);
-  z-index: 0;
-  pointer-events: none;
-}
-
 .reservations-subtabs-container .sub-tab-button.tab:hover,
 .dashboard-subtabbar .sub-tab-button.tab:hover {
   background: linear-gradient(145deg, rgba(244, 247, 255, 0.98), rgba(223, 233, 255, 0.94));
@@ -258,13 +241,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   background: linear-gradient(140deg, rgba(76, 110, 245, 0.94), rgba(93, 139, 255, 0.92));
   color: #ffffff;
   border-color: rgba(76, 110, 245, 0.35);
-  box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32), 0 0 0 4px rgba(76, 110, 245, 0.16);
-}
-
-.reservations-subtabs-container .sub-tab-button.tab.tab-active::after,
-.dashboard-subtabbar .sub-tab-button.tab.tab-active::after {
-  opacity: 1;
-  transform: scaleX(1);
+  box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32), 0 0 22px rgba(76, 110, 245, 0.18);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
@@ -287,14 +264,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: 0 26px 48px rgba(37, 99, 235, 0.42);
 }
 
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab::after,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab::after {
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.65), rgba(129, 140, 248, 0.85));
-}
-
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active::after,
-:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active::after {
-  background: linear-gradient(135deg, rgba(191, 219, 254, 0.9), rgba(165, 180, 252, 0.9));
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active,
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active {
+  box-shadow: 0 26px 48px rgba(37, 99, 235, 0.42), 0 0 28px rgba(148, 197, 255, 0.35);
 }
 
 .sub-tab-button:not(.tab) {
