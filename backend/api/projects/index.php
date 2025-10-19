@@ -397,7 +397,39 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     $paymentStatusRaw = $paymentStatusExists ? (string) ($payload['payment_status'] ?? '') : '';
     $paymentStatus = $paymentStatusExists ? normalizePaymentStatus($paymentStatusRaw) : null;
     if ($paymentStatusExists && !$paymentStatus) {
-        $errors['payment_status'] = 'Payment status must be paid or unpaid';
+        $errors['payment_status'] = 'Payment status must be paid, partially paid, or unpaid';
+    }
+
+    $discountExists = array_key_exists('discount', $payload) || !$isUpdate;
+    $discount = $discountExists ? (float) ($payload['discount'] ?? 0) : null;
+    if ($discountExists && $discount !== null && $discount < 0) {
+        $errors['discount'] = 'Discount must be zero or greater';
+    }
+
+    $discountTypeExists = array_key_exists('discount_type', $payload) || !$isUpdate;
+    $discountTypeRaw = $discountTypeExists ? strtolower(trim((string) ($payload['discount_type'] ?? 'percent'))) : null;
+    $discountType = $discountTypeExists ? ($discountTypeRaw === 'amount' ? 'amount' : ($discountTypeRaw === 'percent' ? 'percent' : null)) : null;
+    if ($discountTypeExists && $discountType === null) {
+        $errors['discount_type'] = 'Discount type must be percent or amount';
+    }
+
+    $companyShareEnabledExists = array_key_exists('company_share_enabled', $payload) || !$isUpdate;
+    $companyShareEnabled = $companyShareEnabledExists ? filter_var($payload['company_share_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN) : null;
+
+    $companySharePercentExists = array_key_exists('company_share_percent', $payload) || !$isUpdate;
+    $companySharePercent = $companySharePercentExists ? (float) ($payload['company_share_percent'] ?? 0) : null;
+    if ($companySharePercentExists) {
+        if ($companySharePercent < 0) {
+            $errors['company_share_percent'] = 'Company share percent must be zero or greater';
+        } elseif ($companySharePercent > 100) {
+            $errors['company_share_percent'] = 'Company share percent must be 100 or less';
+        }
+    }
+
+    $companyShareAmountExists = array_key_exists('company_share_amount', $payload) || !$isUpdate;
+    $companyShareAmount = $companyShareAmountExists ? (float) ($payload['company_share_amount'] ?? 0) : null;
+    if ($companyShareAmountExists && $companyShareAmount < 0) {
+        $errors['company_share_amount'] = 'Company share amount must be zero or greater';
     }
 
     $equipmentEstimateExists = array_key_exists('equipment_estimate', $payload) || !$isUpdate;
@@ -416,6 +448,40 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     $totalWithTax = $totalWithTaxExists ? (float) ($payload['total_with_tax'] ?? 0) : null;
     if ($totalWithTaxExists && $totalWithTax !== null && $totalWithTax < 0) {
         $errors['total_with_tax'] = 'Total with tax must be zero or greater';
+    }
+
+    $paidAmountExists = array_key_exists('paid_amount', $payload) || !$isUpdate;
+    $paidAmount = $paidAmountExists ? (float) ($payload['paid_amount'] ?? 0) : null;
+    if ($paidAmountExists && $paidAmount < 0) {
+        $errors['paid_amount'] = 'Paid amount must be zero or greater';
+    }
+
+    $paidPercentageExists = array_key_exists('paid_percentage', $payload) || !$isUpdate;
+    $paidPercentage = $paidPercentageExists ? (float) ($payload['paid_percentage'] ?? 0) : null;
+    if ($paidPercentageExists) {
+        if ($paidPercentage < 0) {
+            $errors['paid_percentage'] = 'Paid percentage must be zero or greater';
+        } elseif ($paidPercentage > 100) {
+            $errors['paid_percentage'] = 'Paid percentage must be 100 or less';
+        }
+    }
+
+    $paymentProgressTypeExists = array_key_exists('payment_progress_type', $payload) || !$isUpdate;
+    $paymentProgressTypeRaw = $paymentProgressTypeExists ? strtolower(trim((string) ($payload['payment_progress_type'] ?? ''))) : '';
+    $paymentProgressType = $paymentProgressTypeExists
+        ? ($paymentProgressTypeRaw === 'amount' ? 'amount' : ($paymentProgressTypeRaw === 'percent' ? 'percent' : null))
+        : null;
+    if ($paymentProgressTypeExists && $paymentProgressTypeRaw !== '' && $paymentProgressType === null) {
+        $errors['payment_progress_type'] = 'Payment progress type must be amount or percent';
+    }
+
+    $paymentProgressValueExists = array_key_exists('payment_progress_value', $payload) || (!$isUpdate && $paymentProgressTypeExists);
+    $paymentProgressValue = $paymentProgressValueExists ? (float) ($payload['payment_progress_value'] ?? 0) : null;
+    if ($paymentProgressValueExists && $paymentProgressValue < 0) {
+        $errors['payment_progress_value'] = 'Payment progress value must be zero or greater';
+    }
+    if ($paymentProgressType === 'percent' && $paymentProgressValue !== null && $paymentProgressValue > 100) {
+        $errors['payment_progress_value'] = 'Payment progress percentage must be 100 or less';
     }
 
     $expensesExists = array_key_exists('expenses', $payload);
@@ -466,6 +532,15 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         if ($expensesTotal < 0) {
             $errors['expenses_total'] = 'Expenses total must be zero or greater';
         }
+    }
+
+    if ($applyTaxExists && $applyTax === false) {
+        $companyShareEnabled = false;
+        $companySharePercent = 0;
+        $companyShareAmount = 0;
+        $companyShareEnabledExists = true;
+        $companySharePercentExists = true;
+        $companyShareAmountExists = true;
     }
 
     $techniciansExists = array_key_exists('technicians', $payload);
@@ -592,6 +667,33 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     }
     if ($totalWithTaxExists) {
         $fields['total_with_tax'] = $totalWithTax !== null ? round($totalWithTax, 2) : 0;
+    }
+    if ($discountExists) {
+        $fields['discount'] = $discount !== null ? round($discount, 2) : 0;
+    }
+    if ($discountTypeExists) {
+        $fields['discount_type'] = $discountType ?? 'percent';
+    }
+    if ($companyShareEnabledExists) {
+        $fields['company_share_enabled'] = $companyShareEnabled ? 1 : 0;
+    }
+    if ($companySharePercentExists) {
+        $fields['company_share_percent'] = $companySharePercent !== null ? round($companySharePercent, 2) : 0;
+    }
+    if ($companyShareAmountExists) {
+        $fields['company_share_amount'] = $companyShareAmount !== null ? round($companyShareAmount, 2) : 0;
+    }
+    if ($paidAmountExists) {
+        $fields['paid_amount'] = $paidAmount !== null ? round($paidAmount, 2) : 0;
+    }
+    if ($paidPercentageExists) {
+        $fields['paid_percentage'] = $paidPercentage !== null ? round($paidPercentage, 2) : 0;
+    }
+    if ($paymentProgressTypeExists) {
+        $fields['payment_progress_type'] = $paymentProgressType ?? null;
+    }
+    if ($paymentProgressValueExists) {
+        $fields['payment_progress_value'] = $paymentProgressValue !== null ? round($paymentProgressValue, 2) : null;
     }
     if ($confirmedExists) {
         $fields['confirmed'] = $confirmed ? 1 : 0;
@@ -742,10 +844,19 @@ function mapProjectRow(PDO $pdo, array $row): array
         'end_datetime' => $row['end_datetime'],
         'apply_tax' => (bool) $row['apply_tax'],
         'payment_status' => $row['payment_status'],
+        'discount' => isset($row['discount']) ? (float) $row['discount'] : 0.0,
+        'discount_type' => $row['discount_type'] ?? 'percent',
+        'company_share_enabled' => isset($row['company_share_enabled']) ? (bool) $row['company_share_enabled'] : false,
+        'company_share_percent' => isset($row['company_share_percent']) ? (float) $row['company_share_percent'] : 0.0,
+        'company_share_amount' => isset($row['company_share_amount']) ? (float) $row['company_share_amount'] : 0.0,
         'equipment_estimate' => (float) $row['equipment_estimate'],
         'expenses_total' => (float) $row['expenses_total'],
         'tax_amount' => (float) $row['tax_amount'],
         'total_with_tax' => (float) $row['total_with_tax'],
+        'paid_amount' => isset($row['paid_amount']) ? (float) $row['paid_amount'] : 0.0,
+        'paid_percentage' => isset($row['paid_percentage']) ? (float) $row['paid_percentage'] : 0.0,
+        'payment_progress_type' => $row['payment_progress_type'] ?? null,
+        'payment_progress_value' => isset($row['payment_progress_value']) ? (float) $row['payment_progress_value'] : null,
         'confirmed' => (bool) $row['confirmed'],
         'created_at' => $row['created_at'],
         'updated_at' => $row['updated_at'],
@@ -832,6 +943,7 @@ function normalizePaymentStatus(?string $status): ?string
 
     return match ($normalized) {
         'paid', 'مدفوع' => 'paid',
+        'partial', 'partially_paid', 'partial_paid', 'مدفوع جزئياً', 'مدفوع جزئيا' => 'partial',
         'unpaid', 'غير مدفوع' => 'unpaid',
         default => null,
     };
