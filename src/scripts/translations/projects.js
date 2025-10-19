@@ -43,6 +43,9 @@ registerTranslations({
     'projects.form.linkedReservation.button': '➕ إنشاء حجز مرتبط',
     'projects.form.linkedReservation.missingClient': '⚠️ يرجى اختيار العميل قبل إنشاء الحجز المرتبط',
     'projects.form.linkedReservation.missingSchedule': '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إنشاء الحجز المرتبط',
+    'projects.form.linkedReservation.empty': 'لم يتم إنشاء حجوزات مرتبطة بعد.',
+    'projects.form.linkedReservation.pendingItem': 'سيتم ربط هذا الحجز تلقائيًا بعد حفظ المشروع.',
+    'projects.form.linkedReservation.buttonDisabled': 'تم إنشاء حجز مرتبط لهذا المشروع. يمكنك متابعة التعديلات من شاشة الحجز.',
 
     'projects.form.selectClient': 'اختر العميل',
     'projects.form.selectTechnician': 'اختر عضو الطاقم',
@@ -349,6 +352,9 @@ registerTranslations({
     'projects.form.linkedReservation.button': '➕ Create Linked Reservation',
     'projects.form.linkedReservation.missingClient': '⚠️ Please select the client before creating the linked reservation.',
     'projects.form.linkedReservation.missingSchedule': '⚠️ Please provide both start and end date/time before creating the linked reservation.',
+    'projects.form.linkedReservation.empty': 'No linked reservations yet.',
+    'projects.form.linkedReservation.pendingItem': 'This reservation will be linked automatically once the project is saved.',
+    'projects.form.linkedReservation.buttonDisabled': 'A linked reservation was created. Manage further changes from the reservation itself.',
 
     'projects.form.selectClient': 'Select client',
     'projects.form.selectTechnician': 'Select crew member',

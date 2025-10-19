@@ -25,7 +25,8 @@ import { clearProjectDateInputs } from './dom.js';
 import {
   escapeHtml,
   formatCurrency,
-  getEmptyText
+  getEmptyText,
+  formatDateTime
 } from './formatting.js';
 import {
   renderProjects,
@@ -87,6 +88,7 @@ export function resetProjectFormState() {
   if (dom.taxCheckbox) dom.taxCheckbox.checked = false;
   if (dom.paymentStatus) dom.paymentStatus.value = 'unpaid';
   refreshProjectSubmitButton();
+  renderLinkedReservationDraftSummary();
 }
 
 export function bindSelectionEvents() {
@@ -598,6 +600,7 @@ function saveProjectFormDraft(draft) {
 function clearProjectFormDraft() {
   if (typeof window === 'undefined' || !window.sessionStorage) return;
   window.sessionStorage.removeItem(PROJECT_FORM_DRAFT_STORAGE_KEY);
+  renderLinkedReservationDraftSummary();
 }
 
 function captureProjectFormDraft() {
@@ -630,7 +633,10 @@ function captureProjectFormDraft() {
 
 export function restoreProjectFormDraft() {
   const draft = loadProjectFormDraft();
-  if (!draft) return false;
+  if (!draft) {
+    renderLinkedReservationDraftSummary();
+    return false;
+  }
 
   if (dom.type) dom.type.value = draft.type || '';
   if (dom.title) dom.title.value = draft.title || '';
@@ -653,6 +659,7 @@ export function restoreProjectFormDraft() {
     ? draft.equipment.map((item) => ({ ...item }))
     : [];
 
+  renderLinkedReservationDraftSummary();
   return true;
 }
 
@@ -756,5 +763,106 @@ async function linkDraftReservationsToProject(projectId) {
     showToast(t('projects.toast.linkReservationFailed', '⚠️ تعذر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا'), 'error');
   }
 
+  renderLinkedReservationDraftSummary();
   return pending.length;
+}
+
+function buildReservationLookup() {
+  const index = new Map();
+
+  const register = (reservation) => {
+    if (!reservation) return;
+    const keys = [reservation.id, reservation.reservationId, reservation.reservation_id, reservation.reservation_code]
+      .map((key) => (key != null ? String(key) : ''))
+      .filter(Boolean);
+    keys.forEach((key) => {
+      if (!index.has(key)) {
+        index.set(key, reservation);
+      }
+    });
+  };
+
+  if (Array.isArray(state.reservations)) {
+    state.reservations.forEach(register);
+  }
+
+  const snapshot = loadData();
+  if (Array.isArray(snapshot?.reservations)) {
+    snapshot.reservations.forEach(register);
+  }
+
+  return index;
+}
+
+function renderLinkedReservationDraftSummary() {
+  const summaryEl = document.getElementById('project-linked-reservation-summary');
+  if (!summaryEl) return;
+
+  const draft = loadProjectFormDraft();
+  const button = dom.linkedReservationBtn;
+  const ids = Array.isArray(draft?.linkedReservationIds)
+    ? Array.from(new Set(draft.linkedReservationIds.map((value) => String(value)).filter(Boolean)))
+    : [];
+
+  if (!ids.length) {
+    summaryEl.dataset.state = 'empty';
+    summaryEl.innerHTML = `<p class="project-linked-reservation__summary-empty">${escapeHtml(t('projects.form.linkedReservation.empty', 'لم يتم إنشاء حجوزات مرتبطة بعد.'))}</p>`;
+    if (button) {
+      button.disabled = false;
+      button.classList.remove('btn-disabled');
+      button.removeAttribute('aria-disabled');
+      button.title = '';
+    }
+    return;
+  }
+
+  const lookup = buildReservationLookup();
+  const listItems = ids.map((id) => {
+    const reservation = lookup.get(id);
+    if (!reservation) {
+      return `
+        <li class="project-linked-reservation__summary-item">
+          <div class="project-linked-reservation__summary-item-title">#${escapeHtml(normalizeNumbers(id))}</div>
+          <div class="project-linked-reservation__summary-item-meta">
+            <span>${escapeHtml(t('projects.form.linkedReservation.pendingItem', 'تم إنشاء حجز جديد وسيتم ربطه بعد حفظ المشروع.'))}</span>
+          </div>
+        </li>`;
+    }
+
+    const code = reservation.reservation_code || reservation.reservationId || reservation.id || id;
+    const codeText = `#${normalizeNumbers(String(code))}`;
+    const customerName = reservation.customerName || reservation.customer_name || t('projects.fallback.unknownClient', 'عميل غير معروف');
+    const startIso = reservation.start_datetime || reservation.start || '';
+    const endIso = reservation.end_datetime || reservation.end || '';
+    const formattedStart = startIso ? formatDateTime(startIso) : '';
+    const formattedEnd = endIso ? formatDateTime(endIso) : '';
+    const statusKey = reservation.status ? `reservations.status.${reservation.status}` : null;
+    const statusLabel = statusKey ? t(statusKey, reservation.status) : '';
+
+    const metaParts = [];
+    if (formattedStart || formattedEnd) {
+      const range = formattedEnd ? `${formattedStart} → ${formattedEnd}` : formattedStart;
+      metaParts.push(range);
+    }
+    if (customerName) metaParts.push(customerName);
+    if (statusLabel) metaParts.push(statusLabel);
+
+    return `
+      <li class="project-linked-reservation__summary-item">
+        <div class="project-linked-reservation__summary-item-title">${escapeHtml(codeText)}</div>
+        <div class="project-linked-reservation__summary-item-meta">
+          ${metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('')}
+        </div>
+      </li>`;
+  }).join('');
+
+  summaryEl.dataset.state = 'has-linked';
+  summaryEl.innerHTML = `<ul class="project-linked-reservation__summary-list">${listItems}</ul>`;
+
+  if (button) {
+    button.disabled = true;
+    button.classList.add('btn-disabled');
+    button.setAttribute('aria-disabled', 'true');
+    button.title = t('projects.form.linkedReservation.buttonDisabled', 'تم إنشاء حجز مرتبط لهذا المشروع. يمكنك تعديل الحجز بعد حفظ المشروع.');
+  }
 }
