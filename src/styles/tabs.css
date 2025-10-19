@@ -224,18 +224,25 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   gap: 0.3rem;
   line-height: 1.3;
   font-weight: 600;
+  position: relative;
+  isolation: isolate;
 }
 
 .reservations-subtabs-container .sub-tab-button.tab::after,
 .dashboard-subtabbar .sub-tab-button.tab::after {
   content: "";
-  display: block;
-  width: 0;
-  height: 0;
+  position: absolute;
+  inset-inline: clamp(1.1rem, 3.5vw, 1.8rem);
+  inset-block-end: clamp(0.35rem, 1.2vw, 0.6rem);
+  height: 0.45rem;
   border-radius: 999px;
-  background: transparent;
-  margin-top: 0;
-  transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, margin-top 0.25s ease;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.65), rgba(129, 140, 248, 0.85));
+  opacity: 0;
+  transform: scaleX(0.6);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  filter: blur(0.5px);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .reservations-subtabs-container .sub-tab-button.tab:hover,
@@ -250,16 +257,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .dashboard-subtabbar .sub-tab-button.tab.tab-active {
   background: linear-gradient(140deg, rgba(76, 110, 245, 0.94), rgba(93, 139, 255, 0.92));
   color: #ffffff;
-  border-color: transparent;
-  box-shadow: 0 20px 40px rgba(76, 110, 245, 0.28);
+  border-color: rgba(76, 110, 245, 0.35);
+  box-shadow: 0 24px 46px rgba(37, 99, 235, 0.32), 0 0 0 4px rgba(76, 110, 245, 0.16);
 }
 
 .reservations-subtabs-container .sub-tab-button.tab.tab-active::after,
 .dashboard-subtabbar .sub-tab-button.tab.tab-active::after {
-  width: 46px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.9);
-  margin-top: 8px;
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab,
@@ -284,12 +289,12 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab::after,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab::after {
-  background: transparent;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.65), rgba(129, 140, 248, 0.85));
 }
 
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .reservations-subtabs-container .sub-tab-button.tab.tab-active::after,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .dashboard-subtabbar .sub-tab-button.tab.tab-active::after {
-  background: rgba(241, 245, 249, 0.92);
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.9), rgba(165, 180, 252, 0.9));
 }
 
 .sub-tab-button:not(.tab) {
