@@ -385,7 +385,7 @@ export function startProjectEdit(project) {
       }))
     : [];
 
-  const normalizedPayments = Array.isArray(resolved.paymentHistory)
+  let normalizedPayments = Array.isArray(resolved.paymentHistory)
     ? resolved.paymentHistory.map((entry, index) => ({
         type: entry?.type === 'percent' ? 'percent' : 'amount',
         amount: Number.isFinite(Number(entry?.amount)) ? Number(entry.amount) : null,
@@ -397,11 +397,48 @@ export function startProjectEdit(project) {
       }))
     : [];
 
-  const historyPaidAmount = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0);
-  const historyPaidPercent = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.percentage) || 0), 0);
+  let historyPaidAmount = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0);
+  let historyPaidPercent = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.percentage) || 0), 0);
 
   let basePaidAmount = Number.isFinite(Number(resolved.paidAmount)) ? Number(resolved.paidAmount) : 0;
   let basePaidPercent = Number.isFinite(Number(resolved.paidPercent)) ? Number(resolved.paidPercent) : 0;
+
+  if (!normalizedPayments.length && (basePaidAmount > 0 || basePaidPercent > 0)) {
+    const fallbackRecordedAt = resolved.updatedAt
+      ?? resolved.createdAt
+      ?? new Date().toISOString();
+
+    if (basePaidPercent > 0) {
+      normalizedPayments = [
+        {
+          type: 'percent',
+          amount: Number.isFinite(basePaidAmount) && basePaidAmount > 0 ? basePaidAmount : null,
+          percentage: basePaidPercent,
+          value: basePaidPercent,
+          note: null,
+          recordedAt: fallbackRecordedAt,
+          key: `legacy-payment-${resolved.id}-percent`
+        }
+      ];
+    } else if (basePaidAmount > 0) {
+      normalizedPayments = [
+        {
+          type: 'amount',
+          amount: basePaidAmount,
+          percentage: null,
+          value: basePaidAmount,
+          note: null,
+          recordedAt: fallbackRecordedAt,
+          key: `legacy-payment-${resolved.id}-amount`
+        }
+      ];
+    }
+
+    historyPaidAmount = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0);
+    historyPaidPercent = normalizedPayments.reduce((sum, entry) => sum + (Number(entry?.percentage) || 0), 0);
+    basePaidAmount = 0;
+    basePaidPercent = 0;
+  }
 
   if (historyPaidAmount > 0 && Math.abs(basePaidAmount - historyPaidAmount) < 0.01) {
     basePaidAmount = 0;
@@ -1143,19 +1180,8 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
     || (project.company_share_enabled === true)
     || (project.company_share_enabled === 'true')
     || (applyTax && Number.isFinite(parsedSharePercent) && parsedSharePercent > 0);
-  const paymentProgressType = project.paymentProgressType === 'amount' ? 'amount'
-    : project.paymentProgressType === 'percent' ? 'percent'
-    : project.payment_progress_type === 'amount' ? 'amount'
-    : project.payment_progress_type === 'percent' ? 'percent'
-    : 'percent';
-  const paymentProgressValue = normalizeNumbers(
-    String(
-      project.paymentProgressValue
-      ?? project.payment_progress_value
-      ?? (paymentProgressType === 'amount' ? project.paidAmount ?? project.paid_amount : project.paidPercent ?? project.paid_percent)
-      ?? ''
-    )
-  );
+  const paymentProgressType = 'percent';
+  const paymentProgressValue = '';
 
   return `
     <form id="project-details-edit-form" class="project-edit-form">
@@ -1243,11 +1269,13 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </div>
 
       <section class="project-edit-payment-history mt-4">
-        <div class="reservation-payment-history__header">
-          <h6 class="reservation-payment-history__title">${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h6>
-        </div>
         <div id="project-edit-payment-summary" class="project-details-grid mb-3"></div>
-        <div id="project-edit-payment-history" class="reservation-payment-history"></div>
+        <div class="reservation-payment-history-block">
+          <div class="reservation-payment-history__header">
+            <h6 class="reservation-payment-history__title">${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h6>
+          </div>
+          <div id="project-edit-payment-history" class="reservation-payment-history"></div>
+        </div>
       </section>
 
       <section class="project-edit-expenses mt-4">
