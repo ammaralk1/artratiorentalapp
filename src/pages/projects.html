@@ -528,61 +528,73 @@
             </section>
 
             <section id="customers-section" class="tab-pane d-none space-y-6" data-tab-pane="customers-section">
-              <div class="box customer-form-box management-form-box">
+              <div class="tab-section-header">
+                <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+              </div>
+
+              <div class="box customer-form-box management-form-box mb-4">
                 <div class="management-form-header">
+                  <div class="management-form-icon">👤</div>
                   <div class="management-form-header-text">
                     <h4 data-i18n data-i18n-key="customers.form.title">إضافة / تعديل عميل</h4>
                     <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
                   </div>
-                  <div class="management-form-icon">👤</div>
                 </div>
                 <form id="customer-form" class="management-form">
                   <input type="hidden" id="customer-id">
                   <div class="management-form-grid">
                     <div class="form-field">
-                      <label class="form-label" for="customer-name" data-i18n data-i18n-key="customers.form.labels.name">👤 اسم العميل</label>
-                      <input type="text" id="customer-name" class="form-control input input-bordered" placeholder="محمد أحمد" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+                      <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                      <input type="text" class="form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 رقم الجوال</label>
-                      <input type="tel" id="customer-phone" class="form-control input input-bordered" placeholder="05xxxxxxxx" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+                      <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                      <input type="tel" class="form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-                      <input type="text" id="customer-company" class="form-control input input-bordered" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+                      <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                      <input type="email" class="form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد الإلكتروني</label>
-                      <input type="email" id="customer-email" class="form-control input input-bordered" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                      <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                      <input type="text" class="form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-tax" data-i18n data-i18n-key="customers.form.labels.tax">🧾 الرقم الضريبي</label>
-                      <input type="text" id="customer-tax" class="form-control input input-bordered" placeholder="الرقم الضريبي" data-i18n data-i18n-placeholder-key="customers.form.placeholders.tax">
+                      <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                      <input type="text" class="form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 ملاحظات</label>
-                      <textarea id="customer-notes" class="form-control textarea textarea-bordered" rows="3" placeholder="ملاحظات إضافية" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+                      <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                      <input type="text" class="form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+                    </div>
+                    <div class="form-field">
+                      <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                      <div class="customer-upload-inline">
+                        <input type="file" class="form-control" id="customer-document" accept="application/pdf,image/*">
+                        <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                        <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                      </div>
+                    </div>
+                    <div class="form-field form-field-notes">
+                      <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                      <textarea class="form-control" id="customer-notes" rows="2" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
                     </div>
                   </div>
-                  <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-3">
-                    <div class="d-flex flex-wrap gap-2">
-                      <button type="button" class="btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
-                      <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
-                    </div>
+                  <div class="management-form-actions">
+                    <button type="button" class="btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
                     <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
                   </div>
                 </form>
               </div>
 
-              <div class="glass-card management-filters">
-                <div class="management-filters-row">
-                  <div class="management-search-bar">
-                    <input type="text" id="search-customer-input" class="form-control input input-bordered" placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..." data-i18n data-i18n-placeholder-key="customers.search.placeholder">
-                  </div>
-                  <div class="management-filter-actions">
-                    <button type="button" class="btn btn-outline-secondary" id="customer-clear-search" data-i18n data-i18n-key="actions.clear">مسح</button>
-                  </div>
-                </div>
+              <div class="mb-3 management-search-bar">
+                <input
+                  type="text"
+                  id="search-customer-input"
+                  class="form-control"
+                  placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
+                  data-i18n data-i18n-placeholder-key="customers.search.placeholder"
+                >
               </div>
 
               <div class="customer-table-wrapper table-responsive">
@@ -606,108 +618,88 @@
             </section>
 
             <section id="technicians-section" class="tab-pane d-none space-y-6" data-tab-pane="technicians-section">
-              <div class="box add-technicians-box management-form-box">
+              <div class="tab-section-header">
+                <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+              </div>
+
+              <div class="box add-technicians-box management-form-box mb-4">
                 <div class="management-form-header">
-                  <div>
+                  <div class="management-form-icon">😎</div>
+                  <div class="management-form-header-text">
                     <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
                     <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
                   </div>
-                  <div class="management-form-icon">😎</div>
                 </div>
                 <form id="technician-form" class="management-form technician-form">
                   <input type="hidden" id="technician-id">
                   <div class="management-form-grid">
                     <div class="form-field">
                       <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                      <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
                     </div>
                     <div class="form-field">
                       <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+                      <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
                     </div>
                     <div class="form-field">
                       <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+                      <input type="text" class="form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
                     </div>
                     <div class="form-field">
                       <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+                      <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
                     </div>
                     <div class="form-field">
                       <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+                      <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
                     </div>
                     <div class="form-field">
+                      <label for="technician-total" class="form-label" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
+                      <input type="text" class="form-control" id="technician-total" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
+                    </div>
+                    <div class="form-field form-field-notes">
                       <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-                      <textarea class="form-control textarea textarea-bordered" id="technician-notes" rows="3" placeholder="ملاحظات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+                      <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
                     </div>
                   </div>
-                  <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-3">
+                  <div class="management-form-actions">
                     <button type="button" class="btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
                     <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
                   </div>
                 </form>
               </div>
 
-              <div class="glass-card technicians-filters">
-                <div class="row g-3 align-items-end">
-                  <div class="col-md-6">
-                    <label class="form-label" for="technician-status-filter" data-i18n data-i18n-key="technicians.filters.status">⚙️ حالة التوفر</label>
-                    <select class="form-select select select-bordered" id="technician-status-filter">
-                      <option value="all" data-i18n data-i18n-key="technicians.filters.statusAll">جميع الحالات</option>
-                      <option value="available" data-i18n data-i18n-key="technicians.filters.statusAvailable">متاح</option>
-                      <option value="busy" data-i18n data-i18n-key="technicians.filters.statusBusy">مشغول</option>
-                      <option value="inactive" data-i18n data-i18n-key="technicians.filters.statusInactive">غير مفعل</option>
-                    </select>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label" for="technician-department-filter" data-i18n data-i18n-key="technicians.filters.department">🧩 القسم</label>
-                    <select class="form-select select select-bordered" id="technician-department-filter">
-                      <option value="all" data-i18n data-i18n-key="technicians.filters.departmentAll">جميع الأقسام</option>
-                    </select>
-                  </div>
-                  <div class="col-12">
-                    <div class="management-search-bar">
-                      <input type="text" id="technician-search-input" class="form-control input input-bordered" placeholder="🔍 ابحث عن عضو بالاسم أو التخصص..." data-i18n data-i18n-placeholder-key="technicians.search.placeholder">
-                    </div>
-                  </div>
-                </div>
+              <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+                <input
+                  type="text"
+                  id="search-technician-input"
+                  class="form-control"
+                  placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+                  data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+                >
+                <select id="technician-role-filter" class="form-select">
+                  <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+                </select>
               </div>
 
-              <div class="box p-4">
-                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
-                  <h4 class="mb-0" data-i18n data-i18n-key="technicians.table.title">طاقم العمل المسجل</h4>
-                  <div class="d-flex flex-wrap gap-2">
-                    <select class="form-select select select-bordered" id="technician-sort-select">
-                      <option value="name" data-i18n data-i18n-key="technicians.sort.name">ترتيب حسب الاسم</option>
-                      <option value="department" data-i18n data-i18n-key="technicians.sort.department">حسب القسم</option>
-                      <option value="status" data-i18n data-i18n-key="technicians.sort.status">حسب الحالة</option>
-                    </select>
-                    <button type="button" class="btn btn-outline btn-secondary" id="technician-export-btn" data-i18n data-i18n-key="technicians.export">📤 تصدير القائمة</button>
-                  </div>
-                </div>
-
-                <div class="table-responsive">
-                  <table class="table table-bordered table-striped table-hover align-middle">
-                    <thead class="table-dark">
-                      <tr>
-                        <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.phone">📞 الجوال</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
-                        <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
-                        <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody id="technicians-table">
-                      <tr>
-                        <td colspan="8" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div class="customer-table-wrapper technician-table-wrapper table-responsive">
+                <table class="customer-table technician-table align-middle">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                      <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                      <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="technicians-table">
+                    <tr>
+                      <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </section>
           </div>
