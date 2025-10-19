@@ -1359,6 +1359,15 @@ body[dir="rtl"] .project-expense-amount {
   margin-inline-start: auto;
 }
 
+.project-details-info-heading {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+  margin: 16px 0 14px;
+  padding-inline-end: 16px;
+  text-align: start;
+}
+
 body[dir="rtl"] .project-details-header__info {
   align-items: flex-start;
   text-align: start;
@@ -1369,6 +1378,12 @@ body[dir="rtl"] .project-details-header__code {
   margin-inline-start: 0;
   margin-inline-end: auto;
   justify-content: flex-end;
+}
+
+body[dir="rtl"] .project-details-info-heading {
+  text-align: end;
+  padding-inline-end: 0;
+  padding-inline-start: 16px;
 }
 
 .project-details-subtitle {

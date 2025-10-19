@@ -243,7 +243,7 @@ export function openProjectDetails(projectId) {
     resolveProjectScheduleItem('end', project.end)
   ].filter(Boolean);
 
-  const projectInfoTitle = t('projects.details.overview.heading', 'معلومات المشروع');
+  const projectInfoTitle = t('projects.details.overview.heading', 'تفصيل المشروع');
 
   const projectInfoOutlineHtml = `
     <div class="project-details-outline">
