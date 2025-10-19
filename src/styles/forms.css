@@ -470,6 +470,12 @@ select.form-select option {
   --bs-gutter-y: 0.9rem;
 }
 
+.project-form .form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+}
+
 .project-form .form-control-dropdown {
   position: relative;
   display: flex;
