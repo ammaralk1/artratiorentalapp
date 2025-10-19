@@ -28,7 +28,7 @@
   <link rel="stylesheet" crossorigin href="../../assets/reports.css">
   <link rel="stylesheet" crossorigin href="../../assets/app.css">
 </head>
-<body class="page-shell theme-loading" data-theme="light">
+<body class="page-shell theme-loading projects-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
   <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
@@ -198,23 +198,59 @@
               </svg>
             </button>
             <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
-              <div class="flex flex-col gap-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                  <div class="space-y-1 text-start">
-                    <p class="text-sm text-base-content/60">👋 هذه مساحة موحدة لإدارة جميع تفاصيل مشاريعك.</p>
-                    <p class="text-base text-base-content/70">يمكنك إنشاء المشاريع، متابعة التقدم، ومراجعة التقارير من مكان واحد.</p>
+              <div class="dashboard-metrics-card">
+                <div class="stats w-full bg-transparent">
+                  <div class="stat">
+                    <div class="stat-figure text-primary" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"></path>
+                        <path d="M12 12l0 .01"></path>
+                        <path d="M3 13a20 20 0 0 0 18 0"></path>
+                      </svg>
+                    </div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
+                    <div class="stat-value" id="projects-count">0</div>
                   </div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
-                    <a href="projects-reports.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.reports">📊 تقارير المشاريع</a>
+                  <div class="stat">
+                    <div class="stat-figure text-secondary" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
+                        <path d="M16 3v4"></path>
+                        <path d="M8 3v4"></path>
+                        <path d="M4 11h16"></path>
+                        <path d="M8 15h2v2h-2z"></path>
+                      </svg>
+                    </div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
+                    <div class="stat-value" id="projects-upcoming">0</div>
                   </div>
-                </div>
-                <div class="grid gap-4 sm:grid-cols-2">
-                  <div class="glass-card p-4">
-                    <p class="text-sm font-semibold text-base-content/70">✨ احفظ تفاصيل المشروع مبكرًا لتوزيع الطاقم والمعدات بسهولة.</p>
+                  <div class="stat">
+                    <div class="stat-figure text-warning" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 7a4 4 0 1 0 -4 4"></path>
+                        <path d="M12 7v9a4 4 0 1 0 4 -4"></path>
+                        <path d="M6 21h12"></path>
+                      </svg>
+                    </div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
+                    <div class="stat-value" id="projects-expenses">0</div>
                   </div>
-                  <div class="glass-card p-4">
-                    <p class="text-sm font-semibold text-base-content/70">📈 استخدم تقارير المشاريع لمتابعة الأداء المالي والعملي بسرعة.</p>
+                  <div class="stat">
+                    <div class="stat-figure text-success" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 3a6 6 0 0 1 6 6v1a6 6 0 0 1 -12 0v-1a6 6 0 0 1 6 -6z"></path>
+                        <path d="M8 15v2a4 4 0 0 0 8 0v-2"></path>
+                        <path d="M12 11v-3"></path>
+                        <path d="M10 13h4"></path>
+                      </svg>
+                    </div>
+                    <div class="stat-title" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
+                    <div class="stat-value" id="projects-budget">0</div>
                   </div>
                 </div>
               </div>
@@ -251,55 +287,54 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <section class="glass-card projects-hero-card">
-            <div class="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-              <div class="space-y-3">
-                <p class="text-sm text-base-content/60">📁 مساحة موحدة لإدارة وتنظيم كل مشاريعك.</p>
-                <h2 class="text-3xl font-bold text-base-content" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
-                <p class="text-base text-base-content/70 projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
-                <div class="flex flex-wrap gap-3">
-                  <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
-                  <a href="projects-reports.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.reports">📊 تقارير المشاريع</a>
-                  <a href="projects-expenses.html" class="btn btn-outline" data-i18n data-i18n-key="projects.subtabs.expenses">💸 مصاريف المشاريع</a>
-                </div>
-              </div>
-              <div class="projects-hero-summary grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:max-w-2xl">
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-count">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.totalProjects">إجمالي المشاريع</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-upcoming">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.upcoming">مشاريع قادمة</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-expenses">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.expenses">إجمالي المصروفات</div>
-                </div>
-                <div class="summary-stat">
-                  <div class="summary-value" id="projects-budget">0</div>
-                  <div class="summary-label" data-i18n data-i18n-key="projects.summary.budget">قيمة المشاريع التقديرية</div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <div class="tab-section-header">
+            <h2 class="tab-section-title" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
+          </div>
 
-          <section class="glass-card projects-main-tabs">
+          <div class="glass-card dashboard-tabbar hidden lg:block">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button type="button" class="tab-button active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
+              <button type="button" class="tab-button tab-active active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
               <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
               <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
             </div>
-          </section>
+          </div>
+
+          <div class="glass-card dashboard-tabbar p-3 lg:hidden">
+            <div class="tab-scroll" data-tab-scroll>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+                <span aria-hidden="true">‹</span>
+              </button>
+              <div class="tab-scroll-track" data-tab-scroll-track>
+                <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+                  <button type="button" class="tab-button tab-active active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
+                  <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
+                  <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
+                </div>
+              </div>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
 
           <div class="tab-content-wrapper space-y-8">
             <section id="projects-section" class="tab-pane active space-y-6" data-tab-pane="projects-section">
-              <div class="glass-card projects-subtabs">
-                <div class="sub-tab-buttons flex flex-wrap gap-2">
-                  <button type="button" class="sub-tab-button active" data-project-subtab-target="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
-                  <button type="button" class="sub-tab-button" data-project-subtab-target="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
-                  <a class="sub-tab-button" href="projects-reports.html" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
-                  <a class="sub-tab-button" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+              <div class="dashboard-subtabbar">
+                <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
+                  <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+                    <span aria-hidden="true">‹</span>
+                  </button>
+                  <div class="tab-scroll-track" data-tab-scroll-track>
+                    <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
+                      <button type="button" class="sub-tab-button tab tab-active active" data-project-subtab-target="create-project-tab" role="tab" aria-selected="true" aria-controls="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
+                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="false" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
+                      <a class="sub-tab-button tab" href="projects-reports.html" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
+                      <a class="sub-tab-button tab" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+                    </div>
+                  </div>
+                  <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+                    <span aria-hidden="true">›</span>
+                  </button>
                 </div>
               </div>
 
@@ -501,61 +536,73 @@
             </section>
 
             <section id="customers-section" class="tab-pane d-none space-y-6" data-tab-pane="customers-section">
-              <div class="box customer-form-box management-form-box">
+              <div class="tab-section-header">
+                <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
+              </div>
+
+              <div class="box customer-form-box management-form-box mb-4">
                 <div class="management-form-header">
+                  <div class="management-form-icon">👤</div>
                   <div class="management-form-header-text">
                     <h4 data-i18n data-i18n-key="customers.form.title">إضافة / تعديل عميل</h4>
                     <p class="management-form-hint" data-i18n data-i18n-key="customers.form.hint">حدّث بيانات العميل وسيتم مزامنتها مع الحجوزات والفواتير.</p>
                   </div>
-                  <div class="management-form-icon">👤</div>
                 </div>
                 <form id="customer-form" class="management-form">
                   <input type="hidden" id="customer-id">
                   <div class="management-form-grid">
                     <div class="form-field">
-                      <label class="form-label" for="customer-name" data-i18n data-i18n-key="customers.form.labels.name">👤 اسم العميل</label>
-                      <input type="text" id="customer-name" class="form-control input input-bordered" placeholder="محمد أحمد" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+                      <label for="customer-name" class="form-label" data-i18n data-i18n-key="customers.form.labels.name">👤 الاسم</label>
+                      <input type="text" class="form-control" id="customer-name" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-phone" data-i18n data-i18n-key="customers.form.labels.phone">📞 رقم الجوال</label>
-                      <input type="tel" id="customer-phone" class="form-control input input-bordered" placeholder="05xxxxxxxx" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+                      <label for="customer-phone" class="form-label" data-i18n data-i18n-key="customers.form.labels.phone">📞 الجوال</label>
+                      <input type="tel" class="form-control" id="customer-phone" required data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-company" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
-                      <input type="text" id="customer-company" class="form-control input input-bordered" placeholder="اسم الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+                      <label for="customer-email" class="form-label" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد</label>
+                      <input type="email" class="form-control" id="customer-email" dir="ltr" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-email" data-i18n data-i18n-key="customers.form.labels.email">📧 البريد الإلكتروني</label>
-                      <input type="email" id="customer-email" class="form-control input input-bordered" placeholder="example@email.com" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+                      <label for="customer-address" class="form-label" data-i18n data-i18n-key="customers.form.labels.address">📍 العنوان</label>
+                      <input type="text" class="form-control" id="customer-address" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-tax" data-i18n data-i18n-key="customers.form.labels.tax">🧾 الرقم الضريبي</label>
-                      <input type="text" id="customer-tax" class="form-control input input-bordered" placeholder="الرقم الضريبي" data-i18n data-i18n-placeholder-key="customers.form.placeholders.tax">
+                      <label for="customer-company" class="form-label" data-i18n data-i18n-key="customers.form.labels.company">🏢 الشركة</label>
+                      <input type="text" class="form-control" id="customer-company" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
                     </div>
                     <div class="form-field">
-                      <label class="form-label" for="customer-notes" data-i18n data-i18n-key="customers.form.labels.notes">📝 ملاحظات</label>
-                      <textarea id="customer-notes" class="form-control textarea textarea-bordered" rows="3" placeholder="ملاحظات إضافية" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
+                      <label for="customer-tax-id" class="form-label" data-i18n data-i18n-key="customers.form.labels.taxId">🧾 الرقم الضريبي</label>
+                      <input type="text" class="form-control" id="customer-tax-id" placeholder="1234567890" data-i18n data-i18n-placeholder-key="customers.form.placeholders.taxId">
+                    </div>
+                    <div class="form-field">
+                      <label for="customer-document" class="form-label" data-i18n data-i18n-key="customers.form.labels.document">📎 مستند العميل</label>
+                      <div class="customer-upload-inline">
+                        <input type="file" class="form-control" id="customer-document" accept="application/pdf,image/*">
+                        <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
+                        <small class="customer-upload-hint" id="customer-document-name" data-i18n data-i18n-key="customers.form.document.empty">لم يتم اختيار ملف بعد</small>
+                      </div>
+                    </div>
+                    <div class="form-field form-field-notes">
+                      <label for="customer-notes" class="form-label" data-i18n data-i18n-key="customers.form.labels.notes">📝 الملاحظات</label>
+                      <textarea class="form-control" id="customer-notes" rows="2" placeholder="معلومات إضافية أو تذكيرات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes"></textarea>
                     </div>
                   </div>
-                  <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-3">
-                    <div class="d-flex flex-wrap gap-2">
-                      <button type="button" class="btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
-                      <button type="button" class="btn btn-outline btn-secondary" id="customer-document-preview" disabled data-i18n data-i18n-key="customers.form.actions.previewDocument">عرض الملف</button>
-                    </div>
+                  <div class="management-form-actions">
+                    <button type="button" class="btn btn-outline btn-secondary d-none" id="customer-cancel-btn" data-i18n data-i18n-key="customers.form.actions.cancel">إلغاء التعديل</button>
                     <button type="submit" class="btn btn-primary" id="submit-btn" data-i18n data-i18n-key="customers.form.actions.submit">➕ إضافة عميل</button>
                   </div>
                 </form>
               </div>
 
-              <div class="glass-card management-filters">
-                <div class="management-filters-row">
-                  <div class="management-search-bar">
-                    <input type="text" id="search-customer-input" class="form-control input input-bordered" placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..." data-i18n data-i18n-placeholder-key="customers.search.placeholder">
-                  </div>
-                  <div class="management-filter-actions">
-                    <button type="button" class="btn btn-outline-secondary" id="customer-clear-search" data-i18n data-i18n-key="actions.clear">مسح</button>
-                  </div>
-                </div>
+              <div class="mb-3 management-search-bar">
+                <input
+                  type="text"
+                  id="search-customer-input"
+                  class="form-control"
+                  placeholder="🔍 ابحث عن عميل بالاسم أو الجوال أو الشركة..."
+                  data-i18n data-i18n-placeholder-key="customers.search.placeholder"
+                >
               </div>
 
               <div class="customer-table-wrapper table-responsive">
@@ -579,108 +626,88 @@
             </section>
 
             <section id="technicians-section" class="tab-pane d-none space-y-6" data-tab-pane="technicians-section">
-              <div class="box add-technicians-box management-form-box">
+              <div class="tab-section-header">
+                <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
+              </div>
+
+              <div class="box add-technicians-box management-form-box mb-4">
                 <div class="management-form-header">
-                  <div>
+                  <div class="management-form-icon">😎</div>
+                  <div class="management-form-header-text">
                     <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
                     <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
                   </div>
-                  <div class="management-form-icon">😎</div>
                 </div>
                 <form id="technician-form" class="management-form technician-form">
                   <input type="hidden" id="technician-id">
                   <div class="management-form-grid">
                     <div class="form-field">
                       <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                      <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
                     </div>
                     <div class="form-field">
                       <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+                      <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
                     </div>
                     <div class="form-field">
                       <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+                      <input type="text" class="form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
                     </div>
                     <div class="form-field">
                       <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+                      <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
                     </div>
                     <div class="form-field">
                       <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-                      <input type="text" class="form-control input input-bordered" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+                      <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
                     </div>
                     <div class="form-field">
+                      <label for="technician-total" class="form-label" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
+                      <input type="text" class="form-control" id="technician-total" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
+                    </div>
+                    <div class="form-field form-field-notes">
                       <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-                      <textarea class="form-control textarea textarea-bordered" id="technician-notes" rows="3" placeholder="ملاحظات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+                      <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
                     </div>
                   </div>
-                  <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mt-3">
+                  <div class="management-form-actions">
                     <button type="button" class="btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
                     <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
                   </div>
                 </form>
               </div>
 
-              <div class="glass-card technicians-filters">
-                <div class="row g-3 align-items-end">
-                  <div class="col-md-6">
-                    <label class="form-label" for="technician-status-filter" data-i18n data-i18n-key="technicians.filters.status">⚙️ حالة التوفر</label>
-                    <select class="form-select select select-bordered" id="technician-status-filter">
-                      <option value="all" data-i18n data-i18n-key="technicians.filters.statusAll">جميع الحالات</option>
-                      <option value="available" data-i18n data-i18n-key="technicians.filters.statusAvailable">متاح</option>
-                      <option value="busy" data-i18n data-i18n-key="technicians.filters.statusBusy">مشغول</option>
-                      <option value="inactive" data-i18n data-i18n-key="technicians.filters.statusInactive">غير مفعل</option>
-                    </select>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label" for="technician-department-filter" data-i18n data-i18n-key="technicians.filters.department">🧩 القسم</label>
-                    <select class="form-select select select-bordered" id="technician-department-filter">
-                      <option value="all" data-i18n data-i18n-key="technicians.filters.departmentAll">جميع الأقسام</option>
-                    </select>
-                  </div>
-                  <div class="col-12">
-                    <div class="management-search-bar">
-                      <input type="text" id="technician-search-input" class="form-control input input-bordered" placeholder="🔍 ابحث عن عضو بالاسم أو التخصص..." data-i18n data-i18n-placeholder-key="technicians.search.placeholder">
-                    </div>
-                  </div>
-                </div>
+              <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+                <input
+                  type="text"
+                  id="search-technician-input"
+                  class="form-control"
+                  placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+                  data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+                >
+                <select id="technician-role-filter" class="form-select">
+                  <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+                </select>
               </div>
 
-              <div class="box p-4">
-                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
-                  <h4 class="mb-0" data-i18n data-i18n-key="technicians.table.title">طاقم العمل المسجل</h4>
-                  <div class="d-flex flex-wrap gap-2">
-                    <select class="form-select select select-bordered" id="technician-sort-select">
-                      <option value="name" data-i18n data-i18n-key="technicians.sort.name">ترتيب حسب الاسم</option>
-                      <option value="department" data-i18n data-i18n-key="technicians.sort.department">حسب القسم</option>
-                      <option value="status" data-i18n data-i18n-key="technicians.sort.status">حسب الحالة</option>
-                    </select>
-                    <button type="button" class="btn btn-outline btn-secondary" id="technician-export-btn" data-i18n data-i18n-key="technicians.export">📤 تصدير القائمة</button>
-                  </div>
-                </div>
-
-                <div class="table-responsive">
-                  <table class="table table-bordered table-striped table-hover align-middle">
-                    <thead class="table-dark">
-                      <tr>
-                        <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.phone">📞 الجوال</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.wage">💰 الأجر اليومي</th>
-                        <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
-                        <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
-                        <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
-                      </tr>
-                    </thead>
-                    <tbody id="technicians-table">
-                      <tr>
-                        <td colspan="8" class="text-center" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div class="customer-table-wrapper technician-table-wrapper table-responsive">
+                <table class="customer-table technician-table align-middle">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                      <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                      <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                      <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="technicians-table">
+                    <tr>
+                      <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </section>
           </div>

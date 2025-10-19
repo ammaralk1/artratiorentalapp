@@ -1068,8 +1068,20 @@
                     <label for="res-payment-status" class="form-label" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
                     <select id="res-payment-status" class="form-select reservation-billing-input reservation-billing-select reservation-billing-input--payment payment-status-select">
                       <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                      <option value="partial" data-i18n data-i18n-key="reservations.create.paymentStatus.partial">مدفوع جزئياً</option>
                       <option value="unpaid" selected data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
                     </select>
+                    <div class="reservation-payment-progress" id="res-payment-progress">
+                      <label class="form-label reservation-payment-progress__label" for="res-payment-progress-value" data-i18n data-i18n-key="reservations.create.paymentProgress.label">💰 الدفعة المستلمة</label>
+                      <div class="reservation-payment-progress__grid">
+                        <select id="res-payment-progress-type" class="form-select reservation-billing-input reservation-payment-progress__select">
+                          <option value="amount" data-i18n data-i18n-key="reservations.create.paymentProgress.amount">💵 مبلغ</option>
+                          <option value="percent" selected data-i18n data-i18n-key="reservations.create.paymentProgress.percent">٪ نسبة</option>
+                        </select>
+                        <input type="text" id="res-payment-progress-value" class="form-control reservation-billing-input reservation-payment-progress__input" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.create.paymentProgress.placeholder">
+                      </div>
+                      <small class="form-text reservation-payment-progress__hint" data-i18n data-i18n-key="reservations.create.paymentProgress.hint">اكتب المبلغ أو النسبة التي تم استلامها من إجمالي الحجز</small>
+                    </div>
                   </div>
                 </div>
                 <div class="col-lg-auto col-md-12 d-flex justify-content-lg-start justify-content-start">
@@ -1698,8 +1710,31 @@
                     <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
                     <select id="edit-res-paid" class="form-select payment-status-select">
                       <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                      <option value="partial" data-i18n data-i18n-key="reservations.edit.payment.partial">مدفوع جزئياً</option>
                       <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
                     </select>
+                  </div>
+                  <div class="reservation-payment-card__field">
+                    <label class="form-label" for="edit-res-payment-progress-value" data-i18n data-i18n-key="reservations.edit.paymentProgress.label">💰 الدفعات المستلمة</label>
+                    <div class="reservation-payment-progress reservation-payment-progress--flush">
+                      <div class="reservation-payment-progress__grid">
+                        <select id="edit-res-payment-progress-type" class="form-select reservation-payment-progress__select">
+                          <option value="amount" data-i18n data-i18n-key="reservations.edit.paymentProgress.amount">💵 مبلغ</option>
+                          <option value="percent" selected data-i18n data-i18n-key="reservations.edit.paymentProgress.percent">٪ نسبة</option>
+                        </select>
+                        <input type="text" class="form-control reservation-payment-progress__input" id="edit-res-payment-progress-value" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.edit.paymentProgress.placeholder">
+                      </div>
+                      <div class="reservation-payment-progress__actions">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="edit-res-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
+                        <small class="form-text reservation-payment-progress__hint" data-i18n data-i18n-key="reservations.edit.paymentProgress.hint">حدّد مقدار الدفعة التي استلمتها من الحجز</small>
+                      </div>
+                    </div>
+                    <div class="reservation-payment-history-block">
+                      <div class="reservation-payment-history__header">
+                        <h6 class="reservation-payment-history__title" data-i18n data-i18n-key="reservations.paymentHistory.title">سجل الدفعات</h6>
+                      </div>
+                      <div id="edit-res-payment-history" class="reservation-payment-history"></div>
+                    </div>
                   </div>
                 </div>
               </div>

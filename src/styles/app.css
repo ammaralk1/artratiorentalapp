@@ -94,6 +94,22 @@
     justify-self: center;
   }
 
+  .dashboard-hero-callout {
+    @apply flex w-full items-center justify-center gap-3 rounded-3xl px-4 py-4 text-sm font-medium leading-relaxed;
+    min-height: 3.5rem;
+    text-align: center;
+    color: hsl(var(--bc) / 0.82);
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-hero-callout {
+      @apply justify-start text-base;
+      padding-inline: 1.75rem;
+      padding-block: 1.1rem;
+      text-align: start;
+    }
+  }
+
   .dashboard-header-end {
     @apply flex items-center gap-2 sm:gap-3 flex-wrap;
     min-width: 0;

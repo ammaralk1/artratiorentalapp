@@ -1190,3 +1190,48 @@ body[dir="ltr"] .reports-card-text {
 :is(html.dark-mode, body.dark-mode) .reports-payment-subtext {
   color: rgba(203, 213, 225, 0.7);
 }
+
+.expenses-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.expenses-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.expenses-actions .btn {
+  border-radius: 999px;
+  min-width: 150px;
+}
+
+.reports-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  min-height: 220px;
+  color: rgba(71, 85, 105, 0.85);
+}
+
+.reports-panel-empty .reports-empty-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.reports-panel-empty .reports-empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-panel-empty {
+  color: rgba(203, 213, 225, 0.75);
+}
