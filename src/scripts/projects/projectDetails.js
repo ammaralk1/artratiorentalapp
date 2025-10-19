@@ -14,6 +14,7 @@ import {
   determinePaymentStatus,
 } from '../reservationsSummary.js';
 import { normalizeNumbers, showToast } from '../utils.js';
+import { loadData } from '../storage.js';
 import { state, dom } from './state.js';
 import {
   PROJECT_TAX_RATE,
@@ -58,17 +59,30 @@ export function openProjectDetails(projectId) {
   dom.detailsBody.dataset.mode = 'view';
   dom.detailsBody.dataset.projectId = String(project.id);
 
-  const client = state.customers.find((c) => String(c.id) === String(project.clientId));
+  const customersSource = state.customers.length
+    ? state.customers
+    : loadData().customers || [];
+  const client = customersSource.find((c) => String(c.id) === String(project.clientId));
   const typeLabel = getProjectTypeLabel(project.type);
   const descriptionRaw = project.description?.trim();
   const descriptionDisplay = descriptionRaw || t('projects.fallback.noDescription', 'لا يوجد وصف');
   const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
-  const clientPhoneRaw = client?.phone ? String(client.phone).trim() : '';
+  const clientPhoneRaw = client?.phone
+    ?? client?.customerPhone
+    ?? project.clientPhone
+    ?? project.customerPhone
+    ?? '';
   const clientPhone = clientPhoneRaw
-    ? normalizeNumbers(clientPhoneRaw)
+    ? normalizeNumbers(String(clientPhoneRaw).trim())
     : t('projects.details.client.noPhone', 'لا يوجد رقم متاح');
-  const clientEmailRaw = client?.email ? String(client.email).trim() : '';
-  const clientEmail = clientEmailRaw || t('projects.details.client.noEmail', 'لا يوجد بريد متاح');
+
+  const clientEmailRaw = client?.email
+    ?? project.clientEmail
+    ?? project.customerEmail
+    ?? '';
+  const clientEmail = clientEmailRaw
+    ? String(clientEmailRaw).trim()
+    : t('projects.details.client.noEmail', 'لا يوجد بريد متاح');
   const projectCompany = (project.clientCompany || client?.companyName || '').trim();
   const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeDisplay = normalizeNumbers(projectCodeValue);
