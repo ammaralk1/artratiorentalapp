@@ -2862,6 +2862,20 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: rgba(38, 51, 77, 0.55);
 }
 
+.reservation-autocomplete-input:disabled,
+.reservation-autocomplete-input.reservation-input-disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+  background-color: rgba(226, 232, 240, 0.65);
+  color: rgba(30, 41, 59, 0.85);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-autocomplete-input:disabled,
+:is(html.dark-mode, body.dark-mode) .reservation-autocomplete-input.reservation-input-disabled {
+  background-color: rgba(30, 41, 59, 0.75);
+  color: rgba(226, 232, 240, 0.82);
+}
+
 :is(html.dark-mode, body.dark-mode) .reservation-autocomplete-input::placeholder {
   color: rgba(203, 213, 225, 0.65);
 }

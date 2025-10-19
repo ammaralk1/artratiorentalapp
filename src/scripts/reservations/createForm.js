@@ -665,6 +665,7 @@ function applyPendingProjectContext() {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get('reservationProjectContext');
   if (!encoded) {
+    enableProjectSelection({ clearValue: true });
     return;
   }
 
@@ -681,6 +682,8 @@ function applyPendingProjectContext() {
   const newSearch = params.toString();
   const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash || ''}`;
   window.history.replaceState({}, document.title, newUrl);
+
+  enableProjectSelection({ clearValue: false });
 
   if (!context) return;
 
@@ -704,8 +707,18 @@ function applyPendingProjectContext() {
     } else {
       renderDraftReservationSummary();
     }
-  } else if (select) {
-    ensureProjectChoices({ selectedValue: '' });
+    enableProjectSelection();
+  } else {
+    if (select) {
+      ensureProjectChoices({ selectedValue: '' });
+    }
+    const pendingLabel = context.projectTitle
+      ? context.projectTitle
+      : t('reservations.create.project.pendingPlaceholder', 'سيتم الربط بعد حفظ المشروع الحالي');
+    disableProjectSelection(
+      t('reservations.create.project.pendingTooltip', 'سيتم تفعيل اختيار المشروع بعد حفظ المشروع الحالي'),
+      pendingLabel
+    );
   }
 
   if (context.start) {
@@ -731,15 +744,13 @@ function applyPendingProjectContext() {
     customerInput.value = context.customerName;
     customerInput.dataset.selectedId = '';
     if (customerHidden) customerHidden.value = '';
+  } else {
+    ensureCustomerChoices({ selectedValue: '' });
   }
 
   const notesInput = document.getElementById('res-notes');
   if (notesInput && context.description && !notesInput.value) {
     notesInput.value = context.description;
-  }
-
-  if (!context.projectId && !context.customerId && !context.customerName) {
-    ensureCustomerChoices({ selectedValue: '' });
   }
 
   renderDraftReservationSummary();
@@ -1654,6 +1665,44 @@ function handleLinkedProjectReturn(createdReservation) {
   }
 }
 
+function getProjectInputElements() {
+  const input = document.getElementById('res-project-input');
+  const hidden = document.getElementById('res-project');
+  return { input, hidden };
+}
+
+function enableProjectSelection({ clearValue = false } = {}) {
+  const { input, hidden } = getProjectInputElements();
+  if (!input) return;
+  input.disabled = false;
+  input.classList.remove('reservation-input-disabled');
+  input.removeAttribute('aria-disabled');
+  input.title = '';
+  if (clearValue) {
+    input.value = '';
+    input.dataset.selectedId = '';
+  }
+  if (hidden && clearValue) {
+    hidden.value = '';
+  }
+}
+
+function disableProjectSelection(message, displayValue = '') {
+  const { input, hidden } = getProjectInputElements();
+  if (!input) return;
+  input.disabled = true;
+  input.classList.add('reservation-input-disabled');
+  input.setAttribute('aria-disabled', 'true');
+  input.value = displayValue;
+  input.dataset.selectedId = '';
+  if (message) {
+    input.title = message;
+  }
+  if (hidden) {
+    hidden.value = '';
+  }
+}
+
 function resetForm() {
   const customerHidden = document.getElementById('res-customer');
   const customerInput = document.getElementById('res-customer-input');
@@ -1686,6 +1735,7 @@ function resetForm() {
     projectInput.value = '';
     projectInput.dataset.selectedId = '';
   }
+  enableProjectSelection({ clearValue: false });
   ensureProjectChoices({ selectedValue: '', resetInput: true });
   const descriptionInput = document.getElementById('equipment-description');
   if (descriptionInput) descriptionInput.value = '';
