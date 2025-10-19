@@ -243,35 +243,54 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <section class="glass-card projects-hero-card">
-            <div class="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-              <div class="space-y-3">
-                <p class="text-sm text-base-content/60">📁 مساحة موحدة لإدارة وتنظيم كل مشاريعك.</p>
-                <h2 class="text-3xl font-bold text-base-content" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
-                <p class="text-base text-base-content/70 projects-hero-text" data-i18n data-i18n-key="projects.hero.subtitle">أنشئ ونسّق المشاريع، ووزّع المهام على الطاقم والمعدات، وتتبع المصاريف.</p>
-                <div class="flex flex-wrap gap-3">
-                  <a href="#create-project-tab" class="btn btn-primary" data-i18n data-i18n-key="projects.form.buttons.save">🆕 إنشاء مشروع</a>
-                </div>
-              </div>
-            </div>
-          </section>
+          <div class="tab-section-header">
+            <h2 class="tab-section-title" data-i18n data-i18n-key="projects.hero.title">إدارة المشاريع</h2>
+          </div>
 
-          <section class="glass-card projects-main-tabs">
+          <div class="glass-card dashboard-tabbar hidden lg:block">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <button type="button" class="tab-button active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
               <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
               <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
             </div>
-          </section>
+          </div>
+
+          <div class="glass-card dashboard-tabbar p-3 lg:hidden">
+            <div class="tab-scroll" data-tab-scroll>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+                <span aria-hidden="true">‹</span>
+              </button>
+              <div class="tab-scroll-track" data-tab-scroll-track>
+                <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+                  <button type="button" class="tab-button active" data-tab-target="projects-section" data-i18n data-i18n-key="projects.nav.projects">المشاريع</button>
+                  <button type="button" class="tab-button" data-tab-target="customers-section" data-i18n data-i18n-key="projects.nav.customers">العملاء</button>
+                  <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
+                </div>
+              </div>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
 
           <div class="tab-content-wrapper space-y-8">
             <section id="projects-section" class="tab-pane active space-y-6" data-tab-pane="projects-section">
-              <div class="glass-card projects-subtabs">
-                <div class="sub-tab-buttons flex flex-wrap gap-2">
-                  <button type="button" class="sub-tab-button active" data-project-subtab-target="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
-                  <button type="button" class="sub-tab-button" data-project-subtab-target="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
-                  <a class="sub-tab-button" href="projects-reports.html" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
-                  <a class="sub-tab-button" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+              <div class="dashboard-subtabbar">
+                <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
+                  <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+                    <span aria-hidden="true">‹</span>
+                  </button>
+                  <div class="tab-scroll-track" data-tab-scroll-track>
+                    <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
+                      <button type="button" class="sub-tab-button tab tab-active active" data-project-subtab-target="create-project-tab" role="tab" aria-selected="true" aria-controls="create-project-tab" data-i18n data-i18n-key="projects.subtabs.create">إنشاء مشروع</button>
+                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="false" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
+                      <a class="sub-tab-button tab" href="projects-reports.html" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</a>
+                      <a class="sub-tab-button tab" href="projects-expenses.html" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</a>
+                    </div>
+                  </div>
+                  <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+                    <span aria-hidden="true">›</span>
+                  </button>
                 </div>
               </div>
 
