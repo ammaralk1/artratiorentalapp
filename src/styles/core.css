@@ -1366,6 +1366,11 @@ body[dir="rtl"] .project-expense-amount {
   box-shadow: var(--shadow-xs);
 }
 
+body[dir="rtl"] .project-details-code-badge {
+  align-items: flex-end;
+  text-align: right;
+}
+
 .project-details-code-badge__label {
   display: inline-flex;
   align-items: center;
