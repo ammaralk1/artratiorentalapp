@@ -150,6 +150,36 @@ function getProjectElements() {
   };
 }
 
+function isLinkedProjectSelected() {
+  const { input, hidden } = getProjectElements();
+  if (input?.dataset?.pendingLinked === 'true') return true;
+  return Boolean(hidden?.value);
+}
+
+function registerLinkedControlGuard(element, conditionFn) {
+  if (!element) return;
+  const targets = new Set([element]);
+  const parent = element.parentElement;
+  if (parent) targets.add(parent);
+  if (element.id) {
+    const label = document.querySelector(`label[for="${element.id}"]`);
+    if (label) targets.add(label);
+  }
+
+  const handler = (event) => {
+    if (!conditionFn()) return;
+    showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+  };
+
+  targets.forEach((target) => {
+    if (!target || target.dataset?.linkedGuardAttached === 'true') return;
+    ['mousedown', 'touchstart', 'keydown'].forEach((evt) => {
+      target.addEventListener(evt, handler, { capture: true });
+    });
+    target.dataset.linkedGuardAttached = 'true';
+  });
+}
+
 function resolveOptionByLabel(optionMap, value, { allowPartial = false } = {}) {
   const normalized = normalizeText(value);
   if (!normalized) return null;
@@ -515,8 +545,8 @@ function applyProjectContextToForm(project, { forceNotes = false, skipProjectSel
     notesInput.value = project.description;
   }
 
-  updateCreateProjectTaxState();
   renderDraftReservationSummary();
+  updateCreateProjectTaxState();
 }
 
 function populateProjectSelect({ projectsList = null, preselectId = null } = {}) {
@@ -537,31 +567,95 @@ function populateProjectSelect({ projectsList = null, preselectId = null } = {})
 }
 
 function updateCreateProjectTaxState() {
-  const projectSelect = document.getElementById('res-project');
+  const { input: projectInput, hidden: projectHidden } = getProjectElements();
   const taxCheckbox = document.getElementById('res-tax');
   const shareCheckbox = document.getElementById('res-company-share');
-  if (!taxCheckbox) return;
+  const paymentSelect = document.getElementById('res-payment-status');
+  const paymentProgressTypeSelect = document.getElementById('res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('res-payment-progress-value');
 
-  const isLinked = Boolean(projectSelect?.value);
-  if (isLinked) {
-    taxCheckbox.checked = false;
-    taxCheckbox.disabled = true;
-    taxCheckbox.classList.add('disabled');
+  const message = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.');
+
+  const pendingLinked = projectInput?.dataset?.pendingLinked === 'true';
+  const projectLinked = pendingLinked || Boolean(projectHidden?.value);
+
+  if (taxCheckbox) {
+    registerLinkedControlGuard(taxCheckbox, isLinkedProjectSelected);
+    if (shareCheckbox) {
+      registerLinkedControlGuard(shareCheckbox, isLinkedProjectSelected);
+    }
+  }
+  if (paymentSelect) {
+    registerLinkedControlGuard(paymentSelect, isLinkedProjectSelected);
+  }
+  if (paymentProgressTypeSelect) {
+    registerLinkedControlGuard(paymentProgressTypeSelect, isLinkedProjectSelected);
+  }
+  if (paymentProgressValueInput) {
+    registerLinkedControlGuard(paymentProgressValueInput, isLinkedProjectSelected);
+  }
+
+  if (projectLinked) {
+    if (taxCheckbox) {
+      taxCheckbox.checked = false;
+      taxCheckbox.disabled = true;
+      taxCheckbox.classList.add('disabled', 'reservation-input-disabled');
+      taxCheckbox.title = message;
+    }
     if (shareCheckbox) {
       shareCheckbox.checked = false;
       shareCheckbox.disabled = true;
-      shareCheckbox.classList.add('disabled');
+      shareCheckbox.classList.add('disabled', 'reservation-input-disabled');
+      shareCheckbox.title = message;
+    }
+    if (paymentSelect) {
+      paymentSelect.value = 'unpaid';
+      updatePaymentStatusAppearance(paymentSelect, 'unpaid');
+      paymentSelect.disabled = true;
+      paymentSelect.classList.add('reservation-input-disabled');
+      paymentSelect.title = message;
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.value = paymentProgressTypeSelect.value || 'percent';
+      paymentProgressTypeSelect.disabled = true;
+      paymentProgressTypeSelect.classList.add('reservation-input-disabled');
+      paymentProgressTypeSelect.title = message;
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.value = '';
+      paymentProgressValueInput.disabled = true;
+      paymentProgressValueInput.classList.add('reservation-input-disabled');
+      paymentProgressValueInput.title = message;
     }
   } else {
-    const wasDisabled = taxCheckbox.disabled;
-    taxCheckbox.disabled = false;
-    taxCheckbox.classList.remove('disabled');
-    if (wasDisabled) {
-      taxCheckbox.checked = false;
+    if (taxCheckbox) {
+      const wasDisabled = taxCheckbox.disabled;
+      taxCheckbox.disabled = false;
+      taxCheckbox.classList.remove('disabled', 'reservation-input-disabled');
+      taxCheckbox.title = '';
+      if (wasDisabled) {
+        taxCheckbox.checked = false;
+      }
     }
     if (shareCheckbox) {
       shareCheckbox.disabled = false;
-      shareCheckbox.classList.remove('disabled');
+      shareCheckbox.classList.remove('disabled', 'reservation-input-disabled');
+      shareCheckbox.title = '';
+    }
+    if (paymentSelect) {
+      paymentSelect.disabled = false;
+      paymentSelect.classList.remove('reservation-input-disabled');
+      paymentSelect.title = '';
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.disabled = false;
+      paymentProgressTypeSelect.classList.remove('reservation-input-disabled');
+      paymentProgressTypeSelect.title = '';
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.disabled = false;
+      paymentProgressValueInput.classList.remove('reservation-input-disabled');
+      paymentProgressValueInput.title = '';
     }
   }
 
@@ -1748,42 +1842,42 @@ function handleLinkedProjectReturn(createdReservation) {
   }
 }
 
-function getProjectInputElements() {
-  const input = document.getElementById('res-project-input');
-  const hidden = document.getElementById('res-project');
-  return { input, hidden };
-}
-
 function enableProjectSelection({ clearValue = false } = {}) {
-  const { input, hidden } = getProjectInputElements();
+  const { input, hidden } = getProjectElements();
   if (!input) return;
   input.disabled = false;
   input.classList.remove('reservation-input-disabled');
   input.removeAttribute('aria-disabled');
-  input.title = '';
+  input.removeAttribute('title');
   if (clearValue) {
     input.value = '';
     input.dataset.selectedId = '';
+    if (hidden) hidden.value = '';
   }
-  if (hidden && clearValue) {
-    hidden.value = '';
+  if (input.dataset) {
+    delete input.dataset.pendingLinked;
   }
+  updateCreateProjectTaxState();
 }
 
 function disableProjectSelection(message, displayValue = '') {
-  const { input, hidden } = getProjectInputElements();
+  const { input, hidden } = getProjectElements();
   if (!input) return;
   input.disabled = true;
   input.classList.add('reservation-input-disabled');
   input.setAttribute('aria-disabled', 'true');
-  input.value = displayValue;
+  if (displayValue != null) {
+    input.value = displayValue;
+  }
   input.dataset.selectedId = '';
   if (message) {
     input.title = message;
   }
-  if (hidden) {
-    hidden.value = '';
+  if (input.dataset) {
+    input.dataset.pendingLinked = 'true';
   }
+  if (hidden) hidden.value = '';
+  updateCreateProjectTaxState();
 }
 
 function resetForm() {
@@ -1801,16 +1895,6 @@ function resetForm() {
   document.getElementById('res-end-time').value = '';
   document.getElementById('res-notes').value = '';
   document.getElementById('res-discount').value = '';
-  const taxCheckbox = document.getElementById('res-tax');
-  if (taxCheckbox) {
-    taxCheckbox.checked = false;
-    taxCheckbox.disabled = false;
-    taxCheckbox.classList.remove('disabled');
-  }
-  const shareCheckbox = document.getElementById('res-company-share');
-  if (shareCheckbox) {
-    shareCheckbox.checked = false;
-  }
   const projectHidden = document.getElementById('res-project');
   const projectInput = document.getElementById('res-project-input');
   if (projectHidden) projectHidden.value = '';

@@ -193,6 +193,10 @@ function renderEditPaymentHistory() {
 }
 
 function handleAddPaymentHistoryEntry() {
+  if (isEditLinkedProject()) {
+    showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+    return;
+  }
   const typeSelect = document.getElementById('edit-res-payment-progress-type');
   const valueInput = document.getElementById('edit-res-payment-progress-value');
   const type = getEditPaymentProgressType(typeSelect);
@@ -290,7 +294,14 @@ function handleAddPaymentHistoryEntry() {
 function setupPaymentHistoryEvents() {
   const addButton = document.getElementById('edit-res-payment-add');
   if (addButton && !addButton.dataset.listenerAttached) {
-    addButton.addEventListener('click', handleAddPaymentHistoryEntry);
+    addButton.addEventListener('click', (event) => {
+      if (isEditLinkedProject()) {
+        event.preventDefault();
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
+      handleAddPaymentHistoryEntry();
+    });
     addButton.dataset.listenerAttached = 'true';
   }
 
@@ -299,6 +310,11 @@ function setupPaymentHistoryEvents() {
     historyContainer.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action="remove-payment"]');
       if (!button) return;
+      if (isEditLinkedProject()) {
+        event.preventDefault();
+        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+        return;
+      }
       const index = Number(button.dataset.index);
       if (Number.isNaN(index)) return;
       removeEditingPayment(index);
@@ -431,6 +447,125 @@ function ensureGroupHandler(container) {
   container.dataset.groupListenerAttached = 'true';
 }
 
+function isEditLinkedProject() {
+  return Boolean(document.getElementById('edit-res-project')?.value);
+}
+
+function registerEditLinkedGuard(element) {
+  if (!element || element.dataset?.linkedGuardAttached === 'true') return;
+  const related = new Set([element]);
+  if (element.id) {
+    const label = document.querySelector(`label[for="${element.id}"]`);
+    if (label) related.add(label);
+  }
+  if (element.parentElement) {
+    related.add(element.parentElement);
+  }
+
+  const handler = (event) => {
+    if (!isEditLinkedProject()) return;
+    showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
+    event.stopPropagation();
+    event.preventDefault();
+  };
+
+  related.forEach((target) => {
+    if (!target || target.dataset?.linkedGuardAttached === 'true') return;
+    ['mousedown', 'touchstart', 'keydown'].forEach((evt) => target.addEventListener(evt, handler, { capture: true }));
+    target.dataset.linkedGuardAttached = 'true';
+  });
+}
+
+function setEditLinkedReservationControlState(projectLinked) {
+  const message = t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.');
+  const taxCheckbox = document.getElementById('edit-res-tax');
+  const shareCheckbox = document.getElementById('edit-res-company-share');
+  const paidSelect = document.getElementById('edit-res-paid');
+  const paymentProgressTypeSelect = document.getElementById('edit-res-payment-progress-type');
+  const paymentProgressValueInput = document.getElementById('edit-res-payment-progress-value');
+  const paymentAddButton = document.getElementById('edit-res-payment-add');
+  const historyContainer = document.getElementById('edit-res-payment-history');
+
+  [taxCheckbox, shareCheckbox, paidSelect, paymentProgressTypeSelect, paymentProgressValueInput, paymentAddButton, historyContainer]
+    .forEach(registerEditLinkedGuard);
+
+  if (projectLinked) {
+    if (taxCheckbox) {
+      taxCheckbox.checked = false;
+      taxCheckbox.disabled = true;
+      taxCheckbox.classList.add('reservation-input-disabled');
+      taxCheckbox.title = message;
+    }
+    if (shareCheckbox) {
+      shareCheckbox.checked = false;
+      shareCheckbox.disabled = true;
+      shareCheckbox.classList.add('reservation-input-disabled');
+      shareCheckbox.title = message;
+    }
+    if (paidSelect) {
+      paidSelect.value = 'unpaid';
+      paidSelect.disabled = true;
+      paidSelect.classList.add('reservation-input-disabled');
+      paidSelect.title = message;
+      if (paidSelect.dataset) delete paidSelect.dataset.userSelected;
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.value = paymentProgressTypeSelect.value || 'percent';
+      paymentProgressTypeSelect.disabled = true;
+      paymentProgressTypeSelect.classList.add('reservation-input-disabled');
+      paymentProgressTypeSelect.title = message;
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.value = '';
+      paymentProgressValueInput.disabled = true;
+      paymentProgressValueInput.classList.add('reservation-input-disabled');
+      paymentProgressValueInput.title = message;
+    }
+    if (paymentAddButton) {
+      paymentAddButton.disabled = true;
+      paymentAddButton.classList.add('reservation-input-disabled');
+      paymentAddButton.title = message;
+    }
+    if (historyContainer) {
+      historyContainer.dataset.linkedDisabled = 'true';
+    }
+  } else {
+    if (taxCheckbox) {
+      taxCheckbox.disabled = false;
+      taxCheckbox.classList.remove('reservation-input-disabled');
+      taxCheckbox.title = '';
+    }
+    if (shareCheckbox) {
+      shareCheckbox.disabled = false;
+      shareCheckbox.classList.remove('reservation-input-disabled');
+      shareCheckbox.title = '';
+    }
+    if (paidSelect) {
+      paidSelect.disabled = false;
+      paidSelect.classList.remove('reservation-input-disabled');
+      paidSelect.title = '';
+    }
+    if (paymentProgressTypeSelect) {
+      paymentProgressTypeSelect.disabled = false;
+      paymentProgressTypeSelect.classList.remove('reservation-input-disabled');
+      paymentProgressTypeSelect.title = '';
+    }
+    if (paymentProgressValueInput) {
+      paymentProgressValueInput.disabled = false;
+      paymentProgressValueInput.classList.remove('reservation-input-disabled');
+      paymentProgressValueInput.title = '';
+    }
+    if (paymentAddButton) {
+      paymentAddButton.disabled = false;
+      paymentAddButton.classList.remove('reservation-input-disabled');
+      paymentAddButton.title = '';
+    }
+    if (historyContainer) {
+      historyContainer.dataset.linkedDisabled = 'false';
+    }
+  }
+}
+
 export function updateEditReservationSummary() {
   const summaryEl = document.getElementById('edit-res-summary');
   if (!summaryEl) return;
@@ -456,18 +591,21 @@ export function updateEditReservationSummary() {
 
   const discount = parseFloat(rawDiscount) || 0;
   const discountType = discountTypeSelect?.value || 'percent';
-  const projectLinked = Boolean(document.getElementById('edit-res-project')?.value);
+  const projectLinked = isEditLinkedProject();
+  setEditLinkedReservationControlState(projectLinked);
   const taxCheckbox = document.getElementById('edit-res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
-  const manualPaymentOverride = paidSelect?.dataset?.userSelected === 'true';
-  const paidStatus = manualPaymentOverride ? (paidSelect?.value || 'unpaid') : 'unpaid';
-  if (applyTax) {
-    ensureCompanyShareEnabled('edit-res-company-share');
-  }
-  let companySharePercent = getCompanySharePercent('edit-res-company-share');
-  if (applyTax && (!Number.isFinite(companySharePercent) || companySharePercent <= 0)) {
+  const manualPaymentOverride = !projectLinked && paidSelect?.dataset?.userSelected === 'true';
+  const paidStatus = projectLinked ? 'unpaid' : (manualPaymentOverride ? (paidSelect?.value || 'unpaid') : 'unpaid');
+
+  let companySharePercent = null;
+  if (!projectLinked && applyTax) {
     ensureCompanyShareEnabled('edit-res-company-share');
     companySharePercent = getCompanySharePercent('edit-res-company-share');
+    if (!Number.isFinite(companySharePercent) || companySharePercent <= 0) {
+      ensureCompanyShareEnabled('edit-res-company-share');
+      companySharePercent = getCompanySharePercent('edit-res-company-share');
+    }
   }
 
   const { items: editingItems = [], payments: editingPayments = [] } = getEditingState();
