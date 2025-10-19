@@ -1837,6 +1837,7 @@ textarea:focus {
 .btn-success,
 .btn-danger,
 .btn-warning,
+.btn-secondary,
 .btn-outline-secondary {
   border-radius: 999px;
 }
@@ -1844,7 +1845,8 @@ textarea:focus {
 .btn-primary,
 .btn-success,
 .btn-danger,
-.btn-warning {
+.btn-warning,
+.btn-secondary {
   color: #fff;
 }
 
@@ -1852,6 +1854,15 @@ textarea:focus {
 .btn-success { background: linear-gradient(135deg, #2f9e44, #51cf66); }
 .btn-danger { background: linear-gradient(135deg, #e03131, #f06595); }
 .btn-warning { background: linear-gradient(135deg, #f08c00, #ffd43b); color: #2c1a00; }
+.btn-secondary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.95));
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 1), rgba(29, 78, 216, 0.95));
+  color: #fff;
+}
 
 .btn-outline-secondary {
   background: transparent;
@@ -1862,6 +1873,16 @@ textarea:focus {
 :is(html.dark-mode, body.dark-mode) .btn-outline-secondary {
   border-color: rgba(148, 163, 184, 0.55);
   color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode) .btn-secondary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(37, 99, 235, 0.78));
+  color: #e2e8f0;
+}
+
+:is(html.dark-mode, body.dark-mode) .btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.75), rgba(29, 78, 216, 0.92));
+  color: #fff;
 }
 
 :is(html.dark-mode, body.dark-mode) .btn-outline-secondary:hover {
