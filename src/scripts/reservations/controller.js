@@ -196,6 +196,10 @@ export function registerReservationGlobals() {
   window.deleteReservation = deleteReservation;
   window.confirmReservation = confirmReservation;
   window.editReservation = openReservationEditor;
+
+  if (typeof document !== 'undefined') {
+    document.dispatchEvent(new CustomEvent('reservations:globals-ready'));
+  }
 }
 
 export {

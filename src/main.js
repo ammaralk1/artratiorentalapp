@@ -10,8 +10,7 @@ import {
 import { renderCalendar } from './scripts/calendar.js';
 import {
   loadReservationForm,
-  setupReservationEvents,
-  renderReservations
+  setupReservationEvents
 } from './scripts/reservationsUI.js';
 import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
@@ -24,6 +23,7 @@ import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
 applyStoredTheme();
 
 let pendingReservationEdit = null;
+let pendingReservationEditPromise = null;
 
 async function initApp() {
   const user = await checkAuth();
@@ -121,7 +121,7 @@ function handlePendingReservationEdit() {
     reservationIndex: pendingIndexValue != null ? Number(pendingIndexValue) : null,
   };
 
-  applyPendingReservationEdit();
+  void applyPendingReservationEdit();
 
   params.delete('reservationEditId');
   params.delete('reservationEditIndex');
@@ -130,55 +130,146 @@ function handlePendingReservationEdit() {
   window.history.replaceState({}, document.title, newUrl);
 }
 
-function applyPendingReservationEdit() {
+function isDashboardTabActive(tabId) {
+  const tabPanel = document.getElementById(tabId);
+  return Boolean(tabPanel?.classList.contains('active') && tabPanel?.style.display !== 'none');
+}
+
+function waitForDashboardTab(tabId) {
+  return new Promise((resolve) => {
+    if (isDashboardTabActive(tabId)) {
+      resolve();
+      return;
+    }
+
+    const handleTabChange = (event) => {
+      if (event?.detail?.tabId === tabId) {
+        document.removeEventListener('dashboard:tabChanged', handleTabChange);
+        resolve();
+      }
+    };
+
+    document.addEventListener('dashboard:tabChanged', handleTabChange);
+
+    const tabButton = document.querySelector(`[data-tab="${tabId}"]`);
+    tabButton?.click();
+  });
+}
+
+function isReservationSubTabActive(subTabId) {
+  const button = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${subTabId}"]`);
+  const panel = document.getElementById(subTabId);
+  return Boolean(
+    button?.classList.contains('active')
+    && panel?.classList.contains('active')
+    && panel?.getAttribute('aria-hidden') === 'false'
+  );
+}
+
+function waitForReservationSubTab(subTabId) {
+  return new Promise((resolve) => {
+    if (isReservationSubTabActive(subTabId)) {
+      resolve();
+      return;
+    }
+
+    const handleSubTabChange = (event) => {
+      if (event?.detail?.subTabId === subTabId) {
+        document.removeEventListener('reservations:subTabChanged', handleSubTabChange);
+        resolve();
+      }
+    };
+
+    document.addEventListener('reservations:subTabChanged', handleSubTabChange);
+
+    const subTabButton = document.querySelector(`#reservations-tab .sub-tab-button[data-sub-tab="${subTabId}"]`);
+    subTabButton?.click();
+  });
+}
+
+function waitForReservationEditorReady() {
+  return new Promise((resolve) => {
+    if (typeof window.editReservation === 'function') {
+      resolve();
+      return;
+    }
+
+    const handleGlobalsReady = () => {
+      if (typeof window.editReservation === 'function') {
+        document.removeEventListener('reservations:globals-ready', handleGlobalsReady);
+        resolve();
+      }
+    };
+
+    document.addEventListener('reservations:globals-ready', handleGlobalsReady);
+  });
+}
+
+async function applyPendingReservationEdit() {
   if (!pendingReservationEdit) return;
+  if (pendingReservationEditPromise) return pendingReservationEditPromise;
 
-  const data = loadData();
-  const reservations = data.reservations || [];
+  const task = (async () => {
+    const data = loadData();
+    const reservations = data.reservations || [];
 
-  let targetIndex = null;
+    let targetIndex = null;
 
-  if (pendingReservationEdit.reservationId) {
-    const idx = reservations.findIndex((reservation) =>
-      String(reservation?.id) === pendingReservationEdit.reservationId
-      || String(reservation?.reservationId) === pendingReservationEdit.reservationId
-    );
-    if (idx !== -1) {
-      targetIndex = idx;
+    if (pendingReservationEdit.reservationId) {
+      const idx = reservations.findIndex((reservation) =>
+        String(reservation?.id) === pendingReservationEdit.reservationId
+        || String(reservation?.reservationId) === pendingReservationEdit.reservationId
+      );
+      if (idx !== -1) {
+        targetIndex = idx;
+      }
     }
-  }
 
-  if (targetIndex === null && typeof pendingReservationEdit.reservationIndex === 'number' && !Number.isNaN(pendingReservationEdit.reservationIndex)) {
-    if (pendingReservationEdit.reservationIndex >= 0 && pendingReservationEdit.reservationIndex < reservations.length) {
-      targetIndex = pendingReservationEdit.reservationIndex;
+    if (targetIndex === null && typeof pendingReservationEdit.reservationIndex === 'number' && !Number.isNaN(pendingReservationEdit.reservationIndex)) {
+      if (pendingReservationEdit.reservationIndex >= 0 && pendingReservationEdit.reservationIndex < reservations.length) {
+        targetIndex = pendingReservationEdit.reservationIndex;
+      }
     }
+
+    if (targetIndex === null) {
+      return;
+    }
+
+    const subTabId = 'my-reservations-tab';
+    const tabId = 'reservations-tab';
+
+    const pendingContext = pendingReservationEdit;
+    pendingReservationEdit = null;
+
+    try {
+      await waitForDashboardTab(tabId);
+      await waitForReservationSubTab(subTabId);
+      await waitForReservationEditorReady();
+
+      const openEditor = window.editReservation;
+      if (typeof openEditor === 'function') {
+        openEditor(targetIndex);
+      } else {
+        console.warn('⚠️ Pending reservation edit skipped: editor is not available');
+        pendingReservationEdit = pendingContext;
+      }
+    } catch (error) {
+      console.error('❌ Failed to open pending reservation editor', error);
+      pendingReservationEdit = pendingContext;
+    }
+  })();
+
+  pendingReservationEditPromise = task;
+
+  try {
+    await task;
+  } finally {
+    pendingReservationEditPromise = null;
   }
-
-  if (targetIndex === null) {
-    return;
-  }
-
-  pendingReservationEdit = null;
-
-  setTimeout(() => {
-    const reservationsTabBtn = document.querySelector('[data-tab="reservations-tab"]');
-    reservationsTabBtn?.click();
-
-    setTimeout(() => {
-      document.querySelector('.sub-tab-button[data-sub-tab="my-reservations-tab"]')?.click();
-
-      setTimeout(() => {
-        const openEditor = window.editReservation;
-        if (typeof openEditor === 'function') {
-          openEditor(targetIndex);
-        }
-      }, 150);
-    }, 150);
-  }, 150);
 }
 
 document.addEventListener('reservations:changed', () => {
   if (pendingReservationEdit) {
-    applyPendingReservationEdit();
+    void applyPendingReservationEdit();
   }
 });
