@@ -1418,21 +1418,16 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </section>
 
       <section class="project-edit-expenses mt-4">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-2">
-          <h6 class="mb-0">${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
-          <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">
-            ${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}
-          </button>
-        </div>
+        <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
         <div class="project-edit-expense-form row g-2 align-items-center">
           <div class="col-12 col-xl-7">
             <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
           </div>
           <div class="col-6 col-xl-3">
-            <input type="number" class="form-control project-edit-input-xs w-100" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" min="0">
+            <input type="text" class="form-control project-edit-input-xs w-100" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
           </div>
-          <div class="col-6 col-xl-2 d-flex justify-content-start justify-content-xl-end">
-            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn w-100" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
+          <div class="col-6 col-xl-2 d-flex justify-content-end">
+            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
           </div>
         </div>
         <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">
