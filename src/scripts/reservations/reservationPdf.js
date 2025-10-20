@@ -269,7 +269,7 @@ const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
   { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'الفريق الفني (Technical Team)', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
-  { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'متطلبات المشروع', defaultSelected: true },
+  { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'المصاريف', defaultSelected: true },
   { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
   { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true }
 ];
@@ -287,7 +287,7 @@ const PROJECT_QUOTE_FIELD_DEFS = {
   ],
   financialSummary: [
     { id: 'projectSubtotal', labelKey: 'projects.details.summary.projectSubtotal', fallback: 'إجمالي المشروع' },
-    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي متطلبات المشروع' },
+    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي المصاريف' },
     { id: 'reservationsTotal', labelKey: 'projects.details.reservationsTotal', fallback: 'إجمالي الحجوزات' },
     { id: 'discountAmount', labelKey: 'projects.details.summary.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'projects.details.summary.combinedTax', fallback: 'الضريبة' },
@@ -2573,7 +2573,7 @@ function buildProjectQuotationHtml({
     financialInlineItems.push(renderTotalsItem(t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), totalsDisplay.projectSubtotal || `${formatCurrencyValue(0, currencyLabel)}`));
   }
   if (isFieldEnabled('financialSummary', 'expensesTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي متطلبات المشروع'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
+    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي المصاريف'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
   }
   if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
     financialInlineItems.push(renderTotalsItem(t('projects.details.reservationsTotal', 'إجمالي الحجوزات'), totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
@@ -2615,19 +2615,19 @@ function buildProjectQuotationHtml({
   const expensesSectionMarkup = includeSection('projectExpenses')
     ? (expensesColumns.length
         ? `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'متطلبات المشروع'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
             <table class="quote-table">
               <thead>
                 <tr>${expensesColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
               <tbody>${projectExpenses.length
                 ? projectExpenses.map((expense, index) => `<tr>${expensesColumns.map((column) => `<td>${column.render(expense, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد متطلبات مسجلة.'))}</td></tr>`}
+                : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد مصاريف مسجلة.'))}</td></tr>`}
               </tbody>
             </table>
           </section>`
         : `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'متطلبات المشروع'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
             ${noFieldsMessage}
           </section>`)
     : '';
@@ -2691,17 +2691,11 @@ function buildProjectQuotationHtml({
       </footer>`;
 
   const primaryBlocks = [];
-  const primarySections = [];
-  if (projectSectionMarkup) primarySections.push(projectSectionMarkup);
-  if (customerSectionMarkup) primarySections.push(customerSectionMarkup);
-
-  if (primarySections.length > 1) {
-    primaryBlocks.push(withBlockAttributes(
-      `<div class="quote-section-row quote-section-row--primary">${primarySections.join('')}</div>`,
-      { blockType: 'group' }
-    ));
-  } else if (primarySections.length === 1) {
-    primaryBlocks.push(withBlockAttributes(primarySections[0]));
+  if (projectSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+  }
+  if (customerSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
   }
 
   const tableBlocks = [];

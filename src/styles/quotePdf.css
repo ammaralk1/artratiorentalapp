@@ -248,39 +248,16 @@ body,
 
 .quote-section--customer {
   text-align: left;
-  margin: 0;
-  max-width: 100%;
+  margin-left: auto;
+  margin-right: 0;
+  max-width: 46%;
 }
 
 .quote-section--project {
-  text-align: right;
-  margin: 0;
-  max-width: 100%;
-  width: 100%;
-  align-self: stretch;
-}
-
-.quote-section--project .quote-section__title {
-  text-align: right;
-}
-
-.quote-section--project .info-plain,
-.quote-section--project .info-plain__item {
-  text-align: right;
-  align-items: flex-end;
-  justify-content: flex-end;
-}
-
-.quote-section-row--primary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  direction: rtl;
-  align-items: stretch;
-}
-
-.quote-section-row--primary .quote-section {
-  width: 100%;
+  text-align: left;
+  margin-left: 0;
+  margin-right: auto;
+  max-width: 50%;
 }
 
 .quote-section--customer .info-plain,
