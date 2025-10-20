@@ -1562,6 +1562,40 @@ body[dir="rtl"] .project-details-chips {
   min-width: 120px;
 }
 
+.project-edit-expense-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.project-edit-expense-label-col {
+  flex: 1 1 55%;
+  min-width: 220px;
+}
+
+.project-edit-expense-amount-col {
+  flex: 0 0 20%;
+  min-width: 140px;
+}
+
+.project-edit-expense-action-col {
+  flex: 0 0 20%;
+  min-width: 140px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 992px) {
+  .project-edit-expense-amount-col,
+  .project-edit-expense-action-col {
+    flex: 1 1 200px;
+  }
+
+  .project-edit-expense-action-col {
+    justify-content: flex-start;
+  }
+}
+
 .project-edit-inline-group {
   display: flex;
   flex-wrap: wrap;

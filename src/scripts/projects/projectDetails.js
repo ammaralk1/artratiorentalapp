@@ -1419,14 +1419,14 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
 
       <section class="project-edit-expenses mt-4">
         <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
-        <div class="project-edit-expense-form row g-2 align-items-center">
-          <div class="col-12 col-xl-7">
+        <div class="project-edit-expense-form">
+          <div class="project-edit-expense-label-col">
             <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
           </div>
-          <div class="col-6 col-xl-3">
-            <input type="text" class="form-control project-edit-input-xs w-100" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
+          <div class="project-edit-expense-amount-col">
+            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
           </div>
-          <div class="col-6 col-xl-2 d-flex justify-content-end">
+          <div class="project-edit-expense-action-col">
             <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
           </div>
         </div>
