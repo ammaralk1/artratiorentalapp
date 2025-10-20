@@ -1387,7 +1387,9 @@ body[dir="rtl"] .project-expense-amount {
 .project-details-footer {
   margin-top: 24px;
   display: flex;
-  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 body[dir="rtl"] .project-details-header__info {
@@ -1399,8 +1401,110 @@ body[dir="rtl"] .project-details-chips {
   justify-content: flex-start;
 }
 
-body[dir="rtl"] .project-details-footer {
-  justify-content: flex-end;
+/* consistent modal action buttons inside project details */
+.project-details-footer .modal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.55rem 1.4rem;
+  border-radius: 14px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  color: #f8fafc;
+}
+
+.project-details-footer .modal-action-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.project-details-footer .modal-action-btn:hover,
+.project-details-footer .modal-action-btn:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.project-details-footer .modal-action-btn:hover::after,
+.project-details-footer .modal-action-btn:focus-visible::after {
+  opacity: 1;
+}
+
+.project-details-footer .modal-action-btn:active {
+  transform: translateY(0);
+}
+
+.project-details-footer .modal-action-btn--primary {
+  background: linear-gradient(135deg, rgba(59, 91, 220, 0.96), rgba(37, 99, 235, 0.88));
+  box-shadow:
+    0 14px 24px rgba(37, 99, 235, 0.28),
+    0 0 0 1px rgba(59, 91, 220, 0.32);
+}
+
+.project-details-footer .modal-action-btn--primary:hover,
+.project-details-footer .modal-action-btn--primary:focus-visible {
+  box-shadow:
+    0 18px 30px rgba(59, 91, 220, 0.32),
+    0 0 0 1px rgba(99, 102, 241, 0.4);
+}
+
+.project-details-footer .modal-action-btn--ghost {
+  background: linear-gradient(135deg, rgba(241, 245, 255, 0.96), rgba(226, 232, 255, 0.9));
+  color: #1f2d52;
+  box-shadow:
+    0 12px 20px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(148, 163, 255, 0.28);
+}
+
+.project-details-footer .modal-action-btn--ghost::after {
+  background: rgba(76, 110, 245, 0.12);
+}
+
+.project-details-footer .modal-action-btn--ghost:hover,
+.project-details-footer .modal-action-btn--ghost:focus-visible {
+  color: #152349;
+  box-shadow:
+    0 16px 28px rgba(59, 91, 220, 0.22),
+    0 0 0 1px rgba(59, 91, 220, 0.35);
+}
+
+.project-details-footer .modal-action-btn--danger {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.95), rgba(190, 18, 60, 0.9));
+  box-shadow:
+    0 14px 24px rgba(190, 18, 60, 0.28),
+    0 0 0 1px rgba(244, 63, 94, 0.32);
+}
+
+.project-details-footer .modal-action-btn--danger:hover,
+.project-details-footer .modal-action-btn--danger:focus-visible {
+  box-shadow:
+    0 18px 30px rgba(190, 18, 60, 0.34),
+    0 0 0 1px rgba(248, 113, 113, 0.42);
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-footer .modal-action-btn--ghost {
+  background: linear-gradient(135deg, rgba(30, 42, 68, 0.92), rgba(17, 24, 45, 0.9));
+  color: #dbe4ff;
+}
+
+:is(html.dark-mode, body.dark-mode) .project-details-footer .modal-action-btn--ghost:hover,
+:is(html.dark-mode, body.dark-mode) .project-details-footer .modal-action-btn--ghost:focus-visible {
+  color: #fff;
+  box-shadow:
+    0 16px 28px rgba(99, 102, 241, 0.28),
+    0 0 0 1px rgba(99, 102, 241, 0.4);
 }
 
 body[dir="rtl"] .project-details-header__code {

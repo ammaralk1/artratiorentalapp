@@ -339,20 +339,20 @@ export function openProjectDetails(projectId) {
       </div>
     </section>
     ${buildProjectReservationsSection(project)}
-    <div class="project-details-footer d-flex flex-wrap gap-2 justify-content-end">
-      <button type="button" class="btn btn-outline-success" data-action="create-reservation">
-        ${escapeHtml(t('projects.details.actions.createReservation', '➕ إنشاء حجز مرتبط'))}
+    <div class="project-details-footer">
+      <button type="button" class="modal-action-btn modal-action-btn--primary" data-action="create-reservation">
+        ${escapeHtml(t('projects.details.reservations.create', '➕ إنشاء حجز مرتبط'))}
       </button>
-      <button type="button" class="btn btn-outline-primary" data-action="edit-project">
-        ${escapeHtml(t('projects.details.actions.editProject', '✏️ تعديل المشروع'))}
+      <button type="button" class="modal-action-btn modal-action-btn--ghost" data-action="edit-project">
+        ${escapeHtml(t('projects.details.actions.edit', '✏️ تعديل المشروع'))}
       </button>
-      <button type="button" class="btn btn-outline-danger" data-action="delete-project">
-        ${escapeHtml(t('projects.details.actions.deleteProject', '🗑️ حذف المشروع'))}
+      <button type="button" class="modal-action-btn modal-action-btn--danger" data-action="delete-project">
+        ${escapeHtml(t('projects.details.actions.delete', '🗑️ حذف المشروع'))}
       </button>
-      <button type="button" class="btn btn-outline-secondary" id="project-details-export-btn">
+      <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-details-export-btn">
         ${escapeHtml(t('projects.details.actions.exportPdf', '👁️ معاينة PDF'))}
       </button>
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      <button type="button" class="modal-action-btn modal-action-btn--ghost" data-bs-dismiss="modal">
         ${escapeHtml(t('actions.close', 'إغلاق'))}
       </button>
     </div>
