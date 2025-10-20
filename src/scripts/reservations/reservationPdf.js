@@ -2469,7 +2469,11 @@ function buildProjectQuotationHtml({
   const noFieldsMessage = `<div class="quote-placeholder">${escapeHtml(t('reservations.quote.placeholder.noFields', 'لم يتم اختيار أي معلومات للعرض في هذا القسم.'))}</div>`;
 
   const renderPlainItem = (label, value) => (
-    `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`
+    `<div class="info-plain__item">
+      <span class="info-plain__label">${escapeHtml(label)}</span>
+      <span class="info-plain__separator">:</span>
+      <span class="info-plain__value">${escapeHtml(value)}</span>
+    </div>`
   );
 
   const renderTotalsItem = (label, value, { variant = 'inline' } = {}) => {
@@ -2692,19 +2696,19 @@ function buildProjectQuotationHtml({
 
   const primaryBlocks = [];
   const primarySections = [];
-  if (customerSectionMarkup) {
-    primarySections.push({ key: 'customer', html: customerSectionMarkup });
-  }
   if (projectSectionMarkup) {
     primarySections.push({ key: 'project', html: projectSectionMarkup });
   }
+  if (customerSectionMarkup) {
+    primarySections.push({ key: 'customer', html: customerSectionMarkup });
+  }
 
   if (primarySections.length > 1) {
-    const ordered = [];
-    const customerEntry = primarySections.find((entry) => entry.key === 'customer');
     const projectEntry = primarySections.find((entry) => entry.key === 'project');
-    if (customerEntry?.html) ordered.push(customerEntry.html);
+    const customerEntry = primarySections.find((entry) => entry.key === 'customer');
+    const ordered = [];
     if (projectEntry?.html) ordered.push(projectEntry.html);
+    if (customerEntry?.html) ordered.push(customerEntry.html);
 
     primaryBlocks.push(withBlockAttributes(
       `<div class="quote-section-row quote-section-row--primary">${ordered.join('')}</div>`,
