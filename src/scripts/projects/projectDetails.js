@@ -438,10 +438,19 @@ export function bindProjectDetailsEvents(project) {
   const reservationContainer = dom.detailsBody.querySelector('.project-reservations-list');
 
   if (createBtn && project) {
-    createBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      startReservationForProject(project);
-    });
+    const hasReservations = Array.isArray(state.reservations)
+      ? state.reservations.some((reservation) => String(reservation.projectId) === String(project.id))
+      : false;
+
+    if (hasReservations) {
+      createBtn.disabled = true;
+      createBtn.classList.add('is-disabled');
+    } else {
+      createBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        startReservationForProject(project);
+      });
+    }
   }
 
   if (editBtn && project) {
@@ -1411,7 +1420,10 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         <div id="project-edit-payment-summary" class="project-details-grid mb-3"></div>
         <div class="reservation-payment-history-block">
           <div class="reservation-payment-history__header">
-            <h6 class="reservation-payment-history__title">${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h6>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 w-100">
+              <h6 class="reservation-payment-history__title mb-0">${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h6>
+              <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" id="project-edit-payment-add">${escapeHtml(t('reservations.paymentHistory.actions.add', '➕ إضافة دفعة'))}</button>
+            </div>
           </div>
           <div id="project-edit-payment-history" class="reservation-payment-history"></div>
         </div>
