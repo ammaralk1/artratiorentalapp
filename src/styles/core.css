@@ -1579,8 +1579,8 @@ body[dir="rtl"] .project-details-chips {
 }
 
 .project-edit-expense-action-col {
-  flex: 0 0 20%;
-  min-width: 140px;
+  flex: 0 0 auto;
+  min-width: 0;
   display: flex;
   justify-content: flex-end;
 }
@@ -1588,7 +1588,7 @@ body[dir="rtl"] .project-details-chips {
 @media (max-width: 992px) {
   .project-edit-expense-amount-col,
   .project-edit-expense-action-col {
-    flex: 1 1 200px;
+    flex: 1 1 auto;
   }
 
   .project-edit-expense-action-col {
