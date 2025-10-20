@@ -198,6 +198,13 @@ body,
   color: #000000 !important;
 }
 
+.quote-company-license {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #000000 !important;
+}
+
 .quote-header__logo {
   justify-self: end;
   align-self: flex-start;

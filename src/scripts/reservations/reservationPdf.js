@@ -2766,6 +2766,7 @@ const crewSectionMarkup = includeSection('projectCrew')
         <h1>${escapeHtml(t('projects.quote.title', 'عرض سعر'))}</h1>
         <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
+        <p class="quote-company-license">ترخيص إعلامي: 159460</p>
       </div>
       <div class="quote-header__meta">
         <div class="quote-header__meta-item">
