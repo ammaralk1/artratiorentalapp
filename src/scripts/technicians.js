@@ -22,6 +22,9 @@ import {
   deleteTechnicianPosition,
 } from "./technicianPositions.js";
 
+const TECH_SUB_TAB_STORAGE_KEY = "__ART_RATIO_TECH_SUB_TAB__";
+const TECH_SUB_TAB_IDS = ["technicians-management", "technicians-positions"];
+
 let editingTechnicianId = null;
 let technicianPrefillListenerAttached = false;
 let techniciansLoading = false;
@@ -29,6 +32,11 @@ let techniciansErrorMessage = "";
 let techniciansHasLoaded = false;
 let editingPositionId = null;
 let activeTechnicianSubTab = "technicians-management";
+
+const storedTechSubTab = readStoredTechSubTab();
+if (storedTechSubTab) {
+  activeTechnicianSubTab = storedTechSubTab;
+}
 
 async function loadTechniciansFromApi({ showToastOnError = true } = {}) {
   if (techniciansLoading) return;
@@ -90,6 +98,35 @@ function sanitizeNumericInput(element, normalizer) {
     }
   });
   element.dataset.normalizerAttached = "true";
+}
+
+function readStoredTechSubTab() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return null;
+    }
+    const value = window.localStorage.getItem(TECH_SUB_TAB_STORAGE_KEY);
+    if (!value) return null;
+    return TECH_SUB_TAB_IDS.includes(value) ? value : null;
+  } catch (error) {
+    console.warn('⚠️ [technicians] Failed to read stored sub-tab', error);
+    return null;
+  }
+}
+
+function writeStoredTechSubTab(value) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return;
+    }
+    if (!TECH_SUB_TAB_IDS.includes(value)) {
+      window.localStorage.removeItem(TECH_SUB_TAB_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(TECH_SUB_TAB_STORAGE_KEY, value);
+  } catch (error) {
+    console.warn('⚠️ [technicians] Failed to store sub-tab', error);
+  }
 }
 
 function resolvePositionRates(roleValue, fallbackWage = 0, fallbackTotal = null) {
@@ -232,6 +269,7 @@ function activateTechnicianSubTab(target) {
   });
 
   activeTechnicianSubTab = desired;
+  writeStoredTechSubTab(desired);
 
   const activeButton = buttons.find((btn) => btn?.getAttribute('data-tech-tab') === desired);
   const scrollRoot = activeButton?.closest('[data-tab-scroll]');
