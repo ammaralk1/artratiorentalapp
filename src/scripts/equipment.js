@@ -4,6 +4,14 @@ import { t } from "./language.js";
 import { apiRequest, ApiError } from "./apiClient.js";
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 import { refreshEnhancedSelect } from "./ui/enhancedSelect.js";
+import {
+  isEquipmentSelectionActive,
+  getActiveEquipmentSelection,
+  requestAddEquipmentToSelection,
+  clearEquipmentSelection,
+  EQUIPMENT_SELECTION_EVENTS
+} from "./reservations/equipmentSelection.js";
+import { hasEquipmentConflict } from "./reservations/state.js";
 
 const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
@@ -13,6 +21,7 @@ let currentVariantsContext = null;
 let activeEquipmentIndex = null;
 let currentEquipmentSnapshot = null;
 let isEquipmentEditMode = false;
+let selectionChangeListenerAttached = false;
 
 function getBootstrapModal(element) {
   if (!element) return null;
@@ -206,6 +215,110 @@ function statusToFormValue(value) {
 
 function statusToApi(value) {
   return normalizeStatusValue(value);
+}
+
+function getActiveSelectionContext() {
+  if (!isEquipmentSelectionActive()) {
+    return null;
+  }
+  const selection = getActiveEquipmentSelection();
+  if (!selection) {
+    return null;
+  }
+  return { ...selection };
+}
+
+function evaluateSelectionStateForItem(item) {
+  const selection = getActiveSelectionContext();
+  if (!selection) {
+    return { active: false };
+  }
+
+  const barcode = normalizeNumbers(String(item?.barcode ?? '').trim());
+  if (!barcode) {
+    return {
+      active: true,
+      canSelect: false,
+      reason: t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'),
+    };
+  }
+
+  const { start, end, ignoreReservationId = null } = selection;
+
+  if (!start || !end) {
+    return {
+      active: true,
+      canSelect: false,
+      barcode,
+      reason: t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'),
+    };
+  }
+
+  const status = normalizeStatusValue(item?.status);
+  if (status === 'maintenance') {
+    return {
+      active: true,
+      canSelect: false,
+      barcode,
+      reason: t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'),
+    };
+  }
+
+  if (status === 'retired') {
+    return {
+      active: true,
+      canSelect: false,
+      barcode,
+      reason: t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً'),
+    };
+  }
+
+  const conflict = hasEquipmentConflict(barcode, start, end, ignoreReservationId);
+  if (conflict) {
+    return {
+      active: true,
+      canSelect: false,
+      barcode,
+      reason: t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'),
+    };
+  }
+
+  return {
+    active: true,
+    canSelect: true,
+    barcode,
+  };
+}
+
+function navigateBackToReservationForm() {
+  const reservationsTabButton = document.querySelector('[data-tab="reservations-tab"]');
+  if (reservationsTabButton) {
+    reservationsTabButton.click();
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelector('#sub-tab-trigger-create-tab')?.click();
+        document.getElementById('equipment-barcode')?.focus();
+      }, 200);
+    });
+  }
+}
+
+function updateEquipmentSelectionBanner() {
+  if (typeof document === 'undefined') return;
+  const banner = document.getElementById('equipment-selection-banner');
+  const returnButton = document.getElementById('equipment-selection-return');
+  if (!banner) return;
+
+  const selection = getActiveSelectionContext();
+  banner.hidden = !selection;
+
+  if (selection && returnButton && !returnButton.dataset.listenerAttached) {
+    returnButton.addEventListener('click', () => {
+      clearEquipmentSelection('return-button');
+      navigateBackToReservationForm();
+    });
+    returnButton.dataset.listenerAttached = 'true';
+  }
 }
 
 function getAllEquipment() {
@@ -826,6 +939,17 @@ function renderEquipmentItem({ item, index }) {
   `;
 
   const actionButtons = [];
+  const selectionState = evaluateSelectionStateForItem(item);
+
+  if (selectionState.active) {
+    const addLabel = t('reservations.create.equipment.selector.addToReservation', '➕ أضف إلى الحجز');
+    const barcodeAttr = selectionState.barcode ? ` data-equipment-barcode="${escapeHtml(selectionState.barcode)}"` : '';
+    const disabledAttr = selectionState.canSelect ? '' : ' disabled';
+    const reasonAttr = selectionState.reason ? ` title="${escapeHtml(selectionState.reason)}"` : '';
+    actionButtons.push(
+      `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--select" data-equipment-action="select-reservation"${barcodeAttr}${disabledAttr}${reasonAttr}>${addLabel}</button>`
+    );
+  }
   if (canDelete) {
     actionButtons.push(
       `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
@@ -1001,6 +1125,8 @@ function renderEmptyState(message, { tone = "", icon = "📦" } = {}) {
 export function renderEquipment() {
   const container = document.getElementById("equipment-list");
   if (!container) return;
+
+  updateEquipmentSelectionBanner();
 
   const synced = syncEquipmentStatuses();
   const data = Array.isArray(synced) ? synced : getAllEquipment();
@@ -1341,6 +1467,18 @@ function openEditEquipmentModal(index) {
 }
 
 function handleEquipmentListClick(event) {
+  const selectButton = event.target.closest('[data-equipment-action="select-reservation"]');
+  if (selectButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const barcode = selectButton.dataset.equipmentBarcode || '';
+    const success = requestAddEquipmentToSelection(barcode);
+    if (!success) {
+      showToast(t('reservations.create.equipment.selector.selectionInactive', '⚠️ يرجى العودة إلى نموذج الحجز وتفعيل اختيار المعدات من جديد'));
+    }
+    return;
+  }
+
   const deleteButton = event.target.closest('[data-equipment-action="delete"]');
   if (deleteButton) {
     event.preventDefault();
@@ -1602,3 +1740,11 @@ document.addEventListener('DOMContentLoaded', () => {
     modalElement.dataset.variantsListenerAttached = 'true';
   }
 });
+
+if (typeof document !== 'undefined' && !selectionChangeListenerAttached) {
+  document.addEventListener(EQUIPMENT_SELECTION_EVENTS.change, () => {
+    updateEquipmentSelectionBanner();
+    renderEquipment();
+  });
+  selectionChangeListenerAttached = true;
+}

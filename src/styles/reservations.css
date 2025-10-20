@@ -1271,6 +1271,24 @@ body[dir="rtl"] .reservation-summary-card {
   .reservation-equipment-inputs .reservation-equipment-field--search {
     flex-grow: 1.35;
   }
+
+  .reservation-equipment-inputs .reservation-equipment-field--selector {
+    flex: 0 0 auto;
+  }
+}
+
+.reservation-equipment-inputs .reservation-equipment-field--selector {
+  display: flex;
+  align-items: stretch;
+}
+
+.reservation-select-equipment-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding-inline: 1.25rem;
+  font-weight: 600;
 }
 
 .reservation-remove-button {

@@ -650,6 +650,18 @@
           </form>
         </div>
 
+        <div id="equipment-selection-banner" class="equipment-selection-banner" hidden>
+          <div class="equipment-selection-banner__content">
+            <div class="equipment-selection-banner__copy">
+              <span class="equipment-selection-banner__title" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerTitle">🔗 اختيار معدات لحجز جديد</span>
+              <p class="equipment-selection-banner__hint" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerHint">ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.</p>
+            </div>
+            <div class="equipment-selection-banner__actions">
+              <button type="button" class="btn btn-primary btn-sm" id="equipment-selection-return" data-i18n data-i18n-key="reservations.create.equipment.selector.returnButton">⬅️ العودة إلى الحجز</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ✅ البحث والفلترة -->
         <div class="equipment-filters mb-4">
           <div class="equipment-search-row">
@@ -1016,6 +1028,15 @@
                   <div class="reservation-equipment-field reservation-equipment-field--search">
                     <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
                     <datalist id="equipment-description-options"></datalist>
+                  </div>
+                  <div class="reservation-equipment-field reservation-equipment-field--selector">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary reservation-select-equipment-btn"
+                      id="open-equipment-selector"
+                      data-i18n
+                      data-i18n-key="reservations.create.equipment.actions.openSelector"
+                    >📦 اختيار من قائمة المعدات</button>
                   </div>
                 </div>
 

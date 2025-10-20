@@ -40,6 +40,12 @@ import {
   buildReservationPayload,
   isApiError,
 } from '../reservationsService.js';
+import {
+  activateEquipmentSelection,
+  clearEquipmentSelection,
+  EQUIPMENT_SELECTION_EVENTS,
+  isEquipmentSelectionActive
+} from './equipmentSelection.js';
 
 const DEFAULT_PROJECT_FORM_DRAFT_KEY = 'projects:create:draft';
 const DEFAULT_PROJECT_FORM_RETURN_URL = 'projects.html#projects-section';
@@ -52,6 +58,7 @@ let projectOptionMap = new Map();
 let equipmentDescriptionOptionMap = new Map();
 let isSyncingShareTaxCreate = false;
 let linkedProjectReturnContext = null;
+let equipmentSelectionEventsRegistered = false;
 
 function escapeHtml(value = '') {
   return String(value)
@@ -1214,6 +1221,86 @@ function setupEquipmentDescriptionInputs() {
   }
 }
 
+function applyEquipmentSelectionButtonState(button, active) {
+  if (!button) return;
+  const isActive = Boolean(active);
+  button.dataset.selectionActive = isActive ? 'true' : 'false';
+  button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  button.classList.toggle('reservation-equipment-select-button--active', isActive);
+  if (isActive) {
+    button.classList.add('btn-primary');
+    button.classList.remove('btn-outline-primary');
+  } else {
+    button.classList.add('btn-outline-primary');
+    button.classList.remove('btn-primary');
+  }
+}
+
+function setupEquipmentSelectionButton() {
+  const button = document.getElementById('open-equipment-selector');
+  if (!button) return;
+
+  if (!button.dataset.listenerAttached) {
+    button.addEventListener('click', () => {
+      const { start, end } = getCreateReservationDateRange();
+      if (!start || !end) {
+        showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
+        return;
+      }
+
+      activateEquipmentSelection({
+        mode: 'create',
+        source: 'reservation-form',
+        returnTab: 'reservations-tab',
+        returnSubTab: 'create-tab',
+        start,
+        end,
+      });
+
+      const equipmentTabButton = document.querySelector('[data-tab="equipment-tab"]');
+      if (equipmentTabButton) {
+        equipmentTabButton.click();
+        window.requestAnimationFrame(() => {
+          setTimeout(() => {
+            document.getElementById('search-equipment')?.focus();
+          }, 300);
+        });
+      } else {
+        showToast(t('reservations.toast.equipmentTabUnavailable', '⚠️ تعذر فتح تبويب المعدات حالياً'));
+      }
+    });
+    button.dataset.listenerAttached = 'true';
+  }
+
+  if (!button.dataset.selectionObserverAttached) {
+    document.addEventListener(EQUIPMENT_SELECTION_EVENTS.change, (event) => {
+      applyEquipmentSelectionButtonState(button, event?.detail?.active);
+    });
+    button.dataset.selectionObserverAttached = 'true';
+  }
+
+  applyEquipmentSelectionButtonState(button, isEquipmentSelectionActive());
+}
+
+function handleEquipmentSelectionAdd(event) {
+  if (!event || !event.detail) return;
+  const { barcode } = event.detail;
+  if (!barcode) return;
+  if (!document.getElementById('reservation-form')) return;
+  addDraftEquipmentByBarcode(barcode, null);
+}
+
+function setupEquipmentSelectionIntegration() {
+  setupEquipmentSelectionButton();
+
+  if (equipmentSelectionEventsRegistered || typeof document === 'undefined') {
+    return;
+  }
+
+  document.addEventListener(EQUIPMENT_SELECTION_EVENTS.requestAdd, handleEquipmentSelectionAdd);
+  equipmentSelectionEventsRegistered = true;
+}
+
 function renderReservationItems(containerId = 'reservation-items') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1953,6 +2040,7 @@ function resetForm() {
   }
   resetSelectedTechnicians();
   setSelectedItems([]);
+  clearEquipmentSelection('form-reset');
   renderReservationItems();
   updateCreateProjectTaxState();
   renderDraftReservationSummary();
@@ -2056,6 +2144,7 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
 
   populateEquipmentDescriptionLists();
   setupEquipmentDescriptionInputs();
+  setupEquipmentSelectionIntegration();
   setupReservationTimeSync();
   setupSummaryEvents();
   setupReservationButtons();
@@ -2072,6 +2161,7 @@ export function refreshCreateReservationForm() {
   ensureCustomerChoices();
   setupCustomerAutocomplete();
   setupProjectSelection();
+  setupEquipmentSelectionIntegration();
   renderReservationItems();
   renderDraftReservationSummary();
 }

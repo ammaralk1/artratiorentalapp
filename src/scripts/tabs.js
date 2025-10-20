@@ -124,6 +124,12 @@ export function setupTabs() {
 
     writeStoredTab(DASHBOARD_TAB_STORAGE_KEY, target);
 
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('dashboard:tabChanged', {
+        detail: { tabId: target }
+      }));
+    }
+
     if (!skipStore) {
       updatePreferences({ dashboardTab: target }).catch((error) => {
         console.warn('⚠️ [tabs.js] Failed to store dashboard tab preference', error);
@@ -396,6 +402,12 @@ function setupSubTabs() {
       updatePreferences({ dashboardSubTab: targetToActivate }).catch((error) => {
         console.warn('⚠️ [tabs.js] Failed to store sub-tab preference', error);
       });
+    }
+
+    if (typeof document !== 'undefined') {
+      document.dispatchEvent(new CustomEvent('reservations:subTabChanged', {
+        detail: { subTabId: targetToActivate }
+      }));
     }
 
     if (targetToActivate === "my-reservations-tab") {
