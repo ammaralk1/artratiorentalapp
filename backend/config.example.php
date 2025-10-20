@@ -25,5 +25,16 @@ return [
         'api_base' => 'https://api.sirv.com',
         'cdn_base' => 'https://your-bucket.sirv.com',
         'upload_folder' => '/art-ratio/uploads',
+        // 'max_file_size' => 5242880, // Override max upload size (in bytes)
+        // 'upload_rules' => [
+        //     [
+        //         'mime' => 'image/jpeg',
+        //         'extensions' => ['jpg', 'jpeg'],
+        //     ],
+        //     [
+        //         'mime' => 'application/pdf',
+        //         'extensions' => ['pdf'],
+        //     ],
+        // ],
     ],
 ];
