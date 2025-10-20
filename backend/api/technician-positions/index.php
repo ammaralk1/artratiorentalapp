@@ -451,9 +451,11 @@ function generatePositionSlug(string $value): string
         $value = uniqid('position-', true);
     }
 
-    $transliterated = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-    if ($transliterated !== false && $transliterated !== '') {
-        $value = $transliterated;
+    if (function_exists('iconv')) {
+        $transliterated = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        if ($transliterated !== false && $transliterated !== '') {
+            $value = $transliterated;
+        }
     }
 
     $value = preg_replace('/[^a-z0-9\-\s]+/i', '', $value) ?? $value;
