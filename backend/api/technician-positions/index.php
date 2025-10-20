@@ -1,11 +1,6 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
 
-use \\InvalidArgumentException;
-use \\PDO;
-use \\RuntimeException;
-use \\Throwable;
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
@@ -29,16 +24,16 @@ try {
         default:
             respondError('Method not allowed', 405);
     }
-} catch (InvalidArgumentException $exception) {
+} catch (\InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
-} catch (Throwable $exception) {
+} catch (\Throwable $exception) {
     logTechnicianPositionsError($exception);
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
 }
 
-function handleTechnicianPositionsGet(PDO $pdo): void
+function handleTechnicianPositionsGet(\PDO $pdo): void
 {
     $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
@@ -104,7 +99,7 @@ function handleTechnicianPositionsGet(PDO $pdo): void
     );
 }
 
-function handleTechnicianPositionsCreate(PDO $pdo): void
+function handleTechnicianPositionsCreate(\PDO $pdo): void
 {
     requireRole(['manager', 'admin']);
 
@@ -123,7 +118,7 @@ function handleTechnicianPositionsCreate(PDO $pdo): void
 
         $existing = findTechnicianPositionByName($pdo, $data['name']);
         if ($existing) {
-            throw new InvalidArgumentException('A position with that name already exists');
+            throw new \InvalidArgumentException('A position with that name already exists');
         }
 
         $supportsTranslations = technicianPositionsSupportsTranslations($pdo);
@@ -160,16 +155,16 @@ function handleTechnicianPositionsCreate(PDO $pdo): void
 
         $pdo->commit();
         respond($position, 201);
-    } catch (Throwable $error) {
+    } catch (\Throwable $error) {
         $pdo->rollBack();
-        if ($error instanceof InvalidArgumentException) {
+        if ($error instanceof \InvalidArgumentException) {
             throw $error;
         }
-        throw new RuntimeException($error->getMessage(), 0, $error);
+        throw new \RuntimeException($error->getMessage(), 0, $error);
     }
 }
 
-function handleTechnicianPositionsUpdate(PDO $pdo): void
+function handleTechnicianPositionsUpdate(\PDO $pdo): void
 {
     requireRole(['manager', 'admin']);
 
@@ -195,49 +190,49 @@ function handleTechnicianPositionsUpdate(PDO $pdo): void
     $pdo->beginTransaction();
 
     try {
-    $original = fetchTechnicianPositionById($pdo, $id);
-    if (!$original) {
-        respondError('Position not found', 404);
-        return;
-    }
+        $original = fetchTechnicianPositionById($pdo, $id);
+        if (!$original) {
+            respondError('Position not found', 404);
+            return;
+        }
 
-    $supportsTranslations = technicianPositionsSupportsTranslations($pdo);
+        $supportsTranslations = technicianPositionsSupportsTranslations($pdo);
 
-    $data = ensurePositionLabels($data, $original);
+        $data = ensurePositionLabels($data, $original);
 
         if (isset($data['name'])) {
             $data['name'] = generatePositionSlug($data['name']);
             $duplicate = findTechnicianPositionByName($pdo, $data['name'], $id);
             if ($duplicate) {
-                throw new InvalidArgumentException('A position with that name already exists');
+                throw new \InvalidArgumentException('A position with that name already exists');
             }
         }
 
-    $fields = [];
-    $params = ['id' => $id];
+        $fields = [];
+        $params = ['id' => $id];
 
-    foreach ($data as $column => $value) {
-        if (!$supportsTranslations && ($column === 'label_ar' || $column === 'label_en')) {
-            continue;
+        foreach ($data as $column => $value) {
+            if (!$supportsTranslations && ($column === 'label_ar' || $column === 'label_en')) {
+                continue;
+            }
+            $fields[] = sprintf('%s = :%s', $column, $column);
+            $params[$column] = $value;
         }
-        $fields[] = sprintf('%s = :%s', $column, $column);
-        $params[$column] = $value;
-    }
 
-    if ($fields) {
-        $sql = 'UPDATE technician_positions SET ' . implode(', ', $fields) . ' WHERE id = :id';
-        $statement = $pdo->prepare($sql);
-        $statement->execute($params);
+        if ($fields) {
+            $sql = 'UPDATE technician_positions SET ' . implode(', ', $fields) . ' WHERE id = :id';
+            $statement = $pdo->prepare($sql);
+            $statement->execute($params);
 
-        if ($statement->rowCount() === 0) {
-            $existing = fetchTechnicianPositionById($pdo, $id);
-            if (!$existing) {
-                throw new InvalidArgumentException('Position not found');
+            if ($statement->rowCount() === 0) {
+                $existing = fetchTechnicianPositionById($pdo, $id);
+                if (!$existing) {
+                    throw new \InvalidArgumentException('Position not found');
+                }
             }
         }
-    }
 
-    $position = fetchTechnicianPositionById($pdo, $id);
+        $position = fetchTechnicianPositionById($pdo, $id);
 
         logActivity($pdo, 'TECHNICIAN_POSITION_UPDATE', [
             'position_id' => $id,
@@ -246,16 +241,16 @@ function handleTechnicianPositionsUpdate(PDO $pdo): void
 
         $pdo->commit();
         respond($position);
-    } catch (Throwable $error) {
+    } catch (\Throwable $error) {
         $pdo->rollBack();
-        if ($error instanceof InvalidArgumentException) {
+        if ($error instanceof \InvalidArgumentException) {
             throw $error;
         }
-        throw new RuntimeException($error->getMessage(), 0, $error);
+        throw new \RuntimeException($error->getMessage(), 0, $error);
     }
 }
 
-function handleTechnicianPositionsDelete(PDO $pdo): void
+function handleTechnicianPositionsDelete(\PDO $pdo): void
 {
     requireRole('admin');
 
@@ -358,7 +353,7 @@ function validateTechnicianPositionPayload(array $payload, bool $isUpdate): arra
     return [$data, $errors];
 }
 
-function fetchTechnicianPositionById(PDO $pdo, int $id): ?array
+function fetchTechnicianPositionById(\PDO $pdo, int $id): ?array
 {
     $statement = $pdo->prepare('SELECT * FROM technician_positions WHERE id = :id LIMIT 1');
     $statement->execute(['id' => $id]);
@@ -367,7 +362,7 @@ function fetchTechnicianPositionById(PDO $pdo, int $id): ?array
     return $row ? mapTechnicianPositionRow($row) : null;
 }
 
-function findTechnicianPositionByName(PDO $pdo, string $name, ?int $excludeId = null): ?array
+function findTechnicianPositionByName(\PDO $pdo, string $name, ?int $excludeId = null): ?array
 {
     $sql = 'SELECT * FROM technician_positions WHERE name = :name';
     $params = ['name' => $name];
@@ -386,7 +381,7 @@ function findTechnicianPositionByName(PDO $pdo, string $name, ?int $excludeId = 
     return $row ? mapTechnicianPositionRow($row) : null;
 }
 
-function technicianPositionsSupportsTranslations(PDO $pdo): bool
+function technicianPositionsSupportsTranslations(\PDO $pdo): bool
 {
     static $cache = null;
     if ($cache !== null) {
@@ -396,7 +391,7 @@ function technicianPositionsSupportsTranslations(PDO $pdo): bool
     try {
         $statement = $pdo->query("SHOW COLUMNS FROM technician_positions LIKE 'label_ar'");
         $cache = $statement && $statement->fetch() ? true : false;
-    } catch (Throwable $error) {
+    } catch (\Throwable $error) {
         $cache = false;
     }
 
@@ -546,7 +541,7 @@ function httpRequest(string $url): ?string
     return $body === false ? null : $body;
 }
 
-function logTechnicianPositionsError(Throwable $exception): void
+function logTechnicianPositionsError(\Throwable $exception): void
 {
     $logDir = __DIR__ . '/../../storage/logs';
     if (!is_dir($logDir)) {

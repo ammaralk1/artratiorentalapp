@@ -3,9 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 
-use InvalidArgumentException;
-use Throwable;
-
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
@@ -22,9 +19,9 @@ try {
         default:
             respondError('Method not allowed', 405);
     }
-} catch (InvalidArgumentException $exception) {
+} catch (\InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
-} catch (Throwable $exception) {
+} catch (\Throwable $exception) {
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
@@ -97,7 +94,7 @@ function readJsonPayload(): array
 
     $data = json_decode($raw, true);
     if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new InvalidArgumentException('Invalid JSON payload');
+        throw new \InvalidArgumentException('Invalid JSON payload');
     }
 
     return is_array($data) ? $data : [];
