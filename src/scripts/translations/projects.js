@@ -24,6 +24,7 @@ registerTranslations({
     'projects.form.labels.technician': 'إضافة عضو طاقم',
     'projects.form.labels.equipment': 'إضافة معدة',
     'projects.form.labels.quantity': 'الكمية',
+    'projects.form.labels.expenses': 'متطلبات المشروع',
     'projects.form.labels.expenseLabel': 'اسم المصروف',
     'projects.form.labels.expenseAmount': 'المبلغ (SR)',
 
@@ -36,7 +37,7 @@ registerTranslations({
     'projects.form.placeholders.endDate': 'اختر تاريخ النهاية',
     'projects.form.placeholders.endTime': 'اختر وقت النهاية',
     'projects.form.placeholders.client': 'اكتب اسم العميل...',
-    'projects.form.placeholders.expenseLabel': 'مثال: رسوم موقع التصوير',
+    'projects.form.placeholders.expenseLabel': 'مثال: متطلب إضافي (رسوم موقع، معدات إضافية...)',
 
     'projects.form.linkedReservation.title': 'إنشاء حجز مرتبط',
     'projects.form.linkedReservation.description': 'أنشئ حجزًا مرتبطًا بالمشروع الحالي وسيتم تعبئة تفاصيله تلقائيًا.',
@@ -68,7 +69,7 @@ registerTranslations({
 
     'projects.form.buttons.addTechnician': '➕ إضافة للطاقم',
     'projects.form.buttons.addEquipment': '➕ إضافة للمشروع',
-    'projects.form.buttons.addExpense': '➕ إضافة مصروف',
+    'projects.form.buttons.addExpense': '➕ إضافة متطلب',
     'projects.form.buttons.save': '🆕 إنشاء المشروع',
     'projects.form.buttons.update': '🔁 تحديث المشروع',
     'projects.form.taxLabel': 'شامل الضريبة (15٪)',
@@ -353,6 +354,7 @@ registerTranslations({
     'projects.form.labels.technician': 'Add Crew Member',
     'projects.form.labels.equipment': 'Add Equipment',
     'projects.form.labels.quantity': 'Quantity',
+    'projects.form.labels.expenses': 'Project requirements',
     'projects.form.labels.expenseLabel': 'Expense Name',
     'projects.form.labels.expenseAmount': 'Amount (SR)',
 
@@ -365,7 +367,7 @@ registerTranslations({
     'projects.form.placeholders.endDate': 'Select the end date (optional)',
     'projects.form.placeholders.endTime': 'Select the end time (optional)',
     'projects.form.placeholders.client': 'Type the client name...',
-    'projects.form.placeholders.expenseLabel': 'Example: Location fee',
+    'projects.form.placeholders.expenseLabel': 'Example: Location permit or extra gear',
 
     'projects.form.linkedReservation.title': 'Create Linked Reservation',
     'projects.form.linkedReservation.description': 'Create a reservation for this project and we\'ll pre-fill the matching details.',
@@ -397,7 +399,7 @@ registerTranslations({
 
     'projects.form.buttons.addTechnician': '➕ Add to Crew',
     'projects.form.buttons.addEquipment': '➕ Add to Project',
-    'projects.form.buttons.addExpense': '➕ Add Expense',
+    'projects.form.buttons.addExpense': '➕ Add Requirement',
     'projects.form.buttons.save': '🆕 Create Project',
     'projects.form.buttons.update': '🔁 Update Project',
     'projects.form.taxLabel': 'Include VAT (15%)',

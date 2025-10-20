@@ -1494,6 +1494,37 @@ body[dir="rtl"] .project-details-chips {
     0 0 0 1px rgba(248, 113, 113, 0.42);
 }
 
+.project-details-footer .modal-action-btn--warning,
+.project-edit-form .modal-action-btn--warning {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.95), rgba(234, 179, 8, 0.9));
+  color: #1f2f4a;
+  box-shadow:
+    0 14px 24px rgba(234, 179, 8, 0.26),
+    0 0 0 1px rgba(250, 204, 21, 0.32);
+}
+
+.project-details-footer .modal-action-btn--warning:hover,
+.project-details-footer .modal-action-btn--warning:focus-visible,
+.project-edit-form .modal-action-btn--warning:hover,
+.project-edit-form .modal-action-btn--warning:focus-visible {
+  color: #152349;
+  box-shadow:
+    0 18px 30px rgba(234, 179, 8, 0.34),
+    0 0 0 1px rgba(251, 191, 36, 0.42);
+}
+
+:is(html.dark-mode, body.dark-mode) .modal-action-btn--warning {
+  background: linear-gradient(135deg, rgba(253, 224, 71, 0.92), rgba(250, 204, 21, 0.88));
+  color: #111827;
+}
+
+:is(html.dark-mode, body.dark-mode) .modal-action-btn--warning:hover,
+:is(html.dark-mode, body.dark-mode) .modal-action-btn--warning:focus-visible {
+  box-shadow:
+    0 18px 30px rgba(253, 224, 71, 0.32),
+    0 0 0 1px rgba(252, 211, 77, 0.42);
+}
+
 :is(html.dark-mode, body.dark-mode) .project-details-footer .modal-action-btn--ghost {
   background: linear-gradient(135deg, rgba(30, 42, 68, 0.92), rgba(17, 24, 45, 0.9));
   color: #dbe4ff;
@@ -1512,12 +1543,17 @@ body[dir="rtl"] .project-details-chips {
 }
 
 .project-edit-form .project-edit-textarea {
-  min-height: 168px;
+  min-height: 220px;
 }
 
 .project-edit-form .project-edit-select-xs {
   max-width: 180px;
   min-width: 140px;
+}
+
+.project-edit-form .project-edit-select-lg {
+  max-width: 360px;
+  min-width: 240px;
 }
 
 .project-edit-form .project-edit-input-xs {
