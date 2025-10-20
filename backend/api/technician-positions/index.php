@@ -105,7 +105,7 @@ function handleTechnicianPositionsGet(PDO $pdo): void
 
 function handleTechnicianPositionsCreate(PDO $pdo): void
 {
-    requireRole('manager');
+    requireRole(['manager', 'admin']);
 
     [$data, $errors] = validateTechnicianPositionPayload(readJsonPayload(), false);
 
@@ -152,7 +152,7 @@ function handleTechnicianPositionsCreate(PDO $pdo): void
 
 function handleTechnicianPositionsUpdate(PDO $pdo): void
 {
-    requireRole('manager');
+    requireRole(['manager', 'admin']);
 
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
