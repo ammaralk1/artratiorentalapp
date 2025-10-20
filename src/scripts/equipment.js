@@ -11,7 +11,8 @@ import {
   clearEquipmentSelection,
   EQUIPMENT_SELECTION_EVENTS
 } from "./reservations/equipmentSelection.js";
-import { hasEquipmentConflict } from "./reservations/state.js";
+import { hasEquipmentConflict, normalizeBarcodeValue } from "./reservations/state.js";
+import { isEquipmentAvailable } from "./reservationsEquipment.js";
 
 const initialEquipmentData = loadData() || {};
 let equipmentState = (initialEquipmentData.equipment || []).map(mapLegacyEquipment);
@@ -234,8 +235,22 @@ function evaluateSelectionStateForItem(item) {
     return { active: false };
   }
 
-  const barcode = normalizeNumbers(String(item?.barcode ?? '').trim());
-  if (!barcode) {
+  const variants = Array.isArray(item?.variants) && item.variants.length ? item.variants : [item];
+  const { start, end, ignoreReservationId = null } = selection;
+
+  const uniqueVariants = [];
+  const seen = new Set();
+
+  variants.forEach((variant) => {
+    const normalizedBarcode = normalizeBarcodeValue(variant?.barcode);
+    if (!normalizedBarcode || seen.has(normalizedBarcode)) {
+      return;
+    }
+    seen.add(normalizedBarcode);
+    uniqueVariants.push({ variant, barcode: normalizedBarcode });
+  });
+
+  if (!uniqueVariants.length) {
     return {
       active: true,
       canSelect: false,
@@ -243,50 +258,51 @@ function evaluateSelectionStateForItem(item) {
     };
   }
 
-  const { start, end, ignoreReservationId = null } = selection;
-
+  const availableVariants = uniqueVariants.filter(({ variant }) => isEquipmentAvailable(variant));
   if (!start || !end) {
     return {
       active: true,
       canSelect: false,
-      barcode,
+      barcode: availableVariants[0]?.barcode || uniqueVariants[0].barcode,
       reason: t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'),
+      availableBarcodes: [],
+      maxQuantity: 0,
+    };
+  }
+  const conflictFreeVariants = availableVariants.filter(({ barcode }) => !hasEquipmentConflict(barcode, start, end, ignoreReservationId));
+
+  if (conflictFreeVariants.length) {
+    return {
+      active: true,
+      canSelect: true,
+      barcode: conflictFreeVariants[0].barcode,
+      availableBarcodes: conflictFreeVariants.map(({ barcode }) => barcode),
+      maxQuantity: conflictFreeVariants.length,
     };
   }
 
-  const status = normalizeStatusValue(item?.status);
-  if (status === 'maintenance') {
-    return {
-      active: true,
-      canSelect: false,
-      barcode,
-      reason: t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً'),
-    };
-  }
+  let reason = t('reservations.toast.equipmentUnavailable', '⚠️ هذه المعدة غير متاحة حالياً');
 
-  if (status === 'retired') {
-    return {
-      active: true,
-      canSelect: false,
-      barcode,
-      reason: t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً'),
-    };
-  }
-
-  const conflict = hasEquipmentConflict(barcode, start, end, ignoreReservationId);
-  if (conflict) {
-    return {
-      active: true,
-      canSelect: false,
-      barcode,
-      reason: t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'),
-    };
+  if (availableVariants.length > 0) {
+    reason = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+  } else {
+    const statusSet = new Set(uniqueVariants.map(({ variant }) => normalizeStatusValue(variant?.status)));
+    if (statusSet.has('maintenance')) {
+      reason = t('reservations.toast.equipmentMaintenance', '⚠️ هذه المعدة قيد الصيانة ولا يمكن إضافتها حالياً');
+    } else if (statusSet.has('reserved')) {
+      reason = t('reservations.toast.equipmentReserved', '⚠️ هذه المعدة محجوزة حالياً ولا يمكن إضافتها');
+    } else if (statusSet.has('retired')) {
+      reason = t('reservations.toast.equipmentRetired', '⚠️ هذه المعدة خارج الخدمة حالياً');
+    }
   }
 
   return {
     active: true,
-    canSelect: true,
-    barcode,
+    canSelect: false,
+    barcode: availableVariants[0]?.barcode || uniqueVariants[0].barcode,
+    reason,
+    availableBarcodes: [],
+    maxQuantity: 0,
   };
 }
 
@@ -941,22 +957,68 @@ function renderEquipmentItem({ item, index }) {
   const actionButtons = [];
   const selectionState = evaluateSelectionStateForItem(item);
 
+  const availableBarcodesAttr = selectionState?.availableBarcodes?.length
+    ? selectionState.availableBarcodes.join(',')
+    : (selectionState?.barcode ? selectionState.barcode : '');
+
+  let selectionControlsHtml = '';
+  let selectionButtonHtml = '';
+
   if (selectionState.active) {
+    const quantitySelectId = `equipment-select-qty-${index}`;
+    const isSelectable = Boolean(selectionState.canSelect);
+    const maxSelectable = isSelectable
+      ? Math.max(1, Number(selectionState.maxQuantity || (selectionState.availableBarcodes?.length || 1)))
+      : 1;
+    const optionCount = Math.max(1, Math.min(maxSelectable, 99));
+    const quantityOptions = [];
+    for (let i = 1; i <= optionCount; i += 1) {
+      const valueDisplay = normalizeNumbers(String(i));
+      quantityOptions.push(`<option value="${i}"${i === 1 ? ' selected' : ''}>${valueDisplay}</option>`);
+    }
+    const quantityDisabledAttr = isSelectable ? '' : ' disabled';
+    const quantityLabel = t('reservations.create.equipment.selector.quantityLabel', 'الكمية');
+    const availabilityLabel = isSelectable
+      ? `${t('reservations.create.equipment.selector.availableHint', 'الوحدات المتاحة')}: ${normalizeNumbers(String(maxSelectable))}`
+      : (selectionState.reason ? selectionState.reason : '');
+
+    selectionControlsHtml = `
+      <div class="equipment-card__selection-controls">
+        <label class="equipment-card__selection-label" for="${quantitySelectId}">${quantityLabel}</label>
+        <select class="equipment-card__quantity-select" id="${quantitySelectId}" data-equipment-select-quantity${quantityDisabledAttr}>
+          ${quantityOptions.join('')}
+        </select>
+        ${availabilityLabel ? `<span class="equipment-card__selection-hint">${escapeHtml(availabilityLabel)}</span>` : ''}
+      </div>
+    `;
+
     const addLabel = t('reservations.create.equipment.selector.addToReservation', '➕ أضف إلى الحجز');
-    const barcodeAttr = selectionState.barcode ? ` data-equipment-barcode="${escapeHtml(selectionState.barcode)}"` : '';
-    const disabledAttr = selectionState.canSelect ? '' : ' disabled';
+    const disabledAttr = isSelectable ? '' : ' disabled';
     const reasonAttr = selectionState.reason ? ` title="${escapeHtml(selectionState.reason)}"` : '';
-    actionButtons.push(
-      `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--select" data-equipment-action="select-reservation"${barcodeAttr}${disabledAttr}${reasonAttr}>${addLabel}</button>`
-    );
+    const datasetAttrs = [
+      'data-equipment-action="select-reservation"',
+      `data-selection-max="${isSelectable ? maxSelectable : 0}"`,
+    ];
+
+    if (availableBarcodesAttr) {
+      datasetAttrs.push(`data-selection-barcodes="${escapeHtml(availableBarcodesAttr)}"`);
+    }
+    if (item.groupKey) {
+      datasetAttrs.push(`data-selection-group="${escapeHtml(String(item.groupKey))}"`);
+    }
+
+    selectionButtonHtml = `
+      <button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--select" ${datasetAttrs.join(' ')}${disabledAttr}${reasonAttr}>${addLabel}</button>
+    `;
   }
+
   if (canDelete) {
     actionButtons.push(
       `<button type="button" class="btn btn-sm equipment-card__action-btn equipment-card__action-btn--delete" data-equipment-action="delete" data-equipment-index="${index}">${deleteLabel}</button>`
     );
   }
   const actionsHtml = actionButtons.length
-    ? `<div class="equipment-card__actions equipment-card__actions--center">${actionButtons.join("\n")}</div>`
+    ? actionButtons.join('\n')
     : '';
 
   const cardLabel = escapeHtml(title);
@@ -965,6 +1027,7 @@ function renderEquipmentItem({ item, index }) {
     <article
       class="equipment-card"
       data-equipment-index="${index}"
+      ${item.groupKey ? `data-equipment-group-key="${escapeHtml(String(item.groupKey))}"` : ''}
       data-equipment-card="true"
       role="listitem"
       tabindex="0"
@@ -990,7 +1053,13 @@ function renderEquipmentItem({ item, index }) {
         ${categoriesHtml}
         ${aliasHtml}
       </div>
-      ${actionsHtml}
+      ${selectionControlsHtml || selectionButtonHtml || actionsHtml
+        ? `<div class="equipment-card__actions equipment-card__actions--center">
+            ${selectionControlsHtml}
+            ${selectionButtonHtml}
+            ${actionsHtml}
+          </div>`
+        : ''}
     </article>
   `;
 }
@@ -1471,8 +1540,32 @@ function handleEquipmentListClick(event) {
   if (selectButton) {
     event.preventDefault();
     event.stopPropagation();
-    const barcode = selectButton.dataset.equipmentBarcode || '';
-    const success = requestAddEquipmentToSelection(barcode);
+    const card = selectButton.closest('[data-equipment-card="true"]');
+    const quantityInput = card?.querySelector('[data-equipment-select-quantity]');
+    let quantity = Number.parseInt(quantityInput?.value || '1', 10);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      quantity = 1;
+    }
+    const maxSelectable = Number.parseInt(selectButton.dataset.selectionMax || '0', 10);
+    if (Number.isFinite(maxSelectable) && maxSelectable > 0 && quantity > maxSelectable) {
+      quantity = maxSelectable;
+    }
+
+    const availableRaw = selectButton.dataset.selectionBarcodes || '';
+    const availableBarcodes = availableRaw
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    const description = card?.querySelector('.equipment-card__title')?.textContent?.trim() || '';
+    const groupKey = card?.dataset.equipmentGroupKey || selectButton.dataset.selectionGroup || '';
+
+    const success = requestAddEquipmentToSelection({
+      barcodes: availableBarcodes,
+      quantity,
+      groupKey,
+      description,
+    });
     if (!success) {
       showToast(t('reservations.create.equipment.selector.selectionInactive', '⚠️ يرجى العودة إلى نموذج الحجز وتفعيل اختيار المعدات من جديد'));
     }

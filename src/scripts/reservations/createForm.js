@@ -1076,43 +1076,52 @@ function populateEquipmentDescriptionLists() {
   if (editList) editList.innerHTML = optionsHtml;
 }
 
-function addDraftEquipmentByBarcode(rawCode, inputElement) {
+function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
+  const { silent = false } = options;
   const normalizedCode = normalizeBarcodeValue(rawCode);
-  if (!normalizedCode) return false;
+  if (!normalizedCode) {
+    return { success: false, message: null };
+  }
 
   const { start, end } = getCreateReservationDateRange();
   if (!start || !end) {
-    showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
-    return false;
+    const message = t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات');
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   const currentItems = getSelectedItems();
   if (currentItems.some((item) => normalizeBarcodeValue(item.barcode) === normalizedCode)) {
-    showToast(t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز'));
-    return false;
+    const message = t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز');
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
-    showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
-    return false;
+    const message = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   const item = findEquipmentByBarcode(normalizedCode);
   if (!item) {
-    showToast(t('reservations.toast.barcodeNotFound', '❌ الباركود غير موجود'));
-    return false;
+    const message = t('reservations.toast.barcodeNotFound', '❌ الباركود غير موجود');
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   const availability = getEquipmentAvailabilityStatus(item);
   if (availability === 'maintenance' || availability === 'retired') {
-    showToast(getEquipmentUnavailableMessage(availability));
-    return false;
+    const message = getEquipmentUnavailableMessage(availability);
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   const equipmentId = resolveEquipmentIdentifier(item);
   if (!equipmentId) {
-    showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
-    return false;
+    const message = t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف');
+    if (!silent) showToast(message);
+    return { success: false, message };
   }
 
   addSelectedItem({
@@ -1128,8 +1137,9 @@ function addDraftEquipmentByBarcode(rawCode, inputElement) {
   if (inputElement) inputElement.value = '';
   renderReservationItems();
   renderDraftReservationSummary();
-  showToast(t('reservations.toast.equipmentAdded', '✅ تم إضافة المعدة بنجاح'));
-  return true;
+  const message = t('reservations.toast.equipmentAdded', '✅ تم إضافة المعدة بنجاح');
+  if (!silent) showToast(message);
+  return { success: true, message, barcode: normalizedCode };
 }
 
 function addDraftEquipmentByDescription(inputElement) {
@@ -1284,10 +1294,49 @@ function setupEquipmentSelectionButton() {
 
 function handleEquipmentSelectionAdd(event) {
   if (!event || !event.detail) return;
-  const { barcode } = event.detail;
-  if (!barcode) return;
   if (!document.getElementById('reservation-form')) return;
-  addDraftEquipmentByBarcode(barcode, null);
+
+  const detail = event.detail;
+  const barcodes = Array.isArray(detail.barcodes) ? detail.barcodes : [];
+  const quantityRequested = Number.isInteger(detail.quantity) && detail.quantity > 0 ? detail.quantity : 1;
+
+  const resolvedBarcodes = barcodes.length ? barcodes : (detail.barcode ? [detail.barcode] : []);
+  if (!resolvedBarcodes.length) {
+    return;
+  }
+
+  let addedCount = 0;
+  let lastMessage = null;
+
+  const uniqueBarcodes = [];
+  const seen = new Set();
+  resolvedBarcodes.forEach((code) => {
+    const normalized = normalizeBarcodeValue(code);
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      uniqueBarcodes.push(normalized);
+    }
+  });
+
+  const limit = Math.min(quantityRequested, uniqueBarcodes.length);
+  for (let index = 0; index < limit; index += 1) {
+    const barcode = uniqueBarcodes[index];
+    const result = addDraftEquipmentByBarcode(barcode, null, { silent: true });
+    if (result.success) {
+      addedCount += 1;
+    }
+    if (result.message) {
+      lastMessage = result.message;
+    }
+  }
+
+  if (addedCount > 0) {
+    const successLabel = t('reservations.toast.equipmentAddedBulk', '✅ تم إضافة {count} معدة إلى الحجز');
+    const message = successLabel.replace('{count}', normalizeNumbers(String(addedCount)));
+    showToast(message);
+  } else if (lastMessage) {
+    showToast(lastMessage);
+  }
 }
 
 function setupEquipmentSelectionIntegration() {

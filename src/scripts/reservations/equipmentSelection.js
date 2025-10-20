@@ -78,16 +78,51 @@ export function getActiveEquipmentSelection() {
   return activeSelection ? { ...activeSelection } : null;
 }
 
-export function requestAddEquipmentToSelection(barcode) {
+export function requestAddEquipmentToSelection(payload) {
   if (!activeSelection) {
     return false;
   }
-  const normalized = normalizeNumbers(String(barcode ?? '').trim());
-  if (!normalized) {
+
+  let detail;
+
+  if (typeof payload === 'string' || typeof payload === 'number') {
+    const normalized = normalizeNumbers(String(payload ?? '').trim());
+    if (!normalized) {
+      return false;
+    }
+    detail = {
+      barcodes: [normalized],
+      quantity: 1,
+    };
+  } else if (payload && typeof payload === 'object') {
+    const { barcodes, barcode, quantity, groupKey, description } = payload;
+    const collected = Array.isArray(barcodes) ? barcodes : [];
+    if (barcode) {
+      collected.push(barcode);
+    }
+    const normalizedBarcodes = collected
+      .map((value) => normalizeNumbers(String(value ?? '').trim()))
+      .filter((value) => typeof value === 'string' && value.length > 0);
+    if (!normalizedBarcodes.length) {
+      return false;
+    }
+    const safeQuantity = Number.isInteger(quantity) && quantity > 0 ? quantity : normalizedBarcodes.length;
+    detail = {
+      barcodes: normalizedBarcodes,
+      quantity: Math.min(safeQuantity, normalizedBarcodes.length),
+    };
+    if (groupKey) {
+      detail.groupKey = groupKey;
+    }
+    if (description) {
+      detail.description = description;
+    }
+  } else {
     return false;
   }
+
   dispatchSelectionEvent(EQUIPMENT_SELECTION_EVENTS.requestAdd, {
-    barcode: normalized,
+    ...detail,
     selection: { ...activeSelection },
   });
   return true;
