@@ -11,6 +11,8 @@ function mapTechnicianPositionFromApi(raw = {}) {
   return {
     id: Number(raw.id) || 0,
     name: String(raw.name ?? '').trim(),
+    labelAr: typeof raw.label_ar === 'string' ? raw.label_ar.trim() : null,
+    labelEn: typeof raw.label_en === 'string' ? raw.label_en.trim() : null,
     cost: Number.parseFloat(raw.cost ?? 0) || 0,
     clientPrice: raw.client_price == null ? null : Number.parseFloat(raw.client_price),
     createdAt: raw.created_at ?? null,
@@ -18,11 +20,13 @@ function mapTechnicianPositionFromApi(raw = {}) {
   };
 }
 
-function mapTechnicianPositionToApi({ name, cost, clientPrice }) {
+function mapTechnicianPositionToApi({ name, cost, clientPrice, labelAr, labelEn }) {
   return {
     name: String(name ?? '').trim(),
     cost: cost ?? 0,
     client_price: clientPrice,
+    label_ar: labelAr ?? null,
+    label_en: labelEn ?? null,
   };
 }
 
@@ -53,6 +57,10 @@ function dispatchUpdate() {
   }
 }
 
+function getPositionSortKey(position = {}) {
+  return (position.labelAr || position.labelEn || position.name || '').toLowerCase();
+}
+
 export function getTechnicianPositionsCache() {
   return positionsCache.map((item) => ({ ...item }));
 }
@@ -60,7 +68,12 @@ export function getTechnicianPositionsCache() {
 export function findPositionByName(name) {
   const normalized = String(name ?? '').trim().toLowerCase();
   if (!normalized) return null;
-  return positionsCache.find((item) => item.name.toLowerCase() === normalized) || null;
+  return positionsCache.find((item) => {
+    if (item.name && item.name.toLowerCase() === normalized) return true;
+    if (item.labelAr && item.labelAr.toLowerCase() === normalized) return true;
+    if (item.labelEn && item.labelEn.toLowerCase() === normalized) return true;
+    return false;
+  }) || null;
 }
 
 export async function loadTechnicianPositions({ forceRefresh = false } = {}) {
@@ -95,32 +108,32 @@ export async function ensureTechnicianPositionsLoaded({ forceRefresh = false } =
   }
 }
 
-export async function createTechnicianPosition({ name, cost, clientPrice }) {
-  const payload = mapTechnicianPositionToApi({ name, cost, clientPrice });
+export async function createTechnicianPosition({ name, cost, clientPrice, labelAr, labelEn }) {
+  const payload = mapTechnicianPositionToApi({ name, cost, clientPrice, labelAr, labelEn });
   const response = await apiRequest('/technician-positions/', {
     method: 'POST',
     body: payload,
   });
   const created = mapTechnicianPositionFromApi(response?.data ?? {});
   positionsCache = [...positionsCache, created];
-  positionsCache.sort((a, b) => a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' }));
+  positionsCache.sort((a, b) => getPositionSortKey(a).localeCompare(getPositionSortKey(b), 'ar', { sensitivity: 'base' }));
   dispatchUpdate();
   return created;
 }
 
-export async function updateTechnicianPosition(id, { name, cost, clientPrice }) {
+export async function updateTechnicianPosition(id, { name, cost, clientPrice, labelAr, labelEn }) {
   if (!id) {
     throw new Error('Position id is required');
   }
 
-  const payload = mapTechnicianPositionToApi({ name, cost, clientPrice });
+  const payload = mapTechnicianPositionToApi({ name, cost, clientPrice, labelAr, labelEn });
   const response = await apiRequest(`/technician-positions/?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: payload,
   });
   const updated = mapTechnicianPositionFromApi(response?.data ?? {});
   positionsCache = positionsCache.map((item) => (item.id === updated.id ? updated : item));
-  positionsCache.sort((a, b) => a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' }));
+  positionsCache.sort((a, b) => getPositionSortKey(a).localeCompare(getPositionSortKey(b), 'ar', { sensitivity: 'base' }));
   dispatchUpdate();
   return updated;
 }

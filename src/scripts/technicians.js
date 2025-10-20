@@ -1,6 +1,6 @@
 import { loadData } from "./storage.js";
 import { showToast, normalizeNumbers } from "./utils.js";
-import { t } from "./language.js";
+import { t, getCurrentLanguage } from "./language.js";
 import { userCanManageDestructiveActions, notifyPermissionDenied, AUTH_EVENTS } from "./auth.js";
 import {
   getTechniciansState,
@@ -119,6 +119,20 @@ function getTechnicianRoleSummaryElements() {
   return { container, body };
 }
 
+function getPositionLabel(position, language = getCurrentLanguage()) {
+  if (!position) return "";
+  if (language === 'ar') {
+    return position.labelAr || position.labelEn || position.name || "";
+  }
+  return position.labelEn || position.labelAr || position.name || "";
+}
+
+function getAlternatePositionLabel(position, language = getCurrentLanguage()) {
+  return language === 'ar'
+    ? (position.labelEn || position.labelAr || position.name || "")
+    : (position.labelAr || position.labelEn || position.name || "");
+}
+
 function clearTechnicianRoleSummary() {
   const { container, body } = getTechnicianRoleSummaryElements();
   if (!container || !body) return;
@@ -165,10 +179,32 @@ function renderPositionOptionsList() {
   const datalist = document.getElementById("technician-position-options");
   if (!datalist) return;
 
-  const options = getTechnicianPositionsCache();
-  datalist.innerHTML = options
-    .map((position) => `<option value="${escapeHtml(position.name)}"></option>`)
-    .join("");
+  const positions = getTechnicianPositionsCache();
+  const primaryLanguage = getCurrentLanguage();
+  const seen = new Set();
+  const optionMarkup = [];
+
+  positions.forEach((position) => {
+    const primaryLabel = getPositionLabel(position, primaryLanguage).trim();
+    if (primaryLabel && !seen.has(primaryLabel.toLowerCase())) {
+      optionMarkup.push(`<option value="${escapeHtml(primaryLabel)}"></option>`);
+      seen.add(primaryLabel.toLowerCase());
+    }
+
+    const secondaryLabel = getAlternatePositionLabel(position, primaryLanguage).trim();
+    if (secondaryLabel && !seen.has(secondaryLabel.toLowerCase())) {
+      optionMarkup.push(`<option value="${escapeHtml(secondaryLabel)}"></option>`);
+      seen.add(secondaryLabel.toLowerCase());
+    }
+
+    const slugLabel = position.name?.trim();
+    if (slugLabel && !seen.has(slugLabel.toLowerCase())) {
+      optionMarkup.push(`<option value="${escapeHtml(slugLabel)}"></option>`);
+      seen.add(slugLabel.toLowerCase());
+    }
+  });
+
+  datalist.innerHTML = optionMarkup.join("");
 }
 
 function activateTechnicianSubTab(target) {
@@ -650,7 +686,8 @@ function getPositionFormElements() {
   return {
     form: document.getElementById("position-form"),
     idInput: document.getElementById("position-id"),
-    nameInput: document.getElementById("position-name"),
+    nameArInput: document.getElementById("position-name-ar"),
+    nameEnInput: document.getElementById("position-name-en"),
     costInput: document.getElementById("position-cost"),
     clientPriceInput: document.getElementById("position-client-price"),
     submitBtn: document.getElementById("position-submit-btn"),
@@ -673,10 +710,11 @@ function setPositionFormMode(mode = "add") {
 }
 
 function resetPositionForm() {
-  const { form, idInput, nameInput, costInput, clientPriceInput } = getPositionFormElements();
+  const { form, idInput, nameArInput, nameEnInput, costInput, clientPriceInput } = getPositionFormElements();
   if (form) form.reset();
   if (idInput) idInput.value = "";
-  if (nameInput) nameInput.value = "";
+  if (nameArInput) nameArInput.value = "";
+  if (nameEnInput) nameEnInput.value = "";
   if (costInput) costInput.value = "";
   if (clientPriceInput) clientPriceInput.value = "";
   editingPositionId = null;
@@ -684,11 +722,12 @@ function resetPositionForm() {
 }
 
 function populatePositionForm(position) {
-  const { idInput, nameInput, costInput, clientPriceInput } = getPositionFormElements();
-  if (!position || !nameInput || !costInput) return;
+  const { idInput, nameArInput, nameEnInput, costInput, clientPriceInput } = getPositionFormElements();
+  if (!position || !costInput) return;
 
   if (idInput) idInput.value = position.id || "";
-  nameInput.value = position.name || "";
+  if (nameArInput) nameArInput.value = position.labelAr || "";
+  if (nameEnInput) nameEnInput.value = position.labelEn || "";
   costInput.value = normalizeMoneyValue(position.cost ?? 0);
   if (clientPriceInput) {
     clientPriceInput.value = position.clientPrice == null ? "" : normalizeMoneyValue(position.clientPrice);
@@ -699,10 +738,12 @@ function populatePositionForm(position) {
 }
 
 function collectPositionForm() {
-  const { nameInput, costInput, clientPriceInput } = getPositionFormElements();
-  if (!nameInput || !costInput) return null;
+  const { nameArInput, nameEnInput, costInput, clientPriceInput } = getPositionFormElements();
+  if (!costInput) return null;
 
-  const name = nameInput.value.trim();
+  const nameAr = nameArInput?.value.trim() || "";
+  const nameEn = nameEnInput?.value.trim() || "";
+  const baseName = nameEn || nameAr;
   const costValue = normalizeMoneyValue(costInput.value.trim());
   costInput.value = costValue;
   const cost = costValue === "" ? 0 : parseFloat(costValue);
@@ -711,9 +752,9 @@ function collectPositionForm() {
   if (clientPriceInput) clientPriceInput.value = clientValue;
   const clientPrice = clientValue === "" ? null : parseFloat(clientValue);
 
-  if (!name) {
+  if (!baseName) {
     showToast(t("positions.toast.invalidName", "⚠️ يرجى إدخال اسم المنصب"));
-    nameInput.focus();
+    if (nameArInput) nameArInput.focus();
     return null;
   }
 
@@ -731,9 +772,11 @@ function collectPositionForm() {
 
   return {
     id: editingPositionId,
-    name,
+    name: baseName,
     cost: Number(cost.toFixed(2)),
     clientPrice: clientPrice == null ? null : Number(clientPrice.toFixed(2)),
+    labelAr: nameAr || null,
+    labelEn: nameEn || null,
   };
 }
 
@@ -757,7 +800,7 @@ function renderPositionsTable() {
   if (!positions.length) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="4">${t('positions.table.empty', 'لا توجد مناصب بعد.')}</td>
+        <td colspan="5">${t('positions.table.empty', 'لا توجد مناصب بعد.')}</td>
       </tr>
     `;
     return;
@@ -769,11 +812,14 @@ function renderPositionsTable() {
     const priceLabel = position.clientPrice == null
       ? t('technicians.positionSummary.noClientPrice', '—')
       : formatCurrencyLocalized(position.clientPrice);
+    const nameArLabel = getPositionLabel(position, 'ar') || '—';
+    const nameEnLabel = getPositionLabel(position, 'en') || '—';
     const editLabel = t('positions.table.actions.edit', '✏️ تعديل');
     const deleteLabel = t('positions.table.actions.delete', '🗑️ حذف');
     return `
       <tr${isEditing ? ' class="technician-table-row-editing"' : ''}>
-        <td>${escapeHtml(position.name)}</td>
+        <td>${escapeHtml(nameArLabel)}</td>
+        <td>${escapeHtml(nameEnLabel)}</td>
         <td>${escapeHtml(costLabel)}</td>
         <td>${escapeHtml(priceLabel)}</td>
         <td class="table-actions-cell">

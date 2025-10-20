@@ -604,8 +604,12 @@
               <input type="hidden" id="position-id">
               <div class="management-form-grid">
                 <div class="form-field">
-                  <label for="position-name" class="form-label" data-i18n data-i18n-key="positions.form.labels.name">🏷️ اسم المنصب</label>
-                  <input type="text" class="form-control" id="position-name" placeholder="مثال: مصور فوتوغرافي" required data-i18n data-i18n-placeholder-key="positions.form.placeholders.name">
+                  <label for="position-name-ar" class="form-label" data-i18n data-i18n-key="positions.form.labels.nameAr">🏷️ اسم المنصب (العربية)</label>
+                  <input type="text" class="form-control" id="position-name-ar" placeholder="مثال: مصور فوتوغرافي" data-i18n data-i18n-placeholder-key="positions.form.placeholders.nameAr">
+                </div>
+                <div class="form-field">
+                  <label for="position-name-en" class="form-label" data-i18n data-i18n-key="positions.form.labels.nameEn">🏷️ Position (English)</label>
+                  <input type="text" class="form-control" id="position-name-en" placeholder="e.g. Photographer" data-i18n data-i18n-placeholder-key="positions.form.placeholders.nameEn">
                 </div>
                 <div class="form-field">
                   <label for="position-cost" class="form-label" data-i18n data-i18n-key="positions.form.labels.cost">💵 التكلفة</label>
@@ -632,7 +636,8 @@
               <table class="table table-zebra positions-table w-full">
                 <thead>
                   <tr>
-                    <th data-i18n data-i18n-key="positions.table.headers.name">🏷️ المنصب</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.nameAr">🏷️ المنصب (العربية)</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.nameEn">🏷️ Position (English)</th>
                     <th data-i18n data-i18n-key="positions.table.headers.cost">💵 التكلفة</th>
                     <th data-i18n data-i18n-key="positions.table.headers.clientPrice">💼 سعر العميل</th>
                     <th class="table-actions-head" data-i18n data-i18n-key="positions.table.headers.actions">⚙️ الإجراءات</th>
