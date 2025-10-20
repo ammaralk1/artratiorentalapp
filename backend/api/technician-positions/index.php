@@ -125,16 +125,29 @@ function handleTechnicianPositionsCreate(PDO $pdo): void
             throw new InvalidArgumentException('A position with that name already exists');
         }
 
-        $statement = $pdo->prepare(
-            'INSERT INTO technician_positions (name, label_ar, label_en, cost, client_price) VALUES (:name, :label_ar, :label_en, :cost, :client_price)'
-        );
-        $statement->execute([
-            'name' => $data['name'],
-            'label_ar' => $data['label_ar'],
-            'label_en' => $data['label_en'],
-            'cost' => $data['cost'],
-            'client_price' => $data['client_price'],
-        ]);
+        $supportsTranslations = technicianPositionsSupportsTranslations($pdo);
+
+        if ($supportsTranslations) {
+            $statement = $pdo->prepare(
+                'INSERT INTO technician_positions (name, label_ar, label_en, cost, client_price) VALUES (:name, :label_ar, :label_en, :cost, :client_price)'
+            );
+            $statement->execute([
+                'name' => $data['name'],
+                'label_ar' => $data['label_ar'],
+                'label_en' => $data['label_en'],
+                'cost' => $data['cost'],
+                'client_price' => $data['client_price'],
+            ]);
+        } else {
+            $statement = $pdo->prepare(
+                'INSERT INTO technician_positions (name, cost, client_price) VALUES (:name, :cost, :client_price)'
+            );
+            $statement->execute([
+                'name' => $data['name'],
+                'cost' => $data['cost'],
+                'client_price' => $data['client_price'],
+            ]);
+        }
 
         $id = (int) $pdo->lastInsertId();
         $position = fetchTechnicianPositionById($pdo, $id);
@@ -181,7 +194,15 @@ function handleTechnicianPositionsUpdate(PDO $pdo): void
     $pdo->beginTransaction();
 
     try {
-        $data = ensurePositionLabels($data, fetchTechnicianPositionById($pdo, $id));
+    $original = fetchTechnicianPositionById($pdo, $id);
+    if (!$original) {
+        respondError('Position not found', 404);
+        return;
+    }
+
+    $supportsTranslations = technicianPositionsSupportsTranslations($pdo);
+
+    $data = ensurePositionLabels($data, $original);
 
         if (isset($data['name'])) {
             $data['name'] = generatePositionSlug($data['name']);
@@ -191,26 +212,31 @@ function handleTechnicianPositionsUpdate(PDO $pdo): void
             }
         }
 
-        $fields = [];
-        $params = ['id' => $id];
+    $fields = [];
+    $params = ['id' => $id];
 
-        foreach ($data as $column => $value) {
-            $fields[] = sprintf('%s = :%s', $column, $column);
-            $params[$column] = $value;
+    foreach ($data as $column => $value) {
+        if (!$supportsTranslations && ($column === 'label_ar' || $column === 'label_en')) {
+            continue;
         }
+        $fields[] = sprintf('%s = :%s', $column, $column);
+        $params[$column] = $value;
+    }
 
+    if ($fields) {
         $sql = 'UPDATE technician_positions SET ' . implode(', ', $fields) . ' WHERE id = :id';
         $statement = $pdo->prepare($sql);
         $statement->execute($params);
 
         if ($statement->rowCount() === 0) {
-            $position = fetchTechnicianPositionById($pdo, $id);
-            if (!$position) {
+            $existing = fetchTechnicianPositionById($pdo, $id);
+            if (!$existing) {
                 throw new InvalidArgumentException('Position not found');
             }
         }
+    }
 
-        $position = fetchTechnicianPositionById($pdo, $id);
+    $position = fetchTechnicianPositionById($pdo, $id);
 
         logActivity($pdo, 'TECHNICIAN_POSITION_UPDATE', [
             'position_id' => $id,
@@ -359,13 +385,30 @@ function findTechnicianPositionByName(PDO $pdo, string $name, ?int $excludeId = 
     return $row ? mapTechnicianPositionRow($row) : null;
 }
 
+function technicianPositionsSupportsTranslations(PDO $pdo): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+
+    try {
+        $statement = $pdo->query("SHOW COLUMNS FROM technician_positions LIKE 'label_ar'");
+        $cache = $statement && $statement->fetch() ? true : false;
+    } catch (Throwable $error) {
+        $cache = false;
+    }
+
+    return $cache;
+}
+
 function mapTechnicianPositionRow(array $row): array
 {
     return [
         'id' => (int) ($row['id'] ?? 0),
         'name' => (string) ($row['name'] ?? ''),
-        'label_ar' => isset($row['label_ar']) ? (string) $row['label_ar'] : null,
-        'label_en' => isset($row['label_en']) ? (string) $row['label_en'] : null,
+        'label_ar' => array_key_exists('label_ar', $row) ? ($row['label_ar'] !== null ? (string) $row['label_ar'] : null) : null,
+        'label_en' => array_key_exists('label_en', $row) ? ($row['label_en'] !== null ? (string) $row['label_en'] : null) : null,
         'cost' => (float) ($row['cost'] ?? 0),
         'client_price' => isset($row['client_price']) ? (float) $row['client_price'] : null,
         'created_at' => $row['created_at'] ?? null,
