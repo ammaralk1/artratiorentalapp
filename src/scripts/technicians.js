@@ -12,12 +12,23 @@ import {
   buildTechnicianPayload,
   isApiError,
 } from "./techniciansService.js";
+import { formatCurrencyLocalized, escapeHtml } from "./projectsCommon.js";
+import {
+  ensureTechnicianPositionsLoaded,
+  getTechnicianPositionsCache,
+  findPositionByName,
+  createTechnicianPosition,
+  updateTechnicianPosition,
+  deleteTechnicianPosition,
+} from "./technicianPositions.js";
 
 let editingTechnicianId = null;
 let technicianPrefillListenerAttached = false;
 let techniciansLoading = false;
 let techniciansErrorMessage = "";
 let techniciansHasLoaded = false;
+let editingPositionId = null;
+let activeTechnicianSubTab = "technicians-management";
 
 async function loadTechniciansFromApi({ showToastOnError = true } = {}) {
   if (techniciansLoading) return;
@@ -81,6 +92,124 @@ function sanitizeNumericInput(element, normalizer) {
   element.dataset.normalizerAttached = "true";
 }
 
+function resolvePositionRates(roleValue, fallbackWage = 0, fallbackTotal = null) {
+  const normalizedRole = String(roleValue ?? "").trim();
+  const matchedPosition = normalizedRole ? findPositionByName(normalizedRole) : null;
+  if (matchedPosition) {
+    return {
+      matchedPosition,
+      dailyWage: Number.isFinite(matchedPosition.cost) ? matchedPosition.cost : 0,
+      dailyTotal: matchedPosition.clientPrice == null
+        ? null
+        : Number.isFinite(matchedPosition.clientPrice)
+          ? matchedPosition.clientPrice
+          : 0,
+    };
+  }
+  return {
+    matchedPosition: null,
+    dailyWage: Number.isFinite(fallbackWage) ? fallbackWage : 0,
+    dailyTotal: fallbackTotal == null ? null : (Number.isFinite(fallbackTotal) ? fallbackTotal : 0),
+  };
+}
+
+function getTechnicianRoleSummaryElements() {
+  const container = document.getElementById("technician-position-summary");
+  const body = document.getElementById("technician-position-summary-body");
+  return { container, body };
+}
+
+function clearTechnicianRoleSummary() {
+  const { container, body } = getTechnicianRoleSummaryElements();
+  if (!container || !body) return;
+  body.textContent = "";
+  container.hidden = true;
+}
+
+function updateTechnicianRoleSummary(roleValue, fallback = {}) {
+  const { container, body } = getTechnicianRoleSummaryElements();
+  if (!container || !body) return;
+
+  const role = String(roleValue ?? "").trim();
+  if (!role) {
+    clearTechnicianRoleSummary();
+    return;
+  }
+
+  const rates = resolvePositionRates(role, fallback?.dailyWage ?? 0, fallback?.dailyTotal ?? null);
+  const costLabel = formatCurrencyLocalized(rates.dailyWage || 0);
+  const priceLabel = rates.dailyTotal != null
+    ? formatCurrencyLocalized(rates.dailyTotal)
+    : t('technicians.positionSummary.noClientPrice', '—');
+
+  if (rates.matchedPosition) {
+    body.textContent = t(
+      'technicians.positionSummary.match',
+      'التكلفة: {cost} · سعر العميل: {price}'
+    )
+      .replace('{cost}', costLabel)
+      .replace('{price}', priceLabel);
+  } else {
+    body.textContent = t(
+      'technicians.positionSummary.custom',
+      'لا يوجد منصب مطابق. يمكنك إضافته من تبويب المناصب. سيتم حفظ التكلفة الحالية: {cost} · سعر العميل: {price}'
+    )
+      .replace('{cost}', costLabel)
+      .replace('{price}', priceLabel);
+  }
+
+  container.hidden = false;
+}
+
+function renderPositionOptionsList() {
+  const datalist = document.getElementById("technician-position-options");
+  if (!datalist) return;
+
+  const options = getTechnicianPositionsCache();
+  datalist.innerHTML = options
+    .map((position) => `<option value="${escapeHtml(position.name)}"></option>`)
+    .join("");
+}
+
+function activateTechnicianSubTab(target) {
+  const buttons = Array.from(document.querySelectorAll('[data-tech-tab]'));
+  const panels = Array.from(document.querySelectorAll('[data-tech-tab-panel]'));
+  const availableIds = buttons.map((button) => button?.getAttribute('data-tech-tab')).filter(Boolean);
+  const desired = availableIds.includes(target) ? target : 'technicians-management';
+
+  buttons.forEach((button) => {
+    if (!button) return;
+    const tabId = button.getAttribute('data-tech-tab');
+    const isActive = tabId === desired;
+    button.classList.toggle('tab-active', isActive);
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    button.setAttribute('tabindex', isActive ? '0' : '-1');
+  });
+
+  panels.forEach((panel) => {
+    if (!panel) return;
+    const panelId = panel.getAttribute('data-tech-tab-panel');
+    const isActive = panelId === desired;
+    panel.hidden = !isActive;
+    panel.classList.toggle('active', isActive);
+  });
+
+  activeTechnicianSubTab = desired;
+
+  if (desired === 'technicians-positions') {
+    renderPositionsTable();
+    ensureTechnicianPositionsLoaded()
+      .then(() => {
+        renderPositionsTable();
+      })
+      .catch((error) => {
+        console.error('❌ [technicians] failed to load positions for tab switch', error);
+        showToast(error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى'), 'error');
+      });
+  }
+}
+
 function setTechnicianSubmitState(mode = "add") {
   const submitBtn = document.getElementById("technician-submit-btn");
   if (!submitBtn) return;
@@ -141,6 +270,7 @@ function resetTechnicianForm() {
   editingTechnicianId = null;
   setTechnicianSubmitState("add");
   updateTechnicianCancelVisibility(false);
+  clearTechnicianRoleSummary();
 }
 
 function populateTechnicianForm(technician) {
@@ -148,23 +278,20 @@ function populateTechnicianForm(technician) {
   const phoneInput = document.getElementById("technician-phone");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
-  const wageInput = document.getElementById("technician-wage");
-  const totalInput = document.getElementById("technician-total");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput || !totalInput) return;
+  if (!nameInput || !phoneInput || !roleInput) return;
 
   nameInput.value = technician.name || "";
   phoneInput.value = normalizePhoneValue(technician.phone || "");
   roleInput.value = technician.role || "";
   if (departmentInput) departmentInput.value = technician.department || "";
-  wageInput.value = normalizeMoneyValue(technician.dailyWage != null ? technician.dailyWage : "");
-  totalInput.value = normalizeMoneyValue(technician.dailyTotal != null ? technician.dailyTotal : "");
   if (notesInput) notesInput.value = technician.notes || "";
 
   editingTechnicianId = String(technician.id);
   setTechnicianSubmitState("update");
   updateTechnicianCancelVisibility(true);
+  updateTechnicianRoleSummary(roleInput.value, technician);
 }
 
 function collectTechnicianForm() {
@@ -172,25 +299,20 @@ function collectTechnicianForm() {
   const phoneInput = document.getElementById("technician-phone");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
-  const wageInput = document.getElementById("technician-wage");
-  const totalInput = document.getElementById("technician-total");
   const notesInput = document.getElementById("technician-notes");
 
-  if (!nameInput || !phoneInput || !roleInput || !wageInput || !totalInput) return null;
+  if (!nameInput || !phoneInput || !roleInput) return null;
 
   const name = nameInput.value.trim();
   const phone = normalizePhoneValue(phoneInput.value.trim());
   phoneInput.value = phone;
   const role = roleInput.value.trim();
   const department = departmentInput?.value.trim() || "";
-  const wageValue = normalizeMoneyValue(wageInput.value.trim());
-  wageInput.value = wageValue;
-  const wage = wageValue === "" ? 0 : parseFloat(wageValue);
-  const totalValueRaw = normalizeMoneyValue(totalInput.value.trim());
-  totalInput.value = totalValueRaw;
-  const totalAmount = totalValueRaw === "" ? null : parseFloat(totalValueRaw);
   const status = 'available';
   const notes = notesInput?.value.trim() || "";
+
+  const existing = editingTechnicianId ? getTechnicianById(editingTechnicianId) : null;
+  const { dailyWage, dailyTotal } = resolvePositionRates(role, existing?.dailyWage ?? 0, existing?.dailyTotal ?? null);
 
   if (!name) {
     showToast(t("technicians.toast.missingName", "⚠️ يرجى إدخال اسم عضو الطاقم"));
@@ -210,25 +332,25 @@ function collectTechnicianForm() {
     return null;
   }
 
-  if (Number.isNaN(wage) || wage < 0) {
-    showToast(t("technicians.toast.invalidWage", "⚠️ أدخل قيمة صحيحة للأجر اليومي"));
-    wageInput.focus();
+  if (!Number.isFinite(dailyWage) || dailyWage < 0) {
+    showToast(t("positions.toast.invalidCost", "⚠️ أدخل قيمة صحيحة للتكلفة"));
     return null;
   }
 
-  if (totalAmount != null && (Number.isNaN(totalAmount) || totalAmount < 0)) {
-    showToast(t("technicians.toast.invalidTotal", "⚠️ أدخل قيمة صحيحة للتكلفة الإجمالية"));
-    totalInput.focus();
+  if (dailyTotal != null && (!Number.isFinite(dailyTotal) || dailyTotal < 0)) {
+    showToast(t("positions.toast.invalidClientPrice", "⚠️ أدخل قيمة صحيحة لسعر العميل"));
     return null;
   }
+
+  updateTechnicianRoleSummary(role, { dailyWage, dailyTotal });
 
   return {
     name,
     phone,
     role,
     department,
-    dailyWage: Number.isFinite(wage) ? wage : 0,
-    dailyTotal: totalAmount == null ? null : Number(totalAmount),
+    dailyWage: Number.isFinite(dailyWage) ? dailyWage : 0,
+    dailyTotal: dailyTotal == null ? null : Number(dailyTotal),
     status,
     baseStatus: status,
     notes
@@ -237,6 +359,15 @@ function collectTechnicianForm() {
 
 async function handleTechnicianSubmit(event) {
   event.preventDefault();
+  try {
+    await ensureTechnicianPositionsLoaded();
+  } catch (error) {
+    console.error('❌ [technicians] failed to load positions before submit', error);
+    const message = error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى');
+    showToast(message, 'error');
+    return;
+  }
+
   const payload = collectTechnicianForm();
   if (!payload) return;
 
@@ -515,6 +646,218 @@ function renderTechniciansTable() {
   }).join("");
 }
 
+function getPositionFormElements() {
+  return {
+    form: document.getElementById("position-form"),
+    idInput: document.getElementById("position-id"),
+    nameInput: document.getElementById("position-name"),
+    costInput: document.getElementById("position-cost"),
+    clientPriceInput: document.getElementById("position-client-price"),
+    submitBtn: document.getElementById("position-submit-btn"),
+    cancelBtn: document.getElementById("position-cancel-btn"),
+  };
+}
+
+function setPositionFormMode(mode = "add") {
+  const { submitBtn, cancelBtn } = getPositionFormElements();
+  const isUpdate = mode === "update";
+  if (submitBtn) {
+    const key = isUpdate ? "positions.form.actions.update" : "positions.form.actions.submit";
+    const fallback = isUpdate ? "💾 حفظ المنصب" : "➕ إضافة منصب";
+    submitBtn.textContent = t(key, fallback);
+  }
+  if (cancelBtn) {
+    cancelBtn.classList.toggle("d-none", !isUpdate);
+    cancelBtn.textContent = t("positions.form.actions.cancel", "إلغاء");
+  }
+}
+
+function resetPositionForm() {
+  const { form, idInput, nameInput, costInput, clientPriceInput } = getPositionFormElements();
+  if (form) form.reset();
+  if (idInput) idInput.value = "";
+  if (nameInput) nameInput.value = "";
+  if (costInput) costInput.value = "";
+  if (clientPriceInput) clientPriceInput.value = "";
+  editingPositionId = null;
+  setPositionFormMode("add");
+}
+
+function populatePositionForm(position) {
+  const { idInput, nameInput, costInput, clientPriceInput } = getPositionFormElements();
+  if (!position || !nameInput || !costInput) return;
+
+  if (idInput) idInput.value = position.id || "";
+  nameInput.value = position.name || "";
+  costInput.value = normalizeMoneyValue(position.cost ?? 0);
+  if (clientPriceInput) {
+    clientPriceInput.value = position.clientPrice == null ? "" : normalizeMoneyValue(position.clientPrice);
+  }
+
+  editingPositionId = position.id || null;
+  setPositionFormMode("update");
+}
+
+function collectPositionForm() {
+  const { nameInput, costInput, clientPriceInput } = getPositionFormElements();
+  if (!nameInput || !costInput) return null;
+
+  const name = nameInput.value.trim();
+  const costValue = normalizeMoneyValue(costInput.value.trim());
+  costInput.value = costValue;
+  const cost = costValue === "" ? 0 : parseFloat(costValue);
+
+  const clientValue = clientPriceInput ? normalizeMoneyValue(clientPriceInput.value.trim()) : "";
+  if (clientPriceInput) clientPriceInput.value = clientValue;
+  const clientPrice = clientValue === "" ? null : parseFloat(clientValue);
+
+  if (!name) {
+    showToast(t("positions.toast.invalidName", "⚠️ يرجى إدخال اسم المنصب"));
+    nameInput.focus();
+    return null;
+  }
+
+  if (!Number.isFinite(cost) || cost < 0) {
+    showToast(t("positions.toast.invalidCost", "⚠️ أدخل قيمة صحيحة للتكلفة"));
+    costInput.focus();
+    return null;
+  }
+
+  if (clientPrice != null && (!Number.isFinite(clientPrice) || clientPrice < 0)) {
+    showToast(t("positions.toast.invalidClientPrice", "⚠️ أدخل قيمة صحيحة لسعر العميل"));
+    clientPriceInput?.focus();
+    return null;
+  }
+
+  return {
+    id: editingPositionId,
+    name,
+    cost: Number(cost.toFixed(2)),
+    clientPrice: clientPrice == null ? null : Number(clientPrice.toFixed(2)),
+  };
+}
+
+function refreshTechnicianRoleSummaryFromInputs() {
+  const roleInput = document.getElementById("technician-role");
+  if (!roleInput) return;
+  const fallback = editingTechnicianId ? getTechnicianById(editingTechnicianId) : null;
+  updateTechnicianRoleSummary(roleInput.value, fallback || {});
+}
+
+function renderPositionsTable() {
+  const tableBody = document.getElementById("positions-table");
+  const countEl = document.getElementById("positions-count");
+  if (!tableBody) return;
+
+  const positions = getTechnicianPositionsCache();
+  if (countEl) {
+    countEl.textContent = normalizeNumbers(String(positions.length));
+  }
+
+  if (!positions.length) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="4">${t('positions.table.empty', 'لا توجد مناصب بعد.')}</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = positions.map((position) => {
+    const isEditing = editingPositionId && String(editingPositionId) === String(position.id);
+    const costLabel = formatCurrencyLocalized(position.cost || 0);
+    const priceLabel = position.clientPrice == null
+      ? t('technicians.positionSummary.noClientPrice', '—')
+      : formatCurrencyLocalized(position.clientPrice);
+    const editLabel = t('positions.table.actions.edit', '✏️ تعديل');
+    const deleteLabel = t('positions.table.actions.delete', '🗑️ حذف');
+    return `
+      <tr${isEditing ? ' class="technician-table-row-editing"' : ''}>
+        <td>${escapeHtml(position.name)}</td>
+        <td>${escapeHtml(costLabel)}</td>
+        <td>${escapeHtml(priceLabel)}</td>
+        <td class="table-actions-cell">
+          <div class="table-action-buttons">
+            <button type="button" class="technician-action-btn technician-action-btn--edit position-edit-btn" data-id="${position.id}">${editLabel}</button>
+            <button type="button" class="technician-action-btn technician-action-btn--delete position-delete-btn" data-id="${position.id}">${deleteLabel}</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+async function handlePositionSubmit(event) {
+  event.preventDefault();
+  const payload = collectPositionForm();
+  if (!payload) return;
+
+  try {
+    const isUpdate = Boolean(editingPositionId);
+    if (isUpdate) {
+      await updateTechnicianPosition(payload.id, payload);
+    } else {
+      await createTechnicianPosition(payload);
+    }
+
+    const successMessage = isUpdate
+      ? t('positions.toast.updateSuccess', '💾 تم حفظ بيانات المنصب')
+      : t('positions.toast.addSuccess', '✅ تم إضافة المنصب');
+    showToast(successMessage);
+    resetPositionForm();
+    renderPositionsTable();
+    renderPositionOptionsList();
+    refreshTechnicianRoleSummaryFromInputs();
+  } catch (error) {
+    console.error('❌ [technicians] handlePositionSubmit failed', error);
+    const message = error?.message || t('positions.toast.saveFailed', '⚠️ تعذر حفظ بيانات المنصب، حاول مرة أخرى');
+    showToast(message, 'error');
+  }
+}
+
+function handlePositionCancel() {
+  resetPositionForm();
+}
+
+async function handlePositionsTableClick(event) {
+  try {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const id = target.dataset.id;
+    if (!id) return;
+
+    if (target.classList.contains('position-edit-btn')) {
+      await ensureTechnicianPositionsLoaded();
+      const position = getTechnicianPositionsCache().find((item) => String(item.id) === String(id));
+      if (!position) {
+        showToast(t('positions.toast.notFound', '⚠️ تعذر العثور على بيانات المنصب'), 'error');
+        return;
+      }
+      populatePositionForm(position);
+      renderPositionsTable();
+      return;
+    }
+
+    if (target.classList.contains('position-delete-btn')) {
+      if (!confirm(t('positions.toast.deleteConfirm', '⚠️ هل أنت متأكد من حذف هذا المنصب؟'))) {
+        return;
+      }
+      await deleteTechnicianPosition(id);
+      if (editingPositionId && String(editingPositionId) === String(id)) {
+        resetPositionForm();
+      }
+      showToast(t('positions.toast.deleteSuccess', '🗑️ تم حذف المنصب'));
+      renderPositionsTable();
+      renderPositionOptionsList();
+      refreshTechnicianRoleSummaryFromInputs();
+    }
+  } catch (error) {
+    console.error('❌ [technicians] handlePositionsTableClick failed', error);
+    const message = error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى');
+    showToast(message, 'error');
+  }
+}
+
 function handleEditClick(id) {
   const technician = getTechnicians().find((tech) => String(tech.id) === String(id));
   if (!technician) {
@@ -638,8 +981,13 @@ function setupTechnicianModule() {
   }
 
   sanitizeNumericInput(document.getElementById("technician-phone"), normalizePhoneValue);
-  sanitizeNumericInput(document.getElementById("technician-wage"), normalizeMoneyValue);
-  sanitizeNumericInput(document.getElementById("technician-total"), normalizeMoneyValue);
+  const roleInput = document.getElementById("technician-role");
+  if (roleInput && !roleInput.dataset.listenerAttached) {
+    roleInput.addEventListener("input", () => {
+      refreshTechnicianRoleSummaryFromInputs();
+    });
+    roleInput.dataset.listenerAttached = "true";
+  }
 
   const tableBody = document.getElementById("technicians-table");
   if (tableBody && !tableBody.dataset.listenerAttached) {
@@ -689,6 +1037,59 @@ function setupTechnicianModule() {
     modalSaveBtn.dataset.listenerAttached = "true";
   }
 
+  const positionsForm = document.getElementById("position-form");
+  if (positionsForm && !positionsForm.dataset.listenerAttached) {
+    positionsForm.addEventListener("submit", (event) => {
+      handlePositionSubmit(event).catch((error) => {
+        console.error('❌ [technicians] position submit failed', error);
+      });
+    });
+    positionsForm.dataset.listenerAttached = "true";
+  }
+
+  const positionCancelBtn = document.getElementById("position-cancel-btn");
+  if (positionCancelBtn && !positionCancelBtn.dataset.listenerAttached) {
+    positionCancelBtn.addEventListener("click", handlePositionCancel);
+    positionCancelBtn.dataset.listenerAttached = "true";
+  }
+
+  const positionsTableBody = document.getElementById("positions-table");
+  if (positionsTableBody && !positionsTableBody.dataset.listenerAttached) {
+    positionsTableBody.addEventListener("click", handlePositionsTableClick);
+    positionsTableBody.dataset.listenerAttached = "true";
+  }
+
+  sanitizeNumericInput(document.getElementById("position-cost"), normalizeMoneyValue);
+  sanitizeNumericInput(document.getElementById("position-client-price"), normalizeMoneyValue);
+
+  const subTabsRoot = document.querySelector('[data-tech-tabs]');
+  if (subTabsRoot && !subTabsRoot.dataset.listenerAttached) {
+    const buttons = subTabsRoot.querySelectorAll('[data-tech-tab]');
+    buttons.forEach((button) => {
+      if (!button) return;
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-tech-tab');
+        activateTechnicianSubTab(target);
+      });
+    });
+    subTabsRoot.dataset.listenerAttached = "true";
+  }
+
+  activateTechnicianSubTab(activeTechnicianSubTab);
+
+  ensureTechnicianPositionsLoaded()
+    .then(() => {
+      renderPositionOptionsList();
+      if (activeTechnicianSubTab === 'technicians-positions') {
+        renderPositionsTable();
+      }
+      refreshTechnicianRoleSummaryFromInputs();
+    })
+    .catch((error) => {
+      console.error('❌ [technicians] failed to load technician positions', error);
+      showToast(error?.message || t('positions.toast.fetchFailed', '⚠️ تعذر تحميل المناصب، حاول مرة أخرى'), 'error');
+    });
+
   if (!technicianPrefillListenerAttached) {
     document.addEventListener('technician:prefill', (event) => {
       const technician = event.detail;
@@ -699,6 +1100,10 @@ function setupTechnicianModule() {
 
   if (firstInit) {
     resetTechnicianForm();
+  }
+
+  if (activeTechnicianSubTab === 'technicians-positions') {
+    renderPositionsTable();
   }
 }
 
@@ -725,8 +1130,24 @@ document.addEventListener('technicians:refreshRequested', () => {
 
 document.addEventListener("language:changed", () => {
   refreshTechnicianLanguageStrings();
+  renderPositionOptionsList();
+  if (activeTechnicianSubTab === 'technicians-positions') {
+    renderPositionsTable();
+  }
+  refreshTechnicianRoleSummaryFromInputs();
 });
 
 document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
   renderTechniciansTable();
 });
+
+const positionsUpdatedHandler = () => {
+  renderPositionOptionsList();
+  if (activeTechnicianSubTab === 'technicians-positions') {
+    renderPositionsTable();
+  }
+  refreshTechnicianRoleSummaryFromInputs();
+};
+
+window.addEventListener('technicianPositions:updated', positionsUpdatedHandler);
+document.addEventListener('technicianPositions:updated', positionsUpdatedHandler);

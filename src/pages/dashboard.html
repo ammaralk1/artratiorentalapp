@@ -498,89 +498,157 @@
           <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
         </div>
 
-        <!-- ✅ نموذج إضافة فني -->
-        <div class="box add-technicians-box management-form-box mb-4">
-          <div class="management-form-header">
-            <div class="management-form-icon">😎</div>
-            <div class="management-form-header-text">
-              <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
-              <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
+        <div class="tech-subtabs-container" data-tech-tabs>
+          <div class="tabs tabs-boxed tech-subtabs" role="tablist">
+            <button type="button" class="tab tech-subtab-button tab-active" data-tech-tab="technicians-management" aria-selected="true" data-i18n data-i18n-key="technicians.subTabs.management">⚙️ إدارة الطاقم</button>
+            <button type="button" class="tab tech-subtab-button" data-tech-tab="technicians-positions" aria-selected="false" data-i18n data-i18n-key="technicians.subTabs.positions">🏷️ المناصب</button>
+          </div>
+        </div>
+
+        <div class="tech-subtab-panel" data-tech-tab-panel="technicians-management">
+          <!-- ✅ نموذج إضافة فني -->
+          <div class="box add-technicians-box management-form-box mb-4">
+            <div class="management-form-header">
+              <div class="management-form-icon">😎</div>
+              <div class="management-form-header-text">
+                <h4 data-i18n data-i18n-key="technicians.form.title">إضافة / تعديل عضو طاقم</h4>
+                <p class="management-form-hint" data-i18n data-i18n-key="technicians.form.hint">أدخل بيانات عضو الطاقم ليتم حفظها وتحديثها في سجلات الحجز.</p>
+              </div>
+            </div>
+            <form id="technician-form" class="management-form technician-form">
+              <input type="hidden" id="technician-id">
+              <div class="management-form-grid">
+                <div class="form-field">
+                  <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                  <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+                </div>
+                <div class="form-field">
+                  <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                  <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+                </div>
+                <div class="form-field">
+                  <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                  <input type="text" class="form-control" id="technician-role" list="technician-position-options" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+                  <datalist id="technician-position-options"></datalist>
+                </div>
+                <div class="form-field">
+                  <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                  <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+                </div>
+                <div class="form-field form-field-notes">
+                  <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                  <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+                </div>
+              </div>
+              <div id="technician-position-summary" class="alert alert-info technician-position-summary" hidden>
+                <div class="flex flex-col gap-1">
+                  <span class="font-semibold" data-i18n data-i18n-key="technicians.positionSummary.title">💵 تفاصيل التكلفة</span>
+                  <span id="technician-position-summary-body"></span>
+                </div>
+              </div>
+              <div class="management-form-actions">
+                <button type="button" class="btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
+                <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ✅ شريط البحث -->
+          <div class="mb-3 d-flex flex-wrap gap-2 align-items-center technician-search-row">
+            <input
+              type="text"
+              id="search-technician-input"
+              class="form-control"
+              placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
+              data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
+            >
+            <select id="technician-role-filter" class="form-select">
+              <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
+            </select>
+          </div>
+
+
+          <!-- ✅ جدول الفريق الفني -->
+          <div class="customer-table-wrapper technician-table-wrapper table-responsive">
+            <table class="customer-table technician-table align-middle">
+              <thead>
+                <tr>
+                  <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
+                  <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
+                  <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
+                  <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="technicians-table">
+                <tr>
+                  <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tech-subtab-panel" data-tech-tab-panel="technicians-positions" hidden>
+          <!-- ✅ إدارة المناصب -->
+          <div class="box positions-form-box management-form-box mb-4">
+            <div class="management-form-header">
+              <div class="management-form-icon">🏷️</div>
+              <div class="management-form-header-text">
+                <h4 data-i18n data-i18n-key="positions.form.title">إضافة / تعديل منصب</h4>
+                <p class="management-form-hint" data-i18n data-i18n-key="positions.form.hint">عرّف المناصب القياسية مع التكلفة وسعر العميل لتسهيل تعبئة بيانات الطاقم.</p>
+              </div>
+            </div>
+            <form id="position-form" class="management-form position-form">
+              <input type="hidden" id="position-id">
+              <div class="management-form-grid">
+                <div class="form-field">
+                  <label for="position-name" class="form-label" data-i18n data-i18n-key="positions.form.labels.name">🏷️ اسم المنصب</label>
+                  <input type="text" class="form-control" id="position-name" placeholder="مثال: مصور فوتوغرافي" required data-i18n data-i18n-placeholder-key="positions.form.placeholders.name">
+                </div>
+                <div class="form-field">
+                  <label for="position-cost" class="form-label" data-i18n data-i18n-key="positions.form.labels.cost">💵 التكلفة</label>
+                  <input type="text" class="form-control" id="position-cost" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="positions.form.placeholders.cost">
+                </div>
+                <div class="form-field">
+                  <label for="position-client-price" class="form-label" data-i18n data-i18n-key="positions.form.labels.clientPrice">💼 السعر المقدم للعميل</label>
+                  <input type="text" class="form-control" id="position-client-price" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="positions.form.placeholders.clientPrice">
+                </div>
+              </div>
+              <div class="management-form-actions">
+                <button type="button" class="btn btn-outline btn-secondary d-none" id="position-cancel-btn" data-i18n data-i18n-key="positions.form.actions.cancel">إلغاء</button>
+                <button type="submit" class="btn btn-primary" id="position-submit-btn" data-i18n data-i18n-key="positions.form.actions.submit">➕ إضافة منصب</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="box positions-list-box">
+            <div class="positions-list-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <h5 class="mb-0" data-i18n data-i18n-key="positions.list.title">📋 المناصب الحالية</h5>
+              <span class="badge" id="positions-count">0</span>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-zebra positions-table w-full">
+                <thead>
+                  <tr>
+                    <th data-i18n data-i18n-key="positions.table.headers.name">🏷️ المنصب</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.cost">💵 التكلفة</th>
+                    <th data-i18n data-i18n-key="positions.table.headers.clientPrice">💼 سعر العميل</th>
+                    <th class="table-actions-head" data-i18n data-i18n-key="positions.table.headers.actions">⚙️ الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="positions-table">
+                  <tr>
+                    <td colspan="4" data-i18n data-i18n-key="positions.table.empty">لا توجد مناصب بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
-          <form id="technician-form" class="management-form technician-form">
-            <input type="hidden" id="technician-id">
-            <div class="management-form-grid">
-              <div class="form-field">
-                <label for="technician-name" class="form-label" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
-                <input type="text" class="form-control" id="technician-name" placeholder="اسم عضو الطاقم" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
-              </div>
-              <div class="form-field">
-                <label for="technician-phone" class="form-label" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
-                <input type="text" class="form-control" id="technician-phone" placeholder="05xxxxxxxx" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
-              </div>
-              <div class="form-field">
-                <label for="technician-role" class="form-label" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
-                <input type="text" class="form-control" id="technician-role" placeholder="مثال: مصور" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
-              </div>
-              <div class="form-field">
-                <label for="technician-department" class="form-label" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
-                <input type="text" class="form-control" id="technician-department" placeholder="مثال: قسم الصوت" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
-              </div>
-              <div class="form-field">
-                <label for="technician-wage" class="form-label" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
-                <input type="text" class="form-control" id="technician-wage" placeholder="0" inputmode="decimal" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
-              </div>
-              <div class="form-field">
-                <label for="technician-total" class="form-label" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
-                <input type="text" class="form-control" id="technician-total" placeholder="0" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
-              </div>
-              <div class="form-field form-field-notes">
-                <label for="technician-notes" class="form-label" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
-                <textarea id="technician-notes" class="form-control" rows="2" placeholder="معلومات إضافية" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
-              </div>
-            </div>
-            <div class="management-form-actions">
-              <button type="button" class="btn btn-outline btn-secondary d-none" id="technician-cancel-btn" data-i18n data-i18n-key="technicians.form.actions.cancel">إلغاء التعديل</button>
-              <button type="submit" class="btn btn-primary" id="technician-submit-btn" data-i18n data-i18n-key="technicians.form.actions.submit">➕ إضافة عضو طاقم</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- ✅ شريط البحث -->
-        <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-          <input
-            type="text"
-            id="search-technician-input"
-            class="form-control"
-            placeholder="🔍 ابحث عن عضو الطاقم بالاسم أو الجوال أو الوظيفة..."
-            data-i18n data-i18n-placeholder-key="technicians.search.placeholder"
-          >
-          <select id="technician-role-filter" class="form-select">
-            <option value="" data-i18n data-i18n-key="technicians.search.filters.allRoles">👔 كل الوظائف</option>
-          </select>
-        </div>
-
-        <!-- ✅ جدول الفريق الفني -->
-        <div class="customer-table-wrapper technician-table-wrapper table-responsive">
-          <table class="customer-table technician-table align-middle">
-            <thead>
-              <tr>
-                <th data-i18n data-i18n-key="technicians.table.headers.name">😎 اسم العضو</th>
-                <th data-i18n data-i18n-key="technicians.table.headers.role">👔 الوظيفة</th>
-                <th data-i18n data-i18n-key="technicians.table.headers.department">🧩 القسم</th>
-                <th data-i18n data-i18n-key="technicians.table.headers.status">⚙️ الحالة</th>
-                <th class="table-notes-head" data-i18n data-i18n-key="technicians.table.headers.notes">📝 ملاحظات</th>
-                <th class="table-actions-head" data-i18n data-i18n-key="technicians.table.headers.actions">⚙️ الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="technicians-table">
-              <tr>
-                <td colspan="8" data-i18n data-i18n-key="technicians.table.loading">جاري التحميل...</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div> <!-- نهاية تبويب الفريق الفني -->
+
 
       <!-- ✅ تبويب: المعدات -->
       <div class="tab" id="equipment-tab">
