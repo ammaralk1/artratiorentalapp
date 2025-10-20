@@ -4273,7 +4273,7 @@ export async function exportProjectPdf({ project }) {
     return;
   }
 
-  const { sequence, quoteNumber } = peekNextQuoteSequence();
+  const { sequence, quoteNumber } = peekNextQuoteSequence('project');
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
