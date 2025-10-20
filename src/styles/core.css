@@ -1620,11 +1620,6 @@ body[dir="rtl"] .project-details-chips {
   max-width: 140px;
 }
 
-.project-edit-add-btn {
-  padding: 0.45rem 1.2rem;
-  font-size: 0.78rem;
-}
-
 body[dir="rtl"] .project-details-header__code {
   order: -1;
   margin-inline-start: 0;
