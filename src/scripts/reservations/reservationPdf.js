@@ -2,12 +2,22 @@ import { loadData } from '../storage.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { t } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast, showToastWithAction } from '../utils.js';
-import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../reservationsSummary.js';
+import {
+  calculateReservationDays,
+  calculateReservationTotal,
+  DEFAULT_COMPANY_SHARE_PERCENT,
+  calculatePaymentProgress,
+  determinePaymentStatus
+} from '../reservationsSummary.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
+import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
-const QUOTE_TOGGLE_PREFS_STORAGE_KEY = 'reservations.quote.togglePrefs.v1';
+const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
+  reservation: 'reservations.quote.togglePrefs.v1',
+  project: 'projects.quote.togglePrefs.v1'
+};
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
 const QUOTE_COMPANY_INFO = {
@@ -167,13 +177,172 @@ const QUOTE_FIELD_DEFS = {
   crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
 };
 
-const QUOTE_SECTION_ID_SET = new Set(QUOTE_SECTION_DEFS.map(({ id }) => id));
-const QUOTE_FIELD_ID_MAP = Object.fromEntries(
-  Object.entries(QUOTE_FIELD_DEFS).map(([sectionId, fields = []]) => [
-    sectionId,
-    new Set(fields.map((field) => field.id))
-  ])
-);
+const PROJECT_EXPENSES_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_expense, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'label',
+    labelKey: null,
+    fallback: 'البند',
+    render: (expense) => escapeHtml(expense?.label || '-')
+  },
+  {
+    id: 'amount',
+    labelKey: null,
+    fallback: 'المبلغ',
+    render: (expense) => escapeHtml(expense?.displayAmount || '—')
+  },
+  {
+    id: 'note',
+    labelKey: null,
+    fallback: 'ملاحظات',
+    render: (expense) => escapeHtml(expense?.note || '-')
+  }
+];
+
+const PROJECT_EQUIPMENT_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_item, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'description',
+    labelKey: null,
+    fallback: 'الوصف',
+    render: (item) => escapeHtml(item?.description || '-')
+  },
+  {
+    id: 'totalQuantity',
+    labelKey: null,
+    fallback: 'إجمالي الكمية',
+    render: (item) => escapeHtml(normalizeNumbers(String(item?.totalQuantity || 0)))
+  },
+  {
+    id: 'reservationsCount',
+    labelKey: null,
+    fallback: 'عدد الحجوزات',
+    render: (item) => escapeHtml(normalizeNumbers(String(item?.reservationsCount || 0)))
+  },
+  {
+    id: 'totalCost',
+    labelKey: null,
+    fallback: 'التكلفة التقديرية',
+    render: (item) => escapeHtml(item?.displayCost || '—')
+  }
+];
+
+const PROJECT_RESERVATIONS_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_reservation, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'reservationId',
+    labelKey: null,
+    fallback: 'رقم الحجز',
+    render: (reservation) => escapeHtml(reservation?.reservationId || '-')
+  },
+  {
+    id: 'dateRange',
+    labelKey: null,
+    fallback: 'الفترة الزمنية',
+    render: (reservation) => escapeHtml(reservation?.dateRange || '—')
+  },
+  {
+    id: 'statusLabel',
+    labelKey: null,
+    fallback: 'الحالة',
+    render: (reservation) => escapeHtml(reservation?.statusLabel || '—')
+  },
+  {
+    id: 'totalLabel',
+    labelKey: null,
+    fallback: 'الإجمالي',
+    render: (reservation) => escapeHtml(reservation?.totalLabel || '—')
+  }
+];
+
+const PROJECT_QUOTE_SECTION_DEFS = [
+  { id: 'customerInfo', labelKey: 'projects.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
+  { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
+  { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
+  { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'المصاريف', defaultSelected: true },
+  { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
+  { id: 'projectReservations', labelKey: 'projects.quote.sections.reservations', fallback: 'الحجوزات المرتبطة', defaultSelected: true },
+  { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true }
+];
+
+const PROJECT_QUOTE_FIELD_DEFS = {
+  customerInfo: QUOTE_FIELD_DEFS.customerInfo,
+  projectInfo: [
+    { id: 'projectTitle', labelKey: 'projects.details.overview.heading', fallback: 'معلومات المشروع' },
+    { id: 'projectCode', labelKey: 'projects.details.labels.code', fallback: 'رقم المشروع' },
+    { id: 'projectType', labelKey: 'projects.details.type', fallback: 'نوع المشروع' },
+    { id: 'projectStart', labelKey: 'projects.details.start', fallback: 'بداية المشروع' },
+    { id: 'projectEnd', labelKey: 'projects.details.end', fallback: 'نهاية المشروع' },
+    { id: 'projectDuration', labelKey: 'projects.details.duration', fallback: 'مدة المشروع' },
+    { id: 'projectStatus', labelKey: 'projects.details.status', fallback: 'حالة المشروع' }
+  ],
+  financialSummary: [
+    { id: 'projectSubtotal', labelKey: 'projects.details.summary.projectSubtotal', fallback: 'إجمالي المشروع' },
+    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي المصاريف' },
+    { id: 'reservationsTotal', labelKey: 'projects.details.reservationsTotal', fallback: 'إجمالي الحجوزات' },
+    { id: 'discountAmount', labelKey: 'projects.details.summary.discount', fallback: 'الخصم' },
+    { id: 'taxAmount', labelKey: 'projects.details.summary.combinedTax', fallback: 'الضريبة' },
+    { id: 'overallTotal', labelKey: 'projects.details.summary.overallTotal', fallback: 'الإجمالي الكلي' },
+    { id: 'paidAmount', labelKey: 'projects.details.summary.paidAmount', fallback: 'المدفوع' },
+    { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع' }
+  ],
+  payment: QUOTE_FIELD_DEFS.payment,
+  projectExpenses: PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectEquipment: PROJECT_EQUIPMENT_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectReservations: PROJECT_RESERVATIONS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectNotes: []
+};
+
+const QUOTE_CONFIG_CACHE = new Map();
+
+function getQuoteConfig(context = 'reservation') {
+  if (QUOTE_CONFIG_CACHE.has(context)) {
+    return QUOTE_CONFIG_CACHE.get(context);
+  }
+  const sectionDefs = context === 'project' ? PROJECT_QUOTE_SECTION_DEFS : QUOTE_SECTION_DEFS;
+  const fieldDefs = context === 'project' ? PROJECT_QUOTE_FIELD_DEFS : QUOTE_FIELD_DEFS;
+  const sectionIdSet = new Set(sectionDefs.map(({ id }) => id));
+  const fieldIdMap = Object.fromEntries(
+    Object.entries(fieldDefs).map(([sectionId, fields = []]) => [
+      sectionId,
+      new Set(fields.map((field) => field.id))
+    ])
+  );
+  const config = { sectionDefs, fieldDefs, sectionIdSet, fieldIdMap };
+  QUOTE_CONFIG_CACHE.set(context, config);
+  return config;
+}
+
+function getQuoteSectionDefs(context = 'reservation') {
+  return getQuoteConfig(context).sectionDefs;
+}
+
+function getQuoteFieldDefs(context = 'reservation') {
+  return getQuoteConfig(context).fieldDefs;
+}
+
+function getQuoteSectionIdSet(context = 'reservation') {
+  return getQuoteConfig(context).sectionIdSet;
+}
+
+function getQuoteFieldIdMap(context = 'reservation') {
+  return getQuoteConfig(context).fieldIdMap;
+}
 
 function getQuoteStatusMessage(type) {
   switch (type) {
@@ -382,9 +551,10 @@ function notifyQuoteAssetFailure() {
   }
 }
 
-function buildDefaultFieldSelections() {
+function buildDefaultFieldSelections(context = 'reservation') {
   const selections = {};
-  Object.entries(QUOTE_FIELD_DEFS).forEach(([sectionId, fields = []]) => {
+  const fieldDefs = getQuoteFieldDefs(context);
+  Object.entries(fieldDefs).forEach(([sectionId, fields = []]) => {
     selections[sectionId] = new Set(fields.filter((field) => field?.default !== false).map((field) => field.id));
   });
   return selections;
@@ -418,13 +588,13 @@ function isFieldEnabledInSelections(selections = {}, sectionId, fieldId) {
   return Boolean(set?.[fieldId]);
 }
 
-function buildDefaultSectionExpansions() {
-  return Object.fromEntries(QUOTE_SECTION_DEFS.map(({ id }) => [id, false]));
+function buildDefaultSectionExpansions(context = 'reservation') {
+  return Object.fromEntries(getQuoteSectionDefs(context).map(({ id }) => [id, false]));
 }
 
 function ensureSectionExpansionState(state, sectionId) {
   if (!state.sectionExpansions) {
-    state.sectionExpansions = buildDefaultSectionExpansions();
+    state.sectionExpansions = buildDefaultSectionExpansions(state.context || 'reservation');
   }
   if (sectionId && typeof state.sectionExpansions[sectionId] !== 'boolean') {
     state.sectionExpansions[sectionId] = false;
@@ -1375,9 +1545,14 @@ function commitQuoteSequence(sequence) {
   }
 }
 
-function readQuoteTogglePreferences() {
+function getTogglePrefsStorageKey(context = 'reservation') {
+  return QUOTE_TOGGLE_PREFS_STORAGE_KEYS[context] || QUOTE_TOGGLE_PREFS_STORAGE_KEYS.reservation;
+}
+
+function readQuoteTogglePreferences(context = 'reservation') {
   try {
-    const stored = window.localStorage?.getItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY);
+    const storageKey = getTogglePrefsStorageKey(context);
+    const stored = window.localStorage?.getItem?.(storageKey);
     if (!stored) return null;
     const parsed = JSON.parse(stored);
     return parsed && typeof parsed === 'object' ? parsed : null;
@@ -1387,13 +1562,14 @@ function readQuoteTogglePreferences() {
   }
 }
 
-function writeQuoteTogglePreferences(preferences) {
+function writeQuoteTogglePreferences(preferences, context = 'reservation') {
   try {
+    const storageKey = getTogglePrefsStorageKey(context);
     if (!preferences) {
-      window.localStorage?.removeItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY);
+      window.localStorage?.removeItem?.(storageKey);
       return;
     }
-    window.localStorage?.setItem?.(QUOTE_TOGGLE_PREFS_STORAGE_KEY, JSON.stringify(preferences));
+    window.localStorage?.setItem?.(storageKey, JSON.stringify(preferences));
   } catch (error) {
     console.warn('⚠️ [reservations/pdf] failed to persist toggle preferences', error);
   }
@@ -1414,14 +1590,16 @@ function collectSelectionIds(selection) {
   return { ids: null, emptyExplicitly: false };
 }
 
-function serializeQuoteToggleState(state) {
+function serializeQuoteToggleState(state, context = 'reservation') {
   if (!state) return null;
+  const sectionIdSet = getQuoteSectionIdSet(context);
+  const fieldIdMap = getQuoteFieldIdMap(context);
   const sectionIds = Array.from(state.sections instanceof Set ? state.sections : new Set(state.sections || []))
-    .filter((id) => QUOTE_SECTION_ID_SET.has(id));
+    .filter((id) => sectionIdSet.has(id));
 
   const fieldsPayload = {};
   const selections = state.fields || {};
-  Object.entries(QUOTE_FIELD_ID_MAP).forEach(([sectionId, validIds]) => {
+  Object.entries(fieldIdMap).forEach(([sectionId, validIds]) => {
     const selection = selections[sectionId];
     if (selection == null) return;
     const { ids, emptyExplicitly } = collectSelectionIds(selection);
@@ -1440,25 +1618,30 @@ function serializeQuoteToggleState(state) {
 }
 
 function persistQuoteTogglePreferences(state) {
-  const snapshot = serializeQuoteToggleState(state);
+  if (!state) return;
+  const context = state.context || 'reservation';
+  const snapshot = serializeQuoteToggleState(state, context);
   if (!snapshot) return;
-  writeQuoteTogglePreferences(snapshot);
+  writeQuoteTogglePreferences(snapshot, context);
 }
 
 function applyQuoteTogglePreferences(state) {
   if (!state) return;
-  const preferences = readQuoteTogglePreferences();
+  const context = state.context || 'reservation';
+  const preferences = readQuoteTogglePreferences(context);
   if (!preferences) return;
 
-  const storedSections = Array.isArray(preferences.sections) ? preferences.sections.filter((id) => QUOTE_SECTION_ID_SET.has(id)) : [];
+  const sectionIdSet = getQuoteSectionIdSet(context);
+  const storedSections = Array.isArray(preferences.sections) ? preferences.sections.filter((id) => sectionIdSet.has(id)) : [];
   if (storedSections.length) {
     state.sections = new Set(storedSections);
   }
 
   if (preferences.fields && typeof preferences.fields === 'object') {
-    const nextSelections = cloneFieldSelections(state.fields || buildDefaultFieldSelections());
+    const nextSelections = cloneFieldSelections(state.fields || buildDefaultFieldSelections(context));
+    const fieldIdMap = getQuoteFieldIdMap(context);
     Object.entries(preferences.fields).forEach(([sectionId, storedIds]) => {
-      const validIds = QUOTE_FIELD_ID_MAP[sectionId];
+      const validIds = fieldIdMap[sectionId];
       if (!validIds) return;
       const normalized = Array.isArray(storedIds) ? storedIds.filter((id) => validIds.has(id)) : [];
       nextSelections[sectionId] = new Set(normalized);
@@ -1637,21 +1820,930 @@ function collectReservationFinancials(reservation, technicians, project) {
   };
 }
 
-function buildQuotationHtml({
-  reservation,
-  customer,
+function parsePaymentNumber(value) {
+  if (value == null || value === '') return null;
+  const normalized = Number.parseFloat(normalizeNumbers(String(value)));
+  return Number.isFinite(normalized) ? normalized : null;
+}
+
+function resolveRecordedAt(value) {
+  if (!value) return new Date().toISOString();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+  return date.toISOString();
+}
+
+function normalizePaymentHistoryEntryForView(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+
+  const typeRaw = entry.type ?? entry.payment_type ?? entry.paymentType ?? null;
+  let type = typeof typeRaw === 'string' ? typeRaw.trim().toLowerCase() : null;
+  if (type !== 'percent') {
+    type = 'amount';
+  }
+
+  const amount = parsePaymentNumber(entry.amount ?? (type === 'amount' ? entry.value : null));
+  const percentage = parsePaymentNumber(entry.percentage ?? (type === 'percent' ? entry.value : null));
+  const value = type === 'percent'
+    ? (percentage != null ? percentage : null)
+    : (amount != null ? amount : null);
+  const note = entry.note ?? entry.memo ?? null;
+  const recordedAt = resolveRecordedAt(entry.recordedAt ?? entry.recorded_at ?? entry.date ?? entry.created_at ?? null);
+
+  if (type === 'amount' && amount == null) {
+    return null;
+  }
+
+  if (type === 'percent' && percentage == null) {
+    return null;
+  }
+
+  return {
+    type,
+    amount: amount != null ? amount : null,
+    percentage: percentage != null ? percentage : null,
+    value,
+    note,
+    recordedAt
+  };
+}
+
+function normalizeProjectPaymentHistoryForView(project = {}) {
+  const rawHistory = Array.isArray(project.paymentHistory)
+    ? project.paymentHistory
+    : Array.isArray(project.payment_history)
+      ? project.payment_history
+      : [];
+
+  const normalized = rawHistory
+    .map(normalizePaymentHistoryEntryForView)
+    .filter(Boolean);
+
+  if (normalized.length > 0) {
+    return normalized;
+  }
+
+  const basePercent = parsePaymentNumber(project.paidPercent ?? project.paid_percent);
+  const baseAmount = parsePaymentNumber(project.paidAmount ?? project.paid_amount);
+  const recordedAtRaw = project.updatedAt
+    ?? project.updated_at
+    ?? project.createdAt
+    ?? project.created_at
+    ?? null;
+  const recordedAt = resolveRecordedAt(recordedAtRaw);
+
+  if (basePercent != null && basePercent > 0) {
+    return [
+      {
+        type: 'percent',
+        amount: baseAmount != null && baseAmount > 0 ? baseAmount : null,
+        percentage: basePercent,
+        value: basePercent,
+        note: null,
+        recordedAt
+      }
+    ];
+  }
+
+  if (baseAmount != null && baseAmount > 0) {
+    return [
+      {
+        type: 'amount',
+        amount: baseAmount,
+        percentage: null,
+        value: baseAmount,
+        note: null,
+        recordedAt
+      }
+    ];
+  }
+
+  return [];
+}
+
+function getProjectTypeLabel(type) {
+  if (!type) return t('projects.form.types.unknown', 'نوع غير محدد');
+  const key = {
+    commercial: 'projects.form.types.commercial',
+    coverage: 'projects.form.types.coverage',
+    photography: 'projects.form.types.photography',
+    social: 'projects.form.types.social'
+  }[type] || 'projects.form.types.unknown';
+  return t(key, type);
+}
+
+function determineProjectStatusFromDates(project) {
+  const now = new Date();
+  const start = project?.start ? new Date(project.start) : null;
+  const end = project?.end ? new Date(project.end) : null;
+
+  if (start && !Number.isNaN(start.getTime()) && start > now) {
+    return 'upcoming';
+  }
+
+  if (end && !Number.isNaN(end.getTime()) && end < now) {
+    return 'completed';
+  }
+
+  return 'ongoing';
+}
+
+function getProjectExpensesTotal(project) {
+  if (typeof project?.expensesTotal === 'number') {
+    return project.expensesTotal;
+  }
+  if (Array.isArray(project?.expenses)) {
+    return project.expenses.reduce((sum, expense) => sum + (Number(expense?.amount) || 0), 0);
+  }
+  return 0;
+}
+
+function resolveProjectTotalsForPdf(project) {
+  const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
+  const expensesTotal = getProjectExpensesTotal(project);
+  const baseSubtotal = equipmentEstimate + expensesTotal;
+  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+
+  const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  let discountAmount = discountType === 'amount'
+    ? discountValue
+    : baseSubtotal * (discountValue / 100);
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) {
+    discountAmount = 0;
+  }
+  if (discountAmount > baseSubtotal) {
+    discountAmount = baseSubtotal;
+  }
+
+  const subtotalAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+
+  const companyShareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true';
+  const rawSharePercent = Number.parseFloat(
+    project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+  ) || 0;
+  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
+  const companyShareAmount = sharePercent > 0
+    ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
+    : 0;
+
+  const subtotal = subtotalAfterDiscount + companyShareAmount;
+
+  let taxAmount = applyTax ? subtotal * PROJECT_TAX_RATE : 0;
+  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
+    taxAmount = 0;
+  }
+  taxAmount = Number(taxAmount.toFixed(2));
+
+  let totalWithTax = applyTax ? Number(project?.totalWithTax) : subtotal;
+  if (applyTax) {
+    if (!Number.isFinite(totalWithTax) || totalWithTax <= 0) {
+      totalWithTax = Number((subtotal + taxAmount).toFixed(2));
+    }
+  } else {
+    totalWithTax = subtotal;
+  }
+
+  return {
+    equipmentEstimate,
+    expensesTotal,
+    baseSubtotal,
+    discountAmount,
+    subtotalAfterDiscount,
+    companyShareAmount,
+    subtotal,
+    applyTax,
+    taxAmount,
+    totalWithTax
+  };
+}
+
+function resolveReservationNetTotalForProject(reservation) {
+  if (!reservation) return 0;
+  const items = Array.isArray(reservation.items) ? reservation.items : [];
+  const discountRaw = reservation.discount ?? 0;
+  const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
+  const discountType = reservation.discountType || 'percent';
+  const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+  const calculated = calculateReservationTotal(
+    items,
+    discountValue,
+    discountType,
+    false,
+    technicianIds,
+    { start: reservation.start, end: reservation.end }
+  );
+
+  if (Number.isFinite(calculated)) {
+    return calculated;
+  }
+
+  const storedCost = Number(normalizeNumbers(String(reservation.cost ?? 0)));
+  return Number.isFinite(storedCost) ? Math.round(storedCost) : 0;
+}
+
+function combineProjectDateRange(start, end) {
+  if (!start) return '—';
+  const startText = formatDateTime(start);
+  if (!end) return startText;
+  return `${startText} - ${formatDateTime(end)}`;
+}
+
+function formatCurrencyValue(value, currencyLabel = 'SR', fractionDigits = 2) {
+  const number = Number(value) || 0;
+  const digits = Number.isInteger(fractionDigits) ? fractionDigits : 2;
+  return `${normalizeNumbers(number.toFixed(digits))} ${currencyLabel}`;
+}
+
+function formatPercentageValue(value, fractionDigits = 2) {
+  if (!Number.isFinite(Number(value))) {
+    return '0%';
+  }
+  const digits = Number.isInteger(fractionDigits) ? fractionDigits : 2;
+  return `${normalizeNumbers(Number(value).toFixed(digits))}%`;
+}
+
+function calculateProjectDurationDays(project) {
+  if (!project?.start) return null;
+  if (!project?.end) return 1;
+  const days = calculateReservationDays(project.start, project.end);
+  return Number.isFinite(days) ? days : 1;
+}
+
+function formatProjectDurationLabel(days) {
+  if (!Number.isFinite(days)) return 'غير محدد';
+  if (days <= 1) return 'يوم واحد';
+  return `${normalizeNumbers(String(Math.round(days)))} أيام`;
+}
+
+function collectProjectQuoteData(project) {
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const { customers = [], reservations = [], projects = [] } = loadData();
+
+  const resolvedProject = project?.id != null
+    ? projects.find((entry) => String(entry.id) === String(project.id)) || project
+    : project || null;
+
+  const fallback = {
+    projectStatusLabel: t('projects.status.ongoing', 'قيد التنفيذ'),
+    paymentStatusLabel: t('projects.paymentStatus.unpaid', 'غير مدفوع')
+  };
+
+  if (!resolvedProject) {
+    return {
+      project: null,
+      customer: null,
+      clientInfo: {
+        name: '-',
+        company: '-',
+        phone: '-',
+        email: '-'
+      },
+      projectInfo: {
+        title: '-',
+        code: '-',
+        typeLabel: '-',
+        startDisplay: '-',
+        endDisplay: '-',
+        durationLabel: '-',
+        statusLabel: fallback.projectStatusLabel
+      },
+      expenses: [],
+      equipment: [],
+      reservations: [],
+      totals: {
+        equipmentEstimate: 0,
+        expensesTotal: 0,
+        baseSubtotal: 0,
+        discountAmount: 0,
+        subtotalAfterDiscount: 0,
+        companyShareAmount: 0,
+        subtotal: 0,
+        applyTax: false,
+        taxAmount: 0,
+        totalWithTax: 0
+      },
+      totalsDisplay: {
+        projectSubtotal: formatCurrencyValue(0, currencyLabel),
+        expensesTotal: formatCurrencyValue(0, currencyLabel),
+        reservationsTotal: formatCurrencyValue(0, currencyLabel),
+        discountAmount: formatCurrencyValue(0, currencyLabel),
+        taxAmount: formatCurrencyValue(0, currencyLabel),
+        overallTotal: formatCurrencyValue(0, currencyLabel),
+        paidAmount: formatCurrencyValue(0, currencyLabel),
+        remainingAmount: formatCurrencyValue(0, currencyLabel)
+      },
+      projectTotals: {
+        combinedTaxAmount: 0,
+        overallTotal: 0,
+        reservationsTotal: 0,
+        paidAmount: 0,
+        paidPercent: 0,
+        remainingAmount: 0,
+        paymentStatus: 'unpaid'
+      },
+      paymentSummary: {
+        status: 'unpaid',
+        statusLabel: fallback.paymentStatusLabel,
+        paidAmount: 0,
+        paidPercent: 0,
+        remainingAmount: 0,
+        paidAmountDisplay: formatCurrencyValue(0, currencyLabel),
+        remainingAmountDisplay: formatCurrencyValue(0, currencyLabel),
+        paidPercentDisplay: formatPercentageValue(0)
+      },
+      notes: '',
+      currencyLabel,
+      projectStatus: 'ongoing',
+      projectStatusLabel: fallback.projectStatusLabel,
+      projectDurationDays: null,
+      projectDurationLabel: 'غير محدد',
+      paymentHistory: []
+    };
+  }
+
+  const clientId = resolvedProject.clientId
+    ?? resolvedProject.customerId
+    ?? resolvedProject.client_id
+    ?? resolvedProject.customer_id
+    ?? null;
+  const customer = clientId != null
+    ? customers.find((entry) => String(entry.id) === String(clientId)) || null
+    : null;
+
+  const clientName = customer?.customerName
+    ?? customer?.name
+    ?? resolvedProject.clientName
+    ?? resolvedProject.customerName
+    ?? t('projects.fallback.unknownClient', 'عميل غير معروف');
+
+  const projectCompany = (resolvedProject.clientCompany || customer?.companyName || customer?.company || '').trim();
+
+  const clientPhoneRaw = customer?.phone
+    ?? customer?.customerPhone
+    ?? resolvedProject.clientPhone
+    ?? resolvedProject.customerPhone
+    ?? '';
+  const clientPhone = clientPhoneRaw
+    ? normalizeNumbers(String(clientPhoneRaw).trim())
+    : t('projects.details.client.noPhone', 'لا يوجد رقم متاح');
+
+  const clientEmailRaw = customer?.email
+    ?? resolvedProject.clientEmail
+    ?? resolvedProject.customerEmail
+    ?? '';
+  const clientEmail = clientEmailRaw
+    ? String(clientEmailRaw).trim()
+    : t('projects.details.client.noEmail', 'لا يوجد بريد متاح');
+
+  const projectCodeRaw = resolvedProject.projectCode || `PRJ-${normalizeNumbers(String(resolvedProject.id ?? ''))}`;
+  const projectCodeDisplay = normalizeNumbers(String(projectCodeRaw));
+  const projectTitle = (resolvedProject.title || '').trim() || t('projects.fallback.untitled', 'مشروع بدون عنوان');
+  const typeLabel = getProjectTypeLabel(resolvedProject.type);
+  const startDisplay = resolvedProject.start ? formatDateTime(resolvedProject.start) : '—';
+  const endDisplay = resolvedProject.end ? formatDateTime(resolvedProject.end) : '—';
+  const durationDays = calculateProjectDurationDays(resolvedProject);
+  const durationLabel = durationDays != null ? formatProjectDurationLabel(durationDays) : 'غير محدد';
+  const projectStatus = determineProjectStatusFromDates(resolvedProject);
+  const statusFallbackMap = {
+    upcoming: 'قادم',
+    ongoing: 'قيد التنفيذ',
+    completed: 'مكتمل'
+  };
+  const projectStatusLabel = t(`projects.status.${projectStatus}`, statusFallbackMap[projectStatus] || projectStatus);
+
+  const projectIdValue = resolvedProject.id != null ? String(resolvedProject.id) : null;
+  const reservationsForProject = projectIdValue
+    ? reservations.filter((reservation) => String(reservation.projectId) === projectIdValue)
+    : [];
+
+  const reservationsWithMeta = reservationsForProject
+    .map((reservation) => {
+      const reservationId = reservation.reservationId || reservation.id || '';
+      const statusRaw = reservation.status || reservation.state || 'pending';
+      const statusKey = String(statusRaw).toLowerCase();
+      const statusLabel = t(`reservations.status.${statusKey}`, statusKey);
+      const total = resolveReservationNetTotalForProject(reservation);
+      const startTimestamp = reservation.start ? new Date(reservation.start).getTime() : 0;
+      return {
+        reservationId: normalizeNumbers(String(reservationId || '-')),
+        status: statusKey,
+        statusLabel,
+        total,
+        totalLabel: formatCurrencyValue(total, currencyLabel),
+        dateRange: combineProjectDateRange(reservation.start, reservation.end),
+        startTimestamp: Number.isNaN(startTimestamp) ? 0 : startTimestamp
+      };
+    })
+    .sort((a, b) => b.startTimestamp - a.startTimestamp)
+    .map(({ startTimestamp, ...rest }) => rest);
+
+  const reservationsTotal = reservationsWithMeta.reduce((sum, entry) => sum + (Number(entry.total) || 0), 0);
+
+  const equipmentMap = new Map();
+  reservationsForProject.forEach((reservation) => {
+    const items = Array.isArray(reservation.items) ? reservation.items : [];
+    const rentalDays = calculateReservationDays(reservation.start, reservation.end);
+    const reservationLabel = reservation.reservationId || reservation.id || '';
+    items.forEach((item, index) => {
+      if (!item) return;
+      const keyCandidate = item.barcode || item.code || item.id || item.desc || item.description || `item-${index}`;
+      const key = String(keyCandidate || `item-${index}`);
+      const existing = equipmentMap.get(key) || {
+        description: item.desc || item.description || item.name || item.barcode || `#${normalizeNumbers(String(index + 1))}`,
+        totalQuantity: 0,
+        reservationsCount: 0,
+        reservationIds: new Set(),
+        totalCost: 0
+      };
+      const qty = Number(item.qty) || 1;
+      const unitPrice = Number(item.price) || 0;
+      existing.totalQuantity += qty;
+      existing.reservationIds.add(String(reservationLabel));
+      const computedCost = unitPrice * qty * Math.max(1, rentalDays);
+      if (Number.isFinite(computedCost)) {
+        existing.totalCost += computedCost;
+      }
+      equipmentMap.set(key, existing);
+    });
+  });
+
+  const equipment = Array.from(equipmentMap.values()).map((entry) => ({
+    description: entry.description,
+    totalQuantity: entry.totalQuantity,
+    reservationsCount: entry.reservationIds.size,
+    displayCost: formatCurrencyValue(entry.totalCost, currencyLabel)
+  }));
+
+  const expenses = Array.isArray(resolvedProject.expenses)
+    ? resolvedProject.expenses.map((expense) => {
+        const amount = Number(expense?.amount) || 0;
+        return {
+          label: expense?.label || expense?.name || '-',
+          amount,
+          displayAmount: formatCurrencyValue(amount, currencyLabel),
+          note: expense?.note || expense?.description || ''
+        };
+      })
+    : [];
+
+  const projectTotals = resolveProjectTotalsForPdf(resolvedProject);
+  const combinedTaxAmount = projectTotals.applyTax
+    ? Number(((projectTotals.subtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+    : 0;
+  const overallTotal = Number((projectTotals.subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+
+  const paymentHistory = normalizeProjectPaymentHistoryForView(resolvedProject);
+  const basePaidAmount = parsePaymentNumber(resolvedProject.paidAmount ?? resolvedProject.paid_amount) || 0;
+  const basePaidPercent = parsePaymentNumber(resolvedProject.paidPercent ?? resolvedProject.paid_percent) || 0;
+  const paymentProgress = calculatePaymentProgress({
+    totalAmount: overallTotal,
+    paidAmount: basePaidAmount,
+    paidPercent: basePaidPercent,
+    history: paymentHistory
+  });
+  const manualStatusRaw = typeof resolvedProject.paymentStatus === 'string'
+    ? resolvedProject.paymentStatus.toLowerCase()
+    : '';
+  const paymentStatus = determinePaymentStatus({
+    manualStatus: manualStatusRaw,
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount: overallTotal
+  });
+  const paymentStatusFallback = {
+    paid: 'مدفوع',
+    partial: 'مدفوع جزئياً',
+    unpaid: 'غير مدفوع'
+  };
+  const paymentStatusLabel = t(`projects.paymentStatus.${paymentStatus}`, paymentStatusFallback[paymentStatus] || paymentStatus);
+
+  const paidAmount = Number(paymentProgress.paidAmount || 0);
+  const paidPercent = Number(paymentProgress.paidPercent || 0);
+  const remainingAmount = Math.max(0, Number((overallTotal - paidAmount).toFixed(2)));
+
+  const totalsDisplay = {
+    projectSubtotal: formatCurrencyValue(projectTotals.subtotal, currencyLabel),
+    expensesTotal: formatCurrencyValue(projectTotals.expensesTotal, currencyLabel),
+    reservationsTotal: formatCurrencyValue(reservationsTotal, currencyLabel),
+    discountAmount: formatCurrencyValue(projectTotals.discountAmount, currencyLabel),
+    taxAmount: formatCurrencyValue(combinedTaxAmount, currencyLabel),
+    overallTotal: formatCurrencyValue(overallTotal, currencyLabel),
+    paidAmount: formatCurrencyValue(paidAmount, currencyLabel),
+    remainingAmount: formatCurrencyValue(remainingAmount, currencyLabel)
+  };
+
+  const paymentSummary = {
+    status: paymentStatus,
+    statusLabel: paymentStatusLabel,
+    paidAmount,
+    paidPercent,
+    remainingAmount,
+    paidAmountDisplay: formatCurrencyValue(paidAmount, currencyLabel),
+    remainingAmountDisplay: formatCurrencyValue(remainingAmount, currencyLabel),
+    paidPercentDisplay: formatPercentageValue(paidPercent)
+  };
+
+  const notes = (resolvedProject.description || '').trim();
+
+  const clientCompanyDisplay = projectCompany || '—';
+
+  return {
+    project: resolvedProject,
+    customer,
+    clientInfo: {
+      name: clientName,
+      company: clientCompanyDisplay,
+      phone: clientPhone,
+      email: clientEmail
+    },
+    projectInfo: {
+      title: projectTitle,
+      code: projectCodeDisplay,
+      typeLabel,
+      startDisplay,
+      endDisplay,
+      durationLabel,
+      statusLabel: projectStatusLabel
+    },
+    expenses,
+    equipment,
+    reservations: reservationsWithMeta,
+    totals: projectTotals,
+    totalsDisplay,
+    projectTotals: {
+      combinedTaxAmount,
+      overallTotal,
+      reservationsTotal,
+      paidAmount,
+      paidPercent,
+      remainingAmount,
+      paymentStatus
+    },
+    paymentSummary,
+    notes,
+    currencyLabel,
+    projectStatus,
+    projectStatusLabel,
+    projectDurationDays: durationDays,
+    projectDurationLabel: durationLabel,
+    paymentHistory
+  };
+}
+
+function buildProjectQuotationHtml({
   project,
-  technicians,
-  totals,
-  totalsDisplay,
-  rentalDays,
-  currencyLabel,
+  clientInfo = {},
+  projectInfo = {},
+  projectExpenses = [],
+  projectEquipment = [],
+  projectReservations = [],
+  totalsDisplay = {},
+  projectTotals = {},
+  paymentSummary = {},
+  currencyLabel = 'SR',
   sections,
   fieldSelections = {},
   quoteNumber,
   quoteDate,
   terms = DEFAULT_TERMS
 }) {
+  const fieldsSelection = cloneFieldSelections(fieldSelections);
+  const isFieldEnabled = (sectionId, fieldId) => isFieldEnabledInSelections(fieldsSelection, sectionId, fieldId);
+  const includeSection = (id) => sections?.has?.(id);
+  const noFieldsMessage = `<div class="quote-placeholder">${escapeHtml(t('reservations.quote.placeholder.noFields', 'لم يتم اختيار أي معلومات للعرض في هذا القسم.'))}</div>`;
+
+  const renderPlainItem = (label, value) => (
+    `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`
+  );
+
+  const renderTotalsItem = (label, value, { variant = 'inline' } = {}) => {
+    if (variant === 'final') {
+      return `<div class="totals-item totals-item--final">
+        <span class="totals-item__label">${escapeHtml(label)}</span>
+        <span class="totals-item__slash">/</span>
+        <span class="totals-item__value">${escapeHtml(value)}</span>
+      </div>`;
+    }
+
+    return `<span class="totals-inline__item">
+      <span class="totals-inline__label">${escapeHtml(label)}</span>
+      <span class="totals-inline__slash">/</span>
+      <span class="totals-inline__value">${escapeHtml(value)}</span>
+    </span>`;
+  };
+
+  const renderPaymentRow = (label, value) => (
+    `<div class="payment-row">
+      <span class="payment-row__label">${escapeHtml(label)}</span>
+      <span class="payment-row__slash">/</span>
+      <span class="payment-row__value">${escapeHtml(value)}</span>
+    </div>`
+  );
+
+  const customerFieldItems = [];
+  if (isFieldEnabled('customerInfo', 'customerName')) {
+    customerFieldItems.push(renderPlainItem(t('projects.details.client', 'العميل'), clientInfo.name || '-'));
+  }
+  if (isFieldEnabled('customerInfo', 'customerCompany')) {
+    customerFieldItems.push(renderPlainItem(t('projects.details.company', 'شركة العميل'), clientInfo.company || '—'));
+  }
+  if (isFieldEnabled('customerInfo', 'customerPhone')) {
+    customerFieldItems.push(renderPlainItem(t('projects.details.labels.clientPhone', 'رقم العميل'), clientInfo.phone || '-'));
+  }
+  if (isFieldEnabled('customerInfo', 'customerEmail')) {
+    customerFieldItems.push(renderPlainItem(t('projects.details.labels.clientEmail', 'البريد الإلكتروني'), clientInfo.email || '-'));
+  }
+
+  const customerSectionMarkup = includeSection('customerInfo')
+    ? `<section class="quote-section quote-section--plain quote-section--customer">
+        <h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.customer', 'بيانات العميل'))}</h3>
+        ${customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage}
+      </section>`
+    : '';
+
+  const projectFieldItems = [];
+  if (isFieldEnabled('projectInfo', 'projectTitle')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.projectTitle', 'اسم المشروع'), projectInfo.title || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectCode')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.labels.code', 'رقم المشروع'), projectInfo.code || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectType')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.type', 'نوع المشروع'), projectInfo.typeLabel || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectStart')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.start', 'بداية المشروع'), projectInfo.startDisplay || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectEnd')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.end', 'نهاية المشروع'), projectInfo.endDisplay || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectDuration')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.duration', 'مدة المشروع'), projectInfo.durationLabel || '-'));
+  }
+  if (isFieldEnabled('projectInfo', 'projectStatus')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.status', 'حالة المشروع'), projectInfo.statusLabel || '-'));
+  }
+
+  const projectSectionMarkup = includeSection('projectInfo')
+    ? `<section class="quote-section quote-section--plain quote-section--project">
+        <h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.project', 'بيانات المشروع'))}</h3>
+        ${projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage}
+      </section>`
+    : '';
+
+  const financialInlineItems = [];
+  if (isFieldEnabled('financialSummary', 'projectSubtotal')) {
+    financialInlineItems.push(renderTotalsItem(t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), totalsDisplay.projectSubtotal || `${formatCurrencyValue(0, currencyLabel)}`));
+  }
+  if (isFieldEnabled('financialSummary', 'expensesTotal')) {
+    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي المصاريف'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
+  }
+  if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
+    financialInlineItems.push(renderTotalsItem(t('projects.details.reservationsTotal', 'إجمالي الحجوزات'), totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
+  }
+  if (isFieldEnabled('financialSummary', 'discountAmount')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), totalsDisplay.discountAmount || formatCurrencyValue(0, currencyLabel)));
+  }
+  if (isFieldEnabled('financialSummary', 'taxAmount')) {
+    financialInlineItems.push(renderTotalsItem(t('projects.details.summary.combinedTax', 'إجمالي الضريبة'), totalsDisplay.taxAmount || formatCurrencyValue(0, currencyLabel)));
+  }
+
+  const financialFinalItems = [];
+  if (isFieldEnabled('financialSummary', 'overallTotal')) {
+    financialFinalItems.push(renderTotalsItem(t('projects.details.summary.overallTotal', 'الإجمالي الكلي'), totalsDisplay.overallTotal || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
+  }
+  if (isFieldEnabled('financialSummary', 'paidAmount')) {
+    financialFinalItems.push(renderTotalsItem(t('projects.details.summary.paidAmount', 'إجمالي المدفوع'), totalsDisplay.paidAmount || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
+  }
+  if (isFieldEnabled('financialSummary', 'remainingAmount')) {
+    financialFinalItems.push(renderTotalsItem(t('projects.details.summary.remainingAmount', 'المتبقي للدفع'), totalsDisplay.remainingAmount || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
+  }
+
+  const financialSectionMarkup = includeSection('financialSummary')
+    ? (() => {
+        if (!financialInlineItems.length && !financialFinalItems.length) {
+          return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
+        }
+        return `<section class="quote-section quote-section--financial">
+          <div class="totals-block">
+            <h3>${escapeHtml(t('projects.quote.sections.financial', 'الملخص المالي'))}</h3>
+            ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
+            ${financialFinalItems.length ? `<div class="totals-final">${financialFinalItems.join('')}</div>` : ''}
+          </div>
+        </section>`;
+      })()
+    : '';
+
+  const expensesColumns = PROJECT_EXPENSES_COLUMN_DEFS.filter((column) => isFieldEnabled('projectExpenses', column.id));
+  const expensesSectionMarkup = includeSection('projectExpenses')
+    ? (expensesColumns.length
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${expensesColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${projectExpenses.length
+                ? projectExpenses.map((expense, index) => `<tr>${expensesColumns.map((column) => `<td>${column.render(expense, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد مصاريف مسجلة.'))}</td></tr>`}
+              </tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
+    : '';
+
+  const equipmentColumns = PROJECT_EQUIPMENT_COLUMN_DEFS.filter((column) => isFieldEnabled('projectEquipment', column.id));
+  const equipmentSectionMarkup = includeSection('projectEquipment')
+    ? (equipmentColumns.length
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.equipment', 'المعدات'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${equipmentColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${projectEquipment.length
+                ? projectEquipment.map((item, index) => `<tr>${equipmentColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(equipmentColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
+              </tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.equipment', 'المعدات'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
+    : '';
+
+  const reservationColumns = PROJECT_RESERVATIONS_COLUMN_DEFS.filter((column) => isFieldEnabled('projectReservations', column.id));
+  const reservationsSectionMarkup = includeSection('projectReservations')
+    ? (reservationColumns.length
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.reservations', 'الحجوزات المرتبطة'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${reservationColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${projectReservations.length
+                ? projectReservations.map((reservation, index) => `<tr>${reservationColumns.map((column) => `<td>${column.render(reservation, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(reservationColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.reservations.empty', 'لا توجد حجوزات مرتبطة بهذا المشروع.'))}</td></tr>`}
+              </tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.reservations', 'الحجوزات المرتبطة'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
+    : '';
+
+  const notesValue = (project?.description || '').trim() || '';
+  const notesSectionMarkup = includeSection('projectNotes')
+    ? `<section class="quote-section">
+        <h3>${escapeHtml(t('projects.quote.sections.notes', 'ملاحظات المشروع'))}</h3>
+        <div class="quote-notes">${notesValue ? escapeHtml(notesValue) : escapeHtml(t('projects.fallback.noDescription', 'لا يوجد وصف للمشروع.'))}</div>
+      </section>`
+    : '';
+
+  const paymentRows = [];
+  if (isFieldEnabled('payment', 'beneficiary')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.beneficiary', 'اسم المستفيد'), QUOTE_COMPANY_INFO.beneficiaryName));
+  }
+  if (isFieldEnabled('payment', 'bank')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.bank', 'اسم البنك'), QUOTE_COMPANY_INFO.bankName));
+  }
+  if (isFieldEnabled('payment', 'account')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.account', 'رقم الحساب'), normalizeNumbers(QUOTE_COMPANY_INFO.accountNumber)));
+  }
+  if (isFieldEnabled('payment', 'iban')) {
+    paymentRows.push(renderPaymentRow(t('reservations.quote.labels.iban', 'رقم الآيبان'), normalizeNumbers(QUOTE_COMPANY_INFO.iban)));
+  }
+
+  const paymentSectionMarkup = `<section class="quote-section">
+      <div class="payment-block">
+        <h3>${escapeHtml(t('reservations.quote.sections.payment', 'بيانات الدفع'))}</h3>
+        <div class="payment-rows">${paymentRows.length ? paymentRows.join('') : noFieldsMessage}</div>
+      </div>
+      <p class="quote-approval-note">${escapeHtml(QUOTE_COMPANY_INFO.approvalNote)}</p>
+    </section>`;
+
+  const termsList = Array.isArray(terms) && terms.length ? terms : DEFAULT_TERMS;
+
+  const termsSectionMarkup = `<footer class="quote-footer">
+        <h4>${escapeHtml(t('reservations.quote.labels.terms', 'الشروط العامة'))}</h4>
+        <ul>${termsList.map((term) => `<li>${escapeHtml(term)}</li>`).join('')}</ul>
+      </footer>`;
+
+  const primaryBlocks = [];
+  if (customerSectionMarkup && projectSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(`<div class="quote-section-row">${customerSectionMarkup}${projectSectionMarkup}</div>`, { blockType: 'group' }));
+  } else {
+    if (customerSectionMarkup) {
+      primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
+    }
+    if (projectSectionMarkup) {
+      primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+    }
+  }
+
+  const tableBlocks = [];
+  if (expensesSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(expensesSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-expenses"' }));
+  }
+  if (equipmentSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(equipmentSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-equipment"' }));
+  }
+  if (reservationsSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(reservationsSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-reservations"' }));
+  }
+
+  const summaryBlocks = [];
+  if (financialSectionMarkup) {
+    summaryBlocks.push(withBlockAttributes(financialSectionMarkup, { blockType: 'summary' }));
+  }
+  if (notesSectionMarkup) {
+    summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
+  }
+
+  const footerBlocks = [
+    withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' }),
+    withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
+  ];
+
+  const orderedBlocks = [
+    ...ensureBlocks(primaryBlocks, 'projects.quote.placeholder.primary'),
+    ...tableBlocks,
+    ...ensureBlocks(summaryBlocks, 'projects.quote.placeholder.summary'),
+    ...footerBlocks
+  ];
+
+  const headerTemplateHtml = `
+    <header class="quote-header" data-quote-header-template>
+      <div class="quote-header__logo">
+        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
+      </div>
+      <div class="quote-header__title">
+        <h1>${escapeHtml(t('projects.quote.title', 'مستند مشروع'))}</h1>
+        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+        <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
+      </div>
+      <div class="quote-header__meta">
+        <div class="quote-header__meta-item">
+          <span>${escapeHtml(t('reservations.details.labels.reservationId', 'رقم العرض'))}</span>
+          <strong>${escapeHtml(quoteNumber)}</strong>
+        </div>
+        <div class="quote-header__meta-item">
+          <span>${escapeHtml(t('projects.quote.labels.date', 'التاريخ'))}</span>
+          <strong>${escapeHtml(quoteDate)}</strong>
+        </div>
+      </div>
+    </header>
+  `.trim();
+
+  return `
+    <div id="quotation-pdf-root" dir="rtl">
+      <style>${QUOTE_PDF_STYLES}</style>
+      <div class="quote-document" data-quote-document>
+        <div class="quote-preview-pages" data-quote-pages></div>
+        <div class="quote-content-source" data-quote-source>
+          ${headerTemplateHtml}
+          ${orderedBlocks.join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildQuotationHtml(options) {
+  if (options?.context === 'project') {
+    return buildProjectQuotationHtml(options);
+  }
+
+  const {
+    reservation,
+    customer,
+    project,
+    technicians,
+    totals,
+    totalsDisplay,
+    rentalDays,
+    currencyLabel,
+    sections,
+    fieldSelections = {},
+    quoteNumber,
+    quoteDate,
+    terms = DEFAULT_TERMS
+  } = options;
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
@@ -2490,7 +3582,9 @@ function renderQuotePreview() {
   const { previewFrame } = quoteModalRefs;
   if (!previewFrame) return;
 
+  const context = activeQuoteState.context || 'reservation';
   const html = buildQuotationHtml({
+    context,
     reservation: activeQuoteState.reservation,
     customer: activeQuoteState.customer,
     project: activeQuoteState.project,
@@ -2503,7 +3597,14 @@ function renderQuotePreview() {
     fieldSelections: activeQuoteState.fields,
     quoteNumber: activeQuoteState.quoteNumber,
     quoteDate: activeQuoteState.quoteDateLabel,
-    terms: activeQuoteState.terms
+    terms: activeQuoteState.terms,
+    projectExpenses: activeQuoteState.projectExpenses,
+    projectEquipment: activeQuoteState.projectEquipment,
+    projectReservations: activeQuoteState.projectReservations,
+    projectInfo: activeQuoteState.projectInfo,
+    clientInfo: activeQuoteState.clientInfo,
+    paymentSummary: activeQuoteState.paymentSummary,
+    projectTotals: activeQuoteState.projectTotals
   });
 
   showQuotePreviewStatus('render');
@@ -2589,7 +3690,8 @@ function handleFieldToggleChange(event) {
   const sectionId = checkbox?.dataset?.sectionId;
   const fieldId = checkbox?.dataset?.fieldId;
   if (!sectionId || !fieldId) return;
-  const selections = activeQuoteState.fields || (activeQuoteState.fields = buildDefaultFieldSelections());
+  const context = activeQuoteState.context || 'reservation';
+  const selections = activeQuoteState.fields || (activeQuoteState.fields = buildDefaultFieldSelections(context));
   const set = getFieldSelectionSet(selections, sectionId);
   if (checkbox.checked) {
     set.add(fieldId);
@@ -2613,11 +3715,14 @@ function renderQuoteToggles() {
   if (!quoteModalRefs?.toggles || !activeQuoteState) return;
   const { toggles } = quoteModalRefs;
   const selections = activeQuoteState.fields || {};
+  const context = activeQuoteState.context || 'reservation';
   const expansions = ensureSectionExpansionState(activeQuoteState);
-  const items = QUOTE_SECTION_DEFS.map(({ id, labelKey, fallback }) => {
+  const sectionDefs = getQuoteSectionDefs(context);
+  const fieldDefs = getQuoteFieldDefs(context);
+  const items = sectionDefs.map(({ id, labelKey, fallback }) => {
     const sectionLabel = t(labelKey, fallback);
     const sectionChecked = activeQuoteState.sections.has(id);
-    const fields = QUOTE_FIELD_DEFS[id] || [];
+    const fields = fieldDefs[id] || [];
     const sectionExpanded = isSectionExpanded(activeQuoteState, id);
     const fieldList = fields.length
       ? `<div class="quote-toggle-sublist">
@@ -3077,6 +4182,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const baseTerms = resolveTermsFromForms();
 
   activeQuoteState = {
+    context: 'reservation',
     reservation,
     customer,
     project,
@@ -3085,15 +4191,66 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     totalsDisplay,
     rentalDays,
     currencyLabel,
-    sections: new Set(QUOTE_SECTION_DEFS.filter((section) => section.defaultSelected).map((section) => section.id)),
-    sectionExpansions: buildDefaultSectionExpansions(),
-    fields: buildDefaultFieldSelections(),
+    sections: new Set(getQuoteSectionDefs('reservation').filter((section) => section.defaultSelected).map((section) => section.id)),
+    sectionExpansions: buildDefaultSectionExpansions('reservation'),
+    fields: buildDefaultFieldSelections('reservation'),
     terms: baseTerms,
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
+  };
+
+  applyQuoteTogglePreferences(activeQuoteState);
+  openQuoteModal();
+}
+
+export async function exportProjectPdf({ project }) {
+  if (!project) {
+    showToast(t('projects.toast.notFound', '⚠️ تعذر العثور على بيانات المشروع'));
+    return;
+  }
+
+  const projectData = collectProjectQuoteData(project);
+  const { project: resolvedProject } = projectData;
+  if (!resolvedProject) {
+    showToast(t('projects.toast.notFound', '⚠️ تعذر العثور على بيانات المشروع'));
+    return;
+  }
+
+  const { sequence, quoteNumber } = peekNextQuoteSequence();
+  const now = new Date();
+  const baseTerms = resolveTermsFromForms();
+
+  activeQuoteState = {
+    context: 'project',
+    reservation: null,
+    customer: projectData.customer,
+    project: resolvedProject,
+    technicians: [],
+    clientInfo: projectData.clientInfo,
+    projectInfo: projectData.projectInfo,
+    projectExpenses: projectData.expenses,
+    projectEquipment: projectData.equipment,
+    projectReservations: projectData.reservations,
+    totals: projectData.totals,
+    projectTotals: projectData.projectTotals,
+    totalsDisplay: projectData.totalsDisplay,
+    rentalDays: projectData.projectDurationDays,
+    currencyLabel: projectData.currencyLabel,
+    sections: new Set(getQuoteSectionDefs('project').filter((section) => section.defaultSelected).map((section) => section.id)),
+    sectionExpansions: buildDefaultSectionExpansions('project'),
+    fields: buildDefaultFieldSelections('project'),
+    terms: baseTerms,
+    quoteSequence: sequence,
+    quoteNumber,
+    quoteDate: now,
+    quoteDateLabel: formatQuoteDate(now),
+    sequenceCommitted: false,
+    paymentSummary: projectData.paymentSummary,
+    projectNotes: projectData.notes,
+    paymentHistory: projectData.paymentHistory
   };
 
   applyQuoteTogglePreferences(activeQuoteState);

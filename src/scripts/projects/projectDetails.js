@@ -13,6 +13,7 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus,
 } from '../reservationsSummary.js';
+import { exportProjectPdf } from '../reservations/reservationPdf.js';
 import { normalizeNumbers, showToast } from '../utils.js';
 import { loadData } from '../storage.js';
 import { state, dom } from './state.js';
@@ -339,6 +340,9 @@ export function openProjectDetails(projectId) {
     </section>
     ${buildProjectReservationsSection(project)}
     <div class="project-details-footer">
+      <button type="button" class="btn btn-outline-primary" id="project-details-export-btn">
+        ${escapeHtml(t('projects.details.actions.exportPdf', '👁️ معاينة PDF'))}
+      </button>
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
         ${escapeHtml(t('actions.close', 'إغلاق'))}
       </button>
@@ -346,6 +350,24 @@ export function openProjectDetails(projectId) {
   `;
 
   bindProjectDetailsEvents(project);
+
+  const exportBtn = dom.detailsBody.querySelector('#project-details-export-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async (event) => {
+      event.preventDefault();
+      exportBtn.blur();
+      if (exportBtn.disabled) return;
+      exportBtn.disabled = true;
+      try {
+        await exportProjectPdf({ project });
+      } catch (error) {
+        console.error('❌ [projects/details] export project PDF failed', error);
+        showToast(t('projects.details.exportFailed', '⚠️ تعذر تصدير المشروع إلى PDF'), 'error');
+      } finally {
+        exportBtn.disabled = false;
+      }
+    });
+  }
 
   if (dom.detailsModalEl && window.bootstrap?.Modal) {
     const modal = window.bootstrap.Modal.getOrCreateInstance(dom.detailsModalEl);
