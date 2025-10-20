@@ -2691,11 +2691,17 @@ function buildProjectQuotationHtml({
       </footer>`;
 
   const primaryBlocks = [];
-  if (projectSectionMarkup) {
-    primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
-  }
-  if (customerSectionMarkup) {
-    primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
+  const primarySections = [];
+  if (projectSectionMarkup) primarySections.push(projectSectionMarkup);
+  if (customerSectionMarkup) primarySections.push(customerSectionMarkup);
+
+  if (primarySections.length > 1) {
+    primaryBlocks.push(withBlockAttributes(
+      `<div class="quote-section-row quote-section-row--primary">${primarySections.join('')}</div>`,
+      { blockType: 'group' }
+    ));
+  } else if (primarySections.length === 1) {
+    primaryBlocks.push(withBlockAttributes(primarySections[0]));
   }
 
   const tableBlocks = [];
