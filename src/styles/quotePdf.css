@@ -257,7 +257,22 @@ body,
   text-align: left;
   margin-left: 0;
   margin-right: auto;
+  margin-inline-start: auto;
+  margin-inline-end: 0;
   max-width: 50%;
+  width: fit-content;
+  align-self: flex-start;
+}
+
+.quote-section--project .quote-section__title {
+  text-align: left;
+}
+
+.quote-section--project .info-plain,
+.quote-section--project .info-plain__item {
+  text-align: left;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .quote-section--customer .info-plain,
