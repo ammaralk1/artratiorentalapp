@@ -913,6 +913,15 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     paymentStatusSelect.dataset.listenerAttached = 'true';
   }
 
+  if (expenseAmountInput && !expenseAmountInput.dataset.listenerAttached) {
+    expenseAmountInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    expenseAmountInput.dataset.listenerAttached = 'true';
+  }
+
   if (shareCheckbox && !shareCheckbox.dataset.listenerAttached) {
     shareCheckbox.addEventListener('change', () => {
       syncShareAndTax('share');
