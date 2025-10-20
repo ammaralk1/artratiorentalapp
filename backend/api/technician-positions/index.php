@@ -544,8 +544,20 @@ function httpRequest(string $url): ?string
 function logTechnicianPositionsError(\Throwable $exception): void
 {
     $logDir = __DIR__ . '/../../storage/logs';
+    $logFile = $logDir . '/technician_positions.log';
+
     if (!is_dir($logDir)) {
-        @mkdir($logDir, 0775, true);
+        if (!@mkdir($logDir, 0775, true) && !is_dir($logDir)) {
+            return;
+        }
+        @chmod($logDir, 0775);
+    }
+
+    if (!file_exists($logFile)) {
+        if (!@touch($logFile)) {
+            return;
+        }
+        @chmod($logFile, 0664);
     }
 
     $message = sprintf(
@@ -557,5 +569,5 @@ function logTechnicianPositionsError(\Throwable $exception): void
         $exception->getTraceAsString()
     );
 
-    @file_put_contents($logDir . '/technician_positions.log', $message, FILE_APPEND);
+    @file_put_contents($logFile, $message, FILE_APPEND);
 }
