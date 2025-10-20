@@ -40,6 +40,14 @@ const QUOTE_TERMS = [
 ];
 
 const DEFAULT_TERMS = [...QUOTE_TERMS];
+const PROJECT_QUOTE_TERMS = [
+  'يتم دفع 50% من قيمة المشروع عند الموافقة على عرض السعر، ويتم استكمال الـ 50% المتبقية قبل التسليم النهائي.',
+  'يحصل العميل على حقوق استخدام النسخة النهائية في أي مكان يراه مناسباً، بينما تحتفظ الشركة بالمواد الخام ولا تستخدمها إلا بعد موافقة العميل ما لم يُتفق على غير ذلك.',
+  'يتم الاتفاق على جدول زمني للتنفيذ، وأي تعديلات إضافية خارج النطاق المتفق عليه تخضع لرسوم إضافية.',
+  'العميل مسؤول عن توفير التصاريح اللازمة للتصوير في المواقع المحددة، وأي تأخير ناتج عن ذلك قد يؤثر على مواعيد التسليم.',
+  'تُحفَظ المواد النهائية للمشروع لمدة 12 شهراً في أرشيف الشركة، ويمكن للعميل طلب نسخ إضافية خلال تلك الفترة.',
+  'يتحمّل العميل مسؤولية توفير بيئة عمل آمنة للفريق الفني والمعدات في موقع التصوير، ويضمن اتخاذ كافة الاحتياطات اللازمة للحفاظ على سلامتهم.'
+];
 
 function normalizeTermsInput(value) {
   if (!value) return [...DEFAULT_TERMS];
@@ -4295,7 +4303,7 @@ export async function exportProjectPdf({ project }) {
 
   const { sequence, quoteNumber } = peekNextQuoteSequence('project');
   const now = new Date();
-  const baseTerms = resolveTermsFromForms();
+  const baseTerms = [...PROJECT_QUOTE_TERMS];
 
   activeQuoteState = {
     context: 'project',
