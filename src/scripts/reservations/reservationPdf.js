@@ -267,7 +267,7 @@ const PROJECT_EQUIPMENT_COLUMN_DEFS = [
 const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'projects.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
-  { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'الفريق الفني (Technical Team)', defaultSelected: true },
+  { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'الفريق الفني', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'المصاريف', defaultSelected: true },
   { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
@@ -2555,7 +2555,7 @@ function buildProjectQuotationHtml({
   const crewSectionMarkup = includeSection('projectCrew')
     ? (crewColumns.length
         ? `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني (Technical Team)'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني'))}</h3>
             <table class="quote-table">
               <thead>
                 <tr>${crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
@@ -2567,7 +2567,7 @@ function buildProjectQuotationHtml({
             </table>
           </section>`
         : `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني (Technical Team)'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني'))}</h3>
             ${noFieldsMessage}
           </section>`)
     : '';
