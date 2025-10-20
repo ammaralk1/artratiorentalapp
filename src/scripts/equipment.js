@@ -1572,6 +1572,10 @@ function handleEquipmentListClick(event) {
     return;
   }
 
+  if (event.target.closest('[data-equipment-select-quantity]') || event.target.closest('.equipment-card__selection-controls')) {
+    return;
+  }
+
   const deleteButton = event.target.closest('[data-equipment-action="delete"]');
   if (deleteButton) {
     event.preventDefault();
@@ -1597,6 +1601,9 @@ function handleEquipmentListClick(event) {
 function handleEquipmentListKeyDown(event) {
   if (event.defaultPrevented) return;
   if (event.target.closest('[data-equipment-action]')) return;
+  if (event.target.matches('[data-equipment-select-quantity]') || event.target.closest('.equipment-card__selection-controls')) {
+    return;
+  }
   const card = event.target.closest('[data-equipment-card="true"]');
   if (!card) return;
 
