@@ -253,6 +253,13 @@ body,
   max-width: 46%;
 }
 
+.quote-section--project {
+  text-align: left;
+  margin-left: 0;
+  margin-right: auto;
+  max-width: 50%;
+}
+
 .quote-section--customer .info-plain,
 .quote-section--customer .info-plain__item {
   align-items: flex-start;

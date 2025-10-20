@@ -177,6 +177,33 @@ const QUOTE_FIELD_DEFS = {
   crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
 };
 
+const PROJECT_CREW_COLUMN_DEFS = [
+  {
+    id: 'rowNumber',
+    labelKey: null,
+    fallback: '#',
+    render: (_tech, index) => escapeHtml(normalizeNumbers(String(index + 1)))
+  },
+  {
+    id: 'name',
+    labelKey: null,
+    fallback: 'الاسم',
+    render: (tech) => escapeHtml(tech?.name || tech?.full_name || tech?.fullName || '-')
+  },
+  {
+    id: 'role',
+    labelKey: null,
+    fallback: 'الدور',
+    render: (tech) => escapeHtml(tech?.role || tech?.title || t('reservations.details.technicians.roleUnknown', 'غير محدد'))
+  },
+  {
+    id: 'phone',
+    labelKey: null,
+    fallback: 'الهاتف',
+    render: (tech) => escapeHtml(tech?.phone || tech?.mobile || t('reservations.details.technicians.phoneUnknown', 'غير متوفر'))
+  }
+];
+
 const PROJECT_EXPENSES_COLUMN_DEFS = [
   {
     id: 'rowNumber',
@@ -237,46 +264,13 @@ const PROJECT_EQUIPMENT_COLUMN_DEFS = [
   }
 ];
 
-const PROJECT_RESERVATIONS_COLUMN_DEFS = [
-  {
-    id: 'rowNumber',
-    labelKey: null,
-    fallback: '#',
-    render: (_reservation, index) => escapeHtml(normalizeNumbers(String(index + 1)))
-  },
-  {
-    id: 'reservationId',
-    labelKey: null,
-    fallback: 'رقم الحجز',
-    render: (reservation) => escapeHtml(reservation?.reservationId || '-')
-  },
-  {
-    id: 'dateRange',
-    labelKey: null,
-    fallback: 'الفترة الزمنية',
-    render: (reservation) => escapeHtml(reservation?.dateRange || '—')
-  },
-  {
-    id: 'statusLabel',
-    labelKey: null,
-    fallback: 'الحالة',
-    render: (reservation) => escapeHtml(reservation?.statusLabel || '—')
-  },
-  {
-    id: 'totalLabel',
-    labelKey: null,
-    fallback: 'الإجمالي',
-    render: (reservation) => escapeHtml(reservation?.totalLabel || '—')
-  }
-];
-
 const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'projects.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
+  { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'الفريق الفني (Technical Team)', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'المصاريف', defaultSelected: true },
   { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
-  { id: 'projectReservations', labelKey: 'projects.quote.sections.reservations', fallback: 'الحجوزات المرتبطة', defaultSelected: true },
   { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true }
 ];
 
@@ -302,9 +296,9 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع' }
   ],
   payment: QUOTE_FIELD_DEFS.payment,
+  projectCrew: PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectExpenses: PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectEquipment: PROJECT_EQUIPMENT_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-  projectReservations: PROJECT_RESERVATIONS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectNotes: []
 };
 
@@ -1514,10 +1508,15 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#39;');
 }
 
-function formatQuoteNumber(sequence) {
+function resolveQuotePrefix(context = 'reservation') {
+  return context === 'project' ? 'QP' : 'Q';
+}
+
+function formatQuoteNumber(sequence, context = 'reservation') {
   const seq = Number(sequence);
-  if (!Number.isFinite(seq) || seq <= 0) return 'Q-0001';
-  return `Q-${String(seq).padStart(4, '0')}`;
+  const prefix = resolveQuotePrefix(context);
+  if (!Number.isFinite(seq) || seq <= 0) return `${prefix}-0001`;
+  return `${prefix}-${String(seq).padStart(4, '0')}`;
 }
 
 function readQuoteSequence() {
@@ -1526,12 +1525,12 @@ function readQuoteSequence() {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function peekNextQuoteSequence() {
+function peekNextQuoteSequence(context = 'reservation') {
   const last = readQuoteSequence();
   const sequence = last + 1;
   return {
     sequence,
-    quoteNumber: formatQuoteNumber(sequence)
+    quoteNumber: formatQuoteNumber(sequence, context)
   };
 }
 
@@ -2087,7 +2086,7 @@ function formatProjectDurationLabel(days) {
 
 function collectProjectQuoteData(project) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { customers = [], reservations = [], projects = [] } = loadData();
+  const { customers = [], reservations = [], projects = [], technicians: storedTechnicians = [] } = loadData();
 
   const resolvedProject = project?.id != null
     ? projects.find((entry) => String(entry.id) === String(project.id)) || project
@@ -2284,6 +2283,53 @@ function collectProjectQuoteData(project) {
     displayCost: formatCurrencyValue(entry.totalCost, currencyLabel)
   }));
 
+  const techniciansMap = new Map((storedTechnicians || []).filter(Boolean).map((tech) => [String(tech.id), tech]));
+  const crewMap = new Map();
+
+  const registerTechnician = (entry) => {
+    if (!entry) return;
+    let identifier = null;
+    if (typeof entry === 'object') {
+      identifier = entry.id ?? entry.technicianId ?? entry.technician_id ?? entry.userId ?? entry.user_id ?? null;
+    } else if (typeof entry === 'string' || typeof entry === 'number') {
+      identifier = entry;
+    }
+
+    const normalizedId = identifier != null ? String(identifier) : null;
+    const base = normalizedId && techniciansMap.has(normalizedId)
+      ? techniciansMap.get(normalizedId)
+      : (typeof entry === 'object' ? entry : null);
+
+    const name = base?.name || base?.full_name || base?.fullName || base?.displayName || (typeof entry === 'string' ? entry : null);
+    const role = base?.role || base?.title || null;
+    const phone = base?.phone || base?.mobile || base?.contact || null;
+
+    if (!name && !normalizedId) {
+      return;
+    }
+
+    const key = normalizedId || name;
+    if (crewMap.has(key)) return;
+
+    crewMap.set(key, {
+      id: normalizedId,
+      name: name || '-',
+      role: role || null,
+      phone: phone || null
+    });
+  };
+
+  if (Array.isArray(resolvedProject?.technicians)) {
+    resolvedProject.technicians.forEach((entry) => registerTechnician(entry));
+  }
+
+  reservationsForProject.forEach((reservation) => {
+    const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+    technicianIds.forEach((techId) => registerTechnician(techId));
+  });
+
+  const projectCrew = Array.from(crewMap.values());
+
   const expenses = Array.isArray(resolvedProject.expenses)
     ? resolvedProject.expenses.map((expense) => {
         const amount = Number(expense?.amount) || 0;
@@ -2377,7 +2423,7 @@ function collectProjectQuoteData(project) {
     },
     expenses,
     equipment,
-    reservations: reservationsWithMeta,
+    crew: projectCrew,
     totals: projectTotals,
     totalsDisplay,
     projectTotals: {
@@ -2404,9 +2450,9 @@ function buildProjectQuotationHtml({
   project,
   clientInfo = {},
   projectInfo = {},
+  projectCrew = [],
   projectExpenses = [],
   projectEquipment = [],
-  projectReservations = [],
   totalsDisplay = {},
   projectTotals = {},
   paymentSummary = {},
@@ -2501,6 +2547,27 @@ function buildProjectQuotationHtml({
       </section>`
     : '';
 
+  const crewColumns = PROJECT_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('projectCrew', column.id));
+  const crewSectionMarkup = includeSection('projectCrew')
+    ? (crewColumns.length
+        ? `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني (Technical Team)'))}</h3>
+            <table class="quote-table">
+              <thead>
+                <tr>${crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+              </thead>
+              <tbody>${projectCrew.length
+                ? projectCrew.map((tech, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(tech, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
+              </tbody>
+            </table>
+          </section>`
+        : `<section class="quote-section quote-section--table">
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني (Technical Team)'))}</h3>
+            ${noFieldsMessage}
+          </section>`)
+    : '';
+
   const financialInlineItems = [];
   if (isFieldEnabled('financialSummary', 'projectSubtotal')) {
     financialInlineItems.push(renderTotalsItem(t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), totalsDisplay.projectSubtotal || `${formatCurrencyValue(0, currencyLabel)}`));
@@ -2586,27 +2653,6 @@ function buildProjectQuotationHtml({
           </section>`)
     : '';
 
-  const reservationColumns = PROJECT_RESERVATIONS_COLUMN_DEFS.filter((column) => isFieldEnabled('projectReservations', column.id));
-  const reservationsSectionMarkup = includeSection('projectReservations')
-    ? (reservationColumns.length
-        ? `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.reservations', 'الحجوزات المرتبطة'))}</h3>
-            <table class="quote-table">
-              <thead>
-                <tr>${reservationColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
-              </thead>
-              <tbody>${projectReservations.length
-                ? projectReservations.map((reservation, index) => `<tr>${reservationColumns.map((column) => `<td>${column.render(reservation, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(reservationColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.reservations.empty', 'لا توجد حجوزات مرتبطة بهذا المشروع.'))}</td></tr>`}
-              </tbody>
-            </table>
-          </section>`
-        : `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.reservations', 'الحجوزات المرتبطة'))}</h3>
-            ${noFieldsMessage}
-          </section>`)
-    : '';
-
   const notesValue = (project?.description || '').trim() || '';
   const notesSectionMarkup = includeSection('projectNotes')
     ? `<section class="quote-section">
@@ -2645,26 +2691,22 @@ function buildProjectQuotationHtml({
       </footer>`;
 
   const primaryBlocks = [];
-  if (customerSectionMarkup && projectSectionMarkup) {
-    primaryBlocks.push(withBlockAttributes(`<div class="quote-section-row">${customerSectionMarkup}${projectSectionMarkup}</div>`, { blockType: 'group' }));
-  } else {
-    if (customerSectionMarkup) {
-      primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
-    }
-    if (projectSectionMarkup) {
-      primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
-    }
+  if (projectSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+  }
+  if (customerSectionMarkup) {
+    primaryBlocks.push(withBlockAttributes(customerSectionMarkup));
   }
 
   const tableBlocks = [];
+  if (crewSectionMarkup) {
+    tableBlocks.push(withBlockAttributes(crewSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-crew"' }));
+  }
   if (expensesSectionMarkup) {
     tableBlocks.push(withBlockAttributes(expensesSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-expenses"' }));
   }
   if (equipmentSectionMarkup) {
     tableBlocks.push(withBlockAttributes(equipmentSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-equipment"' }));
-  }
-  if (reservationsSectionMarkup) {
-    tableBlocks.push(withBlockAttributes(reservationsSectionMarkup, { blockType: 'table', extraAttributes: 'data-table-id="project-reservations"' }));
   }
 
   const summaryBlocks = [];
@@ -2693,7 +2735,7 @@ function buildProjectQuotationHtml({
         <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
       <div class="quote-header__title">
-        <h1>${escapeHtml(t('projects.quote.title', 'مستند مشروع'))}</h1>
+        <h1>${escapeHtml(t('projects.quote.title', 'عرض سعر'))}</h1>
         <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
       </div>
@@ -3598,9 +3640,9 @@ function renderQuotePreview() {
     quoteNumber: activeQuoteState.quoteNumber,
     quoteDate: activeQuoteState.quoteDateLabel,
     terms: activeQuoteState.terms,
+    projectCrew: activeQuoteState.projectCrew,
     projectExpenses: activeQuoteState.projectExpenses,
     projectEquipment: activeQuoteState.projectEquipment,
-    projectReservations: activeQuoteState.projectReservations,
     projectInfo: activeQuoteState.projectInfo,
     clientInfo: activeQuoteState.clientInfo,
     paymentSummary: activeQuoteState.paymentSummary,
@@ -4080,9 +4122,9 @@ async function exportQuoteAsPdf() {
       quoteNumber: activeQuoteState.quoteNumber,
       quoteDate: activeQuoteState.quoteDateLabel,
       terms: activeQuoteState.terms,
+      projectCrew: activeQuoteState.projectCrew,
       projectExpenses: activeQuoteState.projectExpenses,
       projectEquipment: activeQuoteState.projectEquipment,
-      projectReservations: activeQuoteState.projectReservations,
       projectInfo: activeQuoteState.projectInfo,
       clientInfo: activeQuoteState.clientInfo,
       paymentSummary: activeQuoteState.paymentSummary,
@@ -4186,7 +4228,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const technicians = collectAssignedTechnicians(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, technicians, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { sequence, quoteNumber } = peekNextQuoteSequence();
+  const { sequence, quoteNumber } = peekNextQuoteSequence('reservation');
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -4200,6 +4242,9 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     totalsDisplay,
     rentalDays,
     currencyLabel,
+    projectCrew: [],
+    projectExpenses: [],
+    projectEquipment: [],
     sections: new Set(getQuoteSectionDefs('reservation').filter((section) => section.defaultSelected).map((section) => section.id)),
     sectionExpansions: buildDefaultSectionExpansions('reservation'),
     fields: buildDefaultFieldSelections('reservation'),
@@ -4237,12 +4282,12 @@ export async function exportProjectPdf({ project }) {
     reservation: null,
     customer: projectData.customer,
     project: resolvedProject,
-    technicians: [],
+    technicians: projectData.crew || [],
     clientInfo: projectData.clientInfo,
     projectInfo: projectData.projectInfo,
+    projectCrew: projectData.crew,
     projectExpenses: projectData.expenses,
     projectEquipment: projectData.equipment,
-    projectReservations: projectData.reservations,
     totals: projectData.totals,
     projectTotals: projectData.projectTotals,
     totalsDisplay: projectData.totalsDisplay,
