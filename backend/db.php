@@ -1,7 +1,7 @@
 <?php
-use PDO;
-use PDOException;
-use RuntimeException;
+use \\PDO;
+use \\PDOException;
+use \\RuntimeException;
 
 function create_pdo(array $settings): PDO
 {
