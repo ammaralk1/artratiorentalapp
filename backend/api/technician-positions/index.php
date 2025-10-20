@@ -353,6 +353,30 @@ function validateTechnicianPositionPayload(array $payload, bool $isUpdate): arra
     return [$data, $errors];
 }
 
+
+function readJsonPayload(): array
+{
+    $raw = file_get_contents('php://input');
+
+    if ($raw === false) {
+        throw new \RuntimeException('Unable to read request body');
+    }
+
+    $raw = trim($raw);
+
+    if ($raw === '') {
+        return [];
+    }
+
+    $data = json_decode($raw, true);
+
+    if (!is_array($data)) {
+        throw new \InvalidArgumentException('Invalid JSON payload');
+    }
+
+    return $data;
+}
+
 function fetchTechnicianPositionById(\PDO $pdo, int $id): ?array
 {
     $statement = $pdo->prepare('SELECT * FROM technician_positions WHERE id = :id LIMIT 1');
