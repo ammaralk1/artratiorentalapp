@@ -32,6 +32,7 @@ try {
 } catch (InvalidArgumentException $exception) {
     respondError($exception->getMessage(), 400);
 } catch (Throwable $exception) {
+    logTechnicianPositionsError($exception);
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
@@ -543,4 +544,23 @@ function httpRequest(string $url): ?string
 
     $body = @file_get_contents($url, false, $context);
     return $body === false ? null : $body;
+}
+
+function logTechnicianPositionsError(Throwable $exception): void
+{
+    $logDir = __DIR__ . '/../../storage/logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+
+    $message = sprintf(
+        "[%s] %s in %s:%d\nTrace: %s\n\n",
+        date('c'),
+        $exception->getMessage(),
+        $exception->getFile(),
+        $exception->getLine(),
+        $exception->getTraceAsString()
+    );
+
+    @file_put_contents($logDir . '/technician_positions.log', $message, FILE_APPEND);
 }
