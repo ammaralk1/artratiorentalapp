@@ -1543,7 +1543,8 @@ body[dir="rtl"] .project-details-chips {
 }
 
 .project-edit-form .project-edit-textarea {
-  min-height: 220px;
+  min-height: 140px;
+  width: 100%;
 }
 
 .project-edit-form .project-edit-select-xs {

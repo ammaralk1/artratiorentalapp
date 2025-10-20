@@ -1409,16 +1409,18 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </section>
 
       <section class="project-edit-expenses mt-4">
-        <h6>${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-2">
+          <h6 class="mb-0">${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
+          <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">
+            ${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}
+          </button>
+        </div>
         <div class="project-edit-expense-form row g-2 align-items-center">
           <div class="col-12 col-lg-8">
             <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
           </div>
-          <div class="col-6 col-lg-3">
-            <input type="number" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" min="0">
-          </div>
-          <div class="col-6 col-lg-1 d-flex justify-content-end">
-            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة'))}</button>
+          <div class="col-12 col-lg-3">
+            <input type="number" class="form-control project-edit-input-xs w-100" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" min="0">
           </div>
         </div>
         <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">

@@ -69,7 +69,7 @@ registerTranslations({
 
     'projects.form.buttons.addTechnician': '➕ إضافة للطاقم',
     'projects.form.buttons.addEquipment': '➕ إضافة للمشروع',
-    'projects.form.buttons.addExpense': '➕ إضافة متطلب',
+    'projects.form.buttons.addExpense': '➕ إضافة مصروف',
     'projects.form.buttons.save': '🆕 إنشاء المشروع',
     'projects.form.buttons.update': '🔁 تحديث المشروع',
     'projects.form.taxLabel': 'شامل الضريبة (15٪)',
@@ -399,7 +399,7 @@ registerTranslations({
 
     'projects.form.buttons.addTechnician': '➕ Add to Crew',
     'projects.form.buttons.addEquipment': '➕ Add to Project',
-    'projects.form.buttons.addExpense': '➕ Add Requirement',
+    'projects.form.buttons.addExpense': '➕ Add Expense',
     'projects.form.buttons.save': '🆕 Create Project',
     'projects.form.buttons.update': '🔁 Update Project',
     'projects.form.taxLabel': 'Include VAT (15%)',
