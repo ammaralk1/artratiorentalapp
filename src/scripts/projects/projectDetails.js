@@ -1315,39 +1315,43 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
   return `
     <form id="project-details-edit-form" class="project-edit-form">
       <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-12 col-xl-8">
           <label class="form-label">${escapeHtml(t('projects.form.labels.title', 'عنوان المشروع'))}</label>
-          <input type="text" class="form-control" name="project-title" value="${escapeHtml(project.title || '')}" required>
+          <input type="text" class="form-control project-edit-input-wide" name="project-title" value="${escapeHtml(project.title || '')}" required>
         </div>
-        <div class="col-md-6">
+        <div class="col-12 col-sm-6 col-xl-4 d-flex flex-column">
           <label class="form-label">${escapeHtml(t('projects.form.labels.type', 'نوع المشروع'))}</label>
-          <select class="form-select" name="project-type" required>
+          <select class="form-select project-edit-select-xs" name="project-type" required>
             ${buildProjectTypeOptionsMarkup(project.type)}
           </select>
         </div>
-        <div class="col-md-6">
-          <label class="form-label">${escapeHtml(t('projects.form.labels.startDate', 'تاريخ البدء'))}</label>
-          <input type="date" class="form-control" name="project-start-date" value="${escapeHtml(startDate)}" required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">${escapeHtml(t('projects.form.labels.startTime', 'وقت البدء'))}</label>
-          <input type="time" class="form-control" name="project-start-time" value="${escapeHtml(startTime)}">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">${escapeHtml(t('projects.form.labels.endDate', 'تاريخ الانتهاء'))}</label>
-          <input type="date" class="form-control" name="project-end-date" value="${escapeHtml(endDate)}">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">${escapeHtml(t('projects.form.labels.endTime', 'وقت الانتهاء'))}</label>
-          <input type="time" class="form-control" name="project-end-time" value="${escapeHtml(endTime)}">
+        <div class="col-12">
+          <div class="project-edit-inline-group">
+            <div class="project-edit-inline-field">
+              <label class="form-label">${escapeHtml(t('projects.form.labels.startDate', 'تاريخ البدء'))}</label>
+              <input type="date" class="form-control" name="project-start-date" value="${escapeHtml(startDate)}" required>
+            </div>
+            <div class="project-edit-inline-field">
+              <label class="form-label">${escapeHtml(t('projects.form.labels.endDate', 'تاريخ الانتهاء'))}</label>
+              <input type="date" class="form-control" name="project-end-date" value="${escapeHtml(endDate)}">
+            </div>
+            <div class="project-edit-inline-field">
+              <label class="form-label">${escapeHtml(t('projects.form.labels.startTime', 'وقت البدء'))}</label>
+              <input type="time" class="form-control" name="project-start-time" value="${escapeHtml(startTime)}">
+            </div>
+            <div class="project-edit-inline-field">
+              <label class="form-label">${escapeHtml(t('projects.form.labels.endTime', 'وقت الانتهاء'))}</label>
+              <input type="time" class="form-control" name="project-end-time" value="${escapeHtml(endTime)}">
+            </div>
+          </div>
         </div>
         <div class="col-12">
           <label class="form-label">${escapeHtml(t('projects.form.labels.description', 'الوصف'))}</label>
-          <textarea class="form-control" name="project-description" rows="3">${escapeHtml(project.description || '')}</textarea>
+          <textarea class="form-control project-edit-textarea" name="project-description" rows="4">${escapeHtml(project.description || '')}</textarea>
         </div>
-        <div class="col-md-6">
+        <div class="col-12 col-md-4 col-xl-3">
           <label class="form-label">${escapeHtml(t('projects.form.labels.paymentStatus', 'حالة الدفع'))}</label>
-          <select class="form-select" name="project-payment-status" id="project-edit-payment-status">
+          <select class="form-select project-edit-select-xs" name="project-payment-status" id="project-edit-payment-status">
             <option value="unpaid" ${paymentStatusValue === 'unpaid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.unpaid', 'غير مدفوع'))}</option>
             <option value="partial" ${paymentStatusValue === 'partial' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.partial', 'مدفوع جزئياً'))}</option>
             <option value="paid" ${paymentStatusValue === 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.paid', 'مدفوع'))}</option>
@@ -1355,18 +1359,18 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         </div>
       </div>
 
-      <div class="row g-3 align-items-start mt-3">
-        <div class="col-md-4">
+      <div class="row g-3 align-items-start mt-1">
+        <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
-          <div class="input-group">
-            <select id="project-edit-discount-type" name="project-discount-type" class="form-select">
+          <div class="input-group project-edit-input-group">
+            <select id="project-edit-discount-type" name="project-discount-type" class="form-select project-edit-select-xs">
               <option value="percent" ${discountType === 'percent' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.percent', '٪ نسبة'))}</option>
               <option value="amount" ${discountType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.discount.amount', '💵 مبلغ'))}</option>
             </select>
-            <input type="text" id="project-edit-discount" name="project-discount" class="form-control" value="${escapeHtml(discountValue)}" placeholder="0" inputmode="decimal">
+            <input type="text" id="project-edit-discount" name="project-discount" class="form-control project-edit-input-xs" value="${escapeHtml(discountValue)}" placeholder="0" inputmode="decimal">
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label d-block" for="project-edit-company-share">${escapeHtml(t('projects.form.labels.companyShare', 'نسبة الشركة والضريبة'))}</label>
           <div class="d-flex flex-column gap-2">
             <div class="form-check form-switch m-0">
@@ -1379,18 +1383,18 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
             </div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label" for="project-edit-payment-progress-value">${escapeHtml(t('projects.form.paymentProgress.label', '💰 الدفعة المستلمة'))}</label>
           <div class="reservation-payment-progress reservation-payment-progress--flush">
             <div class="reservation-payment-progress__grid">
-              <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select">
+              <select id="project-edit-payment-progress-type" name="project-payment-progress-type" class="form-select project-edit-select-xs">
                 <option value="amount" ${paymentProgressType === 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.amount', '💵 مبلغ'))}</option>
                 <option value="percent" ${paymentProgressType !== 'amount' ? 'selected' : ''}>${escapeHtml(t('projects.form.paymentProgress.percent', '٪ نسبة'))}</option>
               </select>
-              <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
+              <input type="text" id="project-edit-payment-progress-value" name="project-payment-progress-value" class="form-control project-edit-input-xs" value="${escapeHtml(paymentProgressValue)}" placeholder="0" inputmode="decimal">
             </div>
             <div class="reservation-payment-progress__actions">
-              <button type="button" class="btn btn-outline-primary btn-sm" id="project-edit-payment-add">${escapeHtml(t('reservations.paymentHistory.actions.add', '➕ إضافة دفعة'))}</button>
+              <button type="button" class="modal-action-btn modal-action-btn--ghost project-edit-add-btn" id="project-edit-payment-add">${escapeHtml(t('reservations.paymentHistory.actions.add', '➕ إضافة دفعة'))}</button>
               <small class="form-text reservation-payment-progress__hint">${escapeHtml(t('projects.form.paymentProgress.hint', 'أدخل المبلغ أو النسبة التي تم استلامها من قيمة المشروع'))}</small>
             </div>
           </div>
@@ -1408,16 +1412,16 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </section>
 
       <section class="project-edit-expenses mt-4">
-        <h6>${escapeHtml(t('projects.form.labels.expenses', 'المصاريف'))}</h6>
+        <h6>${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
         <div class="project-edit-expense-form row g-2 align-items-center">
-          <div class="col-md-6">
-            <input type="text" class="form-control" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المصروف'))}">
+          <div class="col-12 col-lg-8">
+            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
           </div>
-          <div class="col-md-4">
-            <input type="number" class="form-control" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" min="0">
+          <div class="col-6 col-lg-3">
+            <input type="number" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" min="0">
           </div>
-          <div class="col-md-2">
-            <button class="btn btn-secondary w-100" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', 'إضافة'))}</button>
+          <div class="col-6 col-lg-1 d-flex justify-content-end">
+            <button type="button" class="modal-action-btn modal-action-btn--ghost project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة'))}</button>
           </div>
         </div>
         <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">
