@@ -8,6 +8,10 @@ import {
 } from '../projectsService.js';
 import { getReservationsState } from '../reservationsService.js';
 import {
+  getReservationUIHandler,
+  waitForReservationUIHandler
+} from '../reservations/uiBridge.js';
+import {
   calculateReservationTotal,
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
@@ -473,15 +477,37 @@ export function bindProjectDetailsEvents(project) {
   }
 
   if (reservationContainer) {
-    reservationContainer.addEventListener('click', (event) => {
+    const openReservationDetails = async (index) => {
+      if (!Number.isInteger(index) || index < 0) {
+        return false;
+      }
+
+      const immediate = getReservationUIHandler('showReservationDetails');
+      if (typeof immediate === 'function') {
+        immediate(index);
+        return true;
+      }
+
+      try {
+        const handler = await waitForReservationUIHandler('showReservationDetails');
+        if (typeof handler === 'function') {
+          handler(index);
+          return true;
+        }
+      } catch (error) {
+        console.warn('⚠️ [projects/projectDetails] Unable to resolve reservation UI handler', error);
+      }
+      return false;
+    };
+
+    reservationContainer.addEventListener('click', async (event) => {
       const actionButton = event.target.closest('[data-action="view-reservation"]');
       if (!actionButton) return;
       const indexAttr = actionButton.dataset.index || actionButton.dataset.reservationIndex;
       const index = Number.parseInt(indexAttr || '-1', 10);
       if (!Number.isInteger(index) || index < 0) return;
-      if (typeof window.showReservationDetails === 'function') {
-        window.showReservationDetails(index);
-      } else {
+      const opened = await openReservationDetails(index);
+      if (!opened) {
         window.location.href = 'dashboard.html#reservations';
       }
     });

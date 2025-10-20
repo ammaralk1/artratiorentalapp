@@ -6,6 +6,10 @@ import { t } from "./language.js";
 import { ensureReservationsLoaded } from "./reservationsActions.js";
 import { getReservationsState } from "./reservationsService.js";
 import {
+  getReservationUIHandler,
+  waitForReservationUIHandler
+} from "./reservations/uiBridge.js";
+import {
   buildProjectFocusCard,
   buildProjectDetailsMarkup,
   buildProjectEditMarkup,
@@ -690,9 +694,32 @@ function attachTechnicianReservationViewHandlers(modalBody) {
   const buttons = modalBody.querySelectorAll('[data-action="view-reservation"]');
   if (!buttons.length) return;
 
+  async function openReservationDetails(index) {
+    if (!Number.isInteger(index) || index < 0) {
+      return false;
+    }
+
+    const immediate = getReservationUIHandler('showReservationDetails');
+    if (typeof immediate === 'function') {
+      immediate(index);
+      return true;
+    }
+
+    try {
+      const handler = await waitForReservationUIHandler('showReservationDetails');
+      if (typeof handler === 'function') {
+        handler(index);
+        return true;
+      }
+    } catch (error) {
+      console.warn('⚠️ [technicianDetails] Unable to resolve reservation UI handler', error);
+    }
+    return false;
+  }
+
   buttons.forEach((button) => {
     if (button.dataset.listenerAttached === 'true') return;
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', async (event) => {
       event.preventDefault();
       event.stopPropagation();
       const reservationsState = getReservationsState();
@@ -708,9 +735,8 @@ function attachTechnicianReservationViewHandlers(modalBody) {
         }
       }
 
-      if (Number.isInteger(index) && index >= 0 && typeof window.showReservationDetails === 'function') {
-        window.showReservationDetails(index);
-      } else {
+      const opened = await openReservationDetails(index);
+      if (!opened) {
         showToast(t('projects.details.reservations.viewUnavailable', 'تعذر فتح تفاصيل الحجز الآن'));
       }
     });

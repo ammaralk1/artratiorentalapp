@@ -19,6 +19,10 @@ import { initReports } from './scripts/reports.js';
 import { initDashboardMetrics } from './scripts/dashboardMetrics.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
+import {
+  getReservationUIHandler,
+  waitForReservationUIHandler
+} from './scripts/reservations/uiBridge.js';
 
 applyStoredTheme();
 
@@ -187,22 +191,18 @@ function waitForReservationSubTab(subTabId) {
   });
 }
 
-function waitForReservationEditorReady() {
-  return new Promise((resolve) => {
-    if (typeof window.editReservation === 'function') {
-      resolve();
-      return;
-    }
+async function waitForReservationEditorReady() {
+  const directHandler = getReservationUIHandler('openReservationEditor');
+  if (typeof directHandler === 'function') {
+    return directHandler;
+  }
 
-    const handleGlobalsReady = () => {
-      if (typeof window.editReservation === 'function') {
-        document.removeEventListener('reservations:globals-ready', handleGlobalsReady);
-        resolve();
-      }
-    };
+  const handler = await waitForReservationUIHandler('openReservationEditor');
+  if (typeof handler === 'function') {
+    return handler;
+  }
 
-    document.addEventListener('reservations:globals-ready', handleGlobalsReady);
-  });
+  throw new Error('Reservation editor handler is unavailable');
 }
 
 async function applyPendingReservationEdit() {
@@ -244,9 +244,7 @@ async function applyPendingReservationEdit() {
     try {
       await waitForDashboardTab(tabId);
       await waitForReservationSubTab(subTabId);
-      await waitForReservationEditorReady();
-
-      const openEditor = window.editReservation;
+      const openEditor = await waitForReservationEditorReady();
       if (typeof openEditor === 'function') {
         openEditor(targetIndex);
       } else {

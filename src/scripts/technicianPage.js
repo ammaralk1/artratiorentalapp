@@ -3,6 +3,7 @@ import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { renderTechnicianReservations, renderTechnicianProjects, normalizeTechnicianAssignments } from './technicianDetails.js';
 import { showReservationDetails } from './reservationsUI.js';
+import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
@@ -908,7 +909,7 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-window.showReservationDetails = showReservationDetails;
+setReservationsUIHandlers({ showReservationDetails });
 
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn && !logoutBtn.dataset.listenerAttached) {

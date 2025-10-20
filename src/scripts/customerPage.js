@@ -4,6 +4,7 @@ import { checkAuth, logout } from './auth.js';
 import { loadData, saveData, migrateOldData } from './storage.js';
 import { renderCustomerReservations, renderCustomerProjects } from './customerDetails.js';
 import { showReservationDetails } from './reservationsUI.js';
+import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -26,7 +27,7 @@ if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
   logoutBtn.dataset.listenerAttached = 'true';
 }
 
-window.showReservationDetails = showReservationDetails;
+setReservationsUIHandlers({ showReservationDetails });
 
 const params = new URLSearchParams(window.location.search);
 const customerId = params.get('id');

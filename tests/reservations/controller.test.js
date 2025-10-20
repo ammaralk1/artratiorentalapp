@@ -137,8 +137,12 @@ const setMockLocation = () => {
 };
 
 describe('reservations/controller module', () => {
-  beforeEach(() => {
+  let uiBridge;
+
+  beforeEach(async () => {
     resetEnvironment();
+    uiBridge = await import('../../src/scripts/reservations/uiBridge.js');
+    uiBridge.__resetReservationsUIHandlersForTests();
   });
 
   afterEach(() => {
@@ -148,6 +152,7 @@ describe('reservations/controller module', () => {
     document.documentElement.className = '';
     delete window.refreshCustomerReservationsViews;
     delete window.refreshTechnicianReservationsViews;
+    uiBridge = undefined;
   });
 
   it('loadReservationForm loads technicians and refreshes form', async () => {
@@ -305,14 +310,18 @@ describe('reservations/controller module', () => {
     restoreLocation();
   });
 
-  it('registerReservationGlobals exposes public APIs on window', async () => {
+  it('registerReservationGlobals publishes handlers to the reservations UI service', async () => {
     const module = await import('../../src/scripts/reservations/controller.js');
 
     module.registerReservationGlobals();
 
-    expect(window.showReservationDetails).toBe(module.showReservationDetails);
-    expect(window.deleteReservation).toBe(module.deleteReservation);
-    expect(window.confirmReservation).toBe(module.confirmReservation);
-    expect(window.editReservation).toBe(module.openReservationEditor);
+    const handlers = uiBridge.getReservationsUIHandlers();
+
+    expect(handlers.showReservationDetails).toBe(module.showReservationDetails);
+    expect(handlers.deleteReservation).toBe(module.deleteReservation);
+    expect(handlers.confirmReservation).toBe(module.confirmReservation);
+    expect(handlers.openReservationEditor).toBe(module.openReservationEditor);
+
+    expect(uiBridge.getReservationUIHandler('openReservationEditor')).toBe(module.openReservationEditor);
   });
 });

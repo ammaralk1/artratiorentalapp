@@ -38,6 +38,7 @@ import {
 } from './formUtils.js';
 import { updatePreferences } from '../preferencesService.js';
 import { ensureProjectsLoaded } from '../projectsService.js';
+import { setReservationsUIHandlers } from './uiBridge.js';
 
 export function loadReservationForm() {
   return ensureProjectsLoaded().catch((error) => {
@@ -190,16 +191,12 @@ export function openReservationEditor(index, reservation = null) {
 }
 
 export function registerReservationGlobals() {
-  if (typeof window === 'undefined') return;
-
-  window.showReservationDetails = showReservationDetails;
-  window.deleteReservation = deleteReservation;
-  window.confirmReservation = confirmReservation;
-  window.editReservation = openReservationEditor;
-
-  if (typeof document !== 'undefined') {
-    document.dispatchEvent(new CustomEvent('reservations:globals-ready'));
-  }
+  setReservationsUIHandlers({
+    showReservationDetails,
+    deleteReservation,
+    confirmReservation,
+    openReservationEditor,
+  });
 }
 
 export {
