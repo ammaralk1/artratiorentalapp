@@ -285,7 +285,6 @@ body,
 .quote-section--project .info-plain,
 .quote-section--project .info-plain__item {
   text-align: right;
-  align-items: flex-end;
   justify-content: flex-end;
 }
 
