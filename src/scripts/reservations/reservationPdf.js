@@ -275,9 +275,9 @@ const PROJECT_EQUIPMENT_COLUMN_DEFS = [
 const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'customerInfo', labelKey: 'projects.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
   { id: 'projectInfo', labelKey: 'projects.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
-  { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'الفريق الفني', defaultSelected: true },
+  { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'متطلبات المشروع', defaultSelected: true },
+  { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
-  { id: 'projectExpenses', labelKey: 'projects.quote.sections.expenses', fallback: 'المصاريف', defaultSelected: true },
   { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
   { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true }
 ];
@@ -304,8 +304,8 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع' }
   ],
   payment: QUOTE_FIELD_DEFS.payment,
-  projectCrew: PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectExpenses: PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectCrew: PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectEquipment: PROJECT_EQUIPMENT_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectNotes: []
 };
@@ -2560,10 +2560,10 @@ function buildProjectQuotationHtml({
     : '';
 
   const crewColumns = PROJECT_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('projectCrew', column.id));
-  const crewSectionMarkup = includeSection('projectCrew')
+const crewSectionMarkup = includeSection('projectCrew')
     ? (crewColumns.length
         ? `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'طاقم العمل'))}</h3>
             <table class="quote-table">
               <thead>
                 <tr>${crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
@@ -2575,7 +2575,7 @@ function buildProjectQuotationHtml({
             </table>
           </section>`
         : `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.crew', 'الفريق الفني'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.crew', 'طاقم العمل'))}</h3>
             ${noFieldsMessage}
           </section>`)
     : '';
