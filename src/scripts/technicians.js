@@ -233,6 +233,12 @@ function activateTechnicianSubTab(target) {
 
   activeTechnicianSubTab = desired;
 
+  const activeButton = buttons.find((btn) => btn?.getAttribute('data-tech-tab') === desired);
+  const scrollRoot = activeButton?.closest('[data-tab-scroll]');
+  if (scrollRoot) {
+    scrollRoot.dispatchEvent(new CustomEvent('tabScroll:update', { bubbles: true }));
+  }
+
   if (desired === 'technicians-positions') {
     renderPositionsTable();
     ensureTechnicianPositionsLoaded()
@@ -744,6 +750,9 @@ function collectPositionForm() {
   const nameAr = nameArInput?.value.trim() || "";
   const nameEn = nameEnInput?.value.trim() || "";
   const baseName = nameEn || nameAr;
+  const existing = editingPositionId
+    ? getTechnicianPositionsCache().find((item) => String(item.id) === String(editingPositionId))
+    : null;
   const costValue = normalizeMoneyValue(costInput.value.trim());
   costInput.value = costValue;
   const cost = costValue === "" ? 0 : parseFloat(costValue);
@@ -772,7 +781,7 @@ function collectPositionForm() {
 
   return {
     id: editingPositionId,
-    name: baseName,
+    name: existing?.name || baseName,
     cost: Number(cost.toFixed(2)),
     clientPrice: clientPrice == null ? null : Number(clientPrice.toFixed(2)),
     labelAr: nameAr || null,

@@ -35,7 +35,7 @@ function setPositionsCache(list) {
     ? list
         .map(mapTechnicianPositionFromApi)
         .filter((item) => item.name !== '')
-        .sort((a, b) => a.name.localeCompare(b.name, 'ar', { sensitivity: 'base' }))
+        .sort((a, b) => getPositionSortKey(a).localeCompare(getPositionSortKey(b), 'ar', { sensitivity: 'base' }))
     : [];
   loaded = true;
   dispatchUpdate();

@@ -507,13 +507,43 @@
         </div>
 
         <div class="tech-subtabs-container" data-tech-tabs>
-          <div class="tabs tabs-boxed tech-subtabs" role="tablist">
-            <button type="button" class="tab tech-subtab-button tab-active" data-tech-tab="technicians-management" aria-selected="true" data-i18n data-i18n-key="technicians.subTabs.management">⚙️ إدارة الطاقم</button>
-            <button type="button" class="tab tech-subtab-button" data-tech-tab="technicians-positions" aria-selected="false" data-i18n data-i18n-key="technicians.subTabs.positions">🏷️ المناصب</button>
+          <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
+            <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+              <span aria-hidden="true">‹</span>
+            </button>
+            <div class="tab-scroll-track" data-tab-scroll-track>
+              <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
+                <button
+                  type="button"
+                  class="sub-tab-button tab tab-active tech-subtab-button"
+                  id="tech-subtab-trigger-management"
+                  data-tech-tab="technicians-management"
+                  role="tab"
+                  aria-selected="true"
+                  aria-controls="technicians-management-panel"
+                  data-i18n
+                  data-i18n-key="technicians.subTabs.management"
+                >⚙️ إدارة الطاقم</button>
+                <button
+                  type="button"
+                  class="sub-tab-button tab tech-subtab-button"
+                  id="tech-subtab-trigger-positions"
+                  data-tech-tab="technicians-positions"
+                  role="tab"
+                  aria-selected="false"
+                  aria-controls="technicians-positions-panel"
+                  data-i18n
+                  data-i18n-key="technicians.subTabs.positions"
+                >🏷️ المناصب</button>
+              </div>
+            </div>
+            <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+              <span aria-hidden="true">›</span>
+            </button>
           </div>
         </div>
 
-        <div class="tech-subtab-panel" data-tech-tab-panel="technicians-management">
+        <div class="tech-subtab-panel sub-tab" id="technicians-management-panel" data-tech-tab-panel="technicians-management" role="tabpanel" aria-labelledby="tech-subtab-trigger-management">
           <!-- ✅ نموذج إضافة فني -->
           <div class="box add-technicians-box management-form-box mb-4">
             <div class="management-form-header">
@@ -598,7 +628,7 @@
           </div>
         </div>
 
-        <div class="tech-subtab-panel" data-tech-tab-panel="technicians-positions" hidden>
+        <div class="tech-subtab-panel sub-tab" id="technicians-positions-panel" data-tech-tab-panel="technicians-positions" role="tabpanel" aria-labelledby="tech-subtab-trigger-positions" hidden>
           <!-- ✅ إدارة المناصب -->
           <div class="box positions-form-box management-form-box mb-4">
             <div class="management-form-header">
