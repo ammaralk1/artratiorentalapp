@@ -4064,20 +4064,29 @@ async function exportQuoteAsPdf() {
     await ensureHtml2Pdf();
     logPdfDebug('html2pdf ensured');
 
+    const context = activeQuoteState.context || 'reservation';
     const html = buildQuotationHtml({
+      context,
       reservation: activeQuoteState.reservation,
       customer: activeQuoteState.customer,
       project: activeQuoteState.project,
-    technicians: activeQuoteState.technicians,
-    totals: activeQuoteState.totals,
-    totalsDisplay: activeQuoteState.totalsDisplay,
+      technicians: activeQuoteState.technicians,
+      totals: activeQuoteState.totals,
+      totalsDisplay: activeQuoteState.totalsDisplay,
       rentalDays: activeQuoteState.rentalDays,
       currencyLabel: activeQuoteState.currencyLabel,
       sections: activeQuoteState.sections,
       fieldSelections: activeQuoteState.fields,
       quoteNumber: activeQuoteState.quoteNumber,
       quoteDate: activeQuoteState.quoteDateLabel,
-      terms: activeQuoteState.terms
+      terms: activeQuoteState.terms,
+      projectExpenses: activeQuoteState.projectExpenses,
+      projectEquipment: activeQuoteState.projectEquipment,
+      projectReservations: activeQuoteState.projectReservations,
+      projectInfo: activeQuoteState.projectInfo,
+      clientInfo: activeQuoteState.clientInfo,
+      paymentSummary: activeQuoteState.paymentSummary,
+      projectTotals: activeQuoteState.projectTotals
     });
 
     container = document.createElement('div');
