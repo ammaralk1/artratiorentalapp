@@ -8,6 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:reservations": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.js",
+    "integration:up": "docker compose -f tests/integration/docker-compose.yml up -d",
+    "integration:down": "docker compose -f tests/integration/docker-compose.yml down -v",
     "predeploy": "npm run test:reservations && npm run build",
     "deploy": "gh-pages -d dist"
   },

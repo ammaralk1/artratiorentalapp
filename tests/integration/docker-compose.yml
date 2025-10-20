@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: art_ratio_test_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: art_ratio_test
+      MYSQL_USER: art_ratio
+      MYSQL_PASSWORD: testpassword
+      TZ: Asia/Riyadh
+    ports:
+      - '33306:3306'
+    volumes:
+      - ./docker/init:/docker-entrypoint-initdb.d
+      - ../../backend/sql:/docker-entrypoint-initdb.d/base:ro
+
+  php:
+    image: php:8.2-cli
+    container_name: art_ratio_test_php
+    depends_on:
+      - db
+    working_dir: /app
+    volumes:
+      - ../../backend:/app/backend
+      - ./config.testing.php:/app/backend/config.php:ro
+    command: >-
+      sh -c "php -S 0.0.0.0:8080 -t backend"
+    environment:
+      TZ: Asia/Riyadh
+
+networks:
+  default:
+    name: art_ratio_test_network
