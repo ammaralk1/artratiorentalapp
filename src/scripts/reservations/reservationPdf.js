@@ -2522,14 +2522,14 @@ function buildProjectQuotationHtml({
     : '';
 
   const projectFieldItems = [];
+  if (isFieldEnabled('projectInfo', 'projectType')) {
+    projectFieldItems.push(renderPlainItem(t('projects.details.type', 'نوع المشروع'), projectInfo.typeLabel || '-'));
+  }
   if (isFieldEnabled('projectInfo', 'projectTitle')) {
     projectFieldItems.push(renderPlainItem(t('projects.details.projectTitle', 'اسم المشروع'), projectInfo.title || '-'));
   }
   if (isFieldEnabled('projectInfo', 'projectCode')) {
     projectFieldItems.push(renderPlainItem(t('projects.details.labels.code', 'رقم المشروع'), projectInfo.code || '-'));
-  }
-  if (isFieldEnabled('projectInfo', 'projectType')) {
-    projectFieldItems.push(renderPlainItem(t('projects.details.type', 'نوع المشروع'), projectInfo.typeLabel || '-'));
   }
   if (isFieldEnabled('projectInfo', 'projectStart')) {
     projectFieldItems.push(renderPlainItem(t('projects.details.start', 'بداية المشروع'), projectInfo.startDisplay || '-'));
@@ -2577,7 +2577,7 @@ function buildProjectQuotationHtml({
     financialInlineItems.push(renderTotalsItem(t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), totalsDisplay.projectSubtotal || `${formatCurrencyValue(0, currencyLabel)}`));
   }
   if (isFieldEnabled('financialSummary', 'expensesTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي المصاريف'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
+    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي متطلبات المشروع'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
   }
   if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
     financialInlineItems.push(renderTotalsItem(t('projects.details.reservationsTotal', 'إجمالي الحجوزات'), totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
@@ -2619,19 +2619,19 @@ function buildProjectQuotationHtml({
   const expensesSectionMarkup = includeSection('projectExpenses')
     ? (expensesColumns.length
         ? `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'متطلبات المشروع'))}</h3>
             <table class="quote-table">
               <thead>
                 <tr>${expensesColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
               <tbody>${projectExpenses.length
                 ? projectExpenses.map((expense, index) => `<tr>${expensesColumns.map((column) => `<td>${column.render(expense, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد مصاريف مسجلة.'))}</td></tr>`}
+                : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد متطلبات مسجلة.'))}</td></tr>`}
               </tbody>
             </table>
           </section>`
         : `<section class="quote-section quote-section--table">
-            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'المصاريف'))}</h3>
+            <h3>${escapeHtml(t('projects.quote.sections.expenses', 'متطلبات المشروع'))}</h3>
             ${noFieldsMessage}
           </section>`)
     : '';
