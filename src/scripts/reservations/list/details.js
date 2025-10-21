@@ -169,6 +169,42 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       return true;
     });
 
+  const items = reservation.items || [];
+  const groupedItems = groupReservationItems(items);
+
+  packageGroups.forEach((pkgGroup) => {
+    pkgGroup.items.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      groupedItems.push(entry);
+    });
+  });
+
+  const filteredGroupedItems = groupedItems.filter((group) => {
+    const representsPackage = group.items.some((item) => item?.type === 'package');
+    if (representsPackage && packageGroups.length > 0) {
+      return false;
+    }
+
+    const everyItemFromPackage = group.items.every((item) => {
+      const eqId = resolveEquipmentIdentifier(item);
+      const normalizedEqId = eqId != null ? String(eqId) : null;
+      if (normalizedEqId && packageEquipmentIds.has(normalizedEqId)) {
+        return true;
+      }
+      const normalizedBarcode = item?.barcode ? normalizeBarcodeValue(item.barcode) : null;
+      if (normalizedBarcode && normalizedPackageBarcodes.has(normalizedBarcode)) {
+        return true;
+      }
+      return false;
+    });
+
+    if (everyItemFromPackage) {
+      return false;
+    }
+
+    return true;
+  });
+
   const displayGroups = packageGroups.length
     ? [...packageGroups, ...filteredGroupedItems]
     : groupedItems;
