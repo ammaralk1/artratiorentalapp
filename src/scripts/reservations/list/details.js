@@ -86,18 +86,33 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   };
 
   const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
-    const quantity = Number(group?.count ?? group?.quantity ?? 1) || 1;
-    const rawUnitPrice = Number(group?.unitPrice);
-    let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
-    if (!unitPrice || unitPrice <= 0) {
-      const totalCandidate = Number(group?.totalPrice);
+    const representative = (Array.isArray(group?.items) && group.items.length) ? group.items[0] : {};
+    const quantity = Number(group?.count ?? group?.quantity ?? representative?.qty ?? 1) || 1;
+
+    const candidatePrices = [
+      representative?.price,
+      representative?.unit_price,
+      representative?.unitPrice,
+      group?.unitPrice
+    ];
+
+    let unitPrice = candidatePrices.reduce((value, candidate) => {
+      if (Number.isFinite(value) && value > 0) return value;
+      const parsed = Number(candidate);
+      return Number.isFinite(parsed) ? parsed : value;
+    }, NaN);
+
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      const totalCandidate = Number(group?.totalPrice ?? representative?.total ?? representative?.total_price);
       if (Number.isFinite(totalCandidate) && quantity > 0) {
         unitPrice = Number((totalCandidate / quantity).toFixed(2));
       }
     }
+
     if (!Number.isFinite(unitPrice)) {
       unitPrice = 0;
     }
+
     return sum + (unitPrice * quantity);
   }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
@@ -387,10 +402,38 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
         const isPackageGroup = group.items.some((item) => item?.type === 'package');
-        const quantityValue = Number(group.quantity) || Number(group.count) || 0;
+        const quantityValue = Number(group.quantity ?? group.count ?? representative?.qty ?? 0) || 0;
         const quantityDisplay = normalizeNumbers(String(quantityValue));
-        const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
-        const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * quantityValue;
+
+        const candidatePrices = [
+          representative?.price,
+          representative?.unit_price,
+          representative?.unitPrice,
+          group.unitPrice
+        ];
+
+        let unitPriceNumber = candidatePrices.reduce((value, candidate) => {
+          if (Number.isFinite(value) && value > 0) return value;
+          const parsed = Number(candidate);
+          return Number.isFinite(parsed) ? parsed : value;
+        }, NaN);
+
+        if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
+          const totalCandidate = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+          if (Number.isFinite(totalCandidate) && quantityValue > 0) {
+            unitPriceNumber = Number((totalCandidate / quantityValue).toFixed(2));
+          }
+        }
+
+        if (!Number.isFinite(unitPriceNumber)) {
+          unitPriceNumber = 0;
+        }
+
+        let totalPriceNumber = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+        if (!Number.isFinite(totalPriceNumber)) {
+          totalPriceNumber = unitPriceNumber * quantityValue;
+        }
+
         const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
         const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
         const normalizedBarcodes = group.barcodes

@@ -109,51 +109,13 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
     id: 'code',
     labelKey: 'reservations.details.table.headers.code',
     fallback: 'الكود',
-    render: (item) => {
-      if (!item) return '-';
-      const codes = [];
-      if (item.barcode) {
-        codes.push(item.barcode);
-      }
-      if (Array.isArray(item.barcodes)) {
-        item.barcodes.filter(Boolean).forEach((code) => {
-          if (!codes.includes(code)) codes.push(code);
-        });
-      }
-      if (Array.isArray(item.packageItems)) {
-        item.packageItems.forEach((pkgItem) => {
-          if (pkgItem?.barcode && !codes.includes(pkgItem.barcode)) {
-            codes.push(pkgItem.barcode);
-          }
-        });
-      }
-      if (!codes.length) {
-        return '-';
-      }
-      return codes.map((code) => `<span class="quote-item-code">${escapeHtml(String(code))}</span>`).join('<br>');
-    }
+    render: (item) => escapeHtml(item?.barcode || '-')
   },
   {
     id: 'description',
     labelKey: 'reservations.details.table.headers.description',
     fallback: 'الوصف',
-    render: (item) => {
-      const base = escapeHtml(item?.desc || item?.description || '-');
-      if (!Array.isArray(item?.packageItems) || item.packageItems.length === 0) {
-        return base;
-      }
-
-      const itemsMarkup = item.packageItems
-        .map((pkgItem) => {
-          const label = escapeHtml(pkgItem?.desc || pkgItem?.name || pkgItem?.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'));
-          const qty = normalizeNumbers(String(pkgItem?.qty ?? 1));
-          const barcode = pkgItem?.barcode ? ` <span class="quote-package-barcode">(${escapeHtml(pkgItem.barcode)})</span>` : '';
-          return `<li>${label}${barcode} × ${qty}</li>`;
-        })
-        .join('');
-
-      return `${base}<ul class="quote-package-items">${itemsMarkup}</ul>`;
-    }
+    render: (item) => escapeHtml(item?.desc || item?.description || '-')
   },
   {
     id: 'quantity',
@@ -1651,18 +1613,33 @@ function collectReservationFinancials(reservation, technicians, project) {
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
   const { groups: displayGroups } = buildReservationDisplayGroups(reservation);
   const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
-    const quantity = Number(group?.count ?? group?.quantity ?? 1) || 1;
-    const rawUnitPrice = Number(group?.unitPrice);
-    let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
-    if (!unitPrice || unitPrice <= 0) {
-      const totalCandidate = Number(group?.totalPrice);
+    const representative = (Array.isArray(group?.items) && group.items.length) ? group.items[0] : {};
+    const quantity = Number(group?.count ?? group?.quantity ?? representative?.qty ?? 1) || 1;
+
+    const candidatePrices = [
+      representative?.price,
+      representative?.unit_price,
+      representative?.unitPrice,
+      group?.unitPrice
+    ];
+
+    let unitPrice = candidatePrices.reduce((value, candidate) => {
+      if (Number.isFinite(value) && value > 0) return value;
+      const parsed = Number(candidate);
+      return Number.isFinite(parsed) ? parsed : value;
+    }, NaN);
+
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      const totalCandidate = Number(group?.totalPrice ?? representative?.total ?? representative?.total_price);
       if (Number.isFinite(totalCandidate) && quantity > 0) {
         unitPrice = Number((totalCandidate / quantity).toFixed(2));
       }
     }
+
     if (!Number.isFinite(unitPrice)) {
       unitPrice = 0;
     }
+
     return sum + (unitPrice * quantity);
   }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
@@ -2905,13 +2882,6 @@ function buildQuotationHtml(options) {
     const isPackage = group?.type === 'package'
       || (Array.isArray(group?.items) && group.items.some((item) => item?.type === 'package'));
 
-    const packageItems = isPackage
-      ? (group?.packageItems
-        ?? (Array.isArray(group?.items)
-          ? group.items.flatMap((item) => Array.isArray(item?.packageItems) ? item.packageItems : [])
-          : []))
-      : [];
-
     const fallbackBarcode = Array.isArray(group?.barcodes) && group.barcodes.length
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
@@ -2927,7 +2897,6 @@ function buildQuotationHtml(options) {
     return {
       ...group,
       isPackage,
-      packageItems,
       desc: group?.description,
       barcode,
       qty: count,
