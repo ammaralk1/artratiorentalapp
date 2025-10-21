@@ -45,6 +45,61 @@ function writeReservationPackagesCache(cache) {
   }
 }
 
+function normalizePackagesForCache(packages = []) {
+  if (!Array.isArray(packages)) return [];
+  return packages
+    .map((pkg, index) => convertReservationPackageEntry(pkg, index))
+    .filter(Boolean)
+    .map((pkg, index) => {
+      const normalizedId = normalizePackageId(
+        pkg.packageId
+          ?? pkg.package_id
+          ?? pkg.package_code
+          ?? pkg.code
+          ?? pkg.id
+          ?? `pkg-${index}`
+      );
+
+      const normalizedItems = normalizeReservationPackageItemsFromEntry(pkg, normalizedId).map((item) => {
+        const childQty = toPositiveInt(item.qty ?? item.quantity ?? 1);
+        const childPrice = toNumber(item.price ?? item.unit_price ?? 0);
+        return {
+          ...item,
+          qty: childQty,
+          quantity: childQty,
+          price: childPrice,
+          unit_price: childPrice,
+        };
+      });
+
+      const quantity = toPositiveInt(pkg.quantity ?? pkg.qty ?? 1);
+      let unitPrice = toNumber(pkg.unit_price ?? pkg.unitPrice ?? pkg.price ?? 0);
+      if (!unitPrice || unitPrice <= 0) {
+        const itemsTotal = normalizedItems.reduce((sum, item) => sum + ((item.price || 0) * (item.qty || 1)), 0);
+        if (itemsTotal > 0 && quantity > 0) {
+          unitPrice = Number((itemsTotal / quantity).toFixed(2));
+        }
+      }
+
+      const totalRaw = toNumber(pkg.total_price ?? pkg.totalPrice ?? pkg.total ?? (unitPrice * quantity));
+      const total = totalRaw > 0 ? totalRaw : Number((unitPrice * quantity).toFixed(2));
+
+      return {
+        ...pkg,
+        packageId: normalizedId,
+        package_id: normalizedId,
+        qty: quantity,
+        quantity,
+        unit_price: unitPrice,
+        unitPrice,
+        price: unitPrice,
+        total_price: total,
+        total,
+        packageItems: normalizedItems,
+      };
+    });
+}
+
 function persistReservationPackagesToCache(reservationId, packages) {
   if (!reservationId) return;
   const cache = readReservationPackagesCache();
@@ -57,7 +112,7 @@ function persistReservationPackagesToCache(reservationId, packages) {
     return;
   }
 
-  cache[key] = packages.map((pkg) => ({ ...pkg }));
+  cache[key] = normalizePackagesForCache(packages);
   writeReservationPackagesCache(cache);
 }
 
@@ -69,7 +124,7 @@ function getCachedReservationPackages(reservationId) {
   if (!Array.isArray(entry)) {
     return [];
   }
-  return entry.map((pkg) => ({ ...pkg }));
+  return normalizePackagesForCache(entry);
 }
 
 export function getReservationsState() {

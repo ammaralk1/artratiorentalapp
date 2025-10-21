@@ -1,10 +1,8 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted, resolveReservationProjectState, groupReservationItems, resolveEquipmentIdentifier } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
-import { resolvePackageItems, normalizePackageId } from '../../reservationsPackages.js';
-import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
@@ -24,153 +22,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
-  const groupedItems = groupReservationItems(items);
-
-
-  const packagesMap = new Map();
-
-  const registerPackageSource = (pkg, indexHint = 0) => {
-    if (!pkg || typeof pkg !== 'object') return;
-
-    const normalizedId = normalizePackageId(
-      pkg?.package_code
-      ?? pkg?.packageId
-      ?? pkg?.package_id
-      ?? pkg?.code
-      ?? pkg?.id
-      ?? pkg?.barcode
-      ?? `pkg-${indexHint}`
-    );
-
-    const key = normalizedId || `pkg-${indexHint}`;
-    if (!packagesMap.has(key)) {
-      packagesMap.set(key, { source: pkg, normalizedId: key, index: indexHint });
-    }
-  };
-
-  if (Array.isArray(reservation.packages)) {
-    reservation.packages.forEach((pkg, idx) => registerPackageSource(pkg, idx));
-  }
-
-  items.forEach((item, idx) => {
-    if (item && typeof item === 'object' && (item.type === 'package' || Array.isArray(item?.packageItems))) {
-      registerPackageSource(item, idx + packagesMap.size);
-    }
-  });
-
-  const packageGroups = [];
-  const packageBarcodes = new Set();
-  const packageEquipmentIds = new Set();
-
-  packagesMap.forEach(({ source: pkg, normalizedId }, mapKey) => {
-    const resolvedItems = resolvePackageItems(pkg).map((item) => ({
-      ...item,
-      normalizedBarcode: item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode),
-      qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
-    }));
-
-    resolvedItems.forEach((item) => {
-      const normalizedBarcode = item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode);
-      if (normalizedBarcode) {
-        packageBarcodes.add(normalizedBarcode);
-      }
-      const equipmentId = item?.equipmentId ?? item?.equipment_id ?? null;
-      if (equipmentId != null) {
-        packageEquipmentIds.add(String(equipmentId));
-      }
-    });
-
-    const packageQty = Number.isFinite(Number(pkg?.quantity ?? pkg?.qty ?? pkg?.count))
-      ? Number(pkg.quantity ?? pkg.qty ?? pkg.count)
-      : 1;
-
-    const unitPriceRaw = Number.isFinite(Number(pkg?.unit_price ?? pkg?.price ?? pkg?.unitPrice))
-      ? Number(pkg.unit_price ?? pkg.price ?? pkg.unitPrice)
-      : 0;
-
-    const itemsTotal = resolvedItems.reduce((sum, item) => {
-      const price = Number.isFinite(Number(item?.price)) ? Number(item.price) : 0;
-      const qty = Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1;
-      return sum + (price * qty);
-    }, 0);
-
-    const totalPriceRaw = Number.isFinite(Number(pkg?.total ?? pkg?.total_price ?? pkg?.totalPrice))
-      ? Number(pkg.total ?? pkg.total_price ?? pkg.totalPrice)
-      : (unitPriceRaw ? unitPriceRaw * packageQty : itemsTotal);
-
-    const effectiveUnitPrice = packageQty > 0
-      ? (totalPriceRaw / packageQty)
-      : unitPriceRaw;
-
-    const packageBarcode = pkg?.package_code ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.barcode ?? null;
-    if (packageBarcode) {
-      const normalizedPkgBarcode = normalizeBarcodeValue(packageBarcode);
-      if (normalizedPkgBarcode) {
-        packageBarcodes.add(normalizedPkgBarcode);
-      }
-    }
-
-    const barcodesList = resolvedItems
-      .map((item) => normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')))
-      .filter(Boolean);
-
-    packageGroups.push({
-      key: `package::${mapKey}`,
-      description: pkg?.name || pkg?.package_name || pkg?.title || normalizeNumbers(String(packageBarcode ?? mapKey)),
-      normalizedDescription: normalizeNumbers(String(pkg?.name || pkg?.package_name || '')),
-      unitPrice: effectiveUnitPrice,
-      totalPrice: totalPriceRaw,
-      quantity: packageQty,
-      count: packageQty,
-      image: resolvedItems.find((item) => item?.image)?.image ?? null,
-      barcodes: barcodesList,
-      items: [{
-        type: 'package',
-        packageItems: resolvedItems,
-        packageId: normalizedId,
-        desc: pkg?.name || pkg?.package_name || '',
-        price: effectiveUnitPrice,
-        qty: packageQty,
-        barcode: packageBarcode,
-      }],
-    });
-  });
-
-  const normalizedPackageBarcodes = new Set(
-    Array.from(packageBarcodes)
-      .map((code) => normalizeBarcodeValue(code))
-      .filter(Boolean)
-  );
-
-  const filteredGroupedItems = groupedItems.filter((group) => {
-    const representsPackage = group.items.some((item) => item?.type === 'package');
-    if (representsPackage && packageGroups.length > 0) {
-      return false;
-    }
-
-    const everyItemFromPackage = group.items.every((item) => {
-      const eqId = resolveEquipmentIdentifier(item);
-      const normalizedEqId = eqId != null ? String(eqId) : null;
-      if (normalizedEqId && packageEquipmentIds.has(normalizedEqId)) {
-        return true;
-      }
-      const normalizedBarcode = item?.barcode ? normalizeBarcodeValue(item.barcode) : null;
-      if (normalizedBarcode && normalizedPackageBarcodes.has(normalizedBarcode)) {
-        return true;
-      }
-      return false;
-    });
-
-    if (everyItemFromPackage) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const displayGroups = packageGroups.length
-    ? [...packageGroups, ...filteredGroupedItems]
-    : groupedItems;
+  const { groups: displayGroups, packageGroups, groupedItems } = buildReservationDisplayGroups(reservation);
 
   const { technicians: storedTechnicians = [] } = loadData();
   const technicianSource = []
@@ -232,10 +84,21 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return resolveTechnicianCostRate(technician);
   };
 
-  const equipmentDailyTotal = items.reduce(
-    (sum, item) => sum + ((item.qty || 1) * (item.price || 0)),
-    0
-  );
+  const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
+    const quantity = Number(group?.count ?? group?.quantity ?? 1) || 1;
+    const rawUnitPrice = Number(group?.unitPrice);
+    let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+    if (!unitPrice || unitPrice <= 0) {
+      const totalCandidate = Number(group?.totalPrice);
+      if (Number.isFinite(totalCandidate) && quantity > 0) {
+        unitPrice = Number((totalCandidate / quantity).toFixed(2));
+      }
+    }
+    if (!Number.isFinite(unitPrice)) {
+      unitPrice = 0;
+    }
+    return sum + (unitPrice * quantity);
+  }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
   const crewCostDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianCostRate(tech), 0);
   const crewTotalDaily = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);

@@ -9,7 +9,7 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus
 } from '../reservationsSummary.js';
-import { resolveReservationProjectState } from '../reservationsShared.js';
+import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 import {
@@ -109,13 +109,51 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
     id: 'code',
     labelKey: 'reservations.details.table.headers.code',
     fallback: 'الكود',
-    render: (item) => escapeHtml(item?.barcode || '-')
+    render: (item) => {
+      if (!item) return '-';
+      const codes = [];
+      if (item.barcode) {
+        codes.push(item.barcode);
+      }
+      if (Array.isArray(item.barcodes)) {
+        item.barcodes.filter(Boolean).forEach((code) => {
+          if (!codes.includes(code)) codes.push(code);
+        });
+      }
+      if (Array.isArray(item.packageItems)) {
+        item.packageItems.forEach((pkgItem) => {
+          if (pkgItem?.barcode && !codes.includes(pkgItem.barcode)) {
+            codes.push(pkgItem.barcode);
+          }
+        });
+      }
+      if (!codes.length) {
+        return '-';
+      }
+      return codes.map((code) => `<span class="quote-item-code">${escapeHtml(String(code))}</span>`).join('<br>');
+    }
   },
   {
     id: 'description',
     labelKey: 'reservations.details.table.headers.description',
     fallback: 'الوصف',
-    render: (item) => escapeHtml(item?.desc || item?.description || '-')
+    render: (item) => {
+      const base = escapeHtml(item?.desc || item?.description || '-');
+      if (!Array.isArray(item?.packageItems) || item.packageItems.length === 0) {
+        return base;
+      }
+
+      const itemsMarkup = item.packageItems
+        .map((pkgItem) => {
+          const label = escapeHtml(pkgItem?.desc || pkgItem?.name || pkgItem?.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'));
+          const qty = normalizeNumbers(String(pkgItem?.qty ?? 1));
+          const barcode = pkgItem?.barcode ? ` <span class="quote-package-barcode">(${escapeHtml(pkgItem.barcode)})</span>` : '';
+          return `<li>${label}${barcode} × ${qty}</li>`;
+        })
+        .join('');
+
+      return `${base}<ul class="quote-package-items">${itemsMarkup}</ul>`;
+    }
   },
   {
     id: 'quantity',
@@ -1611,8 +1649,22 @@ function collectAssignedTechnicians(reservation) {
 function collectReservationFinancials(reservation, technicians, project) {
   const { projectLinked } = resolveReservationProjectState(reservation, project);
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
-  const items = Array.isArray(reservation.items) ? reservation.items : [];
-  const equipmentDailyTotal = items.reduce((sum, item) => sum + ((Number(item?.qty) || 1) * (Number(item?.price) || 0)), 0);
+  const { groups: displayGroups } = buildReservationDisplayGroups(reservation);
+  const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
+    const quantity = Number(group?.count ?? group?.quantity ?? 1) || 1;
+    const rawUnitPrice = Number(group?.unitPrice);
+    let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+    if (!unitPrice || unitPrice <= 0) {
+      const totalCandidate = Number(group?.totalPrice);
+      if (Number.isFinite(totalCandidate) && quantity > 0) {
+        unitPrice = Number((totalCandidate / quantity).toFixed(2));
+      }
+    }
+    if (!Number.isFinite(unitPrice)) {
+      unitPrice = 0;
+    }
+    return sum + (unitPrice * quantity);
+  }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
   const crewCostDailyTotal = technicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
   const crewTotalDaily = technicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);
@@ -2835,14 +2887,63 @@ function buildQuotationHtml(options) {
       })()
     : '';
 
+  const { groups: reservationDisplayGroups } = buildReservationDisplayGroups(reservation);
+  const quoteItems = reservationDisplayGroups.map((group) => {
+    const count = Number(group?.count ?? group?.quantity ?? 1) || 1;
+    const rawUnitPrice = Number(group?.unitPrice);
+    let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+    if (!unitPrice || unitPrice <= 0) {
+      const totalCandidate = Number(group?.totalPrice);
+      if (Number.isFinite(totalCandidate) && count > 0) {
+        unitPrice = Number((totalCandidate / count).toFixed(2));
+      }
+    }
+    if (!Number.isFinite(unitPrice)) {
+      unitPrice = 0;
+    }
+
+    const isPackage = group?.type === 'package'
+      || (Array.isArray(group?.items) && group.items.some((item) => item?.type === 'package'));
+
+    const packageItems = isPackage
+      ? (group?.packageItems
+        ?? (Array.isArray(group?.items)
+          ? group.items.flatMap((item) => Array.isArray(item?.packageItems) ? item.packageItems : [])
+          : []))
+      : [];
+
+    const fallbackBarcode = Array.isArray(group?.barcodes) && group.barcodes.length
+      ? group.barcodes[0]
+      : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
+
+    const barcode = group?.barcode
+      ?? fallbackBarcode
+      ?? '';
+
+    const totalPrice = Number.isFinite(Number(group?.totalPrice))
+      ? Number(group.totalPrice)
+      : Number((unitPrice * count).toFixed(2));
+
+    return {
+      ...group,
+      isPackage,
+      packageItems,
+      desc: group?.description,
+      barcode,
+      qty: count,
+      price: unitPrice,
+      totalPrice,
+    };
+  });
+
   const itemColumns = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
   const hasItemColumns = itemColumns.length > 0;
   const itemTableHeader = hasItemColumns
     ? itemColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
     : '';
-  const hasItems = Array.isArray(reservation.items) && reservation.items.length > 0;
+  const hasItems = quoteItems.length > 0;
   const itemsBodyRows = hasItems
-    ? reservation.items.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+    ? quoteItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td></tr>`;
 
   const itemsSectionMarkup = includeSection('items')
