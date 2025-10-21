@@ -410,9 +410,9 @@ function sanitizePriceInputValue() {
   const rawValue = input.value;
   if (rawValue == null) return;
 
-  const replacedSeparators = rawValue.replace(/[٫٬،,]/g, '.');
+  const replacedSeparators = rawValue.replace(/[\u066B\u066C\u060C,]/gu, '.');
   const normalizedDigits = normalizeNumbers(replacedSeparators);
-  let sanitized = normalizedDigits.replace(/[^0-9.]/g, '');
+  let sanitized = normalizedDigits.replace(/[^0-9.]/gu, '');
 
   const firstDotIndex = sanitized.indexOf('.');
   if (firstDotIndex !== -1) {
@@ -627,6 +627,7 @@ function wireEvents() {
     elements.priceInput.addEventListener('input', handler);
     elements.priceInput.addEventListener('blur', handler);
     elements.priceInput.dataset.normalizedAttached = 'true';
+    sanitizePriceInputValue();
   }
 
   if (!eventsRegistered) {

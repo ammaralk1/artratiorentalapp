@@ -2706,6 +2706,10 @@ if (typeof document !== 'undefined') {
   document.addEventListener('language:changed', handleLanguageRefresh);
   document.addEventListener('language:translationsReady', handleLanguageRefresh);
 
+  document.addEventListener('equipment:changed', () => {
+    populateEquipmentDescriptionLists();
+  });
+
   document.addEventListener('packages:changed', () => {
     populatePackageSelect();
     if (getEquipmentBookingMode() === 'package') {
