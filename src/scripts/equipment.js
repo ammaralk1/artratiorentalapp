@@ -368,6 +368,16 @@ function updateEquipmentSelectionBanner() {
         returnButton.textContent = t('reservations.create.equipment.selector.returnButton', '⬅️ العودة إلى الحجز');
       }
     }
+  } else {
+    if (titleEl) {
+      titleEl.textContent = t('reservations.create.equipment.selector.bannerTitle', '🔗 اختيار معدات لحجز جديد');
+    }
+    if (hintEl) {
+      hintEl.textContent = t('reservations.create.equipment.selector.bannerHint', 'ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.');
+    }
+    if (returnButton) {
+      returnButton.textContent = t('reservations.create.equipment.selector.returnButton', '⬅️ العودة إلى الحجز');
+    }
   }
 
   if (selection && returnButton && !returnButton.dataset.listenerAttached) {

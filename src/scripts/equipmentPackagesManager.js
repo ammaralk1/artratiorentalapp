@@ -337,6 +337,9 @@ function handleSelectionChange(event) {
     selectionDraft = [];
   }
   updateSelectionUi(false);
+  if (reason === 'package-commit' || reason === 'package-cancel' || reason === 'package-finish-button') {
+    focusPackageForm();
+  }
 }
 
 function handleSelectionAdd(event) {
@@ -420,12 +423,23 @@ function applySelectionDraft() {
   selectionDraft = [];
   updateSelectionUi(false);
   clearEquipmentSelection('package-commit');
+  focusPackageForm();
 }
 
 function cancelSelectionDraft() {
   selectionDraft = [];
   updateSelectionUi(false);
   clearEquipmentSelection('package-cancel');
+  focusPackageForm();
+}
+
+function focusPackageForm() {
+  if (elements.form) {
+    elements.form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+      elements.nameInput?.focus();
+    }, 200);
+  }
 }
 
 function buildPackagePayload() {
@@ -579,6 +593,21 @@ function startSelection() {
     mode: 'package-manager',
     source: 'equipment-packages',
     activatedAt: Date.now(),
+  });
+
+  const equipmentTabButton = document.querySelector('[data-tab="equipment-tab"]');
+  if (equipmentTabButton) {
+    equipmentTabButton.click();
+  }
+
+  window.requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.getElementById('search-equipment')?.focus();
+      const list = document.getElementById('equipment-list');
+      if (list) {
+        list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 200);
   });
 }
 
