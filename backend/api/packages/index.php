@@ -390,3 +390,18 @@ function generateSlug(string $value): string
     $value = trim($value, '-');
     return $value ?: bin2hex(random_bytes(4));
 }
+
+function readJsonPayload(): array
+{
+    $raw = file_get_contents('php://input');
+    if ($raw === false || trim($raw) === '') {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new InvalidArgumentException('Invalid JSON payload');
+    }
+
+    return is_array($decoded) ? $decoded : [];
+}
