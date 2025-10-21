@@ -12,6 +12,66 @@ import {
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
 
+const RESERVATION_PACKAGES_CACHE_KEY = '__reservation_packages_cache__';
+
+function getPackagesCacheStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+  return window.localStorage;
+}
+
+function readReservationPackagesCache() {
+  const storage = getPackagesCacheStorage();
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(RESERVATION_PACKAGES_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    console.warn('[reservationsService] Failed to read reservation packages cache', error);
+    return {};
+  }
+}
+
+function writeReservationPackagesCache(cache) {
+  const storage = getPackagesCacheStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(RESERVATION_PACKAGES_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[reservationsService] Failed to persist reservation packages cache', error);
+  }
+}
+
+function persistReservationPackagesToCache(reservationId, packages) {
+  if (!reservationId) return;
+  const cache = readReservationPackagesCache();
+  const key = String(reservationId);
+  if (!Array.isArray(packages) || packages.length === 0) {
+    if (cache[key]) {
+      delete cache[key];
+      writeReservationPackagesCache(cache);
+    }
+    return;
+  }
+
+  cache[key] = packages.map((pkg) => ({ ...pkg }));
+  writeReservationPackagesCache(cache);
+}
+
+function getCachedReservationPackages(reservationId) {
+  if (!reservationId) return [];
+  const cache = readReservationPackagesCache();
+  const key = String(reservationId);
+  const entry = cache[key];
+  if (!Array.isArray(entry)) {
+    return [];
+  }
+  return entry.map((pkg) => ({ ...pkg }));
+}
+
 export function getReservationsState() {
   return reservationsState;
 }
@@ -20,6 +80,11 @@ export function setReservationsState(reservations) {
   reservationsState = Array.isArray(reservations)
     ? reservations.map(toInternalReservation)
     : [];
+  reservationsState.forEach((reservation) => {
+    if (!reservation) return;
+    const reservationId = reservation.id ?? reservation.reservationId ?? reservation.reservationCode;
+    persistReservationPackagesToCache(reservationId, reservation.packages);
+  });
   if (reservationsState.length) {
     console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
   } else {
@@ -79,6 +144,7 @@ export async function createReservationApi(payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
   }
+  persistReservationPackagesToCache(created.id ?? created.reservationId ?? created.reservation_code, created.packages);
   if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
       items: created.items || [],
@@ -120,6 +186,7 @@ export async function updateReservationApi(id, payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
   }
+  persistReservationPackagesToCache(updated.id ?? updated.reservationId ?? updated.reservation_code ?? id, updated.packages);
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
       items: updated.items || [],
@@ -147,6 +214,7 @@ export async function deleteReservationApi(id) {
   await apiRequest(`/reservations/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
   const next = reservationsState.filter((reservation) => String(reservation.id) !== String(id));
   setReservationsState(next);
+  persistReservationPackagesToCache(id, null);
 }
 
 export async function confirmReservationApi(id) {
@@ -199,7 +267,7 @@ export function toInternalReservation(raw = {}) {
     ? raw.items.map(mapReservationItem)
     : [];
 
-  const packages = mapReservationPackagesFromSource(raw);
+  let packages = mapReservationPackagesFromSource(raw);
 
   const technicianEntries = Array.isArray(raw.technicians) ? raw.technicians : [];
   const technicianIds = technicianEntries.map((entry) => {
@@ -292,6 +360,16 @@ export function toInternalReservation(raw = {}) {
 
   const rawHistory = extractPaymentHistoryFromCandidates(candidateHistories);
   const paymentHistory = normalizePaymentHistoryCollection(rawHistory);
+
+  const reservationCacheKey = idValue != null ? idValue : (reservationCode ?? raw.reservation_code ?? raw.reservationId ?? null);
+  if (!packages.length) {
+    const cachedPackages = getCachedReservationPackages(reservationCacheKey);
+    if (cachedPackages.length) {
+      packages = mergePackageCollections(packages, cachedPackages);
+    }
+  } else {
+    persistReservationPackagesToCache(reservationCacheKey, packages);
+  }
 
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
