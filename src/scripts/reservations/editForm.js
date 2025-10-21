@@ -1014,6 +1014,13 @@ export function setupEditEquipmentDescriptionInput() {
     };
     editInput.addEventListener('focus', () => {
       populateEquipmentDescriptionLists();
+      if (typeof editInput.showPicker === 'function') {
+        try {
+          editInput.showPicker();
+        } catch (error) {
+          // ignore browsers that disallow programmatic picker opening
+        }
+      }
     });
     editInput.addEventListener('input', tryAutoAdd);
     editInput.addEventListener('change', tryAutoAdd);

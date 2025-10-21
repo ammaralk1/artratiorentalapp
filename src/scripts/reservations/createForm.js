@@ -1279,6 +1279,13 @@ function setupEquipmentDescriptionInputs() {
     };
     createInput.addEventListener('focus', () => {
       populateEquipmentDescriptionLists();
+      if (typeof createInput.showPicker === 'function') {
+        try {
+          createInput.showPicker();
+        } catch (error) {
+          // ignore browsers that disallow programmatic picker opening
+        }
+      }
     });
     createInput.addEventListener('input', tryAutoAdd);
     createInput.addEventListener('change', tryAutoAdd);
