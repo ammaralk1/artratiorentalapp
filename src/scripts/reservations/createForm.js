@@ -1106,7 +1106,8 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
   }
 
   const currentItems = getSelectedItems();
-  if (currentItems.some((item) => normalizeBarcodeValue(item.barcode) === normalizedCode)) {
+  const selectedBarcodes = collectSelectedItemBarcodes(currentItems);
+  if (selectedBarcodes.has(normalizedCode)) {
     const message = t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز');
     if (!silent) showToast(message);
     return { success: false, message };
@@ -1212,8 +1213,8 @@ function addDraftEquipmentByDescription(inputElement) {
   }
 
   const currentItems = getSelectedItems();
-  const duplicate = currentItems.some((item) => normalizeBarcodeValue(item.barcode) === normalizedCode);
-  if (duplicate) {
+  const selectedBarcodes = collectSelectedItemBarcodes(currentItems);
+  if (selectedBarcodes.has(normalizedCode)) {
     showToast(t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز'));
     return;
   }
@@ -1274,6 +1275,27 @@ function applyEquipmentSelectionButtonState(button, active) {
     button.classList.add('btn-outline-primary');
     button.classList.remove('btn-primary');
   }
+}
+
+function collectSelectedItemBarcodes(items = getSelectedItems()) {
+  const set = new Set();
+  items.forEach((item) => {
+    if (!item) return;
+    const primaryBarcode = normalizeBarcodeValue(item.barcode ?? item.normalizedBarcode);
+    if (primaryBarcode) {
+      set.add(primaryBarcode);
+    }
+
+    if (Array.isArray(item.packageItems)) {
+      item.packageItems.forEach((pkgItem) => {
+        const childBarcode = normalizeBarcodeValue(pkgItem?.normalizedBarcode ?? pkgItem?.barcode);
+        if (childBarcode) {
+          set.add(childBarcode);
+        }
+      });
+    }
+  });
+  return set;
 }
 
 function setupEquipmentSelectionButton() {
@@ -1572,6 +1594,46 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
     ? packageInfo.items
     : resolvePackageItems(packageInfo.raw ?? {});
 
+  const selectedBarcodesSet = collectSelectedItemBarcodes(getSelectedItems());
+  const duplicateItems = [];
+  const seenWithinPackage = new Set();
+
+  packageItems.forEach((pkgItem) => {
+    const normalizedBarcode = normalizeBarcodeValue(pkgItem?.normalizedBarcode ?? pkgItem?.barcode);
+    if (!normalizedBarcode) {
+      return;
+    }
+
+    if (seenWithinPackage.has(normalizedBarcode)) {
+      duplicateItems.push({ item: pkgItem, type: 'internal' });
+      return;
+    }
+    seenWithinPackage.add(normalizedBarcode);
+
+    if (selectedBarcodesSet.has(normalizedBarcode)) {
+      duplicateItems.push({ item: pkgItem, type: 'external' });
+    }
+  });
+
+  if (duplicateItems.length) {
+    const itemsList = duplicateItems
+      .map(({ item }) => {
+        const label = item?.desc || item?.description || item?.name || item?.barcode || item?.normalizedBarcode || '';
+        return label ? label : t('equipment.packages.items.unknown', 'معدة بدون اسم');
+      })
+      .map((label) => normalizeNumbers(String(label)))
+      .join(', ');
+
+    const message = duplicateItems.some((entry) => entry.type === 'external')
+      ? t('reservations.toast.packageDuplicateEquipmentExternal', '⚠️ لا يمكن إضافة الحزمة لأن العناصر التالية موجودة مسبقاً في الحجز: {items}').replace('{items}', itemsList)
+      : t('reservations.toast.packageDuplicateEquipmentInternal', '⚠️ بيانات الحزمة تحتوي على عناصر مكررة: {items}').replace('{items}', itemsList);
+
+    if (!silent) {
+      showToast(message);
+    }
+    return { success: false, reason: 'package_duplicate_equipment', duplicates: duplicateItems };
+  }
+
   const conflictingItems = [];
 
   packageItems.forEach((pkgItem) => {
@@ -1604,6 +1666,7 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
     packageItems: packageItems.map((item) => ({
       equipmentId: item?.equipmentId ?? null,
       barcode: item?.barcode ?? item?.normalizedBarcode ?? '',
+      normalizedBarcode: normalizeBarcodeValue(item?.normalizedBarcode ?? item?.barcode),
       desc: item?.desc ?? '',
       qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
       price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
