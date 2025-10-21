@@ -777,19 +777,16 @@
 
             <div class="equipment-package-items-editor">
               <h5 class="equipment-package-items-title" data-i18n data-i18n-key="equipment.packages.items.title">🧰 عناصر الحزمة</h5>
-              <div class="equipment-package-item-controls">
-                <div class="equipment-package-item-field">
-                  <label for="equipment-package-item-select" class="form-label" data-i18n data-i18n-key="equipment.packages.items.labels.equipment">🎥 اختر المعدة</label>
-                  <select id="equipment-package-item-select" class="form-select">
-                    <option value="" selected disabled data-i18n data-i18n-key="equipment.packages.items.placeholders.equipment">اختر المعدة</option>
-                  </select>
-                </div>
-                <div class="equipment-package-item-field equipment-package-item-field--qty">
-                  <label for="equipment-package-item-qty" class="form-label" data-i18n data-i18n-key="equipment.packages.items.labels.quantity">🔢 الكمية</label>
-                  <input type="number" id="equipment-package-item-qty" class="form-control" min="1" value="1" data-i18n data-i18n-placeholder-key="equipment.packages.items.placeholders.quantity">
-                </div>
-                <div class="equipment-package-item-actions">
-                  <button type="button" class="btn btn-outline-primary" id="equipment-package-add-item" data-i18n data-i18n-key="equipment.packages.items.actions.add">➕ إضافة إلى الحزمة</button>
+
+              <div class="equipment-package-selection-controls">
+                <button type="button" class="btn btn-outline-primary" id="equipment-package-open-selector" data-i18n data-i18n-key="equipment.packages.selection.open">🎥 اختيار من قائمة المعدات</button>
+
+                <div class="equipment-package-selection-active" id="equipment-package-selection-active" hidden>
+                  <span id="equipment-package-selection-counter" data-i18n data-i18n-key="equipment.packages.selection.counter">لم يتم اختيار عناصر بعد.</span>
+                  <div class="equipment-package-selection-buttons">
+                    <button type="button" class="btn btn-primary btn-sm" id="equipment-package-apply-selection" data-i18n data-i18n-key="equipment.packages.selection.apply">✅ إضافة العناصر للحزمة</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="equipment-package-cancel-selection" data-i18n data-i18n-key="equipment.packages.selection.cancel">✖️ إلغاء</button>
+                  </div>
                 </div>
               </div>
 
@@ -843,8 +840,8 @@
         <div id="equipment-selection-banner" class="equipment-selection-banner" hidden>
           <div class="equipment-selection-banner__content">
             <div class="equipment-selection-banner__copy">
-              <span class="equipment-selection-banner__title" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerTitle">🔗 اختيار معدات لحجز جديد</span>
-              <p class="equipment-selection-banner__hint" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerHint">ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.</p>
+              <span id="equipment-selection-banner-title" class="equipment-selection-banner__title" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerTitle">🔗 اختيار معدات لحجز جديد</span>
+              <p id="equipment-selection-banner-hint" class="equipment-selection-banner__hint" data-i18n data-i18n-key="reservations.create.equipment.selector.bannerHint">ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.</p>
             </div>
             <div class="equipment-selection-banner__actions">
               <button type="button" class="btn btn-primary btn-sm" id="equipment-selection-return" data-i18n data-i18n-key="reservations.create.equipment.selector.returnButton">⬅️ العودة إلى الحجز</button>

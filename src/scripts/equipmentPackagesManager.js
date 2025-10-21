@@ -2,70 +2,71 @@ import { loadData, saveData } from './storage.js';
 import { apiRequest } from './apiClient.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
-import { setCachedPackages } from './reservations/state.js';
+import {
+  setCachedPackages,
+  normalizeBarcodeValue,
+} from './reservations/state.js';
+import {
+  activateEquipmentSelection,
+  clearEquipmentSelection,
+  EQUIPMENT_SELECTION_EVENTS,
+} from './reservations/equipmentSelection.js';
 import { resolvePackageItems } from './reservationsPackages.js';
 
 let packagesState = [];
 let packageItemsDraft = [];
 let editingPackageId = null;
-let elements = {};
+let selectionDraft = [];
+let selectionActive = false;
+let eventsRegistered = false;
+
+const elements = {};
 
 function cacheElements() {
-  elements = {
-    form: document.getElementById('equipment-package-form'),
-    hiddenId: document.getElementById('equipment-package-id'),
-    nameInput: document.getElementById('equipment-package-name'),
-    codeInput: document.getElementById('equipment-package-code'),
-    priceInput: document.getElementById('equipment-package-price'),
-    descriptionInput: document.getElementById('equipment-package-description'),
-    equipmentSelect: document.getElementById('equipment-package-item-select'),
-    quantityInput: document.getElementById('equipment-package-item-qty'),
-    addItemButton: document.getElementById('equipment-package-add-item'),
-    itemsTableBody: document.querySelector('#equipment-package-items-table tbody'),
-    itemsEmptyMessage: document.getElementById('equipment-package-items-empty'),
-    resetButton: document.getElementById('equipment-package-reset'),
-    submitButton: document.getElementById('equipment-package-submit'),
-    tableBody: document.getElementById('equipment-packages-table-body'),
-    emptyRow: document.getElementById('equipment-packages-empty-row'),
-    countBadge: document.getElementById('equipment-packages-count'),
-  };
+  elements.form = document.getElementById('equipment-package-form');
+  elements.hiddenId = document.getElementById('equipment-package-id');
+  elements.nameInput = document.getElementById('equipment-package-name');
+  elements.codeInput = document.getElementById('equipment-package-code');
+  elements.priceInput = document.getElementById('equipment-package-price');
+  elements.descriptionInput = document.getElementById('equipment-package-description');
+  elements.openSelector = document.getElementById('equipment-package-open-selector');
+  elements.selectionWrapper = document.getElementById('equipment-package-selection-active');
+  elements.selectionCounter = document.getElementById('equipment-package-selection-counter');
+  elements.applySelection = document.getElementById('equipment-package-apply-selection');
+  elements.cancelSelection = document.getElementById('equipment-package-cancel-selection');
+  elements.itemsTableBody = document.querySelector('#equipment-package-items-table tbody');
+  elements.itemsEmptyMessage = document.getElementById('equipment-package-items-empty');
+  elements.resetButton = document.getElementById('equipment-package-reset');
+  elements.submitButton = document.getElementById('equipment-package-submit');
+  elements.tableBody = document.getElementById('equipment-packages-table-body');
+  elements.emptyRow = document.getElementById('equipment-packages-empty-row');
+  elements.countBadge = document.getElementById('equipment-packages-count');
 }
 
 function getEquipmentSnapshot() {
   const { equipment = [] } = loadData() || {};
-  if (!Array.isArray(equipment)) return [];
-  return equipment;
+  return Array.isArray(equipment) ? equipment : [];
 }
 
-function refreshEquipmentOptions() {
-  if (!elements.equipmentSelect) return;
-  const equipmentList = getEquipmentSnapshot();
-  const selectedValue = elements.equipmentSelect.value;
-  const options = ['<option value="" disabled data-i18n data-i18n-key="equipment.packages.items.placeholders.equipment">اختر المعدة</option>'];
+function buildEquipmentIndexById() {
+  const index = new Map();
+  getEquipmentSnapshot().forEach((item) => {
+    const id = item?.id ?? item?.equipment_id ?? item?.equipmentId ?? null;
+    if (id == null) return;
+    index.set(String(id), item);
+  });
+  return index;
+}
 
-  equipmentList
-    .slice()
-    .sort((a, b) => {
-      const nameA = String(a?.desc || a?.name || '').toLowerCase();
-      const nameB = String(b?.desc || b?.name || '').toLowerCase();
-      return nameA.localeCompare(nameB, 'ar', { sensitivity: 'base' });
-    })
-    .forEach((item) => {
-      const id = item?.id ?? item?.equipment_id ?? item?.equipmentId ?? null;
-      if (id == null) {
-        return;
-      }
-      const value = String(id);
-      const label = `${item.desc || item.name || value}${item.barcode ? ` — ${normalizeNumbers(String(item.barcode))}` : ''}`;
-      options.push(`<option value="${value}">${label}</option>`);
-    });
-
-  elements.equipmentSelect.innerHTML = options.join('');
-  if (selectedValue && Array.from(elements.equipmentSelect.options).some((opt) => opt.value === selectedValue)) {
-    elements.equipmentSelect.value = selectedValue;
-  } else {
-    elements.equipmentSelect.value = '';
-  }
+function buildEquipmentIndexByBarcode() {
+  const index = new Map();
+  getEquipmentSnapshot().forEach((item) => {
+    const barcode = normalizeBarcodeValue(item?.barcode);
+    if (barcode && !index.has(barcode)) {
+      index.set(barcode, item);
+    }
+  });
+  return index;
 }
 
 function setPackagesState(list, { persist = false } = {}) {
@@ -152,12 +153,7 @@ function renderDraftItems() {
     return;
   }
 
-  const equipmentIndex = new Map();
-  getEquipmentSnapshot().forEach((item) => {
-    const id = item?.id ?? item?.equipment_id;
-    if (id == null) return;
-    equipmentIndex.set(String(id), item);
-  });
+  const equipmentIndex = buildEquipmentIndexById();
 
   const rows = packageItemsDraft.map((item, index) => {
     const equipment = equipmentIndex.get(String(item.equipment_id));
@@ -193,12 +189,7 @@ function renderPackagesTable() {
     return;
   }
 
-  const equipmentIndex = new Map();
-  getEquipmentSnapshot().forEach((item) => {
-    const id = item?.id ?? item?.equipment_id;
-    if (id == null) return;
-    equipmentIndex.set(String(id), item);
-  });
+  const equipmentIndex = buildEquipmentIndexById();
 
   const rows = packagesState.map((pkg) => {
     const resolvedItems = resolvePackageItems({ ...pkg, items: pkg.items });
@@ -245,22 +236,23 @@ function renderPackagesTable() {
 function resetPackageForm() {
   editingPackageId = null;
   packageItemsDraft = [];
+  selectionDraft = [];
   if (elements.hiddenId) elements.hiddenId.value = '';
   if (elements.nameInput) elements.nameInput.value = '';
   if (elements.codeInput) elements.codeInput.value = '';
   if (elements.priceInput) elements.priceInput.value = '';
   if (elements.descriptionInput) elements.descriptionInput.value = '';
-  if (elements.equipmentSelect) elements.equipmentSelect.value = '';
-  if (elements.quantityInput) elements.quantityInput.value = '1';
   if (elements.submitButton) {
     elements.submitButton.textContent = t('equipment.packages.form.actions.save', '💾 حفظ الحزمة');
   }
   renderDraftItems();
+  updateSelectionUi(false);
 }
 
 function loadPackageIntoForm(pkg) {
   editingPackageId = pkg.id || null;
   packageItemsDraft = pkg.items.map((item) => ({ ...item }));
+  selectionDraft = [];
   if (elements.hiddenId) elements.hiddenId.value = editingPackageId || '';
   if (elements.nameInput) elements.nameInput.value = pkg.name || '';
   if (elements.codeInput) elements.codeInput.value = pkg.package_code || '';
@@ -270,41 +262,208 @@ function loadPackageIntoForm(pkg) {
     elements.submitButton.textContent = t('equipment.packages.form.actions.update', '💾 تحديث الحزمة');
   }
   renderDraftItems();
+  updateSelectionUi(false);
 }
 
-function handleAddItemClick(event) {
-  event.preventDefault();
-  if (!elements.equipmentSelect || !elements.quantityInput) return;
-  const equipmentId = elements.equipmentSelect.value;
-  if (!equipmentId) {
-    showToast(t('equipment.packages.items.validation.selectEquipment', '⚠️ يرجى اختيار المعدة أولاً'), 3500);
+function updateSelectionUi(forceActive = selectionActive) {
+  selectionActive = forceActive;
+  if (elements.selectionWrapper) {
+    if (selectionActive) {
+      elements.selectionWrapper.hidden = false;
+    } else {
+      elements.selectionWrapper.hidden = true;
+    }
+  }
+  if (elements.openSelector) {
+    elements.openSelector.disabled = selectionActive;
+  }
+  if (elements.applySelection) {
+    elements.applySelection.disabled = !selectionActive || selectionDraft.length === 0;
+  }
+  if (elements.cancelSelection) {
+    elements.cancelSelection.disabled = !selectionActive;
+  }
+  updateSelectionCounter();
+}
+
+function updateSelectionCounter() {
+  if (!elements.selectionCounter) return;
+  if (!selectionActive) {
+    elements.selectionCounter.textContent = t('equipment.packages.selection.counter', 'لم يتم اختيار عناصر بعد.');
+    if (elements.applySelection) {
+      elements.applySelection.disabled = true;
+    }
     return;
   }
-  const quantityValue = Number.parseInt(elements.quantityInput.value, 10);
-  const quantity = Number.isFinite(quantityValue) && quantityValue > 0 ? quantityValue : 1;
 
-  const existing = packageItemsDraft.find((item) => String(item.equipment_id) === String(equipmentId));
-  if (existing) {
-    existing.quantity += quantity;
+  const total = selectionDraft.reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
+  if (total > 0) {
+    const countText = normalizeNumbers(String(total));
+    elements.selectionCounter.textContent = t('equipment.packages.selection.counterWithValue', 'تم اختيار {count} عنصر/عناصر')
+      .replace('{count}', countText);
+    if (elements.applySelection) {
+      elements.applySelection.disabled = false;
+    }
   } else {
-    packageItemsDraft.push({
-      equipment_id: String(equipmentId),
-      quantity,
-      unit_price: null,
-    });
+    elements.selectionCounter.textContent = t('equipment.packages.selection.waiting', 'اختر المعدات من القائمة ثم اضغط "إضافة العناصر للحزمة"');
+    if (elements.applySelection) {
+      elements.applySelection.disabled = true;
+    }
   }
-
-  renderDraftItems();
-  elements.quantityInput.value = '1';
 }
 
-function handleItemsTableClick(event) {
-  const button = event.target.closest('[data-action="remove-item"]');
-  if (!button) return;
-  const index = Number(button.dataset.index);
-  if (Number.isNaN(index)) return;
-  packageItemsDraft = packageItemsDraft.filter((_, idx) => idx !== index);
+function handleSelectionChange(event) {
+  const detail = event?.detail || {};
+  const active = Boolean(detail.active);
+  const selection = detail.selection || detail.previous || {};
+  const mode = selection?.mode || selection?.source || '';
+
+  if (mode !== 'package-manager' && mode !== 'equipment-packages') {
+    if (!active && selectionActive) {
+      selectionDraft = [];
+      updateSelectionUi(false);
+    }
+    return;
+  }
+
+  if (active) {
+    selectionDraft = [];
+    updateSelectionUi(true);
+    return;
+  }
+
+  const reason = detail.reason || 'manual';
+  if (reason !== 'package-commit') {
+    selectionDraft = [];
+  }
+  updateSelectionUi(false);
+}
+
+function handleSelectionAdd(event) {
+  const detail = event?.detail;
+  if (!detail) return;
+  const selection = detail.selection || {};
+  const mode = selection?.mode || selection?.source || '';
+  if (mode !== 'package-manager' && mode !== 'equipment-packages') {
+    return;
+  }
+
+  const barcodes = Array.isArray(detail.barcodes) ? detail.barcodes : [];
+  const quantityRequested = Number.isInteger(detail.quantity) && detail.quantity > 0 ? detail.quantity : 1;
+  const resolved = barcodes.length ? barcodes : (detail.barcode ? [detail.barcode] : []);
+  if (!resolved.length) return;
+
+  const barcodeIndex = buildEquipmentIndexByBarcode();
+  const unique = [];
+  const seen = new Set();
+  resolved.forEach((code) => {
+    const normalized = normalizeBarcodeValue(code);
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized);
+      unique.push(normalized);
+    }
+  });
+
+  const limit = Math.min(unique.length, quantityRequested);
+  let added = 0;
+  for (let i = 0; i < limit; i += 1) {
+    const code = unique[i];
+    const equipment = barcodeIndex.get(code);
+    if (!equipment) {
+      continue;
+    }
+    const equipmentId = equipment?.id ?? equipment?.equipment_id ?? equipment?.equipmentId ?? null;
+    if (equipmentId == null) {
+      continue;
+    }
+    const existing = selectionDraft.find((entry) => entry.equipment_id === String(equipmentId));
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      selectionDraft.push({
+        equipment_id: String(equipmentId),
+        quantity: 1,
+        unit_price: Number.isFinite(Number(equipment?.price)) ? Number(equipment.price) : null,
+      });
+    }
+    added += 1;
+  }
+
+  if (added > 0) {
+    updateSelectionCounter();
+  } else {
+    showToast(t('equipment.packages.selection.noMatch', '⚠️ تعذر ربط المعدات المختارة بالحزم، تحقق من بيانات المعدات'), 4000);
+  }
+}
+
+function applySelectionDraft() {
+  if (!selectionDraft.length) {
+    showToast(t('equipment.packages.selection.empty', '⚠️ لم يتم اختيار أي معدات بعد'));
+    return;
+  }
+
+  selectionDraft.forEach((entry) => {
+    const existing = packageItemsDraft.find((item) => item.equipment_id === entry.equipment_id);
+    if (existing) {
+      existing.quantity += entry.quantity;
+    } else {
+      packageItemsDraft.push({
+        equipment_id: entry.equipment_id,
+        quantity: entry.quantity,
+        unit_price: entry.unit_price ?? null,
+      });
+    }
+  });
+
   renderDraftItems();
+  showToast(t('equipment.packages.selection.applied', '✅ تمت إضافة المعدات المحددة إلى الحزمة'));
+  selectionDraft = [];
+  updateSelectionUi(false);
+  clearEquipmentSelection('package-commit');
+}
+
+function cancelSelectionDraft() {
+  selectionDraft = [];
+  updateSelectionUi(false);
+  clearEquipmentSelection('package-cancel');
+}
+
+function buildPackagePayload() {
+  const name = elements.nameInput?.value.trim();
+  const code = elements.codeInput?.value.trim();
+  const description = elements.descriptionInput?.value.trim() ?? '';
+  const priceValue = elements.priceInput?.value ?? '';
+  const price = Number.parseFloat(normalizeNumbers(priceValue));
+
+  if (!name) {
+    showToast(t('equipment.packages.validation.nameRequired', '⚠️ يرجى إدخال اسم الحزمة'));
+    return null;
+  }
+
+  if (!code) {
+    showToast(t('equipment.packages.validation.codeRequired', '⚠️ يرجى إدخال كود الحزمة'));
+    return null;
+  }
+
+  if (!packageItemsDraft.length) {
+    showToast(t('equipment.packages.validation.itemsRequired', '⚠️ أضف عنصرًا واحدًا على الأقل للحزمة'));
+    return null;
+  }
+
+  const normalizedItems = packageItemsDraft.map((item) => ({
+    equipment_id: item.equipment_id,
+    quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1,
+    unit_price: item.unit_price != null && Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price) : null,
+  }));
+
+  return {
+    package_code: code,
+    name,
+    description,
+    price: Number.isFinite(price) ? price : 0,
+    is_active: true,
+    items: normalizedItems,
+  };
 }
 
 async function handlePackageSubmit(event) {
@@ -346,42 +505,13 @@ async function handlePackageSubmit(event) {
   }
 }
 
-function buildPackagePayload() {
-  const name = elements.nameInput?.value.trim();
-  const code = elements.codeInput?.value.trim();
-  const description = elements.descriptionInput?.value.trim() ?? '';
-  const priceValue = elements.priceInput?.value ?? '';
-  const price = Number.parseFloat(normalizeNumbers(priceValue));
-
-  if (!name) {
-    showToast(t('equipment.packages.validation.nameRequired', '⚠️ يرجى إدخال اسم الحزمة')); 
-    return null;
-  }
-
-  if (!code) {
-    showToast(t('equipment.packages.validation.codeRequired', '⚠️ يرجى إدخال كود الحزمة'));
-    return null;
-  }
-
-  if (!packageItemsDraft.length) {
-    showToast(t('equipment.packages.validation.itemsRequired', '⚠️ أضف عنصرًا واحدًا على الأقل للحزمة'));
-    return null;
-  }
-
-  const normalizedItems = packageItemsDraft.map((item) => ({
-    equipment_id: item.equipment_id,
-    quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1,
-    unit_price: item.unit_price != null && Number.isFinite(Number(item.unit_price)) ? Number(item.unit_price) : null,
-  }));
-
-  return {
-    package_code: code,
-    name,
-    description,
-    price: Number.isFinite(price) ? price : 0,
-    is_active: true,
-    items: normalizedItems,
-  };
+function handleItemsTableClick(event) {
+  const button = event.target.closest('[data-action="remove-item"]');
+  if (!button) return;
+  const index = Number(button.dataset.index);
+  if (Number.isNaN(index)) return;
+  packageItemsDraft = packageItemsDraft.filter((_, idx) => idx !== index);
+  renderDraftItems();
 }
 
 async function handlePackagesTableClick(event) {
@@ -434,28 +564,59 @@ function hydrateFromStore() {
     setPackagesState([], { persist: false });
   }
   renderDraftItems();
+  updateSelectionUi(false);
+}
+
+function startSelection() {
+  if (selectionActive) {
+    updateSelectionUi(true);
+    return;
+  }
+
+  selectionDraft = [];
+  updateSelectionUi(true);
+  activateEquipmentSelection({
+    mode: 'package-manager',
+    source: 'equipment-packages',
+    activatedAt: Date.now(),
+  });
 }
 
 function wireEvents() {
   if (!elements.form) return;
   elements.form.addEventListener('submit', handlePackageSubmit);
-  elements.addItemButton?.addEventListener('click', handleAddItemClick);
   elements.itemsTableBody?.addEventListener('click', handleItemsTableClick);
   elements.resetButton?.addEventListener('click', () => {
     resetPackageForm();
   });
   elements.tableBody?.addEventListener('click', handlePackagesTableClick);
 
-  document.addEventListener('equipment:changed', () => {
-    refreshEquipmentOptions();
+  elements.openSelector?.addEventListener('click', (event) => {
+    event.preventDefault();
+    startSelection();
   });
+
+  elements.applySelection?.addEventListener('click', (event) => {
+    event.preventDefault();
+    applySelectionDraft();
+  });
+
+  elements.cancelSelection?.addEventListener('click', (event) => {
+    event.preventDefault();
+    cancelSelectionDraft();
+  });
+
+  if (!eventsRegistered) {
+    document.addEventListener(EQUIPMENT_SELECTION_EVENTS.change, handleSelectionChange);
+    document.addEventListener(EQUIPMENT_SELECTION_EVENTS.requestAdd, handleSelectionAdd);
+    eventsRegistered = true;
+  }
 }
 
 export function initEquipmentPackages() {
   if (typeof document === 'undefined') return;
   cacheElements();
   if (!elements.form) return;
-  refreshEquipmentOptions();
   hydrateFromStore();
   wireEvents();
   refreshPackagesFromApi();

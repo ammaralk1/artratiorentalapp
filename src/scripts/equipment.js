@@ -237,6 +237,7 @@ function evaluateSelectionStateForItem(item) {
 
   const variants = Array.isArray(item?.variants) && item.variants.length ? item.variants : [item];
   const { start, end, ignoreReservationId = null } = selection;
+  const selectionMode = selection?.mode || selection?.source || '';
 
   const uniqueVariants = [];
   const seen = new Set();
@@ -255,6 +256,18 @@ function evaluateSelectionStateForItem(item) {
       active: true,
       canSelect: false,
       reason: t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'),
+    };
+  }
+
+  if (selectionMode === 'package-manager' || selectionMode === 'equipment-packages') {
+    const maxQuantity = Math.max(1, uniqueVariants.length || 1);
+    return {
+      active: true,
+      canSelect: true,
+      barcode: uniqueVariants[0].barcode,
+      availableBarcodes: uniqueVariants.map(({ barcode }) => barcode),
+      maxQuantity,
+      reason: '',
     };
   }
 
@@ -323,15 +336,50 @@ function updateEquipmentSelectionBanner() {
   if (typeof document === 'undefined') return;
   const banner = document.getElementById('equipment-selection-banner');
   const returnButton = document.getElementById('equipment-selection-return');
+  const titleEl = document.getElementById('equipment-selection-banner-title');
+  const hintEl = document.getElementById('equipment-selection-banner-hint');
   if (!banner) return;
 
   const selection = getActiveSelectionContext();
   banner.hidden = !selection;
 
+  const mode = selection?.mode || selection?.source || '';
+  const isPackageMode = mode === 'package-manager' || mode === 'equipment-packages';
+
+  if (selection) {
+    if (isPackageMode) {
+      if (titleEl) {
+        titleEl.textContent = t('equipment.packages.selection.bannerTitle', '📦 اختيار معدات للحزمة');
+      }
+      if (hintEl) {
+        hintEl.textContent = t('equipment.packages.selection.bannerHint', 'اختر المعدات المطلوبة من البطاقات أدناه ثم اضغط على زر إنهاء الاختيار لإضافتها إلى الحزمة.');
+      }
+      if (returnButton) {
+        returnButton.textContent = t('equipment.packages.selection.doneButton', '✅ إنهاء اختيار الحزمة');
+      }
+    } else {
+      if (titleEl) {
+        titleEl.textContent = t('reservations.create.equipment.selector.bannerTitle', '🔗 اختيار معدات لحجز جديد');
+      }
+      if (hintEl) {
+        hintEl.textContent = t('reservations.create.equipment.selector.bannerHint', 'ابحث في القائمة أدناه، ثم أضف المعدات المتاحة مباشرة إلى نموذج الحجز.');
+      }
+      if (returnButton) {
+        returnButton.textContent = t('reservations.create.equipment.selector.returnButton', '⬅️ العودة إلى الحجز');
+      }
+    }
+  }
+
   if (selection && returnButton && !returnButton.dataset.listenerAttached) {
     returnButton.addEventListener('click', () => {
-      clearEquipmentSelection('return-button');
-      navigateBackToReservationForm();
+      const activeSelection = getActiveSelectionContext();
+      const activeMode = activeSelection?.mode || activeSelection?.source || '';
+      if (activeMode === 'package-manager' || activeMode === 'equipment-packages') {
+        clearEquipmentSelection('package-finish-button');
+      } else {
+        clearEquipmentSelection('return-button');
+        navigateBackToReservationForm();
+      }
     });
     returnButton.dataset.listenerAttached = 'true';
   }
