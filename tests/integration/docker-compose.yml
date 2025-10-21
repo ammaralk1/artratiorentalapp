@@ -26,6 +26,8 @@ services:
     volumes:
       - ../../backend:/app/backend
       - ./config.testing.php:/app/backend/config.php:ro
+    ports:
+      - '8080:8080'
     command: >-
       sh -c "php -S 0.0.0.0:8080 -t backend"
     environment:
