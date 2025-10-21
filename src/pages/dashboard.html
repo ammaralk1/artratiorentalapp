@@ -745,6 +745,101 @@
           </form>
         </div>
 
+        <div class="box management-form-box equipment-packages-box mb-4">
+          <div class="management-form-header">
+            <div class="management-form-icon">📦</div>
+            <div class="management-form-header-text">
+              <h4 data-i18n data-i18n-key="equipment.packages.form.title">إدارة الحزم</h4>
+              <p class="management-form-hint" data-i18n data-i18n-key="equipment.packages.form.hint">قم بتجميع عدة معدات في حزمة واحدة لتسهيل إضافتها للحجوزات.</p>
+            </div>
+          </div>
+
+          <form id="equipment-package-form" class="management-form">
+            <input type="hidden" id="equipment-package-id" value="">
+            <div class="management-form-grid equipment-package-form-grid">
+              <div class="form-field">
+                <label for="equipment-package-name" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.name">🧾 اسم الحزمة</label>
+                <input type="text" class="form-control" id="equipment-package-name" placeholder="مثال: طقم تصوير أساسي" required data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label for="equipment-package-code" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.code">🔖 كود الحزمة</label>
+                <input type="text" class="form-control" id="equipment-package-code" placeholder="standard-kit" required data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.code">
+              </div>
+              <div class="form-field">
+                <label for="equipment-package-price" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.price">💵 سعر الحزمة</label>
+                <input type="number" class="form-control" id="equipment-package-price" min="0" step="0.01" placeholder="0" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.price">
+              </div>
+              <div class="form-field form-field--wide">
+                <label for="equipment-package-description" class="form-label" data-i18n data-i18n-key="equipment.packages.form.labels.description">📝 الوصف</label>
+                <textarea class="form-control" id="equipment-package-description" rows="2" placeholder="تفاصيل إضافية عن الحزمة" data-i18n data-i18n-placeholder-key="equipment.packages.form.placeholders.description"></textarea>
+              </div>
+            </div>
+
+            <div class="equipment-package-items-editor">
+              <h5 class="equipment-package-items-title" data-i18n data-i18n-key="equipment.packages.items.title">🧰 عناصر الحزمة</h5>
+              <div class="equipment-package-item-controls">
+                <div class="equipment-package-item-field">
+                  <label for="equipment-package-item-select" class="form-label" data-i18n data-i18n-key="equipment.packages.items.labels.equipment">🎥 اختر المعدة</label>
+                  <select id="equipment-package-item-select" class="form-select">
+                    <option value="" selected disabled data-i18n data-i18n-key="equipment.packages.items.placeholders.equipment">اختر المعدة</option>
+                  </select>
+                </div>
+                <div class="equipment-package-item-field equipment-package-item-field--qty">
+                  <label for="equipment-package-item-qty" class="form-label" data-i18n data-i18n-key="equipment.packages.items.labels.quantity">🔢 الكمية</label>
+                  <input type="number" id="equipment-package-item-qty" class="form-control" min="1" value="1" data-i18n data-i18n-placeholder-key="equipment.packages.items.placeholders.quantity">
+                </div>
+                <div class="equipment-package-item-actions">
+                  <button type="button" class="btn btn-outline-primary" id="equipment-package-add-item" data-i18n data-i18n-key="equipment.packages.items.actions.add">➕ إضافة إلى الحزمة</button>
+                </div>
+              </div>
+
+              <div class="table-responsive equipment-package-items-table-wrapper">
+                <table class="table table-sm table-striped align-middle" id="equipment-package-items-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.equipment">المعدة</th>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="equipment.packages.items.table.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+                <p id="equipment-package-items-empty" class="text-center text-muted" data-i18n data-i18n-key="equipment.packages.items.empty">لم يتم إضافة عناصر إلى الحزمة بعد.</p>
+              </div>
+            </div>
+
+            <div class="management-form-actions equipment-package-form-actions">
+              <button type="submit" class="btn btn-primary" id="equipment-package-submit" data-i18n data-i18n-key="equipment.packages.form.actions.save">💾 حفظ الحزمة</button>
+              <button type="button" class="btn btn-secondary" id="equipment-package-reset" data-i18n data-i18n-key="equipment.packages.form.actions.reset">↩️ إعادة التعيين</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="box equipment-packages-list-box mb-4">
+          <div class="equipment-list-header">
+            <h5 data-i18n data-i18n-key="equipment.packages.list.title">📋 قائمة الحزم</h5>
+            <span class="equipment-list-count" id="equipment-packages-count">—</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle" id="equipment-packages-table">
+              <thead>
+                <tr>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.name">الحزمة</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.code">الكود</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.price">السعر</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.items">عدد العناصر</th>
+                  <th data-i18n data-i18n-key="equipment.packages.list.table.actions">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="equipment-packages-table-body">
+                <tr id="equipment-packages-empty-row">
+                  <td colspan="5" class="text-center text-muted" data-i18n data-i18n-key="equipment.packages.list.empty">لا توجد حزم مضافة حالياً.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <div id="equipment-selection-banner" class="equipment-selection-banner" hidden>
           <div class="equipment-selection-banner__content">
             <div class="equipment-selection-banner__copy">

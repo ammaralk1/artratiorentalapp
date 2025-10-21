@@ -2592,6 +2592,13 @@ if (typeof document !== 'undefined') {
   };
   document.addEventListener('language:changed', handleLanguageRefresh);
   document.addEventListener('language:translationsReady', handleLanguageRefresh);
+
+  document.addEventListener('packages:changed', () => {
+    populatePackageSelect();
+    if (getEquipmentBookingMode() === 'package') {
+      applyEquipmentModeUi('package');
+    }
+  });
 }
 
 if (typeof window !== 'undefined') {

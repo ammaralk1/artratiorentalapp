@@ -8,6 +8,7 @@ import { migrateOldData } from "./storage.js";
 import { initReports } from "./reports.js";
 import { initMaintenance } from "./maintenance.js";
 import { initTabScrollers } from "./ui/tabScroller.js";
+import { initEquipmentPackages } from './equipmentPackagesManager.js';
 
 console.log("🚀 [main.js] Script loaded");
 
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initMaintenance();
   initReports();
+  initEquipmentPackages();
 
   // ✅ زر تسجيل الخروج
   const logoutBtn = document.getElementById("logout-btn");
