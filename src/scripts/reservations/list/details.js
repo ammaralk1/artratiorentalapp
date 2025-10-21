@@ -1,7 +1,7 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
@@ -113,7 +113,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       unitPrice = 0;
     }
 
-    return sum + (unitPrice * quantity);
+    const safeUnitPrice = sanitizePriceValue(unitPrice);
+
+    return sum + (safeUnitPrice * quantity);
   }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
   const crewCostDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianCostRate(tech), 0);
@@ -429,10 +431,14 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           unitPriceNumber = 0;
         }
 
+        unitPriceNumber = sanitizePriceValue(unitPriceNumber);
+
         let totalPriceNumber = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
         if (!Number.isFinite(totalPriceNumber)) {
           totalPriceNumber = unitPriceNumber * quantityValue;
         }
+
+        totalPriceNumber = sanitizePriceValue(totalPriceNumber);
 
         const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
         const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;

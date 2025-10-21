@@ -12,6 +12,21 @@ import {
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
 
+function sanitizePriceValue(value) {
+  let result = Number(value);
+  if (!Number.isFinite(result)) {
+    return 0;
+  }
+
+  let iterations = 0;
+  while (Math.abs(result) > 100_000 && iterations < 8) {
+    result /= 10;
+    iterations += 1;
+  }
+
+  return Number(result.toFixed(2));
+}
+
 const RESERVATION_PACKAGES_CACHE_KEY = '__reservation_packages_cache__';
 
 function getPackagesCacheStorage() {
@@ -62,7 +77,7 @@ function normalizePackagesForCache(packages = []) {
 
       const normalizedItems = normalizeReservationPackageItemsFromEntry(pkg, normalizedId).map((item) => {
         const childQty = toPositiveInt(item.qty ?? item.quantity ?? 1);
-        const childPrice = toNumber(item.price ?? item.unit_price ?? 0);
+        const childPrice = sanitizePriceValue(toNumber(item.price ?? item.unit_price ?? 0));
         return {
           ...item,
           qty: childQty,
@@ -73,16 +88,16 @@ function normalizePackagesForCache(packages = []) {
       });
 
       const quantity = toPositiveInt(pkg.quantity ?? pkg.qty ?? 1);
-      let unitPrice = toNumber(pkg.unit_price ?? pkg.unitPrice ?? pkg.price ?? 0);
+      let unitPrice = sanitizePriceValue(toNumber(pkg.unit_price ?? pkg.unitPrice ?? pkg.price ?? 0));
       if (!unitPrice || unitPrice <= 0) {
         const itemsTotal = normalizedItems.reduce((sum, item) => sum + ((item.price || 0) * (item.qty || 1)), 0);
         if (itemsTotal > 0 && quantity > 0) {
-          unitPrice = Number((itemsTotal / quantity).toFixed(2));
+          unitPrice = sanitizePriceValue(Number((itemsTotal / quantity).toFixed(2)));
         }
       }
 
       const totalRaw = toNumber(pkg.total_price ?? pkg.totalPrice ?? pkg.total ?? (unitPrice * quantity));
-      const total = totalRaw > 0 ? totalRaw : Number((unitPrice * quantity).toFixed(2));
+      const total = totalRaw > 0 ? sanitizePriceValue(totalRaw) : sanitizePriceValue(Number((unitPrice * quantity).toFixed(2)));
 
       return {
         ...pkg,

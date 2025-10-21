@@ -9,7 +9,7 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus
 } from '../reservationsSummary.js';
-import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
+import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue } from '../reservationsShared.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 import {
@@ -1640,7 +1640,11 @@ function collectReservationFinancials(reservation, technicians, project) {
       unitPrice = 0;
     }
 
-    return sum + (unitPrice * quantity);
+    unitPrice = sanitizePriceValue(unitPrice);
+
+    const safeUnitPrice = sanitizePriceValue(unitPrice);
+
+    return sum + (safeUnitPrice * quantity);
   }, 0);
   const equipmentTotal = equipmentDailyTotal * rentalDays;
   const crewCostDailyTotal = technicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
@@ -2890,9 +2894,11 @@ function buildQuotationHtml(options) {
       ?? fallbackBarcode
       ?? '';
 
-    const totalPrice = Number.isFinite(Number(group?.totalPrice))
+    let totalPrice = Number.isFinite(Number(group?.totalPrice))
       ? Number(group.totalPrice)
       : Number((unitPrice * count).toFixed(2));
+
+    totalPrice = sanitizePriceValue(totalPrice);
 
     return {
       ...group,

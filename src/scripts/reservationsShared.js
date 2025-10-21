@@ -1,6 +1,20 @@
 import { normalizeNumbers } from './utils.js';
 import { resolvePackageItems, normalizePackageId } from './reservationsPackages.js';
 
+export function sanitizePriceValue(value) {
+  let result = Number(value);
+  if (!Number.isFinite(result)) {
+    return 0;
+  }
+
+  let iterations = 0;
+  while (Math.abs(result) > 100_000 && iterations < 8) {
+    result /= 10;
+    iterations += 1;
+  }
+
+  return Number(result.toFixed(2));
+}
 function normalizeBarcodeValueLocal(value) {
   return normalizeNumbers(String(value ?? '')).trim().toLowerCase();
 }
@@ -20,7 +34,7 @@ function normalizePrice(value) {
 function getItemQuantity(entry = {}) {
   const parsed = Number(entry?.qty);
   if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
+    return sanitizePriceValue(parsed);
   }
   return 1;
 }
@@ -126,7 +140,7 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = []) {
   const totalParsed = Number(totalCandidate);
   const quantity = resolvePackageQuantity(packageEntry);
   if (Number.isFinite(totalParsed) && totalParsed > 0 && quantity > 0) {
-    return Number((totalParsed / quantity).toFixed(2));
+    return sanitizePriceValue(Number((totalParsed / quantity).toFixed(2)));
   }
 
   if (Array.isArray(packageItems) && packageItems.length) {
@@ -136,7 +150,7 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = []) {
       return sum + (price * qty);
     }, 0);
     if (itemsTotal > 0 && quantity > 0) {
-      return Number((itemsTotal / quantity).toFixed(2));
+      return sanitizePriceValue(Number((itemsTotal / quantity).toFixed(2)));
     }
   }
 
@@ -202,9 +216,11 @@ export function buildReservationDisplayGroups(reservation = {}) {
       ?? pkg?.total_price
       ?? pkg?.totalPrice
       ?? (unitPrice * packageQty);
-    const totalPrice = Number.isFinite(Number(totalPriceCandidate))
-      ? Number(Number(totalPriceCandidate).toFixed(2))
-      : Number((unitPrice * packageQty).toFixed(2));
+    const totalPrice = sanitizePriceValue(
+      Number.isFinite(Number(totalPriceCandidate))
+        ? Number(Number(totalPriceCandidate).toFixed(2))
+        : Number((unitPrice * packageQty).toFixed(2))
+    );
 
     const packageBarcode = pkg?.package_code ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.barcode ?? null;
     if (packageBarcode) {
