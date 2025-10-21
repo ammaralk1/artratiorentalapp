@@ -1327,6 +1327,10 @@ function handleEquipmentSelectionAdd(event) {
   if (!document.getElementById('reservation-form')) return;
 
   const detail = event.detail;
+  const selectionMode = detail.selection?.mode || detail.selection?.source || '';
+  if (selectionMode === 'package-manager' || selectionMode === 'equipment-packages') {
+    return;
+  }
   const barcodes = Array.isArray(detail.barcodes) ? detail.barcodes : [];
   const quantityRequested = Number.isInteger(detail.quantity) && detail.quantity > 0 ? detail.quantity : 1;
 
