@@ -1525,6 +1525,7 @@ function populatePackageSelect() {
     .join('');
 
   packageSelect.innerHTML = `${placeholderOption}${optionMarkup}`;
+  packageSelect.selectedIndex = 0;
 
   const hasPackages = snapshot.length > 0;
   packageSelect.disabled = !hasPackages;
@@ -1538,6 +1539,8 @@ function populatePackageSelect() {
       packageHint.dataset.state = 'empty';
     }
   }
+
+  setupPackageSelectAutoAdd();
 }
 
 function buildPackageConflictMessage(packageInfo, conflictingItems) {
@@ -1731,6 +1734,28 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
   return { success: true, package: result.package };
 }
 
+function setupPackageSelectAutoAdd() {
+  const { packageSelect } = getEquipmentModeElements();
+  if (!packageSelect || packageSelect.dataset.autoAddAttached === 'true') {
+    return;
+  }
+
+  packageSelect.addEventListener('change', () => {
+    const selectedValue = packageSelect.value;
+    if (!selectedValue) return;
+    const result = addPackageToReservation(selectedValue);
+    if (result?.success) {
+      if (packageSelect.options.length > 0) {
+        packageSelect.selectedIndex = 0;
+      } else {
+        packageSelect.value = '';
+      }
+    }
+  });
+
+  packageSelect.dataset.autoAddAttached = 'true';
+}
+
 function setupPackageAddHandler() {
   const { packageAddButton, packageSelect } = getEquipmentModeElements();
   if (!packageAddButton || packageAddButton.dataset.listenerAttached) {
@@ -1765,6 +1790,7 @@ function setupEquipmentModeControls() {
   });
 
   setupPackageAddHandler();
+  setupPackageSelectAutoAdd();
 
   const activeMode = getEquipmentBookingMode();
   const activeRadio = modeRadios.find((radio) => radio.value === activeMode);
