@@ -29,155 +29,118 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const packagesMap = new Map();
 
-    const registerPackageEntry = (pkg, indexHint = 0) => {
-      if (!pkg || typeof pkg !== 'object') return;
+  const registerPackageSource = (pkg, indexHint = 0) => {
+    if (!pkg || typeof pkg !== 'object') return;
 
-      const normalizedId = normalizePackageId(
-        pkg?.package_code
-        ?? pkg?.packageId
-        ?? pkg?.package_id
-        ?? pkg?.code
-        ?? pkg?.id
-        ?? pkg?.barcode
-        ?? `pkg-${indexHint}`
-      );
-
-      const key = normalizedId || `pkg-${indexHint}`;
-      if (!packagesMap.has(key)) {
-        packagesMap.set(key, { source: pkg, normalizedId: key, index: indexHint });
-      }
-    };
-
-    if (Array.isArray(reservation.packages)) {
-      reservation.packages.forEach((pkg, idx) => registerPackageEntry(pkg, idx));
-    }
-
-    items.forEach((item, idx) => {
-      if (item && typeof item === 'object' && (item.type === 'package' || Array.isArray(item?.packageItems))) {
-        registerPackageEntry(item, idx);
-      }
-    });
-
-    const packageGroups = [];
-    const packageBarcodes = new Set();
-    const packageEquipmentIds = new Set();
-
-    packagesMap.forEach(({ source: pkg, normalizedId }, mapKey) => {
-      const resolvedItems = resolvePackageItems(pkg).map((item) => ({
-        ...item,
-        normalizedBarcode: item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode),
-        qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
-      }));
-
-      resolvedItems.forEach((item) => {
-        const normalizedBarcode = item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode);
-        if (normalizedBarcode) {
-          packageBarcodes.add(normalizedBarcode);
-        }
-        if (item?.equipmentId != null) {
-          packageEquipmentIds.add(String(item.equipmentId));
-        } else if (item?.equipment_id != null) {
-          packageEquipmentIds.add(String(item.equipment_id));
-        }
-      });
-
-      const packageQty = Number.isFinite(Number(pkg?.quantity ?? pkg?.qty ?? pkg?.count))
-        ? Number(pkg.quantity ?? pkg.qty ?? pkg.count)
-        : 1;
-
-      const unitPriceRaw = Number.isFinite(Number(pkg?.unit_price ?? pkg?.price ?? pkg?.unitPrice))
-        ? Number(pkg.unit_price ?? pkg.price ?? pkg.unitPrice)
-        : 0;
-
-      const itemsTotal = resolvedItems.reduce((sum, item) => {
-        const price = Number.isFinite(Number(item?.price)) ? Number(item.price) : 0;
-        const qty = Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1;
-        return sum + (price * qty);
-      }, 0);
-
-      const totalPriceRaw = Number.isFinite(Number(pkg?.total ?? pkg?.total_price ?? pkg?.totalPrice))
-        ? Number(pkg.total ?? pkg.total_price ?? pkg.totalPrice)
-        : (unitPriceRaw ? unitPriceRaw * packageQty : itemsTotal);
-
-      const effectiveUnitPrice = packageQty > 0
-        ? (totalPriceRaw / packageQty)
-        : unitPriceRaw;
-
-      const packageBarcode = pkg?.package_code ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.barcode ?? null;
-      if (packageBarcode) {
-        const normalizedPkgBarcode = normalizeBarcodeValue(packageBarcode);
-        if (normalizedPkgBarcode) {
-          packageBarcodes.add(normalizedPkgBarcode);
-        }
-      }
-
-      const barcodesList = resolvedItems
-        .map((item) => normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')))
-        .filter(Boolean);
-
-      packageGroups.push({
-        key: `package::${mapKey}`,
-        description: pkg?.name || pkg?.package_name || pkg?.title || normalizeNumbers(String(packageBarcode ?? mapKey)),
-        normalizedDescription: normalizeNumbers(String(pkg?.name || pkg?.package_name || '')),
-        unitPrice: effectiveUnitPrice,
-        totalPrice: totalPriceRaw,
-        quantity: packageQty,
-        count: packageQty,
-        image: resolvedItems.find((item) => item?.image)?.image ?? null,
-        barcodes: barcodesList,
-        items: [{
-          type: 'package',
-          packageItems: resolvedItems,
-          packageId: normalizedId,
-          desc: pkg?.name || pkg?.package_name || '',
-          price: effectiveUnitPrice,
-          qty: packageQty,
-          barcode: packageBarcode,
-        }],
-      });
-    });
-
-    const normalizedPackageBarcodes = new Set(
-      Array.from(packageBarcodes)
-        .map((code) => normalizeBarcodeValue(code))
-        .filter(Boolean)
+    const normalizedId = normalizePackageId(
+      pkg?.package_code
+      ?? pkg?.packageId
+      ?? pkg?.package_id
+      ?? pkg?.code
+      ?? pkg?.id
+      ?? pkg?.barcode
+      ?? `pkg-${indexHint}`
     );
 
-    const filteredGroupedItems = groupedItems.filter((group) => {
-      const representsPackage = group.items.some((item) => item?.type === 'package');
-      if (representsPackage && packageGroups.length > 0) {
-        return false;
+    const key = normalizedId || `pkg-${indexHint}`;
+    if (!packagesMap.has(key)) {
+      packagesMap.set(key, { source: pkg, normalizedId: key, index: indexHint });
+    }
+  };
+
+  if (Array.isArray(reservation.packages)) {
+    reservation.packages.forEach((pkg, idx) => registerPackageSource(pkg, idx));
+  }
+
+  items.forEach((item, idx) => {
+    if (item && typeof item === 'object' && (item.type === 'package' || Array.isArray(item?.packageItems))) {
+      registerPackageSource(item, idx + packagesMap.size);
+    }
+  });
+
+  const packageGroups = [];
+  const packageBarcodes = new Set();
+  const packageEquipmentIds = new Set();
+
+  packagesMap.forEach(({ source: pkg, normalizedId }, mapKey) => {
+    const resolvedItems = resolvePackageItems(pkg).map((item) => ({
+      ...item,
+      normalizedBarcode: item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode),
+      qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
+    }));
+
+    resolvedItems.forEach((item) => {
+      const normalizedBarcode = item?.normalizedBarcode ?? normalizeBarcodeValue(item?.barcode);
+      if (normalizedBarcode) {
+        packageBarcodes.add(normalizedBarcode);
       }
-
-      const everyItemFromPackage = group.items.every((item) => {
-        const eqId = resolveEquipmentIdentifier(item);
-        const normalizedEqId = eqId != null ? String(eqId) : null;
-        if (normalizedEqId && packageEquipmentIds.has(normalizedEqId)) {
-          return true;
-        }
-        const normalizedBarcode = item?.barcode ? normalizeBarcodeValue(item.barcode) : null;
-        if (normalizedBarcode && normalizedPackageBarcodes.has(normalizedBarcode)) {
-          return true;
-        }
-        return false;
-      });
-
-      if (everyItemFromPackage) {
-        return false;
+      const equipmentId = item?.equipmentId ?? item?.equipment_id ?? null;
+      if (equipmentId != null) {
+        packageEquipmentIds.add(String(equipmentId));
       }
-
-      return true;
     });
 
-  const items = reservation.items || [];
-  const groupedItems = groupReservationItems(items);
+    const packageQty = Number.isFinite(Number(pkg?.quantity ?? pkg?.qty ?? pkg?.count))
+      ? Number(pkg.quantity ?? pkg.qty ?? pkg.count)
+      : 1;
 
-  packageGroups.forEach((pkgGroup) => {
-    pkgGroup.items.forEach((entry) => {
-      if (!entry || typeof entry !== 'object') return;
-      groupedItems.push(entry);
+    const unitPriceRaw = Number.isFinite(Number(pkg?.unit_price ?? pkg?.price ?? pkg?.unitPrice))
+      ? Number(pkg.unit_price ?? pkg.price ?? pkg.unitPrice)
+      : 0;
+
+    const itemsTotal = resolvedItems.reduce((sum, item) => {
+      const price = Number.isFinite(Number(item?.price)) ? Number(item.price) : 0;
+      const qty = Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1;
+      return sum + (price * qty);
+    }, 0);
+
+    const totalPriceRaw = Number.isFinite(Number(pkg?.total ?? pkg?.total_price ?? pkg?.totalPrice))
+      ? Number(pkg.total ?? pkg.total_price ?? pkg.totalPrice)
+      : (unitPriceRaw ? unitPriceRaw * packageQty : itemsTotal);
+
+    const effectiveUnitPrice = packageQty > 0
+      ? (totalPriceRaw / packageQty)
+      : unitPriceRaw;
+
+    const packageBarcode = pkg?.package_code ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.barcode ?? null;
+    if (packageBarcode) {
+      const normalizedPkgBarcode = normalizeBarcodeValue(packageBarcode);
+      if (normalizedPkgBarcode) {
+        packageBarcodes.add(normalizedPkgBarcode);
+      }
+    }
+
+    const barcodesList = resolvedItems
+      .map((item) => normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')))
+      .filter(Boolean);
+
+    packageGroups.push({
+      key: `package::${mapKey}`,
+      description: pkg?.name || pkg?.package_name || pkg?.title || normalizeNumbers(String(packageBarcode ?? mapKey)),
+      normalizedDescription: normalizeNumbers(String(pkg?.name || pkg?.package_name || '')),
+      unitPrice: effectiveUnitPrice,
+      totalPrice: totalPriceRaw,
+      quantity: packageQty,
+      count: packageQty,
+      image: resolvedItems.find((item) => item?.image)?.image ?? null,
+      barcodes: barcodesList,
+      items: [{
+        type: 'package',
+        packageItems: resolvedItems,
+        packageId: normalizedId,
+        desc: pkg?.name || pkg?.package_name || '',
+        price: effectiveUnitPrice,
+        qty: packageQty,
+        barcode: packageBarcode,
+      }],
     });
   });
+
+  const normalizedPackageBarcodes = new Set(
+    Array.from(packageBarcodes)
+      .map((code) => normalizeBarcodeValue(code))
+      .filter(Boolean)
+  );
 
   const filteredGroupedItems = groupedItems.filter((group) => {
     const representsPackage = group.items.some((item) => item?.type === 'package');
