@@ -17,6 +17,7 @@ let packagesState = [];
 let packageItemsDraft = [];
 let editingPackageId = null;
 let selectionActive = false;
+let selectionDraft = [];
 let eventsRegistered = false;
 
 const elements = {};
