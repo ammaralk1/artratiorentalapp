@@ -1,9 +1,17 @@
 import { loadData } from '../storage.js';
 import { normalizeNumbers } from '../utils.js';
+import {
+  findPackageById,
+  findPackagesContainingBarcode,
+  summarizePackageItems,
+  normalizePackageId as normalizePackageIdentifier,
+} from '../reservationsPackages.js';
 
 let selectedItems = [];
 let cachedCustomers = [];
 let cachedEquipment = [];
+let cachedPackages = [];
+let equipmentBookingMode = 'single';
 
 export function getSelectedItems() {
   return selectedItems;
@@ -39,9 +47,26 @@ export function setCachedEquipment(equipment) {
   cachedEquipment = Array.isArray(equipment) ? equipment : [];
 }
 
+export function getCachedPackages() {
+  return cachedPackages;
+}
+
+export function setCachedPackages(packages) {
+  cachedPackages = Array.isArray(packages) ? packages : [];
+}
+
+export function getEquipmentBookingMode() {
+  return equipmentBookingMode === 'package' ? 'package' : 'single';
+}
+
+export function setEquipmentBookingMode(mode) {
+  equipmentBookingMode = mode === 'package' ? 'package' : 'single';
+}
+
 export function resetCachedData() {
   cachedCustomers = [];
   cachedEquipment = [];
+  cachedPackages = [];
 }
 
 export function splitDateTime(value) {
@@ -146,7 +171,7 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
   const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
 
   const reservationConflict = reservations.some((reservation) => {
-    if (!reservation || !Array.isArray(reservation.items) || reservation.items.length === 0) {
+    if (!reservation) {
       return false;
     }
 
@@ -163,7 +188,7 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
     const overlaps = resStart < end && resEnd > start;
     if (!overlaps) return false;
 
-    return reservation.items.some((item) => normalizeBarcodeValue(item?.barcode) === normalizedCode);
+    return doesReservationContainBarcode(reservation, normalizedCode);
   });
 
   if (reservationConflict) {
@@ -191,6 +216,288 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
     return effectiveStart < end && effectiveEnd > start;
   });
+}
+
+export function hasPackageConflict(packageId, startIso, endIso, ignoreReservationId = null) {
+  const normalizedId = normalizePackageIdentifier(packageId);
+  if (!normalizedId || !startIso || !endIso) return false;
+
+  const start = parseDateFlexible(startIso);
+  const end = parseDateFlexible(endIso);
+  if (!start || !end) return false;
+  if (start >= end) return false;
+
+  const snapshot = loadData() || {};
+  const reservations = Array.isArray(snapshot.reservations) ? snapshot.reservations : [];
+  const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
+
+  return reservations.some((reservation) => {
+    if (!reservation?.start || !reservation?.end) return false;
+    if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) {
+      return false;
+    }
+
+    const resStart = parseDateFlexible(reservation.start);
+    const resEnd = parseDateFlexible(reservation.end);
+    if (!resStart || !resEnd) return false;
+
+    const overlaps = resStart < end && resEnd > start;
+    if (!overlaps) return false;
+
+    return doesReservationContainPackage(reservation, normalizedId);
+  });
+}
+
+export function getBlockingPackagesForEquipment(barcode, startIso, endIso, ignoreReservationId = null) {
+  const normalizedCode = normalizeBarcodeValue(barcode);
+  if (!normalizedCode || !startIso || !endIso) return [];
+
+  const matchingPackages = findPackagesContainingBarcode(normalizedCode);
+  if (!matchingPackages.length) {
+    return [];
+  }
+
+  return matchingPackages.filter((pkg) =>
+    hasPackageConflict(pkg.id, startIso, endIso, ignoreReservationId)
+  );
+}
+
+function collectReservationItemCollections(reservation) {
+  const collections = [];
+  if (!reservation || typeof reservation !== 'object') {
+    return collections;
+  }
+
+  const candidateKeys = [
+    'items',
+    'equipment',
+    'packages',
+    'packageItems',
+    'package_items',
+    'reservedItems',
+    'reserved_items',
+  ];
+
+  candidateKeys.forEach((key) => {
+    const value = reservation[key];
+    if (Array.isArray(value) && value.length) {
+      collections.push(value);
+    }
+  });
+
+  return collections;
+}
+
+function doesReservationContainBarcode(reservation, normalizedBarcode) {
+  if (!normalizedBarcode) {
+    return false;
+  }
+
+  if (!reservation || typeof reservation !== 'object') {
+    return false;
+  }
+
+  const reservationBarcode = normalizeBarcodeValue(reservation?.barcode);
+  if (reservationBarcode && reservationBarcode === normalizedBarcode) {
+    return true;
+  }
+
+  const collections = collectReservationItemCollections(reservation);
+
+  for (const collection of collections) {
+    for (const item of collection) {
+      const barcodes = resolveReservationItemBarcodes(item);
+      if (barcodes.has(normalizedBarcode)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function doesReservationContainPackage(reservation, normalizedPackageId) {
+  if (!normalizedPackageId) {
+    return false;
+  }
+
+  if (!reservation || typeof reservation !== 'object') {
+    return false;
+  }
+
+  const directCandidates = [
+    reservation.packageId,
+    reservation.package_id,
+    reservation.bundleId,
+    reservation.bundle_id,
+    reservation.packageCode,
+    reservation.package_code,
+  ];
+
+  for (const candidate of directCandidates) {
+    if (!candidate && candidate !== 0) continue;
+    const normalized = normalizePackageIdentifier(candidate);
+    if (normalized && normalized === normalizedPackageId) {
+      return true;
+    }
+  }
+
+  const topLevelPackages = reservation.packages;
+  if (Array.isArray(topLevelPackages)) {
+    for (const entry of topLevelPackages) {
+      const normalized = normalizePackageIdentifier(entry);
+      if (normalized && normalized === normalizedPackageId) {
+        return true;
+      }
+    }
+  }
+
+  const collections = collectReservationItemCollections(reservation);
+
+  for (const collection of collections) {
+    for (const item of collection) {
+      const packageIds = resolveReservationItemPackageIds(item);
+      if (packageIds.has(normalizedPackageId)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function resolveReservationItemBarcodes(item) {
+  const barcodes = new Set();
+
+  if (!item && item !== 0) {
+    return barcodes;
+  }
+
+  if (typeof item === 'string' || typeof item === 'number') {
+    const normalized = normalizeBarcodeValue(item);
+    if (normalized) {
+      barcodes.add(normalized);
+    }
+    return barcodes;
+  }
+
+  if (typeof item !== 'object') {
+    return barcodes;
+  }
+
+  const directBarcode = normalizeBarcodeValue(
+    item.barcode
+      ?? item.equipmentBarcode
+      ?? item.code
+      ?? item.serial
+      ?? item.serialNumber
+      ?? item.serial_number
+  );
+
+  if (directBarcode) {
+    barcodes.add(directBarcode);
+  }
+
+  const nestedKeys = ['packageItems', 'package_items', 'items', 'equipment', 'bundleItems', 'bundle_items'];
+  nestedKeys.forEach((key) => {
+    const value = item[key];
+    if (!Array.isArray(value)) return;
+    value.forEach((nested) => {
+      if (nested == null) return;
+      if (typeof nested === 'string' || typeof nested === 'number') {
+        const normalized = normalizeBarcodeValue(nested);
+        if (normalized) {
+          barcodes.add(normalized);
+        }
+        return;
+      }
+      if (typeof nested === 'object') {
+        const nestedBarcode = normalizeBarcodeValue(
+          nested.barcode
+            ?? nested.equipmentBarcode
+            ?? nested.code
+            ?? nested.serial
+            ?? nested.serialNumber
+            ?? nested.serial_number
+        );
+        if (nestedBarcode) {
+          barcodes.add(nestedBarcode);
+        }
+      }
+    });
+  });
+
+  const packageIds = resolveReservationItemPackageIds(item);
+  if (packageIds.size) {
+    packageIds.forEach((packageId) => {
+      const packageDefinition = findPackageById(packageId);
+      if (!packageDefinition) {
+        return;
+      }
+      const packageItems = summarizePackageItems(packageDefinition);
+      packageItems.forEach((packageItem) => {
+        const normalized = packageItem.normalizedBarcode
+          ?? normalizeBarcodeValue(packageItem.barcode);
+        if (normalized) {
+          barcodes.add(normalized);
+        }
+      });
+    });
+  }
+
+  return barcodes;
+}
+
+function resolveReservationItemPackageIds(item) {
+  const packageIds = new Set();
+
+  if (!item && item !== 0) {
+    return packageIds;
+  }
+
+  if (typeof item === 'string' || typeof item === 'number') {
+    return packageIds;
+  }
+
+  if (typeof item !== 'object') {
+    return packageIds;
+  }
+
+  const directCandidates = [
+    item.packageId,
+    item.package_id,
+    item.packageCode,
+    item.package_code,
+    item.bundleId,
+    item.bundle_id,
+  ];
+
+  if (item.type === 'package' || item.kind === 'package' || item.category === 'package') {
+    directCandidates.push(item.id, item.code, item.uuid);
+  }
+
+  directCandidates.forEach((candidate) => {
+    const normalized = normalizePackageIdentifier(candidate);
+    if (normalized) {
+      packageIds.add(normalized);
+    }
+  });
+
+  if (item.package && typeof item.package === 'object') {
+    const nested = resolveReservationItemPackageIds(item.package);
+    nested.forEach((value) => packageIds.add(value));
+  }
+
+  if (Array.isArray(item.packages)) {
+    item.packages.forEach((candidate) => {
+      const normalized = normalizePackageIdentifier(candidate);
+      if (normalized) {
+        packageIds.add(normalized);
+      }
+    });
+  }
+
+  return packageIds;
 }
 
 function isMaintenanceTicketBlocking(ticket) {
@@ -492,6 +799,7 @@ export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreRese
 export function resetState() {
   selectedItems = [];
   resetCachedData();
+  equipmentBookingMode = 'single';
 }
 
 function buildReservationIdentifierSet(source) {

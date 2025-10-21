@@ -1116,22 +1116,45 @@
 
             <div class="box mt-3">
               <h5 class="reservation-equipment-heading" data-i18n data-i18n-key="reservations.create.equipment.title">🎥 أضف المعدات</h5>
-                <div class="reservation-equipment-inputs">
-                  <div class="reservation-equipment-field">
-                    <input type="text" class="form-control" id="equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.barcode">
+                <div class="reservation-equipment-mode-toggle">
+                  <div class="btn-group" role="group" aria-label="نوع إضافة المعدات">
+                    <input type="radio" class="btn-check" name="reservation-equipment-mode" id="reservation-mode-single" value="single" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="reservation-mode-single" data-i18n data-i18n-key="reservations.create.packages.mode.single">🎯 عنصر منفرد</label>
+                    <input type="radio" class="btn-check" name="reservation-equipment-mode" id="reservation-mode-package" value="package" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="reservation-mode-package" data-i18n data-i18n-key="reservations.create.packages.mode.package">📦 حزمة</label>
                   </div>
-                  <div class="reservation-equipment-field reservation-equipment-field--search">
-                    <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
-                    <datalist id="equipment-description-options"></datalist>
+                </div>
+
+                <div class="reservation-equipment-modes">
+                  <div class="reservation-equipment-inputs" data-equipment-mode="single">
+                    <div class="reservation-equipment-field">
+                      <input type="text" class="form-control" id="equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.barcode">
+                    </div>
+                    <div class="reservation-equipment-field reservation-equipment-field--search">
+                      <input type="text" class="form-control" id="equipment-description" list="equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.create.equipment.placeholders.description">
+                      <datalist id="equipment-description-options"></datalist>
+                    </div>
+                    <div class="reservation-equipment-field reservation-equipment-field--selector">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary reservation-select-equipment-btn"
+                        id="open-equipment-selector"
+                        data-i18n
+                        data-i18n-key="reservations.create.equipment.actions.openSelector"
+                      >📦 اختيار من قائمة المعدات</button>
+                    </div>
                   </div>
-                  <div class="reservation-equipment-field reservation-equipment-field--selector">
-                    <button
-                      type="button"
-                      class="btn btn-outline-primary reservation-select-equipment-btn"
-                      id="open-equipment-selector"
-                      data-i18n
-                      data-i18n-key="reservations.create.equipment.actions.openSelector"
-                    >📦 اختيار من قائمة المعدات</button>
+
+                  <div class="reservation-equipment-inputs reservation-equipment-inputs--package" data-equipment-mode="package" hidden aria-hidden="true">
+                    <div class="reservation-equipment-field reservation-equipment-field--package-select">
+                      <select class="form-select" id="reservation-package-select" data-i18n data-i18n-placeholder-key="reservations.create.packages.placeholder">
+                        <option value="" selected disabled>📦 اختر الحزمة</option>
+                      </select>
+                    </div>
+                    <div class="reservation-equipment-field reservation-equipment-field--package-action">
+                      <button type="button" class="btn btn-primary" id="add-reservation-package" data-i18n data-i18n-key="reservations.create.packages.addButton">➕ إضافة الحزمة</button>
+                    </div>
+                    <div class="reservation-equipment-hint" id="reservation-package-hint" data-i18n data-i18n-key="reservations.create.packages.hint">حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.</div>
                   </div>
                 </div>
 

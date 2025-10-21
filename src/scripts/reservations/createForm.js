@@ -27,11 +27,17 @@ import {
   setCachedCustomers,
   getCachedEquipment,
   setCachedEquipment,
+  getCachedPackages,
+  setCachedPackages,
   combineDateTime,
   splitDateTime,
   normalizeBarcodeValue,
   hasEquipmentConflict,
-  hasTechnicianConflict
+  hasTechnicianConflict,
+  getEquipmentBookingMode,
+  setEquipmentBookingMode,
+  getBlockingPackagesForEquipment,
+  hasPackageConflict
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
@@ -46,6 +52,14 @@ import {
   EQUIPMENT_SELECTION_EVENTS,
   isEquipmentSelectionActive
 } from './equipmentSelection.js';
+import {
+  buildPackageOptionsSnapshot,
+  findPackageById,
+  resolvePackageItems,
+  resolvePackagePrice,
+  getPackageDisplayName,
+  normalizePackageId,
+} from '../reservationsPackages.js';
 
 const DEFAULT_PROJECT_FORM_DRAFT_KEY = 'projects:create:draft';
 const DEFAULT_PROJECT_FORM_RETURN_URL = 'projects.html#projects-section';
@@ -59,6 +73,7 @@ let equipmentDescriptionOptionMap = new Map();
 let isSyncingShareTaxCreate = false;
 let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
+let packageOptionsCache = [];
 
 function escapeHtml(value = '') {
   return String(value)
@@ -1097,6 +1112,14 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
     return { success: false, message };
   }
 
+  const blockingPackages = getBlockingPackagesForEquipment(normalizedCode, start, end);
+  if (blockingPackages.length) {
+    const names = blockingPackages.map((pkg) => pkg.name).join(', ');
+    const message = t('reservations.toast.equipmentBlockedByPackage', `⚠️ لا يمكن إضافة هذه المعدة لأنها جزء من حزمة محجوزة: ${names}`);
+    if (!silent) showToast(message);
+    return { success: false, message };
+  }
+
   if (hasEquipmentConflict(normalizedCode, start, end)) {
     const message = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
     if (!silent) showToast(message);
@@ -1192,6 +1215,13 @@ function addDraftEquipmentByDescription(inputElement) {
   const duplicate = currentItems.some((item) => normalizeBarcodeValue(item.barcode) === normalizedCode);
   if (duplicate) {
     showToast(t('reservations.toast.equipmentDuplicate', '⚠️ هذه المعدة موجودة بالفعل في الحجز'));
+    return;
+  }
+
+  const blockingPackages = getBlockingPackagesForEquipment(normalizedCode, start, end);
+  if (blockingPackages.length) {
+    const names = blockingPackages.map((pkg) => pkg.name).join(', ');
+    showToast(t('reservations.toast.equipmentBlockedByPackage', `⚠️ لا يمكن إضافة هذه المعدة لأنها جزء من حزمة محجوزة: ${names}`));
     return;
   }
 
@@ -1350,6 +1380,287 @@ function setupEquipmentSelectionIntegration() {
   equipmentSelectionEventsRegistered = true;
 }
 
+function getEquipmentModeElements() {
+  if (typeof document === 'undefined') {
+    return {
+      modeRadios: [],
+      singleContainer: null,
+      packageContainer: null,
+      packageSelect: null,
+      packageHint: null,
+      packageAddButton: null,
+    };
+  }
+
+  const modeRadios = Array.from(document.querySelectorAll('input[name="reservation-equipment-mode"]'));
+  const singleContainer = document.querySelector('[data-equipment-mode="single"]');
+  const packageContainer = document.querySelector('[data-equipment-mode="package"]');
+  const packageSelect = document.getElementById('reservation-package-select');
+  const packageHint = document.getElementById('reservation-package-hint');
+  const packageAddButton = document.getElementById('add-reservation-package');
+
+  return {
+    modeRadios,
+    singleContainer,
+    packageContainer,
+    packageSelect,
+    packageHint,
+    packageAddButton,
+  };
+}
+
+function applyEquipmentModeUi(mode) {
+  const normalized = mode === 'package' ? 'package' : 'single';
+  const {
+    singleContainer,
+    packageContainer,
+    packageSelect,
+  } = getEquipmentModeElements();
+
+  if (singleContainer) {
+    singleContainer.hidden = normalized !== 'single';
+    singleContainer.setAttribute('aria-hidden', normalized !== 'single' ? 'true' : 'false');
+  }
+
+  if (packageContainer) {
+    packageContainer.hidden = normalized !== 'package';
+    packageContainer.setAttribute('aria-hidden', normalized !== 'package' ? 'true' : 'false');
+  }
+
+  const barcodeInput = document.getElementById('equipment-barcode');
+  const descriptionInput = document.getElementById('equipment-description');
+
+  const shouldDisableSingleInputs = normalized === 'package';
+  if (barcodeInput) {
+    barcodeInput.disabled = shouldDisableSingleInputs;
+  }
+  if (descriptionInput) {
+    descriptionInput.disabled = shouldDisableSingleInputs;
+  }
+
+  if (packageSelect) {
+    packageSelect.disabled = normalized !== 'package' || packageSelect.options.length === 0;
+  }
+
+  setEquipmentBookingMode(normalized);
+
+  if (normalized === 'package') {
+    populatePackageSelect();
+  }
+}
+
+function populatePackageSelect() {
+  const {
+    packageSelect,
+    packageHint,
+  } = getEquipmentModeElements();
+
+  if (!packageSelect) {
+    return;
+  }
+
+  // Future improvement: swap this synchronous snapshot with an async API fetch
+  // so that recently added packages from other sessions appear without reloads.
+  const snapshot = buildPackageOptionsSnapshot();
+  packageOptionsCache = snapshot;
+  setCachedPackages(snapshot.map((entry) => entry.raw ?? entry));
+
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const placeholderOption = `<option value="" disabled selected>${t('reservations.create.packages.placeholder', 'اختر الحزمة')}</option>`;
+
+  const optionMarkup = snapshot
+    .map((entry) => {
+      const price = Number.isFinite(Number(entry.price)) ? Number(entry.price) : 0;
+      const priceDisplay = normalizeNumbers(price.toFixed(2));
+      const label = `${entry.name} — ${priceDisplay} ${currencyLabel}`;
+      return `<option value="${entry.id}">${label}</option>`;
+    })
+    .join('');
+
+  packageSelect.innerHTML = `${placeholderOption}${optionMarkup}`;
+
+  const hasPackages = snapshot.length > 0;
+  packageSelect.disabled = !hasPackages;
+
+  if (packageHint) {
+    if (hasPackages) {
+      packageHint.textContent = t('reservations.create.packages.hint', 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.');
+      packageHint.dataset.state = 'ready';
+    } else {
+      packageHint.textContent = t('reservations.create.packages.empty', 'لا توجد حزم معرفة حالياً. يمكنك إضافتها لاحقاً من لوحة التحكم.');
+      packageHint.dataset.state = 'empty';
+    }
+  }
+}
+
+function buildPackageConflictMessage(packageInfo, conflictingItems) {
+  const packageName = packageInfo?.name || t('reservations.create.packages.genericName', 'الحزمة');
+  const header = t('reservations.toast.packageItemsConflict', `⚠️ لا يمكن إضافة ${packageName} لأن العناصر التالية غير متاحة:`);
+
+  const lines = conflictingItems.map(({ item, blockingPackages }) => {
+    const itemLabel = item?.desc || normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')) || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم');
+    if (Array.isArray(blockingPackages) && blockingPackages.length) {
+      const packagesNames = blockingPackages.map((pkg) => pkg.name).join(', ');
+      return `• ${itemLabel} (${t('reservations.create.packages.blockedByPackage', 'محجوز ضمن الحزم')}: ${packagesNames})`;
+    }
+    return `• ${itemLabel} (${t('reservations.create.packages.blockedDirect', 'محجوز في الفترة المختارة')})`;
+  });
+
+  return [header, ...lines].join('\n');
+}
+
+function addPackageToReservation(packageId, { silent = false } = {}) {
+  const normalizedId = normalizePackageId(packageId);
+  if (!normalizedId) {
+    if (!silent) {
+      showToast(t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
+    }
+    return { success: false, reason: 'invalid' };
+  }
+
+  let packageInfo = packageOptionsCache.find((entry) => entry.id === normalizedId) || null;
+  if (!packageInfo) {
+    const raw = findPackageById(normalizedId);
+    if (raw) {
+      packageInfo = {
+        id: normalizedId,
+        name: getPackageDisplayName(raw) || normalizedId,
+        price: resolvePackagePrice(raw),
+        items: resolvePackageItems(raw),
+        raw,
+      };
+    }
+  }
+
+  if (!packageInfo) {
+    if (!silent) {
+      showToast(t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'));
+    }
+    return { success: false, reason: 'not_found' };
+  }
+
+  const { start, end } = getCreateReservationDateRange();
+  if (!start || !end) {
+    if (!silent) {
+      showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
+    }
+    return { success: false, reason: 'missing_dates' };
+  }
+
+  const currentItems = getSelectedItems();
+  const duplicate = currentItems.some((entry) => entry?.type === 'package' && normalizePackageId(entry.packageId) === normalizedId);
+  if (duplicate) {
+    if (!silent) {
+      showToast(t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'));
+    }
+    return { success: false, reason: 'duplicate' };
+  }
+
+  if (hasPackageConflict(normalizedId, start, end)) {
+    if (!silent) {
+      const name = packageInfo.name || normalizedId;
+      showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${name} محجوزة بالفعل في الفترة المختارة`));
+    }
+    return { success: false, reason: 'package_conflict' };
+  }
+
+  const packageItems = Array.isArray(packageInfo.items) && packageInfo.items.length
+    ? packageInfo.items
+    : resolvePackageItems(packageInfo.raw ?? {});
+
+  const conflictingItems = [];
+
+  packageItems.forEach((pkgItem) => {
+    const normalizedBarcode = normalizeBarcodeValue(pkgItem?.normalizedBarcode ?? pkgItem?.barcode);
+    if (!normalizedBarcode) {
+      return;
+    }
+
+    if (hasEquipmentConflict(normalizedBarcode, start, end)) {
+      const blockingPackages = getBlockingPackagesForEquipment(normalizedBarcode, start, end);
+      conflictingItems.push({ item: pkgItem, blockingPackages });
+    }
+  });
+
+  if (conflictingItems.length) {
+    if (!silent) {
+      showToast(buildPackageConflictMessage(packageInfo, conflictingItems));
+    }
+    return { success: false, reason: 'item_conflict', conflicts: conflictingItems };
+  }
+
+  const packagePayload = {
+    id: `package::${normalizedId}`,
+    packageId: normalizedId,
+    type: 'package',
+    desc: packageInfo.name || `Package ${normalizedId}`,
+    qty: 1,
+    price: Number.isFinite(Number(packageInfo.price)) ? Number(packageInfo.price) : 0,
+    barcode: `pkg-${normalizedId}`,
+    packageItems: packageItems.map((item) => ({
+      equipmentId: item?.equipmentId ?? null,
+      barcode: item?.barcode ?? item?.normalizedBarcode ?? '',
+      desc: item?.desc ?? '',
+      qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
+      price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
+    })),
+    image: packageItems.find((item) => item?.image)?.image ?? null,
+  };
+
+  addSelectedItem(packagePayload);
+  renderReservationItems();
+  renderDraftReservationSummary();
+
+  if (!silent) {
+    showToast(t('reservations.toast.packageAdded', '✅ تم إضافة الحزمة بنجاح'));
+  }
+
+  return { success: true, package: packagePayload };
+}
+
+function setupPackageAddHandler() {
+  const { packageAddButton, packageSelect } = getEquipmentModeElements();
+  if (!packageAddButton || packageAddButton.dataset.listenerAttached) {
+    return;
+  }
+
+  packageAddButton.addEventListener('click', () => {
+    const selectedValue = packageSelect?.value || '';
+    if (!selectedValue) {
+      showToast(t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
+      return;
+    }
+    addPackageToReservation(selectedValue);
+  });
+
+  packageAddButton.dataset.listenerAttached = 'true';
+}
+
+function setupEquipmentModeControls() {
+  const { modeRadios } = getEquipmentModeElements();
+  if (!modeRadios.length) {
+    return;
+  }
+
+  modeRadios.forEach((radio) => {
+    if (radio.dataset.listenerAttached) return;
+    radio.addEventListener('change', (event) => {
+      if (!event.target.checked) return;
+      applyEquipmentModeUi(event.target.value);
+    });
+    radio.dataset.listenerAttached = 'true';
+  });
+
+  setupPackageAddHandler();
+
+  const activeMode = getEquipmentBookingMode();
+  const activeRadio = modeRadios.find((radio) => radio.value === activeMode);
+  if (activeRadio) {
+    activeRadio.checked = true;
+  }
+  applyEquipmentModeUi(activeMode);
+}
+
 function renderReservationItems(containerId = 'reservation-items') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1382,6 +1693,8 @@ function renderReservationItems(containerId = 'reservation-items') {
       const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
 
+      const isPackageGroup = group.items.some((item) => item?.type === 'package');
+
       const normalizedBarcodes = group.barcodes
         .map((code) => normalizeNumbers(String(code || '')))
         .filter(Boolean);
@@ -1394,6 +1707,50 @@ function renderReservationItems(containerId = 'reservation-items') {
           </details>`
         : '';
 
+      let packageItemsMeta = '';
+      if (isPackageGroup) {
+        const aggregated = new Map();
+        group.items.forEach((item) => {
+          if (!Array.isArray(item?.packageItems)) return;
+          item.packageItems.forEach((pkgItem) => {
+            if (!pkgItem) return;
+            const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.desc || Math.random());
+            const existing = aggregated.get(key);
+            if (existing) {
+              existing.qty += Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1;
+              return;
+            }
+            aggregated.set(key, {
+              desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
+              qty: Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1,
+              barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? '',
+            });
+          });
+        });
+
+        if (aggregated.size) {
+          const itemsMarkup = Array.from(aggregated.values())
+            .map((pkgItem) => {
+              const qtyDisplay = normalizeNumbers(String(pkgItem.qty));
+              const label = pkgItem.desc || normalizeNumbers(String(pkgItem.barcode || ''));
+              const barcodeLabel = pkgItem.barcode
+                ? ` <span class="reservation-package-items__barcode">(${normalizeNumbers(String(pkgItem.barcode))})</span>`
+                : '';
+              return `<li>${label}${barcodeLabel} × ${qtyDisplay}</li>`;
+            })
+            .join('');
+
+          packageItemsMeta = `
+            <details class="reservation-package-items">
+              <summary>${t('reservations.create.packages.itemsSummary', 'عرض محتويات الحزمة')}</summary>
+              <ul class="reservation-package-items__list">
+                ${itemsMarkup}
+              </ul>
+            </details>
+          `;
+        }
+      }
+
       return `
         <tr data-group-key="${group.key}">
           <td>
@@ -1401,15 +1758,15 @@ function renderReservationItems(containerId = 'reservation-items') {
               <div class="reservation-item-thumb-wrapper">${imageCell}</div>
               <div class="reservation-item-copy">
                 <div class="reservation-item-title">${group.description || '-'}</div>
-                ${barcodesMeta}
+                ${isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta}
               </div>
             </div>
           </td>
           <td>
             <div class="reservation-quantity-control" data-group-key="${group.key}">
-              <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+              <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}" ${isPackageGroup ? 'disabled' : ''}>−</button>
               <span class="reservation-qty-value">${quantityDisplay}</span>
-              <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+              <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}" ${isPackageGroup ? 'disabled' : ''}>+</button>
             </div>
           </td>
           <td>${unitPriceDisplay}</td>
@@ -2129,6 +2486,9 @@ function setupBarcodeInput() {
 
   let autoAddTimer = null;
   const triggerAdd = () => {
+    if (getEquipmentBookingMode() !== 'single') {
+      return;
+    }
     const raw = input.value;
     if (!raw?.trim()) return;
     clearTimeout(autoAddTimer);
@@ -2146,6 +2506,9 @@ function setupBarcodeInput() {
     clearTimeout(autoAddTimer);
     const raw = input.value;
     if (!raw?.trim()) return;
+    if (getEquipmentBookingMode() !== 'single') {
+      return;
+    }
     const { start, end } = getCreateReservationDateRange();
     if (!start || !end) return;
     autoAddTimer = setTimeout(() => {
@@ -2192,8 +2555,10 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   setupProjectSelection();
 
   populateEquipmentDescriptionLists();
+  populatePackageSelect();
   setupEquipmentDescriptionInputs();
   setupEquipmentSelectionIntegration();
+  setupEquipmentModeControls();
   setupReservationTimeSync();
   setupSummaryEvents();
   setupReservationButtons();
@@ -2206,11 +2571,13 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
 
 export function refreshCreateReservationForm() {
   populateEquipmentDescriptionLists();
+  populatePackageSelect();
   populateProjectSelect();
   ensureCustomerChoices();
   setupCustomerAutocomplete();
   setupProjectSelection();
   setupEquipmentSelectionIntegration();
+  setupEquipmentModeControls();
   renderReservationItems();
   renderDraftReservationSummary();
 }
