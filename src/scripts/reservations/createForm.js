@@ -1298,14 +1298,7 @@ function applyEquipmentSelectionButtonState(button, active) {
   const isActive = Boolean(active);
   button.dataset.selectionActive = isActive ? 'true' : 'false';
   button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  button.classList.toggle('reservation-equipment-select-button--active', isActive);
-  if (isActive) {
-    button.classList.add('btn-primary');
-    button.classList.remove('btn-outline-primary');
-  } else {
-    button.classList.add('btn-outline-primary');
-    button.classList.remove('btn-primary');
-  }
+  button.classList.toggle('reservation-select-equipment-btn--active', isActive);
 }
 
 function collectSelectedItemBarcodes(items = getSelectedItems()) {
