@@ -29,7 +29,8 @@ export class ApiTestClient {
     if (!baseUrl) {
       throw new Error('baseUrl is required');
     }
-    this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const ensured = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    this.baseUrl = ensured;
     this.username = username;
     this.password = password;
     this.cookies = new Map();
@@ -73,8 +74,15 @@ export class ApiTestClient {
     if (!path) {
       return this.baseUrl;
     }
+    const normalizedBase = this.baseUrl;
+    let normalizedPath = path || '';
+
+    if (normalizedPath.startsWith('/')) {
+      normalizedPath = normalizedPath.slice(1);
+    }
+
     try {
-      return new URL(path, this.baseUrl).toString();
+      return new URL(normalizedPath, normalizedBase).toString();
     } catch (_error) {
       throw new Error(`Unable to resolve URL for path: ${path}`);
     }
