@@ -5811,3 +5811,62 @@
   color: #475569;
   margin-top: 0.5rem;
 }
+
+:is(html.dark, body.dark) .reservation-equipment-mode-toggle {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%);
+  box-shadow: 0 10px 28px rgba(8, 47, 73, 0.35);
+}
+
+:is(html.dark, body.dark) .reservation-equipment-mode-toggle .reservation-mode-button {
+  color: #e2e8f0;
+}
+
+:is(html.dark, body.dark) .reservation-equipment-mode-toggle .reservation-mode-button:hover,
+:is(html.dark, body.dark) .reservation-equipment-mode-toggle .reservation-mode-button:focus {
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+}
+
+:is(html.dark, body.dark) .btn-check:checked + .reservation-mode-button {
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45);
+}
+
+:is(html.dark, body.dark) .reservation-equipment-inputs {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.85) 100%);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.55);
+}
+
+:is(html.dark, body.dark) .reservation-equipment-inputs:focus-within {
+  border-color: rgba(59, 130, 246, 0.75);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.28);
+}
+
+:is(html.dark, body.dark) .reservation-select-equipment-btn {
+  border-color: rgba(96, 165, 250, 0.85);
+  background: rgba(23, 37, 84, 0.45);
+  color: #bfdbfe;
+  box-shadow: 0 12px 26px rgba(30, 64, 175, 0.45);
+}
+
+:is(html.dark, body.dark) .reservation-select-equipment-btn:hover,
+:is(html.dark, body.dark) .reservation-select-equipment-btn:focus {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+  color: #f8fafc;
+  box-shadow: 0 14px 36px rgba(30, 64, 175, 0.55);
+}
+
+:is(html.dark, body.dark) .reservation-select-equipment-btn--active {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%);
+  color: #f8fafc;
+  box-shadow: 0 16px 38px rgba(37, 99, 235, 0.6);
+}
+
+:is(html.dark, body.dark) .reservation-equipment-subtitle {
+  color: #e2e8f0;
+}
+
+:is(html.dark, body.dark) .reservation-equipment-hint {
+  color: #cbd5f5;
+}
