@@ -1114,7 +1114,7 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
             'equipment_id' => (int) $row['equipment_id'],
             'quantity' => (int) $row['quantity'],
             'unit_price' => (float) $row['unit_price'],
-            'notes' => $row['notes'],
+            'notes' => $row['notes'] ?? null,
             'description' => $row['description'] ?? $row['name'] ?? '',
             'barcode' => $row['barcode'] ?? '',
             'image_url' => $row['image_url'] ?? null,
@@ -1137,7 +1137,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
         $techs[] = [
             'id' => (int) $row['technician_id'],
             'role' => $row['role'],
-            'notes' => $row['notes'],
+            'notes' => $row['notes'] ?? null,
             'name' => $row['technician_name'],
         ];
     }
