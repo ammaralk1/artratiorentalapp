@@ -9,8 +9,7 @@ import {
 } from './scripts/equipment.js';
 import { renderCalendar } from './scripts/calendar.js';
 import {
-  loadReservationForm,
-  setupReservationEvents
+  initializeReservationUI
 } from './scripts/reservationsUI.js';
 import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
@@ -46,8 +45,7 @@ async function initApp() {
   initMaintenance();
   initReports();
 
-  loadReservationForm();
-  setupReservationEvents();
+  await initializeReservationUI();
 
   // ✅ رفع ملف إكسل
   const excelUploadInput = document.getElementById("excel-upload");

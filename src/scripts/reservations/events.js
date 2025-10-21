@@ -104,6 +104,9 @@ function initializeReservationPickers() {
 }
 
 export function setupReservationEvents() {
+  if (reservationEventsInitialized) {
+    return;
+  }
   enhanceTimeInputs();
   setupReservationFilters(() => renderReservations());
   setupEditReservationModalEvents(getReservationsEditContext());
@@ -147,17 +150,4 @@ export async function initializeReservationUI() {
   initializeReservationPickers();
   setupTechniciansUpdatedListener();
 }
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeReservationUI().catch((error) => {
-      console.error('❌ [reservations/events] Failed to initialize reservations UI', error);
-    });
-  }, { once: true });
-} else {
-  initializeReservationUI().catch((error) => {
-    console.error('❌ [reservations/events] Failed to initialize reservations UI', error);
-  });
-}
-
 export { initializeReservationPickers };
