@@ -151,8 +151,9 @@ export function resolvePackageItems(packageEntry) {
         }
         if (entry.price == null || entry.price === 0) {
           const priceValue = record.price ?? record.unit_price;
-          if (Number.isFinite(Number(priceValue))) {
-            entry.price = Number(priceValue);
+          const parsedPrice = Number(priceValue);
+          if (Number.isFinite(parsedPrice) && parsedPrice >= 0 && parsedPrice < 1_000_000) {
+            entry.price = parsedPrice;
           }
         }
         if (!entry.image) {
@@ -170,8 +171,9 @@ export function resolvePackageItems(packageEntry) {
         }
         if (entry.price == null || entry.price === 0) {
           const priceValue = record.price ?? record.unit_price;
-          if (Number.isFinite(Number(priceValue))) {
-            entry.price = Number(priceValue);
+          const parsedPrice = Number(priceValue);
+          if (Number.isFinite(parsedPrice) && parsedPrice >= 0 && parsedPrice < 1_000_000) {
+            entry.price = parsedPrice;
           }
         }
         if (!entry.image) {
