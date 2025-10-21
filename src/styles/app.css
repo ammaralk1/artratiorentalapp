@@ -5702,3 +5702,21 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+
+/* Reservation equipment layout adjustments */
+.reservation-equipment-inputs {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.reservation-equipment-inputs--single,
+.reservation-equipment-inputs--package {
+  margin-bottom: 1.25rem;
+}
+
+.reservation-equipment-subtitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: var(--text-strong, #1f2937);
+}

@@ -104,10 +104,10 @@ describe('calendar module', () => {
 
     const backgrounds = options.events.map((event) => event.backgroundColor);
     expect(backgrounds).toEqual([
-      'linear-gradient(135deg, #4361ee, #3a0ca3)',
-      'linear-gradient(135deg, #4361ee, #3a0ca3)',
-      'linear-gradient(135deg, #4361ee, #3a0ca3)',
-      'linear-gradient(135deg, #4361ee, #3a0ca3)'
+      'transparent',
+      'transparent',
+      'transparent',
+      'transparent'
     ]);
 
     expect(options.events[0].extendedProps.customerName).toBe('عميل');

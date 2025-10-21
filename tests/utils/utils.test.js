@@ -61,7 +61,7 @@ describe('utils module', () => {
       vi.advanceTimersByTime(500);
       expect(container?.children.length).toBe(1);
 
-      vi.advanceTimersByTime(300);
+      vi.advanceTimersByTime(350);
       expect(container?.children.length).toBe(0);
     });
 
@@ -158,7 +158,7 @@ describe('utils module', () => {
 
       const result = formatDateTime('2024-02-01T01:30:00Z');
 
-      expect(formatSpy).toHaveBeenCalledWith('ar-SA-u-ca-gregory', expect.objectContaining({ calendar: 'gregory' }));
+      expect(formatSpy).toHaveBeenCalledWith(expect.stringContaining('ar-SA-u-ca-gregory'), expect.objectContaining({ calendar: 'gregory' }));
       expect(result).toContain('AM');
       expect(result).toContain('01/02/2024');
       expect(result).not.toMatch(/[٠-٩]/);

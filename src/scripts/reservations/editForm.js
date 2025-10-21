@@ -24,15 +24,18 @@ import {
   getEditPaymentProgressType,
   parseEditPaymentProgressValue,
 } from '../reservationsEdit.js';
-import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict } from './state.js';
+import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict, hasPackageConflict } from './state.js';
 import {
   findEquipmentByDescription,
   hasExactEquipmentDescription,
   updatePaymentStatusAppearance,
   getCompanySharePercent,
   ensureCompanyShareEnabled,
-  getEquipmentUnavailableMessage
+  getEquipmentUnavailableMessage,
+  buildReservationPackageEntry
 } from './createForm.js';
+
+import { buildPackageOptionsSnapshot } from '../reservationsPackages.js';
 
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
@@ -46,6 +49,155 @@ export function getEditReservationDateRange() {
     start: combineDateTime(startDate, startTime),
     end: combineDateTime(endDate, endTime)
   };
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getEditPackageElements() {
+  if (typeof document === 'undefined') {
+    return {
+      container: null,
+      select: null,
+      hint: null,
+      addButton: null,
+    };
+  }
+
+  return {
+    container: document.querySelector('.reservation-equipment-inputs--package'),
+    select: document.getElementById('edit-res-package-select'),
+    hint: document.getElementById('edit-res-package-hint'),
+    addButton: document.getElementById('edit-add-reservation-package'),
+  };
+}
+
+function populateEditPackageSelect() {
+  const { container, select, hint, addButton } = getEditPackageElements();
+  if (!select) return;
+
+  const previousValue = select.value;
+  const snapshot = buildPackageOptionsSnapshot();
+
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const placeholderOption = `<option value="" disabled selected>${t('reservations.create.packages.placeholder', 'اختر الحزمة')}</option>`;
+  const optionMarkup = snapshot
+    .map((entry) => {
+      const price = Number.isFinite(Number(entry.price)) ? Number(entry.price) : 0;
+      const priceDisplay = normalizeNumbers(price.toFixed(2));
+      const label = `${entry.name} — ${priceDisplay} ${currencyLabel}`;
+      return `<option value="${escapeHtml(entry.id)}">${escapeHtml(label)}</option>`;
+    })
+    .join('');
+
+  select.innerHTML = `${placeholderOption}${optionMarkup}`;
+
+  const hasPackages = snapshot.length > 0;
+  select.disabled = !hasPackages;
+
+  if (addButton) {
+    addButton.disabled = !hasPackages;
+  }
+
+  if (container) {
+    container.hidden = !hasPackages;
+    container.setAttribute('aria-hidden', hasPackages ? 'false' : 'true');
+  }
+
+  if (hint) {
+    if (hasPackages) {
+      hint.textContent = t('reservations.create.packages.hint', 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.');
+      hint.dataset.state = 'ready';
+    } else {
+      hint.textContent = t('reservations.create.packages.empty', 'لا توجد حزم معرفة حالياً. يمكنك إضافتها لاحقاً من لوحة التحكم.');
+      hint.dataset.state = 'empty';
+    }
+  }
+
+  if (hasPackages && previousValue && snapshot.some((entry) => entry.id === previousValue)) {
+    select.value = previousValue;
+  } else {
+    select.selectedIndex = 0;
+  }
+}
+
+function addPackageToEditingReservationList(packageId, { silent = false } = {}) {
+  const normalizedId = String(packageId ?? '').trim();
+  if (!normalizedId) {
+    if (!silent) {
+      showToast(t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
+    }
+    return { success: false, reason: 'invalid' };
+  }
+
+  const { index: editingIndex, items: currentItems = [] } = getEditingState();
+  const { start, end } = getEditReservationDateRange();
+  const { reservations = [] } = loadData();
+  const currentReservation = editingIndex != null ? reservations[editingIndex] || null : null;
+  const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
+
+  const result = buildReservationPackageEntry(normalizedId, {
+    existingItems: currentItems,
+    start,
+    end,
+    ignoreReservationId: ignoreId,
+  });
+
+  if (!result.success) {
+    if (!silent) {
+      showToast(result.message || t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
+    }
+    return result;
+  }
+
+  const nextItems = [...currentItems, result.package];
+  setEditingState(editingIndex, nextItems);
+  renderEditReservationItems(nextItems);
+  updateEditReservationSummary();
+  if (!silent) {
+    showToast(t('reservations.toast.packageAdded', '✅ تم إضافة الحزمة بنجاح'));
+  }
+  return result;
+}
+
+function handleEditPackageAdd() {
+  const { select } = getEditPackageElements();
+  if (!select) return;
+  const selectedValue = select.value || '';
+  const result = addPackageToEditingReservationList(selectedValue);
+  if (result?.success && select) {
+    select.value = '';
+    select.selectedIndex = 0;
+  }
+}
+
+function setupEditPackageControls() {
+  const { addButton, select } = getEditPackageElements();
+
+  if (addButton && !addButton.dataset.listenerAttached) {
+    addButton.addEventListener('click', () => {
+      handleEditPackageAdd();
+    });
+    addButton.dataset.listenerAttached = 'true';
+  }
+
+  if (select && !select.dataset.listenerAttached) {
+    select.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleEditPackageAdd();
+      }
+    });
+    select.dataset.listenerAttached = 'true';
+  }
+
+  populateEditPackageSelect();
 }
 
 export function renderEditReservationItems(items = []) {
@@ -74,6 +226,7 @@ export function renderEditReservationItems(items = []) {
       const imageCell = imageSource
         ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
         : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+      const isPackageGroup = group.items.some((item) => item?.type === 'package');
       const quantityDisplay = normalizeNumbers(String(group.count));
       const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
       const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * group.count;
@@ -92,6 +245,56 @@ export function renderEditReservationItems(items = []) {
           </details>`
         : '';
 
+      let packageItemsMeta = '';
+      if (isPackageGroup) {
+        const aggregated = new Map();
+        group.items.forEach((item) => {
+          if (!Array.isArray(item?.packageItems)) return;
+          item.packageItems.forEach((pkgItem) => {
+            if (!pkgItem) return;
+            const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
+            const existing = aggregated.get(key);
+            const qty = Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1;
+            if (existing) {
+              existing.qty += qty;
+              return;
+            }
+            aggregated.set(key, {
+              desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
+              qty,
+              barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
+            });
+          });
+        });
+
+        if (aggregated.size) {
+          const itemsMarkup = Array.from(aggregated.values())
+            .map((pkgItem) => {
+              const qtyDisplay = normalizeNumbers(String(pkgItem.qty));
+              const label = escapeHtml(pkgItem.desc || '');
+              const barcodeLabel = pkgItem.barcode
+                ? ` <span class="reservation-package-items__barcode">(${escapeHtml(normalizeNumbers(String(pkgItem.barcode)))})</span>`
+                : '';
+              return `<li>${label}${barcodeLabel} × ${qtyDisplay}</li>`;
+            })
+            .join('');
+
+          packageItemsMeta = `
+            <details class="reservation-package-items">
+              <summary>${t('reservations.create.packages.itemsSummary', 'عرض محتويات الحزمة')}</summary>
+              <ul class="reservation-package-items__list">
+                ${itemsMarkup}
+              </ul>
+            </details>
+          `;
+        }
+      }
+
+      const quantityControlClass = isPackageGroup
+        ? 'reservation-quantity-control reservation-quantity-control--static'
+        : 'reservation-quantity-control';
+      const disableQuantityAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
+
       return `
         <tr data-group-key="${group.key}">
           <td>
@@ -99,15 +302,15 @@ export function renderEditReservationItems(items = []) {
               <div class="reservation-item-thumb-wrapper">${imageCell}</div>
               <div class="reservation-item-copy">
                 <div class="reservation-item-title">${group.description || '-'}</div>
-                ${barcodesMeta}
+                ${isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta}
               </div>
             </div>
           </td>
           <td>
-            <div class="reservation-quantity-control" data-group-key="${group.key}">
-              <button type="button" class="reservation-qty-btn" data-action="decrease-edit-group" data-group-key="${group.key}" aria-label="${decreaseLabel}">−</button>
+            <div class="${quantityControlClass}" data-group-key="${group.key}">
+              <button type="button" class="reservation-qty-btn" data-action="decrease-edit-group" data-group-key="${group.key}" aria-label="${decreaseLabel}"${disableQuantityAttr}>−</button>
               <span class="reservation-qty-value">${quantityDisplay}</span>
-              <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}">+</button>
+              <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}"${disableQuantityAttr}>+</button>
             </div>
           </td>
           <td>${unitPriceDisplay}</td>
@@ -122,6 +325,7 @@ export function renderEditReservationItems(items = []) {
 
   ensureGroupHandler(container);
 }
+
 
 function formatPaymentTypeLabel(type) {
   switch (type) {
@@ -332,6 +536,9 @@ function decreaseEditReservationGroup(groupKey) {
   const groups = groupReservationItems(items);
   const target = groups.find((entry) => entry.key === groupKey);
   if (!target) return;
+  if (target.items.some((item) => item?.type === 'package')) {
+    return;
+  }
 
   const removeIndex = target.itemIndices[target.itemIndices.length - 1];
   if (removeIndex == null) return;
@@ -356,6 +563,9 @@ function increaseEditReservationGroup(groupKey) {
   const groups = groupReservationItems(items);
   const target = groups.find((entry) => entry.key === groupKey);
   if (!target) return;
+  if (target.items.some((item) => item?.type === 'package')) {
+    return;
+  }
 
   const { start, end } = getEditReservationDateRange();
   if (!start || !end) {
@@ -819,6 +1029,7 @@ export function getEditContext() {
     addEquipmentToEditingReservation,
     combineDateTime,
     hasEquipmentConflict,
+    hasPackageConflict,
     hasTechnicianConflict,
     renderReservations,
     handleReservationsMutation,
@@ -829,6 +1040,20 @@ export function getEditContext() {
 if (typeof document !== 'undefined') {
   document.addEventListener('language:changed', () => {
     updateEditReservationSummary();
+  });
+
+  const initEditPackages = () => {
+    setupEditPackageControls();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEditPackages, { once: true });
+  } else {
+    initEditPackages();
+  }
+
+  document.addEventListener('packages:changed', () => {
+    populateEditPackageSelect();
   });
 }
 

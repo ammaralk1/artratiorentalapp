@@ -75,6 +75,27 @@ let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
 
+function resolvePackageInfo(normalizedId) {
+  if (!normalizedId) return null;
+  let packageInfo = packageOptionsCache.find((entry) => entry.id === normalizedId) || null;
+  if (packageInfo) {
+    return packageInfo;
+  }
+
+  const raw = findPackageById(normalizedId);
+  if (!raw) return null;
+
+  packageInfo = {
+    id: normalizedId,
+    name: getPackageDisplayName(raw) || normalizedId,
+    price: resolvePackagePrice(raw),
+    items: resolvePackageItems(raw),
+    raw,
+  };
+
+  return packageInfo;
+}
+
 function escapeHtml(value = '') {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -1535,66 +1556,60 @@ function buildPackageConflictMessage(packageInfo, conflictingItems) {
   return [header, ...lines].join('\n');
 }
 
-function addPackageToReservation(packageId, { silent = false } = {}) {
+export function buildReservationPackageEntry(packageId, {
+  existingItems = [],
+  start,
+  end,
+  ignoreReservationId = null,
+} = {}) {
   const normalizedId = normalizePackageId(packageId);
   if (!normalizedId) {
-    if (!silent) {
-      showToast(t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
-    }
-    return { success: false, reason: 'invalid' };
+    return {
+      success: false,
+      reason: 'invalid',
+      message: t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'),
+    };
   }
 
-  let packageInfo = packageOptionsCache.find((entry) => entry.id === normalizedId) || null;
+  const packageInfo = resolvePackageInfo(normalizedId);
   if (!packageInfo) {
-    const raw = findPackageById(normalizedId);
-    if (raw) {
-      packageInfo = {
-        id: normalizedId,
-        name: getPackageDisplayName(raw) || normalizedId,
-        price: resolvePackagePrice(raw),
-        items: resolvePackageItems(raw),
-        raw,
-      };
-    }
+    return {
+      success: false,
+      reason: 'not_found',
+      message: t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'),
+    };
   }
 
-  if (!packageInfo) {
-    if (!silent) {
-      showToast(t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'));
-    }
-    return { success: false, reason: 'not_found' };
-  }
-
-  const { start, end } = getCreateReservationDateRange();
   if (!start || !end) {
-    if (!silent) {
-      showToast(t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'));
-    }
-    return { success: false, reason: 'missing_dates' };
+    return {
+      success: false,
+      reason: 'missing_dates',
+      message: t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'),
+    };
   }
 
-  const currentItems = getSelectedItems();
-  const duplicate = currentItems.some((entry) => entry?.type === 'package' && normalizePackageId(entry.packageId) === normalizedId);
-  if (duplicate) {
-    if (!silent) {
-      showToast(t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'));
-    }
-    return { success: false, reason: 'duplicate' };
+  if (existingItems.some((entry) => entry?.type === 'package' && normalizePackageId(entry.packageId) === normalizedId)) {
+    return {
+      success: false,
+      reason: 'duplicate',
+      message: t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'),
+    };
   }
 
-  if (hasPackageConflict(normalizedId, start, end)) {
-    if (!silent) {
-      const name = packageInfo.name || normalizedId;
-      showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${name} محجوزة بالفعل في الفترة المختارة`));
-    }
-    return { success: false, reason: 'package_conflict' };
+  if (hasPackageConflict(normalizedId, start, end, ignoreReservationId)) {
+    const name = packageInfo.name || normalizedId;
+    return {
+      success: false,
+      reason: 'package_conflict',
+      message: t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${name} محجوزة بالفعل في الفترة المختارة`),
+    };
   }
 
   const packageItems = Array.isArray(packageInfo.items) && packageInfo.items.length
     ? packageInfo.items
     : resolvePackageItems(packageInfo.raw ?? {});
 
-  const selectedBarcodesSet = collectSelectedItemBarcodes(getSelectedItems());
+  const selectedBarcodesSet = collectSelectedItemBarcodes(existingItems);
   const duplicateItems = [];
   const seenWithinPackage = new Set();
 
@@ -1617,10 +1632,7 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
 
   if (duplicateItems.length) {
     const itemsList = duplicateItems
-      .map(({ item }) => {
-        const label = item?.desc || item?.description || item?.name || item?.barcode || item?.normalizedBarcode || '';
-        return label ? label : t('equipment.packages.items.unknown', 'معدة بدون اسم');
-      })
+      .map(({ item }) => item?.desc || item?.description || item?.name || item?.barcode || item?.normalizedBarcode || t('equipment.packages.items.unknown', 'معدة بدون اسم'))
       .map((label) => normalizeNumbers(String(label)))
       .join(', ');
 
@@ -1628,10 +1640,12 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
       ? t('reservations.toast.packageDuplicateEquipmentExternal', '⚠️ لا يمكن إضافة الحزمة لأن العناصر التالية موجودة مسبقاً في الحجز: {items}').replace('{items}', itemsList)
       : t('reservations.toast.packageDuplicateEquipmentInternal', '⚠️ بيانات الحزمة تحتوي على عناصر مكررة: {items}').replace('{items}', itemsList);
 
-    if (!silent) {
-      showToast(message);
-    }
-    return { success: false, reason: 'package_duplicate_equipment', duplicates: duplicateItems };
+    return {
+      success: false,
+      reason: 'package_duplicate_equipment',
+      message,
+      duplicates: duplicateItems,
+    };
   }
 
   const conflictingItems = [];
@@ -1642,17 +1656,19 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
       return;
     }
 
-    if (hasEquipmentConflict(normalizedBarcode, start, end)) {
-      const blockingPackages = getBlockingPackagesForEquipment(normalizedBarcode, start, end);
+    if (hasEquipmentConflict(normalizedBarcode, start, end, ignoreReservationId)) {
+      const blockingPackages = getBlockingPackagesForEquipment(normalizedBarcode, start, end, ignoreReservationId);
       conflictingItems.push({ item: pkgItem, blockingPackages });
     }
   });
 
   if (conflictingItems.length) {
-    if (!silent) {
-      showToast(buildPackageConflictMessage(packageInfo, conflictingItems));
-    }
-    return { success: false, reason: 'item_conflict', conflicts: conflictingItems };
+    return {
+      success: false,
+      reason: 'item_conflict',
+      message: buildPackageConflictMessage(packageInfo, conflictingItems),
+      conflicts: conflictingItems,
+    };
   }
 
   const packagePayload = {
@@ -1674,7 +1690,37 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
     image: packageItems.find((item) => item?.image)?.image ?? null,
   };
 
-  addSelectedItem(packagePayload);
+  return { success: true, package: packagePayload, packageInfo };
+}
+
+function addPackageToReservation(packageId, { silent = false } = {}) {
+  const normalizedId = normalizePackageId(packageId);
+  if (!normalizedId) {
+    if (!silent) {
+      showToast(t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'));
+    }
+    return { success: false, reason: 'invalid' };
+  }
+
+  const { start, end } = getCreateReservationDateRange();
+  const currentItems = getSelectedItems();
+  const result = buildReservationPackageEntry(normalizedId, { existingItems: currentItems, start, end });
+
+  if (!result.success) {
+    if (!silent) {
+      const fallbackMessages = {
+        invalid: t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً'),
+        not_found: t('reservations.toast.packageNotFound', '⚠️ تعذر العثور على بيانات الحزمة المحددة'),
+        missing_dates: t('reservations.toast.requireDatesBeforeAdd', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية قبل إضافة المعدات'),
+        duplicate: t('reservations.toast.packageDuplicate', '⚠️ هذه الحزمة مضافة بالفعل إلى الحجز'),
+      };
+      const fallback = fallbackMessages[result.reason] || t('reservations.toast.packageInvalid', '⚠️ يرجى اختيار حزمة صالحة أولاً');
+      showToast(result.message || fallback);
+    }
+    return result;
+  }
+
+  addSelectedItem(result.package);
   renderReservationItems();
   renderDraftReservationSummary();
 
@@ -1682,7 +1728,7 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
     showToast(t('reservations.toast.packageAdded', '✅ تم إضافة الحزمة بنجاح'));
   }
 
-  return { success: true, package: packagePayload };
+  return { success: true, package: result.package };
 }
 
 function setupPackageAddHandler() {

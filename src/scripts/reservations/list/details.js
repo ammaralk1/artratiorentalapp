@@ -3,6 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, groupReservationItems } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
+import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
@@ -374,6 +375,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         const imageCell = imageSource
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
+        const isPackageGroup = group.items.some((item) => item?.type === 'package');
         const quantityValue = Number(group.quantity) || Number(group.count) || 0;
         const quantityDisplay = normalizeNumbers(String(quantityValue));
         const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
@@ -392,6 +394,53 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             </details>`
           : '';
 
+        let packageItemsMeta = '';
+        if (isPackageGroup) {
+          const aggregated = new Map();
+          group.items.forEach((item) => {
+            if (!Array.isArray(item?.packageItems)) return;
+            item.packageItems.forEach((pkgItem) => {
+              if (!pkgItem) return;
+              const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
+              const existing = aggregated.get(key);
+              const qty = Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1;
+              if (existing) {
+                existing.qty += qty;
+                return;
+              }
+              aggregated.set(key, {
+                desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
+                qty,
+                barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
+              });
+            });
+          });
+
+          if (aggregated.size) {
+            const itemsMarkup = Array.from(aggregated.values())
+              .map((pkgItem) => {
+                const qtyDisplay = normalizeNumbers(String(pkgItem.qty));
+                const label = escapeHtml(pkgItem.desc || '');
+                const barcodeLabel = pkgItem.barcode
+                  ? ` <span class="reservation-package-items__barcode">(${escapeHtml(normalizeNumbers(String(pkgItem.barcode)))})</span>`
+                  : '';
+                return `<li>${label}${barcodeLabel} × ${qtyDisplay}</li>`;
+              })
+              .join('');
+
+            packageItemsMeta = `
+              <details class="reservation-package-items">
+                <summary>${t('reservations.create.packages.itemsSummary', 'عرض محتويات الحزمة')}</summary>
+                <ul class="reservation-package-items__list">
+                  ${itemsMarkup}
+                </ul>
+              </details>
+            `;
+          }
+        }
+
+        const combinedMeta = isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta;
+
         return `
           <tr>
             <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--item">
@@ -399,7 +448,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
                 <div class="reservation-item-thumb-wrapper">${imageCell}</div>
                 <div class="reservation-item-copy">
                   <div class="reservation-item-title">${escapeHtml(representative.desc || representative.description || representative.name || group.description || '-')}</div>
-                  ${barcodesMeta}
+                  ${combinedMeta}
                 </div>
               </div>
             </td>
@@ -419,6 +468,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         `;
       }).join('')
     : `<tr><td colspan="5" class="text-center">${noItemsText}</td></tr>`;
+
 
   const itemsTable = `
     <div class="table-responsive reservation-modal-items-wrapper">

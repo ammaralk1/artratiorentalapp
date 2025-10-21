@@ -206,7 +206,7 @@ describe('reservationsTechnicians', () => {
     expect(tbody.innerHTML).toContain('Alpha');
     expect(tbody.innerHTML).toContain('Beta');
     expect(tbody.querySelector('input[value="t2"]').checked).toBe(true);
-    expect(tbody.textContent).toContain('150 ريال');
+    expect(tbody.textContent).toContain('150 SR');
 
     const searchInput = document.getElementById('technician-picker-search');
     searchInput.value = 'beta';

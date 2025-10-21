@@ -405,10 +405,11 @@ describe('reservations/editForm module', () => {
     expect(container.innerHTML).toContain('Camera');
   });
 
-  it('addEquipmentToEditingByDescription blocks unavailable equipment', async () => {
+  it('addEquipmentToEditingByDescription blocks reserved equipment via conflict check', async () => {
     const input = { value: 'Lens' };
     findEquipmentByDescriptionMock.mockReturnValue({ id: 3, barcode: 'L3', desc: 'Lens', price: 50 });
     getEquipmentAvailabilityStatusMock.mockReturnValueOnce('reserved');
+    hasEquipmentConflictMock.mockReturnValueOnce(true);
 
     const start = document.createElement('input');
     start.id = 'edit-res-start';
@@ -422,8 +423,8 @@ describe('reservations/editForm module', () => {
 
     module.addEquipmentToEditingByDescription(input);
 
-    expect(getEquipmentUnavailableMessageMock).toHaveBeenCalledWith('reserved');
-    expect(showToastMock).toHaveBeenCalledWith('غير متاح (reserved)');
+    expect(getEquipmentUnavailableMessageMock).not.toHaveBeenCalled();
+    expect(showToastMock).toHaveBeenCalledWith('⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية');
     expect(setEditingStateMock).not.toHaveBeenCalled();
   });
 

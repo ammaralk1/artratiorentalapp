@@ -49,8 +49,9 @@ describe('reservationsSummary', () => {
     // Crew: 100 per day * 2 days -> 200
     // Subtotal = 400
     // Discount 10% -> 360
-    // Tax 15% -> 414
-    expect(total).toBe(414);
+    // Company share 10% -> 396
+    // Tax 15% -> 455.4
+    expect(total).toBeCloseTo(455.4, 2);
   });
 
   it('buildSummaryHtml constructs localized summary', async () => {

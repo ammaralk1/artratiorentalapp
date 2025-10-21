@@ -510,6 +510,7 @@ export function editReservation(index, {
 export async function saveReservationChanges({
   combineDateTime,
   hasEquipmentConflict,
+  hasPackageConflict,
   hasTechnicianConflict,
   updateEditReservationSummary,
   renderReservations,
@@ -595,6 +596,21 @@ export async function saveReservationChanges({
     const code = normalizeBarcodeValue(item.barcode);
     if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
       showToast(t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات'));
+      return;
+    }
+  }
+
+  const hasPackageConflictFn = typeof hasPackageConflict === 'function'
+    ? hasPackageConflict
+    : () => false;
+
+  for (const item of editingItems) {
+    if (item?.type !== 'package') continue;
+    const packageId = item.packageId ?? item.package_id ?? null;
+    if (!packageId) continue;
+    if (hasPackageConflictFn(packageId, start, end, ignoreReservationKey)) {
+      const packageName = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
+      showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`));
       return;
     }
   }

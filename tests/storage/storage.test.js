@@ -26,7 +26,9 @@ describe('storage module', () => {
       equipment: [],
       technicians: [],
       maintenance: [],
-      projects: []
+      projects: [],
+      packages: [],
+      technicianPayouts: []
     });
   });
 
