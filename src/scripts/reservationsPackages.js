@@ -111,6 +111,76 @@ export function resolvePackageItems(packageEntry) {
   });
 
   const seen = new Map();
+  const { equipment = [] } = loadData() || {};
+  const equipmentIndexById = new Map();
+  const equipmentIndexByBarcode = new Map();
+
+  (Array.isArray(equipment) ? equipment : []).forEach((record) => {
+    if (!record || typeof record !== 'object') return;
+    const idCandidates = [
+      record.id,
+      record.equipment_id,
+      record.equipmentId,
+      record.item_id,
+      record.itemId,
+    ];
+    idCandidates
+      .map((value) => (value != null ? String(value) : ''))
+      .filter(Boolean)
+      .forEach((key) => {
+        if (!equipmentIndexById.has(key)) {
+          equipmentIndexById.set(key, record);
+        }
+      });
+
+    const barcode = normalizeBarcodeValueLocal(record.barcode);
+    if (barcode && !equipmentIndexByBarcode.has(barcode)) {
+      equipmentIndexByBarcode.set(barcode, record);
+    }
+  });
+
+  collected.forEach((entry) => {
+    if (entry.equipmentId && equipmentIndexById.has(entry.equipmentId)) {
+      const record = equipmentIndexById.get(entry.equipmentId);
+      if (record) {
+        if (!entry.desc) {
+          entry.desc = record.desc || record.description || record.name || '';
+        }
+        if (!entry.barcode) {
+          entry.barcode = record.barcode || '';
+        }
+        if (entry.price == null || entry.price === 0) {
+          const priceValue = record.price ?? record.unit_price;
+          if (Number.isFinite(Number(priceValue))) {
+            entry.price = Number(priceValue);
+          }
+        }
+        if (!entry.image) {
+          entry.image = record.image || record.imageUrl || record.img || null;
+        }
+      }
+    } else if (entry.normalizedBarcode && equipmentIndexByBarcode.has(entry.normalizedBarcode)) {
+      const record = equipmentIndexByBarcode.get(entry.normalizedBarcode);
+      if (record) {
+        if (!entry.desc) {
+          entry.desc = record.desc || record.description || record.name || '';
+        }
+        if (!entry.barcode) {
+          entry.barcode = record.barcode || '';
+        }
+        if (entry.price == null || entry.price === 0) {
+          const priceValue = record.price ?? record.unit_price;
+          if (Number.isFinite(Number(priceValue))) {
+            entry.price = Number(priceValue);
+          }
+        }
+        if (!entry.image) {
+          entry.image = record.image || record.imageUrl || record.img || null;
+        }
+      }
+    }
+  });
+
   collected.forEach((entry) => {
     const normalized = entry.normalizedBarcode || (entry.barcode ? normalizeBarcodeValueLocal(entry.barcode) : '');
     const key = normalized || (entry.equipmentId ? `id:${entry.equipmentId}` : null);
@@ -178,6 +248,7 @@ export function buildPackageOptionsSnapshot() {
       id,
       name,
       price,
+      code: entry?.package_code ?? entry?.code ?? id,
       items: resolvePackageItems(entry),
       raw: entry,
     };

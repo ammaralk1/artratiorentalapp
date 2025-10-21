@@ -16,7 +16,6 @@ import { resolvePackageItems } from './reservationsPackages.js';
 let packagesState = [];
 let packageItemsDraft = [];
 let editingPackageId = null;
-let selectionDraft = [];
 let selectionActive = false;
 let eventsRegistered = false;
 
@@ -41,6 +40,10 @@ function cacheElements() {
   elements.tableBody = document.getElementById('equipment-packages-table-body');
   elements.emptyRow = document.getElementById('equipment-packages-empty-row');
   elements.countBadge = document.getElementById('equipment-packages-count');
+
+  if (elements.applySelection) {
+    elements.applySelection.style.display = 'none';
+  }
 }
 
 function getEquipmentSnapshot() {
@@ -236,7 +239,6 @@ function renderPackagesTable() {
 function resetPackageForm() {
   editingPackageId = null;
   packageItemsDraft = [];
-  selectionDraft = [];
   if (elements.hiddenId) elements.hiddenId.value = '';
   if (elements.nameInput) elements.nameInput.value = '';
   if (elements.codeInput) elements.codeInput.value = '';
@@ -252,7 +254,6 @@ function resetPackageForm() {
 function loadPackageIntoForm(pkg) {
   editingPackageId = pkg.id || null;
   packageItemsDraft = pkg.items.map((item) => ({ ...item }));
-  selectionDraft = [];
   if (elements.hiddenId) elements.hiddenId.value = editingPackageId || '';
   if (elements.nameInput) elements.nameInput.value = pkg.name || '';
   if (elements.codeInput) elements.codeInput.value = pkg.package_code || '';
@@ -277,9 +278,6 @@ function updateSelectionUi(forceActive = selectionActive) {
   if (elements.openSelector) {
     elements.openSelector.disabled = selectionActive;
   }
-  if (elements.applySelection) {
-    elements.applySelection.disabled = !selectionActive || selectionDraft.length === 0;
-  }
   if (elements.cancelSelection) {
     elements.cancelSelection.disabled = !selectionActive;
   }
@@ -290,26 +288,13 @@ function updateSelectionCounter() {
   if (!elements.selectionCounter) return;
   if (!selectionActive) {
     elements.selectionCounter.textContent = t('equipment.packages.selection.counter', 'لم يتم اختيار عناصر بعد.');
-    if (elements.applySelection) {
-      elements.applySelection.disabled = true;
-    }
     return;
   }
 
-  const total = selectionDraft.reduce((sum, entry) => sum + (Number(entry.quantity) || 0), 0);
-  if (total > 0) {
-    const countText = normalizeNumbers(String(total));
-    elements.selectionCounter.textContent = t('equipment.packages.selection.counterWithValue', 'تم اختيار {count} عنصر/عناصر')
-      .replace('{count}', countText);
-    if (elements.applySelection) {
-      elements.applySelection.disabled = false;
-    }
-  } else {
-    elements.selectionCounter.textContent = t('equipment.packages.selection.waiting', 'اختر المعدات من القائمة ثم اضغط "إضافة العناصر للحزمة"');
-    if (elements.applySelection) {
-      elements.applySelection.disabled = true;
-    }
-  }
+  elements.selectionCounter.textContent = t(
+    'equipment.packages.selection.autoMode',
+    'أي معدة تختارها ستُضاف مباشرة إلى الحزمة. استخدم زر إلغاء للخروج من وضع الاختيار.'
+  );
 }
 
 function handleSelectionChange(event) {
@@ -320,26 +305,19 @@ function handleSelectionChange(event) {
 
   if (mode !== 'package-manager' && mode !== 'equipment-packages') {
     if (!active && selectionActive) {
-      selectionDraft = [];
       updateSelectionUi(false);
+      focusPackageForm();
     }
     return;
   }
 
   if (active) {
-    selectionDraft = [];
     updateSelectionUi(true);
     return;
   }
 
-  const reason = detail.reason || 'manual';
-  if (reason !== 'package-commit') {
-    selectionDraft = [];
-  }
   updateSelectionUi(false);
-  if (reason === 'package-commit' || reason === 'package-cancel' || reason === 'package-finish-button') {
-    focusPackageForm();
-  }
+  focusPackageForm();
 }
 
 function handleSelectionAdd(event) {
@@ -369,6 +347,8 @@ function handleSelectionAdd(event) {
 
   const limit = Math.min(unique.length, quantityRequested);
   let added = 0;
+  const addedNames = [];
+
   for (let i = 0; i < limit; i += 1) {
     const code = unique[i];
     const equipment = barcodeIndex.get(code);
@@ -379,55 +359,37 @@ function handleSelectionAdd(event) {
     if (equipmentId == null) {
       continue;
     }
-    const existing = selectionDraft.find((entry) => entry.equipment_id === String(equipmentId));
+    const name = equipment?.desc || equipment?.name || code;
+    const existing = packageItemsDraft.find((entry) => entry.equipment_id === String(equipmentId));
     if (existing) {
       existing.quantity += 1;
     } else {
-      selectionDraft.push({
+      packageItemsDraft.push({
         equipment_id: String(equipmentId),
         quantity: 1,
         unit_price: Number.isFinite(Number(equipment?.price)) ? Number(equipment.price) : null,
       });
     }
     added += 1;
+    addedNames.push(name);
   }
 
   if (added > 0) {
+    renderDraftItems();
     updateSelectionCounter();
+    const label = added === 1
+      ? t('equipment.packages.selection.itemAddedSingle', '✅ تمت إضافة {name} إلى الحزمة')
+      : t('equipment.packages.selection.itemAddedMulti', '✅ تمت إضافة {count} معدات إلى الحزمة');
+    const message = added === 1
+      ? label.replace('{name}', addedNames[0] || '')
+      : label.replace('{count}', normalizeNumbers(String(added)));
+    showToast(message);
   } else {
     showToast(t('equipment.packages.selection.noMatch', '⚠️ تعذر ربط المعدات المختارة بالحزم، تحقق من بيانات المعدات'), 4000);
   }
 }
 
-function applySelectionDraft() {
-  if (!selectionDraft.length) {
-    showToast(t('equipment.packages.selection.empty', '⚠️ لم يتم اختيار أي معدات بعد'));
-    return;
-  }
-
-  selectionDraft.forEach((entry) => {
-    const existing = packageItemsDraft.find((item) => item.equipment_id === entry.equipment_id);
-    if (existing) {
-      existing.quantity += entry.quantity;
-    } else {
-      packageItemsDraft.push({
-        equipment_id: entry.equipment_id,
-        quantity: entry.quantity,
-        unit_price: entry.unit_price ?? null,
-      });
-    }
-  });
-
-  renderDraftItems();
-  showToast(t('equipment.packages.selection.applied', '✅ تمت إضافة المعدات المحددة إلى الحزمة'));
-  selectionDraft = [];
-  updateSelectionUi(false);
-  clearEquipmentSelection('package-commit');
-  focusPackageForm();
-}
-
 function cancelSelectionDraft() {
-  selectionDraft = [];
   updateSelectionUi(false);
   clearEquipmentSelection('package-cancel');
   focusPackageForm();
@@ -623,11 +585,6 @@ function wireEvents() {
   elements.openSelector?.addEventListener('click', (event) => {
     event.preventDefault();
     startSelection();
-  });
-
-  elements.applySelection?.addEventListener('click', (event) => {
-    event.preventDefault();
-    applySelectionDraft();
   });
 
   elements.cancelSelection?.addEventListener('click', (event) => {

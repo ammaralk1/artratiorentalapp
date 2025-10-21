@@ -1600,7 +1600,7 @@ function addPackageToReservation(packageId, { silent = false } = {}) {
     desc: packageInfo.name || `Package ${normalizedId}`,
     qty: 1,
     price: Number.isFinite(Number(packageInfo.price)) ? Number(packageInfo.price) : 0,
-    barcode: `pkg-${normalizedId}`,
+    barcode: packageInfo.code || packageInfo.raw?.package_code || `pkg-${normalizedId}`,
     packageItems: packageItems.map((item) => ({
       equipmentId: item?.equipmentId ?? null,
       barcode: item?.barcode ?? item?.normalizedBarcode ?? '',
