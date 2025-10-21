@@ -1,6 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
+import { findPackageById, normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
 import {
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculateDraftFinancialBreakdown,
@@ -74,6 +75,10 @@ export async function createReservationApi(payload) {
       created.paymentHistory = fallbackHistory;
     }
   }
+  if (Array.isArray(payload?.packages) && payload.packages.length) {
+    const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
+    created.packages = mergePackageCollections(created.packages, fallbackPackages);
+  }
   if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
       items: created.items || [],
@@ -110,6 +115,10 @@ export async function updateReservationApi(id, payload) {
       updated.paymentHistory = fallbackHistory;
       console.debug('[reservationsService] updateReservationApi applied fallback history', updated.paymentHistory);
     }
+  }
+  if (Array.isArray(payload?.packages) && payload.packages.length) {
+    const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
+    updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
   }
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
@@ -189,6 +198,8 @@ export function toInternalReservation(raw = {}) {
   const items = Array.isArray(raw.items)
     ? raw.items.map(mapReservationItem)
     : [];
+
+  const packages = mapReservationPackagesFromSource(raw);
 
   const technicianEntries = Array.isArray(raw.technicians) ? raw.technicians : [];
   const technicianIds = technicianEntries.map((entry) => {
@@ -331,6 +342,7 @@ export function toInternalReservation(raw = {}) {
     startDatetime: start,
     endDatetime: end,
     customerPhone: raw.customer_phone ?? raw.customerPhone ?? null,
+    packages,
     companySharePercent,
     companyShareAmount,
     companyShareEnabled,
@@ -338,20 +350,55 @@ export function toInternalReservation(raw = {}) {
 }
 
 export function mapReservationItem(item = {}) {
-  const equipmentId = item.equipment_id ?? item.equipmentId ?? item.id ?? item.item_id ?? null;
-  const quantity = toPositiveInt(item.quantity ?? item.qty ?? 1);
-  const unitPrice = toNumber(item.unit_price ?? item.price ?? 0);
+  if (!item || typeof item !== 'object') {
+    return {
+      id: '',
+      equipmentId: null,
+      barcode: '',
+      desc: '',
+      qty: 1,
+      price: 0,
+      notes: null,
+      image: null,
+    };
+  }
 
-  return {
-    id: equipmentId != null ? String(equipmentId) : '',
+  const equipmentId = item.equipment_id ?? item.equipmentId ?? item.item_id ?? item.itemId ?? null;
+  const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count ?? 1);
+  const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? item.total_price ?? item.total ?? 0);
+  const barcode = normalizeNumbers(String(item.barcode ?? item.code ?? item.serial ?? ''));
+  const desc = item.description ?? item.desc ?? item.name ?? item.title ?? '';
+
+  const mapped = {
+    id: item.id != null ? String(item.id) : (equipmentId != null ? String(equipmentId) : ''),
     equipmentId,
-    barcode: normalizeNumbers(String(item.barcode ?? item.code ?? '')),
-    desc: item.description ?? item.desc ?? item.name ?? '',
+    barcode,
+    desc,
     qty: quantity,
     price: unitPrice,
     notes: item.notes ?? null,
-    image: item.image ?? item.image_url ?? null,
+    image: item.image ?? item.image_url ?? item.imageUrl ?? null,
   };
+
+  const normalizedType = normalizeReservationItemType(item.type ?? item.item_type ?? item.kind ?? null);
+  const packageIdRaw = item.packageId ?? item.package_id ?? item.package_code ?? item.packageCode ?? item.bundleId ?? null;
+  const normalizedPackageId = normalizePackageIdentifier(packageIdRaw);
+  const packageItems = normalizeReservationPackageItemsFromEntry(item, normalizedPackageId);
+
+  if (normalizedType === 'package' || normalizedPackageId || packageItems.length) {
+    mapped.type = 'package';
+    const packageId = normalizedPackageId || (equipmentId != null ? String(equipmentId) : (mapped.id ? normalizePackageIdentifier(mapped.id) : ''));
+    if (packageId) {
+      mapped.packageId = packageId;
+      mapped.package_id = packageId;
+      mapped.package_code = item.package_code ?? item.packageCode ?? packageId;
+    }
+    mapped.name = desc || mapped.package_code || packageId || '';
+    mapped.barcode = mapped.barcode || normalizeNumbers(String(item.package_code ?? item.packageCode ?? ''));
+    mapped.packageItems = packageItems;
+  }
+
+  return mapped;
 }
 
 export function buildReservationPayload({
@@ -740,6 +787,388 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
   });
 
   return packages;
+}
+
+function normalizeReservationItemType(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === 'package' || normalized === 'bundle' || normalized === 'pack') {
+    return 'package';
+  }
+  return normalized;
+}
+
+function normalizePackageIdentifier(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  const raw = String(value).replace(/^package::/i, '');
+  return normalizePackageId(raw);
+}
+
+function normalizeBarcodeValueLoose(value) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  return normalizeNumbers(String(value)).trim().toLowerCase();
+}
+
+function normalizePackageItemRecord(item = {}) {
+  if (!item || typeof item !== 'object') {
+    const barcode = normalizeNumbers(String(item ?? ''));
+    return {
+      equipmentId: null,
+      equipment_id: null,
+      qty: 1,
+      quantity: 1,
+      price: 0,
+      unit_price: 0,
+      barcode,
+      normalizedBarcode: normalizeBarcodeValueLoose(barcode),
+      desc: '',
+      image: null,
+    };
+  }
+
+  const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? item.item_id ?? item.itemId ?? null;
+  const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count ?? 1);
+  const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
+  const barcode = normalizeNumbers(String(item.barcode ?? item.normalizedBarcode ?? item.code ?? item.serial ?? ''));
+
+  return {
+    equipmentId: equipmentId != null ? String(equipmentId) : null,
+    equipment_id: equipmentId,
+    qty: quantity,
+    quantity,
+    price: unitPrice,
+    unit_price: unitPrice,
+    barcode,
+    normalizedBarcode: normalizeBarcodeValueLoose(item.normalizedBarcode ?? barcode),
+    desc: item.desc ?? item.description ?? item.name ?? '',
+    image: item.image ?? item.image_url ?? item.imageUrl ?? null,
+  };
+}
+
+function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId = '') {
+  if (!entry || typeof entry !== 'object') {
+    return [];
+  }
+
+  const packageId = normalizePackageIdentifier(fallbackPackageId
+    || entry.packageId
+    || entry.package_id
+    || entry.package_code
+    || entry.packageCode
+    || entry.bundleId
+    || entry.bundle_id
+    || entry.id);
+
+  const candidates = [];
+  if (Array.isArray(entry.packageItems)) candidates.push(...entry.packageItems);
+  if (Array.isArray(entry.package_items)) candidates.push(...entry.package_items);
+  if (Array.isArray(entry.items)) candidates.push(...entry.items);
+  if (Array.isArray(entry.equipment)) candidates.push(...entry.equipment);
+  if (Array.isArray(entry.contents)) candidates.push(...entry.contents);
+
+  let resolved = resolvePackageItems({
+    ...entry,
+    id: entry.id ?? packageId ?? entry.package_code ?? entry.packageCode ?? entry.code ?? null,
+    packageId: packageId,
+    package_id: packageId,
+    package_code: entry.package_code ?? entry.packageCode ?? entry.code ?? entry.id ?? packageId,
+    items: candidates,
+    packageItems: candidates,
+  });
+
+  if ((!Array.isArray(resolved) || resolved.length === 0) && packageId) {
+    const definition = findPackageById(packageId);
+    if (definition) {
+      resolved = resolvePackageItems(definition);
+    }
+  }
+
+  if (!Array.isArray(resolved) || resolved.length === 0) {
+    return [];
+  }
+
+  const normalized = resolved.map((item) => normalizePackageItemRecord(item));
+
+  const merged = new Map();
+  normalized.forEach((pkgItem) => {
+    const key = pkgItem.normalizedBarcode || (pkgItem.equipmentId ? `id:${pkgItem.equipmentId}` : null);
+    if (!key) {
+      return;
+    }
+    if (merged.has(key)) {
+      const existing = merged.get(key);
+      existing.qty += pkgItem.qty;
+      existing.quantity += pkgItem.quantity;
+      if ((!existing.price || existing.price === 0) && pkgItem.price) {
+        existing.price = pkgItem.price;
+        existing.unit_price = pkgItem.unit_price;
+      }
+      if (!existing.desc && pkgItem.desc) {
+        existing.desc = pkgItem.desc;
+      }
+      if (!existing.image && pkgItem.image) {
+        existing.image = pkgItem.image;
+      }
+      return;
+    }
+    merged.set(key, { ...pkgItem });
+  });
+
+  return Array.from(merged.values());
+}
+
+function derivePackageUnitPrice(entry = {}, packageItems = [], quantity = 1) {
+  const totalCandidate = entry.total_price
+    ?? entry.totalPrice
+    ?? entry.total
+    ?? entry.amount
+    ?? null;
+
+  if (Number.isFinite(Number(totalCandidate))) {
+    const numericTotal = toNumber(totalCandidate);
+    return quantity > 0 ? Number((numericTotal / quantity).toFixed(2)) : numericTotal;
+  }
+
+  if (Number.isFinite(Number(entry.unit_price ?? entry.unitPrice ?? entry.price))) {
+    return toNumber(entry.unit_price ?? entry.unitPrice ?? entry.price);
+  }
+
+  if (Array.isArray(packageItems) && packageItems.length) {
+    const itemsTotal = packageItems.reduce((sum, item) => sum + (Number.isFinite(Number(item.price)) ? Number(item.price) : 0), 0);
+    if (itemsTotal > 0) {
+      return Number((itemsTotal).toFixed(2));
+    }
+  }
+
+  return 0;
+}
+
+function mergePackageRecords(base, incoming) {
+  if (!base) return incoming;
+  if (!incoming) return base;
+
+  const merged = { ...base };
+
+  const assignIfMissing = (key) => {
+    if (merged[key] === undefined || merged[key] === null || merged[key] === '') {
+      merged[key] = incoming[key];
+    }
+  };
+
+  ['name', 'desc', 'barcode', 'image'].forEach(assignIfMissing);
+
+  if ((!Number.isFinite(Number(merged.unit_price)) || merged.unit_price === 0) && Number.isFinite(Number(incoming.unit_price))) {
+    merged.unit_price = incoming.unit_price;
+    merged.unitPrice = incoming.unitPrice;
+    merged.price = incoming.price;
+  }
+
+  if ((!Number.isFinite(Number(merged.total_price)) || merged.total_price === 0) && Number.isFinite(Number(incoming.total_price))) {
+    merged.total_price = incoming.total_price;
+    merged.total = incoming.total;
+  }
+
+  if (!Array.isArray(merged.packageItems) || merged.packageItems.length === 0) {
+    merged.packageItems = Array.isArray(incoming.packageItems) ? incoming.packageItems : [];
+    merged.items = merged.packageItems;
+  } else if (Array.isArray(incoming.packageItems) && incoming.packageItems.length) {
+    merged.packageItems = mergePackageItemCollections(merged.packageItems, incoming.packageItems);
+    merged.items = merged.packageItems;
+  }
+
+  return merged;
+}
+
+function mergePackageItemCollections(primary = [], secondary = []) {
+  const merged = new Map();
+
+  const append = (source) => {
+    source.forEach((item) => {
+      if (!item) return;
+      const key = item.normalizedBarcode || (item.equipmentId ? `id:${item.equipmentId}` : null);
+      if (!key) return;
+      if (merged.has(key)) {
+        const existing = merged.get(key);
+        existing.qty += item.qty ?? 0;
+        existing.quantity += item.quantity ?? 0;
+        if ((!existing.price || existing.price === 0) && item.price) {
+          existing.price = item.price;
+          existing.unit_price = item.unit_price;
+        }
+        if (!existing.desc && item.desc) {
+          existing.desc = item.desc;
+        }
+        if (!existing.image && item.image) {
+          existing.image = item.image;
+        }
+        return;
+      }
+      merged.set(key, { ...item });
+    });
+  };
+
+  append(primary);
+  append(secondary);
+
+  return Array.from(merged.values());
+}
+
+function mergePackageCollections(primary = [], secondary = []) {
+  const result = [];
+  const indexByKey = new Map();
+
+  const append = (collection) => {
+    if (!Array.isArray(collection)) return;
+    collection.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const key = entry.packageId || entry.package_id || entry.package_code || entry.id;
+      if (!key) return;
+      if (indexByKey.has(key)) {
+        const existingIndex = indexByKey.get(key);
+        result[existingIndex] = mergePackageRecords(result[existingIndex], entry);
+      } else {
+        indexByKey.set(key, result.length);
+        result.push({ ...entry });
+      }
+    });
+  };
+
+  append(primary);
+  append(secondary);
+
+  return result;
+}
+
+function convertReservationPackageEntry(entry, index = 0) {
+  if (!entry && entry !== 0) {
+    return null;
+  }
+
+  if (typeof entry === 'string' || typeof entry === 'number') {
+    const normalizedId = normalizePackageIdentifier(entry);
+    const definition = normalizedId ? findPackageById(normalizedId) : null;
+    const packageItems = definition ? normalizeReservationPackageItemsFromEntry(definition, normalizedId) : [];
+    const unitPrice = definition
+      ? toNumber(definition.price ?? definition.unit_price ?? definition.unitPrice ?? 0)
+      : 0;
+
+    const quantity = 1;
+    const total = Number((unitPrice * quantity).toFixed(2));
+
+    return {
+      id: `package::${normalizedId || index}`,
+      packageId: normalizedId || `pkg-${index}`,
+      package_id: normalizedId || `pkg-${index}`,
+      package_code: normalizeNumbers(String(entry)) || (normalizedId || `pkg-${index}`),
+      name: definition?.name ?? definition?.package_name ?? definition?.packageName ?? normalizeNumbers(String(entry)) ?? '',
+      desc: definition?.name ?? normalizeNumbers(String(entry)) ?? '',
+      quantity,
+      qty: quantity,
+      unit_price: unitPrice,
+      unitPrice: unitPrice,
+      price: unitPrice,
+      total,
+      total_price: total,
+      barcode: normalizeNumbers(String(entry)),
+      packageItems,
+      items: packageItems,
+      type: 'package',
+      image: definition?.image ?? null,
+    };
+  }
+
+  if (typeof entry !== 'object') {
+    return null;
+  }
+
+  const normalizedId = normalizePackageIdentifier(
+    entry.packageId
+      ?? entry.package_id
+      ?? entry.package_code
+      ?? entry.packageCode
+      ?? entry.code
+      ?? entry.slug
+      ?? entry.id
+  ) || `pkg-${index}`;
+
+  const quantity = toPositiveInt(entry.quantity ?? entry.qty ?? entry.count ?? entry.package_quantity ?? entry.packageQty ?? 1);
+  const packageItems = normalizeReservationPackageItemsFromEntry(entry, normalizedId);
+  const unitPrice = derivePackageUnitPrice(entry, packageItems, quantity);
+  const totalRaw = entry.total_price ?? entry.totalPrice ?? entry.total ?? (unitPrice * quantity);
+  const total = Number.isFinite(Number(totalRaw)) ? toNumber(totalRaw) : Number((unitPrice * quantity).toFixed(2));
+  const packageCode = entry.package_code ?? entry.packageCode ?? entry.code ?? normalizedId;
+  const barcode = normalizeNumbers(String(entry.barcode ?? packageCode ?? ''));
+
+  const image = entry.image
+    ?? entry.cover
+    ?? entry.thumbnail
+    ?? (packageItems.find((item) => item.image)?.image ?? null);
+
+  return {
+    id: entry.id != null ? String(entry.id) : `package::${normalizedId}`,
+    packageId: normalizedId,
+    package_id: normalizedId,
+    package_code: packageCode,
+    name: entry.name ?? entry.package_name ?? entry.packageName ?? entry.title ?? entry.description ?? packageCode ?? normalizedId,
+    desc: entry.name ?? entry.package_name ?? entry.packageName ?? entry.title ?? entry.description ?? packageCode ?? normalizedId,
+    quantity,
+    qty: quantity,
+    unit_price: unitPrice,
+    unitPrice,
+    price: unitPrice,
+    total,
+    total_price: total,
+    barcode,
+    packageItems,
+    items: packageItems,
+    type: 'package',
+    image,
+  };
+}
+
+function mapReservationPackagesFromSource(raw = {}) {
+  const collections = [];
+
+  if (Array.isArray(raw.packages)) collections.push(raw.packages);
+  if (Array.isArray(raw.reservation_packages)) collections.push(raw.reservation_packages);
+  if (Array.isArray(raw.reservationPackages)) collections.push(raw.reservationPackages);
+  if (Array.isArray(raw.package_details)) collections.push(raw.package_details);
+  if (Array.isArray(raw.packageDetails)) collections.push(raw.packageDetails);
+  if (Array.isArray(raw.package_list)) collections.push(raw.package_list);
+  if (Array.isArray(raw.packageList)) collections.push(raw.packageList);
+
+  const aggregated = [];
+  const seen = new Map();
+
+  collections.forEach((collection) => {
+    collection.forEach((entry, index) => {
+      const mapped = convertReservationPackageEntry(entry, index + aggregated.length);
+      if (!mapped) return;
+      const key = mapped.packageId || mapped.package_code || mapped.id || `pkg-${index}`;
+      if (seen.has(key)) {
+        const existingIndex = seen.get(key);
+        aggregated[existingIndex] = mergePackageRecords(aggregated[existingIndex], mapped);
+      } else {
+        seen.set(key, aggregated.length);
+        aggregated.push(mapped);
+      }
+    });
+  });
+
+  if (aggregated.length === 0 && raw.package) {
+    const mapped = convertReservationPackageEntry(raw.package, 0);
+    if (mapped) {
+      aggregated.push(mapped);
+    }
+  }
+
+  return aggregated;
 }
 
 function toNumber(value) {
