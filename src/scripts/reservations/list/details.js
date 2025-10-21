@@ -3,6 +3,7 @@ import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
+import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
