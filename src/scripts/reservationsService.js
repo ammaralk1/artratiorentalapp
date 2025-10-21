@@ -371,6 +371,7 @@ export function buildReservationPayload({
   paidStatus,
   confirmed,
   items,
+  packages,
   technicians,
   companySharePercent,
   companyShareEnabled,
@@ -438,14 +439,8 @@ export function buildReservationPayload({
         }))
       : [],
     confirmed: confirmed === undefined ? null : Boolean(confirmed),
-    items: Array.isArray(items)
-      ? items.map((item) => ({
-          equipment_id: item.equipmentId ?? item.equipment_id ?? item.id,
-          quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
-          unit_price: toNumber(item.price ?? item.unit_price ?? 0),
-          notes: item.notes ?? null,
-        }))
-      : [],
+    items: buildReservationItemsPayload(items),
+    packages: buildReservationPackagesPayload(items, packages),
     company_share_percent: companyShareEnabled && Number.isFinite(companySharePercent)
       ? Number(companySharePercent)
       : null,
@@ -645,6 +640,106 @@ function extractPaymentHistoryFromCandidates(candidates = []) {
     }
   }
   return [];
+}
+
+function buildReservationItemsPayload(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [];
+  }
+
+  const normalized = [];
+
+  items.forEach((item) => {
+    if (!item || typeof item !== 'object') {
+      return;
+    }
+
+    if (item.type === 'package' && Array.isArray(item.packageItems) && item.packageItems.length) {
+      const packageQuantity = toPositiveInt(item.qty ?? item.quantity ?? 1);
+
+      item.packageItems.forEach((packageItem) => {
+        const equipmentId = packageItem?.equipmentId ?? packageItem?.equipment_id ?? packageItem?.id ?? null;
+        if (equipmentId == null) {
+          return;
+        }
+
+        const childQuantity = toPositiveInt(packageItem?.qty ?? packageItem?.quantity ?? 1);
+        const effectiveQuantity = packageQuantity * childQuantity;
+
+        normalized.push({
+          equipment_id: resolveEquipmentIdValue(equipmentId),
+          quantity: effectiveQuantity,
+          unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
+          notes: packageItem?.notes ?? null,
+        });
+      });
+
+      return;
+    }
+
+    const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? null;
+    if (equipmentId == null) {
+      return;
+    }
+
+    normalized.push({
+      equipment_id: resolveEquipmentIdValue(equipmentId),
+      quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
+      unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+      notes: item.notes ?? null,
+    });
+  });
+
+  return normalized;
+}
+
+function resolveEquipmentIdValue(value) {
+  const parsed = Number(value);
+  if (Number.isFinite(parsed) && parsed >= 0) {
+    return parsed;
+  }
+  return String(value);
+}
+
+function buildReservationPackagesPayload(items, packagesFromCaller) {
+  const packages = Array.isArray(packagesFromCaller) ? packagesFromCaller.slice() : [];
+
+  if (!Array.isArray(items)) {
+    return packages;
+  }
+
+  items.forEach((item) => {
+    if (!item || typeof item !== 'object' || item.type !== 'package') {
+      return;
+    }
+
+    const packageQuantity = toPositiveInt(item.qty ?? item.quantity ?? 1);
+    const packageItems = Array.isArray(item.packageItems)
+      ? item.packageItems
+          .map((child) => {
+            const childId = child?.equipmentId ?? child?.equipment_id ?? child?.id ?? null;
+            if (childId == null) {
+              return null;
+            }
+            return {
+              equipment_id: resolveEquipmentIdValue(childId),
+              quantity: toPositiveInt(child?.qty ?? child?.quantity ?? 1),
+              unit_price: toNumber(child?.price ?? child?.unit_price ?? 0),
+            };
+          })
+          .filter(Boolean)
+      : [];
+
+    packages.push({
+      package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
+      name: item.desc ?? item.name ?? '',
+      quantity: packageQuantity,
+      unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+      items: packageItems,
+    });
+  });
+
+  return packages;
 }
 
 function toNumber(value) {
