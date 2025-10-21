@@ -1012,6 +1012,9 @@ export function setupEditEquipmentDescriptionInput() {
         addEquipmentToEditingByDescription(editInput);
       }
     };
+    editInput.addEventListener('focus', () => {
+      populateEquipmentDescriptionLists();
+    });
     editInput.addEventListener('input', tryAutoAdd);
     editInput.addEventListener('change', tryAutoAdd);
     editInput.dataset.listenerAttached = 'true';

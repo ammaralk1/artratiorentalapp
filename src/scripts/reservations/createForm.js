@@ -1277,6 +1277,9 @@ function setupEquipmentDescriptionInputs() {
         addDraftEquipmentByDescription(createInput);
       }
     };
+    createInput.addEventListener('focus', () => {
+      populateEquipmentDescriptionLists();
+    });
     createInput.addEventListener('input', tryAutoAdd);
     createInput.addEventListener('change', tryAutoAdd);
     createInput.dataset.listenerAttached = 'true';
@@ -1532,7 +1535,7 @@ function populatePackageSelect() {
 
   if (packageHint) {
     if (hasPackages) {
-      packageHint.textContent = t('reservations.create.packages.hint', 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.');
+      packageHint.textContent = t('reservations.create.packages.hint', 'سيتم إضافة الحزمة مباشرة بمجرد اختيارها.');
       packageHint.dataset.state = 'ready';
     } else {
       packageHint.textContent = t('reservations.create.packages.empty', 'لا توجد حزم معرفة حالياً. يمكنك إضافتها لاحقاً من لوحة التحكم.');

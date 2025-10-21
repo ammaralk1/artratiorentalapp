@@ -461,7 +461,7 @@ describe('reservations/editForm module', () => {
     expect(setEditingStateMock).toHaveBeenCalledTimes(1);
 
     module.setupEditEquipmentDescriptionInput();
-    expect(input.addEventListener).toHaveBeenCalledTimes(3);
+    expect(input.addEventListener).toHaveBeenCalledTimes(4);
     storedHandler({ key: 'Enter', preventDefault: vi.fn() });
     expect(setEditingStateMock).toHaveBeenCalledTimes(1);
   });

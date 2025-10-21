@@ -411,7 +411,7 @@ function sanitizePriceInputValue() {
   const rawValue = input.value;
   if (rawValue == null) return;
 
-  const replacedSeparators = rawValue.replace(/[\u066B\u066C\u060C,]/gu, '.');
+  const replacedSeparators = rawValue.replace(/[\u066B\u066C\u060C،,]/gu, '.');
   const normalizedDigits = normalizeNumbers(replacedSeparators);
   let sanitized = normalizedDigits.replace(/[^0-9.]/gu, '');
 
