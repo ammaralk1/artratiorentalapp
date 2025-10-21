@@ -1146,27 +1146,56 @@ function mapReservationPackagesFromSource(raw = {}) {
   const aggregated = [];
   const seen = new Map();
 
+  const addPackageEntry = (entry, indexHint = aggregated.length) => {
+    const mapped = convertReservationPackageEntry(entry, indexHint);
+    if (!mapped) return;
+    const key = mapped.packageId || mapped.package_code || mapped.id || `pkg-${indexHint}`;
+    if (seen.has(key)) {
+      const existingIndex = seen.get(key);
+      aggregated[existingIndex] = mergePackageRecords(aggregated[existingIndex], mapped);
+    } else {
+      seen.set(key, aggregated.length);
+      aggregated.push(mapped);
+    }
+  };
+
   collections.forEach((collection) => {
     collection.forEach((entry, index) => {
-      const mapped = convertReservationPackageEntry(entry, index + aggregated.length);
-      if (!mapped) return;
-      const key = mapped.packageId || mapped.package_code || mapped.id || `pkg-${index}`;
-      if (seen.has(key)) {
-        const existingIndex = seen.get(key);
-        aggregated[existingIndex] = mergePackageRecords(aggregated[existingIndex], mapped);
-      } else {
-        seen.set(key, aggregated.length);
-        aggregated.push(mapped);
-      }
+      addPackageEntry(entry, index + aggregated.length);
     });
   });
 
   if (aggregated.length === 0 && raw.package) {
-    const mapped = convertReservationPackageEntry(raw.package, 0);
-    if (mapped) {
-      aggregated.push(mapped);
-    }
+    addPackageEntry(raw.package, 0);
   }
+
+  const itemsCollection = Array.isArray(raw.items) ? raw.items : [];
+  const looksLikePackage = (item = {}) => {
+    if (!item || typeof item !== 'object') {
+      return false;
+    }
+    const normalizedType = normalizeReservationItemType(item.type ?? item.item_type ?? item.kind ?? null);
+    if (normalizedType === 'package') {
+      return true;
+    }
+    if (item.packageItems && Array.isArray(item.packageItems) && item.packageItems.length) {
+      return true;
+    }
+    if (item.items && Array.isArray(item.items) && item.items.length && item.items.every((child) => typeof child === 'object')) {
+      return true;
+    }
+    if (item.packageId || item.package_id || item.package_code || item.packageCode || item.bundleId || item.bundle_id) {
+      return true;
+    }
+    return false;
+  };
+
+  itemsCollection.forEach((item, index) => {
+    if (!looksLikePackage(item)) {
+      return;
+    }
+    addPackageEntry(item, aggregated.length + index);
+  });
 
   return aggregated;
 }

@@ -1,7 +1,7 @@
 import { t } from './language.js';
 import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
-import { resolveReservationProjectState } from './reservationsShared.js';
+import { resolveReservationProjectState, resolveEquipmentIdentifier } from './reservationsShared.js';
 import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { normalizeBarcodeValue, getEquipmentAvailabilityStatus } from './reservationsEquipment.js';
 import {
@@ -20,6 +20,7 @@ import {
   refreshReservationsFromApi,
   isApiError,
 } from './reservationsService.js';
+import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
 
 let editingIndex = null;
 let editingItems = [];
@@ -91,6 +92,246 @@ export function addEditingPayment(entry) {
 export function removeEditingPayment(index) {
   if (!Number.isInteger(index) || index < 0) return;
   editingPayments = editingPayments.filter((_, idx) => idx !== index);
+}
+
+function toPositiveIntSafe(value, fallback = 1) {
+  const parsed = Number.parseFloat(normalizeNumbers(String(value ?? '')));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.floor(parsed);
+}
+
+function toPriceNumberSafe(value, fallback = 0) {
+  if (value === null || value === undefined || value === '') {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(normalizeNumbers(String(value)));
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Number(parsed.toFixed(2));
+}
+
+function normalizePackageItemForEditing(pkgItem = {}) {
+  if (!pkgItem || typeof pkgItem !== 'object') {
+    return null;
+  }
+
+  const equipmentId = pkgItem.equipmentId
+    ?? pkgItem.equipment_id
+    ?? pkgItem.item_id
+    ?? pkgItem.itemId
+    ?? pkgItem.id
+    ?? null;
+  const barcode = pkgItem.barcode ?? pkgItem.normalizedBarcode ?? '';
+  const normalizedBarcode = pkgItem.normalizedBarcode
+    ?? (barcode ? normalizeBarcodeValue(barcode) : '');
+
+  return {
+    equipmentId: equipmentId != null ? String(equipmentId) : null,
+    barcode,
+    normalizedBarcode,
+    desc: pkgItem.desc ?? pkgItem.description ?? pkgItem.name ?? '',
+    qty: toPositiveIntSafe(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.count ?? 1),
+    price: toPriceNumberSafe(pkgItem.price ?? pkgItem.unit_price ?? pkgItem.unitPrice ?? 0),
+    image: pkgItem.image ?? pkgItem.image_url ?? pkgItem.imageUrl ?? null,
+  };
+}
+
+function normalizePackageEntryForEditing(pkg, index = 0) {
+  if (!pkg || typeof pkg !== 'object') {
+    return null;
+  }
+
+  const normalizedId = normalizePackageId(
+    pkg.packageId
+      ?? pkg.package_id
+      ?? pkg.package_code
+      ?? pkg.packageCode
+      ?? pkg.code
+      ?? pkg.id
+      ?? `pkg-${index}`
+  ) || `pkg-${index}`;
+
+  const quantity = toPositiveIntSafe(
+    pkg.quantity
+      ?? pkg.qty
+      ?? pkg.count
+      ?? pkg.package_quantity
+      ?? pkg.packageQty
+      ?? 1
+  );
+
+  const packageItemsSource = Array.isArray(pkg.packageItems) && pkg.packageItems.length
+    ? pkg.packageItems
+    : resolvePackageItems(pkg);
+
+  const packageItems = packageItemsSource
+    .map((item) => normalizePackageItemForEditing(item))
+    .filter(Boolean);
+
+  const totalCandidate = pkg.total_price ?? pkg.totalPrice ?? pkg.total ?? null;
+  let unitPrice = toPriceNumberSafe(pkg.unit_price ?? pkg.unitPrice ?? pkg.price ?? null, 0);
+  if ((!unitPrice || unitPrice === 0) && totalCandidate != null) {
+    const total = toPriceNumberSafe(totalCandidate, 0);
+    if (total > 0 && quantity > 0) {
+      unitPrice = Number((total / quantity).toFixed(2));
+    }
+  }
+
+  const barcode = pkg.package_code ?? pkg.packageCode ?? pkg.barcode ?? null;
+  const descriptionCandidates = [
+    pkg.name,
+    pkg.desc,
+    pkg.package_name,
+    pkg.packageName,
+    pkg.title,
+    pkg.description,
+    barcode,
+    normalizedId
+  ];
+  const description = descriptionCandidates.find((value) => value != null && String(value).trim() !== '')
+    || `Package ${normalizedId}`;
+
+  const image = pkg.image
+    ?? pkg.cover
+    ?? pkg.thumbnail
+    ?? (packageItems.find((item) => item?.image)?.image ?? null);
+
+  return {
+    id: pkg.id != null ? String(pkg.id) : `package::${normalizedId}`,
+    type: 'package',
+    packageId: normalizedId,
+    package_id: normalizedId,
+    desc: normalizeNumbers(String(description)),
+    name: normalizeNumbers(String(description)),
+    qty: quantity,
+    price: unitPrice,
+    barcode,
+    packageItems,
+    image,
+  };
+}
+
+function decrementPackageCounters(counterMap, keys = [], amount = 0) {
+  if (!amount || amount <= 0) {
+    return;
+  }
+  keys.forEach((key) => {
+    if (!key) return;
+    const current = counterMap.get(key);
+    if (current == null) return;
+    const next = current - amount;
+    counterMap.set(key, next > 0 ? next : 0);
+  });
+}
+
+function mergeReservationPackagesIntoItems(reservation = {}, items = []) {
+  const baseItems = Array.isArray(items) ? items.map((item) => ({ ...item })) : [];
+  const packagesSource = Array.isArray(reservation?.packages) ? reservation.packages : [];
+  if (!packagesSource.length) {
+    return baseItems;
+  }
+
+  const packageEntries = packagesSource
+    .map((pkg, index) => normalizePackageEntryForEditing(pkg, index))
+    .filter(Boolean);
+
+  if (!packageEntries.length) {
+    return baseItems;
+  }
+
+  const packageItemCounter = new Map();
+
+  packageEntries.forEach((pkg) => {
+    const packageQty = toPositiveIntSafe(pkg.qty ?? pkg.quantity ?? 1);
+    if (pkg.barcode) {
+      const normalizedPackageBarcode = normalizeBarcodeValue(pkg.barcode);
+      if (normalizedPackageBarcode) {
+        const key = `package::${normalizedPackageBarcode}`;
+        packageItemCounter.set(key, (packageItemCounter.get(key) ?? 0) + packageQty);
+      }
+    }
+
+    (pkg.packageItems || []).forEach((pkgItem) => {
+      if (!pkgItem) return;
+      const childQty = packageQty * toPositiveIntSafe(pkgItem.qty ?? pkgItem.quantity ?? 1);
+      const equipmentId = pkgItem.equipmentId ?? null;
+      const normalizedBarcode = pkgItem.normalizedBarcode || (pkgItem.barcode ? normalizeBarcodeValue(pkgItem.barcode) : null);
+
+      if (equipmentId != null) {
+        const key = `equipment::${String(equipmentId)}`;
+        packageItemCounter.set(key, (packageItemCounter.get(key) ?? 0) + childQty);
+      }
+
+      if (normalizedBarcode) {
+        const key = `barcode::${normalizedBarcode}`;
+        packageItemCounter.set(key, (packageItemCounter.get(key) ?? 0) + childQty);
+      }
+    });
+  });
+
+  const filteredItems = [];
+
+  baseItems.forEach((item) => {
+    if (!item || typeof item !== 'object') {
+      filteredItems.push(item);
+      return;
+    }
+
+    if (item.type === 'package') {
+      const existingPackageId = normalizePackageId(item.packageId ?? item.package_id ?? item.id ?? '');
+      const duplicate = packageEntries.some((pkg) => pkg.packageId === existingPackageId);
+      if (!duplicate) {
+        filteredItems.push({ ...item });
+      }
+      return;
+    }
+
+    const quantity = toPositiveIntSafe(item.qty ?? item.quantity ?? 1);
+    const equipmentId = resolveEquipmentIdentifier(item);
+    const normalizedBarcode = item.barcode ? normalizeBarcodeValue(item.barcode) : null;
+
+    const keys = [];
+    if (equipmentId != null) {
+      keys.push(`equipment::${String(equipmentId)}`);
+    }
+    if (normalizedBarcode) {
+      keys.push(`barcode::${normalizedBarcode}`);
+    }
+
+    const availableCounts = keys
+      .map((key) => packageItemCounter.get(key) ?? 0)
+      .filter((count) => count > 0);
+
+    if (!availableCounts.length) {
+      filteredItems.push({ ...item });
+      return;
+    }
+
+    const available = Math.min(...availableCounts);
+    if (available <= 0) {
+      filteredItems.push({ ...item });
+      return;
+    }
+
+    const matchedQuantity = Math.min(available, quantity);
+    decrementPackageCounters(packageItemCounter, keys, matchedQuantity);
+
+    if (matchedQuantity >= quantity) {
+      return;
+    }
+
+    const remainingQty = quantity - matchedQuantity;
+    filteredItems.push({
+      ...item,
+      qty: remainingQty,
+      quantity: remainingQty,
+    });
+  });
+
+  return [...filteredItems, ...packageEntries.map((entry) => ({ ...entry }))];
 }
 
 function ensureModalInstance(modalElement, factory) {
@@ -391,6 +632,8 @@ export function editReservation(index, {
       }))
     : [];
 
+  const initialItems = mergeReservationPackagesIntoItems(reservation, normalizedItems);
+
   const rawPayments = Array.isArray(reservation.paymentHistory)
     ? reservation.paymentHistory
     : Array.isArray(reservation.payment_history)
@@ -400,7 +643,7 @@ export function editReservation(index, {
     .map((entry) => normalizePaymentHistoryEntry(entry))
     .filter(Boolean);
 
-  setEditingState(index, normalizedItems, normalizedPayments);
+  setEditingState(index, initialItems, normalizedPayments);
 
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
   const customer = customers?.find?.((c) => String(c.id) === String(reservation.customerId));
@@ -492,7 +735,7 @@ export function editReservation(index, {
 
   setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
 
-  renderEditItems?.(normalizedItems);
+  renderEditItems?.(initialItems);
   if (typeof window !== 'undefined') {
     const renderHistory = window?.renderEditPaymentHistory;
     if (typeof renderHistory === 'function') {
@@ -578,6 +821,26 @@ export async function saveReservationChanges({
   const ignoreReservationKey = reservation.id ?? reservation.reservationId;
 
   for (const item of editingItems) {
+    if (item?.type === 'package' && Array.isArray(item.packageItems)) {
+      for (const pkgItem of item.packageItems) {
+        const packageBarcode = pkgItem?.barcode ?? pkgItem?.normalizedBarcode ?? '';
+        if (!packageBarcode) continue;
+        const status = getEquipmentAvailabilityStatus(packageBarcode);
+        if (status === 'reserved') {
+          const code = normalizeBarcodeValue(packageBarcode);
+          if (!hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
+            continue;
+          }
+        }
+
+        if (status !== 'available') {
+          showToast(getEquipmentUnavailableMessage(status));
+          return;
+        }
+      }
+      continue;
+    }
+
     const status = getEquipmentAvailabilityStatus(item.barcode);
     if (status === 'reserved') {
       const code = normalizeBarcodeValue(item.barcode);
@@ -593,6 +856,20 @@ export async function saveReservationChanges({
   }
 
   for (const item of editingItems) {
+    if (item?.type === 'package' && Array.isArray(item.packageItems)) {
+      for (const pkgItem of item.packageItems) {
+        const code = normalizeBarcodeValue(pkgItem?.barcode ?? pkgItem?.normalizedBarcode ?? '');
+        if (!code) continue;
+        if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
+          const label = pkgItem?.desc || pkgItem?.barcode || t('reservations.create.packages.unnamedItem', 'معدة بدون اسم');
+          const conflictMessage = `${t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات')} (${normalizeNumbers(String(label))})`;
+          showToast(conflictMessage);
+          return;
+        }
+      }
+      continue;
+    }
+
     const code = normalizeBarcodeValue(item.barcode);
     if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
       showToast(t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات'));
