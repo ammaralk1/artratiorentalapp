@@ -4,7 +4,6 @@ import { renderEquipment } from "./equipment.js";
 import { renderReservations, setupReservationEvents } from "./reservationsUI.js";
 import { renderCalendar } from "./calendar.js";
 import { renderTechnicians } from "./technicians.js";
-import { renderReports } from "./reports.js";
 import { renderMaintenance } from "./maintenance.js";
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
@@ -81,6 +80,29 @@ let unsubscribePreferences = null;
 let activateSubTabRef = null;
 let activateTabRef = null;
 let restorePendingTimeout = null;
+let reportsModulePromise = null;
+
+function ensureReportsModule() {
+  if (!reportsModulePromise) {
+    reportsModulePromise = import('./reports.js')
+      .then((module) => {
+        try {
+          if (typeof module.initReports === 'function') {
+            module.initReports();
+          }
+        } catch (error) {
+          console.error('❌ [tabs.js] Failed to initialise reports module', error);
+        }
+        return module;
+      })
+      .catch((error) => {
+        console.error('❌ [tabs.js] Failed to load reports module', error);
+        reportsModulePromise = null;
+        throw error;
+      });
+  }
+  return reportsModulePromise;
+}
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
@@ -422,9 +444,20 @@ function setupSubTabs() {
       }, 100);
     } else if (targetToActivate === "reports-tab") {
       console.log("📊 Rendering reports view");
-      setTimeout(() => {
-        renderReports();
-      }, 50);
+      ensureReportsModule()
+        .then((module) => {
+          const { renderReports } = module;
+          setTimeout(() => {
+            try {
+              renderReports?.();
+            } catch (error) {
+              console.error('❌ [tabs.js] Failed to render reports tab', error);
+            }
+          }, 50);
+        })
+        .catch((error) => {
+          console.error('❌ [tabs.js] Unable to load reports tab', error);
+        });
     }
   };
 

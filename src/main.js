@@ -14,8 +14,6 @@ import {
 import { loadData } from './scripts/storage.js';
 import { initMaintenance } from './scripts/maintenance.js';
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
-import { initReports } from './scripts/reports.js';
-import { initDashboardMetrics } from './scripts/dashboardMetrics.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
 import {
@@ -27,6 +25,43 @@ applyStoredTheme();
 
 let pendingReservationEdit = null;
 let pendingReservationEditPromise = null;
+let dashboardMetricsLoadPromise = null;
+
+function loadDashboardMetricsModule() {
+  if (!dashboardMetricsLoadPromise) {
+    dashboardMetricsLoadPromise = import('./scripts/dashboardMetrics.js')
+      .then((module) => {
+        try {
+          if (typeof module.initDashboardMetrics === 'function') {
+            module.initDashboardMetrics();
+          }
+        } catch (error) {
+          console.error('❌ Failed to initialise dashboard metrics', error);
+        }
+        return module;
+      })
+      .catch((error) => {
+        console.error('❌ Failed to load dashboard metrics module', error);
+        dashboardMetricsLoadPromise = null;
+        throw error;
+      });
+  }
+  return dashboardMetricsLoadPromise;
+}
+
+function scheduleDashboardMetricsInit() {
+  const load = () => {
+    void loadDashboardMetricsModule();
+  };
+
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => {
+      load();
+    }, { timeout: 1500 });
+  } else {
+    setTimeout(load, 0);
+  }
+}
 
 async function initApp() {
   const user = await checkAuth();
@@ -36,16 +71,16 @@ async function initApp() {
   initDashboardShell();
   setupTabs();
   initCustomers();
-  initDashboardMetrics();
   initThemeToggle();
   renderEquipment();
   initEnhancedSelects();
   renderCalendar();
 
   initMaintenance();
-  initReports();
 
   await initializeReservationUI();
+
+  scheduleDashboardMetricsInit();
 
   // ✅ رفع ملف إكسل
   const excelUploadInput = document.getElementById("excel-upload");
