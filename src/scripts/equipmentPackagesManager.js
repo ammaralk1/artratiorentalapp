@@ -404,6 +404,36 @@ function focusPackageForm() {
   }
 }
 
+function sanitizePriceInputValue() {
+  const input = elements.priceInput;
+  if (!input) return;
+  const rawValue = input.value;
+  if (rawValue == null) return;
+
+  const replacedSeparators = rawValue.replace(/[٫٬،,]/g, '.');
+  const normalizedDigits = normalizeNumbers(replacedSeparators);
+  let sanitized = normalizedDigits.replace(/[^0-9.]/g, '');
+
+  const firstDotIndex = sanitized.indexOf('.');
+  if (firstDotIndex !== -1) {
+    const beforeDot = sanitized.slice(0, firstDotIndex + 1);
+    const afterDot = sanitized.slice(firstDotIndex + 1).replace(/\./g, '');
+    sanitized = `${beforeDot}${afterDot}`;
+  }
+
+  if (sanitized !== rawValue) {
+    input.value = sanitized;
+    if (typeof input.setSelectionRange === 'function') {
+      const cursor = sanitized.length;
+      try {
+        input.setSelectionRange(cursor, cursor);
+      } catch (error) {
+        // ignore setSelectionRange errors (e.g. for unsupported input types)
+      }
+    }
+  }
+}
+
 function buildPackagePayload() {
   const name = elements.nameInput?.value.trim();
   const code = elements.codeInput?.value.trim();
@@ -591,6 +621,13 @@ function wireEvents() {
     event.preventDefault();
     cancelSelectionDraft();
   });
+
+  if (elements.priceInput && !elements.priceInput.dataset.normalizedAttached) {
+    const handler = () => sanitizePriceInputValue();
+    elements.priceInput.addEventListener('input', handler);
+    elements.priceInput.addEventListener('blur', handler);
+    elements.priceInput.dataset.normalizedAttached = 'true';
+  }
 
   if (!eventsRegistered) {
     document.addEventListener(EQUIPMENT_SELECTION_EVENTS.change, handleSelectionChange);
