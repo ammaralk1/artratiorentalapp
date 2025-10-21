@@ -7,6 +7,7 @@ import {
   uploadEquipmentFromExcel,
   renderEquipment
 } from './scripts/equipment.js';
+import { initEquipmentPackages } from './scripts/equipmentPackagesManager.js';
 import { renderCalendar } from './scripts/calendar.js';
 import {
   initializeReservationUI
@@ -73,6 +74,7 @@ async function initApp() {
   initCustomers();
   initThemeToggle();
   renderEquipment();
+  initEquipmentPackages();
   initEnhancedSelects();
   renderCalendar();
 
