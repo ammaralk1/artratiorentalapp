@@ -16,6 +16,12 @@ services:
     volumes:
       - ./docker/init:/docker-entrypoint-initdb.d
       - ../../backend/sql:/docker-entrypoint-initdb.d/base:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "art_ratio", "--password=testpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
 
   php:
     build:
@@ -24,7 +30,8 @@ services:
     image: art_ratio_php_test:latest
     container_name: art_ratio_test_php
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     working_dir: /app
     volumes:
       - ../../backend:/app/backend
