@@ -18,7 +18,10 @@ services:
       - ../../backend/sql:/docker-entrypoint-initdb.d/base:ro
 
   php:
-    image: php:8.2-cli
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: art_ratio_php_test:latest
     container_name: art_ratio_test_php
     depends_on:
       - db

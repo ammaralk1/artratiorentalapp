@@ -50,6 +50,7 @@ $ docker compose down -v
 ## Notes
 
 - The PHP container uses the test-specific config in `tests/integration/config.testing.php`.
+- The PHP service is built from `tests/integration/docker/php/Dockerfile`, which enables the `pdo_mysql` extension required by the API.
 - If you make schema changes, update the SQL inside `backend/sql/` and restart the stack.
 - The compose services share the `art_ratio_test_network` network so you can attach
   additional tooling (e.g. MySQL Workbench) by targeting `127.0.0.1:33306`.
