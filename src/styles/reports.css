@@ -1024,6 +1024,10 @@ html[dir="rtl"] .reports-table-card .reports-card-title {
   flex-direction: row-reverse;
 }
 
+body[dir="rtl"] .reports-table-card .reports-card-title {
+  flex-direction: row-reverse;
+}
+
 .reports-table-card .reports-card-text {
   display: flex;
   flex-direction: column;

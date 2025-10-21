@@ -12,6 +12,13 @@ import {
 import { resolveReservationProjectState } from '../reservationsShared.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
+import {
+  normalizeColorValue,
+  patchHtml2CanvasColorParsing,
+  sanitizeComputedColorFunctions,
+  enforceLegacyColorFallback,
+  scrubUnsupportedColorFunctions
+} from '../canvasColorUtils.js';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
 const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
@@ -362,11 +369,6 @@ const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.j
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
 
-const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
-const MODERN_COLOR_REGEX = /(color\(|color-mix\()/i;
-const colorCanvas = document.createElement('canvas');
-const colorCtx = colorCanvas.getContext('2d');
-
 const SVG_DATA_URI_REGEX = /^data:image\/svg\+xml/i;
 const SVG_EXTENSION_REGEX = /\.svg($|[?#])/i;
 const SVG_FALLBACK_DIMENSION = 512;
@@ -692,43 +694,6 @@ function ensureBlocks(blocks, placeholderKey) {
     : [buildPlaceholderBlock(placeholderKey)];
 }
 
-function normalizeColorValue(rawValue, fallback = '#000') {
-  if (!colorCtx || !rawValue) return fallback;
-  try {
-    colorCtx.fillStyle = '#000';
-    colorCtx.fillStyle = rawValue;
-    return colorCtx.fillStyle || fallback;
-  } catch (error) {
-    return fallback;
-  }
-}
-
-function patchHtml2CanvasColorParsing() {
-  const html2canvas = window.html2canvas;
-  if (!html2canvas?.Color || html2canvas.Color.__artRatioPatched) return;
-
-  const originalFromString = html2canvas.Color.fromString.bind(html2canvas.Color);
-
-  html2canvas.Color.fromString = (value) => {
-    try {
-      return originalFromString(value);
-    } catch (error) {
-      if (typeof value === 'string' && value.trim().toLowerCase().startsWith('color(')) {
-        console.warn('[quote/pdf] html2canvas color fallback', value);
-        const fallback = normalizeColorValue(value) || '#000';
-        try {
-          return originalFromString(fallback);
-        } catch (secondError) {
-          return originalFromString('#000');
-        }
-      }
-      throw error;
-    }
-  };
-
-  html2canvas.Color.__artRatioPatched = true;
-}
-
 const ARABIC_RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/;
 
 function isProbablyArabic(value = '') {
@@ -796,30 +761,6 @@ function patchCanvasTextDirection() {
   C2DProto.__artRatioDirectionPatched = true;
 }
 
-function scrubUnsupportedColorFunctions(root) {
-  if (!root) return;
-
-  const replaceColorFunctions = (value = '') => (
-    typeof value === 'string' && value.includes('color(')
-      ? value.replace(COLOR_FUNCTION_REGEX, '#000')
-      : value
-  );
-
-  root.querySelectorAll?.('style')?.forEach?.((styleNode) => {
-    const text = styleNode.textContent;
-    if (typeof text === 'string' && text.includes('color(')) {
-      styleNode.textContent = replaceColorFunctions(text);
-    }
-  });
-
-  root.querySelectorAll?.('[style]')?.forEach?.((element) => {
-    const styleAttr = element.getAttribute('style');
-    if (typeof styleAttr === 'string' && styleAttr.includes('color(')) {
-      element.setAttribute('style', replaceColorFunctions(styleAttr));
-    }
-  });
-}
-
 function scrubCloneColors(doc) {
   if (!doc) return;
   scrubUnsupportedColorFunctions(doc);
@@ -827,68 +768,6 @@ function scrubCloneColors(doc) {
   scrubUnsupportedColorFunctions(doc?.body);
   const view = doc?.defaultView || window;
   sanitizeComputedColorFunctions(doc?.documentElement || doc, view);
-}
-
-const COLOR_PROPERTIES = [
-  'color',
-  'backgroundColor',
-  'borderColor',
-  'borderTopColor',
-  'borderRightColor',
-  'borderBottomColor',
-  'borderLeftColor',
-  'outlineColor',
-  'fill',
-  'stroke'
-];
-
-function sanitizeComputedColorFunctions(root, view = window) {
-  if (!root || !view || typeof view.getComputedStyle !== 'function') return;
-  const elements = root.querySelectorAll('*');
-  elements.forEach((element) => {
-    const computed = view.getComputedStyle(element);
-    if (!computed) return;
-
-    COLOR_PROPERTIES.forEach((prop) => {
-      const value = computed[prop];
-      if (value && MODERN_COLOR_REGEX.test(value)) {
-        const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
-        const defaultFallback = prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000';
-        const fallback = normalizeColorValue(value, defaultFallback);
-        element.style.setProperty(hyphenProp, fallback, 'important');
-      }
-    });
-
-    const backgroundImage = computed.backgroundImage;
-    if (backgroundImage && MODERN_COLOR_REGEX.test(backgroundImage)) {
-      const fallbackBackground = normalizeColorValue(computed.backgroundColor || '#ffffff', '#ffffff');
-      element.style.setProperty('background-image', 'none', 'important');
-      element.style.setProperty('background-color', fallbackBackground, 'important');
-    }
-  });
-}
-
-function enforceLegacyColorFallback(root, view = window) {
-  if (!root || !view || typeof view.getComputedStyle !== 'function') return;
-  root.querySelectorAll('*').forEach((element) => {
-    const styles = view.getComputedStyle(element);
-    if (!styles) return;
-
-    ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach((prop) => {
-      const value = styles[prop];
-      if (value && MODERN_COLOR_REGEX.test(value)) {
-        const hyphenProp = prop.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
-        const fallback = prop === 'backgroundColor' ? '#ffffff' : '#000000';
-        element.style.setProperty(hyphenProp, fallback, 'important');
-      }
-    });
-
-    const bgImage = styles.backgroundImage;
-    if (bgImage && MODERN_COLOR_REGEX.test(bgImage)) {
-      element.style.setProperty('background-image', 'none', 'important');
-      element.style.setProperty('background-color', '#ffffff', 'important');
-    }
-  });
 }
 
 function parseSvgDimension(value, fallback = SVG_FALLBACK_DIMENSION) {

@@ -1,5 +1,11 @@
 import { translate, formatDateInput, formatNumber, formatCurrency } from '../formatters.js';
 import { ensureHtml2Pdf, ensureXlsx } from '../external.js';
+import {
+  patchHtml2CanvasColorParsing,
+  sanitizeComputedColorFunctions,
+  enforceLegacyColorFallback,
+  revertStyleMutations
+} from '../../canvasColorUtils.js';
 import { escapeAttribute, escapeHtml } from './utils.js';
 
 function getExportFileName(extension) {
@@ -67,21 +73,32 @@ export async function exportAsPdf() {
   }
 
   const filename = getExportFileName('pdf');
+  patchHtml2CanvasColorParsing();
 
-  await html2pdf().set({
-    margin: 10,
-    filename,
-    html2canvas: {
-      scale: 1.2,
-      useCORS: true,
-      allowTaint: false,
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-    },
-  }).from(container).save();
+  const mutations = [];
+  sanitizeComputedColorFunctions(container, window, mutations);
+  enforceLegacyColorFallback(container, window, mutations);
+
+  try {
+    await html2pdf().set({
+      margin: 10,
+      filename,
+      html2canvas: {
+        scale: 1.2,
+        useCORS: true,
+        allowTaint: false,
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+      },
+    }).from(container).save();
+  } catch (error) {
+    console.error('⚠️ [reports] export failed', error);
+  } finally {
+    revertStyleMutations(mutations);
+  }
 }
 
 export async function exportReport(type, rows) {
