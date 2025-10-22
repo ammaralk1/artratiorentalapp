@@ -1414,12 +1414,19 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
 }
 
-function toPositiveInt(value) {
+function toPositiveInt(value, { fallback = 1, max = 1_000_000 } = {}) {
   const parsed = parsePriceValue(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 1;
+  if (!Number.isFinite(parsed)) {
+    return fallback;
   }
-  return Math.max(1, Math.round(parsed));
+  const rounded = Math.round(parsed);
+  if (rounded <= 0) {
+    return fallback;
+  }
+  if (rounded > max) {
+    return fallback;
+  }
+  return rounded;
 }
 
 function normalizeStatusValue(status) {
