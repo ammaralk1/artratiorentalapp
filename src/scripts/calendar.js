@@ -577,9 +577,21 @@ function showReservationModal(reservation) {
     }
   }
 
-  const mergedReservation = storedReservation
-    ? { ...storedReservation, ...baseReservation }
-    : baseReservation;
+  let mergedReservation;
+  if (storedReservation) {
+    mergedReservation = {
+      ...baseReservation,
+      ...storedReservation
+    };
+    if (Array.isArray(storedReservation.items) && storedReservation.items.length) {
+      mergedReservation.items = storedReservation.items;
+    }
+    if (Array.isArray(storedReservation.packages) && storedReservation.packages.length) {
+      mergedReservation.packages = storedReservation.packages;
+    }
+  } else {
+    mergedReservation = baseReservation;
+  }
 
   const projectId = mergedReservation.projectId ?? mergedReservation.project_id ?? null;
   const project = projectId != null
