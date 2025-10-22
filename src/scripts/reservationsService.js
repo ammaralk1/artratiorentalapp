@@ -548,6 +548,9 @@ export function mapReservationItem(item = {}) {
     barcode,
     desc,
     qty: quantity,
+    quantity,
+    qtyPerPackage: null,
+    totalQuantity: quantity,
     price: unitPrice,
     notes: item.notes ?? null,
     image: item.image ?? item.image_url ?? item.imageUrl ?? null,
@@ -578,6 +581,8 @@ export function mapReservationItem(item = {}) {
     if (!Number.isFinite(mapped.price) || mapped.price <= 0 || mapped.price > derivedUnitPrice * 10) {
       mapped.price = derivedUnitPrice;
     }
+    mapped.qtyPerPackage = packageItems.length ? packageItems[0]?.qtyPerPackage ?? mapped.qtyPerPackage : mapped.qtyPerPackage;
+    mapped.totalQuantity = quantity;
   }
 
   return mapped;
@@ -1169,6 +1174,21 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
 }
 
 function derivePackageUnitPrice(entry = {}, packageItems = [], quantity = 1) {
+  if (Array.isArray(packageItems) && packageItems.length) {
+    const itemsTotal = packageItems.reduce((sum, item) => {
+      const itemPrice = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
+      const perPackageQty = Number.isFinite(Number(item.qtyPerPackage)) && Number(item.qtyPerPackage) > 0
+        ? Number(item.qtyPerPackage)
+        : Number.isFinite(Number(item.qty)) && Number(item.qty) > 0
+          ? Number(item.qty)
+          : 1;
+      return sum + (itemPrice * perPackageQty);
+    }, 0);
+    if (itemsTotal > 0) {
+      return Number(itemsTotal.toFixed(2));
+    }
+  }
+
   const totalCandidate = entry.total_price
     ?? entry.totalPrice
     ?? entry.total
@@ -1182,13 +1202,6 @@ function derivePackageUnitPrice(entry = {}, packageItems = [], quantity = 1) {
 
   if (Number.isFinite(Number(entry.unit_price ?? entry.unitPrice ?? entry.price))) {
     return toNumber(entry.unit_price ?? entry.unitPrice ?? entry.price);
-  }
-
-  if (Array.isArray(packageItems) && packageItems.length) {
-    const itemsTotal = packageItems.reduce((sum, item) => sum + (Number.isFinite(Number(item.price)) ? Number(item.price) : 0), 0);
-    if (itemsTotal > 0) {
-      return Number((itemsTotal).toFixed(2));
-    }
   }
 
   return 0;
