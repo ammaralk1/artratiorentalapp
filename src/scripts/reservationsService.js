@@ -456,7 +456,12 @@ export function toInternalReservation(raw = {}) {
     persistReservationPackagesToCache(reservationCacheKey, packages);
   }
 
+  if (!packages.length && Array.isArray(raw.packages) && raw.packages.length) {
+    packages = mergePackageCollections(packages, mapReservationPackagesFromSource({ packages: raw.packages }));
+  }
+
   items = normalizeItemsWithPackages(items, packages);
+  packages = mergePackageCollections(packages, mapReservationPackagesFromSource({ packages: packages }));
 
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
