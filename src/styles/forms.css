@@ -372,34 +372,34 @@
 
 @media (max-width: 768px) {
   .customer-form-box {
-    align-items: stretch;
+    align-items: center;
   }
 
   .customer-form-box .management-form {
-    width: 100%;
-    max-width: 100%;
+    width: min(100%, 24rem);
     margin-inline: auto;
-    padding-inline: clamp(0.5rem, 4.5vw, 0.9rem);
+    padding-inline: clamp(0.5rem, 4vw, 1rem);
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     box-sizing: border-box;
   }
 
   .customer-form-box .management-form-grid {
     width: 100%;
-    max-width: 100%;
-    justify-items: stretch;
+    max-width: min(100%, 21rem);
+    margin-inline: auto;
+    justify-items: center;
     grid-template-columns: minmax(0, 1fr);
-    gap: clamp(0.45rem, 2.5vw, 0.85rem);
+    gap: clamp(0.45rem, 2.2vw, 0.8rem);
   }
 
   .customer-form-box .management-form-grid .form-field,
   .customer-form-box .customer-upload-inline {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: min(100%, 21rem) !important;
+    max-width: min(100%, 21rem) !important;
     min-width: 0;
-    margin-inline: 0;
+    margin-inline: auto;
     box-sizing: border-box;
   }
 
@@ -415,7 +415,7 @@
   }
 
   .customer-form-box .management-form-actions {
-    width: 100%;
+    width: min(100%, 21rem);
     margin-inline: auto;
   }
 
@@ -426,7 +426,19 @@
 
 @media (max-width: 480px) {
   .customer-form-box .management-form {
-    padding-inline: clamp(0.4rem, 5vw, 0.75rem);
+    width: min(100%, 22rem);
+    padding-inline: clamp(0.45rem, 5vw, 0.85rem);
+  }
+
+  .customer-form-box .management-form-grid,
+  .customer-form-box .management-form-actions {
+    max-width: min(100%, 18.5rem);
+  }
+
+  .customer-form-box .management-form-grid .form-field,
+  .customer-form-box .customer-upload-inline {
+    width: min(100%, 18.5rem) !important;
+    max-width: min(100%, 18.5rem) !important;
   }
 }
 
