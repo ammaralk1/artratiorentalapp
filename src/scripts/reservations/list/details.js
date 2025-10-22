@@ -648,17 +648,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           });
 
           const resolvePackageItemQty = (pkgItem) => {
-            const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.qty ?? pkgItem?.quantity);
+            const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.perPackageQty ?? pkgItem?.quantityPerPackage);
             if (Number.isFinite(direct) && direct > 0 && direct <= 99) {
               return Math.round(direct);
-            }
-            const totalCandidate = parseQuantityValue(pkgItem?.totalQuantity ?? pkgItem?.qty ?? pkgItem?.quantity ?? 1);
-            if (Number.isFinite(totalCandidate) && totalCandidate > 0) {
-              const perPackage = quantityValue > 0 ? totalCandidate / quantityValue : totalCandidate;
-              if (Number.isFinite(perPackage) && perPackage > 0) {
-                return Math.max(1, Math.min(99, Math.round(perPackage)));
-              }
-              return Math.max(1, Math.min(99, Math.round(totalCandidate)));
             }
             return 1;
           };
@@ -670,15 +662,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             const qty = resolvePackageItemQty(pkgItem);
             if (existing) {
               existing.qty = qty;
-              existing.total = Number.isFinite(parseQuantityValue(pkgItem.totalQuantity))
-                ? parseQuantityValue(pkgItem.totalQuantity)
-                : qty;
+              existing.total = qty;
               return;
             }
             aggregated.set(key, {
               desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
               qty: Math.max(1, Math.min(qty, 99)),
-              total: Number.isFinite(parseQuantityValue(pkgItem.totalQuantity)) ? parseQuantityValue(pkgItem.totalQuantity) : qty,
+              total: Math.max(1, Math.min(qty, 99)),
               barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
             });
           });

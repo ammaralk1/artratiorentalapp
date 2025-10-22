@@ -275,14 +275,8 @@ export function renderEditReservationItems(items = []) {
           const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
           if (!key) return;
           const existing = aggregated.get(key);
-          const directQty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
-          let qty = directQty;
-          if ((!Number.isFinite(qty) || qty <= 0) && Number.isFinite(Number(pkgItem.totalQuantity))) {
-            const perPackage = Number(pkgItem.totalQuantity) / Math.max(1, group.count || group.quantity || 1);
-            const normalized = resolvePackageItemQty(perPackage);
-            qty = normalized > 0 ? normalized : 1;
-          }
-          const clampedQty = Math.max(1, Math.min(qty, 99));
+          const directQty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.perPackageQty ?? pkgItem.quantityPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
+          const clampedQty = Math.max(1, Math.min(directQty, 99));
           if (existing) {
             existing.qty = clampedQty;
             return;
