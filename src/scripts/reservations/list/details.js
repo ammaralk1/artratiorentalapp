@@ -243,32 +243,48 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     : isPartial
       ? paymentPartialText
       : paymentUnpaidText;
-  const normalizeCount = (value, { fallback = 1, allowFloat = false } = {}) => {
+  const normalizeCount = (value, { fallback = 1, allowFloat = false, min = 1, max = Number.POSITIVE_INFINITY } = {}) => {
     const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    if (!Number.isFinite(parsed) || parsed <= 0) return Math.max(min, Math.min(max, fallback));
+    const clamped = Math.max(min, Math.min(max, parsed));
     if (!allowFloat) {
-      return Math.max(1, Math.round(parsed));
+      return Math.max(min, Math.round(clamped));
     }
-    return parsed;
+    return clamped;
+  };
+
+  const resolveGroupCount = (group) => {
+    const itemsList = Array.isArray(group.items) ? group.items : [];
+    const fallback = itemsList.reduce((itemSum, entry) => {
+      const entryQty = normalizeCount(entry?.qty ?? entry?.quantity ?? entry?.count, {
+        fallback: 1,
+        allowFloat: false,
+        min: 1,
+        max: 10_000
+      });
+      return itemSum + entryQty;
+    }, 0) || 1;
+
+    const candidate = normalizeCount(group.quantity ?? group.count, {
+      fallback,
+      allowFloat: false,
+      min: 1,
+      max: 100_000
+    });
+
+    if (candidate > fallback * 50) {
+      return fallback;
+    }
+
+    return candidate;
   };
 
   const totalItemsQuantity = displayGroups.reduce((sum, group) => {
     if (group.type === 'package') {
-      const packageQty = normalizeCount(group.quantity ?? group.count, { fallback: 1, allowFloat: false });
-      if (Array.isArray(group.packageItems) && group.packageItems.length) {
-        const packageContentsCount = group.packageItems.reduce((childSum, pkgItem) => {
-          return childSum + normalizeCount(pkgItem?.qty ?? pkgItem?.quantity ?? pkgItem?.count, { fallback: 1, allowFloat: false });
-        }, 0);
-        return sum + (packageContentsCount * packageQty);
-      }
+      const packageQty = resolveGroupCount(group);
       return sum + packageQty;
     }
-
-    const quantity = normalizeCount(group.quantity ?? group.count ?? group.items?.length, {
-      fallback: Array.isArray(group.items) ? group.items.length || 1 : 1,
-      allowFloat: false
-    });
-    return sum + quantity;
+    return sum + resolveGroupCount(group);
   }, 0);
   const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
