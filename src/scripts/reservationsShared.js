@@ -125,7 +125,7 @@ function resolvePackageQuantity(packageEntry = {}) {
   return 1;
 }
 
-function resolvePackageUnitPrice(packageEntry = {}, packageItems = []) {
+function resolvePackageUnitPrice(packageEntry = {}, packageItems = [], quantityOverride = null) {
   const candidate = packageEntry.unit_price
     ?? packageEntry.unitPrice
     ?? packageEntry.price;
@@ -138,7 +138,9 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = []) {
     ?? packageEntry.totalPrice
     ?? packageEntry.total;
   const totalParsed = Number(totalCandidate);
-  const quantity = resolvePackageQuantity(packageEntry);
+  const quantity = Number.isFinite(Number(quantityOverride)) && Number(quantityOverride) > 0
+    ? Number(quantityOverride)
+    : resolvePackageQuantity(packageEntry);
   if (Number.isFinite(totalParsed) && totalParsed > 0 && quantity > 0) {
     return sanitizePriceValue(Number((totalParsed / quantity).toFixed(2)));
   }
@@ -163,7 +165,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
 
   const packagesMap = new Map();
 
-  const registerPackageSource = (pkg, indexHint = 0) => {
+  const registerPackageSource = (pkg, indexHint = 0, origin = 'packages') => {
     if (!pkg || typeof pkg !== 'object') return;
 
     const normalizedId = normalizePackageId(
@@ -178,17 +180,43 @@ export function buildReservationDisplayGroups(reservation = {}) {
 
     const key = normalizedId || `pkg-${indexHint}`;
     if (!packagesMap.has(key)) {
-      packagesMap.set(key, { source: pkg, normalizedId: key, index: indexHint });
+      packagesMap.set(key, {
+        source: pkg,
+        normalizedId: key,
+        index: indexHint,
+        itemSource: origin === 'items' ? pkg : null,
+      });
+      return;
+    }
+
+    const existing = packagesMap.get(key);
+    if (!existing.source) {
+      existing.source = pkg;
+    }
+
+    if (origin === 'items') {
+      existing.itemSource = pkg;
+
+      if (existing.source && typeof existing.source === 'object') {
+        const sourceHasItems = Array.isArray(existing.source.packageItems) && existing.source.packageItems.length > 0;
+        const pkgHasItems = Array.isArray(pkg.packageItems) && pkg.packageItems.length > 0;
+        if (!sourceHasItems && pkgHasItems) {
+          existing.source = { ...existing.source, packageItems: pkg.packageItems };
+        }
+        if (!existing.source.image && pkg.image) {
+          existing.source = { ...existing.source, image: pkg.image };
+        }
+      }
     }
   };
 
   if (Array.isArray(reservation?.packages)) {
-    reservation.packages.forEach((pkg, idx) => registerPackageSource(pkg, idx));
+    reservation.packages.forEach((pkg, idx) => registerPackageSource(pkg, idx, 'packages'));
   }
 
   items.forEach((item, idx) => {
     if (item && typeof item === 'object' && (item.type === 'package' || Array.isArray(item?.packageItems))) {
-      registerPackageSource(item, idx + packagesMap.size);
+      registerPackageSource(item, idx + packagesMap.size, 'items');
     }
   });
 
@@ -196,8 +224,14 @@ export function buildReservationDisplayGroups(reservation = {}) {
   const packageBarcodes = new Set();
   const packageEquipmentIds = new Set();
 
-  packagesMap.forEach(({ source: pkg, normalizedId }, mapKey) => {
-    const resolvedItems = normalizePackageItemsForGroup(pkg);
+  packagesMap.forEach(({ source: pkg, itemSource = null, normalizedId }, mapKey) => {
+    const primarySource = pkg || {};
+    const secondarySource = itemSource && typeof itemSource === 'object' ? itemSource : null;
+
+    let resolvedItems = normalizePackageItemsForGroup(primarySource);
+    if ((!Array.isArray(resolvedItems) || resolvedItems.length === 0) && secondarySource) {
+      resolvedItems = normalizePackageItemsForGroup(secondarySource);
+    }
 
     resolvedItems.forEach((item) => {
       const normalizedBarcode = item?.normalizedBarcode ?? normalizeBarcodeValueLocal(item?.barcode);
@@ -210,19 +244,62 @@ export function buildReservationDisplayGroups(reservation = {}) {
       }
     });
 
-    const packageQty = resolvePackageQuantity(pkg);
-    const unitPrice = resolvePackageUnitPrice(pkg, resolvedItems);
-    const totalPriceCandidate = pkg?.total
-      ?? pkg?.total_price
-      ?? pkg?.totalPrice
-      ?? (unitPrice * packageQty);
-    const totalPrice = sanitizePriceValue(
-      Number.isFinite(Number(totalPriceCandidate))
-        ? Number(Number(totalPriceCandidate).toFixed(2))
-        : Number((unitPrice * packageQty).toFixed(2))
-    );
+    let packageQty = resolvePackageQuantity(primarySource);
+    if (secondarySource) {
+      const overrideQty = resolvePackageQuantity(secondarySource);
+      if (Number.isFinite(overrideQty) && overrideQty > 0) {
+        packageQty = overrideQty;
+      }
+    }
+    if (!Number.isFinite(packageQty) || packageQty <= 0) {
+      packageQty = 1;
+    }
 
-    const packageBarcode = pkg?.package_code ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.barcode ?? null;
+    let unitPrice = resolvePackageUnitPrice(primarySource, resolvedItems, packageQty);
+    const itemPriceCandidates = [
+      secondarySource?.price,
+      secondarySource?.unit_price,
+      secondarySource?.unitPrice,
+    ];
+    for (const candidate of itemPriceCandidates) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        unitPrice = parsed;
+        break;
+      }
+    }
+    unitPrice = sanitizePriceValue(unitPrice);
+
+    const totalPriceCandidates = [
+      secondarySource?.total,
+      secondarySource?.total_price,
+      secondarySource?.totalPrice,
+      primarySource?.total,
+      primarySource?.total_price,
+      primarySource?.totalPrice,
+    ];
+    let totalPrice = NaN;
+    for (const candidate of totalPriceCandidates) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        totalPrice = parsed;
+        break;
+      }
+    }
+    if (!Number.isFinite(totalPrice)) {
+      totalPrice = unitPrice * packageQty;
+    }
+    totalPrice = sanitizePriceValue(totalPrice);
+
+    const packageBarcode = primarySource?.package_code
+      ?? primarySource?.packageId
+      ?? primarySource?.package_id
+      ?? primarySource?.barcode
+      ?? secondarySource?.package_code
+      ?? secondarySource?.packageId
+      ?? secondarySource?.package_id
+      ?? secondarySource?.barcode
+      ?? null;
     if (packageBarcode) {
       const normalizedPkgBarcode = normalizeBarcodeValueLocal(packageBarcode);
       if (normalizedPkgBarcode) {
@@ -234,22 +311,39 @@ export function buildReservationDisplayGroups(reservation = {}) {
       .map((item) => normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')))
       .filter(Boolean);
 
+    const descriptionCandidates = [
+      primarySource?.name,
+      primarySource?.package_name,
+      primarySource?.title,
+      secondarySource?.name,
+      secondarySource?.desc,
+      secondarySource?.package_name,
+      normalizeNumbers(String(packageBarcode ?? mapKey)),
+    ];
+    const description = descriptionCandidates.find((value) => value != null && String(value).trim() !== '')
+      || normalizeNumbers(String(packageBarcode ?? mapKey));
+
+    const imageSource = (resolvedItems.find((item) => item?.image)?.image)
+      ?? primarySource?.image
+      ?? secondarySource?.image
+      ?? null;
+
     packageGroups.push({
       key: `package::${mapKey}`,
-      description: pkg?.name || pkg?.package_name || pkg?.title || normalizeNumbers(String(packageBarcode ?? mapKey)),
-      normalizedDescription: normalizeNumbers(String(pkg?.name || pkg?.package_name || '')),
+      description,
+      normalizedDescription: normalizeNumbers(String(description)),
       unitPrice,
       totalPrice,
       quantity: packageQty,
       count: packageQty,
-      image: resolvedItems.find((item) => item?.image)?.image ?? null,
+      image: imageSource,
       barcodes: barcodesList,
       barcode: packageBarcode,
       items: [{
         type: 'package',
         packageItems: resolvedItems,
         packageId: normalizedId,
-        desc: pkg?.name || pkg?.package_name || '',
+        desc: description,
         price: unitPrice,
         qty: packageQty,
         barcode: packageBarcode,
