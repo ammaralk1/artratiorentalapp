@@ -637,6 +637,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         let packageItemsMeta = '';
         if (isPackageGroup) {
           const aggregated = new Map();
+          const packageItemsSource = [];
+          if (Array.isArray(group.packageItems) && group.packageItems.length) {
+            packageItemsSource.push(...group.packageItems);
+          }
+          group.items.forEach((item) => {
+            if (Array.isArray(item?.packageItems) && item.packageItems.length) {
+              packageItemsSource.push(...item.packageItems);
+            }
+          });
+
           const resolvePackageItemQty = (pkgItem) => {
             const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.qty ?? pkgItem?.quantity);
             if (Number.isFinite(direct) && direct > 0 && direct <= 99) {
@@ -652,26 +662,24 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             }
             return 1;
           };
-          group.items.forEach((item) => {
-            if (!Array.isArray(item?.packageItems)) return;
-            item.packageItems.forEach((pkgItem) => {
-              if (!pkgItem) return;
-              const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
-              const existing = aggregated.get(key);
-              const qty = resolvePackageItemQty(pkgItem);
-              if (existing) {
-                existing.qty = qty;
-                existing.total = Number.isFinite(parseQuantityValue(pkgItem.totalQuantity))
-                  ? parseQuantityValue(pkgItem.totalQuantity)
-                  : qty;
-                return;
-              }
-              aggregated.set(key, {
-                desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
-                qty: Math.max(1, Math.min(qty, 99)),
-                total: Number.isFinite(parseQuantityValue(pkgItem.totalQuantity)) ? parseQuantityValue(pkgItem.totalQuantity) : qty,
-                barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
-              });
+          packageItemsSource.forEach((pkgItem) => {
+            if (!pkgItem) return;
+            const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
+            if (!key) return;
+            const existing = aggregated.get(key);
+            const qty = resolvePackageItemQty(pkgItem);
+            if (existing) {
+              existing.qty = qty;
+              existing.total = Number.isFinite(parseQuantityValue(pkgItem.totalQuantity))
+                ? parseQuantityValue(pkgItem.totalQuantity)
+                : qty;
+              return;
+            }
+            aggregated.set(key, {
+              desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
+              qty: Math.max(1, Math.min(qty, 99)),
+              total: Number.isFinite(parseQuantityValue(pkgItem.totalQuantity)) ? parseQuantityValue(pkgItem.totalQuantity) : qty,
+              barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
             });
           });
 
