@@ -637,16 +637,25 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         let packageItemsMeta = '';
         if (isPackageGroup) {
           const aggregated = new Map();
+          const resolvePackageItemQty = (value) => {
+            const parsed = parseQuantityValue(value);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+              return 1;
+            }
+            if (parsed > 99) {
+              return 1;
+            }
+            return Math.round(parsed);
+          };
           group.items.forEach((item) => {
             if (!Array.isArray(item?.packageItems)) return;
             item.packageItems.forEach((pkgItem) => {
               if (!pkgItem) return;
               const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
               const existing = aggregated.get(key);
-              const qtyCandidate = parseQuantityValue(pkgItem.qty ?? pkgItem.quantity ?? 1);
-              const qty = Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
+              const qty = resolvePackageItemQty(pkgItem.qty ?? pkgItem.quantity ?? 1);
               if (existing) {
-                existing.qty += qty;
+                existing.qty = Math.min(existing.qty + qty, 99);
                 return;
               }
               aggregated.set(key, {
@@ -660,7 +669,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           if (aggregated.size) {
             const itemsMarkup = Array.from(aggregated.values())
               .map((pkgItem) => {
-                const qtyDisplay = normalizeNumbers(String(pkgItem.qty > 0 ? pkgItem.qty : 1));
+                const qtyDisplay = normalizeNumbers(String(pkgItem.qty > 0 ? Math.min(pkgItem.qty, 99) : 1));
                 const label = escapeHtml(pkgItem.desc || '');
                 const barcodeLabel = pkgItem.barcode
                   ? ` <span class="reservation-package-items__barcode">(${escapeHtml(normalizeNumbers(String(pkgItem.barcode)))})</span>`
