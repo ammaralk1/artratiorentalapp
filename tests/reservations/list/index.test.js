@@ -8,6 +8,7 @@ const formatDateTimeMock = vi.fn();
 const loadDataMock = vi.fn();
 const resolveItemImageMock = vi.fn();
 const calculateReservationDaysMock = vi.fn();
+const calculateDraftFinancialBreakdownMock = vi.fn();
 
 vi.mock('../../../src/scripts/reservationsShared.js', async () => {
   const actual = await vi.importActual('../../../src/scripts/reservationsShared.js');
@@ -36,7 +37,8 @@ vi.mock('../../../src/scripts/reservationsEquipment.js', () => ({
 }));
 
 vi.mock('../../../src/scripts/reservationsSummary.js', () => ({
-  calculateReservationDays: calculateReservationDaysMock
+  calculateReservationDays: calculateReservationDaysMock,
+  calculateDraftFinancialBreakdown: calculateDraftFinancialBreakdownMock,
 }));
 
 describe('reservations/list helpers', () => {
@@ -50,6 +52,20 @@ describe('reservations/list helpers', () => {
     loadDataMock.mockReturnValue({ technicians: [] });
     resolveItemImageMock.mockImplementation(() => 'img.png');
     calculateReservationDaysMock.mockReturnValue(2);
+    calculateDraftFinancialBreakdownMock.mockReset().mockReturnValue({
+      rentalDays: 2,
+      equipmentTotal: 300,
+      crewTotal: 0,
+      crewCostTotal: 0,
+      discountAmount: 30,
+      subtotalAfterDiscount: 270,
+      taxableAmount: 310.5,
+      taxAmount: 40.5,
+      finalTotal: 310.5,
+      companySharePercent: 0,
+      companyShareAmount: 0,
+      netProfit: 280,
+    });
   });
 
   it('filterReservationEntries applies filters and sorting', async () => {

@@ -4,7 +4,7 @@ import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
-import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
+import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
@@ -85,106 +85,73 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return resolveTechnicianCostRate(technician);
   };
 
-  const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
-    const representative = (Array.isArray(group?.items) && group.items.length) ? group.items[0] : {};
-    const quantityCandidates = [
-      group?.count,
-      group?.quantity,
-      representative?.qty,
-      representative?.quantity,
-      representative?.count,
-      1
-    ];
-    let quantity = 1;
-    for (const candidate of quantityCandidates) {
-      const parsedQty = parseQuantityValue(candidate);
-      if (Number.isFinite(parsedQty) && parsedQty > 0) {
-        quantity = parsedQty;
-        break;
-      }
-    }
+  const discountValueRaw = reservation.discount
+    ?? reservation.discountValue
+    ?? reservation.discount_value
+    ?? reservation.discountAmount
+    ?? 0;
+  const discountValueParsed = parsePriceValue(discountValueRaw);
+  const discountValue = Number.isFinite(discountValueParsed) ? discountValueParsed : 0;
+  const discountTypeRaw = reservation.discountType
+    ?? reservation.discount_type
+    ?? reservation.discountMode
+    ?? 'percent';
+  const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
 
-    const candidatePrices = [
-      representative?.price,
-      representative?.unit_price,
-      representative?.unitPrice,
-      group?.unitPrice
-    ];
+  const applyTaxFlag = projectLinked
+    ? false
+    : Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
 
-    let unitPrice = NaN;
-    for (const candidate of candidatePrices) {
-      const parsed = parsePriceValue(candidate);
-      if (Number.isFinite(parsed) && parsed >= 0) {
-        unitPrice = parsed;
-        if (parsed > 0) {
-          break;
-        }
-      }
-    }
-
-    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
-      const totalCandidate = parsePriceValue(group?.totalPrice ?? representative?.total ?? representative?.total_price);
-      if (Number.isFinite(totalCandidate) && quantity > 0) {
-        unitPrice = totalCandidate / quantity;
-      }
-    }
-
-    const safeUnitPrice = sanitizePriceValue(unitPrice);
-
-    return sum + (safeUnitPrice * quantity);
-  }, 0);
-  const equipmentTotal = equipmentDailyTotal * rentalDays;
-  const crewCostDailyTotal = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianCostRate(tech), 0);
-  const crewTotalDaily = assignedTechnicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);
-  const crewCostTotal = crewCostDailyTotal * rentalDays;
-  const crewTotal = crewTotalDaily * rentalDays;
-  const discountBase = equipmentTotal + crewTotal;
-  const discountValue = parseFloat(reservation.discount) || 0;
-  const discountAmount = reservation.discountType === 'amount'
-    ? discountValue
-    : discountBase * (discountValue / 100);
-  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
-  const applyTaxFlag = projectLinked ? false : reservation.applyTax;
-  const storedCost = Number(reservation.cost);
-  const hasStoredCost = Number.isFinite(storedCost);
+  const storedCostCandidate = parsePriceValue(reservation.cost ?? reservation.total ?? reservation.finalTotal);
+  const hasStoredCost = Number.isFinite(storedCostCandidate);
+  const storedCost = hasStoredCost ? sanitizePriceValue(storedCostCandidate) : 0;
 
   const rawCompanySharePercent = reservation.companySharePercent
     ?? reservation.company_share_percent
     ?? reservation.companyShare
     ?? reservation.company_share;
   const normalizedCompanyShare = rawCompanySharePercent != null
-    ? parseFloat(normalizeNumbers(String(rawCompanySharePercent)))
-    : NaN;
+    ? parsePriceValue(rawCompanySharePercent)
+    : Number.NaN;
   const companyShareEnabledFlag = reservation.companyShareEnabled
     ?? reservation.company_share_enabled
     ?? reservation.companyShareApplied;
   const hasCompanyShare = (companyShareEnabledFlag === true)
     || (Number.isFinite(normalizedCompanyShare) && normalizedCompanyShare > 0);
-  let companySharePercent = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
+  let companySharePercentInput = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
     ? normalizedCompanyShare
     : 0;
-  if (applyTaxFlag && companySharePercent <= 0) {
-    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
+  if (applyTaxFlag && companySharePercentInput <= 0) {
+    companySharePercentInput = DEFAULT_COMPANY_SHARE_PERCENT;
   }
-  let companyShareAmount = companySharePercent > 0
-    ? Math.max(0, subtotalAfterDiscount * (companySharePercent / 100))
-    : 0;
 
-  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
-  const taxAmountRaw = applyTaxFlag ? taxableAmount * 0.15 : 0;
-  const taxAmount = Number.isFinite(taxAmountRaw) && taxAmountRaw > 0
-    ? Number(taxAmountRaw.toFixed(2))
+  const breakdown = calculateDraftFinancialBreakdown({
+    items,
+    technicianIds: reservation.technicians || [],
+    discount: discountValue,
+    discountType,
+    applyTax: applyTaxFlag,
+    start: reservation.start,
+    end: reservation.end,
+    companySharePercent: companySharePercentInput,
+  });
+
+  const equipmentTotal = sanitizePriceValue(breakdown.equipmentTotal);
+  const crewTotal = sanitizePriceValue(breakdown.crewTotal);
+  const crewCostTotal = sanitizePriceValue(breakdown.crewCostTotal);
+  const discountAmount = sanitizePriceValue(breakdown.discountAmount);
+  const subtotalAfterDiscount = sanitizePriceValue(breakdown.subtotalAfterDiscount);
+  const companySharePercent = Number.isFinite(breakdown.companySharePercent) ? breakdown.companySharePercent : 0;
+  let companyShareAmount = sanitizePriceValue(breakdown.companyShareAmount);
+  companyShareAmount = companySharePercent > 0
+    ? sanitizePriceValue(Math.max(0, companyShareAmount))
     : 0;
-  const computedTotal = taxableAmount + taxAmount;
-  const finalTotalComputed = Number.isFinite(computedTotal)
-    ? Number(computedTotal.toFixed(2))
-    : 0;
+  const taxAmount = sanitizePriceValue(breakdown.taxAmount);
+  const finalTotalComputed = sanitizePriceValue(breakdown.finalTotal);
   const finalTotal = projectLinked
     ? finalTotalComputed
     : (hasStoredCost ? storedCost : finalTotalComputed);
-  if (companySharePercent > 0) {
-    companyShareAmount = Number(Math.max(0, subtotalAfterDiscount * (companySharePercent / 100)).toFixed(2));
-  }
+  const netProfitValue = sanitizePriceValue(breakdown.netProfit);
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -391,8 +358,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
   const revenueAfterDiscountValue = Math.max(0, (equipmentTotal + crewTotal) - discountAmount);
-  const netProfitValue = Math.max(0, revenueAfterDiscountValue - crewCostTotal);
-  const netProfitDisplay = normalizeNumbers(netProfitValue.toFixed(2));
+  const netProfitSafe = Number.isFinite(netProfitValue) ? Math.max(0, netProfitValue) : 0;
+  const netProfitDisplay = normalizeNumbers(netProfitSafe.toFixed(2));
 
   const summaryDetails = [
     { icon: '💼', label: itemsTotalLabel, value: `${equipmentTotalDisplay} ${currencyLabel}` }
@@ -414,9 +381,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     summaryDetails.push({ icon: '🏦', label: companyShareLabel, value: companyShareValue });
   }
 
-  if (Math.abs(netProfitValue - (finalTotal ?? 0)) > 0.009) {
-    summaryDetails.push({ icon: '💵', label: netProfitLabel, value: `${netProfitDisplay} ${currencyLabel}` });
-  }
+  summaryDetails.push({ icon: '💵', label: netProfitLabel, value: `${netProfitDisplay} ${currencyLabel}` });
 
   summaryDetails.push({ icon: '💰', label: finalTotalLabel, value: `${finalTotalDisplay} ${currencyLabel}` });
 

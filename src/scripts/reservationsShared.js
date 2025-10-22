@@ -26,8 +26,10 @@ function parsePriceValueInternal(value) {
   let normalized = normalizeNumbers(String(value)).trim();
   if (!normalized) return Number.NaN;
 
-  // Track negativity before removing separators or symbols.
-  const negative = /-/.test(normalized);
+  const firstDigitIndex = normalized.search(/[0-9]/);
+  const firstMinusIndex = normalized.indexOf('-');
+  const negative = firstMinusIndex !== -1 && (firstDigitIndex === -1 || firstMinusIndex < firstDigitIndex);
+
   normalized = normalized.replace(/[-+]/g, '');
 
   normalized = normalized
