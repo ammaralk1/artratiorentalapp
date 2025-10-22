@@ -1,7 +1,7 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT } from '../../reservationsSummary.js';
@@ -87,7 +87,22 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
     const representative = (Array.isArray(group?.items) && group.items.length) ? group.items[0] : {};
-    const quantity = Number(group?.count ?? group?.quantity ?? representative?.qty ?? 1) || 1;
+    const quantityCandidates = [
+      group?.count,
+      group?.quantity,
+      representative?.qty,
+      representative?.quantity,
+      representative?.count,
+      1
+    ];
+    let quantity = 1;
+    for (const candidate of quantityCandidates) {
+      const parsedQty = parseQuantityValue(candidate);
+      if (Number.isFinite(parsedQty) && parsedQty > 0) {
+        quantity = parsedQty;
+        break;
+      }
+    }
 
     const candidatePrices = [
       representative?.price,
@@ -96,21 +111,22 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       group?.unitPrice
     ];
 
-    let unitPrice = candidatePrices.reduce((value, candidate) => {
-      if (Number.isFinite(value) && value > 0) return value;
-      const parsed = Number(candidate);
-      return Number.isFinite(parsed) ? parsed : value;
-    }, NaN);
-
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-      const totalCandidate = Number(group?.totalPrice ?? representative?.total ?? representative?.total_price);
-      if (Number.isFinite(totalCandidate) && quantity > 0) {
-        unitPrice = Number((totalCandidate / quantity).toFixed(2));
+    let unitPrice = NaN;
+    for (const candidate of candidatePrices) {
+      const parsed = parsePriceValue(candidate);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        unitPrice = parsed;
+        if (parsed > 0) {
+          break;
+        }
       }
     }
 
-    if (!Number.isFinite(unitPrice)) {
-      unitPrice = 0;
+    if (!Number.isFinite(unitPrice) || unitPrice < 0) {
+      const totalCandidate = parsePriceValue(group?.totalPrice ?? representative?.total ?? representative?.total_price);
+      if (Number.isFinite(totalCandidate) && quantity > 0) {
+        unitPrice = totalCandidate / quantity;
+      }
     }
 
     const safeUnitPrice = sanitizePriceValue(unitPrice);
@@ -256,15 +272,15 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return Math.round(parsed);
   };
 
-  const parseQuantityValue = (value) => {
-    if (value == null) return NaN;
+  function parseQuantityValue(value) {
+    if (value == null) return Number.NaN;
     if (typeof value === 'number') {
-      return Number.isFinite(value) ? value : NaN;
+      return Number.isFinite(value) ? value : Number.NaN;
     }
     const cleaned = String(value).replace(/[^0-9.+-]/g, '');
     const parsed = Number(cleaned);
-    return Number.isFinite(parsed) ? parsed : NaN;
-  };
+    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  }
 
   const isPackageEntry = (entry = {}) => {
     const type = String(entry.type ?? entry.kind ?? entry.category ?? '').toLowerCase();
@@ -525,20 +541,46 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
         const isPackageGroup = group.items.some((item) => item?.type === 'package');
+        const resolveQuantityCandidate = (value, { fallback = 1, max = 1_000 } = {}) => {
+          const parsed = parseQuantityValue(value);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            return Math.min(max, parsed);
+          }
+          return fallback;
+        };
+
         let quantityValue;
         if (isPackageGroup) {
-          const representativeQty = Number(representative?.qty ?? representative?.quantity ?? representative?.count);
-          if (Number.isFinite(representativeQty) && representativeQty > 0 && representativeQty < 1_000) {
+          const representativeQty = resolveQuantityCandidate(representative?.qty ?? representative?.quantity ?? representative?.count, { fallback: NaN, max: 999 });
+          if (Number.isFinite(representativeQty) && representativeQty > 0) {
             quantityValue = representativeQty;
           } else {
-            const fallbackQty = Number(group.quantity ?? group.count ?? 1);
-            quantityValue = Number.isFinite(fallbackQty) && fallbackQty > 0 ? fallbackQty : 1;
+            quantityValue = resolveQuantityCandidate(group.quantity ?? group.count ?? 1, { fallback: 1, max: 999 });
           }
         } else {
-          const fallbackQty = Number(group.quantity ?? group.count ?? representative?.qty ?? representative?.quantity ?? representative?.count ?? 0);
-          quantityValue = Number.isFinite(fallbackQty) && fallbackQty > 0 ? fallbackQty : 1;
+          quantityValue = resolveQuantityCandidate(
+            group.quantity ?? group.count ?? representative?.qty ?? representative?.quantity ?? representative?.count ?? 0,
+            { fallback: 1, max: 9_999 }
+          );
         }
         const quantityDisplay = normalizeNumbers(String(quantityValue));
+
+        const resolvePriceCandidate = (candidates, { preferPositive = false } = {}) => {
+          let fallback = Number.NaN;
+          for (const candidate of candidates) {
+            const parsed = parsePriceValue(candidate);
+            if (!Number.isFinite(parsed)) {
+              continue;
+            }
+            if (preferPositive && parsed > 0) {
+              return parsed;
+            }
+            if (!Number.isFinite(fallback)) {
+              fallback = parsed;
+            }
+          }
+          return fallback;
+        };
 
         let unitPriceNumber;
         let totalPriceNumber;
@@ -551,20 +593,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             group.unitPrice
           ];
 
-          unitPriceNumber = unitCandidates.reduce((value, candidate) => {
-            if (Number.isFinite(value) && value > 0) return value;
-            const parsed = Number(candidate);
-            return Number.isFinite(parsed) && parsed > 0 ? parsed : value;
-          }, NaN);
+          unitPriceNumber = resolvePriceCandidate(unitCandidates, { preferPositive: true });
 
-          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
-            const totalFallback = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber < 0) {
+            const totalFallback = parsePriceValue(group.totalPrice ?? representative?.total ?? representative?.total_price);
             if (Number.isFinite(totalFallback) && quantityValue > 0) {
               unitPriceNumber = totalFallback / quantityValue;
             }
           }
 
-          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber < 0) {
+          if (!Number.isFinite(unitPriceNumber)) {
             unitPriceNumber = 0;
           }
 
@@ -574,11 +612,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             group.totalPrice
           ];
 
-          totalPriceNumber = totalCandidates.reduce((value, candidate) => {
-            if (Number.isFinite(value) && value >= 0) return value;
-            const parsed = Number(candidate);
-            return Number.isFinite(parsed) ? parsed : value;
-          }, NaN);
+          totalPriceNumber = resolvePriceCandidate(totalCandidates);
 
           if (!Number.isFinite(totalPriceNumber)) {
             totalPriceNumber = unitPriceNumber * quantityValue;
@@ -599,14 +633,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             group.unitPrice
           ];
 
-          unitPriceNumber = candidatePrices.reduce((value, candidate) => {
-            if (Number.isFinite(value) && value > 0) return value;
-            const parsed = Number(candidate);
-            return Number.isFinite(parsed) ? parsed : value;
-          }, NaN);
+          unitPriceNumber = resolvePriceCandidate(candidatePrices, { preferPositive: true });
 
-          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
-            const totalCandidate = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber < 0) {
+            const totalCandidate = parsePriceValue(group.totalPrice ?? representative?.total ?? representative?.total_price);
             if (Number.isFinite(totalCandidate) && quantityValue > 0) {
               unitPriceNumber = totalCandidate / quantityValue;
             }
@@ -616,7 +646,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             unitPriceNumber = 0;
           }
 
-          totalPriceNumber = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+          totalPriceNumber = parsePriceValue(group.totalPrice ?? representative?.total ?? representative?.total_price);
           if (!Number.isFinite(totalPriceNumber)) {
             totalPriceNumber = unitPriceNumber * quantityValue;
           }
@@ -648,7 +678,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               if (!pkgItem) return;
               const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
               const existing = aggregated.get(key);
-              const qty = Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1;
+              const qtyCandidate = parseQuantityValue(pkgItem.qty ?? pkgItem.quantity ?? 1);
+              const qty = Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
               if (existing) {
                 existing.qty += qty;
                 return;
@@ -664,7 +695,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           if (aggregated.size) {
             const itemsMarkup = Array.from(aggregated.values())
               .map((pkgItem) => {
-                const qtyDisplay = normalizeNumbers('1');
+                const qtyDisplay = normalizeNumbers(String(pkgItem.qty > 0 ? pkgItem.qty : 1));
                 const label = escapeHtml(pkgItem.desc || '');
                 const barcodeLabel = pkgItem.barcode
                   ? ` <span class="reservation-package-items__barcode">(${escapeHtml(normalizeNumbers(String(pkgItem.barcode)))})</span>`

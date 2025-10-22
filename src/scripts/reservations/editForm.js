@@ -1,7 +1,7 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers, formatDateTime } from '../utils.js';
-import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
+import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
 import {
   resolveItemImage,
   findEquipmentByBarcode,
@@ -228,8 +228,11 @@ export function renderEditReservationItems(items = []) {
         : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
       const isPackageGroup = group.items.some((item) => item?.type === 'package');
       const quantityDisplay = normalizeNumbers(String(group.count));
-      const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
-      const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * group.count;
+      const parsedUnitPrice = parsePriceValue(group.unitPrice);
+      const unitPriceNumber = Number.isFinite(parsedUnitPrice) ? sanitizePriceValue(parsedUnitPrice) : 0;
+      const parsedTotalPrice = parsePriceValue(group.totalPrice);
+      const totalPriceRaw = Number.isFinite(parsedTotalPrice) ? parsedTotalPrice : unitPriceNumber * (Number.isFinite(group.count) ? group.count : 1);
+      const totalPriceNumber = sanitizePriceValue(totalPriceRaw);
       const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
 
@@ -254,7 +257,8 @@ export function renderEditReservationItems(items = []) {
             if (!pkgItem) return;
             const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
             const existing = aggregated.get(key);
-            const qty = Number.isFinite(Number(pkgItem.qty)) ? Number(pkgItem.qty) : 1;
+            const qtyCandidate = Number.parseFloat(normalizeNumbers(String(pkgItem.qty ?? pkgItem.quantity ?? 1)).replace(/[^0-9.]/g, ''));
+            const qty = Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
             if (existing) {
               existing.qty += qty;
               return;

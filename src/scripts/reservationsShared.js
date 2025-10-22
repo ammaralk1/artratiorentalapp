@@ -1,12 +1,108 @@
 import { normalizeNumbers } from './utils.js';
 import { resolvePackageItems, normalizePackageId } from './reservationsPackages.js';
 
+function stripExtraDots(candidate) {
+  const parts = candidate.split('.');
+  if (parts.length <= 2) {
+    return candidate;
+  }
+
+  const decimalPart = parts.pop();
+  const integerPart = parts.join('');
+  return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
+}
+
+function parsePriceValueInternal(value) {
+  if (value == null || value === '') return Number.NaN;
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : Number.NaN;
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+
+  let normalized = normalizeNumbers(String(value)).trim();
+  if (!normalized) return Number.NaN;
+
+  // Track negativity before removing separators or symbols.
+  const negative = /-/.test(normalized);
+  normalized = normalized.replace(/[-+]/g, '');
+
+  normalized = normalized
+    .replace(/\s+/g, '')
+    .replace(/\u066B/g, '.') // Arabic decimal separator
+    .replace(/[\u066C\u060C\u061B]/g, ','); // Arabic thousands/comma/semicolon
+
+  // Remove any currency/unit labels while keeping digits and separators.
+  normalized = normalized.replace(/[^0-9.,]/g, '');
+  if (!normalized) return Number.NaN;
+
+  const hasComma = normalized.includes(',');
+  const hasDot = normalized.includes('.');
+  if (hasComma && hasDot) {
+    const lastComma = normalized.lastIndexOf(',');
+    const lastDot = normalized.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      normalized = normalized.replace(/\./g, '');
+      normalized = normalized.replace(/,/g, '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    const commaParts = normalized.split(',');
+    if (commaParts.length === 2 && commaParts[1].length === 3) {
+      normalized = commaParts.join('');
+    } else {
+      normalized = normalized.replace(/,/g, '.');
+    }
+  } else if (hasDot) {
+    const dotParts = normalized.split('.');
+    if (dotParts.length === 2) {
+      const [, fraction] = dotParts;
+      if (fraction.length === 3) {
+        const allDigits = dotParts.join('');
+        if (/^[0-9]+$/.test(allDigits)) {
+          normalized = allDigits;
+        }
+      }
+    } else if (dotParts.length > 2) {
+      normalized = stripExtraDots(normalized);
+    }
+  }
+
+  // Any remaining commas should be removed as thousand separators.
+  normalized = normalized.replace(/,/g, '');
+  normalized = stripExtraDots(normalized);
+
+  if (!/^[0-9]*\.?[0-9]*$/.test(normalized)) {
+    return Number.NaN;
+  }
+
+  if (!normalized || normalized === '.') {
+    return Number.NaN;
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  if (!Number.isFinite(parsed)) {
+    return Number.NaN;
+  }
+
+  return negative ? -parsed : parsed;
+}
+
+export function parsePriceValue(value) {
+  return parsePriceValueInternal(value);
+}
+
 export function sanitizePriceValue(value) {
-  let result = Number(value);
-  if (!Number.isFinite(result)) {
+  const parsed = parsePriceValueInternal(value);
+  if (!Number.isFinite(parsed)) {
     return 0;
   }
 
+  let result = parsed;
   let iterations = 0;
   while (Math.abs(result) > 100_000 && iterations < 8) {
     result /= 10;
@@ -15,6 +111,7 @@ export function sanitizePriceValue(value) {
 
   return Number(result.toFixed(2));
 }
+
 function normalizeBarcodeValueLocal(value) {
   return normalizeNumbers(String(value ?? '')).trim().toLowerCase();
 }
@@ -26,16 +123,26 @@ export function normalizeText(value = '') {
 const GROUP_PRICE_PRECISION = 2;
 
 function normalizePrice(value) {
-  const number = Number(value);
+  const number = parsePriceValue(value);
   if (!Number.isFinite(number)) return '0.00';
   return number.toFixed(GROUP_PRICE_PRECISION);
 }
 
 function getItemQuantity(entry = {}) {
-  const parsed = Number(entry?.qty);
-  if (Number.isFinite(parsed) && parsed > 0) {
-    return sanitizePriceValue(parsed);
+  const candidates = [
+    entry?.qty,
+    entry?.quantity,
+    entry?.count,
+    entry?.units,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = Number.parseFloat(normalizeNumbers(String(candidate ?? '')).replace(/[^0-9.]/g, ''));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return sanitizePriceValue(parsed);
+    }
   }
+
   return 1;
 }
 
@@ -83,12 +190,17 @@ export function groupReservationItems(items = []) {
     quantity: group.items.reduce((sum, entry) => sum + getItemQuantity(entry), 0),
   })).map((group) => {
     const quantity = group.quantity || 0;
-    const totalPrice = group.items.reduce((sum, entry) => {
+    const totalPriceRaw = group.items.reduce((sum, entry) => {
       const price = toPriceNumber(entry);
       const itemQty = getItemQuantity(entry);
       return sum + (price * itemQty);
     }, 0);
-    const unitPrice = quantity > 0 ? totalPrice / quantity : group.unitPrice;
+    const totalPrice = sanitizePriceValue(totalPriceRaw);
+    const existingUnitPrice = parsePriceValue(group.unitPrice);
+    const unitPriceBase = Number.isFinite(existingUnitPrice) ? existingUnitPrice : 0;
+    const unitPrice = quantity > 0
+      ? sanitizePriceValue(totalPrice / quantity)
+      : sanitizePriceValue(unitPriceBase);
 
     return {
       ...group,
@@ -106,8 +218,14 @@ function normalizePackageItemsForGroup(packageEntry = {}) {
   return resolvedItems.map((item) => ({
     ...item,
     normalizedBarcode: item?.normalizedBarcode ?? normalizeBarcodeValueLocal(item?.barcode),
-    qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
-    price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
+    qty: (() => {
+      const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item?.qty ?? item?.quantity ?? 1)));
+      return Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
+    })(),
+    price: (() => {
+      const parsed = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
+      return Number.isFinite(parsed) ? parsed : 0;
+    })(),
   }));
 }
 
@@ -118,7 +236,7 @@ function resolvePackageQuantity(packageEntry = {}) {
     ?? packageEntry.package_quantity
     ?? packageEntry.packageQty
     ?? 1;
-  const parsed = Number(raw);
+  const parsed = Number.parseFloat(normalizeNumbers(String(raw)).replace(/[^0-9.]/g, ''));
   if (Number.isFinite(parsed) && parsed > 0) {
     return parsed;
   }
@@ -129,30 +247,32 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = [], quantityO
   const candidate = packageEntry.unit_price
     ?? packageEntry.unitPrice
     ?? packageEntry.price;
-  const parsed = Number(candidate);
+  const parsed = parsePriceValue(candidate);
   if (Number.isFinite(parsed) && parsed > 0) {
-    return parsed;
+    return sanitizePriceValue(parsed);
   }
 
   const totalCandidate = packageEntry.total_price
     ?? packageEntry.totalPrice
     ?? packageEntry.total;
-  const totalParsed = Number(totalCandidate);
-  const quantity = Number.isFinite(Number(quantityOverride)) && Number(quantityOverride) > 0
-    ? Number(quantityOverride)
+  const totalParsed = parsePriceValue(totalCandidate);
+  const quantityOverrideParsed = Number.parseFloat(normalizeNumbers(String(quantityOverride)).replace(/[^0-9.]/g, ''));
+  const quantity = Number.isFinite(quantityOverrideParsed) && quantityOverrideParsed > 0
+    ? quantityOverrideParsed
     : resolvePackageQuantity(packageEntry);
   if (Number.isFinite(totalParsed) && totalParsed > 0 && quantity > 0) {
-    return sanitizePriceValue(Number((totalParsed / quantity).toFixed(2)));
+    return sanitizePriceValue(totalParsed / quantity);
   }
 
   if (Array.isArray(packageItems) && packageItems.length) {
     const itemsTotal = packageItems.reduce((sum, item) => {
-      const price = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
-      const qty = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 1;
+      const price = parsePriceValue(item.price ?? item.unit_price ?? item.unitPrice);
+      const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item.qty ?? item.quantity ?? 1)).replace(/[^0-9.]/g, ''));
+      const qty = Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
       return sum + (price * qty);
     }, 0);
     if (itemsTotal > 0 && quantity > 0) {
-      return sanitizePriceValue(Number((itemsTotal / quantity).toFixed(2)));
+      return sanitizePriceValue(itemsTotal / quantity);
     }
   }
 
@@ -262,9 +382,9 @@ export function buildReservationDisplayGroups(reservation = {}) {
       secondarySource?.unitPrice,
     ];
     for (const candidate of itemPriceCandidates) {
-      const parsed = Number(candidate);
+      const parsed = parsePriceValue(candidate);
       if (Number.isFinite(parsed) && parsed > 0) {
-        unitPrice = parsed;
+        unitPrice = sanitizePriceValue(parsed);
         break;
       }
     }
@@ -280,7 +400,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
     ];
     let totalPrice = NaN;
     for (const candidate of totalPriceCandidates) {
-      const parsed = Number(candidate);
+      const parsed = parsePriceValue(candidate);
       if (Number.isFinite(parsed) && parsed >= 0) {
         totalPrice = parsed;
         break;
@@ -417,9 +537,22 @@ export function resolveEquipmentIdentifier(record = {}) {
 }
 
 function toPriceNumber(entry = {}) {
-  const value = entry?.price ?? entry?.unit_price ?? entry?.unitPrice ?? 0;
-  const num = Number(value);
-  return Number.isFinite(num) ? num : 0;
+  const candidates = [
+    entry?.price,
+    entry?.unit_price,
+    entry?.unitPrice,
+    entry?.unit_rate,
+    entry?.unitRate,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parsePriceValue(candidate);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
 }
 
 export function isReservationCompleted(reservation) {

@@ -2,6 +2,7 @@ import { normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { getSelectedTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
+import { sanitizePriceValue, parsePriceValue } from './reservationsShared.js';
 
 export const DEFAULT_COMPANY_SHARE_PERCENT = 10;
 
@@ -15,9 +16,9 @@ function resolveTechnicianCostRate(tech = {}) {
   ];
 
   for (const value of candidates) {
-    const number = Number(value);
+    const number = parsePriceValue(value);
     if (Number.isFinite(number)) {
-      return number;
+      return sanitizePriceValue(number);
     }
   }
 
@@ -36,9 +37,9 @@ function resolveTechnicianTotalRate(tech = {}) {
 
   for (const value of candidates) {
     if (value == null || value === '') continue;
-    const number = Number(value);
+    const number = parsePriceValue(value);
     if (Number.isFinite(number)) {
-      return number;
+      return sanitizePriceValue(number);
     }
   }
 
@@ -297,16 +298,19 @@ export function calculateDraftFinancialBreakdown({
   companySharePercent = null
 } = {}) {
   const rentalDays = calculateReservationDays(start, end);
-  const equipmentDailyTotal = (items || []).reduce(
-    (sum, item) => sum + ((Number(item?.qty) || 1) * (Number(item?.price) || 0)),
-    0
-  );
-  const equipmentTotal = equipmentDailyTotal * rentalDays;
+  const equipmentDailyTotal = (items || []).reduce((sum, item) => {
+    const quantityCandidate = parsePriceValue(item?.qty ?? item?.quantity ?? item?.count ?? 1);
+    const quantity = Number.isFinite(quantityCandidate) && quantityCandidate > 0 ? quantityCandidate : 1;
+    const price = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
+    const safePrice = Number.isFinite(price) ? price : 0;
+    return sum + (quantity * safePrice);
+  }, 0);
+  const equipmentTotal = sanitizePriceValue(equipmentDailyTotal * rentalDays);
   const { costPerDay, totalPerDay } = calculateTechnicianDayRates(technicianIds);
-  const crewTotal = totalPerDay * rentalDays;
-  const crewCostTotal = costPerDay * rentalDays;
+  const crewTotal = sanitizePriceValue(totalPerDay * rentalDays);
+  const crewCostTotal = sanitizePriceValue(costPerDay * rentalDays);
 
-  const discountBase = equipmentTotal + crewTotal;
+  const discountBase = sanitizePriceValue(equipmentTotal + crewTotal);
   const discountValue = Number(discount) || 0;
   let discountAmount = discountType === 'amount'
     ? discountValue
