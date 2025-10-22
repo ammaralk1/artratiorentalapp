@@ -2890,7 +2890,8 @@ function buildQuotationHtml(options) {
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
 
-    const packageCode = group?.package_code
+    const packageCode = group?.packageDisplayCode
+      ?? group?.package_code
       ?? group?.packageCode
       ?? group?.packageId
       ?? group?.package_id
@@ -2922,8 +2923,9 @@ function buildQuotationHtml(options) {
       desc: group?.description,
       barcode,
       qty: count,
-      price: unitPrice,
+      price: totalPrice,
       totalPrice,
+      unitPriceValue: unitPrice,
     };
   });
 

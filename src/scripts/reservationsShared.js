@@ -413,21 +413,37 @@ export function buildReservationDisplayGroups(reservation = {}) {
     }
     totalPrice = sanitizePriceValue(totalPrice);
 
-    const packageBarcode = primarySource?.package_code
-      ?? primarySource?.packageCode
-      ?? primarySource?.packageId
-      ?? primarySource?.package_id
-      ?? primarySource?.code
-      ?? primarySource?.barcode
-      ?? secondarySource?.package_code
-      ?? secondarySource?.packageCode
-      ?? secondarySource?.packageId
-      ?? secondarySource?.package_id
-      ?? secondarySource?.code
-      ?? secondarySource?.barcode
-      ?? null;
-    if (packageBarcode) {
-      const normalizedPkgBarcode = normalizeBarcodeValueLocal(packageBarcode);
+    const packageDisplayCodeCandidates = [
+      primarySource?.displayCode,
+      primarySource?.display_code,
+      primarySource?.package_code,
+      primarySource?.packageCode,
+      primarySource?.code,
+      primarySource?.barcode,
+      primarySource?.packageId,
+      primarySource?.package_id,
+      secondarySource?.displayCode,
+      secondarySource?.display_code,
+      secondarySource?.package_code,
+      secondarySource?.packageCode,
+      secondarySource?.code,
+      secondarySource?.barcode,
+      secondarySource?.packageId,
+      secondarySource?.package_id,
+      normalizedId,
+      mapKey,
+    ];
+    const packageDisplayCodeRaw = packageDisplayCodeCandidates.find((candidate) => {
+      if (candidate == null) return false;
+      const trimmed = String(candidate).trim();
+      return trimmed.length > 0;
+    });
+    const packageDisplayCode = packageDisplayCodeRaw != null
+      ? normalizeNumbers(String(packageDisplayCodeRaw)).trim()
+      : '';
+
+    if (packageDisplayCode) {
+      const normalizedPkgBarcode = normalizeBarcodeValueLocal(packageDisplayCode);
       if (normalizedPkgBarcode) {
         packageBarcodes.add(normalizedPkgBarcode);
       }
@@ -444,10 +460,11 @@ export function buildReservationDisplayGroups(reservation = {}) {
       secondarySource?.name,
       secondarySource?.desc,
       secondarySource?.package_name,
-      normalizeNumbers(String(packageBarcode ?? mapKey)),
+      packageDisplayCode,
+      normalizeNumbers(String(mapKey)),
     ];
     const description = descriptionCandidates.find((value) => value != null && String(value).trim() !== '')
-      || normalizeNumbers(String(packageBarcode ?? mapKey));
+      || normalizeNumbers(String(packageDisplayCode || mapKey));
 
     const imageSource = (resolvedItems.find((item) => item?.image)?.image)
       ?? primarySource?.image
@@ -464,8 +481,9 @@ export function buildReservationDisplayGroups(reservation = {}) {
       count: packageQty,
       image: imageSource,
       barcodes: barcodesList,
-      barcode: packageBarcode,
-      package_code: packageBarcode,
+      barcode: packageDisplayCode,
+      package_code: packageDisplayCode,
+      packageDisplayCode,
       items: [{
         type: 'package',
         packageItems: resolvedItems,
@@ -473,7 +491,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
         desc: description,
         price: unitPrice,
         qty: packageQty,
-        barcode: packageBarcode,
+        barcode: packageDisplayCode,
       }],
       type: 'package',
       packageItems: resolvedItems,
