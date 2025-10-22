@@ -348,7 +348,7 @@ export function calculateDraftFinancialBreakdown({
   const interimTotal = taxableAmount + taxAmount;
   const finalTotal = Math.max(0, Number(interimTotal.toFixed(2)));
 
-  const netProfit = Math.max(0, equipmentTotal + crewTotal - crewCostTotal);
+  const netProfit = Math.max(0, Math.max(0, equipmentTotal + crewTotal - discountAmount) - crewCostTotal);
 
   return {
     rentalDays,
