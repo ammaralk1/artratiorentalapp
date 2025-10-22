@@ -660,8 +660,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               const existing = aggregated.get(key);
               const qty = resolvePackageItemQty(pkgItem);
               if (existing) {
-                existing.qty = Math.min((existing.qty ?? 0) + qty, 99);
-                existing.total = Math.min((existing.total ?? 0) + (pkgItem.totalQuantity ?? qty), 99 * Math.max(1, quantityValue));
+                existing.qty = qty;
+                existing.total = Number.isFinite(parseQuantityValue(pkgItem.totalQuantity))
+                  ? parseQuantityValue(pkgItem.totalQuantity)
+                  : qty;
                 return;
               }
               aggregated.set(key, {

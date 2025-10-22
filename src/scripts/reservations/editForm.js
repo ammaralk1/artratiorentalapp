@@ -274,13 +274,14 @@ export function renderEditReservationItems(items = []) {
               const normalized = resolvePackageItemQty(perPackage);
               qty = normalized > 0 ? normalized : 1;
             }
+            const clampedQty = Math.max(1, Math.min(qty, 99));
             if (existing) {
-              existing.qty = Math.min((existing.qty ?? 0) + qty, 99);
+              existing.qty = clampedQty;
               return;
             }
             aggregated.set(key, {
               desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
-              qty: Math.max(1, Math.min(qty, 99)),
+              qty: clampedQty,
               barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
             });
           });
