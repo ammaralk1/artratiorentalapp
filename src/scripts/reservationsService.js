@@ -155,6 +155,108 @@ function getCachedReservationPackages(reservationId) {
   return normalizePackagesForCache(entry);
 }
 
+function normalizeCrewAssignmentEntry(entry, index = 0) {
+  if (entry == null) {
+    return null;
+  }
+
+  if (typeof entry !== 'object') {
+    const technicianId = entry != null ? String(entry) : null;
+    return {
+      assignmentId: `crew-${index}-${technicianId ?? 'unassigned'}`,
+      positionId: null,
+      positionKey: null,
+      positionLabel: '',
+      positionLabelAlt: '',
+      positionLabelAr: null,
+      positionLabelEn: null,
+      positionCost: 0,
+      positionClientPrice: 0,
+      technicianId,
+      technicianName: null,
+      technicianRole: null,
+      notes: null,
+    };
+  }
+
+  const assignmentId = entry.assignment_id
+    ?? entry.assignmentId
+    ?? entry.id
+    ?? entry.technician_id
+    ?? entry.technicianId
+    ?? `crew-${index}`;
+  const positionId = entry.position_id
+    ?? entry.positionId
+    ?? entry.position
+    ?? entry.position_code
+    ?? null;
+  const positionKey = entry.position_key
+    ?? entry.positionKey
+    ?? entry.position_code
+    ?? entry.positionId
+    ?? null;
+  const positionLabel = entry.position_name
+    ?? entry.positionName
+    ?? entry.role
+    ?? entry.position
+    ?? '';
+  const positionLabelAr = entry.position_label_ar ?? null;
+  const positionLabelEn = entry.position_label_en ?? null;
+  const positionLabelAlt = entry.position_label_alt
+    ?? positionLabelEn
+    ?? positionLabelAr
+    ?? '';
+
+  const positionCostRaw = entry.position_cost
+    ?? entry.positionCost
+    ?? entry.cost
+    ?? entry.daily_wage
+    ?? entry.dailyWage
+    ?? entry.internal_cost
+    ?? null;
+  const positionClientPriceRaw = entry.position_client_price
+    ?? entry.positionClientPrice
+    ?? entry.client_price
+    ?? entry.clientPrice
+    ?? entry.daily_total
+    ?? entry.dailyTotal
+    ?? entry.total
+    ?? entry.price
+    ?? null;
+
+  const positionCost = sanitizePriceValue(parsePriceValue(positionCostRaw));
+  const positionClientPrice = sanitizePriceValue(parsePriceValue(positionClientPriceRaw));
+
+  const technicianId = entry.technician_id
+    ?? entry.technicianId
+    ?? entry.id
+    ?? entry.userId
+    ?? entry.user_id
+    ?? null;
+  const technicianName = entry.technician_name
+    ?? entry.technicianName
+    ?? entry.name
+    ?? entry.full_name
+    ?? null;
+  const technicianRole = entry.role ?? entry.specialization ?? null;
+
+  return {
+    assignmentId: String(assignmentId),
+    positionId: positionId != null ? String(positionId) : null,
+    positionKey: positionKey != null ? String(positionKey) : null,
+    positionLabel: positionLabel != null ? String(positionLabel) : '',
+    positionLabelAlt: positionLabelAlt != null ? String(positionLabelAlt) : '',
+    positionLabelAr: positionLabelAr != null ? String(positionLabelAr) : null,
+    positionLabelEn: positionLabelEn != null ? String(positionLabelEn) : null,
+    positionCost: Number.isFinite(positionCost) ? positionCost : 0,
+    positionClientPrice: Number.isFinite(positionClientPrice) ? positionClientPrice : 0,
+    technicianId: technicianId != null ? String(technicianId) : null,
+    technicianName: technicianName != null ? String(technicianName) : null,
+    technicianRole: technicianRole != null ? String(technicianRole) : null,
+    notes: entry.notes ?? null,
+  };
+}
+
 export function getReservationsState() {
   return reservationsState;
 }
@@ -362,14 +464,29 @@ export function toInternalReservation(raw = {}) {
 
   let packages = mapReservationPackagesFromSource(raw);
 
-  const technicianEntries = Array.isArray(raw.technicians) ? raw.technicians : [];
-  const technicianIds = technicianEntries.map((entry) => {
-    if (entry == null) return null;
-    if (typeof entry === 'object') {
-      return String(entry.id ?? entry.technician_id ?? entry.technicianId ?? entry.ID ?? '');
-    }
-    return String(entry);
-  }).filter((value) => value && value !== '');
+  const technicianEntriesSource = Array.isArray(raw.technicians) && raw.technicians.length
+    ? raw.technicians
+    : (Array.isArray(raw.techniciansDetails) ? raw.techniciansDetails : []);
+
+  const crewAssignments = technicianEntriesSource
+    .map((entry, index) => normalizeCrewAssignmentEntry(entry, index))
+    .filter(Boolean);
+
+  const techniciansDetails = crewAssignments.map((assignment, index) => {
+    const sourceEntry = technicianEntriesSource?.[index];
+    const base = sourceEntry && typeof sourceEntry === 'object'
+      ? { ...sourceEntry }
+      : (sourceEntry != null ? { id: sourceEntry } : {});
+    return {
+      ...base,
+      ...assignment,
+    };
+  });
+
+  const technicianIds = crewAssignments
+    .map((assignment) => assignment.technicianId)
+    .filter((value) => value != null && value !== '')
+    .map((value) => Number.isNaN(Number(value)) ? String(value) : Number(value));
 
   const start = raw.start ?? raw.start_datetime ?? '';
   const end = raw.end ?? raw.end_datetime ?? '';
@@ -415,6 +532,7 @@ export function toInternalReservation(raw = {}) {
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds,
+    crewAssignments,
     discount,
     discountType: normalizedDiscountType,
     applyTax,
@@ -513,7 +631,8 @@ export function toInternalReservation(raw = {}) {
     projectId: raw.project_id ?? raw.projectId ?? null,
     items,
     technicians: technicianIds,
-    techniciansDetails: technicianEntries.map((entry) => (typeof entry === 'object' ? entry : { id: Number(entry) || entry })),
+    crewAssignments,
+    techniciansDetails,
     startDatetime: start,
     endDatetime: end,
     customerPhone: raw.customer_phone ?? raw.customerPhone ?? null,
@@ -620,7 +739,8 @@ export function buildReservationPayload({
   confirmed,
   items,
   packages,
-  technicians,
+  crewAssignments = [],
+  technicians = crewAssignments,
   companySharePercent,
   companyShareEnabled,
   paidAmount,
@@ -629,6 +749,8 @@ export function buildReservationPayload({
   paymentProgressValue,
   paymentHistory,
 }) {
+  const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
+
   return {
     reservation_code: reservationCode ?? null,
     customer_id: customerId,
@@ -693,18 +815,69 @@ export function buildReservationPayload({
       ? Number(companySharePercent)
       : null,
     company_share_enabled: companyShareEnabled ? 1 : 0,
-    technicians: Array.isArray(technicians)
-      ? technicians.map((tech) => {
-          if (typeof tech === 'object' && tech !== null) {
-            return {
-              id: tech.id ?? tech.technician_id ?? tech.technicianId ?? tech.ID,
-              role: tech.role ?? null,
-              notes: tech.notes ?? null,
-            };
-          }
-          return Number.isNaN(Number(tech)) ? String(tech) : Number(tech);
+    technicians: assignments.length
+      ? assignments.map((assignment, index) => {
+          const technicianId = assignment.technicianId
+            ?? assignment.technician_id
+            ?? assignment.id
+            ?? null;
+          const positionId = assignment.positionId
+            ?? assignment.position_id
+            ?? assignment.position
+            ?? assignment.position_code
+            ?? null;
+          const positionName = assignment.positionLabel
+            ?? assignment.position_name
+            ?? assignment.role
+            ?? null;
+          const positionCost = toNumber(
+            assignment.positionCost
+            ?? assignment.position_cost
+            ?? assignment.cost
+            ?? assignment.daily_wage
+            ?? assignment.dailyWage
+            ?? 0
+          );
+          const positionClientPrice = toNumber(
+            assignment.positionClientPrice
+            ?? assignment.position_client_price
+            ?? assignment.client_price
+            ?? assignment.clientPrice
+            ?? assignment.daily_total
+            ?? assignment.dailyTotal
+            ?? assignment.total
+            ?? 0
+          );
+
+          return {
+            id: technicianId,
+            technician_id: technicianId,
+            role: positionName ?? assignment.technicianRole ?? null,
+            notes: assignment.notes ?? null,
+            position_id: positionId,
+            position_key: assignment.positionKey ?? assignment.position_key ?? null,
+            position_name: positionName,
+            position_label_ar: assignment.positionLabelAr ?? assignment.position_label_ar ?? null,
+            position_label_en: assignment.positionLabelEn ?? assignment.position_label_en ?? null,
+            position_cost: positionCost,
+            position_client_price: positionClientPrice,
+            client_price: positionClientPrice,
+            cost: positionCost,
+            assignment_id: assignment.assignmentId ?? assignment.assignment_id ?? `crew-${index}`,
+          };
         })
-      : [],
+      : (Array.isArray(technicians)
+        ? technicians.map((tech) => {
+            if (typeof tech === 'object' && tech !== null) {
+              return {
+                id: tech.id ?? tech.technician_id ?? tech.technicianId ?? tech.ID,
+                role: tech.role ?? null,
+                notes: tech.notes ?? null,
+              };
+            }
+            return Number.isNaN(Number(tech)) ? String(tech) : Number(tech);
+          })
+        : []),
   };
 }
 

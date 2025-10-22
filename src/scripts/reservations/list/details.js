@@ -38,9 +38,74 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     techniciansMap.set(key, { ...existing, ...tech });
   });
 
-  const assignedTechnicians = (reservation.technicians || [])
-    .map((id) => techniciansMap.get(String(id)))
-    .filter(Boolean);
+  const crewAssignmentsRaw = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+    ? reservation.crewAssignments
+    : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
+        ? reservation.techniciansDetails
+        : (reservation.technicians || []).map((id) => ({ technicianId: id })));
+
+  const crewAssignments = crewAssignmentsRaw.map((assignment, index) => {
+    const technicianRecord = assignment?.technicianId != null
+      ? techniciansMap.get(String(assignment.technicianId))
+      : null;
+
+    const positionLabel = assignment.positionLabel
+      ?? assignment.position_name
+      ?? assignment.role
+      ?? technicianRecord?.role
+      ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    const positionLabelAlt = assignment.positionLabelAlt
+      ?? assignment.position_label_alt
+      ?? '';
+    const positionCost = sanitizePriceValue(parsePriceValue(
+      assignment.positionCost
+        ?? assignment.position_cost
+        ?? assignment.cost
+        ?? assignment.daily_wage
+        ?? assignment.dailyWage
+        ?? technicianRecord?.dailyWage
+        ?? technicianRecord?.wage
+        ?? 0
+    ));
+    const positionClientPrice = sanitizePriceValue(parsePriceValue(
+      assignment.positionClientPrice
+        ?? assignment.position_client_price
+        ?? assignment.client_price
+        ?? assignment.clientPrice
+        ?? assignment.daily_total
+        ?? assignment.dailyTotal
+        ?? assignment.total
+        ?? technicianRecord?.dailyTotal
+        ?? technicianRecord?.total
+        ?? technicianRecord?.total_wage
+        ?? 0
+    ));
+
+    return {
+      assignmentId: assignment.assignmentId ?? assignment.assignment_id ?? `crew-${index}`,
+      positionId: assignment.positionId ?? assignment.position_id ?? null,
+      positionLabel,
+      positionLabelAlt,
+      positionLabelAr: assignment.positionLabelAr ?? assignment.position_label_ar ?? null,
+      positionLabelEn: assignment.positionLabelEn ?? assignment.position_label_en ?? null,
+      positionCost,
+      positionClientPrice,
+      technicianId: assignment.technicianId != null
+        ? String(assignment.technicianId)
+        : (technicianRecord?.id != null ? String(technicianRecord.id) : null),
+      technicianName: assignment.technicianName
+        ?? assignment.technician_name
+        ?? technicianRecord?.name
+        ?? null,
+      technicianRole: assignment.technicianRole
+        ?? technicianRecord?.role
+        ?? null,
+      technicianPhone: assignment.technicianPhone
+        ?? technicianRecord?.phone
+        ?? null,
+      notes: assignment.notes ?? null,
+    };
+  });
   const canDelete = userCanManageDestructiveActions();
 
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
@@ -127,7 +192,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const breakdown = calculateDraftFinancialBreakdown({
     items,
-    technicianIds: reservation.technicians || [],
+    technicianIds: (reservation.technicians || []),
+    crewAssignments,
     discount: discountValue,
     discountType,
     applyTax: applyTaxFlag,
@@ -156,7 +222,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
-  const techniciansCountDisplay = normalizeNumbers(String(assignedTechnicians.length));
+  const techniciansCountDisplay = normalizeNumbers(String(crewAssignments.length));
   const equipmentTotalDisplay = normalizeNumbers(equipmentTotal.toFixed(2));
   const discountAmountDisplay = normalizeNumbers(discountAmount.toFixed(2));
   const subtotalAfterDiscountDisplay = normalizeNumbers(subtotalAfterDiscount.toFixed(2));
@@ -747,31 +813,44 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     </div>
   `;
 
-  const techniciansCardsHtml = assignedTechnicians.map((tech, idx) => {
+  const techniciansCardsHtml = crewAssignments.map((assignment, idx) => {
     const indexLabel = normalizeNumbers(String(idx + 1));
-    const role = tech.role || roleFallback;
-    const phone = tech.phone || phoneFallback;
-    const wage = tech.wage
-      ? wageTemplate
-          .replace('{amount}', normalizeNumbers(String(tech.wage)))
-          .replace('{currency}', currencyLabel)
-      : '';
+    const positionLabel = assignment.positionLabel
+      ? normalizeNumbers(assignment.positionLabel)
+      : t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    const technicianName = assignment.technicianName
+      ? normalizeNumbers(assignment.technicianName)
+      : t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
+    const phone = assignment.technicianPhone || phoneFallback;
+    const role = assignment.technicianRole || roleFallback;
+    const clientPriceNumber = Number.isFinite(Number(assignment.positionClientPrice))
+      ? Number(assignment.positionClientPrice)
+      : 0;
+    const clientPriceDisplay = `${normalizeNumbers(clientPriceNumber.toFixed(2))} ${currencyLabel}`;
+    const costDisplay = Number.isFinite(Number(assignment.positionCost)) && Number(assignment.positionCost) > 0
+      ? `${normalizeNumbers(Number(assignment.positionCost).toFixed(2))} ${currencyLabel}`
+      : null;
+
     return `
       <div class="reservation-technician-card">
         <div class="technician-card-head">
           <span class="technician-index">${indexLabel}</span>
-          <span class="technician-name">${tech.name}</span>
+          <div class="d-flex flex-column">
+            <span class="technician-name">${positionLabel}</span>
+            <small class="text-muted">${clientPriceDisplay}</small>
+          </div>
         </div>
         <div class="technician-card-body">
+          <div>😎 ${technicianName}</div>
           <div>🎯 ${role}</div>
           <div>📞 ${phone}</div>
-          ${wage ? `<div>💰 ${wage}</div>` : ''}
+          ${costDisplay ? `<div>💵 ${t('reservations.details.technicians.costLabel', 'التكلفة الداخلية')}: ${costDisplay}</div>` : ''}
         </div>
       </div>
     `;
   }).join('');
 
-  const techniciansSectionContent = assignedTechnicians.length
+  const techniciansSectionContent = crewAssignments.length
     ? `<div class="reservation-technicians-grid">${techniciansCardsHtml}</div>`
     : `<ul class="reservation-modal-technicians"><li>${noCrewText}</li></ul>`;
 

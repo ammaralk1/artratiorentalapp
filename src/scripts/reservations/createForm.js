@@ -9,7 +9,7 @@ import {
   isEquipmentUnavailable,
   isEquipmentAvailable
 } from '../reservationsEquipment.js';
-import { getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
+import { getSelectedCrewAssignments, getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
 import {
   calculateReservationTotal,
   renderDraftSummary,
@@ -2020,8 +2020,11 @@ function renderDraftReservationSummary() {
   const paymentProgressType = getPaymentProgressType(paymentProgressTypeSelect);
   const paymentProgressValue = parsePaymentProgressValue(paymentProgressValueInput);
 
+  const crewAssignments = getSelectedCrewAssignments();
+
   renderDraftSummary({
     selectedItems: getSelectedItems(),
+    crewAssignments,
     discount,
     discountType,
     applyTax,
@@ -2251,9 +2254,12 @@ async function handleReservationSubmit() {
     return;
   }
 
-  const technicianIds = getSelectedTechnicians();
+  const crewAssignments = getSelectedCrewAssignments();
+  const technicianIds = crewAssignments
+    .map((assignment) => assignment.technicianId)
+    .filter(Boolean);
   const draftItems = getSelectedItems();
-  if (draftItems.length === 0 && technicianIds.length === 0) {
+  if (draftItems.length === 0 && crewAssignments.length === 0) {
     showToast(t('reservations.toast.noItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل'));
     return;
   }
@@ -2293,8 +2299,8 @@ async function handleReservationSubmit() {
     }
   }
 
-  for (const technicianId of technicianIds) {
-    if (hasTechnicianConflict(technicianId, start, end)) {
+  for (const assignment of crewAssignments) {
+    if (assignment?.technicianId && hasTechnicianConflict(assignment.technicianId, start, end)) {
       showToast(
         t('reservations.toast.cannotCreateCrewConflict', '⚠️ لا يمكن إتمام الحجز، أحد أعضاء الطاقم مرتبط بحجز آخر في نفس الفترة')
       );
@@ -2383,7 +2389,7 @@ async function handleReservationSubmit() {
     discount,
     discountType,
     applyTax,
-    technicianIds,
+    crewAssignments,
     {
       start,
       end,
@@ -2443,7 +2449,7 @@ async function handleReservationSubmit() {
       ...item,
       equipmentId: item.equipmentId ?? item.id,
     })),
-    technicians: technicianIds,
+    crewAssignments,
     companySharePercent: projectLinked || !companyShareEnabled ? null : companySharePercent,
     companyShareEnabled: projectLinked ? false : companyShareEnabled,
     paidAmount: projectLinked ? 0 : paymentProgress.paidAmount,

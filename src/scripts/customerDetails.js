@@ -1280,14 +1280,17 @@ function resolveReservationNetTotal(reservation) {
   const discountRaw = reservation?.discount ?? 0;
   const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
   const discountType = reservation?.discountType || 'percent';
-  const technicianIds = Array.isArray(reservation?.technicians) ? reservation.technicians : [];
+  const crewAssignments = Array.isArray(reservation?.crewAssignments) ? reservation.crewAssignments : [];
+  const techniciansOrAssignments = crewAssignments.length
+    ? crewAssignments
+    : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
 
   const calculated = calculateReservationTotal(
     items,
     discountValue,
     discountType,
     false,
-    technicianIds,
+    techniciansOrAssignments,
     { start: reservation?.start, end: reservation?.end }
   );
 

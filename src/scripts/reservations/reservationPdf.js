@@ -139,22 +139,28 @@ const QUOTE_CREW_COLUMN_DEFS = [
     render: (_tech, index) => escapeHtml(normalizeNumbers(String(index + 1)))
   },
   {
-    id: 'name',
-    labelKey: 'reservations.details.technicians.name',
-    fallback: 'الاسم',
-    render: (tech) => escapeHtml(tech?.name || tech?.full_name || '-')
+    id: 'position',
+    labelKey: 'reservations.details.crew.position',
+    fallback: 'المنصب',
+    render: (assignment) => escapeHtml(
+      normalizeNumbers(
+        assignment?.positionLabel
+          ?? assignment?.position_name
+          ?? assignment?.role
+          ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
+      )
+    )
   },
   {
-    id: 'role',
-    labelKey: 'reservations.details.technicians.role',
-    fallback: 'الدور',
-    render: (tech) => escapeHtml(tech?.role || t('reservations.details.technicians.roleUnknown', 'غير محدد'))
-  },
-  {
-    id: 'phone',
-    labelKey: 'reservations.details.technicians.phone',
-    fallback: 'الهاتف',
-    render: (tech) => escapeHtml(tech?.phone || t('reservations.details.technicians.phoneUnknown', 'غير متوفر'))
+    id: 'price',
+    labelKey: 'reservations.details.crew.clientPrice',
+    fallback: 'سعر العميل',
+    render: (assignment) => {
+      const value = Number.isFinite(Number(assignment?.positionClientPrice))
+        ? Number(assignment.positionClientPrice)
+        : 0;
+      return escapeHtml(`${normalizeNumbers(value.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+    }
   }
 ];
 
@@ -1588,7 +1594,7 @@ function resolveTechnicianTotalRate(technician = {}) {
   return resolveTechnicianDailyRate(technician);
 }
 
-function collectAssignedTechnicians(reservation) {
+function collectReservationCrewAssignments(reservation) {
   const syncedTechnicians = syncTechniciansStatuses() || [];
   const { technicians: storedTechnicians = [] } = loadData();
   const technicianSource = []
@@ -1603,141 +1609,148 @@ function collectAssignedTechnicians(reservation) {
     techniciansMap.set(key, { ...existing, ...tech });
   });
 
-  return (reservation.technicians || [])
-    .map((id) => techniciansMap.get(String(id)))
-    .filter(Boolean);
+  const rawAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+    ? reservation.crewAssignments
+    : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
+        ? reservation.techniciansDetails
+        : (reservation.technicians || []).map((id) => ({ technicianId: id })));
+
+  return rawAssignments.map((assignment, index) => {
+    const technicianRecord = assignment?.technicianId != null
+      ? techniciansMap.get(String(assignment.technicianId))
+      : null;
+
+    const positionLabel = assignment.positionLabel
+      ?? assignment.position_name
+      ?? assignment.role
+      ?? technicianRecord?.role
+      ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    const positionCost = sanitizePriceValue(parsePriceValue(
+      assignment.positionCost
+        ?? assignment.position_cost
+        ?? assignment.cost
+        ?? assignment.daily_wage
+        ?? assignment.dailyWage
+        ?? technicianRecord?.dailyWage
+        ?? technicianRecord?.wage
+        ?? 0
+    ));
+    const positionClientPrice = sanitizePriceValue(parsePriceValue(
+      assignment.positionClientPrice
+        ?? assignment.position_client_price
+        ?? assignment.client_price
+        ?? assignment.clientPrice
+        ?? assignment.daily_total
+        ?? assignment.dailyTotal
+        ?? assignment.total
+        ?? technicianRecord?.dailyTotal
+        ?? technicianRecord?.total
+        ?? technicianRecord?.total_wage
+        ?? 0
+    ));
+
+    return {
+      assignmentId: assignment.assignmentId ?? assignment.assignment_id ?? `crew-${index}`,
+      positionId: assignment.positionId ?? assignment.position_id ?? null,
+      positionLabel,
+      positionLabelAlt: assignment.positionLabelAlt ?? assignment.position_label_alt ?? '',
+      positionCost,
+      positionClientPrice,
+      technicianId: assignment.technicianId != null
+        ? String(assignment.technicianId)
+        : (technicianRecord?.id != null ? String(technicianRecord.id) : null),
+      technicianName: assignment.technicianName
+        ?? assignment.technician_name
+        ?? technicianRecord?.name
+        ?? null,
+      technicianRole: assignment.technicianRole
+        ?? technicianRecord?.role
+        ?? null,
+    };
+  });
 }
 
-function collectReservationFinancials(reservation, technicians, project) {
+function collectReservationFinancials(reservation, crewAssignments, project) {
   const { projectLinked } = resolveReservationProjectState(reservation, project);
   const rentalDays = calculateReservationDays(reservation.start, reservation.end);
-  const { groups: displayGroups } = buildReservationDisplayGroups(reservation);
-  const equipmentDailyTotal = displayGroups.reduce((sum, group) => {
-    const representative = (Array.isArray(group?.items) && group.items.length) ? group.items[0] : {};
-    const quantity = Number(group?.count ?? group?.quantity ?? representative?.qty ?? 1) || 1;
+  const discountRaw = reservation.discount ?? reservation.discountValue ?? 0;
+  const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
+  const discountTypeRaw = reservation.discountType ?? reservation.discount_type ?? 'percent';
+  const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
+  const applyTaxFlag = projectLinked ? false : Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
 
-    const candidatePrices = [
-      representative?.price,
-      representative?.unit_price,
-      representative?.unitPrice,
-      group?.unitPrice
-    ];
-
-    let unitPrice = candidatePrices.reduce((value, candidate) => {
-      if (Number.isFinite(value) && value > 0) return value;
-      const parsed = Number(candidate);
-      return Number.isFinite(parsed) ? parsed : value;
-    }, NaN);
-
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-      const totalCandidate = Number(group?.totalPrice ?? representative?.total ?? representative?.total_price);
-      if (Number.isFinite(totalCandidate) && quantity > 0) {
-        unitPrice = Number((totalCandidate / quantity).toFixed(2));
-      }
-    }
-
-    if (!Number.isFinite(unitPrice)) {
-      unitPrice = 0;
-    }
-
-    unitPrice = sanitizePriceValue(unitPrice);
-
-    const safeUnitPrice = sanitizePriceValue(unitPrice);
-
-    return sum + (safeUnitPrice * quantity);
-  }, 0);
-  const equipmentTotal = equipmentDailyTotal * rentalDays;
-  const crewCostDailyTotal = technicians.reduce((sum, tech) => sum + resolveTechnicianDailyRate(tech), 0);
-  const crewTotalDaily = technicians.reduce((sum, tech) => sum + resolveTechnicianTotalRate(tech), 0);
-  const crewCostTotal = crewCostDailyTotal * rentalDays;
-  const crewTotal = crewTotalDaily * rentalDays;
-  const discountBase = equipmentTotal + crewTotal;
-  const discountValue = parseFloat(reservation.discount) || 0;
-  const discountAmount = reservation.discountType === 'amount'
-    ? discountValue
-    : discountBase * (discountValue / 100);
-  const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
-  const applyTaxFlag = projectLinked ? false : reservation.applyTax;
-  const storedCost = Number(reservation.cost);
-  const hasStoredCost = Number.isFinite(storedCost);
-
-  const rawCompanySharePercent = reservation.companySharePercent
+  const rawSharePercent = reservation.companySharePercent
     ?? reservation.company_share_percent
     ?? reservation.companyShare
     ?? reservation.company_share
     ?? null;
-  const parsedCompanySharePercent = rawCompanySharePercent != null
-    ? parseFloat(normalizeNumbers(String(rawCompanySharePercent).replace('%', '').trim()))
-    : NaN;
-  const shareEnabledRaw = reservation.companyShareEnabled
+  const normalizedSharePercent = rawSharePercent != null
+    ? parsePriceValue(rawSharePercent)
+    : Number.NaN;
+  const shareEnabledFlag = reservation.companyShareEnabled
     ?? reservation.company_share_enabled
     ?? reservation.companyShareApplied
-    ?? reservation.company_share_applied
-    ?? null;
-  const companyShareEnabled = shareEnabledRaw != null
-    ? (shareEnabledRaw === true || shareEnabledRaw === 1 || shareEnabledRaw === '1' || String(shareEnabledRaw).toLowerCase() === 'true')
-    : (Number.isFinite(parsedCompanySharePercent) && parsedCompanySharePercent > 0);
-  let companySharePercent = companyShareEnabled && Number.isFinite(parsedCompanySharePercent)
-    ? Number(parsedCompanySharePercent)
-    : 0;
-  if (applyTaxFlag && companySharePercent <= 0) {
-    companySharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
-  }
-  let companyShareAmount = companySharePercent > 0
-    ? Math.max(0, subtotalAfterDiscount * (companySharePercent / 100))
-    : 0;
-  companyShareAmount = Number(companyShareAmount.toFixed(2));
+    ?? reservation.company_share_applied;
+  const companySharePercentInput = (shareEnabledFlag === true && Number.isFinite(normalizedSharePercent) && normalizedSharePercent > 0)
+    ? normalizedSharePercent
+    : null;
 
-  const taxableAmount = subtotalAfterDiscount + companyShareAmount;
-  let taxAmount = applyTaxFlag ? taxableAmount * 0.15 : 0;
-  if (!Number.isFinite(taxAmount) || taxAmount < 0) {
-    taxAmount = 0;
-  }
-  taxAmount = Number(taxAmount.toFixed(2));
+  const technicianIds = Array.isArray(crewAssignments)
+    ? crewAssignments.map((assignment) => assignment?.technicianId).filter(Boolean)
+    : [];
 
-  const computedTotal = taxableAmount + taxAmount;
-  const finalTotalComputed = Number.isFinite(computedTotal)
-    ? Number(computedTotal.toFixed(2))
-    : 0;
-  const finalTotal = projectLinked
-    ? finalTotalComputed
-    : (hasStoredCost ? storedCost : finalTotalComputed);
-  const revenueAfterDiscount = Math.max(0, (equipmentTotal + crewTotal) - discountAmount);
-  const netProfit = Math.max(0, revenueAfterDiscount - crewCostTotal);
+  const breakdown = calculateDraftFinancialBreakdown({
+    items: Array.isArray(reservation.items) ? reservation.items : [],
+    technicianIds,
+    crewAssignments: Array.isArray(crewAssignments) ? crewAssignments : [],
+    discount: discountValue,
+    discountType,
+    applyTax: applyTaxFlag,
+    start: reservation.start,
+    end: reservation.end,
+    companySharePercent: companySharePercentInput,
+  });
+
+  const storedCostCandidate = parsePriceValue(reservation.cost ?? reservation.total ?? reservation.finalTotal);
+  const hasStoredCost = Number.isFinite(storedCostCandidate);
+  const finalTotalOverride = projectLinked
+    ? breakdown.finalTotal
+    : (hasStoredCost ? sanitizePriceValue(storedCostCandidate) : breakdown.finalTotal);
 
   const totals = {
-    equipmentTotal,
-    crewTotal,
-    crewCostTotal,
-    discountAmount,
-    subtotalAfterDiscount,
-    taxableAmount,
-    taxAmount,
-    finalTotal,
-    companySharePercent,
-    companyShareAmount,
-    netProfit
+    equipmentTotal: breakdown.equipmentTotal,
+    crewTotal: breakdown.crewTotal,
+    crewCostTotal: breakdown.crewCostTotal,
+    discountAmount: breakdown.discountAmount,
+    subtotalAfterDiscount: breakdown.subtotalAfterDiscount,
+    taxableAmount: breakdown.taxableAmount,
+    taxAmount: breakdown.taxAmount,
+    finalTotal: finalTotalOverride,
+    companySharePercent: breakdown.companySharePercent,
+    companyShareAmount: breakdown.companyShareAmount,
+    netProfit: breakdown.netProfit,
   };
 
   const totalsDisplay = {
-    equipmentTotal: normalizeNumbers(equipmentTotal.toFixed(2)),
-    crewTotal: normalizeNumbers(crewTotal.toFixed(2)),
-    discountAmount: normalizeNumbers(discountAmount.toFixed(2)),
-    subtotalAfterDiscount: normalizeNumbers(subtotalAfterDiscount.toFixed(2)),
-    taxableAmount: normalizeNumbers(taxableAmount.toFixed(2)),
-    taxAmount: normalizeNumbers(taxAmount.toFixed(2)),
-    finalTotal: normalizeNumbers(finalTotal.toFixed(2)),
-    companySharePercent: normalizeNumbers(companySharePercent.toFixed(2)),
-    companyShareAmount: normalizeNumbers(companyShareAmount.toFixed(2)),
-    netProfit: normalizeNumbers(netProfit.toFixed(2))
+    equipmentTotal: normalizeNumbers(breakdown.equipmentTotal.toFixed(2)),
+    crewTotal: normalizeNumbers(breakdown.crewTotal.toFixed(2)),
+    discountAmount: normalizeNumbers(breakdown.discountAmount.toFixed(2)),
+    subtotalAfterDiscount: normalizeNumbers(breakdown.subtotalAfterDiscount.toFixed(2)),
+    taxableAmount: normalizeNumbers(breakdown.taxableAmount.toFixed(2)),
+    taxAmount: normalizeNumbers(breakdown.taxAmount.toFixed(2)),
+    finalTotal: normalizeNumbers(finalTotalOverride.toFixed(2)),
+    companySharePercent: normalizeNumbers((Number.isFinite(breakdown.companySharePercent) ? breakdown.companySharePercent : 0).toFixed(2)),
+    companyShareAmount: normalizeNumbers(breakdown.companyShareAmount.toFixed(2)),
+    netProfit: normalizeNumbers(breakdown.netProfit.toFixed(2)),
   };
 
   return {
     totals,
     totalsDisplay,
-    rentalDays
+    rentalDays: breakdown.rentalDays,
   };
 }
+
 
 function parsePaymentNumber(value) {
   if (value == null || value === '') return null;
@@ -1952,13 +1965,16 @@ function resolveReservationNetTotalForProject(reservation) {
   const discountRaw = reservation.discount ?? 0;
   const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
   const discountType = reservation.discountType || 'percent';
-  const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+  const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
+  const techniciansOrAssignments = crewAssignments.length
+    ? crewAssignments
+    : (Array.isArray(reservation.technicians) ? reservation.technicians : []);
   const calculated = calculateReservationTotal(
     items,
     discountValue,
     discountType,
     false,
-    technicianIds,
+    techniciansOrAssignments,
     { start: reservation.start, end: reservation.end }
   );
 
@@ -2244,8 +2260,12 @@ function collectProjectQuoteData(project) {
   }
 
   reservationsForProject.forEach((reservation) => {
-    const technicianIds = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-    technicianIds.forEach((techId) => registerTechnician(techId));
+    const assignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+      ? reservation.crewAssignments
+      : (Array.isArray(reservation.technicians)
+          ? reservation.technicians.map((id) => ({ technicianId: id }))
+          : []);
+    assignments.forEach((entry) => registerTechnician(entry));
   });
 
   const projectCrew = Array.from(crewMap.values());
@@ -2716,7 +2736,7 @@ function buildQuotationHtml(options) {
     reservation,
     customer,
     project,
-    technicians,
+    crewAssignments,
     totals,
     totalsDisplay,
     rentalDays,
@@ -2961,8 +2981,9 @@ function buildQuotationHtml(options) {
   const crewHeader = hasCrewColumns
     ? crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
     : '';
-  const crewBodyRows = technicians.length
-    ? technicians.map((tech, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(tech, index)}</td>`).join('')}</tr>`).join('')
+  const crewSource = Array.isArray(crewAssignments) ? crewAssignments : [];
+  const crewBodyRows = crewSource.length
+    ? crewSource.map((assignment, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
 
   const crewSectionMarkup = includeSection('crew')
@@ -3633,7 +3654,7 @@ function renderQuotePreview() {
     reservation: activeQuoteState.reservation,
     customer: activeQuoteState.customer,
     project: activeQuoteState.project,
-    technicians: activeQuoteState.technicians,
+    crewAssignments: activeQuoteState.crewAssignments,
     totals: activeQuoteState.totals,
     totalsDisplay: activeQuoteState.totalsDisplay,
     rentalDays: activeQuoteState.rentalDays,
@@ -4115,7 +4136,7 @@ async function exportQuoteAsPdf() {
       reservation: activeQuoteState.reservation,
       customer: activeQuoteState.customer,
       project: activeQuoteState.project,
-      technicians: activeQuoteState.technicians,
+      crewAssignments: activeQuoteState.crewAssignments,
       totals: activeQuoteState.totals,
       totalsDisplay: activeQuoteState.totalsDisplay,
       rentalDays: activeQuoteState.rentalDays,
@@ -4228,8 +4249,8 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     return;
   }
 
-  const technicians = collectAssignedTechnicians(reservation);
-  const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, technicians, project);
+  const crewAssignments = collectReservationCrewAssignments(reservation);
+  const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const { sequence, quoteNumber } = peekNextQuoteSequence('reservation');
   const now = new Date();
@@ -4240,7 +4261,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     reservation,
     customer,
     project,
-    technicians,
+    crewAssignments,
     totals,
     totalsDisplay,
     rentalDays,

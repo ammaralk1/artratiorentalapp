@@ -1,6 +1,6 @@
 import { normalizeNumbers } from './utils.js';
 import { t } from './language.js';
-import { getSelectedTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
+import { getSelectedCrewAssignments, getEditingCrewAssignments } from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
 import { sanitizePriceValue, parsePriceValue } from './reservationsShared.js';
 
@@ -181,8 +181,45 @@ export function calculatePaymentProgress({
           }
         }
       }
-    });
+  });
+}
+
+function calculateCrewDailyTotalsFromAssignments(assignments = []) {
+  if (!Array.isArray(assignments) || assignments.length === 0) {
+    return {
+      costPerDay: 0,
+      totalPerDay: 0
+    };
   }
+
+  return assignments.reduce((acc, assignment) => {
+    const positionCost = parsePriceValue(
+      assignment?.positionCost
+      ?? assignment?.position_cost
+      ?? assignment?.cost
+      ?? assignment?.dailyWage
+      ?? assignment?.daily_wage
+      ?? 0
+    );
+    const clientPrice = parsePriceValue(
+      assignment?.positionClientPrice
+      ?? assignment?.position_client_price
+      ?? assignment?.clientPrice
+      ?? assignment?.dailyTotal
+      ?? assignment?.daily_total
+      ?? assignment?.total
+      ?? 0
+    );
+
+    const costPerDay = Number.isFinite(positionCost) ? positionCost : 0;
+    const totalPerDay = Number.isFinite(clientPrice) ? clientPrice : 0;
+
+    return {
+      costPerDay: acc.costPerDay + costPerDay,
+      totalPerDay: acc.totalPerDay + totalPerDay,
+    };
+  }, { costPerDay: 0, totalPerDay: 0 });
+}
 
   if (normalizedType === 'amount' && value != null) {
     amount = value;
@@ -290,6 +327,7 @@ export function calculateReservationDays(start, end) {
 export function calculateDraftFinancialBreakdown({
   items = [],
   technicianIds = [],
+  crewAssignments = [],
   discount = 0,
   discountType = 'percent',
   applyTax = false,
@@ -306,7 +344,14 @@ export function calculateDraftFinancialBreakdown({
     return sum + (quantity * safePrice);
   }, 0);
   const equipmentTotal = sanitizePriceValue(equipmentDailyTotal * rentalDays);
-  const { costPerDay, totalPerDay } = calculateTechnicianDayRates(technicianIds);
+  const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
+  const normalizedTechnicianIds = assignments.length
+    ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
+    : (Array.isArray(technicianIds) ? technicianIds : []);
+
+  const { costPerDay, totalPerDay } = assignments.length
+    ? calculateCrewDailyTotalsFromAssignments(assignments)
+    : calculateTechnicianDayRates(normalizedTechnicianIds);
   const crewTotal = sanitizePriceValue(totalPerDay * rentalDays);
   const crewCostTotal = sanitizePriceValue(costPerDay * rentalDays);
 
@@ -371,12 +416,29 @@ export function calculateReservationTotal(
   discount = 0,
   discountType = 'percent',
   applyTax = false,
-  technicianIds = [],
+  crewOrTechnicians = [],
   { start = null, end = null, companySharePercent = null } = {}
 ) {
+  const isAssignmentObject = (value) => value && typeof value === 'object' && (
+    value.positionId !== undefined
+    || value.position_id !== undefined
+    || value.positionLabel !== undefined
+    || value.position_name !== undefined
+    || value.positionClientPrice !== undefined
+  );
+
+  const assignments = Array.isArray(crewOrTechnicians) && crewOrTechnicians.some(isAssignmentObject)
+    ? crewOrTechnicians
+    : [];
+
+  const technicianIds = assignments.length
+    ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
+    : (Array.isArray(crewOrTechnicians) ? crewOrTechnicians : []);
+
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds,
+    crewAssignments: assignments,
     discount,
     discountType,
     applyTax,
@@ -507,12 +569,16 @@ export function renderDraftSummary({
   companySharePercent = null,
   paymentHistory = [],
 }) {
-  const technicianIds = getSelectedTechnicians();
-  const techniciansCount = technicianIds.length;
+  const crewAssignments = getSelectedCrewAssignments();
+  const technicianIds = crewAssignments
+    .map((assignment) => assignment?.technicianId)
+    .filter(Boolean);
+  const techniciansCount = crewAssignments.length;
   const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
   const breakdown = calculateDraftFinancialBreakdown({
     items: selectedItems,
     technicianIds,
+    crewAssignments,
     discount,
     discountType,
     applyTax,
@@ -576,12 +642,16 @@ export function renderEditSummary({
   companySharePercent = null,
   paymentHistory = [],
 }) {
-  const technicianIds = getEditingTechnicians();
-  const techniciansCount = technicianIds.length;
+  const crewAssignments = getEditingCrewAssignments();
+  const technicianIds = crewAssignments
+    .map((assignment) => assignment?.technicianId)
+    .filter(Boolean);
+  const techniciansCount = crewAssignments.length;
   const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds,
+    crewAssignments,
     discount,
     discountType,
     applyTax,

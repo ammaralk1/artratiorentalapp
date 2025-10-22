@@ -2,7 +2,12 @@ import { t } from './language.js';
 import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { resolveReservationProjectState, resolveEquipmentIdentifier } from './reservationsShared.js';
-import { setEditingTechnicians, resetEditingTechnicians, getEditingTechnicians } from './reservationsTechnicians.js';
+import {
+  setEditingTechnicians,
+  resetEditingTechnicians,
+  getEditingTechnicians,
+  getEditingCrewAssignments,
+} from './reservationsTechnicians.js';
 import { normalizeBarcodeValue, getEquipmentAvailabilityStatus } from './reservationsEquipment.js';
 import {
   calculateReservationTotal,
@@ -733,7 +738,12 @@ export function editReservation(index, {
 
   setEditPaymentProgressValue(paymentProgressValueInput, null);
 
-  setEditingTechnicians((reservation.technicians || []).map((id) => String(id)));
+  const initialCrewAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+    ? reservation.crewAssignments
+    : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
+        ? reservation.techniciansDetails
+        : (reservation.technicians || []).map((id) => String(id)));
+  setEditingTechnicians(initialCrewAssignments);
 
   renderEditItems?.(initialItems);
   if (typeof window !== 'undefined') {
@@ -782,7 +792,10 @@ export async function saveReservationChanges({
   const paymentProgressType = getEditPaymentProgressType(paymentProgressTypeSelect);
   const paymentProgressValue = parseEditPaymentProgressValue(paymentProgressValueInput);
   const projectIdValue = document.getElementById('edit-res-project')?.value || '';
-  const technicianIds = getEditingTechnicians();
+  const crewAssignments = getEditingCrewAssignments();
+  const technicianIds = crewAssignments
+    .map((assignment) => assignment?.technicianId)
+    .filter(Boolean);
   const shareCheckbox = document.getElementById('edit-res-company-share');
   const taxCheckbox = document.getElementById('edit-res-tax');
 
@@ -810,7 +823,7 @@ export async function saveReservationChanges({
     return;
   }
 
-  if (!Array.isArray(editingItems) || (editingItems.length === 0 && technicianIds.length === 0)) {
+  if (!Array.isArray(editingItems) || (editingItems.length === 0 && crewAssignments.length === 0)) {
     showToast(t('reservations.toast.updateNoItems', '⚠️ يجب إضافة معدة أو عضو واحد من الطاقم الفني على الأقل للحجز'));
     return;
   }
@@ -896,8 +909,8 @@ export async function saveReservationChanges({
     ? hasTechnicianConflict
     : () => false;
 
-  for (const technicianId of technicianIds) {
-    if (hasTechnicianConflictFn(technicianId, start, end, ignoreReservationKey)) {
+  for (const assignment of crewAssignments) {
+    if (assignment?.technicianId && hasTechnicianConflictFn(assignment.technicianId, start, end, ignoreReservationKey)) {
       showToast(t('reservations.toast.updateCrewConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في جدول أحد أعضاء الطاقم'));
       return;
     }
@@ -962,7 +975,7 @@ export async function saveReservationChanges({
     discount,
     discountType,
     applyTax,
-    technicianIds,
+    crewAssignments,
     {
       start,
       end,
@@ -1050,7 +1063,7 @@ export async function saveReservationChanges({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
     })),
-    technicians: technicianIds,
+    crewAssignments,
     companySharePercent: companyShareEnabled ? companySharePercent : null,
     companyShareEnabled,
     paidAmount: paymentProgress.paidAmount,

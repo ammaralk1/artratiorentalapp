@@ -74,10 +74,27 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       : '';
 
     const itemsCount = reservation.items?.length || 0;
+    const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
     const techniciansAssigned = (reservation.technicians || [])
       .map((id) => techniciansMap.get(String(id)))
       .filter(Boolean);
-    const techniciansNames = techniciansAssigned.map((tech) => tech.name).join(crewSeparator) || '—';
+    const crewSummaryList = crewAssignments.length
+      ? crewAssignments.map((assignment) => {
+          const positionLabel = assignment.positionLabel
+            ?? assignment.position_name
+            ?? assignment.role
+            ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+          const technicianName = assignment.technicianName
+            ?? techniciansMap.get(String(assignment.technicianId ?? ''))?.name
+            ?? null;
+          return technicianName
+            ? `${normalizeNumbers(positionLabel)} (${normalizeNumbers(technicianName)})`
+            : normalizeNumbers(positionLabel);
+        })
+      : techniciansAssigned.map((tech) => tech.name);
+    const techniciansNames = crewSummaryList.length
+      ? crewSummaryList.join(crewSeparator)
+      : '—';
     const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? ''));
     const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
     const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
@@ -132,7 +149,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
           </div>
           <div class="tile-row">
             <span class="tile-label">${labels.crew}</span>
-            <span class="tile-value">${techniciansAssigned.length ? techniciansNames : '—'}</span>
+            <span class="tile-value">${crewSummaryList.length ? techniciansNames : '—'}</span>
           </div>
           </div>
           <div class="tile-footer">
