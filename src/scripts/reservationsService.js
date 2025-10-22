@@ -227,7 +227,11 @@ export async function createReservationApi(payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
   }
-  created.items = normalizeItemsWithPackages(created.items || [], created.packages || []);
+  {
+    const normalized = normalizeItemsWithPackages(created.items || [], created.packages || []);
+    created.items = normalized.items;
+    created.packages = mergePackageCollections(created.packages || [], normalized.packages);
+  }
   persistReservationPackagesToCache(created.id ?? created.reservationId ?? created.reservation_code, created.packages);
   if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
@@ -270,7 +274,11 @@ export async function updateReservationApi(id, payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
   }
-  updated.items = normalizeItemsWithPackages(updated.items || [], updated.packages || []);
+  {
+    const normalized = normalizeItemsWithPackages(updated.items || [], updated.packages || []);
+    updated.items = normalized.items;
+    updated.packages = mergePackageCollections(updated.packages || [], normalized.packages);
+  }
   persistReservationPackagesToCache(updated.id ?? updated.reservationId ?? updated.reservation_code ?? id, updated.packages);
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
@@ -456,12 +464,9 @@ export function toInternalReservation(raw = {}) {
     persistReservationPackagesToCache(reservationCacheKey, packages);
   }
 
-  if (!packages.length && Array.isArray(raw.packages) && raw.packages.length) {
-    packages = mergePackageCollections(packages, mapReservationPackagesFromSource({ packages: raw.packages }));
-  }
-
-  items = normalizeItemsWithPackages(items, packages);
-  packages = mergePackageCollections(packages, mapReservationPackagesFromSource({ packages: packages }));
+  const normalizedResult = normalizeItemsWithPackages(items, packages);
+  items = normalizedResult.items;
+  packages = mergePackageCollections(packages, normalizedResult.packages);
 
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
@@ -1148,21 +1153,28 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
 }
 
 function normalizeItemsWithPackages(items = [], packages = []) {
-  if (!packages.length) {
-    const derived = derivePackagesFromItemsList(items);
+  let workingPackages = Array.isArray(packages) ? [...packages] : [];
+  let workingItems = Array.isArray(items) ? [...items] : [];
+
+  if (!workingPackages.length) {
+    const derived = derivePackagesFromItemsList(workingItems);
     if (derived.packages.length) {
-      packages = mergePackageCollections(packages, derived.packages);
-      items = derived.items;
+      workingPackages = mergePackageCollections(workingPackages, derived.packages);
+      workingItems = derived.items;
     }
   }
-  if (!packages.length) {
-    return items;
+
+  if (!workingPackages.length) {
+    return {
+      items: workingItems,
+      packages: workingPackages,
+    };
   }
 
   const packageLookup = new Map();
   const packageItemBarcodes = new Set();
 
-  packages.forEach((pkg) => {
+  workingPackages.forEach((pkg) => {
     const normalizedId = normalizePackageIdentifier(pkg.packageId ?? pkg.package_id ?? pkg.id);
     if (!normalizedId) return;
     packageLookup.set(normalizedId, pkg);
@@ -1179,7 +1191,7 @@ function normalizeItemsWithPackages(items = [], packages = []) {
   const reconciled = [];
   const addedPackageIds = new Set();
 
-  items.forEach((item) => {
+  workingItems.forEach((item) => {
     const normalizedItemPackageId = normalizePackageIdentifier(
       item.packageId
         ?? item.package_id
@@ -1212,7 +1224,10 @@ function normalizeItemsWithPackages(items = [], packages = []) {
     addedPackageIds.add(normalizedId);
   });
 
-  return reconciled;
+  return {
+    items: reconciled,
+    packages: workingPackages,
+  };
 }
 
 function derivePackagesFromItemsList(items = []) {
