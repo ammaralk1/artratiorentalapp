@@ -378,6 +378,7 @@
   .customer-form-box .management-form-grid {
     max-width: 100%;
     justify-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .customer-form-box .management-form-grid .form-field {
