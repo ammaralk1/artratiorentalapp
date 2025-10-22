@@ -147,12 +147,32 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .reservations-subtabs-container,
 .tech-subtabs-container,
 .dashboard-subtabbar {
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
-  margin: 12px auto 24px;
+  margin: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.subtab-scroll-card {
+  max-width: min(100%, 72rem);
+  width: min(100%, 96vw);
+  margin: 12px auto 24px;
+  padding: clamp(0.75rem, 3vw, 1.2rem);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+}
+
+.subtab-scroll-card .tab-scroll {
+  width: 100%;
+}
+
+.subtab-scroll-card .tab-scroll-track {
+  padding-inline: clamp(1rem, 4vw, 2.4rem);
 }
 
 .reservations-subtabs-container .tabs,
@@ -362,7 +382,17 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   .dashboard-subtabbar {
     width: 100%;
     justify-content: stretch;
+  }
+
+  .subtab-scroll-card {
+    width: 100%;
+    max-width: 100%;
     margin: 16px 0 20px;
+    padding: clamp(0.65rem, 4vw, 1rem);
+  }
+
+  .subtab-scroll-card .tab-scroll-track {
+    padding-inline: clamp(0.75rem, 4vw, 1.6rem);
   }
 
   .reservations-subtabs-container .tabs,
