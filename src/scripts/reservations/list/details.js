@@ -536,10 +536,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
         if (isPackageGroup) {
           const unitCandidates = [
-            group.unitPrice,
             representative?.price,
             representative?.unit_price,
-            representative?.unitPrice
+            representative?.unitPrice,
+            group.unitPrice
           ];
 
           unitPriceNumber = unitCandidates.reduce((value, candidate) => {
@@ -560,9 +560,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           }
 
           const totalCandidates = [
-            group.totalPrice,
             representative?.total,
-            representative?.total_price
+            representative?.total_price,
+            group.totalPrice
           ];
 
           totalPriceNumber = totalCandidates.reduce((value, candidate) => {
@@ -573,6 +573,14 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
           if (!Number.isFinite(totalPriceNumber)) {
             totalPriceNumber = unitPriceNumber * quantityValue;
+          } else {
+            const computedTotal = unitPriceNumber * quantityValue;
+            if (Number.isFinite(computedTotal) && computedTotal > 0) {
+              const delta = Math.abs(totalPriceNumber - computedTotal);
+              if (delta > computedTotal * 0.25) {
+                totalPriceNumber = computedTotal;
+              }
+            }
           }
         } else {
           const candidatePrices = [
