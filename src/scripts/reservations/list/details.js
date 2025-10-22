@@ -243,7 +243,33 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     : isPartial
       ? paymentPartialText
       : paymentUnpaidText;
-  const totalItemsQuantity = groupedItems.reduce((sum, group) => sum + (Number(group.quantity) || 0), 0);
+  const normalizeCount = (value, { fallback = 1, allowFloat = false } = {}) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    if (!allowFloat) {
+      return Math.max(1, Math.round(parsed));
+    }
+    return parsed;
+  };
+
+  const totalItemsQuantity = displayGroups.reduce((sum, group) => {
+    if (group.type === 'package') {
+      const packageQty = normalizeCount(group.quantity ?? group.count, { fallback: 1, allowFloat: false });
+      if (Array.isArray(group.packageItems) && group.packageItems.length) {
+        const packageContentsCount = group.packageItems.reduce((childSum, pkgItem) => {
+          return childSum + normalizeCount(pkgItem?.qty ?? pkgItem?.quantity ?? pkgItem?.count, { fallback: 1, allowFloat: false });
+        }, 0);
+        return sum + (packageContentsCount * packageQty);
+      }
+      return sum + packageQty;
+    }
+
+    const quantity = normalizeCount(group.quantity ?? group.count ?? group.items?.length, {
+      fallback: Array.isArray(group.items) ? group.items.length || 1 : 1,
+      allowFloat: false
+    });
+    return sum + quantity;
+  }, 0);
   const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
