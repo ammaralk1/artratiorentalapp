@@ -351,7 +351,19 @@ function renderAssignmentsTable() {
 
   const assignments = getAssignmentsForContext(crewPickerContext);
   if (!assignments.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('technicians.picker.noAssignments', 'لم يتم إضافة أي مناصب بعد')}</td></tr>`;
+    const emptyMessage = t('technicians.picker.noAssignments', 'لم يتم إضافة أي مناصب بعد');
+    const emptyHint = t('technicians.picker.assignments.hint', 'استخدم قائمة المناصب على اليسار لإضافة طاقم العمل.');
+    tbody.innerHTML = `
+      <tr class="crew-assignment-empty-row">
+        <td colspan="5">
+          <div class="crew-assignment-empty">
+            <span class="crew-assignment-empty-icon" aria-hidden="true">🧑‍🤝‍🧑</span>
+            <p class="crew-assignment-empty-text">${emptyMessage}</p>
+            <p class="crew-assignment-empty-hint text-muted">${emptyHint}</p>
+          </div>
+        </td>
+      </tr>
+    `;
     return;
   }
 
@@ -368,21 +380,34 @@ function renderAssignmentsTable() {
       ? `<div class="text-muted small">${normalizeNumbers(assignment.positionLabelAlt)}</div>`
       : '';
 
+    const removeLabel = t('technicians.picker.actions.remove', 'إزالة');
+    const priceLabel = t('technicians.picker.assignments.price', 'سعر العميل');
+
     return `
-      <tr data-assignment-id="${assignment.assignmentId}">
-        <td class="crew-assignment-cell-index">${rowIndex}</td>
-        <td class="crew-assignment-cell-position">
-          <div class="crew-assignment-position">${normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
-          ${positionSubtitle}
+      <tr data-assignment-id="${assignment.assignmentId}" class="crew-assignment-row">
+        <td class="crew-assignment-cell-index">
+          <span class="crew-assignment-index-badge">${rowIndex}</span>
         </td>
-        <td class="crew-assignment-cell-price">${clientPrice}</td>
+        <td class="crew-assignment-cell-position">
+          <div class="crew-assignment-position-card">
+            <div class="crew-assignment-position">${normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
+            ${positionSubtitle}
+          </div>
+        </td>
+        <td class="crew-assignment-cell-price">
+          <div class="crew-assignment-price-chip" aria-label="${priceLabel}">${clientPrice}</div>
+        </td>
         <td class="crew-assignment-cell-member">
-          <select class="form-select crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
-            ${selectOptions}
-          </select>
+          <div class="crew-assignment-select-wrapper">
+            <select class="form-select form-select-sm crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
+              ${selectOptions}
+            </select>
+          </div>
         </td>
         <td class="crew-assignment-cell-actions">
-          <button type="button" class="crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${t('technicians.picker.actions.remove', 'إزالة')}">✖</button>
+          <button type="button" class="btn btn-sm btn-outline-danger crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${removeLabel}">
+            ${removeLabel}
+          </button>
         </td>
       </tr>
     `;
@@ -440,20 +465,35 @@ function renderPositionList() {
     const subtitle = alternateLabel
       ? `<span class="crew-position-card__subtitle">${normalizeNumbers(alternateLabel)}</span>`
       : '';
+
+    const costLabel = t('technicians.picker.positionCostLabel', 'التكلفة');
+    const clientPriceLabel = t('technicians.picker.positionClientPriceLabel', 'سعر العميل');
+    const addButtonLabel = t('technicians.picker.actions.addPosition', 'إضافة المنصب');
+
     return `
       <article class="crew-position-card" data-position-id="${position.id}">
-        <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
-        <div class="crew-position-card__body">
-          <h6 class="crew-position-card__title">${normalizeNumbers(primaryLabel)}</h6>
-          ${subtitle}
-          <div class="crew-position-card__meta">
-            <span>${t('technicians.picker.positionCostLabel', 'التكلفة')} ${costDisplay}</span>
-            <span>${t('technicians.picker.positionClientPriceLabel', 'سعر العميل')} ${priceDisplay}</span>
+        <div class="crew-position-card__layout">
+          <header class="crew-position-card__header">
+            <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
+            <div class="crew-position-card__titles">
+              <h6 class="crew-position-card__title">${normalizeNumbers(primaryLabel)}</h6>
+              ${subtitle}
+            </div>
+          </header>
+          <div class="crew-position-card__meta-grid">
+            <div class="crew-position-card__meta-item">
+              <span class="crew-position-card__meta-label">${costLabel}</span>
+              <span class="crew-position-card__meta-value">${costDisplay}</span>
+            </div>
+            <div class="crew-position-card__meta-item">
+              <span class="crew-position-card__meta-label">${clientPriceLabel}</span>
+              <span class="crew-position-card__meta-value">${priceDisplay}</span>
+            </div>
           </div>
         </div>
         <div class="crew-position-card__actions">
-          <button type="button" class="crew-position-add-btn" data-position-id="${position.id}">
-            ${t('technicians.picker.actions.addPosition', '➕ إضافة')}
+          <button type="button" class="btn btn-sm btn-primary crew-position-add-btn" data-position-id="${position.id}">
+            ${addButtonLabel}
           </button>
         </div>
       </article>

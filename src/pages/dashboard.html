@@ -2034,22 +2034,22 @@
 
   <!-- ✅ مودال اختيار طاقم العمل -->
   <div class="modal fade" id="selectTechniciansModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
+    <div class="modal-dialog modal-lg crew-picker-modal__dialog">
+      <div class="modal-content crew-picker-modal">
+        <div class="modal-header crew-picker-modal__header">
+          <h5 class="modal-title crew-picker-modal__title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
         </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-lg-5">
-              <label for="crew-position-search" class="form-label" data-i18n data-i18n-key="technicians.picker.positions.label">🏷️ اختر المناصب</label>
-              <input type="text" class="form-control" id="crew-position-search" placeholder="🔍 ابحث باسم المنصب..." data-i18n data-i18n-placeholder-key="technicians.picker.positions.search">
-              <div id="crew-position-list" class="mt-3"></div>
+        <div class="modal-body crew-picker-modal__body">
+          <div class="row g-3 crew-picker-layout">
+            <div class="col-lg-5 crew-picker-panel">
+              <label for="crew-position-search" class="form-label crew-picker-label" data-i18n data-i18n-key="technicians.picker.positions.label">🏷️ اختر المناصب</label>
+              <input type="text" class="form-control crew-picker-search" id="crew-position-search" placeholder="🔍 ابحث باسم المنصب..." data-i18n data-i18n-placeholder-key="technicians.picker.positions.search">
+              <div id="crew-position-list" class="mt-3 crew-picker-list"></div>
             </div>
-            <div class="col-lg-7 crew-assignment-column">
-              <label class="form-label" data-i18n data-i18n-key="technicians.picker.assignments.label">📋 المناصب المختارة</label>
-              <div class="crew-assignment-table-wrapper">
+            <div class="col-lg-7 crew-assignment-column crew-picker-panel crew-picker-panel--assignments">
+              <label class="form-label crew-picker-label" data-i18n data-i18n-key="technicians.picker.assignments.label">📋 المناصب المختارة</label>
+              <div class="crew-assignment-table-wrapper crew-picker-table-wrapper">
                 <table class="table table-hover align-middle" id="crew-assignment-table">
                   <thead class="table-light">
                     <tr>
@@ -2068,10 +2068,10 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <span class="text-muted me-auto" id="technician-picker-selection-info" data-i18n data-i18n-key="technicians.picker.selectionInfo">لم يتم اختيار أي عضو بعد</span>
-          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="technicians.picker.actions.cancel">إلغاء</button>
-          <button type="button" class="btn btn-primary reservation-primary-btn" id="apply-technician-selection" data-i18n data-i18n-key="technicians.picker.actions.apply">تم</button>
+        <div class="modal-footer crew-picker-modal__footer">
+          <span class="text-muted me-auto crew-picker-selection-info" id="technician-picker-selection-info" data-i18n data-i18n-key="technicians.picker.selectionInfo">لم يتم اختيار أي عضو بعد</span>
+          <button type="button" class="btn modal-close-btn crew-picker-cancel-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="technicians.picker.actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary reservation-primary-btn crew-picker-apply-btn" id="apply-technician-selection" data-i18n data-i18n-key="technicians.picker.actions.apply">تم</button>
         </div>
       </div>
     </div>
