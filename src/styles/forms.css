@@ -371,70 +371,36 @@
 }
 
 @media (max-width: 768px) {
+  .customer-form-box {
+    align-items: stretch;
+  }
+
   .customer-form-box .management-form {
-    width: min(100%, clamp(15.5rem, 90vw, 20.5rem));
+    width: 100%;
+    max-width: 100%;
     margin-inline: auto;
-    padding-inline: clamp(0.6rem, 4.5vw, 1.15rem);
+    padding-inline: clamp(0.5rem, 4.5vw, 0.9rem);
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
     box-sizing: border-box;
   }
 
   .customer-form-box .management-form-grid {
     width: 100%;
-    max-width: min(100%, 30rem);
-    justify-items: center;
-    grid-template-columns: minmax(0, 1fr);
-    gap: clamp(0.5rem, 2.5vw, 0.9rem);
-  }
-
-  .customer-form-box .management-form-grid .form-field {
-    width: min(100%, clamp(13.5rem, 90vw, 18.5rem)) !important;
-    max-width: min(100%, clamp(13.5rem, 90vw, 18.5rem)) !important;
-    min-width: 0;
-    margin-inline: auto;
-    box-sizing: border-box;
-  }
-
-  .customer-form-box .management-form-grid .form-field .form-control,
-  .customer-form-box .management-form-grid .form-field .form-select,
-  .customer-form-box .management-form-grid .form-field textarea.form-control {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box;
-  }
-
-  .customer-form-box .customer-upload-inline {
-    width: min(100%, clamp(13.5rem, 90vw, 18.5rem)) !important;
-    max-width: min(100%, clamp(13.5rem, 90vw, 18.5rem)) !important;
-    margin-inline: auto;
-    justify-content: center;
-    box-sizing: border-box;
-  }
-}
-
-@media (max-width: 640px) {
-  .customer-form-box {
-    align-items: center;
-  }
-
-  .customer-form-box .management-form {
-    width: min(100%, clamp(15rem, 92vw, 19.5rem));
-    margin-inline: auto;
-    padding-inline: clamp(0.5rem, 5.5vw, 1.05rem);
-  }
-
-  .customer-form-box .management-form-grid {
     max-width: 100%;
-    width: 100%;
-    gap: clamp(0.45rem, 2.5vw, 0.75rem);
+    justify-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(0.45rem, 2.5vw, 0.85rem);
   }
 
   .customer-form-box .management-form-grid .form-field,
   .customer-form-box .customer-upload-inline {
-    width: min(100%, clamp(13.5rem, 94vw, 18rem)) !important;
-    max-width: min(100%, clamp(13.5rem, 94vw, 18rem)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    margin-inline: 0;
+    box-sizing: border-box;
   }
 
   .customer-form-box .customer-upload-inline {
@@ -446,11 +412,10 @@
   .customer-form-box .customer-upload-inline input[type='file'],
   .customer-form-box .customer-upload-inline .btn {
     width: 100%;
-    max-width: 100%;
   }
 
   .customer-form-box .management-form-actions {
-    width: min(100%, clamp(15rem, 92vw, 19.5rem));
+    width: 100%;
     margin-inline: auto;
   }
 
@@ -460,14 +425,8 @@
 }
 
 @media (max-width: 480px) {
-  .customer-form-box .management-form-grid .form-field,
-  .customer-form-box .customer-upload-inline {
-    width: min(100%, clamp(13rem, 95vw, 17.5rem)) !important;
-    max-width: min(100%, clamp(13rem, 95vw, 17.5rem)) !important;
-  }
-
   .customer-form-box .management-form {
-    padding-inline: clamp(0.5rem, 6vw, 0.9rem);
+    padding-inline: clamp(0.4rem, 5vw, 0.75rem);
   }
 }
 
