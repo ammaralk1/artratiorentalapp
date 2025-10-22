@@ -243,49 +243,39 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     : isPartial
       ? paymentPartialText
       : paymentUnpaidText;
-  const normalizeCount = (value, { fallback = 1, allowFloat = false, min = 1, max = Number.POSITIVE_INFINITY } = {}) => {
+  const clampItemQuantity = (value, { fallback = 1 } = {}) => {
     const parsed = Number(value);
-    if (!Number.isFinite(parsed) || parsed <= 0) return Math.max(min, Math.min(max, fallback));
-    const clamped = Math.max(min, Math.min(max, parsed));
-    if (!allowFloat) {
-      return Math.max(min, Math.round(clamped));
-    }
-    return clamped;
-  };
-
-  const resolveGroupCount = (group) => {
-    const itemsList = Array.isArray(group.items) ? group.items : [];
-    const fallback = itemsList.reduce((itemSum, entry) => {
-      const entryQty = normalizeCount(entry?.qty ?? entry?.quantity ?? entry?.count, {
-        fallback: 1,
-        allowFloat: false,
-        min: 1,
-        max: 10_000
-      });
-      return itemSum + entryQty;
-    }, 0) || 1;
-
-    const candidate = normalizeCount(group.quantity ?? group.count, {
-      fallback,
-      allowFloat: false,
-      min: 1,
-      max: 100_000
-    });
-
-    if (candidate > fallback * 50) {
+    if (!Number.isFinite(parsed) || parsed <= 0) {
       return fallback;
     }
 
-    return candidate;
+    if (parsed > 1_000) {
+      return 1_000;
+    }
+
+    return Math.round(parsed);
   };
 
-  const totalItemsQuantity = displayGroups.reduce((sum, group) => {
-    if (group.type === 'package') {
-      const packageQty = resolveGroupCount(group);
-      return sum + packageQty;
-    }
-    return sum + resolveGroupCount(group);
+  let totalItemsQuantity = (Array.isArray(items) ? items : []).reduce((sum, item) => {
+    const quantity = clampItemQuantity(
+      item?.qty
+        ?? item?.quantity
+        ?? item?.count
+        ?? item?.package_quantity
+        ?? item?.packageQty
+        ?? 1,
+      { fallback: 1 }
+    );
+
+    return sum + quantity;
   }, 0);
+
+  if (totalItemsQuantity <= 0 && Array.isArray(displayGroups) && displayGroups.length) {
+    totalItemsQuantity = displayGroups.reduce((sum, group) => {
+      const quantity = clampItemQuantity(group?.quantity ?? group?.count ?? 1, { fallback: 1 });
+      return sum + quantity;
+    }, 0);
+  }
   const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
