@@ -461,6 +461,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
       image: imageSource,
       barcodes: barcodesList,
       barcode: packageBarcode,
+      package_code: packageBarcode,
       items: [{
         type: 'package',
         packageItems: resolvedItems,

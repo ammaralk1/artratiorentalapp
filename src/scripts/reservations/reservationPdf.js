@@ -2890,9 +2890,14 @@ function buildQuotationHtml(options) {
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
 
-    const barcode = group?.barcode
-      ?? fallbackBarcode
-      ?? '';
+    const packageCode = group?.package_code
+      ?? group?.packageCode
+      ?? group?.barcode
+      ?? (Array.isArray(group?.items) && group.items.length ? group.items[0]?.package_code ?? group.items[0]?.packageCode : null);
+
+    const barcode = isPackage
+      ? (packageCode ?? fallbackBarcode ?? '')
+      : (group?.barcode ?? fallbackBarcode ?? '');
 
     let totalPrice = Number.isFinite(Number(group?.totalPrice))
       ? Number(group.totalPrice)
