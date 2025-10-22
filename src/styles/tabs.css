@@ -234,6 +234,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   flex-direction: column;
   gap: clamp(0.85rem, 2.4vw, 1.2rem);
   min-height: 100%;
+  overflow: visible;
 }
 
 .crew-picker-panel--assignments {
@@ -314,17 +315,28 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card {
+  position: relative;
   display: flex;
   gap: clamp(0.85rem, 3vw, 1.2rem);
   align-items: stretch;
-  padding: clamp(0.85rem, 3vw, 1.2rem);
-  margin-bottom: 1rem;
-  border-radius: 20px;
-  border: 1px solid hsl(var(--bc) / 0.14);
-  background: hsl(var(--b1) / 0.97);
+  padding: clamp(0.95rem, 3vw, 1.3rem);
+  margin-bottom: 1.1rem;
+  border-radius: 22px;
+  border: 1px solid hsl(var(--p) / 0.22);
+  background: linear-gradient(135deg, hsl(var(--b1)), hsl(var(--b2) / 0.92));
   color: hsl(var(--bc));
-  box-shadow: 0 16px 36px hsl(var(--bc) / 0.06);
-  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 42px hsl(var(--bc) / 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.crew-position-card::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 18px;
+  border: 1px dashed hsl(var(--bc) / 0.18);
+  pointer-events: none;
+  backdrop-filter: blur(2px);
 }
 
 .crew-position-card__layout {
@@ -333,6 +345,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   flex-direction: column;
   gap: clamp(0.65rem, 2vw, 0.9rem);
   min-width: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .crew-position-card__header {
@@ -408,6 +422,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 2;
 }
 
 .crew-position-add-btn {
@@ -584,39 +600,28 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-assignment-cell-member {
-  min-width: 200px;
+  min-width: 220px;
   position: relative;
   overflow: visible;
 }
 
-.crew-assignment-select-wrapper {
-  display: flex;
-  width: 100%;
-  border-radius: 14px;
-  border: 1px solid hsl(var(--bc) / 0.14);
-  background: hsl(var(--b1));
-  padding: 2px;
-  isolation: isolate;
-}
-
-.crew-assignment-select-wrapper:focus-within {
-  border-color: hsl(var(--p));
-  box-shadow: 0 0 0 3px hsl(var(--p) / 0.18);
-}
-
 .crew-assignment-cell-member .crew-assignment-select {
   width: 100%;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  background-color: transparent;
-  box-shadow: none;
+  border-radius: 14px;
+  border: 1px solid hsl(var(--bc) / 0.16);
+  background-color: hsl(var(--b1));
+  box-shadow: 0 10px 24px hsl(var(--bc) / 0.08);
   color: inherit;
-  padding: 0.45rem 0.85rem;
+  padding: 0.55rem 1rem;
+  position: relative;
+  z-index: 50;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-assignment-cell-member .crew-assignment-select:focus {
   border-color: hsl(var(--p));
-  box-shadow: 0 0 0 3px hsl(var(--p) / 0.18);
+  box-shadow: 0 0 0 3px hsl(var(--p) / 0.22);
+  outline: none;
 }
 
 .crew-assignment-cell-actions {
@@ -760,10 +765,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  background: linear-gradient(135deg, hsla(var(--b2) / 0.9), hsla(var(--p) / 0.22));
-  border-color: hsla(var(--p) / 0.35);
+  background: linear-gradient(135deg, hsla(var(--b2) / 0.85), hsla(var(--p) / 0.28));
+  border-color: hsla(var(--p) / 0.45);
   color: hsla(var(--bc) / 0.92);
-  box-shadow: 0 18px 36px hsla(var(--b1) / 0.24);
+  box-shadow: 0 22px 48px hsla(var(--b1) / 0.32);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
+  border-color: hsla(var(--p) / 0.45);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
@@ -831,13 +840,11 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.45);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-select-wrapper {
-  background: hsla(var(--b1) / 0.28);
-  border-color: hsla(var(--p) / 0.28);
-}
-
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-cell-member .crew-assignment-select {
+  background: hsla(var(--b1) / 0.26);
+  border-color: hsla(var(--p) / 0.4);
   color: hsla(var(--bc) / 0.96);
+  box-shadow: 0 14px 32px hsla(var(--b1) / 0.38);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {

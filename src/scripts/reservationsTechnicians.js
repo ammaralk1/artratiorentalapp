@@ -398,11 +398,9 @@ function renderAssignmentsTable() {
           <div class="crew-assignment-price-chip" aria-label="${priceLabel}">${clientPrice}</div>
         </td>
         <td class="crew-assignment-cell-member">
-          <div class="crew-assignment-select-wrapper">
-            <select class="form-select form-select-sm crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
-              ${selectOptions}
-            </select>
-          </div>
+          <select class="form-select form-select-sm crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
+            ${selectOptions}
+          </select>
         </td>
         <td class="crew-assignment-cell-actions">
           <button type="button" class="btn btn-sm btn-outline-danger crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${removeLabel}">

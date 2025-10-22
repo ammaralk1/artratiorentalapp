@@ -357,9 +357,10 @@
 }
 
 .customer-form-box .management-form-grid .form-field {
-  width: min(100%, 22rem);
+  width: min(100%, clamp(14rem, 42vw, 22rem));
   margin-inline: auto;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .customer-form-box .management-form-grid .form-field .form-control,
@@ -388,10 +389,11 @@
   }
 
   .customer-form-box .management-form-grid .form-field {
-    width: 80% !important;
-    max-width: min(80%, 16rem) !important;
+    width: min(100%, clamp(14rem, 88vw, 19rem)) !important;
+    max-width: min(100%, clamp(14rem, 88vw, 19rem)) !important;
     min-width: 0;
     margin-inline: auto;
+    box-sizing: border-box;
   }
 
   .customer-form-box .management-form-grid .form-field .form-control,
@@ -403,11 +405,19 @@
   }
 
   .customer-form-box .customer-upload-inline {
-    width: 80% !important;
-    max-width: min(80%, 16rem) !important;
+    width: min(100%, clamp(14rem, 88vw, 19rem)) !important;
+    max-width: min(100%, clamp(14rem, 88vw, 19rem)) !important;
     margin-inline: auto;
     justify-content: center;
     box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .customer-form-box .management-form-grid .form-field,
+  .customer-form-box .customer-upload-inline {
+    width: min(100%, 18rem) !important;
+    max-width: min(100%, 18rem) !important;
   }
 }
 
