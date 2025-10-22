@@ -79,30 +79,28 @@ import{d as V,n as _,b as O,A as Oe,s as sn,a as ii,m as ai,c as oi,i as si,l as
       </tr>
     `}).join(""),e.querySelectorAll(".crew-assignment-remove").forEach(n=>{n.dataset.listenerAttached||(n.addEventListener("click",()=>{zn(n.dataset.assignmentId,w)}),n.dataset.listenerAttached="true")}),oa(e)}function oa(e){e.querySelectorAll(".crew-assignment-autocomplete").forEach(n=>{if(n.dataset.listenerAttached)return;const i=n.dataset.assignmentId,o=()=>{sa(n,i)};n.addEventListener("change",o),n.addEventListener("blur",o),n.dataset.listenerAttached="true"})}function sa(e,t){if(!t)return;const n=e.value?.trim()??"";if(!n){Ve(t,"");return}const i=e.getAttribute("list"),o=i?document.getElementById(i):null,a=o?Array.from(o.options):[],c=_(n).toLowerCase(),s=a.find(l=>_(l.value).toLowerCase()===c);if(!s){N(f("technicians.picker.toast.autocompleteNoMatch","⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة")),e.value="",Ve(t,"");return}if(s.dataset.disabled==="true"){N(f("technicians.picker.optionTaken","⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر")),e.value="";return}const r=s.dataset.id;if(!r){N(f("technicians.picker.toast.autocompleteNoMatch","⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة")),e.value="",Ve(t,"");return}Ve(t,r)}function dt(){const e=document.getElementById("crew-position-list");if(!e)return;Tt();const t=document.getElementById("crew-position-search"),n=_(String(t?.value||"")).trim().toLowerCase(),i=et.filter(a=>n?[a.labelAr,a.labelEn,a.name].filter(Boolean).map(s=>_(String(s)).toLowerCase()).join(" ").includes(n):!0);if(!i.length){e.innerHTML=`<div class="text-muted">${f("technicians.picker.noPositions","لا توجد مناصب مطابقة.")}</div>`;return}const o=ce();e.innerHTML=i.map(a=>{const c=Ct(a,o)||a.name||"",s=Et(a,o),r=Ke(a.clientPrice||0),l=Ke(a.cost||0),d=s?`<span class="crew-position-card__subtitle">${_(s)}</span>`:"",u=f("technicians.picker.positionCostLabel","التكلفة"),p=f("technicians.picker.positionClientPriceLabel","سعر العميل"),h=f("technicians.picker.actions.addPosition","إضافة المنصب");return`
       <article class="crew-position-card" data-position-id="${a.id}" tabindex="0" role="button" aria-label="${_(c)}">
-        <div class="crew-position-card__surface">
-          <header class="crew-position-card__header">
-            <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
-            <div class="crew-position-card__titles">
-              <h6 class="crew-position-card__title">${_(c)}</h6>
-              ${d}
-            </div>
-          </header>
-          <div class="crew-position-card__meta-grid">
-            <div class="crew-position-card__meta-item">
-              <span class="crew-position-card__meta-label">${u}</span>
-              <span class="crew-position-card__meta-value">${l}</span>
-            </div>
-            <div class="crew-position-card__meta-item crew-position-card__meta-item--highlight">
-              <span class="crew-position-card__meta-label">${p}</span>
-              <span class="crew-position-card__meta-value">${r}</span>
-            </div>
+        <header class="crew-position-card__header">
+          <span class="crew-position-card__icon" aria-hidden="true">🎯</span>
+          <div class="crew-position-card__titles">
+            <h6 class="crew-position-card__title">${_(c)}</h6>
+            ${d}
           </div>
-          <footer class="crew-position-card__footer">
-            <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${a.id}">
-              ${h}
-            </button>
-          </footer>
+        </header>
+        <div class="crew-position-card__metrics">
+          <div class="crew-position-card__metric">
+            <span class="crew-position-card__metric-label">${u}</span>
+            <span class="crew-position-card__metric-value">${l}</span>
+          </div>
+          <div class="crew-position-card__metric crew-position-card__metric--accent">
+            <span class="crew-position-card__metric-label">${p}</span>
+            <span class="crew-position-card__metric-value">${r}</span>
+          </div>
         </div>
+        <footer class="crew-position-card__footer">
+          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${a.id}">
+            ${h}
+          </button>
+        </footer>
       </article>
     `}).join(""),e.querySelectorAll(".crew-position-add-btn").forEach(a=>{a.dataset.listenerAttached||(a.addEventListener("click",c=>{c.stopPropagation(),ot(a.dataset.positionId)}),a.dataset.listenerAttached="true")}),e.querySelectorAll(".crew-position-card").forEach(a=>{a.dataset.cardListenerAttached||(a.addEventListener("click",()=>{ot(a.dataset.positionId)}),a.addEventListener("keydown",c=>{(c.key==="Enter"||c.key===" ")&&(c.preventDefault(),ot(a.dataset.positionId))}),a.dataset.cardListenerAttached="true")})}function ot(e){Tt();const t=et.find(o=>String(o.id)===String(e)),n=Wt(t||{id:null,name:""}),i=be(w);i.push(n),se(w,i),ae(),N(f("technicians.picker.toast.positionAdded","✅ تم إضافة المنصب إلى القائمة"),"success")}function zn(e,t="create"){if(!e)return;const n=be(t).filter(i=>i.assignmentId!==e);se(t,n),ae(),N(f("technicians.picker.toast.positionRemoved","🗑️ تم حذف المنصب من القائمة"))}function Ve(e,t){if(!e)return;const n=be(w),i=n.find(c=>c.assignmentId===e);if(!i)return;if(!t){i.technicianId=null,i.technicianName=null,i.technicianRole=null,se(w,n),ae(),N(f("technicians.picker.toast.assignmentCleared","ℹ️ تمت إزالة التعيين من هذا المنصب"));return}if(n.find(c=>c.assignmentId!==e&&c.technicianId===t)){N(f("technicians.picker.duplicateTechnician","⚠️ لا يمكن تعيين نفس الشخص لأكثر من منصب في نفس الحجز")),ae();return}const a=tt(t);a?(i.technicianId=String(a.id),i.technicianName=a.name??null,i.technicianRole=a.role??null,i.technicianPhone=a.phone??null):(i.technicianId=String(t),i.technicianName=null,i.technicianRole=null,i.technicianPhone=null),se(w,n),ae(),i.technicianName?N(f("technicians.picker.toast.assignmentApplied","✅ تم تعيين {name} على هذا المنصب").replace("{name}",_(i.technicianName)),"success"):N(f("technicians.picker.toast.assignmentIdApplied","✅ تم تعيين العضو المحدد على هذا المنصب"),"success")}async function Kt(e="create"){w=e;const t=Sn();Array.isArray(t)&&t.length&&($e=t);try{await Re()}catch(i){console.warn("[reservations/crew] failed to load positions",i)}Tt(),dt(),ae(),nt();const n=document.getElementById("selectTechniciansModal");n&&window.bootstrap?.Modal&&window.bootstrap.Modal.getOrCreateInstance(n).show()}function ca(){return be(w).map(he)}function ra(){const e=ca(),{start:t,end:n,ignoreReservationId:i}=ia(w);if(t&&n){const a=e.filter(c=>c.technicianId&&ea(c.technicianId,t,n,i));if(a.length>0){const c=a.map(r=>r.technicianName||r.technicianId).join(f("reservations.list.crew.separator","، ")),s=f("reservations.toast.technicianSelectionConflict","⚠️ لا يمكن اختيار {names} لأنهم مرتبطون بحجز آخر في نفس الفترة الزمنية").replace("{names}",c);a.forEach(r=>{r.technicianId=null,r.technicianName=null}),se(w,e),ae(),N(s),nt();return}}se(w,e);const o=document.getElementById("selectTechniciansModal");o&&window.bootstrap?.Modal&&window.bootstrap.Modal.getOrCreateInstance(o)?.hide?.(),N(f("technicians.picker.toast.selectionApplied","✅ تم حفظ الطاقم بنجاح"),"success")}function Ce(e,t=[],n="create"){const i=document.getElementById(e);if(i){if(!t.length){i.innerHTML=`<span class="text-muted">${f("reservations.crew.none","لم يتم اختيار أي عضو من الطاقم.")}</span>`;return}i.innerHTML=t.map(o=>{const a=_(o.positionLabel||f("reservations.crew.positionFallback","منصب بدون اسم")),c=o.technicianName?`${_(o.technicianName)}`:f("technicians.picker.noTechnicianOption","— بدون تعيين —"),s=Ke(Number(o.positionClientPrice)||0),r=f("reservations.crew.removeAria","إزالة");return`
       <span class="technician-chip" data-assignment-id="${o.assignmentId}">

@@ -538,30 +538,28 @@ function renderPositionList() {
 
     return `
       <article class="crew-position-card" data-position-id="${position.id}" tabindex="0" role="button" aria-label="${normalizeNumbers(primaryLabel)}">
-        <div class="crew-position-card__surface">
-          <header class="crew-position-card__header">
-            <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
-            <div class="crew-position-card__titles">
-              <h6 class="crew-position-card__title">${normalizeNumbers(primaryLabel)}</h6>
-              ${subtitle}
-            </div>
-          </header>
-          <div class="crew-position-card__meta-grid">
-            <div class="crew-position-card__meta-item">
-              <span class="crew-position-card__meta-label">${costLabel}</span>
-              <span class="crew-position-card__meta-value">${costDisplay}</span>
-            </div>
-            <div class="crew-position-card__meta-item crew-position-card__meta-item--highlight">
-              <span class="crew-position-card__meta-label">${clientPriceLabel}</span>
-              <span class="crew-position-card__meta-value">${priceDisplay}</span>
-            </div>
+        <header class="crew-position-card__header">
+          <span class="crew-position-card__icon" aria-hidden="true">🎯</span>
+          <div class="crew-position-card__titles">
+            <h6 class="crew-position-card__title">${normalizeNumbers(primaryLabel)}</h6>
+            ${subtitle}
           </div>
-          <footer class="crew-position-card__footer">
-            <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
-              ${addButtonLabel}
-            </button>
-          </footer>
+        </header>
+        <div class="crew-position-card__metrics">
+          <div class="crew-position-card__metric">
+            <span class="crew-position-card__metric-label">${costLabel}</span>
+            <span class="crew-position-card__metric-value">${costDisplay}</span>
+          </div>
+          <div class="crew-position-card__metric crew-position-card__metric--accent">
+            <span class="crew-position-card__metric-label">${clientPriceLabel}</span>
+            <span class="crew-position-card__metric-value">${priceDisplay}</span>
+          </div>
         </div>
+        <footer class="crew-position-card__footer">
+          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
+            ${addButtonLabel}
+          </button>
+        </footer>
       </article>
     `;
   }).join('');
