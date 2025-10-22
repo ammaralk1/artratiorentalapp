@@ -221,6 +221,10 @@ function calculateCrewDailyTotalsFromAssignments(assignments = []) {
   }, { costPerDay: 0, totalPerDay: 0 });
 }
 
+if (typeof globalThis !== 'undefined' && !globalThis.calculateCrewDailyTotalsFromAssignments) {
+  globalThis.calculateCrewDailyTotalsFromAssignments = calculateCrewDailyTotalsFromAssignments;
+}
+
   if (normalizedType === 'amount' && value != null) {
     amount = value;
   } else if (normalizedType === 'percent' && value != null) {
