@@ -1153,80 +1153,39 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
 }
 
 function normalizeItemsWithPackages(items = [], packages = []) {
-  let workingPackages = Array.isArray(packages) ? [...packages] : [];
-  let workingItems = Array.isArray(items) ? [...items] : [];
+  const derived = derivePackagesFromItemsList(items);
 
-  if (!workingPackages.length) {
-    const derived = derivePackagesFromItemsList(workingItems);
-    if (derived.packages.length) {
-      workingPackages = mergePackageCollections(workingPackages, derived.packages);
-      workingItems = derived.items;
-    }
-  }
+  const workingPackages = Array.isArray(packages)
+    ? mergePackageCollections(packages, derived.packages)
+    : derived.packages;
 
-  if (!workingPackages.length) {
-    return {
-      items: workingItems,
-      packages: workingPackages,
-    };
-  }
-
-  const packageLookup = new Map();
-  const packageItemBarcodes = new Set();
-
+  const packagesById = new Map();
   workingPackages.forEach((pkg) => {
     const normalizedId = normalizePackageIdentifier(pkg.packageId ?? pkg.package_id ?? pkg.id);
     if (!normalizedId) return;
-    packageLookup.set(normalizedId, pkg);
-    if (Array.isArray(pkg.packageItems)) {
-      pkg.packageItems.forEach((child) => {
-        const normalizedChildBarcode = normalizeBarcodeValueLoose(child?.barcode ?? child?.normalizedBarcode ?? '');
-        if (normalizedChildBarcode) {
-          packageItemBarcodes.add(normalizedChildBarcode);
-        }
-      });
-    }
+    packagesById.set(normalizedId, pkg);
   });
 
-  const reconciled = [];
-  const addedPackageIds = new Set();
-
-  workingItems.forEach((item) => {
-    const normalizedItemPackageId = normalizePackageIdentifier(
-      item.packageId
-        ?? item.package_id
-        ?? item.packageCode
-        ?? item.package_code
-        ?? item.bundleId
-        ?? item.bundle_id
-        ?? null
-    );
-
-    if (normalizedItemPackageId && packageLookup.has(normalizedItemPackageId)) {
-      if (!addedPackageIds.has(normalizedItemPackageId)) {
-        reconciled.push(buildReservationPackageItem(packageLookup.get(normalizedItemPackageId), item));
-        addedPackageIds.add(normalizedItemPackageId);
-      }
-      return;
+  // Ensure each package has its packageItems populated from derived data when missing
+  derived.packages.forEach((derivedPkg) => {
+    const normalizedId = normalizePackageIdentifier(derivedPkg.packageId ?? derivedPkg.package_id ?? derivedPkg.id);
+    if (!normalizedId) return;
+    const target = packagesById.get(normalizedId);
+    if (!target) return;
+    if (!Array.isArray(target.packageItems) || target.packageItems.length === 0) {
+      target.packageItems = derivedPkg.packageItems;
     }
-
-    const normalizedBarcode = normalizeBarcodeValueLoose(item.barcode);
-    if (packageItemBarcodes.has(normalizedBarcode)) {
-      return;
+    if (!target.name && derivedPkg.name) {
+      target.name = derivedPkg.name;
     }
-
-    reconciled.push(item);
-  });
-
-  packageLookup.forEach((pkg, normalizedId) => {
-    if (addedPackageIds.has(normalizedId)) return;
-    reconciled.push(buildReservationPackageItem(pkg));
-    addedPackageIds.add(normalizedId);
+    if (!target.image && derivedPkg.image) {
+      target.image = derivedPkg.image;
+    }
   });
 
   return {
-    items: reconciled,
-    packages: workingPackages,
+    items: derived.items,
+    packages: Array.from(packagesById.values()),
   };
 }
 
