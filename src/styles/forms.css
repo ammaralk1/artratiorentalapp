@@ -366,8 +366,8 @@
 .customer-form-box .management-form-grid .form-field .form-control,
 .customer-form-box .management-form-grid .form-field .form-select,
 .customer-form-box .management-form-grid .form-field textarea.form-control {
-  width: 100%;
-  max-width: 100%;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 @media (max-width: 768px) {
@@ -411,7 +411,8 @@
 
   .customer-form-box .customer-upload-inline input[type='file'],
   .customer-form-box .customer-upload-inline .btn {
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .customer-form-box .management-form-actions {
@@ -420,7 +421,7 @@
   }
 
   .customer-form-box .management-form-actions .btn {
-    width: 100%;
+    width: 100% !important;
   }
 }
 
