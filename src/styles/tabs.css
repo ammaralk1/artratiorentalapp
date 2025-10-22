@@ -183,10 +183,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   padding: clamp(0.85rem, 3vw, 1.2rem);
   margin-bottom: 1rem;
   border-radius: 18px;
-  border: 1px solid hsl(var(--bc) / 0.12);
-  background: hsl(var(--b1) / 0.95);
+  border: 1px solid hsl(var(--bc) / 0.14);
+  background: hsl(var(--b1) / 0.97);
   color: hsl(var(--bc));
-  box-shadow: 0 12px 28px hsl(var(--bc) / 0.08);
+  box-shadow: 0 12px 28px hsl(var(--bc) / 0.04);
   backdrop-filter: blur(8px);
 }
 
@@ -216,7 +216,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   display: inline-block;
   margin-top: 4px;
   font-size: 0.85rem;
-  color: hsl(var(--bc) / 0.7);
+  color: hsl(var(--bc) / 0.65);
 }
 
 .crew-position-card__meta {
@@ -225,7 +225,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   gap: 0.75rem;
   margin-top: 8px;
   font-size: 0.85rem;
-  color: hsl(var(--bc) / 0.78);
+  color: hsl(var(--bc) / 0.72);
 }
 
 .crew-position-card__actions {
@@ -278,7 +278,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   position: relative;
   overflow: visible;
   border-radius: 18px;
-  border: 1px solid hsl(var(--bc) / 0.12);
+  border: 1px solid hsl(var(--bc) / 0.14);
   box-shadow: 0 12px 32px hsl(var(--bc) / 0.08);
   background: hsl(var(--b1) / 0.96);
   padding: clamp(0.75rem, 3vw, 1.2rem);
@@ -292,10 +292,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-assignment-table-wrapper tbody tr {
   background: hsl(var(--b1));
-  box-shadow: 0 6px 18px hsl(var(--bc) / 0.08);
-  border-radius: 12px;
+  box-shadow: 0 6px 18px hsl(var(--bc) / 0.06);
+  border-radius: 14px;
+  border: 1px dashed hsl(var(--bc) / 0.16);
   position: relative;
   overflow: visible;
+  z-index: 1;
+  isolation: isolate;
 }
 
 .crew-assignment-table-wrapper tbody tr td {
@@ -375,6 +378,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-assignment-table-wrapper tbody tr:hover {
   transform: translateY(-1px);
+  z-index: 10;
+}
+
+.crew-assignment-table-wrapper tbody tr:focus-within {
+  z-index: 12;
+  box-shadow: 0 10px 28px hsl(var(--p) / 0.22);
+  border-color: hsl(var(--p) / 0.28);
 }
 
 .crew-assignment-table-wrapper tbody tr td:first-child {
@@ -405,7 +415,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   background: linear-gradient(135deg, hsla(var(--b2) / 0.9), hsla(var(--p) / 0.22));
   border-color: hsla(var(--p) / 0.35);
   color: hsla(var(--bc) / 0.92);
-  box-shadow: 0 18px 40px hsla(var(--b1) / 0.28);
+  box-shadow: 0 18px 36px hsla(var(--b1) / 0.24);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
@@ -429,7 +439,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper tbody tr {
   background: hsla(var(--b2) / 0.94);
-  box-shadow: 0 12px 28px hsla(var(--b1) / 0.28);
+  box-shadow: 0 12px 24px hsla(var(--b1) / 0.24);
+  border-color: hsla(var(--p) / 0.3);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-cell-price {
@@ -753,4 +764,7 @@ body[dir="rtl"] #reservations-tab > .sub-tab-buttons {
 body[dir="rtl"] #reservations-tab > h2 {
   order: 2;
   align-self: flex-end;
+}
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper tbody tr:focus-within {
+  box-shadow: 0 16px 34px hsla(var(--p) / 0.35);
 }
