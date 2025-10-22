@@ -637,15 +637,20 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         let packageItemsMeta = '';
         if (isPackageGroup) {
           const aggregated = new Map();
-          const resolvePackageItemQty = (value) => {
-            const parsed = parseQuantityValue(value);
-            if (!Number.isFinite(parsed) || parsed <= 0) {
-              return 1;
+          const resolvePackageItemQty = (pkgItem) => {
+            const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.qty ?? pkgItem?.quantity);
+            if (Number.isFinite(direct) && direct > 0 && direct <= 99) {
+              return Math.round(direct);
             }
-            if (parsed > 99) {
-              return 1;
+            const totalCandidate = parseQuantityValue(pkgItem?.totalQuantity ?? pkgItem?.qty ?? pkgItem?.quantity ?? 1);
+            if (Number.isFinite(totalCandidate) && totalCandidate > 0) {
+              const perPackage = quantityValue > 0 ? totalCandidate / quantityValue : totalCandidate;
+              if (Number.isFinite(perPackage) && perPackage > 0) {
+                return Math.max(1, Math.min(99, Math.round(perPackage)));
+              }
+              return Math.max(1, Math.min(99, Math.round(totalCandidate)));
             }
-            return Math.round(parsed);
+            return 1;
           };
           group.items.forEach((item) => {
             if (!Array.isArray(item?.packageItems)) return;
@@ -653,14 +658,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               if (!pkgItem) return;
               const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
               const existing = aggregated.get(key);
-              const qty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
+              const qty = resolvePackageItemQty(pkgItem);
               if (existing) {
                 existing.qty = Math.min((existing.qty ?? 0) + qty, 99);
+                existing.total = Math.min((existing.total ?? 0) + (pkgItem.totalQuantity ?? qty), 99 * Math.max(1, quantityValue));
                 return;
               }
               aggregated.set(key, {
                 desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
                 qty: Math.max(1, Math.min(qty, 99)),
+                total: Number.isFinite(parseQuantityValue(pkgItem.totalQuantity)) ? parseQuantityValue(pkgItem.totalQuantity) : qty,
                 barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
               });
             });

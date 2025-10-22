@@ -267,7 +267,13 @@ export function renderEditReservationItems(items = []) {
             if (!pkgItem) return;
             const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
             const existing = aggregated.get(key);
-            const qty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
+            const directQty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
+            let qty = directQty;
+            if ((!Number.isFinite(qty) || qty <= 0) && Number.isFinite(Number(pkgItem.totalQuantity))) {
+              const perPackage = Number(pkgItem.totalQuantity) / Math.max(1, group.count || group.quantity || 1);
+              const normalized = resolvePackageItemQty(perPackage);
+              qty = normalized > 0 ? normalized : 1;
+            }
             if (existing) {
               existing.qty = Math.min((existing.qty ?? 0) + qty, 99);
               return;
