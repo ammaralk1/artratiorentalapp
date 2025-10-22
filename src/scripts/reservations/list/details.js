@@ -747,51 +747,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           return [];
         };
 
-        const derivePackageUnitFromItems = (itemsList) => {
-          if (!Array.isArray(itemsList) || !itemsList.length) {
-            return 0;
-          }
-          const total = itemsList.reduce((sum, pkgItem) => {
-            if (!pkgItem || typeof pkgItem !== 'object') {
-              return sum;
-            }
-            const qtyCandidates = [pkgItem.qty, pkgItem.quantity, pkgItem.count, 1];
-            const itemQtyRaw = qtyCandidates.find((candidate) => Number.isFinite(Number(candidate)) && Number(candidate) > 0);
-            const itemQty = Number.isFinite(Number(itemQtyRaw)) && Number(itemQtyRaw) > 0
-              ? Number(itemQtyRaw)
-              : 1;
-
-            const priceCandidates = [
-              pkgItem.price,
-              pkgItem.unit_price,
-              pkgItem.unitPrice,
-            ];
-            let unit = priceCandidates.reduce((value, candidate) => {
-              if (Number.isFinite(value) && value > 0) return value;
-              const parsed = Number(candidate);
-              return Number.isFinite(parsed) && parsed > 0 ? parsed : value;
-            }, NaN);
-
-            if (!Number.isFinite(unit) || unit <= 0) {
-              const totalCandidate = [pkgItem.total, pkgItem.total_price, pkgItem.totalPrice]
-                .map((candidate) => Number(candidate))
-                .find((candidate) => Number.isFinite(candidate) && candidate > 0);
-              if (Number.isFinite(totalCandidate) && totalCandidate > 0 && itemQty > 0) {
-                unit = totalCandidate / itemQty;
-              }
-            }
-
-            if (!Number.isFinite(unit) || unit <= 0) {
-              return sum;
-            }
-
-            const sanitizedUnit = sanitizePriceValue(unit);
-            return sum + (sanitizedUnit * Math.max(1, itemQty));
-          }, 0);
-
-          return sanitizePriceValue(total);
-        };
-
         return `
           <tr>
             <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--item">
