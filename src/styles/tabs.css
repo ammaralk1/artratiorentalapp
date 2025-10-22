@@ -321,19 +321,28 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   align-items: stretch;
   gap: clamp(0.75rem, 2.6vw, 1rem);
   padding: clamp(0.75rem, 2.4vw, 1rem);
-  border-radius: 16px;
-  border: 1px solid hsl(var(--p) / 0.38);
-  background: hsl(var(--b1));
+  border-radius: 18px;
+  border: 1.5px solid hsl(var(--p) / 0.4);
+  background: linear-gradient(145deg, hsl(var(--b1)), hsl(var(--p) / 0.06));
   color: hsl(var(--bc));
-  box-shadow: 0 10px 24px hsl(var(--p) / 0.14);
-  outline: 1px solid hsl(var(--p) / 0.55);
-  outline-offset: -4px;
-  transition: box-shadow 0.2s ease;
+  box-shadow: 0 12px 26px hsl(var(--p) / 0.12);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.crew-position-card::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 22px;
+  border: 1.5px solid hsl(var(--p) / 0.35);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .crew-position-card:hover,
 .crew-position-card:focus-within {
-  box-shadow: 0 14px 30px hsl(var(--p) / 0.22);
+  border-color: hsl(var(--p) / 0.6);
+  box-shadow: 0 16px 34px hsl(var(--p) / 0.24);
 }
 
 .crew-position-card__layout {
@@ -781,16 +790,20 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  background: linear-gradient(135deg, hsla(var(--b2) / 0.7), hsla(var(--p) / 0.22));
-  border-color: hsla(var(--p) / 0.45);
-  color: hsla(var(--bc) / 0.94);
-  box-shadow: 0 16px 36px hsla(var(--p) / 0.28);
-  outline-color: hsla(var(--p) / 0.6);
+  background: linear-gradient(145deg, hsla(var(--b2) / 0.82), hsla(var(--p) / 0.24));
+  border-color: hsla(var(--p) / 0.5);
+  color: hsla(var(--bc) / 0.95);
+  box-shadow: 0 14px 32px hsla(var(--p) / 0.28);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
+  border-color: hsla(var(--p) / 0.55);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
-  box-shadow: 0 22px 46px hsla(var(--p) / 0.36);
+  border-color: hsla(var(--p) / 0.7);
+  box-shadow: 0 20px 42px hsla(var(--p) / 0.4);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
