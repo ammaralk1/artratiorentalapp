@@ -537,8 +537,8 @@ function renderPositionList() {
     const addButtonLabel = t('technicians.picker.actions.addPosition', 'إضافة المنصب');
 
     return `
-      <article class="crew-position-card" data-position-id="${position.id}" tabindex="0" role="button">
-        <div class="crew-position-card__content">
+      <article class="crew-position-card" data-position-id="${position.id}" tabindex="0" role="button" aria-label="${normalizeNumbers(primaryLabel)}">
+        <div class="crew-position-card__surface">
           <header class="crew-position-card__header">
             <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
             <div class="crew-position-card__titles">
@@ -551,16 +551,16 @@ function renderPositionList() {
               <span class="crew-position-card__meta-label">${costLabel}</span>
               <span class="crew-position-card__meta-value">${costDisplay}</span>
             </div>
-            <div class="crew-position-card__meta-item">
+            <div class="crew-position-card__meta-item crew-position-card__meta-item--highlight">
               <span class="crew-position-card__meta-label">${clientPriceLabel}</span>
               <span class="crew-position-card__meta-value">${priceDisplay}</span>
             </div>
           </div>
-        </div>
-        <div class="crew-position-card__actions">
-          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
-            ${addButtonLabel}
-          </button>
+          <footer class="crew-position-card__footer">
+            <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
+              ${addButtonLabel}
+            </button>
+          </footer>
         </div>
       </article>
     `;

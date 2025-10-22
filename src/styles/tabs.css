@@ -318,57 +318,81 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 .crew-position-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.75rem, 2.2vw, 1rem);
-  padding: clamp(0.9rem, 2.6vw, 1.15rem);
-  border-radius: 16px;
-  border: 1px solid hsl(var(--bc) / 0.18);
+  border-radius: 20px;
+  background: linear-gradient(140deg, hsl(var(--p) / 0.18), hsl(var(--bc) / 0.08));
+  padding: 2px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.crew-position-card__surface {
+  position: relative;
+  border-radius: 18px;
   background: hsl(var(--b1));
   color: hsl(var(--bc));
-  box-shadow: 0 10px 24px hsl(var(--bc) / 0.08);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  cursor: pointer;
+  padding: clamp(0.95rem, 2.6vw, 1.25rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.8rem, 2.5vw, 1.1rem);
+  border: 1px solid hsl(var(--bc) / 0.18);
+  box-shadow: 0 16px 34px hsl(var(--bc) / 0.12);
+  isolation: isolate;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crew-position-card__surface::before {
+  content: '';
+  position: absolute;
+  inset: 0.7rem;
+  border-radius: 14px;
+  border: 1px dashed hsl(var(--bc) / 0.24);
+  opacity: 0.75;
+  pointer-events: none;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
 }
 
 .crew-position-card:hover,
 .crew-position-card:focus-visible,
 .crew-position-card:focus-within {
-  border-color: hsl(var(--p));
-  box-shadow: 0 16px 32px hsl(var(--p) / 0.18);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 .crew-position-card:focus-visible {
-  outline: 3px solid hsl(var(--p) / 0.28);
-  outline-offset: 2px;
+  outline: 3px solid hsl(var(--p) / 0.35);
+  outline-offset: 3px;
 }
 
-.crew-position-card__content {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.65rem, 2vw, 0.9rem);
-  flex: 1;
-  min-width: 0;
+.crew-position-card:hover .crew-position-card__surface,
+.crew-position-card:focus-visible .crew-position-card__surface,
+.crew-position-card:focus-within .crew-position-card__surface {
+  border-color: hsl(var(--p) / 0.85);
+  box-shadow: 0 24px 46px hsl(var(--p) / 0.28);
+}
+
+.crew-position-card:hover .crew-position-card__surface::before,
+.crew-position-card:focus-visible .crew-position-card__surface::before,
+.crew-position-card:focus-within .crew-position-card__surface::before {
+  border-color: hsl(var(--p) / 0.65);
+  opacity: 1;
 }
 
 .crew-position-card__header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: clamp(0.75rem, 2vw, 1rem);
 }
 
 .crew-position-card__icon {
   font-size: 1.6rem;
   line-height: 1;
-  background: hsl(var(--bc) / 0.06);
+  background: hsl(var(--bc) / 0.08);
   padding: 0.65rem;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  min-height: 48px;
+  min-width: 50px;
+  min-height: 50px;
 }
 
 .crew-position-card__titles {
@@ -377,7 +401,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card__title {
-  font-weight: 600;
+  font-weight: 700;
   margin: 0;
   color: inherit;
 }
@@ -386,27 +410,30 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   display: inline-flex;
   margin-top: 4px;
   font-size: 0.85rem;
-  color: hsl(var(--bc) / 0.6);
+  color: hsl(var(--bc) / 0.65);
 }
 
 .crew-position-card__meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: clamp(0.6rem, 2vw, 0.9rem);
-  padding-top: clamp(0.6rem, 2vw, 0.85rem);
-  border-top: 1px solid hsl(var(--bc) / 0.1);
+  gap: clamp(0.65rem, 2vw, 1rem);
 }
 
 .crew-position-card__meta-item {
   border-radius: 14px;
-  border: 1px solid hsl(var(--bc) / 0.12);
-  background: hsl(var(--b1) / 0.96);
+  border: 1px solid hsl(var(--bc) / 0.16);
+  background: hsl(var(--b1) / 0.98);
   padding: 0.65rem 0.85rem;
-  min-height: 68px;
+  min-height: 70px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
+}
+
+.crew-position-card__meta-item--highlight {
+  border-color: hsl(var(--p) / 0.35);
+  background: hsl(var(--p) / 0.12);
 }
 
 .crew-position-card__meta-label {
@@ -416,13 +443,20 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: hsl(var(--bc) / 0.58);
 }
 
-.crew-position-card__meta-value {
-  font-weight: 700;
-  color: hsl(var(--bc) / 0.9);
+.crew-position-card__meta-item--highlight .crew-position-card__meta-label {
+  color: hsl(var(--p));
 }
 
-.crew-position-card__actions {
-  margin-top: auto;
+.crew-position-card__meta-value {
+  font-weight: 700;
+  color: hsl(var(--bc) / 0.92);
+}
+
+.crew-position-card__meta-item--highlight .crew-position-card__meta-value {
+  color: hsl(var(--p));
+}
+
+.crew-position-card__footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -431,13 +465,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-add-btn {
   font-weight: 600;
   border-radius: 999px;
-  padding-inline: 1.4rem;
+  padding-inline: 1.5rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-position-add-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px hsl(var(--p) / 0.25);
+  box-shadow: 0 12px 26px hsl(var(--p) / 0.28);
 }
 
 .crew-position-add-btn:focus-visible {
@@ -782,17 +816,32 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  background: hsla(var(--b2) / 0.88);
-  border-color: hsla(var(--p) / 0.45);
+  background: linear-gradient(140deg, hsla(var(--p) / 0.35), hsla(var(--b1) / 0.2));
   color: hsla(var(--bc) / 0.96);
-  box-shadow: 0 16px 40px hsla(var(--b1) / 0.32);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__surface {
+  background: hsla(var(--b2) / 0.9);
+  border-color: hsla(var(--p) / 0.4);
+  box-shadow: 0 20px 48px hsla(var(--b1) / 0.4);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__surface::before {
+  border-color: hsla(var(--p) / 0.55);
+  opacity: 0.85;
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover .crew-position-card__surface,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible .crew-position-card__surface,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within .crew-position-card__surface {
+  border-color: hsla(var(--p) / 0.85);
+  box-shadow: 0 26px 56px hsla(var(--p) / 0.45);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover .crew-position-card__surface::before,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible .crew-position-card__surface::before,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within .crew-position-card__surface::before {
   border-color: hsla(var(--p) / 0.75);
-  box-shadow: 0 20px 48px hsla(var(--p) / 0.4);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible {
@@ -806,6 +855,25 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__subtitle,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-label {
   color: hsla(var(--bc) / 0.78);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-item {
+  background: hsla(var(--b1) / 0.32);
+  border-color: hsla(var(--p) / 0.35);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-item--highlight {
+  background: hsla(var(--p) / 0.28);
+  border-color: hsla(var(--p) / 0.6);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-value {
+  color: hsla(var(--bc) / 0.95);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-item--highlight .crew-position-card__meta-label,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-item--highlight .crew-position-card__meta-value {
+  color: hsla(var(--pc));
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn {
@@ -826,15 +894,6 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty-text {
   color: hsla(var(--bc) / 0.9);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-item {
-  background: hsla(var(--b1) / 0.3);
-  border-color: hsla(var(--p) / 0.32);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-value {
-  color: hsla(var(--bc) / 0.95);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-table-wrapper {
