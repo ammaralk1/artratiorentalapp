@@ -1114,10 +1114,17 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
     packageItems: candidates,
   });
 
+  let definitionItems = [];
   if ((!Array.isArray(resolved) || resolved.length === 0) && packageId) {
     const definition = findPackageById(packageId);
     if (definition) {
       resolved = resolvePackageItems(definition);
+      definitionItems = Array.isArray(resolved) ? resolved : [];
+    }
+  } else if (packageId) {
+    const definition = findPackageById(packageId);
+    if (definition) {
+      definitionItems = resolvePackageItems(definition) || [];
     }
   }
 
@@ -1141,6 +1148,37 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
   );
 
   const normalized = resolved.map((item) => normalizePackageItemRecord(item, packageQuantity));
+
+  if (definitionItems.length) {
+    const definitionIndex = new Map();
+    definitionItems.forEach((defItem) => {
+      if (!defItem) return;
+      const key = normalizeBarcodeValueLoose(defItem.barcode)
+        || (defItem.equipmentId != null ? `id:${defItem.equipmentId}` : null)
+        || (defItem.equipment_id != null ? `id:${defItem.equipment_id}` : null);
+      if (!key) return;
+      definitionIndex.set(key, defItem);
+    });
+
+    normalized.forEach((pkgItem) => {
+      const key = pkgItem.normalizedBarcode || (pkgItem.equipmentId ? `id:${pkgItem.equipmentId}` : null);
+      if (!key || !definitionIndex.has(key)) return;
+      const defItem = definitionIndex.get(key);
+      const defQty = toPositiveInt(defItem.quantity ?? defItem.qty ?? 1, { fallback: pkgItem.qtyPerPackage ?? 1, max: 99 });
+      pkgItem.qtyPerPackage = defQty;
+      pkgItem.qty = defQty;
+      pkgItem.quantity = defQty;
+      const defPrice = toNumber(defItem.unit_price ?? defItem.unitPrice ?? defItem.price ?? pkgItem.price);
+      pkgItem.price = defPrice;
+      pkgItem.unit_price = defPrice;
+      if (!pkgItem.desc && defItem.desc) {
+        pkgItem.desc = defItem.desc;
+      }
+      if (!pkgItem.image && defItem.image) {
+        pkgItem.image = defItem.image;
+      }
+    });
+  }
 
   const merged = new Map();
   normalized.forEach((pkgItem) => {
