@@ -256,26 +256,104 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return Math.round(parsed);
   };
 
-  let totalItemsQuantity = (Array.isArray(items) ? items : []).reduce((sum, item) => {
-    const quantity = clampItemQuantity(
-      item?.qty
-        ?? item?.quantity
-        ?? item?.count
-        ?? item?.package_quantity
-        ?? item?.packageQty
-        ?? 1,
-      { fallback: 1 }
-    );
+  const parseQuantityValue = (value) => {
+    if (value == null) return NaN;
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : NaN;
+    }
+    const cleaned = String(value).replace(/[^0-9.+-]/g, '');
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  };
 
-    return sum + quantity;
+  const isPackageEntry = (entry = {}) => {
+    const type = String(entry.type ?? entry.kind ?? entry.category ?? '').toLowerCase();
+    if (['package', 'bundle', 'pack'].includes(type)) return true;
+    if (Array.isArray(entry.packageItems) && entry.packageItems.length) return true;
+    return false;
+  };
+
+  const hasPackageReference = (entry = {}) => {
+    return [
+      entry.packageId,
+      entry.package_id,
+      entry.packageCode,
+      entry.package_code,
+      entry.bundleId,
+      entry.bundle_id,
+    ].some((candidate) => candidate != null && candidate !== '');
+  };
+
+  const isPackageChildEntry = (entry = {}) => {
+    if (!entry || typeof entry !== 'object') return false;
+    return !isPackageEntry(entry) && hasPackageReference(entry);
+  };
+
+  const resolveEntryQuantity = (entry = {}) => {
+    const packageEntry = isPackageEntry(entry);
+    const candidates = [
+      entry.qty,
+      entry.quantity,
+      entry.count,
+      entry.package_quantity,
+      entry.packageQty,
+      entry.packageCount,
+      entry.units,
+    ];
+
+    let quantity = NaN;
+    for (const candidate of candidates) {
+      const parsed = parseQuantityValue(candidate);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        quantity = parsed;
+        break;
+      }
+    }
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      quantity = packageEntry ? 1 : 1;
+    }
+
+    if (packageEntry) {
+      const rounded = Math.round(quantity);
+      if (rounded > 999) {
+        return 1;
+      }
+      return Math.max(1, Math.min(999, rounded));
+    }
+
+    return Math.max(1, Math.min(100_000, Math.round(quantity)));
+  };
+
+  let totalItemsQuantity = (Array.isArray(items) ? items : []).reduce((sum, item) => {
+    if (!item || typeof item !== 'object') {
+      return sum;
+    }
+    if (isPackageChildEntry(item)) {
+      return sum;
+    }
+    return sum + resolveEntryQuantity(item);
   }, 0);
 
   if (totalItemsQuantity <= 0 && Array.isArray(displayGroups) && displayGroups.length) {
     totalItemsQuantity = displayGroups.reduce((sum, group) => {
-      const quantity = clampItemQuantity(group?.quantity ?? group?.count ?? 1, { fallback: 1 });
+      const quantity = resolveEntryQuantity({ ...group, type: group.type });
       return sum + quantity;
     }, 0);
   }
+
+  if (!Number.isFinite(totalItemsQuantity) || totalItemsQuantity <= 0) {
+    totalItemsQuantity = Array.isArray(displayGroups) && displayGroups.length
+      ? displayGroups.length
+      : (Array.isArray(items) ? items.length : 0) || 1;
+  } else if (totalItemsQuantity > 1_000_000) {
+    totalItemsQuantity = Math.min(totalItemsQuantity, (Array.isArray(displayGroups) ? displayGroups.length : totalItemsQuantity));
+    if (!Number.isFinite(totalItemsQuantity) || totalItemsQuantity <= 0) {
+      totalItemsQuantity = (Array.isArray(items) ? items.length : 0) || 1;
+    }
+  }
+
+  totalItemsQuantity = Math.max(1, Math.round(totalItemsQuantity));
   const itemsCountDisplay = normalizeNumbers(String(totalItemsQuantity));
   const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);
   const crewCountText = crewCountTemplate.replace('{count}', techniciansCountDisplay);
