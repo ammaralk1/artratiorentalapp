@@ -1149,6 +1149,13 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
 
 function normalizeItemsWithPackages(items = [], packages = []) {
   if (!packages.length) {
+    const derived = derivePackagesFromItemsList(items);
+    if (derived.packages.length) {
+      packages = mergePackageCollections(packages, derived.packages);
+      items = derived.items;
+    }
+  }
+  if (!packages.length) {
     return items;
   }
 
@@ -1206,6 +1213,84 @@ function normalizeItemsWithPackages(items = [], packages = []) {
   });
 
   return reconciled;
+}
+
+function derivePackagesFromItemsList(items = []) {
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const normalizedId = normalizePackageIdentifier(
+      item.packageId
+        ?? item.package_id
+        ?? item.packageCode
+        ?? item.package_code
+        ?? item.bundleId
+        ?? item.bundle_id
+        ?? null
+    );
+    if (!normalizedId) return;
+    const key = normalizedId;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        base: item,
+        items: [],
+      });
+    }
+    groups.get(key).items.push(item);
+  });
+
+  if (!groups.size) {
+    return { items, packages: [] };
+  }
+
+  const filteredItems = [];
+  const derivedPackages = [];
+  const consumedPackageIds = new Set();
+
+  items.forEach((item) => {
+    const normalizedId = normalizePackageIdentifier(
+      item.packageId
+        ?? item.package_id
+        ?? item.packageCode
+        ?? item.package_code
+        ?? item.bundleId
+        ?? item.bundle_id
+        ?? null
+    );
+
+    if (normalizedId && groups.has(normalizedId)) {
+      if (consumedPackageIds.has(normalizedId)) {
+        return;
+      }
+      const group = groups.get(normalizedId);
+      const base = group.base || item;
+      const packageItems = group.items.map((child) => normalizePackageItemRecord(child, 1));
+      const derivedPackage = {
+        packageId: normalizedId,
+        package_id: normalizedId,
+        package_code: base.package_code
+          ?? base.packageCode
+          ?? base.barcode
+          ?? normalizeNumbers(String(normalizedId)),
+        name: base.package_name ?? base.packageName ?? base.desc ?? base.name ?? `Package ${normalizedId}`,
+        quantity: toPositiveInt(base.package_quantity ?? base.packageQty ?? base.qty ?? 1, { fallback: 1, max: 9_999 }),
+        unit_price: toNumber(base.package_price ?? base.packagePrice ?? base.price ?? 0),
+        packageItems,
+        image: base.image ?? null,
+      };
+      derivedPackages.push(derivedPackage);
+      filteredItems.push(buildReservationPackageItem(derivedPackage, base));
+      consumedPackageIds.add(normalizedId);
+      return;
+    }
+
+    filteredItems.push(item);
+  });
+
+  return {
+    items: filteredItems,
+    packages: derivedPackages,
+  };
 }
 
 function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId = '') {
