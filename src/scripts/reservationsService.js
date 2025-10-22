@@ -8,6 +8,7 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus,
 } from './reservationsSummary.js';
+import { parsePriceValue } from './reservationsShared.js';
 
 const initialReservationsData = loadData() || {};
 let reservationsState = (initialReservationsData.reservations || []).map(mapLegacyReservation);
@@ -1349,14 +1350,16 @@ function mapReservationPackagesFromSource(raw = {}) {
 }
 
 function toNumber(value) {
-  const num = Number(normalizeNumbers(String(value ?? '0')));
-  return Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
+  const parsed = parsePriceValue(value);
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
 }
 
 function toPositiveInt(value) {
-  const num = Number.parseInt(normalizeNumbers(String(value ?? '1')), 10);
-  if (!Number.isFinite(num) || num <= 0) return 1;
-  return num;
+  const parsed = parsePriceValue(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+  return Math.max(1, Math.round(parsed));
 }
 
 function normalizeStatusValue(status) {
