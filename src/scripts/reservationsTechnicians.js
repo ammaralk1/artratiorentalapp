@@ -371,9 +371,38 @@ function renderAssignmentsTable() {
     const rowIndex = normalizeNumbers(String(index + 1));
     const clientPrice = formatCurrency(assignment.positionClientPrice || 0);
     const options = buildTechnicianOptions(assignment.assignmentId);
-    const selectOptions = [
-      `<option value="">${t('technicians.picker.noTechnicianOption', '— بدون تعيين —')}</option>`,
-      ...options.map((option) => `<option value="${option.id}" ${assignment.technicianId === option.id ? 'selected' : ''} ${option.disabled ? 'disabled' : ''}>${option.label}${option.disabled && assignment.technicianId !== option.id ? ` ${t('technicians.picker.optionAssigned', '(مستخدم)')}` : ''}</option>`)
+    const placeholderLabel = t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
+    const currentLabel = assignment.technicianName
+      ? normalizeNumbers(assignment.technicianName)
+      : placeholderLabel;
+    const currentTechnicianId = assignment.technicianId != null
+      ? String(assignment.technicianId)
+      : '';
+
+    const takenNote = t('technicians.picker.optionAssigned', '(مستخدم)');
+    const optionButtons = [
+      `<button type="button" class="crew-assignment-member-option${currentTechnicianId === '' ? ' is-selected' : ''}" data-value="" role="option" aria-selected="${currentTechnicianId === '' ? 'true' : 'false'}">${placeholderLabel}</button>`,
+      ...options.map((option) => {
+        const isSelected = currentTechnicianId === option.id;
+        const isDisabled = option.disabled && !isSelected;
+        const assignedSuffix = option.disabled && !isSelected ? ` <span class="crew-assignment-option-note">${takenNote}</span>` : '';
+        const optionClasses = [
+          'crew-assignment-member-option',
+          isSelected ? 'is-selected' : '',
+          isDisabled ? 'is-disabled' : '',
+        ].filter(Boolean).join(' ');
+        return `
+          <button type="button"
+            class="${optionClasses}"
+            data-value="${option.id}"
+            ${isDisabled ? 'data-disabled="true" aria-disabled="true" tabindex="-1"' : ''}
+            role="option"
+            aria-selected="${isSelected ? 'true' : 'false'}">
+            <span class="crew-assignment-option-label">${option.label}</span>
+            ${assignedSuffix}
+          </button>
+        `;
+      })
     ].join('');
 
     const positionSubtitle = assignment.positionLabelAlt
@@ -398,9 +427,15 @@ function renderAssignmentsTable() {
           <div class="crew-assignment-price-chip" aria-label="${priceLabel}">${clientPrice}</div>
         </td>
         <td class="crew-assignment-cell-member">
-          <select class="form-select form-select-sm crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
-            ${selectOptions}
-          </select>
+          <div class="crew-assignment-member-picker" data-assignment-id="${assignment.assignmentId}" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+            <button type="button" class="crew-assignment-member-toggle" data-assignment-id="${assignment.assignmentId}">
+              <span class="crew-assignment-member-label">${currentLabel}</span>
+              <span class="crew-assignment-member-icon" aria-hidden="true">▾</span>
+            </button>
+            <div class="crew-assignment-member-menu" role="listbox">
+              ${optionButtons}
+            </div>
+          </div>
         </td>
         <td class="crew-assignment-cell-actions">
           <button type="button" class="btn btn-sm btn-outline-danger crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${removeLabel}">
@@ -420,14 +455,80 @@ function renderAssignmentsTable() {
     }
   });
 
-  tbody.querySelectorAll('.crew-assignment-select').forEach((select) => {
-    if (!select.dataset.listenerAttached) {
-      select.addEventListener('change', (event) => {
-        handleTechnicianSelectionChange(select.dataset.assignmentId, event.target.value);
-      });
-      select.dataset.listenerAttached = 'true';
+  setupCrewAssignmentMemberPickers(tbody);
+}
+
+function closeAllCrewMemberPickers(exceptPicker = null) {
+  document.querySelectorAll('.crew-assignment-member-picker.is-open').forEach((picker) => {
+    if (picker !== exceptPicker) {
+      picker.classList.remove('is-open');
+      picker.setAttribute('aria-expanded', 'false');
     }
   });
+}
+
+function setupCrewAssignmentMemberPickers(root) {
+  const pickers = root.querySelectorAll('.crew-assignment-member-picker');
+
+  pickers.forEach((picker) => {
+    if (picker.dataset.listenerAttached) return;
+    const assignmentId = picker.dataset.assignmentId;
+    const toggle = picker.querySelector('.crew-assignment-member-toggle');
+    const menu = picker.querySelector('.crew-assignment-member-menu');
+    if (!toggle || !menu) return;
+
+    const handleToggle = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const isOpen = picker.classList.contains('is-open');
+      closeAllCrewMemberPickers(isOpen ? picker : null);
+      if (isOpen) {
+        picker.classList.remove('is-open');
+        picker.setAttribute('aria-expanded', 'false');
+      } else {
+        picker.classList.add('is-open');
+        picker.setAttribute('aria-expanded', 'true');
+        const focusedOption = menu.querySelector('.crew-assignment-member-option.is-selected');
+        focusedOption?.focus({ preventScroll: true });
+      }
+    };
+
+    toggle.addEventListener('click', handleToggle);
+
+    menu.querySelectorAll('.crew-assignment-member-option').forEach((optionBtn) => {
+      optionBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (optionBtn.dataset.disabled === 'true') return;
+        const value = optionBtn.dataset.value ?? '';
+        handleTechnicianSelectionChange(assignmentId, value);
+        closeAllCrewMemberPickers();
+      });
+
+      optionBtn.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          optionBtn.click();
+        }
+      });
+    });
+
+    picker.dataset.listenerAttached = 'true';
+  });
+
+  if (!document.body.dataset.crewPickerOutsideListener) {
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.crew-assignment-member-picker')) {
+        closeAllCrewMemberPickers();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeAllCrewMemberPickers();
+      }
+    });
+    document.body.dataset.crewPickerOutsideListener = 'true';
+  }
 }
 
 function renderPositionList() {
