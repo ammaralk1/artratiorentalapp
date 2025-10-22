@@ -404,40 +404,87 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
         const isPackageGroup = group.items.some((item) => item?.type === 'package');
-        const quantityValue = Number(group.quantity ?? group.count ?? representative?.qty ?? 0) || 0;
+        let quantityValue = Number(group.quantity ?? group.count ?? representative?.qty ?? 0);
+        if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
+          quantityValue = 1;
+        }
         const quantityDisplay = normalizeNumbers(String(quantityValue));
 
-        const candidatePrices = [
-          representative?.price,
-          representative?.unit_price,
-          representative?.unitPrice,
-          group.unitPrice
-        ];
+        let unitPriceNumber;
+        let totalPriceNumber;
 
-        let unitPriceNumber = candidatePrices.reduce((value, candidate) => {
-          if (Number.isFinite(value) && value > 0) return value;
-          const parsed = Number(candidate);
-          return Number.isFinite(parsed) ? parsed : value;
-        }, NaN);
+        if (isPackageGroup) {
+          const unitCandidates = [
+            group.unitPrice,
+            representative?.price,
+            representative?.unit_price,
+            representative?.unitPrice
+          ];
 
-        if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
-          const totalCandidate = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
-          if (Number.isFinite(totalCandidate) && quantityValue > 0) {
-            unitPriceNumber = Number((totalCandidate / quantityValue).toFixed(2));
+          unitPriceNumber = unitCandidates.reduce((value, candidate) => {
+            if (Number.isFinite(value) && value > 0) return value;
+            const parsed = Number(candidate);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : value;
+          }, NaN);
+
+          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
+            const totalFallback = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+            if (Number.isFinite(totalFallback) && quantityValue > 0) {
+              unitPriceNumber = totalFallback / quantityValue;
+            }
+          }
+
+          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber < 0) {
+            unitPriceNumber = 0;
+          }
+
+          const totalCandidates = [
+            group.totalPrice,
+            representative?.total,
+            representative?.total_price
+          ];
+
+          totalPriceNumber = totalCandidates.reduce((value, candidate) => {
+            if (Number.isFinite(value) && value >= 0) return value;
+            const parsed = Number(candidate);
+            return Number.isFinite(parsed) ? parsed : value;
+          }, NaN);
+
+          if (!Number.isFinite(totalPriceNumber)) {
+            totalPriceNumber = unitPriceNumber * quantityValue;
+          }
+        } else {
+          const candidatePrices = [
+            representative?.price,
+            representative?.unit_price,
+            representative?.unitPrice,
+            group.unitPrice
+          ];
+
+          unitPriceNumber = candidatePrices.reduce((value, candidate) => {
+            if (Number.isFinite(value) && value > 0) return value;
+            const parsed = Number(candidate);
+            return Number.isFinite(parsed) ? parsed : value;
+          }, NaN);
+
+          if (!Number.isFinite(unitPriceNumber) || unitPriceNumber <= 0) {
+            const totalCandidate = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+            if (Number.isFinite(totalCandidate) && quantityValue > 0) {
+              unitPriceNumber = totalCandidate / quantityValue;
+            }
+          }
+
+          if (!Number.isFinite(unitPriceNumber)) {
+            unitPriceNumber = 0;
+          }
+
+          totalPriceNumber = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
+          if (!Number.isFinite(totalPriceNumber)) {
+            totalPriceNumber = unitPriceNumber * quantityValue;
           }
         }
 
-        if (!Number.isFinite(unitPriceNumber)) {
-          unitPriceNumber = 0;
-        }
-
         unitPriceNumber = sanitizePriceValue(unitPriceNumber);
-
-        let totalPriceNumber = Number(group.totalPrice ?? representative?.total ?? representative?.total_price);
-        if (!Number.isFinite(totalPriceNumber)) {
-          totalPriceNumber = unitPriceNumber * quantityValue;
-        }
-
         totalPriceNumber = sanitizePriceValue(totalPriceNumber);
 
         const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
