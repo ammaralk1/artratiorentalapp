@@ -77,7 +77,19 @@ function normalizePackagesForCache(packages = []) {
       );
 
       const normalizedItems = normalizeReservationPackageItemsFromEntry(pkg, normalizedId).map((item) => {
-        const childQty = toPositiveInt(item.qty ?? item.quantity ?? 1);
+        const childQty = toPositiveInt(
+          item.qty
+            ?? item.quantity
+            ?? item.count
+            ?? item.units
+            ?? item.unit_qty
+            ?? item.unitQty
+            ?? item.unit_count
+            ?? item.unitCount
+            ?? item.package_quantity
+            ?? item.packageQty
+            ?? 1
+        );
         const childPrice = sanitizePriceValue(toNumber(item.price ?? item.unit_price ?? 0));
         return {
           ...item,
@@ -513,7 +525,19 @@ export function mapReservationItem(item = {}) {
   }
 
   const equipmentId = item.equipment_id ?? item.equipmentId ?? item.item_id ?? item.itemId ?? null;
-  const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count ?? 1);
+  const quantity = toPositiveInt(
+    item.quantity
+      ?? item.qty
+      ?? item.count
+      ?? item.units
+      ?? item.unit_qty
+      ?? item.unitQty
+      ?? item.unit_count
+      ?? item.unitCount
+      ?? item.package_quantity
+      ?? item.packageQty
+      ?? 1
+  );
   const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? item.total_price ?? item.total ?? 0);
   const barcode = normalizeNumbers(String(item.barcode ?? item.code ?? item.serial ?? ''));
   const desc = item.description ?? item.desc ?? item.name ?? item.title ?? '';
@@ -919,7 +943,19 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             }
             return {
               equipment_id: resolveEquipmentIdValue(childId),
-              quantity: toPositiveInt(child?.qty ?? child?.quantity ?? 1),
+              quantity: toPositiveInt(
+                child?.qty
+                  ?? child?.quantity
+                  ?? child?.count
+                  ?? child?.units
+                  ?? child?.unit_qty
+                  ?? child?.unitQty
+                  ?? child?.unit_count
+                  ?? child?.unitCount
+                  ?? child?.package_quantity
+                  ?? child?.packageQty
+                  ?? 1
+              ),
               unit_price: toNumber(child?.price ?? child?.unit_price ?? 0),
             };
           })
@@ -982,7 +1018,19 @@ function normalizePackageItemRecord(item = {}) {
   }
 
   const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? item.item_id ?? item.itemId ?? null;
-  const quantity = toPositiveInt(item.quantity ?? item.qty ?? item.count ?? 1);
+  const quantity = toPositiveInt(
+    item.quantity
+      ?? item.qty
+      ?? item.count
+      ?? item.units
+      ?? item.unit_qty
+      ?? item.unitQty
+      ?? item.unit_count
+      ?? item.unitCount
+      ?? item.package_quantity
+      ?? item.packageQty
+      ?? 1
+  );
   const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
   const barcode = normalizeNumbers(String(item.barcode ?? item.normalizedBarcode ?? item.code ?? item.serial ?? ''));
 
@@ -1246,7 +1294,19 @@ function convertReservationPackageEntry(entry, index = 0) {
       ?? entry.id
   ) || `pkg-${index}`;
 
-  const quantity = toPositiveInt(entry.quantity ?? entry.qty ?? entry.count ?? entry.package_quantity ?? entry.packageQty ?? 1);
+  const quantity = toPositiveInt(
+    entry.quantity
+      ?? entry.qty
+      ?? entry.count
+      ?? entry.units
+      ?? entry.unit_qty
+      ?? entry.unitQty
+      ?? entry.unit_count
+      ?? entry.unitCount
+      ?? entry.package_quantity
+      ?? entry.packageQty
+      ?? 1
+  );
   const packageItems = normalizeReservationPackageItemsFromEntry(entry, normalizedId);
   const unitPrice = derivePackageUnitPrice(entry, packageItems, quantity);
   const totalRaw = entry.total_price ?? entry.totalPrice ?? entry.total ?? (unitPrice * quantity);
