@@ -414,12 +414,16 @@ export function buildReservationDisplayGroups(reservation = {}) {
     totalPrice = sanitizePriceValue(totalPrice);
 
     const packageBarcode = primarySource?.package_code
+      ?? primarySource?.packageCode
       ?? primarySource?.packageId
       ?? primarySource?.package_id
+      ?? primarySource?.code
       ?? primarySource?.barcode
       ?? secondarySource?.package_code
+      ?? secondarySource?.packageCode
       ?? secondarySource?.packageId
       ?? secondarySource?.package_id
+      ?? secondarySource?.code
       ?? secondarySource?.barcode
       ?? null;
     if (packageBarcode) {

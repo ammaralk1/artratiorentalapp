@@ -2892,12 +2892,23 @@ function buildQuotationHtml(options) {
 
     const packageCode = group?.package_code
       ?? group?.packageCode
+      ?? group?.packageId
+      ?? group?.package_id
+      ?? group?.code
       ?? group?.barcode
-      ?? (Array.isArray(group?.items) && group.items.length ? group.items[0]?.package_code ?? group.items[0]?.packageCode : null);
+      ?? (Array.isArray(group?.items) && group.items.length
+        ? group.items[0]?.package_code
+          ?? group.items[0]?.packageCode
+          ?? group.items[0]?.packageId
+          ?? group.items[0]?.package_id
+          ?? group.items[0]?.code
+          ?? group.items[0]?.barcode
+        : null);
 
-    const barcode = isPackage
+    const rawBarcode = isPackage
       ? (packageCode ?? fallbackBarcode ?? '')
       : (group?.barcode ?? fallbackBarcode ?? '');
+    const barcode = rawBarcode != null ? String(rawBarcode) : '';
 
     let totalPrice = Number.isFinite(Number(group?.totalPrice))
       ? Number(group.totalPrice)
