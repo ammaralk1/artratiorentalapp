@@ -525,9 +525,18 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
         const isPackageGroup = group.items.some((item) => item?.type === 'package');
-        let quantityValue = Number(group.quantity ?? group.count ?? representative?.qty ?? 0);
-        if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
-          quantityValue = 1;
+        let quantityValue;
+        if (isPackageGroup) {
+          const representativeQty = Number(representative?.qty ?? representative?.quantity ?? representative?.count);
+          if (Number.isFinite(representativeQty) && representativeQty > 0 && representativeQty < 1_000) {
+            quantityValue = representativeQty;
+          } else {
+            const fallbackQty = Number(group.quantity ?? group.count ?? 1);
+            quantityValue = Number.isFinite(fallbackQty) && fallbackQty > 0 ? fallbackQty : 1;
+          }
+        } else {
+          const fallbackQty = Number(group.quantity ?? group.count ?? representative?.qty ?? representative?.quantity ?? representative?.count ?? 0);
+          quantityValue = Number.isFinite(fallbackQty) && fallbackQty > 0 ? fallbackQty : 1;
         }
         const quantityDisplay = normalizeNumbers(String(quantityValue));
 
