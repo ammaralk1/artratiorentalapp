@@ -328,11 +328,7 @@ function buildTechnicianOptions(currentAssignmentId) {
   const options = technicians.map((tech) => {
     const id = String(tech.id);
     const isTaken = takenIds.has(id);
-    const labelParts = [tech.name || id];
-    if (tech.role) {
-      labelParts.push(`(${tech.role})`);
-    }
-    const label = normalizeNumbers(labelParts.join(' '));
+    const label = normalizeNumbers(tech.name || id);
     return {
       id,
       label,
