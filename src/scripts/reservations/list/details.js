@@ -653,14 +653,14 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               if (!pkgItem) return;
               const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());
               const existing = aggregated.get(key);
-              const qty = resolvePackageItemQty(pkgItem.qty ?? pkgItem.quantity ?? 1);
+              const qty = resolvePackageItemQty(pkgItem.qtyPerPackage ?? pkgItem.qty ?? pkgItem.quantity ?? 1);
               if (existing) {
-                existing.qty = Math.min(existing.qty + qty, 99);
+                existing.qty = Math.min((existing.qty ?? 0) + qty, 99);
                 return;
               }
               aggregated.set(key, {
                 desc: pkgItem.desc || pkgItem.barcode || t('reservations.create.packages.unnamedItem', 'عنصر بدون اسم'),
-                qty,
+                qty: Math.max(1, Math.min(qty, 99)),
                 barcode: pkgItem.barcode ?? pkgItem.normalizedBarcode ?? ''
               });
             });

@@ -1000,7 +1000,7 @@ function normalizeBarcodeValueLoose(value) {
   return normalizeNumbers(String(value)).trim().toLowerCase();
 }
 
-function normalizePackageItemRecord(item = {}) {
+function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
   if (!item || typeof item !== 'object') {
     const barcode = normalizeNumbers(String(item ?? ''));
     return {
@@ -1008,6 +1008,7 @@ function normalizePackageItemRecord(item = {}) {
       equipment_id: null,
       qty: 1,
       quantity: 1,
+      qtyPerPackage: 1,
       price: 0,
       unit_price: 0,
       barcode,
@@ -1033,12 +1034,31 @@ function normalizePackageItemRecord(item = {}) {
   );
   const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
   const barcode = normalizeNumbers(String(item.barcode ?? item.normalizedBarcode ?? item.code ?? item.serial ?? ''));
+  const perPackageCandidate = item.qtyPerPackage
+    ?? item.qty_per_package
+    ?? item.perPackageQty
+    ?? item.per_package_qty
+    ?? null;
+  let qtyPerPackage;
+  if (perPackageCandidate != null) {
+    qtyPerPackage = toPositiveInt(perPackageCandidate, { fallback: 1, max: 99 });
+  } else if (packageQuantity > 0) {
+    const divided = quantity / packageQuantity;
+    if (Number.isFinite(divided) && divided > 0 && Number.isInteger(divided)) {
+      qtyPerPackage = toPositiveInt(divided, { fallback: 1, max: 99 });
+    } else {
+      qtyPerPackage = Math.min(quantity, 99);
+    }
+  } else {
+    qtyPerPackage = Math.min(quantity, 99);
+  }
 
   return {
     equipmentId: equipmentId != null ? String(equipmentId) : null,
     equipment_id: equipmentId,
     qty: quantity,
     quantity,
+    qtyPerPackage,
     price: unitPrice,
     unit_price: unitPrice,
     barcode,
@@ -1090,7 +1110,22 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
     return [];
   }
 
-  const normalized = resolved.map((item) => normalizePackageItemRecord(item));
+  const packageQuantity = toPositiveInt(
+    entry.quantity
+      ?? entry.qty
+      ?? entry.count
+      ?? entry.units
+      ?? entry.unit_qty
+      ?? entry.unitQty
+      ?? entry.unit_count
+      ?? entry.unitCount
+      ?? entry.package_quantity
+      ?? entry.packageQty
+      ?? 1,
+    { fallback: 1, max: 9_999 }
+  );
+
+  const normalized = resolved.map((item) => normalizePackageItemRecord(item, packageQuantity));
 
   const merged = new Map();
   normalized.forEach((pkgItem) => {
@@ -1102,6 +1137,9 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
       const existing = merged.get(key);
       existing.qty += pkgItem.qty;
       existing.quantity += pkgItem.quantity;
+      if (!Number.isFinite(existing.qtyPerPackage) || existing.qtyPerPackage <= 0) {
+        existing.qtyPerPackage = pkgItem.qtyPerPackage;
+      }
       if ((!existing.price || existing.price === 0) && pkgItem.price) {
         existing.price = pkgItem.price;
         existing.unit_price = pkgItem.unit_price;
@@ -1194,6 +1232,9 @@ function mergePackageItemCollections(primary = [], secondary = []) {
         const existing = merged.get(key);
         existing.qty += item.qty ?? 0;
         existing.quantity += item.quantity ?? 0;
+        if ((!Number.isFinite(existing.qtyPerPackage) || existing.qtyPerPackage <= 0) && Number.isFinite(item.qtyPerPackage)) {
+          existing.qtyPerPackage = item.qtyPerPackage;
+        }
         if ((!existing.price || existing.price === 0) && item.price) {
           existing.price = item.price;
           existing.unit_price = item.unit_price;
