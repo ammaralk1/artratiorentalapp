@@ -291,23 +291,38 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const resolveEntryQuantity = (entry = {}) => {
     const packageEntry = isPackageEntry(entry);
-    const candidates = [
-      entry.qty,
-      entry.quantity,
-      entry.count,
-      entry.package_quantity,
-      entry.packageQty,
-      entry.packageCount,
-      entry.units,
+
+    const orderedCandidates = [
+      { value: entry.qty, key: 'qty', limit: 999 },
+      { value: entry.quantity, key: 'quantity', limit: 999 },
+      { value: entry.units, key: 'units', limit: 999 },
+      { value: entry.count, key: 'count', limit: 50 },
+      { value: entry.package_quantity, key: 'package_quantity', limit: 999 },
+      { value: entry.packageQty, key: 'packageQty', limit: 999 },
+      { value: entry.packageCount, key: 'packageCount', limit: 999 },
     ];
 
     let quantity = NaN;
-    for (const candidate of candidates) {
-      const parsed = parseQuantityValue(candidate);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        quantity = parsed;
-        break;
+    for (const candidate of orderedCandidates) {
+      if (candidate.value == null || candidate.value === '') continue;
+
+      const rawString = typeof candidate.value === 'string' ? candidate.value.trim() : String(candidate.value ?? '');
+      if (candidate.key === 'count' && rawString.length > 6) {
+        continue;
       }
+
+      const parsed = parseQuantityValue(candidate.value);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        continue;
+      }
+
+      const rounded = Math.round(parsed);
+      if (rounded > candidate.limit) {
+        continue;
+      }
+
+      quantity = Math.max(1, rounded);
+      break;
     }
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
@@ -315,14 +330,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     }
 
     if (packageEntry) {
-      const rounded = Math.round(quantity);
-      if (rounded > 999) {
-        return 1;
-      }
-      return Math.max(1, Math.min(999, rounded));
+      return Math.max(1, Math.min(99, quantity));
     }
 
-    return Math.max(1, Math.min(100_000, Math.round(quantity)));
+    return Math.max(1, Math.min(9999, quantity));
   };
 
   let totalItemsQuantity = (Array.isArray(items) ? items : []).reduce((sum, item) => {
