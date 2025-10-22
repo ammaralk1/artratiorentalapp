@@ -1,4 +1,5 @@
 import { loadData } from '../storage.js';
+import { toInternalReservation } from '../reservationsService.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { t } from '../language.js';
 import { showToast } from '../utils.js';
@@ -17,7 +18,17 @@ export function renderReservationsList({
   onConfirmReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
-  const { reservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
+  const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
+  const normalizedReservations = rawReservations.map((reservation) => {
+    const normalized = toInternalReservation(reservation);
+    return {
+      ...normalized,
+      id: reservation.id ?? normalized.id,
+      reservationId: reservation.reservationId ?? reservation.reservation_id ?? normalized.reservationId,
+      reservationCode: reservation.reservationCode ?? reservation.reservation_code ?? normalized.reservationCode,
+    };
+  });
+  const reservations = normalizedReservations;
   const technicians = Array.isArray(syncedTechnicians) ? syncedTechnicians : (storedTechnicians || []);
   const projectsMap = new Map((projects || []).map((project) => [String(project.id), project]));
 
@@ -37,7 +48,7 @@ export function renderReservationsList({
   const techniciansMap = new Map(technicians.map((tech) => [String(tech.id), tech]));
 
   const filteredEntries = filterReservationEntries({
-    reservations,
+    reservations: normalizedReservations,
     filters: activeFilters,
     customersMap,
     techniciansMap,
@@ -83,19 +94,30 @@ export function renderReservationDetails(index, {
   onDelete,
   getEditContext
 } = {}) {
-  const { reservations = [], customers = [], projects = [] } = loadData();
-  const reservation = reservations[index];
+  const { reservations: rawReservations = [], customers = [], projects = [] } = loadData();
+  const normalizedReservations = rawReservations.map((reservation) => {
+    const normalized = toInternalReservation(reservation);
+    return {
+      ...normalized,
+      id: reservation.id ?? normalized.id,
+      reservationId: reservation.reservationId ?? reservation.reservation_id ?? normalized.reservationId,
+      reservationCode: reservation.reservationCode ?? reservation.reservation_code ?? normalized.reservationCode,
+    };
+  });
+  const reservation = rawReservations[index];
   if (!reservation) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
     return false;
   }
+
+  const normalizedReservation = normalizedReservations[index] ?? toInternalReservation(reservation);
 
   const customer = customers.find((c) => String(c.id) === String(reservation.customerId));
   const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
   if (body) {
     const techniciansList = syncTechniciansStatuses() || [];
-    body.innerHTML = buildReservationDetailsHtml(reservation, customer, techniciansList, index, project);
+    body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, techniciansList, index, project);
   }
 
   const modalEl = document.getElementById('reservationDetailsModal');
