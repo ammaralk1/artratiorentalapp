@@ -270,12 +270,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-picker-list {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.75rem, 2.5vw, 1.1rem);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(0.75rem, 2.4vw, 1.1rem);
+  align-content: flex-start;
   max-height: clamp(20rem, 58vh, 30rem);
   overflow-y: auto;
-  padding-right: 0.4rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.2rem;
 }
 
 .crew-picker-list::-webkit-scrollbar {
@@ -318,47 +319,37 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-card {
   position: relative;
   display: flex;
-  align-items: stretch;
-  gap: clamp(0.75rem, 2.6vw, 1rem);
-  padding: clamp(0.85rem, 2.8vw, 1.15rem);
-  border-radius: 18px;
-  border: 2px solid hsl(var(--p));
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.2vw, 1rem);
+  padding: clamp(0.9rem, 2.6vw, 1.15rem);
+  border-radius: 16px;
+  border: 1px solid hsl(var(--bc) / 0.18);
   background: hsl(var(--b1));
   color: hsl(var(--bc));
-  box-shadow:
-    0 12px 28px hsl(var(--p) / 0.18),
-    0 0 0 5px hsl(var(--p) / 0.18);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-  z-index: 0;
-}
-
-.crew-position-card::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
-  border-radius: 22px;
-  border: 2px solid hsl(var(--p) / 0.4);
-  background: linear-gradient(145deg, hsl(var(--b1)), hsl(var(--p) / 0.08));
-  z-index: -1;
-  pointer-events: none;
+  box-shadow: 0 10px 24px hsl(var(--bc) / 0.08);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
 }
 
 .crew-position-card:hover,
+.crew-position-card:focus-visible,
 .crew-position-card:focus-within {
   border-color: hsl(var(--p));
-  box-shadow:
-    0 16px 36px hsl(var(--p) / 0.28),
-    0 0 0 6px hsl(var(--p) / 0.26);
+  box-shadow: 0 16px 32px hsl(var(--p) / 0.18);
+  transform: translateY(-2px);
 }
 
-.crew-position-card__layout {
-  flex: 1;
+.crew-position-card:focus-visible {
+  outline: 3px solid hsl(var(--p) / 0.28);
+  outline-offset: 2px;
+}
+
+.crew-position-card__content {
   display: flex;
   flex-direction: column;
   gap: clamp(0.65rem, 2vw, 0.9rem);
+  flex: 1;
   min-width: 0;
-  position: relative;
-  z-index: 2;
 }
 
 .crew-position-card__header {
@@ -368,16 +359,16 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card__icon {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   line-height: 1;
   background: hsl(var(--bc) / 0.06);
-  padding: 0.75rem;
-  border-radius: 16px;
+  padding: 0.65rem;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 52px;
-  min-height: 52px;
+  min-width: 48px;
+  min-height: 48px;
 }
 
 .crew-position-card__titles {
@@ -401,17 +392,17 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-card__meta-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: clamp(0.65rem, 2vw, 1rem);
+  gap: clamp(0.6rem, 2vw, 0.9rem);
   padding-top: clamp(0.6rem, 2vw, 0.85rem);
   border-top: 1px solid hsl(var(--bc) / 0.1);
 }
 
 .crew-position-card__meta-item {
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid hsl(var(--bc) / 0.12);
-  background: hsl(var(--b1));
+  background: hsl(var(--b1) / 0.96);
   padding: 0.65rem 0.85rem;
-  min-height: 72px;
+  min-height: 68px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -419,35 +410,34 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card__meta-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: hsl(var(--bc) / 0.6);
+  color: hsl(var(--bc) / 0.58);
 }
 
 .crew-position-card__meta-value {
   font-weight: 700;
-  color: hsl(var(--bc));
+  color: hsl(var(--bc) / 0.9);
 }
 
 .crew-position-card__actions {
+  margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
+  justify-content: flex-end;
 }
 
 .crew-position-add-btn {
   font-weight: 600;
   border-radius: 999px;
-  padding-inline: 1.6rem;
+  padding-inline: 1.4rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-position-add-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 26px hsl(var(--p) / 0.35);
+  box-shadow: 0 12px 26px hsl(var(--p) / 0.25);
 }
 
 .crew-position-add-btn:focus-visible {
@@ -461,12 +451,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 #crew-position-list {
-  max-height: 420px;
+  max-height: clamp(20rem, 58vh, 30rem);
   overflow-y: auto;
-  padding: 0.35rem 0.45rem 0.35rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.75rem, 2.4vw, 1.1rem);
 }
 
 .crew-assignment-column {
@@ -796,37 +782,40 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  border-color: hsla(var(--p) / 0.75);
-  background: hsla(var(--b2) / 0.85);
+  background: hsla(var(--b2) / 0.88);
+  border-color: hsla(var(--p) / 0.45);
   color: hsla(var(--bc) / 0.96);
-  box-shadow:
-    0 14px 32px hsla(var(--p) / 0.35),
-    0 0 0 5px hsla(var(--p) / 0.3);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
-  border-color: hsla(var(--p) / 0.55);
-  background: linear-gradient(145deg, hsla(var(--b2) / 0.7), hsla(var(--p) / 0.35));
+  box-shadow: 0 16px 40px hsla(var(--b1) / 0.32);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
-  box-shadow:
-    0 18px 44px hsla(var(--p) / 0.5),
-    0 0 0 6px hsla(var(--p) / 0.45);
+  border-color: hsla(var(--p) / 0.75);
+  box-shadow: 0 20px 48px hsla(var(--p) / 0.4);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible {
+  outline-color: hsla(var(--p) / 0.55);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
-  background: hsla(var(--p) / 0.18);
+  background: hsla(var(--p) / 0.24);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__subtitle,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__meta-label {
-  color: hsla(var(--bc) / 0.75);
+  color: hsla(var(--bc) / 0.78);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn {
+  color: hsla(var(--pc));
+  border-color: hsla(var(--p) / 0.65);
   box-shadow: 0 14px 32px hsla(var(--p) / 0.45);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover {
+  box-shadow: 0 18px 38px hsla(var(--p) / 0.55);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty {

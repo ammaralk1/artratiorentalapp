@@ -537,8 +537,8 @@ function renderPositionList() {
     const addButtonLabel = t('technicians.picker.actions.addPosition', 'إضافة المنصب');
 
     return `
-      <article class="crew-position-card" data-position-id="${position.id}">
-        <div class="crew-position-card__layout">
+      <article class="crew-position-card" data-position-id="${position.id}" tabindex="0" role="button">
+        <div class="crew-position-card__content">
           <header class="crew-position-card__header">
             <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
             <div class="crew-position-card__titles">
@@ -558,7 +558,7 @@ function renderPositionList() {
           </div>
         </div>
         <div class="crew-position-card__actions">
-          <button type="button" class="btn btn-sm btn-primary crew-position-add-btn" data-position-id="${position.id}">
+          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
             ${addButtonLabel}
           </button>
         </div>
@@ -568,10 +568,26 @@ function renderPositionList() {
 
   container.querySelectorAll('.crew-position-add-btn').forEach((btn) => {
     if (!btn.dataset.listenerAttached) {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
         addAssignmentByPosition(btn.dataset.positionId);
       });
       btn.dataset.listenerAttached = 'true';
+    }
+  });
+
+  container.querySelectorAll('.crew-position-card').forEach((card) => {
+    if (!card.dataset.cardListenerAttached) {
+      card.addEventListener('click', () => {
+        addAssignmentByPosition(card.dataset.positionId);
+      });
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          addAssignmentByPosition(card.dataset.positionId);
+        }
+      });
+      card.dataset.cardListenerAttached = 'true';
     }
   });
 }
