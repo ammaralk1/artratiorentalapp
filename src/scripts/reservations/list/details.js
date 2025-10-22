@@ -505,7 +505,20 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         const imageCell = imageSource
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
-        const isPackageGroup = group.items.some((item) => item?.type === 'package');
+
+        const packageItemsSource = [];
+        if (Array.isArray(group.packageItems) && group.packageItems.length) {
+          packageItemsSource.push(...group.packageItems);
+        }
+        group.items.forEach((item) => {
+          if (Array.isArray(item?.packageItems) && item.packageItems.length) {
+            packageItemsSource.push(...item.packageItems);
+          }
+        });
+
+        const isPackageGroup = isPackageEntry(group)
+          || group.items.some((item) => isPackageEntry(item))
+          || packageItemsSource.length > 0;
         const resolveQuantityCandidate = (value, { fallback = 1, max = 1_000 } = {}) => {
           const parsed = parseQuantityValue(value);
           if (Number.isFinite(parsed) && parsed > 0) {
@@ -635,18 +648,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           : '';
 
         let packageItemsMeta = '';
-        if (isPackageGroup) {
+        if (packageItemsSource.length) {
           const aggregated = new Map();
-          const packageItemsSource = [];
-          if (Array.isArray(group.packageItems) && group.packageItems.length) {
-            packageItemsSource.push(...group.packageItems);
-          }
-          group.items.forEach((item) => {
-            if (Array.isArray(item?.packageItems) && item.packageItems.length) {
-              packageItemsSource.push(...item.packageItems);
-            }
-          });
-
           const resolvePackageItemQty = (pkgItem) => {
             const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.perPackageQty ?? pkgItem?.quantityPerPackage);
             if (Number.isFinite(direct) && direct > 0 && direct <= 99) {
