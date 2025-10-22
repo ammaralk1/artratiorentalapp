@@ -569,6 +569,15 @@ export function mapReservationItem(item = {}) {
     mapped.name = desc || mapped.package_code || packageId || '';
     mapped.barcode = mapped.barcode || normalizeNumbers(String(item.package_code ?? item.packageCode ?? ''));
     mapped.packageItems = packageItems;
+
+    const derivedUnitPrice = derivePackageUnitPrice({
+      ...item,
+      unit_price: item.unit_price ?? item.unitPrice ?? item.price,
+      total_price: item.total_price ?? item.totalPrice ?? item.total,
+    }, packageItems, quantity);
+    if (!Number.isFinite(mapped.price) || mapped.price <= 0 || mapped.price > derivedUnitPrice * 10) {
+      mapped.price = derivedUnitPrice;
+    }
   }
 
   return mapped;
@@ -1056,9 +1065,10 @@ function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
   return {
     equipmentId: equipmentId != null ? String(equipmentId) : null,
     equipment_id: equipmentId,
-    qty: quantity,
-    quantity,
+    qty: qtyPerPackage,
+    quantity: qtyPerPackage,
     qtyPerPackage,
+    totalQuantity: quantity,
     price: unitPrice,
     unit_price: unitPrice,
     barcode,
