@@ -207,14 +207,18 @@ describe('reservationsTechnicians', () => {
 
     document.getElementById('open-technician-picker').click();
     await Promise.resolve();
-    const selects = Array.from(document.querySelectorAll('.crew-assignment-select'));
+    const inputs = Array.from(document.querySelectorAll('.crew-assignment-autocomplete'));
 
-    expect(selects).toHaveLength(2);
-    expect(selects[0].value).toBe('t1');
-    expect(selects[1].value).toBe('t2');
+    expect(inputs).toHaveLength(2);
+    expect(inputs[0].value).toBe('Alpha');
+    expect(inputs[1].value).toBe('Beta');
 
-    const conflictingOption = Array.from(selects[0].options).find((option) => option.value === 't2');
-    expect(conflictingOption?.disabled).toBe(true);
+    const firstListId = inputs[0].getAttribute('list');
+    const firstList = firstListId ? document.getElementById(firstListId) : null;
+    const conflictingOption = firstList
+      ? Array.from(firstList.options).find((option) => option.dataset.id === 't2')
+      : null;
+    expect(conflictingOption?.dataset.disabled).toBe('true');
 
     const priceText = document.querySelector('#crew-assignment-table tbody').textContent;
     expect(priceText).toContain('SR');

@@ -369,21 +369,21 @@ function renderAssignmentsTable() {
     const currentTechnicianId = assignment.technicianId != null
       ? String(assignment.technicianId)
       : '';
+    const currentName = assignment.technicianName
+      ? normalizeNumbers(assignment.technicianName)
+      : '';
+    const datalistId = `crew-assignment-options-${assignment.assignmentId}`;
 
     const takenNote = t('technicians.picker.optionAssigned', '(مستخدم)');
-    const selectOptions = [
-      `<option value=""${currentTechnicianId === '' ? ' selected' : ''}>${placeholderLabel}</option>`,
-      ...options.map((option) => {
-        const isSelected = currentTechnicianId === option.id;
-        const isDisabled = option.disabled && !isSelected;
-        const label = isDisabled && !isSelected
-          ? `${option.label} ${takenNote}`
-          : option.label;
-        const disabledAttr = isDisabled ? ' disabled data-disabled="true"' : '';
-        const selectedAttr = isSelected ? ' selected' : '';
-        return `<option value="${option.id}"${disabledAttr}${selectedAttr}>${label}</option>`;
-      }),
-    ].join('');
+    const datalistOptions = options.map((option) => {
+      const isSelected = currentTechnicianId === option.id;
+      const isDisabled = option.disabled && !isSelected;
+      const displayLabel = isDisabled ? `${option.label} ${takenNote}` : option.label;
+      const disabledAttr = isDisabled ? ' disabled data-disabled="true"' : '';
+      return `
+        <option value="${option.label}" data-id="${option.id}" data-disabled="${option.disabled ? 'true' : 'false'}" label="${displayLabel}"${disabledAttr}></option>
+      `;
+    }).join('');
 
     const positionSubtitle = assignment.positionLabelAlt
       ? `<div class="text-muted small">${normalizeNumbers(assignment.positionLabelAlt)}</div>`
@@ -407,13 +407,21 @@ function renderAssignmentsTable() {
           <div class="crew-assignment-price-chip" aria-label="${priceLabel}">${clientPrice}</div>
         </td>
         <td class="crew-assignment-cell-member">
-          <select
-            class="form-select crew-assignment-select"
-            data-assignment-id="${assignment.assignmentId}"
-            aria-label="${t('technicians.picker.assignments.member', 'عضو الطاقم')}"
-          >
-            ${selectOptions}
-          </select>
+          <div class="crew-assignment-autocomplete-wrapper">
+            <input
+              type="text"
+              class="form-control crew-assignment-autocomplete"
+              list="${datalistId}"
+              data-assignment-id="${assignment.assignmentId}"
+              placeholder="${placeholderLabel}"
+              value="${currentTechnicianId ? currentName : ''}"
+              aria-label="${t('technicians.picker.assignments.member', 'عضو الطاقم')}"
+              autocomplete="off"
+            />
+            <datalist id="${datalistId}">
+              ${datalistOptions}
+            </datalist>
+          </div>
         </td>
         <td class="crew-assignment-cell-actions">
           <button type="button" class="btn btn-sm btn-outline-danger crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${removeLabel}">
@@ -433,19 +441,61 @@ function renderAssignmentsTable() {
     }
   });
 
-  setupCrewAssignmentSelects(tbody);
+  setupCrewAssignmentAutocomplete(tbody);
 }
 
-function setupCrewAssignmentSelects(root) {
-  const selects = root.querySelectorAll('.crew-assignment-select');
-  selects.forEach((select) => {
-    if (select.dataset.listenerAttached) return;
-    select.addEventListener('change', (event) => {
-      const { assignmentId } = select.dataset;
-      handleTechnicianSelectionChange(assignmentId, event.target.value);
-    });
-    select.dataset.listenerAttached = 'true';
+function setupCrewAssignmentAutocomplete(root) {
+  const inputs = root.querySelectorAll('.crew-assignment-autocomplete');
+  inputs.forEach((input) => {
+    if (input.dataset.listenerAttached) return;
+    const assignmentId = input.dataset.assignmentId;
+
+    const commitSelection = () => {
+      handleAutocompleteSelection(input, assignmentId);
+    };
+
+    input.addEventListener('change', commitSelection);
+    input.addEventListener('blur', commitSelection);
+    input.dataset.listenerAttached = 'true';
   });
+}
+
+function handleAutocompleteSelection(input, assignmentId) {
+  if (!assignmentId) return;
+  const rawValue = input.value?.trim() ?? '';
+  if (!rawValue) {
+    handleTechnicianSelectionChange(assignmentId, '');
+    return;
+  }
+
+  const datalistId = input.getAttribute('list');
+  const datalistEl = datalistId ? document.getElementById(datalistId) : null;
+  const options = datalistEl ? Array.from(datalistEl.options) : [];
+  const normalizedValue = normalizeNumbers(rawValue).toLowerCase();
+  const match = options.find((option) => normalizeNumbers(option.value).toLowerCase() === normalizedValue);
+
+  if (!match) {
+    showToast(t('technicians.picker.toast.autocompleteNoMatch', '⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة'));
+    input.value = '';
+    handleTechnicianSelectionChange(assignmentId, '');
+    return;
+  }
+
+  if (match.dataset.disabled === 'true') {
+    showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));
+    input.value = '';
+    return;
+  }
+
+  const technicianId = match.dataset.id;
+  if (!technicianId) {
+    showToast(t('technicians.picker.toast.autocompleteNoMatch', '⚠️ لم يتم العثور على فني مطابق، الرجاء اختيار من القائمة'));
+    input.value = '';
+    handleTechnicianSelectionChange(assignmentId, '');
+    return;
+  }
+
+  handleTechnicianSelectionChange(assignmentId, technicianId);
 }
 
 function renderPositionList() {
