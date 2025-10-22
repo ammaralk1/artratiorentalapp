@@ -149,11 +149,89 @@ function normalizeBoolean(value) {
   return !(normalized === '0' || normalized === 'false' || normalized === 'no');
 }
 
+function resolveDraftItemQuantity(item) {
+  const raw = item?.quantity ?? item?.qty ?? 1;
+  const parsed = Number.parseFloat(normalizeNumbers(String(raw)));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 1;
+  }
+  return parsed;
+}
+
+function resolveDraftItemUnitPrice(item, equipmentIndex) {
+  const priceCandidates = [item?.unit_price, item?.price];
+  for (const candidate of priceCandidates) {
+    if (candidate == null) continue;
+    const parsed = Number.parseFloat(normalizeNumbers(String(candidate)));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  const equipmentId = item?.equipment_id ?? item?.equipmentId ?? item?.id;
+  if (equipmentId != null && equipmentIndex instanceof Map) {
+    const equipment = equipmentIndex.get(String(equipmentId));
+    if (equipment && typeof equipment === 'object') {
+      const equipmentCandidates = [
+        equipment.unit_price,
+        equipment.unitPrice,
+        equipment.price,
+        equipment.daily_rate,
+        equipment.dailyRate,
+      ];
+      for (const candidate of equipmentCandidates) {
+        if (candidate == null) continue;
+        const parsed = Number.parseFloat(normalizeNumbers(String(candidate)));
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+function calculatePackageItemsTotal(equipmentIndex = null) {
+  const workingIndex = equipmentIndex instanceof Map ? equipmentIndex : buildEquipmentIndexById();
+  return packageItemsDraft.reduce((sum, item) => {
+    const quantity = resolveDraftItemQuantity(item);
+    const unitPrice = resolveDraftItemUnitPrice(item, workingIndex);
+    const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+    const safeUnitPrice = Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : 0;
+    return sum + (safeQuantity * safeUnitPrice);
+  }, 0);
+}
+
+function applyAutoCalculatedPackagePrice(total) {
+  const input = elements.priceInput;
+  if (!input) return;
+
+  const manualOverride = input.dataset.autoCalculated === 'false';
+  const hasUserValue = Boolean(input.value && input.value.trim());
+  if (manualOverride && hasUserValue) {
+    return;
+  }
+
+  if (!Number.isFinite(total) || packageItemsDraft.length === 0) {
+    input.value = '';
+    input.dataset.autoCalculated = 'true';
+    return;
+  }
+
+  const nonNegativeTotal = total < 0 ? 0 : total;
+  const rounded = Math.round(nonNegativeTotal * 100) / 100;
+  const displayValue = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  input.value = displayValue;
+  input.dataset.autoCalculated = 'true';
+}
+
 function renderDraftItems() {
   if (!elements.itemsTableBody || !elements.itemsEmptyMessage) return;
   if (packageItemsDraft.length === 0) {
     elements.itemsTableBody.innerHTML = '';
     elements.itemsEmptyMessage.hidden = false;
+    applyAutoCalculatedPackagePrice(0);
     return;
   }
 
@@ -178,6 +256,8 @@ function renderDraftItems() {
 
   elements.itemsTableBody.innerHTML = rows.join('');
   elements.itemsEmptyMessage.hidden = true;
+  const draftTotal = calculatePackageItemsTotal(equipmentIndex);
+  applyAutoCalculatedPackagePrice(draftTotal);
 }
 
 function renderPackagesTable() {
@@ -243,7 +323,10 @@ function resetPackageForm() {
   if (elements.hiddenId) elements.hiddenId.value = '';
   if (elements.nameInput) elements.nameInput.value = '';
   if (elements.codeInput) elements.codeInput.value = '';
-  if (elements.priceInput) elements.priceInput.value = '';
+  if (elements.priceInput) {
+    elements.priceInput.value = '';
+    elements.priceInput.dataset.autoCalculated = 'true';
+  }
   if (elements.descriptionInput) elements.descriptionInput.value = '';
   if (elements.submitButton) {
     elements.submitButton.textContent = t('equipment.packages.form.actions.save', '💾 حفظ الحزمة');
@@ -258,7 +341,10 @@ function loadPackageIntoForm(pkg) {
   if (elements.hiddenId) elements.hiddenId.value = editingPackageId || '';
   if (elements.nameInput) elements.nameInput.value = pkg.name || '';
   if (elements.codeInput) elements.codeInput.value = pkg.package_code || '';
-  if (elements.priceInput) elements.priceInput.value = pkg.price != null ? String(pkg.price) : '';
+  if (elements.priceInput) {
+    elements.priceInput.value = pkg.price != null ? String(pkg.price) : '';
+    elements.priceInput.dataset.autoCalculated = pkg.price != null ? 'false' : 'true';
+  }
   if (elements.descriptionInput) elements.descriptionInput.value = pkg.description || '';
   if (elements.submitButton) {
     elements.submitButton.textContent = t('equipment.packages.form.actions.update', '💾 تحديث الحزمة');
@@ -405,7 +491,7 @@ function focusPackageForm() {
   }
 }
 
-function sanitizePriceInputValue() {
+function sanitizePriceInputValue(event) {
   const input = elements.priceInput;
   if (!input) return;
   const rawValue = input.value;
@@ -432,6 +518,10 @@ function sanitizePriceInputValue() {
         // ignore setSelectionRange errors (e.g. for unsupported input types)
       }
     }
+  }
+
+  if (event?.type === 'input') {
+    input.dataset.autoCalculated = sanitized.trim() ? 'false' : 'true';
   }
 }
 
@@ -624,9 +714,8 @@ function wireEvents() {
   });
 
   if (elements.priceInput && !elements.priceInput.dataset.normalizedAttached) {
-    const handler = () => sanitizePriceInputValue();
-    elements.priceInput.addEventListener('input', handler);
-    elements.priceInput.addEventListener('blur', handler);
+    elements.priceInput.addEventListener('input', sanitizePriceInputValue);
+    elements.priceInput.addEventListener('blur', sanitizePriceInputValue);
     elements.priceInput.dataset.normalizedAttached = 'true';
     sanitizePriceInputValue();
   }
