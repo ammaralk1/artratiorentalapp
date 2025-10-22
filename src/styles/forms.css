@@ -343,6 +343,48 @@
   color: rgba(240, 244, 255, 0.92) !important;
 }
 
+.customer-form-box .management-form {
+  width: min(100%, 62rem);
+  margin-inline: auto;
+}
+
+.customer-form-box .management-form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
+  max-width: min(100%, 54rem);
+  margin-inline: auto;
+  justify-items: center;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.customer-form-box .management-form-grid .form-field {
+  width: min(100%, 22rem);
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.customer-form-box .management-form-grid .form-field .form-control,
+.customer-form-box .management-form-grid .form-field .form-select,
+.customer-form-box .management-form-grid .form-field textarea.form-control {
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .customer-form-box .management-form {
+    width: 100%;
+    padding-inline: clamp(0.5rem, 4vw, 1.25rem);
+  }
+
+  .customer-form-box .management-form-grid {
+    max-width: 100%;
+    justify-items: stretch;
+  }
+
+  .customer-form-box .management-form-grid .form-field {
+    width: 100%;
+  }
+}
+
 .customer-document-preview img,
 .customer-document-preview iframe {
   max-width: 100%;
