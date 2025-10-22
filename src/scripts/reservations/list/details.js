@@ -525,6 +525,58 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
         const isPackageGroup = group.items.some((item) => item?.type === 'package');
+
+        const packageItemsList = (() => {
+          if (!isPackageGroup) return [];
+          if (Array.isArray(group.packageItems) && group.packageItems.length) {
+            return group.packageItems;
+          }
+          const sourceEntry = Array.isArray(group.items)
+            ? group.items.find((entry) => Array.isArray(entry?.packageItems) && entry.packageItems.length)
+            : null;
+          return Array.isArray(sourceEntry?.packageItems) ? sourceEntry.packageItems : [];
+        })();
+
+        const derivePackageUnitFromItems = (itemsList) => {
+          if (!Array.isArray(itemsList) || !itemsList.length) {
+            return 0;
+          }
+
+          const total = itemsList.reduce((sum, pkgItem) => {
+            if (!pkgItem || typeof pkgItem !== 'object') {
+              return sum;
+            }
+
+            const qtyCandidates = [pkgItem.qty, pkgItem.quantity, pkgItem.count, 1];
+            const qtyRaw = qtyCandidates.find((candidate) => Number.isFinite(Number(candidate)) && Number(candidate) > 0);
+            const itemQty = Number.isFinite(Number(qtyRaw)) && Number(qtyRaw) > 0 ? Number(qtyRaw) : 1;
+
+            const priceCandidates = [pkgItem.price, pkgItem.unit_price, pkgItem.unitPrice];
+            let unit = priceCandidates.reduce((value, candidate) => {
+              if (Number.isFinite(value) && value > 0) return value;
+              const parsed = Number(candidate);
+              return Number.isFinite(parsed) && parsed > 0 ? parsed : value;
+            }, NaN);
+
+            if (!Number.isFinite(unit) || unit <= 0) {
+              const totalCandidate = [pkgItem.total, pkgItem.total_price, pkgItem.totalPrice]
+                .map((candidate) => Number(candidate))
+                .find((candidate) => Number.isFinite(candidate) && candidate > 0);
+              if (Number.isFinite(totalCandidate) && totalCandidate > 0 && itemQty > 0) {
+                unit = totalCandidate / itemQty;
+              }
+            }
+
+            if (!Number.isFinite(unit) || unit <= 0) {
+              return sum;
+            }
+
+            const sanitizedUnit = sanitizePriceValue(unit);
+            return sum + (sanitizedUnit * Math.max(1, itemQty));
+          }, 0);
+
+          return sanitizePriceValue(total);
+        };
         let quantityValue = Number(group.quantity ?? group.count ?? representative?.qty ?? 0);
         if (!Number.isFinite(quantityValue) || quantityValue <= 0) {
           quantityValue = 1;
@@ -535,6 +587,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         let totalPriceNumber;
 
         if (isPackageGroup) {
+          const unitFromItems = derivePackageUnitFromItems(packageItemsList);
           const unitCandidates = [
             representative?.price,
             representative?.unit_price,
@@ -557,6 +610,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
           if (!Number.isFinite(unitPriceNumber) || unitPriceNumber < 0) {
             unitPriceNumber = 0;
+          }
+
+          if (Number.isFinite(unitFromItems) && unitFromItems > 0) {
+            unitPriceNumber = unitFromItems;
           }
 
           const totalCandidates = [
@@ -675,7 +732,65 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           }
         }
 
-        const combinedMeta = isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta;
+  const combinedMeta = isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta;
+
+        const resolvedPackageItems = () => {
+          if (Array.isArray(group.packageItems) && group.packageItems.length) {
+            return group.packageItems;
+          }
+          const withPackageItems = Array.isArray(group.items)
+            ? group.items.find((entry) => Array.isArray(entry?.packageItems) && entry.packageItems.length)
+            : null;
+          if (withPackageItems) {
+            return withPackageItems.packageItems;
+          }
+          return [];
+        };
+
+        const derivePackageUnitFromItems = (itemsList) => {
+          if (!Array.isArray(itemsList) || !itemsList.length) {
+            return 0;
+          }
+          const total = itemsList.reduce((sum, pkgItem) => {
+            if (!pkgItem || typeof pkgItem !== 'object') {
+              return sum;
+            }
+            const qtyCandidates = [pkgItem.qty, pkgItem.quantity, pkgItem.count, 1];
+            const itemQtyRaw = qtyCandidates.find((candidate) => Number.isFinite(Number(candidate)) && Number(candidate) > 0);
+            const itemQty = Number.isFinite(Number(itemQtyRaw)) && Number(itemQtyRaw) > 0
+              ? Number(itemQtyRaw)
+              : 1;
+
+            const priceCandidates = [
+              pkgItem.price,
+              pkgItem.unit_price,
+              pkgItem.unitPrice,
+            ];
+            let unit = priceCandidates.reduce((value, candidate) => {
+              if (Number.isFinite(value) && value > 0) return value;
+              const parsed = Number(candidate);
+              return Number.isFinite(parsed) && parsed > 0 ? parsed : value;
+            }, NaN);
+
+            if (!Number.isFinite(unit) || unit <= 0) {
+              const totalCandidate = [pkgItem.total, pkgItem.total_price, pkgItem.totalPrice]
+                .map((candidate) => Number(candidate))
+                .find((candidate) => Number.isFinite(candidate) && candidate > 0);
+              if (Number.isFinite(totalCandidate) && totalCandidate > 0 && itemQty > 0) {
+                unit = totalCandidate / itemQty;
+              }
+            }
+
+            if (!Number.isFinite(unit) || unit <= 0) {
+              return sum;
+            }
+
+            const sanitizedUnit = sanitizePriceValue(unit);
+            return sum + (sanitizedUnit * Math.max(1, itemQty));
+          }, 0);
+
+          return sanitizePriceValue(total);
+        };
 
         return `
           <tr>
