@@ -372,17 +372,38 @@
 @media (max-width: 768px) {
   .customer-form-box .management-form {
     width: 100%;
-    padding-inline: clamp(0.5rem, 4vw, 1.25rem);
+    padding-inline: clamp(0.65rem, 5vw, 1.4rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .customer-form-box .management-form-grid {
-    max-width: 100%;
-    justify-items: stretch;
+    width: 100%;
+    max-width: min(100%, 32rem);
+    justify-items: center;
     grid-template-columns: minmax(0, 1fr);
+    gap: clamp(0.5rem, 2.5vw, 1rem);
   }
 
   .customer-form-box .management-form-grid .form-field {
+    width: min(92%, 20rem);
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .customer-form-box .management-form-grid .form-field .form-control,
+  .customer-form-box .management-form-grid .form-field .form-select,
+  .customer-form-box .management-form-grid .form-field textarea.form-control {
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .customer-form-box .customer-upload-inline {
+    width: min(92%, 20rem);
+    margin-inline: auto;
+    justify-content: center;
   }
 }
 
