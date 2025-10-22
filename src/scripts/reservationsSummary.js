@@ -1,6 +1,11 @@
 import { normalizeNumbers } from './utils.js';
 import { t } from './language.js';
-import { getSelectedCrewAssignments, getEditingCrewAssignments } from './reservationsTechnicians.js';
+import {
+  getSelectedCrewAssignments,
+  getEditingCrewAssignments,
+  getSelectedTechnicians,
+  getEditingTechnicians,
+} from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
 import { sanitizePriceValue, parsePriceValue } from './reservationsShared.js';
 
@@ -598,10 +603,16 @@ export function renderDraftSummary({
   paymentHistory = [],
 }) {
   const crewAssignments = getSelectedCrewAssignments();
-  const technicianIds = crewAssignments
-    .map((assignment) => assignment?.technicianId)
-    .filter(Boolean);
-  const techniciansCount = crewAssignments.length;
+  const selectedTechnicians = typeof getSelectedTechnicians === 'function'
+    ? getSelectedTechnicians() ?? []
+    : [];
+  const fallbackTechnicians = Array.isArray(selectedTechnicians)
+    ? selectedTechnicians.map(String)
+    : [];
+  const technicianIds = crewAssignments.length
+    ? crewAssignments.map((assignment) => assignment?.technicianId).filter(Boolean).map(String)
+    : fallbackTechnicians;
+  const techniciansCount = crewAssignments.length || technicianIds.length;
   const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
   const breakdown = calculateDraftFinancialBreakdown({
     items: selectedItems,
@@ -673,10 +684,16 @@ export function renderEditSummary({
   paymentHistory = [],
 }) {
   const crewAssignments = getEditingCrewAssignments();
-  const technicianIds = crewAssignments
-    .map((assignment) => assignment?.technicianId)
-    .filter(Boolean);
-  const techniciansCount = crewAssignments.length;
+  const selectedEditTechnicians = typeof getEditingTechnicians === 'function'
+    ? getEditingTechnicians() ?? []
+    : [];
+  const fallbackTechnicians = Array.isArray(selectedEditTechnicians)
+    ? selectedEditTechnicians.map(String)
+    : [];
+  const technicianIds = crewAssignments.length
+    ? crewAssignments.map((assignment) => assignment?.technicianId).filter(Boolean).map(String)
+    : fallbackTechnicians;
+  const techniciansCount = crewAssignments.length || technicianIds.length;
   const sharePercent = Number.isFinite(companySharePercent) ? Number(companySharePercent) : null;
   const breakdown = calculateDraftFinancialBreakdown({
     items,

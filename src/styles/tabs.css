@@ -314,44 +314,33 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: 0 18px 40px hsl(var(--p) / 0.4);
 }
 
+
 .crew-position-card {
   position: relative;
   display: flex;
-  gap: clamp(0.85rem, 3vw, 1.2rem);
   align-items: stretch;
-  padding: clamp(0.95rem, 3vw, 1.3rem);
-  margin-bottom: 1.1rem;
-  border-radius: 22px;
-  border: 1px solid hsl(var(--p) / 0.22);
-  background: linear-gradient(135deg, hsl(var(--b1)), hsl(var(--b2) / 0.92));
+  gap: clamp(0.85rem, 3vw, 1.2rem);
+  padding: clamp(0.95rem, 3vw, 1.25rem);
+  border-radius: 20px;
+  border: 1px solid hsl(var(--bc) / 0.12);
+  background: hsl(var(--b1));
   color: hsl(var(--bc));
-  box-shadow: 0 18px 42px hsl(var(--bc) / 0.08);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 14px 32px hsl(var(--bc) / 0.12);
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    outline-color 0.2s ease;
 }
 
-.crew-position-card::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border-radius: 18px;
-  border: 1px dashed hsl(var(--bc) / 0.18);
-  pointer-events: none;
-  backdrop-filter: blur(2px);
-}
-
-.crew-position-card::after {
-  content: '';
-  position: absolute;
-  left: clamp(0.75rem, 2vw, 1.2rem);
-  right: clamp(0.75rem, 2vw, 1.2rem);
-  bottom: -0.55rem;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, hsl(var(--p) / 0.3), transparent);
-  opacity: 0.7;
-}
-
-.crew-position-card:last-child::after {
-  display: none;
+.crew-position-card:hover,
+.crew-position-card:focus-within {
+  border-color: hsl(var(--p) / 0.75);
+  box-shadow: 0 18px 42px hsl(var(--p) / 0.18);
+  outline-color: hsl(var(--p) / 0.35);
+  transform: translateY(-2px);
 }
 
 .crew-position-card__layout {
@@ -466,11 +455,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 #crew-position-list {
   max-height: 420px;
   overflow-y: auto;
-  padding-right: 4px;
-}
-
-.crew-position-card + .crew-position-card {
-  margin-top: 0.75rem;
+  padding: 0.35rem 0.45rem 0.35rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.4vw, 1.1rem);
 }
 
 .crew-assignment-column {
@@ -575,125 +563,26 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: inset 0 0 0 1px hsl(var(--p) / 0.18);
 }
 
-.crew-assignment-member-picker {
-  position: relative;
+.crew-assignment-select {
   width: 100%;
-}
-
-.crew-assignment-member-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
   border-radius: 14px;
   border: 1px solid hsl(var(--bc) / 0.16);
   background: hsl(var(--b1));
   color: inherit;
-  padding: 0.55rem 1rem;
   font-weight: 600;
+  padding: 0.55rem 0.95rem;
   box-shadow: 0 10px 24px hsl(var(--bc) / 0.08);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.crew-assignment-member-picker.is-open .crew-assignment-member-toggle,
-.crew-assignment-member-toggle:focus-visible {
+.crew-assignment-select:focus {
   border-color: hsl(var(--p));
   box-shadow: 0 12px 28px hsl(var(--p) / 0.25);
   outline: none;
 }
 
-.crew-assignment-member-toggle:active {
-  transform: translateY(1px);
-}
-
-.crew-assignment-member-label {
-  flex: 1;
-  text-align: start;
-  min-width: 0;
-}
-
-.crew-assignment-member-icon {
-  font-size: 0.8rem;
-  color: hsl(var(--bc) / 0.6);
-  transform: translateY(1px);
-}
-
-.crew-assignment-member-picker.is-open .crew-assignment-member-icon {
-  transform: rotate(180deg);
-}
-
-.crew-assignment-member-menu {
-  position: absolute;
-  top: calc(100% + 0.55rem);
-  left: 0;
-  right: 0;
-  background: hsl(var(--b1));
-  border: 1px solid hsl(var(--bc) / 0.16);
-  border-radius: 16px;
-  box-shadow: 0 22px 48px hsl(var(--bc) / 0.18);
-  padding: 0.4rem;
-  max-height: clamp(12rem, 40vh, 18rem);
-  overflow-y: auto;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  z-index: 600;
-}
-
-.crew-assignment-member-picker.is-open .crew-assignment-member-menu {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.crew-assignment-member-option {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  border: none;
-  background: transparent;
-  color: inherit;
-  padding: 0.6rem 0.8rem;
-  border-radius: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: start;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-
-.crew-assignment-member-option:hover,
-.crew-assignment-member-option:focus-visible {
-  background: hsl(var(--p) / 0.12);
-  color: hsl(var(--p));
-  outline: none;
-}
-
-.crew-assignment-member-option.is-selected {
-  background: hsl(var(--p) / 0.18);
-  color: hsl(var(--pc));
-  font-weight: 600;
-}
-
-.crew-assignment-member-option.is-disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.crew-assignment-member-option.is-disabled:hover,
-.crew-assignment-member-option.is-disabled:focus-visible {
-  background: transparent;
-  color: inherit;
-}
-
-.crew-assignment-option-note {
-  font-size: 0.75rem;
-  color: hsl(var(--bc) / 0.6);
-  white-space: nowrap;
+.crew-assignment-select option[data-disabled="true"] {
+  color: hsl(var(--bc) / 0.45);
 }
 
 .crew-assignment-empty-row td {
@@ -894,18 +783,17 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
-  background: linear-gradient(135deg, hsla(var(--b2) / 0.85), hsla(var(--p) / 0.28));
-  border-color: hsla(var(--p) / 0.45);
-  color: hsla(var(--bc) / 0.92);
-  box-shadow: 0 22px 48px hsla(var(--b1) / 0.32);
+  background: linear-gradient(135deg, hsla(var(--b2) / 0.68), hsla(var(--p) / 0.2));
+  border-color: hsla(var(--p) / 0.32);
+  color: hsla(var(--bc) / 0.94);
+  box-shadow: 0 22px 48px hsla(var(--b1) / 0.26);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
-  border-color: hsla(var(--p) / 0.45);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::after {
-  background: linear-gradient(90deg, transparent, hsla(var(--p) / 0.45), transparent);
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
+  border-color: hsla(var(--p) / 0.55);
+  box-shadow: 0 28px 56px hsla(var(--p) / 0.35);
+  outline-color: hsla(var(--p) / 0.45);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
@@ -973,37 +861,21 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow: inset 0 0 0 1px hsla(var(--p) / 0.45);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-toggle {
-  background: hsla(var(--b1) / 0.26);
-  border-color: hsla(var(--p) / 0.38);
-  box-shadow: 0 14px 32px hsla(var(--b1) / 0.38);
-}
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-picker.is-open .crew-assignment-member-toggle,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-toggle:focus-visible {
-  border-color: hsla(var(--p) / 0.6);
-  box-shadow: 0 18px 40px hsla(var(--p) / 0.45);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-menu {
-  background: hsla(var(--b2) / 0.92);
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-select {
+  background: hsla(var(--b2) / 0.82);
   border-color: hsla(var(--p) / 0.32);
-  box-shadow: 0 24px 52px hsla(var(--b1) / 0.4);
+  color: hsla(var(--bc) / 0.94);
+  box-shadow: 0 14px 32px hsla(var(--b1) / 0.28);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-option:hover,
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-option:focus-visible {
-  background: hsla(var(--p) / 0.3);
-  color: hsla(var(--pc));
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-select:focus {
+  border-color: hsla(var(--p) / 0.6);
+  box-shadow: 0 18px 40px hsla(var(--p) / 0.32);
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-member-option.is-selected {
-  background: hsla(var(--p) / 0.38);
-  color: hsla(var(--pc));
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-option-note {
-  color: hsla(var(--bc) / 0.65);
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-select option[data-disabled="true"] {
+  color: hsla(var(--bc) / 0.6);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-remove {

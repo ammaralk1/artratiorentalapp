@@ -4,13 +4,17 @@ const normalizeNumbersMock = vi.fn();
 const tMock = vi.fn();
 const getSelectedTechniciansMock = vi.fn();
 const getEditingTechniciansMock = vi.fn();
+const getSelectedCrewAssignmentsMock = vi.fn();
+const getEditingCrewAssignmentsMock = vi.fn();
 const loadDataMock = vi.fn();
 
 vi.mock('../../src/scripts/utils.js', () => ({ normalizeNumbers: normalizeNumbersMock }));
-vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
+vi.mock('../../src/scripts/language.js', () => ({ t: tMock, getCurrentLanguage: () => 'ar' }));
 vi.mock('../../src/scripts/reservationsTechnicians.js', () => ({
   getSelectedTechnicians: getSelectedTechniciansMock,
-  getEditingTechnicians: getEditingTechniciansMock
+  getEditingTechnicians: getEditingTechniciansMock,
+  getSelectedCrewAssignments: getSelectedCrewAssignmentsMock,
+  getEditingCrewAssignments: getEditingCrewAssignmentsMock,
 }));
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 
@@ -20,6 +24,8 @@ beforeEach(() => {
   tMock.mockReset().mockImplementation((key, fallback) => fallback ?? key);
   getSelectedTechniciansMock.mockReset().mockReturnValue([]);
   getEditingTechniciansMock.mockReset().mockReturnValue([]);
+  getSelectedCrewAssignmentsMock.mockReset().mockReturnValue([]);
+  getEditingCrewAssignmentsMock.mockReset().mockReturnValue([]);
   loadDataMock.mockReset().mockReturnValue({ technicians: [] });
 });
 
