@@ -18,6 +18,13 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#39;');
 }
 
+function normalizedDisplay(value) {
+  if (value == null) return '';
+  const stringValue = String(value).trim();
+  if (!stringValue) return '';
+  return normalizeNumbers(stringValue);
+}
+
 export function buildReservationDetailsHtml(reservation, customer, techniciansList = [], index, project = null) {
   const { projectLinked, effectiveConfirmed: confirmed } = resolveReservationProjectState(reservation, project);
   const paid = reservation.paid === true || reservation.paid === 'paid';
@@ -49,13 +56,29 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       ? techniciansMap.get(String(assignment.technicianId))
       : null;
 
-    const positionLabel = assignment.positionLabel
+    let positionLabel = assignment.positionLabel
       ?? assignment.position_name
+      ?? assignment.position_label
       ?? assignment.role
+      ?? assignment.position
       ?? technicianRecord?.role
       ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    if (!positionLabel || positionLabel.trim() === '') {
+      positionLabel = assignment.positionLabelAr
+        ?? assignment.position_label_ar
+        ?? assignment.positionLabelEn
+        ?? assignment.position_label_en
+        ?? assignment.position_name_ar
+        ?? assignment.position_name_en
+        ?? technicianRecord?.role
+        ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    }
     const positionLabelAlt = assignment.positionLabelAlt
       ?? assignment.position_label_alt
+      ?? assignment.positionLabelEn
+      ?? assignment.position_label_en
+      ?? assignment.positionLabelAr
+      ?? assignment.position_label_ar
       ?? '';
     const positionCost = sanitizePriceValue(parsePriceValue(
       assignment.positionCost
@@ -815,20 +838,64 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const techniciansCardsHtml = crewAssignments.map((assignment, idx) => {
     const indexLabel = normalizeNumbers(String(idx + 1));
-    const positionLabel = assignment.positionLabel
-      ? normalizeNumbers(assignment.positionLabel)
-      : t('reservations.crew.positionFallback', 'منصب بدون اسم');
-    const technicianName = assignment.technicianName
-      ? normalizeNumbers(assignment.technicianName)
-      : t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
+
+    let resolvedPositionLabel = assignment.positionLabel
+      ?? assignment.position_name
+      ?? assignment.position_label
+      ?? assignment.role
+      ?? assignment.position
+      ?? null;
+    if (!resolvedPositionLabel || resolvedPositionLabel.trim() === '') {
+      resolvedPositionLabel = assignment.positionLabelAr
+        ?? assignment.position_label_ar
+        ?? assignment.positionLabelEn
+        ?? assignment.position_label_en
+        ?? assignment.position_name_ar
+        ?? assignment.position_name_en
+        ?? null;
+    }
+    const positionLabel = normalizedDisplay(resolvedPositionLabel)
+      || t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    const positionLabelAlt = normalizedDisplay(
+      assignment.positionLabelAlt
+        ?? assignment.position_label_alt
+        ?? assignment.positionLabelEn
+        ?? assignment.position_label_en
+        ?? assignment.positionLabelAr
+        ?? assignment.position_label_ar
+        ?? assignment.position_name_en
+        ?? assignment.position_name_ar
+        ?? ''
+    );
+
+    const technicianName = normalizedDisplay(assignment.technicianName)
+      || t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
     const phone = assignment.technicianPhone || phoneFallback;
-    const role = assignment.technicianRole || roleFallback;
-    const clientPriceNumber = Number.isFinite(Number(assignment.positionClientPrice))
-      ? Number(assignment.positionClientPrice)
-      : 0;
-    const clientPriceDisplay = `${normalizeNumbers(clientPriceNumber.toFixed(2))} ${currencyLabel}`;
-    const costDisplay = Number.isFinite(Number(assignment.positionCost)) && Number(assignment.positionCost) > 0
-      ? `${normalizeNumbers(Number(assignment.positionCost).toFixed(2))} ${currencyLabel}`
+    const role = normalizedDisplay(assignment.technicianRole) || roleFallback;
+
+    const positionCost = sanitizePriceValue(parsePriceValue(
+      assignment.positionCost
+        ?? assignment.position_cost
+        ?? assignment.cost
+        ?? assignment.daily_wage
+        ?? assignment.dailyWage
+        ?? assignment.internal_cost
+        ?? 0
+    ));
+    const positionClientPrice = sanitizePriceValue(parsePriceValue(
+      assignment.positionClientPrice
+        ?? assignment.position_client_price
+        ?? assignment.client_price
+        ?? assignment.clientPrice
+        ?? assignment.daily_total
+        ?? assignment.dailyTotal
+        ?? assignment.total
+        ?? 0
+    ));
+
+    const clientPriceDisplay = `${normalizeNumbers(positionClientPrice.toFixed(2))} ${currencyLabel}`;
+    const costDisplay = positionCost > 0
+      ? `${normalizeNumbers(positionCost.toFixed(2))} ${currencyLabel}`
       : null;
 
     return `
@@ -837,6 +904,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           <span class="technician-index">${indexLabel}</span>
           <div class="d-flex flex-column">
             <span class="technician-name">${positionLabel}</span>
+            ${positionLabelAlt ? `<small class="text-muted">${positionLabelAlt}</small>` : ''}
             <small class="text-muted">${clientPriceDisplay}</small>
           </div>
         </div>

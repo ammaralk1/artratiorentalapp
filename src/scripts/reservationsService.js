@@ -195,11 +195,19 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
     ?? entry.position_code
     ?? entry.positionId
     ?? null;
-  const positionLabel = entry.position_name
+  let positionLabel = entry.position_name
     ?? entry.positionName
+    ?? entry.position_label
     ?? entry.role
     ?? entry.position
     ?? '';
+  if (!positionLabel) {
+    positionLabel = entry.position_label_ar
+      ?? entry.position_name_ar
+      ?? entry.position_label_en
+      ?? entry.position_name_en
+      ?? '';
+  }
   const positionLabelAr = entry.position_label_ar ?? null;
   const positionLabelEn = entry.position_label_en ?? null;
   const positionLabelAlt = entry.position_label_alt

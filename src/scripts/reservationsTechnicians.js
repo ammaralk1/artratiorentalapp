@@ -351,7 +351,7 @@ function renderAssignmentsTable() {
 
   const assignments = getAssignmentsForContext(crewPickerContext);
   if (!assignments.length) {
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${t('technicians.picker.noAssignments', 'لم يتم إضافة أي مناصب بعد')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('technicians.picker.noAssignments', 'لم يتم إضافة أي مناصب بعد')}</td></tr>`;
     return;
   }
 
@@ -370,19 +370,19 @@ function renderAssignmentsTable() {
 
     return `
       <tr data-assignment-id="${assignment.assignmentId}">
-        <td style="width: 40px;">${rowIndex}</td>
-        <td>
-          <div class="fw-bold">${normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
+        <td class="crew-assignment-cell-index">${rowIndex}</td>
+        <td class="crew-assignment-cell-position">
+          <div class="crew-assignment-position">${normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
           ${positionSubtitle}
         </td>
-        <td>${clientPrice}</td>
-        <td>
+        <td class="crew-assignment-cell-price">${clientPrice}</td>
+        <td class="crew-assignment-cell-member">
           <select class="form-select crew-assignment-select" data-assignment-id="${assignment.assignmentId}">
             ${selectOptions}
           </select>
         </td>
-        <td style="width: 48px;text-align:center;">
-          <button type="button" class="btn btn-sm btn-outline-danger crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${t('technicians.picker.actions.remove', 'إزالة')}">✖</button>
+        <td class="crew-assignment-cell-actions">
+          <button type="button" class="crew-assignment-remove" data-assignment-id="${assignment.assignmentId}" aria-label="${t('technicians.picker.actions.remove', 'إزالة')}">✖</button>
         </td>
       </tr>
     `;
@@ -436,28 +436,31 @@ function renderPositionList() {
     const primaryLabel = resolvePositionLabel(position, language) || position.name || '';
     const alternateLabel = resolveAlternatePositionLabel(position, language);
     const priceDisplay = formatCurrency(position.clientPrice || 0);
+    const costDisplay = formatCurrency(position.cost || 0);
     const subtitle = alternateLabel
-      ? `<div class="text-muted small">${normalizeNumbers(alternateLabel)}</div>`
+      ? `<span class="crew-position-card__subtitle">${normalizeNumbers(alternateLabel)}</span>`
       : '';
     return `
-      <div class="crew-position-item d-flex justify-content-between align-items-start border rounded p-2 mb-2" data-position-id="${position.id}">
-        <div>
-          <div class="fw-bold">${normalizeNumbers(primaryLabel)}</div>
+      <article class="crew-position-card" data-position-id="${position.id}">
+        <div class="crew-position-card__icon" aria-hidden="true">🎯</div>
+        <div class="crew-position-card__body">
+          <h6 class="crew-position-card__title">${normalizeNumbers(primaryLabel)}</h6>
           ${subtitle}
-          <div class="text-muted small">${t('technicians.picker.positionCost', 'التكلفة: {cost} · سعر العميل: {price}')
-            .replace('{cost}', formatCurrency(position.cost || 0))
-            .replace('{price}', priceDisplay)}</div>
+          <div class="crew-position-card__meta">
+            <span>${t('technicians.picker.positionCostLabel', 'التكلفة')} ${costDisplay}</span>
+            <span>${t('technicians.picker.positionClientPriceLabel', 'سعر العميل')} ${priceDisplay}</span>
+          </div>
         </div>
-        <div>
-          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add" data-position-id="${position.id}">
+        <div class="crew-position-card__actions">
+          <button type="button" class="crew-position-add-btn" data-position-id="${position.id}">
             ${t('technicians.picker.actions.addPosition', '➕ إضافة')}
           </button>
         </div>
-      </div>
+      </article>
     `;
   }).join('');
 
-  container.querySelectorAll('.crew-position-add').forEach((btn) => {
+  container.querySelectorAll('.crew-position-add-btn').forEach((btn) => {
     if (!btn.dataset.listenerAttached) {
       btn.addEventListener('click', () => {
         addAssignmentByPosition(btn.dataset.positionId);
@@ -475,6 +478,10 @@ function addAssignmentByPosition(positionId) {
   assignments.push(assignment);
   setAssignmentsForContext(crewPickerContext, assignments);
   renderAssignmentsTable();
+  showToast(
+    t('technicians.picker.toast.positionAdded', '✅ تم إضافة المنصب إلى القائمة'),
+    'success'
+  );
 }
 
 function removeAssignmentById(assignmentId, context = 'create') {
@@ -482,6 +489,7 @@ function removeAssignmentById(assignmentId, context = 'create') {
   const assignments = getAssignmentsForContext(context).filter((assignment) => assignment.assignmentId !== assignmentId);
   setAssignmentsForContext(context, assignments);
   renderAssignmentsTable();
+  showToast(t('technicians.picker.toast.positionRemoved', '🗑️ تم حذف المنصب من القائمة'));
 }
 
 function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
@@ -496,6 +504,7 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
     target.technicianRole = null;
     setAssignmentsForContext(crewPickerContext, assignments);
     renderAssignmentsTable();
+    showToast(t('technicians.picker.toast.assignmentCleared', 'ℹ️ تمت إزالة التعيين من هذا المنصب'));
     return;
   }
 
@@ -523,6 +532,15 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
 
   setAssignmentsForContext(crewPickerContext, assignments);
   renderAssignmentsTable();
+  if (target.technicianName) {
+    showToast(
+      t('technicians.picker.toast.assignmentApplied', '✅ تم تعيين {name} على هذا المنصب')
+        .replace('{name}', normalizeNumbers(target.technicianName)),
+      'success'
+    );
+  } else {
+    showToast(t('technicians.picker.toast.assignmentIdApplied', '✅ تم تعيين العضو المحدد على هذا المنصب'), 'success');
+  }
 }
 
 async function openCrewPicker(context = 'create') {
@@ -589,6 +607,7 @@ function applyCrewSelection() {
     const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
     instance?.hide?.();
   }
+  showToast(t('technicians.picker.toast.selectionApplied', '✅ تم حفظ الطاقم بنجاح'), 'success');
 }
 
 function renderCrewSummary(containerId, assignments = [], context = 'create') {

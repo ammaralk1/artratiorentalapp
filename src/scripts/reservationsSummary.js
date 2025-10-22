@@ -466,7 +466,9 @@ export function buildSummaryHtml({
   companyShareAmount = null,
   taxAmount = null,
   netProfit = null,
-  totalKey = 'reservations.summary.total'
+  totalKey = 'reservations.summary.total',
+  equipmentTotal = null,
+  crewTotal = null
 }) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const totalDisplay = normalizeNumbers(String(total));
@@ -491,6 +493,8 @@ export function buildSummaryHtml({
   const itemsLabel = t('reservations.summary.itemsLabel', '📦 عدد المعدات');
   const daysLabel = t('reservations.summary.durationLabel', '⏱️ عدد الأيام');
   const crewLabel = t('reservations.summary.crewLabel', '😎 عدد الفريق');
+  const equipmentTotalLabel = t('reservations.details.labels.itemsTotal', '💼 إجمالي المعدات');
+  const crewTotalLabel = t('reservations.details.labels.crewTotal', '😎 إجمالي الفريق');
   const taxLabelShort = t('reservations.summary.taxLabelShort', '🧾 الضريبة');
   const paymentLabel = t('reservations.summary.paymentLabelShort', '💳 حالة الدفع');
   const totalLabel = t(totalKey.replace('.total', '.totalLabel'), '💰 التكلفة الإجمالية');
@@ -503,6 +507,26 @@ export function buildSummaryHtml({
     { label: daysLabel, value: rentalDaysDisplay },
     { label: crewLabel, value: crewCountDisplay },
   ];
+
+  const equipmentTotalNumber = Number.isFinite(Number(equipmentTotal))
+    ? Math.max(0, Number(equipmentTotal))
+    : null;
+  if (equipmentTotalNumber != null) {
+    summaryRows.push({
+      label: equipmentTotalLabel,
+      value: `${normalizeNumbers(equipmentTotalNumber.toFixed(2))} ${currencyLabel}`
+    });
+  }
+
+  const crewTotalNumber = Number.isFinite(Number(crewTotal))
+    ? Math.max(0, Number(crewTotal))
+    : null;
+  if (crewTotalNumber != null) {
+    summaryRows.push({
+      label: crewTotalLabel,
+      value: `${normalizeNumbers(crewTotalNumber.toFixed(2))} ${currencyLabel}`
+    });
+  }
 
   if (applyTax) {
     let taxValue = t('reservations.summary.taxIncludedValue', 'شامل 15%');
@@ -615,7 +639,9 @@ export function renderDraftSummary({
     companySharePercent: breakdown.companySharePercent,
     companyShareAmount: breakdown.companyShareAmount,
     taxAmount: breakdown.taxAmount,
-    netProfit: breakdown.netProfit
+    netProfit: breakdown.netProfit,
+    equipmentTotal: breakdown.equipmentTotal,
+    crewTotal: breakdown.crewTotal
   });
 
   const summaryData = {
@@ -689,7 +715,9 @@ export function renderEditSummary({
     companyShareAmount: breakdown.companyShareAmount,
     taxAmount: breakdown.taxAmount,
     netProfit: breakdown.netProfit,
-    totalKey: 'reservations.summary.totalAfterEdit'
+    totalKey: 'reservations.summary.totalAfterEdit',
+    equipmentTotal: breakdown.equipmentTotal,
+    crewTotal: breakdown.crewTotal
   });
 
   const summaryData = {

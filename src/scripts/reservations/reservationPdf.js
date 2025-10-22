@@ -9,7 +9,7 @@ import {
   calculatePaymentProgress,
   determinePaymentStatus
 } from '../reservationsSummary.js';
-import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue } from '../reservationsShared.js';
+import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 import {
@@ -1620,11 +1620,23 @@ function collectReservationCrewAssignments(reservation) {
       ? techniciansMap.get(String(assignment.technicianId))
       : null;
 
-    const positionLabel = assignment.positionLabel
+    let positionLabel = assignment.positionLabel
       ?? assignment.position_name
+      ?? assignment.position_label
       ?? assignment.role
+      ?? assignment.position
       ?? technicianRecord?.role
       ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    if (!positionLabel || positionLabel.trim() === '') {
+      positionLabel = assignment.positionLabelAr
+        ?? assignment.position_label_ar
+        ?? assignment.positionLabelEn
+        ?? assignment.position_label_en
+        ?? assignment.position_name_ar
+        ?? assignment.position_name_en
+        ?? technicianRecord?.role
+        ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    }
     const positionCost = sanitizePriceValue(parsePriceValue(
       assignment.positionCost
         ?? assignment.position_cost

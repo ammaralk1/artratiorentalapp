@@ -175,6 +175,227 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   padding-inline: clamp(1rem, 4vw, 2.4rem);
 }
 
+.crew-position-card {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: clamp(0.85rem, 3vw, 1.2rem);
+  margin-bottom: 1rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(59, 130, 246, 0.45));
+  color: #f8fafc;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(10px);
+}
+
+.crew-position-card__icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  background: rgba(248, 250, 252, 0.18);
+  padding: 0.75rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crew-position-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.crew-position-card__title {
+  font-weight: 600;
+  margin: 0;
+  color: #f1f5f9;
+}
+
+.crew-position-card__subtitle {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: rgba(241, 245, 249, 0.75);
+}
+
+.crew-position-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: rgba(241, 245, 249, 0.9);
+}
+
+.crew-position-card__actions {
+  display: flex;
+  align-items: center;
+}
+
+.crew-position-add-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.55rem 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #0f172a;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crew-position-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.35);
+}
+
+.crew-position-add-btn:focus {
+  outline: 3px solid rgba(99, 102, 241, 0.35);
+  outline-offset: 2px;
+}
+
+.crew-assignment-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.crew-assignment-table-wrapper {
+  overflow: visible;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  padding: clamp(0.75rem, 3vw, 1.2rem);
+}
+
+.crew-assignment-table-wrapper table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.crew-assignment-table-wrapper tbody tr {
+  background: #f8fafc;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+}
+
+.crew-assignment-table-wrapper tbody tr td {
+  border: none;
+  vertical-align: middle;
+}
+
+.crew-assignment-cell-index {
+  width: 48px;
+  text-align: center;
+  font-weight: 600;
+  color: #334155;
+}
+
+.crew-assignment-cell-position {
+  min-width: 160px;
+}
+
+.crew-assignment-position {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.crew-assignment-position + small,
+.crew-assignment-cell-position .text-muted {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b !important;
+}
+
+.crew-assignment-cell-price {
+  white-space: nowrap;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.crew-assignment-cell-member {
+  min-width: 200px;
+}
+
+.crew-assignment-cell-member .crew-assignment-select {
+  width: 100%;
+  background-color: #fff;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  box-shadow: none;
+}
+
+.crew-assignment-cell-member .crew-assignment-select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.crew-assignment-cell-actions {
+  width: 56px;
+  text-align: center;
+}
+
+.crew-assignment-remove {
+  border: none;
+  background: rgba(248, 113, 113, 0.12);
+  color: #b91c1c;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.crew-assignment-remove:hover {
+  background: rgba(248, 113, 113, 0.22);
+}
+
+.crew-assignment-table-wrapper tbody tr:hover {
+  transform: translateY(-1px);
+}
+
+.crew-assignment-table-wrapper tbody tr td:first-child {
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+}
+
+.crew-assignment-table-wrapper tbody tr td:last-child {
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
+}
+
+.crew-assignment-table-wrapper .table thead > tr > th {
+  border: none;
+  color: #475569;
+  font-weight: 600;
+}
+
+.crew-assignment-table-wrapper .table thead {
+  background: transparent;
+}
+
+.crew-assignment-table-wrapper .table tbody {
+  overflow: visible;
+}
+
+.crew-assignment-table-wrapper .table tbody tr {
+  position: relative;
+  overflow: visible;
+}
+
+#crew-position-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.crew-position-card + .crew-position-card {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 992px) {
+  .crew-assignment-table-wrapper {
+    margin-top: 1rem;
+  }
+}
 .reservations-subtabs-container .tabs,
 .tech-subtabs-container .tabs,
 .dashboard-subtabbar .tabs {
