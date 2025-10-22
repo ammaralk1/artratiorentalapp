@@ -227,6 +227,7 @@ export async function createReservationApi(payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
   }
+  created.items = normalizeItemsWithPackages(created.items || [], created.packages || []);
   persistReservationPackagesToCache(created.id ?? created.reservationId ?? created.reservation_code, created.packages);
   if (created.companySharePercent > 0 && (!Number.isFinite(created.companyShareAmount) || created.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
@@ -269,6 +270,7 @@ export async function updateReservationApi(id, payload) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
   }
+  updated.items = normalizeItemsWithPackages(updated.items || [], updated.packages || []);
   persistReservationPackagesToCache(updated.id ?? updated.reservationId ?? updated.reservation_code ?? id, updated.packages);
   if (updated.companySharePercent > 0 && (!Number.isFinite(updated.companyShareAmount) || updated.companyShareAmount <= 0)) {
     const breakdown = calculateDraftFinancialBreakdown({
