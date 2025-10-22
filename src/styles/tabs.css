@@ -272,7 +272,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-picker-list {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: clamp(0.75rem, 2.5vw, 1.1rem);
   max-height: clamp(20rem, 58vh, 30rem);
   overflow-y: auto;
   padding-right: 0.4rem;
@@ -337,6 +337,21 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border: 1px dashed hsl(var(--bc) / 0.18);
   pointer-events: none;
   backdrop-filter: blur(2px);
+}
+
+.crew-position-card::after {
+  content: '';
+  position: absolute;
+  left: clamp(0.75rem, 2vw, 1.2rem);
+  right: clamp(0.75rem, 2vw, 1.2rem);
+  bottom: -0.55rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--p) / 0.3), transparent);
+  opacity: 0.7;
+}
+
+.crew-position-card:last-child::after {
+  display: none;
 }
 
 .crew-position-card__layout {
@@ -477,6 +492,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   margin-bottom: 0;
   border-collapse: separate;
   border-spacing: 0 8px;
+  overflow: visible;
 }
 
 .crew-assignment-table-wrapper tbody tr {
@@ -494,6 +510,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-assignment-table-wrapper tbody tr td {
   border: none;
   vertical-align: middle;
+  overflow: visible;
 }
 
 .crew-assignment-cell-index {
@@ -603,6 +620,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   min-width: 220px;
   position: relative;
   overflow: visible;
+  z-index: 200;
 }
 
 .crew-assignment-cell-member .crew-assignment-select {
@@ -614,7 +632,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: inherit;
   padding: 0.55rem 1rem;
   position: relative;
-  z-index: 50;
+  z-index: 500;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -633,6 +651,15 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border-radius: 999px;
   padding-inline: 1.2rem;
   font-weight: 600;
+}
+
+#crew-assignment-table,
+#crew-assignment-table thead,
+#crew-assignment-table tbody,
+#crew-assignment-table tr,
+#crew-assignment-table td,
+#crew-assignment-table th {
+  overflow: visible;
 }
 
 .crew-assignment-table-wrapper tbody tr:hover {
@@ -773,6 +800,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
   border-color: hsla(var(--p) / 0.45);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::after {
+  background: linear-gradient(90deg, transparent, hsla(var(--p) / 0.45), transparent);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__icon {
