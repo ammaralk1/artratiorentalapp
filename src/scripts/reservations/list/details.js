@@ -479,7 +479,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           if (aggregated.size) {
             const itemsMarkup = Array.from(aggregated.values())
               .map((pkgItem) => {
-                const qtyDisplay = normalizeNumbers(String(pkgItem.qty));
+                const qtyDisplay = normalizeNumbers('1');
                 const label = escapeHtml(pkgItem.desc || '');
                 const barcodeLabel = pkgItem.barcode
                   ? ` <span class="reservation-package-items__barcode">(${escapeHtml(normalizeNumbers(String(pkgItem.barcode)))})</span>`
