@@ -346,7 +346,7 @@ export function toInternalReservation(raw = {}) {
   const idValue = raw.id ?? raw.reservation_id ?? raw.reservationId ?? null;
   const reservationCode = raw.reservation_code ?? raw.reservationCode ?? raw.reservationId ?? (idValue != null ? `RSV-${idValue}` : null);
 
-  const items = Array.isArray(raw.items)
+  let items = Array.isArray(raw.items)
     ? raw.items.map(mapReservationItem)
     : [];
 
@@ -453,6 +453,8 @@ export function toInternalReservation(raw = {}) {
   } else {
     persistReservationPackagesToCache(reservationCacheKey, packages);
   }
+
+  items = normalizeItemsWithPackages(items, packages);
 
   const paymentProgress = calculatePaymentProgress({
     totalAmount,
@@ -1081,6 +1083,122 @@ function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
     desc: item.desc ?? item.description ?? item.name ?? '',
     image: item.image ?? item.image_url ?? item.imageUrl ?? null,
   };
+}
+
+function buildReservationPackageItem(pkg = {}, fallback = {}) {
+  const normalizedId = normalizePackageIdentifier(
+    pkg.packageId
+      ?? pkg.package_id
+      ?? pkg.id
+      ?? fallback.packageId
+      ?? fallback.package_id
+      ?? fallback.id
+      ?? ''
+  );
+  const quantity = toPositiveInt(
+    pkg.quantity
+      ?? pkg.qty
+      ?? fallback.qty
+      ?? fallback.quantity
+      ?? 1,
+    { fallback: 1, max: 9_999 }
+  );
+  const unitPrice = toNumber(
+    pkg.unit_price
+      ?? pkg.unitPrice
+      ?? pkg.price
+      ?? fallback.price
+      ?? fallback.unit_price
+      ?? fallback.unitPrice
+      ?? 0
+  );
+  const barcode = normalizeNumbers(String(
+    pkg.package_code
+      ?? pkg.packageCode
+      ?? pkg.barcode
+      ?? fallback.package_code
+      ?? fallback.packageCode
+      ?? fallback.barcode
+      ?? ''
+  ));
+
+  return {
+    id: fallback.id ?? (pkg.id != null ? String(pkg.id) : normalizedId ? `package::${normalizedId}` : ''),
+    equipmentId: null,
+    barcode,
+    desc: fallback.desc ?? fallback.description ?? pkg.name ?? pkg.desc ?? pkg.title ?? barcode,
+    qty: quantity,
+    quantity,
+    price: unitPrice,
+    notes: fallback.notes ?? null,
+    image: pkg.image ?? fallback.image ?? null,
+    type: 'package',
+    packageId: normalizedId,
+    package_id: normalizedId,
+    package_code: barcode,
+    packageItems: Array.isArray(pkg.packageItems) ? pkg.packageItems : (Array.isArray(fallback.packageItems) ? fallback.packageItems : []),
+  };
+}
+
+function normalizeItemsWithPackages(items = [], packages = []) {
+  if (!packages.length) {
+    return items;
+  }
+
+  const packageLookup = new Map();
+  const packageItemBarcodes = new Set();
+
+  packages.forEach((pkg) => {
+    const normalizedId = normalizePackageIdentifier(pkg.packageId ?? pkg.package_id ?? pkg.id);
+    if (!normalizedId) return;
+    packageLookup.set(normalizedId, pkg);
+    if (Array.isArray(pkg.packageItems)) {
+      pkg.packageItems.forEach((child) => {
+        const normalizedChildBarcode = normalizeBarcodeValueLoose(child?.barcode ?? child?.normalizedBarcode ?? '');
+        if (normalizedChildBarcode) {
+          packageItemBarcodes.add(normalizedChildBarcode);
+        }
+      });
+    }
+  });
+
+  const reconciled = [];
+  const addedPackageIds = new Set();
+
+  items.forEach((item) => {
+    const normalizedItemPackageId = normalizePackageIdentifier(
+      item.packageId
+        ?? item.package_id
+        ?? item.packageCode
+        ?? item.package_code
+        ?? item.bundleId
+        ?? item.bundle_id
+        ?? null
+    );
+
+    if (normalizedItemPackageId && packageLookup.has(normalizedItemPackageId)) {
+      if (!addedPackageIds.has(normalizedItemPackageId)) {
+        reconciled.push(buildReservationPackageItem(packageLookup.get(normalizedItemPackageId), item));
+        addedPackageIds.add(normalizedItemPackageId);
+      }
+      return;
+    }
+
+    const normalizedBarcode = normalizeBarcodeValueLoose(item.barcode);
+    if (packageItemBarcodes.has(normalizedBarcode)) {
+      return;
+    }
+
+    reconciled.push(item);
+  });
+
+  packageLookup.forEach((pkg, normalizedId) => {
+    if (addedPackageIds.has(normalizedId)) return;
+    reconciled.push(buildReservationPackageItem(pkg));
+    addedPackageIds.add(normalizedId);
+  });
+
+  return reconciled;
 }
 
 function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId = '') {
