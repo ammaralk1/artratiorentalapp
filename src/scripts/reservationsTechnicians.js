@@ -845,12 +845,16 @@ function setupCrewPickerInternal() {
       const hasTimes = Boolean(startTime && endTime);
       const hasCustomer = Boolean(customerId);
 
-      if (!hasDates || !hasTimes || !hasCustomer) {
+      if (!hasDates || !hasTimes) {
+        // Prioritize date/time requirement as requested
         event.preventDefault();
-        const message = !hasCustomer
-          ? t('technicians.picker.requireCustomer', '⚠️ يرجى اختيار العميل أولاً')
-          : t('technicians.picker.requireDates', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية أولاً');
-        showToast(message, 'warning');
+        showToast(t('technicians.picker.requireDates', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية أولاً'), 'warning');
+        return;
+      }
+
+      if (!hasCustomer) {
+        event.preventDefault();
+        showToast(t('technicians.picker.requireCustomer', '⚠️ يرجى اختيار العميل أولاً'), 'warning');
         return;
       }
 
@@ -866,8 +870,9 @@ function setupCrewPickerInternal() {
       const startTime = document.getElementById('res-start-time')?.value?.trim();
       const endTime = document.getElementById('res-end-time')?.value?.trim();
       const ready = Boolean(customerId && startDate && endDate && startTime && endTime);
-      openCreateBtn.disabled = !ready;
-      openCreateBtn.ariaDisabled = String(!ready);
+      // Keep button clickable to show toast, but reflect visual/ARIA disabled state
+      openCreateBtn.setAttribute('aria-disabled', String(!ready));
+      openCreateBtn.dataset.ready = ready ? 'true' : 'false';
       openCreateBtn.classList.toggle('is-disabled', !ready);
     };
 
