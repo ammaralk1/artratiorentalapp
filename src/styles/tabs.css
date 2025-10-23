@@ -186,6 +186,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   background: linear-gradient(145deg, hsl(var(--b1)), hsl(var(--b2) / 0.94));
   box-shadow: 0 28px 64px hsl(var(--bc) / 0.14);
   overflow: hidden;
+  /* Outline color used for position cards (fallbacks if theme vars missing) */
+  --crew-outline: hsl(var(--er, 0 80% 50%));
 }
 
 .crew-picker-modal__header,
@@ -324,9 +326,11 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   padding: clamp(1rem, 3vw, 1.45rem);
   border-radius: 20px;
   background: hsl(var(--b1));
-  /* Strong outline like the red boxes in the screenshot (themed via --er) */
-  border: 2px solid hsl(var(--er) / 0.7);
-  box-shadow: 0 18px 40px hsl(var(--b1) / 0.14);
+  /* Crisp red outline, themed with safe fallback */
+  border: 1px solid var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 18px 40px hsl(var(--b1) / 0.14);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
@@ -358,8 +362,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-card:hover,
 .crew-position-card:focus-visible,
 .crew-position-card:focus-within {
-  border-color: hsl(var(--er));
-  box-shadow: 0 22px 48px hsl(var(--er) / 0.25);
+  border-color: var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 22px 48px hsl(var(--er, 0 80% 50%) / 0.25);
   transform: translateY(-4px);
 }
 
@@ -371,8 +377,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card:focus-visible {
-  outline: 3px solid hsl(var(--er) / 0.45);
-  outline-offset: 3px;
+  outline: 3px solid var(--crew-outline);
+  outline-offset: 2px;
 }
 
 .crew-position-card__header {
@@ -774,6 +780,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   background: linear-gradient(145deg, hsla(var(--b2) / 0.92), hsla(var(--p) / 0.2));
   border-color: hsla(var(--p) / 0.38);
   box-shadow: 0 32px 68px hsla(var(--b1) / 0.42);
+  --crew-outline: hsl(var(--er, 0 70% 60%));
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal__body {
@@ -819,8 +826,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
   background: hsla(var(--b2) / 0.72);
-  border-color: hsla(var(--er) / 0.75);
-  box-shadow: 0 24px 52px hsla(var(--b1) / 0.35);
+  border-color: var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 24px 52px hsla(var(--b1) / 0.35);
   color: hsla(var(--bc) / 0.96);
 }
 
@@ -839,8 +848,10 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
-  border-color: hsla(var(--er));
-  box-shadow: 0 30px 60px hsla(var(--er) / 0.35);
+  border-color: var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 30px 60px hsla(var(--er, 0 70% 60%) / 0.35);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover::before,
