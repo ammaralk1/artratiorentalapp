@@ -871,7 +871,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     const technicianName = normalizedDisplay(assignment.technicianName)
       || t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
     const phone = assignment.technicianPhone || phoneFallback;
-    const role = normalizedDisplay(assignment.technicianRole) || roleFallback;
 
     const positionCost = sanitizePriceValue(parsePriceValue(
       assignment.positionCost
@@ -903,14 +902,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         <div class="technician-card-head">
           <span class="technician-index">${indexLabel}</span>
           <div class="d-flex flex-column">
-            <span class="technician-name">${positionLabel}</span>
-            ${positionLabelAlt ? `<small class="text-muted">${positionLabelAlt}</small>` : ''}
-            <small class="text-muted">${clientPriceDisplay}</small>
+            <span class="technician-name">${technicianName}</span>
+            <small class="text-muted">👔 ${positionLabel}${positionLabelAlt ? ` — ${positionLabelAlt}` : ''}</small>
+            <small class="text-muted">💼 ${clientPriceDisplay}</small>
           </div>
         </div>
         <div class="technician-card-body">
-          <div>😎 ${technicianName}</div>
-          <div>🎯 ${role}</div>
           <div>📞 ${phone}</div>
           ${costDisplay ? `<div>💵 ${t('reservations.details.technicians.costLabel', 'التكلفة الداخلية')}: ${costDisplay}</div>` : ''}
         </div>
