@@ -857,6 +857,25 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.position_name_en
         ?? null;
     }
+    // Fallback to positions cache if still missing
+    if (!resolvedPositionLabel || resolvedPositionLabel.trim() === '') {
+      try {
+        const positions = typeof getTechnicianPositionsCache === 'function' ? getTechnicianPositionsCache() : [];
+        const byId = assignment.positionId
+          ? positions.find((p) => String(p.id) === String(assignment.positionId))
+          : null;
+        const byKey = !byId && assignment.positionKey
+          ? positions.find((p) => String(p.name).toLowerCase() === String(assignment.positionKey).toLowerCase())
+          : null;
+        const pos = byId || byKey || null;
+        if (pos) {
+          resolvedPositionLabel = pos.labelAr || pos.labelEn || pos.name || resolvedPositionLabel;
+        }
+      } catch (_e) {
+        /* optional fallback only */
+      }
+    }
+
     const positionLabel = normalizedDisplay(resolvedPositionLabel)
       || t('reservations.crew.positionFallback', 'منصب بدون اسم');
     const positionLabelAlt = normalizedDisplay(

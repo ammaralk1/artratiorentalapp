@@ -29,6 +29,7 @@ function sanitizePriceValue(value) {
 }
 
 const RESERVATION_PACKAGES_CACHE_KEY = '__reservation_packages_cache__';
+const RESERVATION_CREW_CACHE_KEY = '__reservation_crew_cache__';
 
 function getPackagesCacheStorage() {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -61,6 +62,81 @@ function writeReservationPackagesCache(cache) {
   }
 }
 
+function getCrewCacheStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+  return window.localStorage;
+}
+
+function readReservationCrewCache() {
+  const storage = getCrewCacheStorage();
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(RESERVATION_CREW_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    console.warn('[reservationsService] Failed to read reservation crew cache', error);
+    return {};
+  }
+}
+
+function writeReservationCrewCache(cache) {
+  const storage = getCrewCacheStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(RESERVATION_CREW_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[reservationsService] Failed to persist reservation crew cache', error);
+  }
+}
+
+function normalizeCrewAssignmentsForCache(assignments = []) {
+  if (!Array.isArray(assignments)) return [];
+  return assignments
+    .map((entry, index) => normalizeCrewAssignmentEntry(entry, index))
+    .filter(Boolean)
+    .map((a) => ({
+      assignmentId: a.assignmentId,
+      positionId: a.positionId ?? null,
+      positionKey: a.positionKey ?? null,
+      positionLabel: a.positionLabel ?? '',
+      positionLabelAlt: a.positionLabelAlt ?? '',
+      positionCost: Number.isFinite(a.positionCost) ? a.positionCost : 0,
+      positionClientPrice: Number.isFinite(a.positionClientPrice) ? a.positionClientPrice : 0,
+      technicianId: a.technicianId ?? null,
+      technicianName: a.technicianName ?? null,
+      technicianRole: a.technicianRole ?? null,
+      technicianPhone: a.technicianPhone ?? null,
+      notes: a.notes ?? null,
+    }));
+}
+
+function persistReservationCrewToCache(reservationId, assignments) {
+  if (!reservationId) return;
+  const cache = readReservationCrewCache();
+  const key = String(reservationId);
+  const normalized = normalizeCrewAssignmentsForCache(assignments);
+  if (!normalized.length) {
+    if (cache[key]) {
+      delete cache[key];
+      writeReservationCrewCache(cache);
+    }
+    return;
+  }
+  cache[key] = normalized;
+  writeReservationCrewCache(cache);
+}
+
+export function getCachedReservationCrew(reservationId) {
+  if (!reservationId) return [];
+  const cache = readReservationCrewCache();
+  const key = String(reservationId);
+  const list = cache[key];
+  return Array.isArray(list) ? list : [];
+}
 function normalizePackagesForCache(packages = []) {
   if (!Array.isArray(packages)) return [];
   return packages
@@ -303,6 +379,7 @@ export function setReservationsState(reservations) {
     if (!reservation) return;
     const reservationId = reservation.id ?? reservation.reservationId ?? reservation.reservationCode;
     persistReservationPackagesToCache(reservationId, reservation.packages);
+    persistReservationCrewToCache(reservationId, reservation.crewAssignments || reservation.techniciansDetails || []);
   });
   if (reservationsState.length) {
     console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
@@ -374,6 +451,13 @@ export async function createReservationApi(payload) {
       });
     }
   }
+  // Persist crew assignments to local cache
+  {
+    const createdKey = created.id ?? created.reservationId ?? created.reservation_code;
+    if (createdKey) {
+      persistReservationCrewToCache(createdKey, created.crewAssignments || created.techniciansDetails || []);
+    }
+  }
   if (Array.isArray(payload?.packages) && payload.packages.length) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
@@ -433,6 +517,13 @@ export async function updateReservationApi(id, payload) {
         const src = payload.technicians[idx];
         return typeof src === 'object' ? { ...src, ...assignment } : assignment;
       });
+    }
+  }
+  // Persist crew assignments to local cache
+  {
+    const updatedKey = updated.id ?? updated.reservationId ?? updated.reservation_code ?? id;
+    if (updatedKey) {
+      persistReservationCrewToCache(updatedKey, updated.crewAssignments || updated.techniciansDetails || []);
     }
   }
   if (Array.isArray(payload?.packages) && payload.packages.length) {
@@ -534,11 +625,11 @@ export function toInternalReservation(raw = {}) {
         ? raw.techniciansDetails
         : (Array.isArray(raw.technicians) ? raw.technicians : []));
 
-  const crewAssignments = technicianEntriesSource
+  let crewAssignments = technicianEntriesSource
     .map((entry, index) => normalizeCrewAssignmentEntry(entry, index))
     .filter(Boolean);
 
-  const techniciansDetails = crewAssignments.map((assignment, index) => {
+  let techniciansDetails = crewAssignments.map((assignment, index) => {
     const sourceEntry = technicianEntriesSource?.[index];
     const base = sourceEntry && typeof sourceEntry === 'object'
       ? { ...sourceEntry }
@@ -548,6 +639,17 @@ export function toInternalReservation(raw = {}) {
       ...assignment,
     };
   });
+
+  if ((!Array.isArray(crewAssignments) || crewAssignments.length === 0)) {
+    const cacheKey = idValue ?? reservationCode ?? raw.reservation_code ?? raw.reservationId ?? null;
+    if (cacheKey != null) {
+      const cachedCrew = getCachedReservationCrew(cacheKey);
+      if (Array.isArray(cachedCrew) && cachedCrew.length) {
+        crewAssignments = cachedCrew.map((entry, index) => normalizeCrewAssignmentEntry(entry, index)).filter(Boolean);
+        techniciansDetails = crewAssignments.map((assignment) => ({ ...assignment }));
+      }
+    }
+  }
 
   const technicianIds = crewAssignments
     .map((assignment) => assignment.technicianId)

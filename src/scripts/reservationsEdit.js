@@ -27,6 +27,7 @@ import {
 } from './reservationsService.js';
 import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
 import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
+import { getCachedReservationCrew } from './reservationsService.js';
 
 let editingIndex = null;
 let editingItems = [];
@@ -739,11 +740,17 @@ export async function editReservation(index, {
 
   setEditPaymentProgressValue(paymentProgressValueInput, null);
 
-  const initialCrewAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
+  let initialCrewAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
     ? reservation.crewAssignments
     : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
         ? reservation.techniciansDetails
         : (reservation.technicians || []).map((id) => String(id)));
+  if (!Array.isArray(initialCrewAssignments) || initialCrewAssignments.length === 0) {
+    const cached = getCachedReservationCrew(reservation.id ?? reservation.reservationId ?? reservation.reservation_code ?? null);
+    if (Array.isArray(cached) && cached.length) {
+      initialCrewAssignments = cached;
+    }
+  }
   try {
     await ensureTechnicianPositionsLoaded();
   } catch (e) {
