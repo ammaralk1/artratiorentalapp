@@ -3839,9 +3839,9 @@
   }
 
   #search-customer-input.form-control {
-    max-width: 240px;
-    width: 240px;
-    flex: 0 0 240px;
+    max-width: min(100%, 21rem);
+    width: min(100%, 21rem);
+    flex: 1 1 18rem;
   }
 
   #search-technician-input.form-control {

@@ -482,18 +482,17 @@ select.form-select option {
 }
 
 .management-search-bar .form-control {
-  max-width: 240px;
-  width: 240px !important;
-  flex: 0 0 240px;
-  border-radius: 16px;
-  padding-inline: 14px;
-  padding-block: 0.6rem;
-  min-height: 2.75rem;
+  max-width: min(100%, 21rem);
+  width: min(100%, 21rem) !important;
+  flex: 1 1 18rem;
+  border-radius: 12px;
+  padding: 0.65rem 1rem;
+  min-height: 3rem;
   height: auto;
-  line-height: 1.45;
-  border: 1px solid rgba(76, 110, 245, 0.18);
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  background: rgba(248, 250, 255, 0.96);
+  line-height: 1.4;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  box-shadow: none;
+  background: rgba(248, 250, 255, 0.98);
 }
 
 .equipment-filter-controls.management-search-bar .form-select,
@@ -507,10 +506,10 @@ select.form-select option {
 }
 
 :is(html.dark-mode, body.dark-mode) .management-search-bar .form-control {
-  background: rgba(15, 23, 42, 0.92);
-  border-color: rgba(59, 130, 246, 0.32);
+  background: rgba(17, 25, 45, 0.95);
+  border-color: rgba(59, 130, 246, 0.35);
   color: rgba(226, 232, 240, 0.94);
-  box-shadow: 0 2px 8px rgba(2, 6, 23, 0.5);
+  box-shadow: none;
 }
 
 @media (max-width: 576px) {
