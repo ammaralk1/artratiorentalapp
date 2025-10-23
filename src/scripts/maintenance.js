@@ -1360,6 +1360,7 @@ function filterTicketsByStatus(status) {
 
 export function renderMaintenance() {
   const allTickets = loadTickets();
+  console.log("[renderMaintenance] loadedTickets:", allTickets);
   populateEquipmentInputs();
 
   renderStats(allTickets);

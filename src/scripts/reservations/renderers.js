@@ -18,7 +18,9 @@ export function renderReservationsList({
   onConfirmReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
-  const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
+  const loaded = loadData();
+  console.log("[renderReservationsList] loadedData:", loaded);
+  const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loaded;
   const normalizedReservations = rawReservations.map((reservation) => {
     const normalized = toInternalReservation(reservation);
     return {

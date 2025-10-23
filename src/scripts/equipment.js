@@ -1252,6 +1252,8 @@ function renderEmptyState(message, { tone = "", icon = "📦" } = {}) {
 export function renderEquipment() {
   const container = document.getElementById("equipment-list");
   if (!container) return;
+  const loaded = loadData();
+  console.log("[renderEquipment] loadedData:", loaded);
 
   updateEquipmentSelectionBanner();
 
