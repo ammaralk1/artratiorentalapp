@@ -20,6 +20,25 @@ let crewPickerContext = 'create';
 let onDraftSelectionChange = () => {};
 let onEditSelectionChange = () => {};
 
+// Prevent duplicate commits when input fires both 'change' and 'blur'
+const selectionCommitGuards = new Map(); // assignmentId -> lastCommitTs
+const SELECTION_COMMIT_THROTTLE_MS = 450;
+
+function isSelectionCommitGuarded(assignmentId) {
+  const ts = selectionCommitGuards.get(assignmentId);
+  return ts != null && (Date.now() - ts) < SELECTION_COMMIT_THROTTLE_MS;
+}
+
+function markSelectionCommit(assignmentId) {
+  selectionCommitGuards.set(assignmentId, Date.now());
+  setTimeout(() => {
+    const ts = selectionCommitGuards.get(assignmentId);
+    if (ts != null && (Date.now() - ts) >= SELECTION_COMMIT_THROTTLE_MS) {
+      selectionCommitGuards.delete(assignmentId);
+    }
+  }, SELECTION_COMMIT_THROTTLE_MS + 50);
+}
+
 function generateAssignmentId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -462,6 +481,10 @@ function setupCrewAssignmentAutocomplete(root) {
 
 function handleAutocompleteSelection(input, assignmentId) {
   if (!assignmentId) return;
+  if (isSelectionCommitGuarded(assignmentId)) {
+    return; // skip duplicates from rapid change/blur sequence
+  }
+  markSelectionCommit(assignmentId);
   const rawValue = input.value?.trim() ?? '';
   if (!rawValue) {
     handleTechnicianSelectionChange(assignmentId, '');
