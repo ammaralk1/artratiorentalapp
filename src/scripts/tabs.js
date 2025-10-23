@@ -1,11 +1,14 @@
 // ✅ استيراد الدوال الخاصة بكل تبويب
 import { renderCustomers } from "./customers.js";
-import { renderEquipment } from "./equipment.js";
+import { renderEquipment, refreshEquipmentFromApi } from "./equipment.js";
 import { renderReservations, setupReservationEvents } from "./reservationsUI.js";
 import { renderCalendar } from "./calendar.js";
 import { renderTechnicians } from "./technicians.js";
 import { renderMaintenance } from "./maintenance.js";
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
+import { ensureReservationsLoaded } from "./reservationsActions.js";
+import { loadData } from "./storage.js";
+import { getMaintenanceState, refreshMaintenanceFromApi } from "./maintenanceService.js";
 
 const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
 const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
@@ -177,10 +180,29 @@ export function setupTabs() {
     if (!skipRender && target === "equipment-tab") {
       console.log("📦 Rendering equipment");
       renderEquipment();
+      try {
+        const { equipment = [] } = loadData();
+        if (!Array.isArray(equipment) || equipment.length === 0) {
+          // Fire-and-forget refresh to avoid empty state on first open
+          void refreshEquipmentFromApi({ showToastOnError: false });
+        }
+      } catch (error) {
+        console.warn('⚠️ [tabs.js] Failed to check equipment cache', error);
+      }
     }
     if (!skipRender && target === "maintenance-tab") {
       console.log("🛠️ Rendering maintenance");
       renderMaintenance();
+      try {
+        const current = getMaintenanceState?.() || [];
+        if (!Array.isArray(current) || current.length === 0) {
+          void refreshMaintenanceFromApi().catch((error) => {
+            console.warn('⚠️ [tabs.js] Failed to refresh maintenance on tab open', error);
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ [tabs.js] Failed to check maintenance cache', error);
+      }
     }
     if (!skipRender && target === "technicians-tab") {
       console.log("🛠️ Rendering technicians");
@@ -189,6 +211,14 @@ export function setupTabs() {
     if (target === "reservations-tab") {
       console.log("📅 Rendering reservations");
       if (!skipRender) {
+        // Ensure data is present before rendering to avoid empty view
+        try {
+          void ensureReservationsLoaded().catch((error) => {
+            console.warn('⚠️ [tabs.js] ensureReservationsLoaded failed', error);
+          });
+        } catch (error) {
+          console.warn('⚠️ [tabs.js] Failed to kick off reservations load', error);
+        }
         renderReservations();
       }
 
@@ -324,6 +354,12 @@ export function setupTabs() {
         renderMaintenance();
       }
     });
+    // Also respond to the service-level maintenance event
+    window.addEventListener('maintenance:updated', () => {
+      if (currentMainTab === 'maintenance-tab') {
+        renderMaintenance();
+      }
+    }, { passive: true });
     document.addEventListener('reservations:changed', () => {
       if (currentMainTab === 'reservations-tab') {
         renderReservations();

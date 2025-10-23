@@ -72,12 +72,20 @@ function initDashboardGreetingToggle() {
 export function initDashboardShell() {
   // جلب بيانات التابات عند تحميل الداشبورد
   async function fetchAndStoreDashboardData() {
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     if (!user) {
       window.location.href = 'login.html';
       return;
     }
     try {
+      const emit = (type) => {
+        try {
+          document.dispatchEvent(new CustomEvent(type));
+        } catch {}
+        try {
+          window.dispatchEvent(new CustomEvent(type));
+        } catch {}
+      };
       const [equipmentRes, maintenanceRes, reservationsRes] = await Promise.all([
         apiRequest('equipment/'),
         apiRequest('maintenance/'),
@@ -88,9 +96,11 @@ export function initDashboardShell() {
         maintenance: maintenanceRes?.data || [],
         reservations: reservationsRes?.data || []
       });
-      document.dispatchEvent(new Event('equipment:changed'));
-      document.dispatchEvent(new Event('maintenance:changed'));
-      document.dispatchEvent(new Event('reservations:changed'));
+      // Notify listeners across both document and window for compatibility
+      emit('equipment:changed');
+      emit('maintenance:changed');
+      emit('maintenance:updated');
+      emit('reservations:changed');
     } catch (err) {
       console.error('فشل جلب بيانات الداشبورد', err);
     }
