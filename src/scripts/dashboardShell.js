@@ -1,4 +1,5 @@
 import { apiRequest } from './apiClient.js';
+import { getCurrentUser } from './auth.js';
 import { saveData } from './storage.js';
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
@@ -71,6 +72,11 @@ function initDashboardGreetingToggle() {
 export function initDashboardShell() {
   // جلب بيانات التابات عند تحميل الداشبورد
   async function fetchAndStoreDashboardData() {
+    const user = getCurrentUser();
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
     try {
       const [equipmentRes, maintenanceRes, reservationsRes] = await Promise.all([
         apiRequest('equipment/'),
@@ -86,7 +92,6 @@ export function initDashboardShell() {
       document.dispatchEvent(new Event('maintenance:changed'));
       document.dispatchEvent(new Event('reservations:changed'));
     } catch (err) {
-      // يمكن إضافة معالجة خطأ هنا
       console.error('فشل جلب بيانات الداشبورد', err);
     }
   }
