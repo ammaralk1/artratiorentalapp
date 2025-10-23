@@ -429,7 +429,10 @@ function getResponsiveCalendarView() {
   if (typeof window === 'undefined') {
     return 'dayGridMonth';
   }
-  return window.innerWidth <= 768 ? 'listWeek' : 'dayGridMonth';
+  const w = window.innerWidth || 1024;
+  if (w <= 480) return 'listDay';
+  if (w <= 768) return 'listWeek';
+  return 'dayGridMonth';
 }
 
 function applyResponsiveCalendarView() {
@@ -705,11 +708,15 @@ export function renderCalendar() {
         initialView: getResponsiveCalendarView(),
         locale: getCurrentLanguage(),
         timeZone: 'local',
+        expandRows: true,
+        height: 'auto',
+        contentHeight: 'auto',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay',
         },
+        dayMaxEventRows: 3,
         buttonText: getCalendarButtonText(),
         events,
         eventContent: buildEventContent,
