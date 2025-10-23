@@ -512,6 +512,49 @@ select.form-select option {
   box-shadow: none;
 }
 
+/* Customers tab: match reservations search styling (size/shape/alignment) */
+#customers-tab .management-search-bar {
+  justify-content: center;
+}
+
+#customers-tab #search-customer-input.form-control {
+  flex: 0 0 45% !important;
+  width: 45% !important;
+  max-width: 520px !important;
+  min-width: 260px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 255, 0.28);
+  padding-inline: 18px;
+  padding-block: 0.42rem;
+  min-height: 2.6rem;
+  box-shadow: 0 12px 24px rgba(59, 91, 220, 0.14);
+  background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(236, 242, 255, 0.92));
+  color: #1f2d52;
+}
+
+#customers-tab #search-customer-input.form-control:focus {
+  border-color: rgba(76, 110, 245, 0.6);
+  box-shadow: 0 0 0 0.15rem rgba(76, 110, 245, 0.15);
+}
+
+:is(html.dark-mode, body.dark-mode) #customers-tab #search-customer-input.form-control {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+  color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.42);
+}
+
+@media (max-width: 640px) {
+  #customers-tab .management-search-bar {
+    justify-content: flex-start;
+  }
+  #customers-tab #search-customer-input.form-control {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+}
+
 @media (max-width: 576px) {
   .management-form-icon {
     width: 48px;

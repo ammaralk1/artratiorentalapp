@@ -506,6 +506,15 @@ function renderPositionList() {
   const searchInput = document.getElementById('crew-position-search');
   const query = normalizeNumbers(String(searchInput?.value || '')).trim().toLowerCase();
 
+  // Build a quick lookup for how many times a position is already added
+  const assignments = getAssignmentsForContext(crewPickerContext);
+  const positionCountMap = assignments.reduce((acc, a) => {
+    const key = a?.positionId != null ? String(a.positionId) : null;
+    if (!key) return acc;
+    acc.set(key, (acc.get(key) || 0) + 1);
+    return acc;
+  }, new Map());
+
   const filtered = cachedPositions.filter((position) => {
     if (!query) return true;
     const haystack = [
@@ -535,9 +544,13 @@ function renderPositionList() {
     const costLabel = t('technicians.picker.positionCostLabel', 'التكلفة');
     const clientPriceLabel = t('technicians.picker.positionClientPriceLabel', 'سعر العميل');
     const addButtonLabel = t('technicians.picker.actions.addPosition', 'إضافة المنصب');
+    const count = positionCountMap.get(String(position.id)) || 0;
+    const countBadgeLabel = t('technicians.picker.positionCountBadge', 'مضاف ×{count}')
+      .replace('{count}', normalizeNumbers(String(count)));
 
     return `
       <article class="crew-position-card" data-position-id="${position.id}" tabindex="0" role="button" aria-label="${normalizeNumbers(primaryLabel)}">
+        ${count > 0 ? `<span class="crew-position-card__badge" aria-label="${countBadgeLabel}">${normalizeNumbers(String(count))}</span>` : ''}
         <header class="crew-position-card__header">
           <span class="crew-position-card__icon" aria-hidden="true">🎯</span>
           <div class="crew-position-card__titles">

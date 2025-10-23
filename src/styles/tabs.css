@@ -333,6 +333,27 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
+.crew-position-card__badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+  background: hsl(var(--a) / 0.15);
+  color: hsl(var(--a));
+  border: 1px solid hsl(var(--a) / 0.5);
+  box-shadow: 0 6px 14px hsl(var(--a) / 0.25);
+  pointer-events: none;
+}
+
 .crew-position-card::before {
   content: '';
   position: absolute;
@@ -817,6 +838,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
     0 0 0 1px hsla(var(--p) / 0.35),
     0 24px 52px hsla(var(--b1) / 0.35);
   color: hsla(var(--bc) / 0.96);
+}
+
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card__badge {
+  background: hsla(var(--a) / 0.3);
+  color: hsla(var(--ac));
+  border-color: hsla(var(--a) / 0.7);
+  box-shadow: 0 8px 18px hsla(var(--a) / 0.45);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card::before {
