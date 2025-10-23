@@ -1,3 +1,5 @@
+import { apiRequest } from './apiClient.js';
+import { saveData } from './storage.js';
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -67,6 +69,29 @@ function initDashboardGreetingToggle() {
 }
 
 export function initDashboardShell() {
+  // جلب بيانات التابات عند تحميل الداشبورد
+  async function fetchAndStoreDashboardData() {
+    try {
+      const [equipmentRes, maintenanceRes, reservationsRes] = await Promise.all([
+        apiRequest('/api/equipment/'),
+        apiRequest('/api/maintenance/'),
+        apiRequest('/api/reservations/')
+      ]);
+      saveData({
+        equipment: equipmentRes?.data || [],
+        maintenance: maintenanceRes?.data || [],
+        reservations: reservationsRes?.data || []
+      });
+      document.dispatchEvent(new Event('equipment:changed'));
+      document.dispatchEvent(new Event('maintenance:changed'));
+      document.dispatchEvent(new Event('reservations:changed'));
+    } catch (err) {
+      // يمكن إضافة معالجة خطأ هنا
+      console.error('فشل جلب بيانات الداشبورد', err);
+    }
+  }
+
+  fetchAndStoreDashboardData();
   const elements = getElements();
   const { sidebar, backdrop, openTrigger, closeTrigger } = elements;
 
