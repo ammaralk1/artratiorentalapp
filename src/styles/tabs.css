@@ -97,6 +97,16 @@ body.tabs-loading .tab-content-wrapper > .tab {
   display: none !important;
 }
 
+/* Safety override: ensure tabs show when app is ready */
+.page-shell .tab-content-wrapper {
+  visibility: visible;
+  opacity: 1;
+}
+
+.page-shell .tab-content-wrapper > .tab.active {
+  display: block !important;
+}
+
 .tab-content-wrapper > .tab {
   display: none;
 }

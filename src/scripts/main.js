@@ -35,6 +35,12 @@ console.log("🔑 [main.js] checkAuth() executed");
 document.addEventListener('DOMContentLoaded', () => {
   console.log("📌 [main.js] DOMContentLoaded fired");
 
+  // Ensure tabs are visible even if earlier init was delayed
+  if (document && document.body) {
+    document.body.classList.remove('tabs-loading');
+    document.body.classList.remove('no-js');
+  }
+
   setupTabs();
   console.log("✅ [main.js] setupTabs() called");
 
