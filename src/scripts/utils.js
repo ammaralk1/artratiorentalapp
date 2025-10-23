@@ -58,12 +58,50 @@ function scheduleToastRemoval(toast, duration) {
   return { hide, timeoutId };
 }
 
-export function showToast(message, duration = 3000) {
+/**
+ * Flexible toast helper.
+ * Usage examples:
+ *  - showToast('Saved');
+ *  - showToast('Saved', 5000);
+ *  - showToast('Saved', 'success');
+ *  - showToast('Saved', 'error', 6000);
+ */
+export function showToast(message, typeOrDuration = 3000, maybeDuration) {
   const container = ensureToastContainer();
   const toast = document.createElement('div');
   toast.className = 'toast-message';
   toast.textContent = message;
+
+  // Determine type and duration from flexible args
+  const allowedTypes = new Set(['success', 'error', 'info', 'warning']);
+  let type = 'info';
+  let duration = 3000;
+
+  if (typeof typeOrDuration === 'number' && Number.isFinite(typeOrDuration)) {
+    duration = Math.max(0, typeOrDuration);
+  } else if (typeof typeOrDuration === 'string' && allowedTypes.has(typeOrDuration)) {
+    type = typeOrDuration;
+    if (typeof maybeDuration === 'number' && Number.isFinite(maybeDuration)) {
+      duration = Math.max(0, maybeDuration);
+    }
+  } else {
+    // Fallback: keep defaults
+  }
+
   applyToastBaseStyles(toast);
+
+  // Apply type styles
+  const typeStyles = {
+    success: { bg: '#14532d', border: 'rgba(34,197,94,0.35)', glow: 'rgba(34,197,94,0.35)' },
+    error:   { bg: '#7f1d1d', border: 'rgba(239,68,68,0.35)', glow: 'rgba(239,68,68,0.35)' },
+    info:    { bg: '#1e3a8a', border: 'rgba(59,130,246,0.35)', glow: 'rgba(59,130,246,0.35)' },
+    warning: { bg: '#7c2d12', border: 'rgba(245,158,11,0.35)', glow: 'rgba(245,158,11,0.35)' },
+  };
+  const { bg, border, glow } = typeStyles[type] || typeStyles.info;
+  toast.style.background = bg;
+  toast.style.border = `1px solid ${border}`;
+  toast.style.boxShadow = `0 8px 24px rgba(15, 23, 42, 0.32), 0 0 0 4px ${glow}`;
+
   container.appendChild(toast);
   fadeInToast(toast);
   const { hide } = scheduleToastRemoval(toast, duration);
