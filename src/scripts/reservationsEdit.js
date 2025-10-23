@@ -26,6 +26,7 @@ import {
   isApiError,
 } from './reservationsService.js';
 import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
+import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 
 let editingIndex = null;
 let editingItems = [];
@@ -595,7 +596,7 @@ function syncEditTaxAndShare(source) {
   finalize();
 }
 
-export function editReservation(index, {
+export async function editReservation(index, {
   populateEquipmentDescriptionLists,
   setFlatpickrValue,
   splitDateTime,
@@ -743,6 +744,11 @@ export function editReservation(index, {
     : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
         ? reservation.techniciansDetails
         : (reservation.technicians || []).map((id) => String(id)));
+  try {
+    await ensureTechnicianPositionsLoaded();
+  } catch (e) {
+    console.warn('[reservationsEdit] positions load failed (non-fatal)', e);
+  }
   setEditingTechnicians(initialCrewAssignments);
 
   renderEditItems?.(initialItems);

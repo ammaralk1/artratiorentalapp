@@ -472,9 +472,12 @@ export function toInternalReservation(raw = {}) {
 
   let packages = mapReservationPackagesFromSource(raw);
 
-  const technicianEntriesSource = Array.isArray(raw.technicians) && raw.technicians.length
-    ? raw.technicians
-    : (Array.isArray(raw.techniciansDetails) ? raw.techniciansDetails : []);
+  // Prefer rich assignments if backend returns them
+  const technicianEntriesSource = Array.isArray(raw.crewAssignments) && raw.crewAssignments.length
+    ? raw.crewAssignments
+    : (Array.isArray(raw.technicians) && raw.technicians.length
+        ? raw.technicians
+        : (Array.isArray(raw.techniciansDetails) ? raw.techniciansDetails : []));
 
   const crewAssignments = technicianEntriesSource
     .map((entry, index) => normalizeCrewAssignmentEntry(entry, index))
