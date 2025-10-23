@@ -344,14 +344,23 @@ function buildTechnicianOptions(currentAssignmentId) {
     ? cachedTechnicians
     : (loadData().technicians || []);
 
+  // Determine current interval for conflict detection
+  const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
+  const hasInterval = Boolean(start && end);
+
   const options = technicians.map((tech) => {
     const id = String(tech.id);
     const isTaken = takenIds.has(id);
+    const isConflicting = hasInterval
+      ? hasTechnicianConflict(id, start, end, ignoreReservationId)
+      : false;
     const label = normalizeNumbers(tech.name || id);
     return {
       id,
       label,
-      disabled: isTaken,
+      disabled: isTaken || isConflicting,
+      conflict: isConflicting,
+      taken: isTaken,
     };
   });
 
@@ -394,13 +403,21 @@ function renderAssignmentsTable() {
     const datalistId = `crew-assignment-options-${assignment.assignmentId}`;
 
     const takenNote = t('technicians.picker.optionAssigned', '(مستخدم)');
+    const conflictNote = t('technicians.picker.optionConflicting', '(متعارض)');
     const datalistOptions = options.map((option) => {
       const isSelected = currentTechnicianId === option.id;
       const isDisabled = option.disabled && !isSelected;
-      const displayLabel = isDisabled ? `${option.label} ${takenNote}` : option.label;
+      const displayLabel = isDisabled
+        ? `${option.label} ${option.conflict ? conflictNote : takenNote}`
+        : option.label;
       const disabledAttr = isDisabled ? ' disabled data-disabled="true"' : '';
       return `
-        <option value="${option.label}" data-id="${option.id}" data-disabled="${option.disabled ? 'true' : 'false'}" label="${displayLabel}"${disabledAttr}></option>
+        <option value="${option.label}"
+                data-id="${option.id}"
+                data-disabled="${option.disabled ? 'true' : 'false'}"
+                data-conflict="${option.conflict ? 'true' : 'false'}"
+                data-taken="${option.taken ? 'true' : 'false'}"
+                label="${displayLabel}"${disabledAttr}></option>
       `;
     }).join('');
 
@@ -505,7 +522,11 @@ function handleAutocompleteSelection(input, assignmentId) {
   }
 
   if (match.dataset.disabled === 'true') {
-    showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));
+    if (match.dataset.conflict === 'true') {
+      showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+    } else {
+      showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));
+    }
     input.value = '';
     return;
   }
@@ -674,6 +695,13 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
   }
 
   const technician = getTechnicianByIdLocal(technicianIdValue);
+  // Check time conflict against reservation interval if available
+  const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
+  if (start && end && hasTechnicianConflict(String(technicianIdValue), start, end, ignoreReservationId)) {
+    showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+    renderAssignmentsTable();
+    return;
+  }
   if (technician) {
     target.technicianId = String(technician.id);
     target.technicianName = technician.name ?? null;
