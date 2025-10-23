@@ -346,8 +346,8 @@ body[dir="rtl"] .reports-filters {
 .reports-filters-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
-  column-gap: 2px;
-  row-gap: 0;
+  column-gap: 12px;
+  row-gap: 8px;
   justify-items: stretch;
 }
 
@@ -359,8 +359,8 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-filters-grid {
   width: min(100%, 960px);
   margin-inline: auto;
-  column-gap: 2px;
-  row-gap: 0;
+  column-gap: 12px;
+  row-gap: 8px;
   justify-items: stretch;
 }
 
@@ -1237,6 +1237,13 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     column-gap: 12px;
     row-gap: 12px;
   }
+  /* Avoid cramped/overflowing inputs on small screens */
+  .reports-wrapper--reservations .reports-filters .form-control,
+  .reports-wrapper--reservations .reports-filters .form-select,
+  .reports-wrapper--reservations .reports-filters-grid .reports-filter-control {
+    min-width: 0;
+    width: 100%;
+  }
   .reports-wrapper--reservations .reports-filter-field {
     max-width: none;
     width: 100%;
@@ -1252,6 +1259,9 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     grid-template-columns: 1fr;
     gap: 14px;
   }
+  /* Enforce explicit order inside the top sections grid on mobile */
+  #reports-top-sections > .reports-table-card:nth-child(1) { order: 1; }
+  #reports-top-sections > .reports-table-card:nth-child(2) { order: 2; }
 
   .reports-table-card .reports-table-wrapper {
     overflow-x: auto;
