@@ -10,10 +10,9 @@ export class ApiError extends Error {
 }
 
 export function getApiBase() {
-  const envBase = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL;
-  const globalBase = typeof window !== 'undefined' ? window.APP_API_BASE : null;
-  const base = envBase || globalBase || DEFAULT_API_BASE;
-  return String(base).replace(/\/$/, '');
+  // Force localhost for development
+  const base = 'http://localhost:8000/api';
+  return base;
 }
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
