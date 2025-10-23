@@ -1192,6 +1192,59 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   }
 }
 
+@media (max-width: 768px) {
+  .reports-wrapper {
+    padding: 16px 12px;
+  }
+
+  .reports-wrapper--projects {
+    width: 100%;
+    padding-inline: 12px;
+  }
+
+  .reports-wrapper--reservations {
+    align-items: stretch;
+    padding: 16px 12px;
+  }
+
+  .reports-kpi-grid,
+  .reports-analytics-grid {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 14px;
+    padding-bottom: 8px;
+    margin-inline: -12px;
+    padding-inline: 12px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reports-kpi-card,
+  .reports-chart-card {
+    flex: 0 0 min(280px, 85vw);
+    scroll-snap-align: start;
+  }
+
+  .reports-chart-card--wide {
+    flex-basis: min(320px, 90vw);
+  }
+
+  .reports-table-card .reports-table-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reports-table-card .reports-table {
+    min-width: 640px;
+  }
+}
+
 @media (max-width: 600px) {
   .reports-kpi-card {
     flex-direction: column;
