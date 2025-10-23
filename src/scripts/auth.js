@@ -15,6 +15,28 @@ export const AUTH_EVENTS = {
   USER_UPDATED: 'auth:user-updated',
 };
 
+function isLocalhost() {
+  try {
+    const host = window?.location?.hostname || '';
+    return host === 'localhost' || host === '127.0.0.1' || host === '' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
+function shouldBypassAuth() {
+  try {
+    if (!isLocalhost()) return false;
+    // Explicit opt‑in via flag or query param
+    const url = new URL(window.location.href);
+    const qp = (url.searchParams.get('bypassAuth') || url.searchParams.get('dev') || url.searchParams.get('debug') || '').toLowerCase();
+    const flagEnabled = window.__BYPASS_AUTH__ === true;
+    return flagEnabled || qp === '1' || qp === 'true';
+  } catch {
+    return false;
+  }
+}
+
 function applyRoleToDocument(role) {
   if (typeof document === 'undefined') return;
 
@@ -206,6 +228,14 @@ export async function logout() {
 }
 
 export async function getCurrentUser({ refresh = false } = {}) {
+  // 🔓 Local dev bypass (only on localhost and with explicit flag)
+  if (shouldBypassAuth()) {
+    if (!currentUser) {
+      setCurrentUser({ id: 0, username: 'dev-local', loginAt: new Date().toISOString(), role: 'admin' });
+    }
+    return currentUser;
+  }
+
   if (!refresh && currentUser) {
     return currentUser;
   }
@@ -223,6 +253,14 @@ export async function getCurrentUser({ refresh = false } = {}) {
 }
 
 export function checkAuth({ redirect = true } = {}) {
+  // If bypass is enabled, consider the user authenticated
+  if (shouldBypassAuth()) {
+    if (!currentUser) {
+      setCurrentUser({ id: 0, username: 'dev-local', loginAt: new Date().toISOString(), role: 'admin' });
+    }
+    return Promise.resolve(currentUser);
+  }
+
   return getCurrentUser({ refresh: true })
     .then((user) => {
       if (!user && redirect) {
