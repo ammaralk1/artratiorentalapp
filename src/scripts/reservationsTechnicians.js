@@ -805,8 +805,52 @@ function renderCrewSummary(containerId, assignments = [], context = 'create') {
 function setupCrewPickerInternal() {
   const openCreateBtn = document.getElementById('open-technician-picker');
   if (openCreateBtn && !openCreateBtn.dataset.listenerAttached) {
-    openCreateBtn.addEventListener('click', () => openCrewPicker('create'));
+    openCreateBtn.addEventListener('click', (event) => {
+      // Guard: require date, time and customer before opening in create mode
+      const customerId = document.getElementById('res-customer')?.value?.trim();
+      const startDate = document.getElementById('res-start')?.value?.trim();
+      const endDate = document.getElementById('res-end')?.value?.trim();
+      const startTime = document.getElementById('res-start-time')?.value?.trim();
+      const endTime = document.getElementById('res-end-time')?.value?.trim();
+
+      const hasDates = Boolean(startDate && endDate);
+      const hasTimes = Boolean(startTime && endTime);
+      const hasCustomer = Boolean(customerId);
+
+      if (!hasDates || !hasTimes || !hasCustomer) {
+        event.preventDefault();
+        const message = !hasCustomer
+          ? t('technicians.picker.requireCustomer', '⚠️ يرجى اختيار العميل أولاً')
+          : t('technicians.picker.requireDates', '⚠️ يرجى تحديد تاريخ ووقت البداية والنهاية أولاً');
+        showToast(message, 'warning');
+        return;
+      }
+
+      openCrewPicker('create');
+    });
     openCreateBtn.dataset.listenerAttached = 'true';
+
+    // Optional UX: reflect availability by disabling the button until ready
+    const updateAvailability = () => {
+      const customerId = document.getElementById('res-customer')?.value?.trim();
+      const startDate = document.getElementById('res-start')?.value?.trim();
+      const endDate = document.getElementById('res-end')?.value?.trim();
+      const startTime = document.getElementById('res-start-time')?.value?.trim();
+      const endTime = document.getElementById('res-end-time')?.value?.trim();
+      const ready = Boolean(customerId && startDate && endDate && startTime && endTime);
+      openCreateBtn.disabled = !ready;
+      openCreateBtn.ariaDisabled = String(!ready);
+      openCreateBtn.classList.toggle('is-disabled', !ready);
+    };
+
+    ['res-customer', 'res-customer-input', 'res-start', 'res-end', 'res-start-time', 'res-end-time']
+      .map((id) => document.getElementById(id))
+      .filter(Boolean)
+      .forEach((el) => {
+        ['input', 'change'].forEach((evt) => el.addEventListener(evt, updateAvailability));
+      });
+    // Initial state
+    updateAvailability();
   }
 
   const openEditBtn = document.getElementById('open-edit-technician-picker');
