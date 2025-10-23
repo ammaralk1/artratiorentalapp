@@ -30,6 +30,7 @@ function sanitizePriceValue(value) {
 
 const RESERVATION_PACKAGES_CACHE_KEY = '__reservation_packages_cache__';
 const RESERVATION_CREW_CACHE_KEY = '__reservation_crew_cache__';
+const CREW_CACHE_ENABLED = false; // disable crew cache to rely on DB
 
 function getPackagesCacheStorage() {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -70,6 +71,7 @@ function getCrewCacheStorage() {
 }
 
 function readReservationCrewCache() {
+  if (!CREW_CACHE_ENABLED) return {};
   const storage = getCrewCacheStorage();
   if (!storage) return {};
   try {
@@ -84,6 +86,7 @@ function readReservationCrewCache() {
 }
 
 function writeReservationCrewCache(cache) {
+  if (!CREW_CACHE_ENABLED) return;
   const storage = getCrewCacheStorage();
   if (!storage) return;
   try {
@@ -127,6 +130,7 @@ function hasRichCrewData(assignments = []) {
 }
 
 function persistReservationCrewToCache(reservationId, assignments) {
+  if (!CREW_CACHE_ENABLED) return;
   if (!reservationId) return;
   const cache = readReservationCrewCache();
   const key = String(reservationId);
@@ -148,6 +152,7 @@ function persistReservationCrewToCache(reservationId, assignments) {
 }
 
 export function getCachedReservationCrew(reservationId) {
+  if (!CREW_CACHE_ENABLED) return [];
   if (!reservationId) return [];
   const cache = readReservationCrewCache();
   const key = String(reservationId);
@@ -474,13 +479,7 @@ export async function createReservationApi(payload) {
       });
     }
   }
-  // Persist crew assignments to local cache
-  {
-    const createdKey = created.id ?? created.reservationId ?? created.reservation_code;
-    if (createdKey) {
-      persistReservationCrewToCache(createdKey, created.crewAssignments || created.techniciansDetails || []);
-    }
-  }
+  // Crew cache disabled — rely on backend data only
   if (Array.isArray(payload?.packages) && payload.packages.length) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
@@ -542,13 +541,7 @@ export async function updateReservationApi(id, payload) {
       });
     }
   }
-  // Persist crew assignments to local cache
-  {
-    const updatedKey = updated.id ?? updated.reservationId ?? updated.reservation_code ?? id;
-    if (updatedKey) {
-      persistReservationCrewToCache(updatedKey, updated.crewAssignments || updated.techniciansDetails || []);
-    }
-  }
+  // Crew cache disabled — rely on backend data only
   if (Array.isArray(payload?.packages) && payload.packages.length) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
@@ -663,7 +656,7 @@ export function toInternalReservation(raw = {}) {
     };
   });
 
-  if ((!Array.isArray(crewAssignments) || crewAssignments.length === 0) || !hasRichCrewData(crewAssignments)) {
+  if (false && ((!Array.isArray(crewAssignments) || crewAssignments.length === 0) || !hasRichCrewData(crewAssignments))) {
     const cacheKey = idValue ?? reservationCode ?? raw.reservation_code ?? raw.reservationId ?? null;
     if (cacheKey != null) {
       const cachedCrew = getCachedReservationCrew(cacheKey);

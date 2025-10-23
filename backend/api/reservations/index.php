@@ -981,12 +981,28 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
         reservation_id,
         technician_id,
         role,
-        notes
+        notes,
+        position_id,
+        position_key,
+        position_name,
+        position_label_ar,
+        position_label_en,
+        position_cost,
+        position_client_price,
+        assignment_id
     ) VALUES (
         :reservation_id,
         :technician_id,
         :role,
-        :notes
+        :notes,
+        :position_id,
+        :position_key,
+        :position_name,
+        :position_label_ar,
+        :position_label_en,
+        :position_cost,
+        :position_client_price,
+        :assignment_id
     )';
 
     $statement = $pdo->prepare($sql);
@@ -996,10 +1012,44 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
             $technicianId = (int) ($technician['id'] ?? $technician['technician_id'] ?? 0);
             $role = $technician['role'] ?? null;
             $notes = $technician['notes'] ?? null;
+
+            $positionId = isset($technician['position_id']) ? (int) $technician['position_id']
+                : (isset($technician['positionId']) ? (int) $technician['positionId'] : null);
+            $positionKey = $technician['position_key'] ?? ($technician['positionKey'] ?? ($technician['position_code'] ?? null));
+            $positionName = $technician['position_name'] ?? ($technician['positionName'] ?? ($technician['position_label'] ?? null));
+            $positionLabelAr = $technician['position_label_ar'] ?? ($technician['positionLabelAr'] ?? null);
+            $positionLabelEn = $technician['position_label_en'] ?? ($technician['positionLabelEn'] ?? null);
+
+            // pricing fallbacks
+            $positionCost = $technician['position_cost']
+                ?? $technician['positionCost']
+                ?? $technician['cost']
+                ?? $technician['daily_wage']
+                ?? $technician['dailyWage']
+                ?? 0;
+            $positionClientPrice = $technician['position_client_price']
+                ?? $technician['positionClientPrice']
+                ?? $technician['client_price']
+                ?? $technician['customer_price']
+                ?? $technician['position_price']
+                ?? $technician['daily_total']
+                ?? $technician['dailyTotal']
+                ?? $technician['total']
+                ?? 0;
+
+            $assignmentId = $technician['assignment_id'] ?? ($technician['assignmentId'] ?? null);
         } else {
             $technicianId = (int) $technician;
             $role = null;
             $notes = null;
+            $positionId = null;
+            $positionKey = null;
+            $positionName = null;
+            $positionLabelAr = null;
+            $positionLabelEn = null;
+            $positionCost = 0;
+            $positionClientPrice = 0;
+            $assignmentId = null;
         }
 
         $statement->execute([
@@ -1007,6 +1057,14 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
             'technician_id' => $technicianId,
             'role' => $role,
             'notes' => $notes,
+            'position_id' => $positionId,
+            'position_key' => $positionKey,
+            'position_name' => $positionName,
+            'position_label_ar' => $positionLabelAr,
+            'position_label_en' => $positionLabelEn,
+            'position_cost' => (float) $positionCost,
+            'position_client_price' => (float) $positionClientPrice,
+            'assignment_id' => $assignmentId,
         ]);
     }
 }
@@ -1136,9 +1194,18 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
     while ($row = $statement->fetch()) {
         $techs[] = [
             'id' => (int) $row['technician_id'],
+            'technician_id' => (int) $row['technician_id'],
             'role' => $row['role'],
             'notes' => $row['notes'] ?? null,
             'name' => $row['technician_name'],
+            'position_id' => isset($row['position_id']) ? (int) $row['position_id'] : null,
+            'position_key' => $row['position_key'] ?? null,
+            'position_name' => $row['position_name'] ?? null,
+            'position_label_ar' => $row['position_label_ar'] ?? null,
+            'position_label_en' => $row['position_label_en'] ?? null,
+            'position_cost' => isset($row['position_cost']) ? (float) $row['position_cost'] : 0,
+            'position_client_price' => isset($row['position_client_price']) ? (float) $row['position_client_price'] : 0,
+            'assignment_id' => $row['assignment_id'] ?? null,
         ];
     }
     return $techs;
