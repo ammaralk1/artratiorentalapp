@@ -7,8 +7,37 @@ export function renderReservationsTable(reservations, customers, technicians) {
   const tbody = document.getElementById('reports-reservations-body');
   if (!tbody) return [];
 
+  const tableWrapper = tbody.closest('.reports-table-wrapper') || tbody.parentElement;
+  
   if (!reservations || reservations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    const emptyMessage = translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.');
+    const tableHTML = `
+      <div class="reports-card">
+        <div class="reports-table-wrapper">
+          <table class="reports-table">
+            <thead>
+              <tr>
+                <th data-report-column="code">${translate('reports.reservations.code', 'رقم الحجز', 'Booking #')}</th>
+                <th data-report-column="customer">${translate('reports.reservations.customer', 'العميل', 'Customer')}</th>
+                <th data-report-column="date">${translate('reports.reservations.date', 'التاريخ', 'Date')}</th>
+                <th data-report-column="status">${translate('reports.reservations.status', 'الحالة', 'Status')}</th>
+                <th data-report-column="payment">${translate('reports.reservations.payment', 'الدفع', 'Payment')}</th>
+                <th data-report-column="total">${translate('reports.reservations.total', 'الإجمالي', 'Total')}</th>
+                <th data-report-column="share">${translate('reports.reservations.share', 'نسبة الشركة', 'Company Share')}</th>
+                <th data-report-column="net">${translate('reports.reservations.net', 'الصافي', 'Net')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" class="text-base-content/60">${emptyMessage}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    if (tableWrapper) {
+      tableWrapper.innerHTML = tableHTML;
+    } else {
+      tbody.innerHTML = `<tr><td colspan="8" class="text-base-content/60">${emptyMessage}</td></tr>`;
+    }
     return [];
   }
 
@@ -44,22 +73,60 @@ export function renderReservationsTable(reservations, customers, technicians) {
       return { formatted, exportRow };
     });
 
-  tbody.innerHTML = rows
-    .map(({ formatted }) => `
-      <tr data-drilldown="reservation" data-search="${escapeAttribute(formatted.code.text)}">
-        <td data-report-column="code">${formatted.code.html}</td>
-        <td data-report-column="customer">${formatted.customer.html}</td>
-        <td data-report-column="date">${formatted.date.html}</td>
-        <td data-report-column="status">${formatted.status.html}</td>
-        <td data-report-column="payment">${formatted.payment.html}</td>
-        <td data-report-column="total">${formatted.total.html}</td>
-        <td data-report-column="share">${formatted.share.html}</td>
-        <td data-report-column="net">${formatted.net.html}</td>
-      </tr>
-    `)
-    .join('');
+  if (tableWrapper) {
+    tableWrapper.innerHTML = `
+      <div class="reports-card">
+        <div class="reports-table-wrapper">
+          <table class="reports-table">
+            <thead>
+              <tr>
+                <th data-report-column="code">${translate('reports.reservations.code', 'رقم الحجز', 'Booking #')}</th>
+                <th data-report-column="customer">${translate('reports.reservations.customer', 'العميل', 'Customer')}</th>
+                <th data-report-column="date">${translate('reports.reservations.date', 'التاريخ', 'Date')}</th>
+                <th data-report-column="status">${translate('reports.reservations.status', 'الحالة', 'Status')}</th>
+                <th data-report-column="payment">${translate('reports.reservations.payment', 'الدفع', 'Payment')}</th>
+                <th data-report-column="total">${translate('reports.reservations.total', 'الإجمالي', 'Total')}</th>
+                <th data-report-column="share">${translate('reports.reservations.share', 'نسبة الشركة', 'Company Share')}</th>
+                <th data-report-column="net">${translate('reports.reservations.net', 'الصافي', 'Net')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(({ formatted }) => `
+                <tr data-drilldown="reservation" data-search="${escapeAttribute(formatted.code.text)}">
+                  <td data-report-column="code">${formatted.code.html}</td>
+                  <td data-report-column="customer">${formatted.customer.html}</td>
+                  <td data-report-column="date">${formatted.date.html}</td>
+                  <td data-report-column="status">${formatted.status.html}</td>
+                  <td data-report-column="payment">${formatted.payment.html}</td>
+                  <td data-report-column="total">${formatted.total.html}</td>
+                  <td data-report-column="share">${formatted.share.html}</td>
+                  <td data-report-column="net">${formatted.net.html}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+} else {
+  const htmlParts = [];
+  for (const { formatted } of rows) {
+    htmlParts.push(
+      '<tr data-drilldown="reservation" data-search="' + escapeAttribute(formatted.code.text) + '">' +
+        '<td data-report-column="code">' + formatted.code.html + '</td>' +
+        '<td data-report-column="customer">' + formatted.customer.html + '</td>' +
+        '<td data-report-column="date">' + formatted.date.html + '</td>' +
+        '<td data-report-column="status">' + formatted.status.html + '</td>' +
+        '<td data-report-column="payment">' + formatted.payment.html + '</td>' +
+        '<td data-report-column="total">' + formatted.total.html + '</td>' +
+        '<td data-report-column="share">' + formatted.share.html + '</td>' +
+        '<td data-report-column="net">' + formatted.net.html + '</td>' +
+      '</tr>'
+    );
+  }
+  tbody.innerHTML = htmlParts.join('');
 
   return rows.map(({ exportRow }) => exportRow);
+}
 }
 
 function formatReservationRow(reservation, customerMap, technicianMap) {

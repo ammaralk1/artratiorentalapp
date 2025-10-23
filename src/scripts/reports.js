@@ -172,6 +172,23 @@ function toggleCustomRange(wrapper, isActive) {
 }
 
 function syncFilterControls() {
+  // Wrap filters in the new filter group container if it doesn't exist
+  let filterGroup = document.querySelector('.filters-group');
+  if (!filterGroup) {
+    const filtersContainer = document.querySelector('#reports-filters');
+    if (filtersContainer) {
+      filterGroup = document.createElement('div');
+      filterGroup.className = 'filters-group';
+      [...filtersContainer.children].forEach(child => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'filter-control';
+        child.parentNode.insertBefore(wrapper, child);
+        wrapper.appendChild(child);
+      });
+      filtersContainer.appendChild(filterGroup);
+    }
+  }
+
   const rangeSelect = document.getElementById('reports-range');
   const statusSelect = document.getElementById('reports-status-filter');
   const paymentSelect = document.getElementById('reports-payment-filter');

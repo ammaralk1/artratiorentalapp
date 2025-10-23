@@ -1,5 +1,43 @@
 /* ===================== التقارير ===================== */
 
+/* Filter Styles */
+.filters-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--reports-surface-soft);
+  border-radius: var(--reports-radius-md);
+}
+
+.filter-control {
+  flex: 1;
+  min-width: 180px;
+  margin-bottom: 0.5rem;
+}
+
+.filter-control select,
+.filter-control input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--reports-border);
+  border-radius: var(--reports-radius-md);
+  background: var(--reports-surface);
+}
+
+@media (max-width: 768px) {
+  .filters-group {
+    gap: 1.25rem;
+    padding: 1rem 0.75rem;
+  }
+  
+  .filter-control {
+    flex: 1 1 auto;
+    min-width: 150px;
+  }
+}
+
 :root {
   --reports-radius-lg: var(--radius-lg, 18px);
   --reports-radius-md: var(--radius-md, 14px);
@@ -45,6 +83,141 @@ body.dark-mode {
 
 .reports-page {
   color: var(--clr-text);
+}
+
+/* Sections Layout */
+.reports-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  margin: 1.5rem 0;
+}
+
+#reports-top-customers,
+#reports-top-equipment {
+  background: var(--reports-surface);
+  border-radius: var(--reports-radius-md);
+  box-shadow: var(--reports-shadow);
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .reports-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  #reports-top-customers {
+    order: 1;
+  }
+
+  #reports-top-equipment {
+    order: 2;
+  }
+  
+  .reports-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+}
+
+/* Table and Card Styles */
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--reports-border);
+}
+
+.reports-table th {
+  text-align: start;
+  background: var(--reports-surface-soft);
+  font-weight: 500;
+}
+
+.reports-table tr:hover {
+  background: var(--reports-surface-contrast);
+}
+
+@media (max-width: 768px) {
+  .reports-table th,
+  .reports-table td {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9375rem;
+  }
+  
+  .reports-table-wrapper {
+    margin: 0 -0.75rem;
+  }
+  
+  /* Make tables more compact on mobile */
+  .reports-table [data-report-column="code"],
+  .reports-table [data-report-column="date"] {
+    white-space: nowrap;
+  }
+}
+
+/* Add spacing between filters on mobile */
+.reports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .reports-filters {
+    gap: 1.25rem;
+    padding: 1rem 0.75rem;
+  }
+  
+  .reports-filter-item {
+    flex: 1 1 auto;
+    min-width: 150px;
+  }
+}
+
+/* Adjust sections order on mobile */
+.reports-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .reports-sections {
+    gap: 1.5rem;
+  }
+
+  .best-clients-section {
+    order: 1;
+  }
+
+  .equipment-usage-section {
+    order: 2;
+  }
+}
+
+/* Improve spacing and readability on mobile */
+.reports-card {
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--reports-surface);
+  border-radius: var(--reports-radius-md);
+  box-shadow: var(--reports-shadow);
+}
+
+@media (max-width: 768px) {
+  .reports-card {
+    padding: 1rem;
+  }
 }
 
 
