@@ -1149,6 +1149,9 @@ function decorateReservation(PDO $pdo, array $reservation): array
 
     $reservation['items'] = fetchReservationItems($pdo, (int) $reservation['id']);
     $reservation['technicians'] = fetchReservationTechnicians($pdo, (int) $reservation['id']);
+    // Provide rich crew arrays so frontend prefers assigned position data in details view
+    $reservation['crewAssignments'] = $reservation['technicians'];
+    $reservation['techniciansDetails'] = $reservation['technicians'];
     $payments = fetchReservationPayments($pdo, (int) $reservation['id']);
     $reservation['payment_history'] = $payments;
     $reservation['paymentHistory'] = $payments;
