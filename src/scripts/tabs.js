@@ -312,6 +312,23 @@ export function setupTabs() {
       }
     });
   }
+
+    // ✅ ربط أحداث التحديث مع دوال العرض
+    document.addEventListener('equipment:changed', () => {
+      if (currentMainTab === 'equipment-tab') {
+        renderEquipment();
+      }
+    });
+    document.addEventListener('maintenance:changed', () => {
+      if (currentMainTab === 'maintenance-tab') {
+        renderMaintenance();
+      }
+    });
+    document.addEventListener('reservations:changed', () => {
+      if (currentMainTab === 'reservations-tab') {
+        renderReservations();
+      }
+    });
 }
 
 // ✅ إدارة التبويبات الفرعية للحجوزات
