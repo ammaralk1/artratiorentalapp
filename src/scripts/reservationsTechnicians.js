@@ -1,6 +1,7 @@
 import { normalizeNumbers, showToast } from './utils.js';
 import { t, getCurrentLanguage } from './language.js';
 import { syncTechniciansStatuses } from './technicians.js';
+import { refreshTechniciansFromApi } from './techniciansService.js';
 import { loadData } from './storage.js';
 import { combineDateTime, hasTechnicianConflict } from './reservations/state.js';
 import {
@@ -729,8 +730,16 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
 
 async function openCrewPicker(context = 'create') {
   crewPickerContext = context;
-  const technicians = syncTechniciansStatuses();
-  if (Array.isArray(technicians) && technicians.length) {
+  let technicians = syncTechniciansStatuses();
+  if (!Array.isArray(technicians) || technicians.length === 0) {
+    try {
+      const fetched = await refreshTechniciansFromApi();
+      technicians = Array.isArray(fetched) ? fetched : [];
+    } catch (e) {
+      console.warn('[reservations/crew] technicians fetch failed, falling back to stored list', e);
+    }
+  }
+  if (Array.isArray(technicians)) {
     cachedTechnicians = technicians;
   }
 
