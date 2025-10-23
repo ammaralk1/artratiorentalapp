@@ -1192,10 +1192,16 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
     $statement->execute(['id' => $reservationId]);
     $techs = [];
     while ($row = $statement->fetch()) {
+        // Prefer the assigned position name as the role shown in details, fallback to stored role
+        $effectiveRole = $row['position_name'] ?? null;
+        if ($effectiveRole === null || trim((string) $effectiveRole) === '') {
+            $effectiveRole = $row['role'];
+        }
+
         $techs[] = [
             'id' => (int) $row['technician_id'],
             'technician_id' => (int) $row['technician_id'],
-            'role' => $row['role'],
+            'role' => $effectiveRole,
             'notes' => $row['notes'] ?? null,
             'name' => $row['technician_name'],
             'position_id' => isset($row['position_id']) ? (int) $row['position_id'] : null,

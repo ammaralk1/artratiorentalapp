@@ -415,6 +415,14 @@ export function setReservationsState(reservations) {
     console.debug('[reservationsService] setReservationsState empty state');
   }
   saveData({ reservations: reservationsState });
+  try {
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('reservations:updated'));
+    }
+    if (typeof document !== 'undefined' && typeof document.dispatchEvent === 'function') {
+      document.dispatchEvent(new CustomEvent('reservations:updated'));
+    }
+  } catch (_) { /* ignore */ }
   return reservationsState;
 }
 

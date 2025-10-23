@@ -119,6 +119,13 @@ export function setupReservationEvents() {
   loadReservationForm();
   setupEquipmentDescriptionInputs();
   reservationEventsInitialized = true;
+
+  // Re-render list as soon as reservations state updates (fixes empty view after login until hard refresh)
+  try {
+    const rerender = () => renderReservations();
+    document.addEventListener('reservations:updated', rerender);
+    window.addEventListener('reservations:updated', rerender);
+  } catch (_) { /* ignore */ }
 }
 
 function setupTechniciansUpdatedListener() {
