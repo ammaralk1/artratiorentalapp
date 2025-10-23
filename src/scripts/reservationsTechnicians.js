@@ -411,14 +411,16 @@ function renderAssignmentsTable() {
       const displayLabel = isDisabled
         ? `${option.label} ${option.conflict ? conflictNote : takenNote}`
         : option.label;
-      const disabledAttr = isDisabled ? ' disabled data-disabled="true"' : '';
+      // Do NOT use the native `disabled` attribute on <option> inside <datalist>,
+      // as many browsers hide disabled options entirely. We keep a data flag
+      // and block selection in JS instead so users still see all technicians.
       return `
         <option value="${option.label}"
                 data-id="${option.id}"
                 data-disabled="${option.disabled ? 'true' : 'false'}"
                 data-conflict="${option.conflict ? 'true' : 'false'}"
                 data-taken="${option.taken ? 'true' : 'false'}"
-                label="${displayLabel}"${disabledAttr}></option>
+                label="${displayLabel}"></option>
       `;
     }).join('');
 
