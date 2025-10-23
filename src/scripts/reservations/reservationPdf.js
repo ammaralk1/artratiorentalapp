@@ -7,7 +7,8 @@ import {
   calculateReservationTotal,
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
-  determinePaymentStatus
+  determinePaymentStatus,
+  calculateDraftFinancialBreakdown
 } from '../reservationsSummary.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
