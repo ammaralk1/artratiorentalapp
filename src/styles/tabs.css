@@ -791,7 +791,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   border-color: var(--crew-outline);
   box-shadow:
     0 0 0 2px var(--crew-outline) inset,
-    0 22px 48px hsl(var(--er, 0 80% 50%) / 0.25);
+    0 22px 48px hsl(var(--p, 220 90% 56%) / 0.25);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal {
