@@ -73,9 +73,9 @@ export function initDashboardShell() {
   async function fetchAndStoreDashboardData() {
     try {
       const [equipmentRes, maintenanceRes, reservationsRes] = await Promise.all([
-        apiRequest('/api/equipment/'),
-        apiRequest('/api/maintenance/'),
-        apiRequest('/api/reservations/')
+        apiRequest('equipment/'),
+        apiRequest('maintenance/'),
+        apiRequest('reservations/')
       ]);
       saveData({
         equipment: equipmentRes?.data || [],
