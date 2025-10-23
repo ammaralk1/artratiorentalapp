@@ -185,20 +185,31 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
     ?? entry.technician_id
     ?? entry.technicianId
     ?? `crew-${index}`;
-  const positionId = entry.position_id
+  const positionObj = (entry && typeof entry.position === 'object') ? entry.position : null;
+  const positionId = (
+    entry.position_id
     ?? entry.positionId
     ?? entry.position
     ?? entry.position_code
-    ?? null;
-  const positionKey = entry.position_key
+    ?? (positionObj?.id ?? positionObj?.code)
+    ?? null
+  );
+  const positionKey = (
+    entry.position_key
     ?? entry.positionKey
     ?? entry.position_code
     ?? entry.positionId
-    ?? null;
+    ?? positionObj?.name
+    ?? positionObj?.key
+    ?? null
+  );
   let positionLabel = entry.position_name
     ?? entry.positionName
     ?? entry.position_label
     ?? entry.position_title
+    ?? positionObj?.label_ar
+    ?? positionObj?.label_en
+    ?? positionObj?.name
     ?? entry.role
     ?? entry.position
     ?? '';
@@ -223,6 +234,9 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
     ?? entry.cost
     ?? entry.daily_wage
     ?? entry.dailyWage
+    ?? positionObj?.cost
+    ?? positionObj?.daily_wage
+    ?? positionObj?.dailyWage
     ?? entry.internal_cost
     ?? null;
   const positionClientPriceRaw = entry.position_client_price
@@ -230,6 +244,8 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
     ?? entry.client_price
     ?? entry.customer_price
     ?? entry.position_price
+    ?? positionObj?.client_price
+    ?? positionObj?.clientPrice
     ?? entry.clientPrice
     ?? entry.daily_total
     ?? entry.dailyTotal
@@ -240,18 +256,22 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
   const positionCost = sanitizePriceValue(parsePriceValue(positionCostRaw));
   const positionClientPrice = sanitizePriceValue(parsePriceValue(positionClientPriceRaw));
 
+  const technicianObj = (entry && typeof entry.technician === 'object') ? entry.technician : null;
   const technicianId = entry.technician_id
     ?? entry.technicianId
     ?? entry.id
+    ?? technicianObj?.id
     ?? entry.userId
     ?? entry.user_id
     ?? null;
   const technicianName = entry.technician_name
     ?? entry.technicianName
     ?? entry.name
+    ?? technicianObj?.name
     ?? entry.full_name
     ?? null;
-  const technicianRole = entry.role ?? entry.specialization ?? null;
+  const technicianRole = entry.role ?? technicianObj?.role ?? entry.specialization ?? null;
+  const technicianPhone = entry.technician_phone ?? technicianObj?.phone ?? entry.phone ?? null;
 
   return {
     assignmentId: String(assignmentId),
@@ -266,6 +286,7 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
     technicianId: technicianId != null ? String(technicianId) : null,
     technicianName: technicianName != null ? String(technicianName) : null,
     technicianRole: technicianRole != null ? String(technicianRole) : null,
+    technicianPhone: technicianPhone != null ? String(technicianPhone) : null,
     notes: entry.notes ?? null,
   };
 }
