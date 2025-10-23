@@ -324,13 +324,9 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   padding: clamp(1rem, 3vw, 1.45rem);
   border-radius: 20px;
   background: hsl(var(--b1));
-  border: 1px solid hsl(var(--bc) / 0.18);
-  box-shadow:
-    0 0 0 2px hsl(var(--b1) / 0.9) inset,
-    0 0 0 1px hsl(var(--bc) / 0.12),
-    /* Static outer outline to make each card visually distinct */
-    0 0 0 3px hsl(var(--bc) / 0.08),
-    0 18px 40px hsl(var(--b1) / 0.14);
+  /* Strong outline like the red boxes in the screenshot (themed via --er) */
+  border: 2px solid hsl(var(--er) / 0.7);
+  box-shadow: 0 18px 40px hsl(var(--b1) / 0.14);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
@@ -356,27 +352,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   pointer-events: none;
 }
 
-.crew-position-card::before {
-  content: '';
-  position: absolute;
-  inset: 10px;
-  border-radius: 16px;
-  border: 1px dashed hsl(var(--bc) / 0.22);
-  opacity: 0.55;
-  pointer-events: none;
-  transition: border-color 0.25s ease, opacity 0.25s ease;
-}
+/* Remove inner dashed decoration to keep a clean solid outline */
+.crew-position-card::before { display: none; }
 
 .crew-position-card:hover,
 .crew-position-card:focus-visible,
 .crew-position-card:focus-within {
-  border-color: hsl(var(--p) / 0.55);
-  box-shadow:
-    0 0 0 2px hsl(var(--p) / 0.08) inset,
-    0 0 0 1px hsl(var(--p) / 0.35),
-    /* Emphasize the outer outline on interaction */
-    0 0 0 3px hsl(var(--p) / 0.15),
-    0 22px 48px hsl(var(--p) / 0.25);
+  border-color: hsl(var(--er));
+  box-shadow: 0 22px 48px hsl(var(--er) / 0.25);
   transform: translateY(-4px);
 }
 
@@ -388,7 +371,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .crew-position-card:focus-visible {
-  outline: 3px solid hsl(var(--p) / 0.35);
+  outline: 3px solid hsl(var(--er) / 0.45);
   outline-offset: 3px;
 }
 
@@ -836,13 +819,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card {
   background: hsla(var(--b2) / 0.72);
-  border-color: hsla(var(--p) / 0.42);
-  box-shadow:
-    0 0 0 2px hsla(var(--b2) / 0.4) inset,
-    0 0 0 1px hsla(var(--p) / 0.35),
-    /* Static outer outline for dark mode */
-    0 0 0 3px hsla(var(--p) / 0.22),
-    0 24px 52px hsla(var(--b1) / 0.35);
+  border-color: hsla(var(--er) / 0.75);
+  box-shadow: 0 24px 52px hsla(var(--b1) / 0.35);
   color: hsla(var(--bc) / 0.96);
 }
 
@@ -861,13 +839,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-visible,
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:focus-within {
-  border-color: hsla(var(--p) / 0.8);
-  box-shadow:
-    0 0 0 2px hsla(var(--p) / 0.14) inset,
-    0 0 0 1px hsla(var(--p) / 0.55),
-    /* Emphasize outline in dark mode on interaction */
-    0 0 0 3px hsla(var(--p) / 0.3),
-    0 30px 60px hsla(var(--p) / 0.45);
+  border-color: hsla(var(--er));
+  box-shadow: 0 30px 60px hsla(var(--er) / 0.35);
 }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-card:hover::before,
