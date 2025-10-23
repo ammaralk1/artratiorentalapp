@@ -820,12 +820,62 @@ function renderCrewSummary(containerId, assignments = [], context = 'create') {
     return;
   }
 
+  ensurePositionsCached();
+
   container.innerHTML = assignments.map((assignment) => {
-    const positionLabel = normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'));
+    // Resolve robust label
+    let resolvedLabel = assignment.positionLabel
+      ?? assignment.position_label
+      ?? assignment.position_name
+      ?? assignment.role
+      ?? assignment.position
+      ?? '';
+    if (!resolvedLabel || String(resolvedLabel).trim() === '') {
+      const byId = assignment.positionId
+        ? cachedPositions.find((p) => String(p.id) === String(assignment.positionId))
+        : null;
+      const byKey = !byId && assignment.positionKey
+        ? cachedPositions.find((p) => String(p.name).toLowerCase() === String(assignment.positionKey).toLowerCase())
+        : null;
+      resolvedLabel = byId
+        ? resolvePositionLabel(byId, getCurrentLanguage()) || byId?.name || ''
+        : (byKey ? resolvePositionLabel(byKey, getCurrentLanguage()) || byKey?.name || '' : '');
+    }
+    const positionLabel = normalizeNumbers(resolvedLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'));
+
     const technicianLabel = assignment.technicianName
       ? `${normalizeNumbers(assignment.technicianName)}`
       : t('technicians.picker.noTechnicianOption', '— بدون تعيين —');
-    const priceLabel = formatCurrency(Number(assignment.positionClientPrice) || 0);
+
+    // Resolve client price with fallbacks
+    let priceValue = Number(assignment.positionClientPrice);
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+      const candidates = [
+        assignment.position_client_price,
+        assignment.client_price,
+        assignment.customer_price,
+        assignment.daily_total,
+        assignment.dailyTotal,
+        assignment.total
+      ];
+      for (const c of candidates) {
+        const n = Number(c);
+        if (Number.isFinite(n) && n > 0) { priceValue = n; break; }
+      }
+    }
+    if ((!Number.isFinite(priceValue) || priceValue <= 0) && (assignment.positionId || assignment.positionKey)) {
+      const byId = assignment.positionId
+        ? cachedPositions.find((p) => String(p.id) === String(assignment.positionId))
+        : null;
+      const byKey = !byId && assignment.positionKey
+        ? cachedPositions.find((p) => String(p.name).toLowerCase() === String(assignment.positionKey).toLowerCase())
+        : null;
+      const pos = byId || byKey || null;
+      if (pos && Number.isFinite(Number(pos.clientPrice))) {
+        priceValue = Number(pos.clientPrice);
+      }
+    }
+    const priceLabel = formatCurrency(Number.isFinite(priceValue) && priceValue > 0 ? priceValue : 0);
     const removeLabel = t('reservations.crew.removeAria', 'إزالة');
     return `
       <span class="technician-chip" data-assignment-id="${assignment.assignmentId}">
