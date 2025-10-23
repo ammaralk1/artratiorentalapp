@@ -358,8 +358,30 @@ export function calculateDraftFinancialBreakdown({
     ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
     : (Array.isArray(technicianIds) ? technicianIds : []);
 
+  // Compute crew daily totals directly to avoid any runtime scope issues
   const { costPerDay, totalPerDay } = assignments.length
-    ? calculateCrewDailyTotalsFromAssignments(assignments)
+    ? assignments.reduce((acc, assignment) => {
+        const positionCost = parsePriceValue(
+          assignment?.positionCost
+          ?? assignment?.position_cost
+          ?? assignment?.cost
+          ?? assignment?.dailyWage
+          ?? assignment?.daily_wage
+          ?? 0
+        );
+        const clientPrice = parsePriceValue(
+          assignment?.positionClientPrice
+          ?? assignment?.position_client_price
+          ?? assignment?.clientPrice
+          ?? assignment?.dailyTotal
+          ?? assignment?.daily_total
+          ?? assignment?.total
+          ?? 0
+        );
+        const cpd = Number.isFinite(positionCost) ? positionCost : 0;
+        const tpd = Number.isFinite(clientPrice) ? clientPrice : 0;
+        return { costPerDay: acc.costPerDay + cpd, totalPerDay: acc.totalPerDay + tpd };
+      }, { costPerDay: 0, totalPerDay: 0 })
     : calculateTechnicianDayRates(normalizedTechnicianIds);
   const crewTotal = sanitizePriceValue(totalPerDay * rentalDays);
   const crewCostTotal = sanitizePriceValue(costPerDay * rentalDays);
