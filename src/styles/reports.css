@@ -38,6 +38,16 @@
   }
 }
 
+@media (max-width: 768px) {
+  .filter-control {
+    margin-bottom: 1.25rem;
+  }
+  .filters-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 :root {
   --reports-radius-lg: var(--radius-lg, 18px);
   --reports-radius-md: var(--radius-md, 14px);
