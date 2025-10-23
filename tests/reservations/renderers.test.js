@@ -12,7 +12,11 @@ const buildReservationDetailsHtmlMock = vi.fn();
 vi.mock('../../src/scripts/storage.js', () => ({ loadData: loadDataMock }));
 vi.mock('../../src/scripts/technicians.js', () => ({ syncTechniciansStatuses: syncTechniciansStatusesMock }));
 vi.mock('../../src/scripts/language.js', () => ({ t: tMock }));
-vi.mock('../../src/scripts/utils.js', () => ({ showToast: showToastMock }));
+vi.mock('../../src/scripts/utils.js', () => ({
+  showToast: showToastMock,
+  // Provide a passthrough normalizer to satisfy downstream imports
+  normalizeNumbers: (value) => String(value ?? ''),
+}));
 vi.mock('../../src/scripts/reservationsFilters.js', () => ({ getReservationFilters: getReservationFiltersMock }));
 vi.mock('../../src/scripts/reservations/list/index.js', () => ({
   filterReservationEntries: filterReservationEntriesMock,

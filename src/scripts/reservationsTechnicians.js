@@ -732,6 +732,12 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
 
 async function openCrewPicker(context = 'create') {
   crewPickerContext = context;
+
+  // Render immediately from current selections to improve perceived responsiveness
+  renderAssignmentsTable();
+  updateCrewPickerInfo();
+
+  // Then refresh technicians/positions asynchronously
   let technicians = syncTechniciansStatuses();
   if (!Array.isArray(technicians) || technicians.length === 0) {
     try {

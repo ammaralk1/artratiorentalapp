@@ -43,6 +43,7 @@ const buildDom = () => {
     <table id="crew-assignment-table"><tbody></tbody></table>
     <div id="selected-technicians-list"></div>
     <div id="edit-selected-technicians-list"></div>
+    <input type="hidden" id="res-customer" value="C1" />
     <input id="res-start" value="2024-07-01" />
     <input id="res-end" value="2024-07-02" />
     <input id="res-start-time" value="08:00" />
