@@ -1190,6 +1190,19 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   .reports-chart-card--wide {
     grid-column: span 1;
   }
+
+  /* Stack detail cards on small tablets too */
+  .reports-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Let filters wrap nicely on small tablets */
+  .reports-wrapper--reservations .reports-filters-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    column-gap: 12px;
+    row-gap: 12px;
+  }
 }
 
 @media (max-width: 768px) {

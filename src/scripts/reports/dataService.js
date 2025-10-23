@@ -143,17 +143,13 @@ export async function loadReportsData({ silent = false } = {}) {
     reportsState.techniciansIndex = new Map((reportsState.data.technicians || []).map((tech) => [String(tech.id), tech]));
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
+    // Preserve last known snapshot to avoid wiping UI to zeros
     reportsState.errorMessage = error instanceof ApiError
       ? error.message
       : translate('reservations.reports.error.fetchFailed', 'تعذر تحميل بيانات التقارير، حاول لاحقاً');
-    reportsState.data.reservations = [];
-    reportsState.data.customers = [];
-    reportsState.data.equipment = [];
-    reportsState.data.technicians = [];
-    reportsState.data.projects = [];
-    reportsState.data.projectsMap = new Map();
-    reportsState.data.maintenance = [];
-    reportsState.techniciansIndex = null;
+    if (!reportsState.data.projectsMap || !(reportsState.data.projectsMap instanceof Map)) {
+      reportsState.data.projectsMap = new Map();
+    }
   } finally {
     reportsState.loading = false;
     if (!silent) {

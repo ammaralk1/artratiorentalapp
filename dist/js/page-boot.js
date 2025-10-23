@@ -64,4 +64,20 @@
       document.body.setAttribute('data-theme', 'light');
     }
   }
+
+  // Configure API base fallback early (before modules load)
+  try {
+    if (typeof window !== 'undefined' && !window.APP_API_BASE) {
+      // When opened directly from filesystem, use local backend default
+      if (location.protocol === 'file:') {
+        window.APP_API_BASE = 'http://127.0.0.1:8000/backend/api';
+      }
+      // When running on localhost, keep same-origin backend path
+      else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+        window.APP_API_BASE = '/backend/api';
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 })();
