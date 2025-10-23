@@ -61,7 +61,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       ?? assignment.position_label
       ?? assignment.role
       ?? assignment.position
-      ?? technicianRecord?.role
       ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
     if (!positionLabel || positionLabel.trim() === '') {
       positionLabel = assignment.positionLabelAr
@@ -70,7 +69,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.position_label_en
         ?? assignment.position_name_ar
         ?? assignment.position_name_en
-        ?? technicianRecord?.role
         ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
     }
     const positionLabelAlt = assignment.positionLabelAlt
@@ -945,7 +943,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           <span class="technician-index">${indexLabel}</span>
           <div class="d-flex flex-column">
             <span class="technician-name">${technicianName}</span>
-            <small class="text-muted">👔 ${positionLabel}${positionLabelAlt ? ` — ${positionLabelAlt}` : ''}</small>
+            <small class="text-muted">🏷️ ${positionLabel}${positionLabelAlt ? ` — ${positionLabelAlt}` : ''}</small>
             <small class="text-muted">💼 ${clientPriceDisplay}</small>
           </div>
         </div>
