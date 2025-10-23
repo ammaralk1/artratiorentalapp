@@ -12,6 +12,9 @@ let calendarInstance = null;
 let calendarLanguageListenerAttached = false;
 let calendarReservationsListenerAttached = false;
 let calendarResponsiveListenerAttached = false;
+let calendarSwipeListenerAttached = false;
+let calendarWidthBucket = null;
+let calendarResizeTimer = null;
 let calendarThemeObserverAttached = false;
 let calendarThemeObserver = null;
 let calendarThemeDebounce = null;
@@ -425,20 +428,31 @@ function ensureCalendarListeners() {
   }
 }
 
+function getWidthBucket(w) {
+  if (w <= 480) return 'xs';
+  if (w <= 768) return 'sm';
+  return 'lg';
+}
+
 function getResponsiveCalendarView() {
   if (typeof window === 'undefined') {
     return 'dayGridMonth';
   }
   const w = window.innerWidth || 1024;
-  if (w <= 480) return 'listDay';
-  if (w <= 768) return 'listWeek';
+  const bucket = getWidthBucket(w);
+  if (bucket === 'xs') return 'listDay';
+  if (bucket === 'sm') return 'listWeek';
   return 'dayGridMonth';
 }
 
 function applyResponsiveCalendarView() {
   if (!calendarInstance) return;
+  const w = typeof window !== 'undefined' ? (window.innerWidth || 1024) : 1024;
+  const bucket = getWidthBucket(w);
   const desiredView = getResponsiveCalendarView();
-  if (calendarInstance.view?.type !== desiredView) {
+  // Avoid thrashing: only change view if width bucket changed
+  if (calendarWidthBucket !== bucket && calendarInstance.view?.type !== desiredView) {
+    calendarWidthBucket = bucket;
     calendarInstance.changeView(desiredView);
   }
   calendarInstance.updateSize();
@@ -447,10 +461,54 @@ function applyResponsiveCalendarView() {
 function ensureResponsiveListener() {
   if (calendarResponsiveListenerAttached) return;
   if (typeof window === 'undefined') return;
+  // Debounce rapid resize events (mobile address bar show/hide)
   window.addEventListener('resize', () => {
-    applyResponsiveCalendarView();
-  });
+    if (calendarResizeTimer) {
+      clearTimeout(calendarResizeTimer);
+    }
+    calendarResizeTimer = setTimeout(() => {
+      applyResponsiveCalendarView();
+    }, 160);
+  }, { passive: true });
   calendarResponsiveListenerAttached = true;
+}
+
+function ensureSwipeNavigation() {
+  if (calendarSwipeListenerAttached) return;
+  const { calendarEl } = getCalendarElements();
+  if (!calendarEl) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  const onTouchStart = (e) => {
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    startX = t.clientX;
+    startY = t.clientY;
+    tracking = true;
+  };
+  const onTouchEnd = (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    // Horizontal swipe dominant and long enough
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) {
+        calendarInstance?.next();
+      } else {
+        calendarInstance?.prev();
+      }
+    }
+  };
+
+  calendarEl.addEventListener('touchstart', onTouchStart, { passive: true });
+  calendarEl.addEventListener('touchend', onTouchEnd, { passive: true });
+  calendarSwipeListenerAttached = true;
 }
 
 function ensureThemeListener() {
@@ -717,19 +775,28 @@ export function renderCalendar() {
           right: 'dayGridMonth,timeGridWeek,timeGridDay',
         },
         dayMaxEventRows: 3,
+        lazyFetching: false,
+        noEventsContent() {
+          return t('calendar.noEvents', 'لا توجد حجوزات لعرضها في هذا النطاق');
+        },
         buttonText: getCalendarButtonText(),
         events,
         eventContent: buildEventContent,
-  eventClick(info) {
-    showReservationModal(info.event.extendedProps);
-  },
-  windowResize: applyResponsiveCalendarView,
-  datesSet() {
-    decorateCalendarControls();
-  }
-});
-calendarInstance.render();
-decorateCalendarControls();
+        eventClick(info) {
+          showReservationModal(info.event.extendedProps);
+        },
+        windowResize: applyResponsiveCalendarView,
+        datesSet() {
+          decorateCalendarControls();
+        }
+      });
+      calendarInstance.render();
+      // Initialize width bucket once rendered
+      if (typeof window !== 'undefined') {
+        calendarWidthBucket = getWidthBucket(window.innerWidth || 1024);
+      }
+      ensureSwipeNavigation();
+      decorateCalendarControls();
     } else {
       calendarInstance.setOption('locale', getCurrentLanguage());
       calendarInstance.setOption('buttonText', getCalendarButtonText());
