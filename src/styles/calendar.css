@@ -487,6 +487,25 @@
   /* Improve readability on small tablets */
   .calendar-shell { min-height: 55vh; }
   .calendar-toolbar__title { font-size: 1.2rem; }
+
+  /* Allow horizontal slide for week views and give each day enough width */
+  .calendar-shell {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Time grid week: wider than viewport to keep columns readable */
+  .fc .fc-timeGridWeek-view .fc-scrollgrid {
+    min-width: 1200px;
+  }
+  /* Day grid week: also widen for readability */
+  .fc .fc-dayGridWeek-view .fc-scrollgrid {
+    min-width: 980px;
+  }
+  /* Make time axis labels slightly smaller to save horizontal space */
+  .fc .fc-timegrid-slot-label-cushion,
+  .fc .fc-timegrid-axis-cushion {
+    font-size: 0.85rem;
+  }
 }
 
 /* Modal tweaks */
