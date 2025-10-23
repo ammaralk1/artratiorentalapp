@@ -776,6 +776,23 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   }
 }
 
+/* Stronger specificity to guarantee outline inside the technicians picker modal */
+#selectTechniciansModal .crew-position-card {
+  border-color: var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 18px 40px hsl(var(--b1) / 0.14);
+}
+
+#selectTechniciansModal .crew-position-card:hover,
+#selectTechniciansModal .crew-position-card:focus-visible,
+#selectTechniciansModal .crew-position-card:focus-within {
+  border-color: var(--crew-outline);
+  box-shadow:
+    0 0 0 2px var(--crew-outline) inset,
+    0 22px 48px hsl(var(--er, 0 80% 50%) / 0.25);
+}
+
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-picker-modal {
   background: linear-gradient(145deg, hsla(var(--b2) / 0.92), hsla(var(--p) / 0.2));
   border-color: hsla(var(--p) / 0.38);
