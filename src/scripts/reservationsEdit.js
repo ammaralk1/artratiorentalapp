@@ -36,6 +36,27 @@ let modalInstance = null;
 let modalEventsContext = {};
 let isSyncingShareTaxEdit = false;
 
+// ===== Crew debug helpers (safe no-op by default) =====
+const CREW_DEBUG_FLAG = '__DEBUG_CREW__';
+function isCrewDebugEnabled() {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search || '');
+      if (params.get('debugCrew') === '1') return true;
+      const ls = window.localStorage?.getItem(CREW_DEBUG_FLAG);
+      if (ls && ['1', 'true', 'on', 'yes'].includes(String(ls).toLowerCase())) return true;
+    }
+  } catch (_) { /* ignore */ }
+  return false;
+}
+function crewDebugLog(label, data) {
+  if (!isCrewDebugEnabled()) return;
+  try {
+    // eslint-disable-next-line no-console
+    console.log(`🪵 [crew-debug:edit] ${label}`, data);
+  } catch (_) { /* ignore */ }
+}
+
 function updateConfirmedControls(value, { disable = false } = {}) {
   const hiddenInput = document.getElementById('edit-res-confirmed');
   const toggleBtn = document.getElementById('edit-res-confirmed-btn');
@@ -1087,7 +1108,19 @@ export async function saveReservationChanges({
   });
 
   try {
+    crewDebugLog('about to submit', {
+      editingIndex,
+      crewAssignments,
+      techniciansPayload: payload?.technicians,
+      payload,
+    });
     const updatedReservation = await updateReservationApi(reservation.id || reservation.reservationId, payload);
+    crewDebugLog('server response', {
+      reservation: updatedReservation?.id ?? updatedReservation?.reservationId ?? updatedReservation?.reservation_code,
+      technicians: updatedReservation?.technicians,
+      crewAssignments: updatedReservation?.crewAssignments,
+      techniciansDetails: updatedReservation?.techniciansDetails,
+    });
     await refreshReservationsFromApi();
     syncEquipmentStatuses();
     renderEquipment();

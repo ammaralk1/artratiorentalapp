@@ -61,6 +61,27 @@ import {
   normalizePackageId,
 } from '../reservationsPackages.js';
 
+// ===== Crew debug helpers (safe no-op by default) =====
+const CREW_DEBUG_FLAG = '__DEBUG_CREW__';
+function isCrewDebugEnabled() {
+  try {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search || '');
+      if (params.get('debugCrew') === '1') return true;
+      const ls = window.localStorage?.getItem(CREW_DEBUG_FLAG);
+      if (ls && ['1', 'true', 'on', 'yes'].includes(String(ls).toLowerCase())) return true;
+    }
+  } catch (_) { /* ignore */ }
+  return false;
+}
+function crewDebugLog(label, data) {
+  if (!isCrewDebugEnabled()) return;
+  try {
+    // eslint-disable-next-line no-console
+    console.log(`🪵 [crew-debug:create] ${label}`, data);
+  } catch (_) { /* ignore */ }
+}
+
 const DEFAULT_PROJECT_FORM_DRAFT_KEY = 'projects:create:draft';
 const DEFAULT_PROJECT_FORM_RETURN_URL = 'projects.html#projects-section';
 
@@ -2460,7 +2481,14 @@ async function handleReservationSubmit() {
   });
 
   try {
+    crewDebugLog('about to submit', { crewAssignments, techniciansPayload: payload?.technicians, payload });
     const createdReservation = await createReservationApi(payload);
+    crewDebugLog('server response', {
+      reservation: createdReservation?.id ?? createdReservation?.reservationId ?? createdReservation?.reservation_code,
+      technicians: createdReservation?.technicians,
+      crewAssignments: createdReservation?.crewAssignments,
+      techniciansDetails: createdReservation?.techniciansDetails,
+    });
     syncEquipmentStatuses();
     populateEquipmentDescriptionLists();
     syncTechniciansStatuses();

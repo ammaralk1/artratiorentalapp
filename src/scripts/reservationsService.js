@@ -114,17 +114,34 @@ function normalizeCrewAssignmentsForCache(assignments = []) {
     }));
 }
 
+function hasRichCrewData(assignments = []) {
+  if (!Array.isArray(assignments) || assignments.length === 0) return false;
+  return assignments.some((a) => {
+    const label = (a.positionLabel ?? '').trim();
+    const hasLabel = label.length > 0;
+    const hasKey = a.positionId != null || (a.positionKey != null && String(a.positionKey).trim() !== '');
+    const hasPrice = Number.isFinite(Number(a.positionClientPrice)) && Number(a.positionClientPrice) > 0;
+    const hasCost = Number.isFinite(Number(a.positionCost)) && Number(a.positionCost) > 0;
+    return hasLabel || hasKey || hasPrice || hasCost;
+  });
+}
+
 function persistReservationCrewToCache(reservationId, assignments) {
   if (!reservationId) return;
   const cache = readReservationCrewCache();
   const key = String(reservationId);
   const normalized = normalizeCrewAssignmentsForCache(assignments);
-  if (!normalized.length) {
+  // If incoming data is empty or lacks position info while existing cache has rich data, keep existing.
+  const existing = Array.isArray(cache[key]) ? cache[key] : [];
+  const incomingRich = hasRichCrewData(normalized);
+  const existingRich = hasRichCrewData(existing);
+  if (!normalized.length || (!incomingRich && existingRich)) {
     if (cache[key]) {
-      delete cache[key];
-      writeReservationCrewCache(cache);
+      // Keep existing rich data; do not overwrite with empty/poor data
+      if (!incomingRich) return;
     }
-    return;
+    // If no existing entry and incoming is empty, nothing to persist
+    if (!incomingRich) return;
   }
   cache[key] = normalized;
   writeReservationCrewCache(cache);
@@ -379,7 +396,13 @@ export function setReservationsState(reservations) {
     if (!reservation) return;
     const reservationId = reservation.id ?? reservation.reservationId ?? reservation.reservationCode;
     persistReservationPackagesToCache(reservationId, reservation.packages);
-    persistReservationCrewToCache(reservationId, reservation.crewAssignments || reservation.techniciansDetails || []);
+    const candidateCrew = reservation.crewAssignments && reservation.crewAssignments.length
+      ? reservation.crewAssignments
+      : (reservation.techniciansDetails || []);
+    // Only persist if we have rich data to avoid wiping richer cache with backend-stripped data
+    if (hasRichCrewData(candidateCrew)) {
+      persistReservationCrewToCache(reservationId, candidateCrew);
+    }
   });
   if (reservationsState.length) {
     console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
@@ -640,11 +663,11 @@ export function toInternalReservation(raw = {}) {
     };
   });
 
-  if ((!Array.isArray(crewAssignments) || crewAssignments.length === 0)) {
+  if ((!Array.isArray(crewAssignments) || crewAssignments.length === 0) || !hasRichCrewData(crewAssignments)) {
     const cacheKey = idValue ?? reservationCode ?? raw.reservation_code ?? raw.reservationId ?? null;
     if (cacheKey != null) {
       const cachedCrew = getCachedReservationCrew(cacheKey);
-      if (Array.isArray(cachedCrew) && cachedCrew.length) {
+      if (Array.isArray(cachedCrew) && cachedCrew.length && hasRichCrewData(cachedCrew)) {
         crewAssignments = cachedCrew.map((entry, index) => normalizeCrewAssignmentEntry(entry, index)).filter(Boolean);
         techniciansDetails = crewAssignments.map((assignment) => ({ ...assignment }));
       }
