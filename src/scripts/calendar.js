@@ -20,6 +20,8 @@ let calendarThemeObserver = null;
 let calendarThemeDebounce = null;
 let isCalendarLoading = false;
 let calendarErrorMessage = '';
+// Disable swipe-based period navigation to avoid accidental month changes on mobile
+const SWIPE_NAV_ENABLED = false;
 const CALENDAR_LEGEND_ITEMS = [
   { key: 'confirmed', chipClass: 'reservation-chip status-confirmed' },
   { key: 'pending', chipClass: 'reservation-chip status-pending' },
@@ -474,6 +476,7 @@ function ensureResponsiveListener() {
 }
 
 function ensureSwipeNavigation() {
+  if (!SWIPE_NAV_ENABLED) return;
   if (calendarSwipeListenerAttached) return;
   const { calendarEl } = getCalendarElements();
   if (!calendarEl) return;
