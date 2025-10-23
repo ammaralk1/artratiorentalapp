@@ -328,6 +328,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow:
     0 0 0 2px hsl(var(--b1) / 0.9) inset,
     0 0 0 1px hsl(var(--bc) / 0.12),
+    /* Static outer outline to make each card visually distinct */
+    0 0 0 3px hsl(var(--bc) / 0.08),
     0 18px 40px hsl(var(--b1) / 0.14);
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
@@ -372,6 +374,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow:
     0 0 0 2px hsl(var(--p) / 0.08) inset,
     0 0 0 1px hsl(var(--p) / 0.35),
+    /* Emphasize the outer outline on interaction */
+    0 0 0 3px hsl(var(--p) / 0.15),
     0 22px 48px hsl(var(--p) / 0.25);
   transform: translateY(-4px);
 }
@@ -836,6 +840,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow:
     0 0 0 2px hsla(var(--b2) / 0.4) inset,
     0 0 0 1px hsla(var(--p) / 0.35),
+    /* Static outer outline for dark mode */
+    0 0 0 3px hsla(var(--p) / 0.22),
     0 24px 52px hsla(var(--b1) / 0.35);
   color: hsla(var(--bc) / 0.96);
 }
@@ -859,6 +865,8 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   box-shadow:
     0 0 0 2px hsla(var(--p) / 0.14) inset,
     0 0 0 1px hsla(var(--p) / 0.55),
+    /* Emphasize outline in dark mode on interaction */
+    0 0 0 3px hsla(var(--p) / 0.3),
     0 30px 60px hsla(var(--p) / 0.45);
 }
 
