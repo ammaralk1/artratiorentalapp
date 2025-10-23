@@ -125,32 +125,14 @@ export function renderTopCustomers(rows) {
     return;
   }
 
-  tbody.innerHTML = `
-    <div class="reports-card">
-      <div class="reports-card-header">
-        <h3>${translate('reports.topCustomers.title', 'أفضل العملاء', 'Top Customers')}</h3>
-      </div>
-      <div class="reports-table-wrapper">
-        <table class="reports-table">
-          <thead>
-            <tr>
-              <th>${translate('reports.topCustomers.name', 'العميل', 'Customer')}</th>
-              <th>${translate('reports.topCustomers.count', 'عدد الحجوزات', 'Bookings')}</th>
-              <th>${translate('reports.topCustomers.revenue', 'الإيرادات', 'Revenue')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((row) => `
-              <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="customer" data-search="${escapeAttribute(row.name)}">
-                <td>${escapeHtml(row.name)}</td>
-                <td>${formatNumber(row.count)}</td>
-                <td>${formatCurrency(row.revenue)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="customer" data-search="${escapeAttribute(row.name)}">
+        <td>${escapeHtml(row.name)}</td>
+        <td>${formatNumber(row.count)}</td>
+        <td>${formatCurrency(row.revenue)}</td>
+      </tr>
+    `)
     .join('');
 }
 
@@ -163,31 +145,13 @@ export function renderTopEquipment(rows) {
     return;
   }
 
-  tbody.innerHTML = `
-    <div class="reports-card">
-      <div class="reports-card-header">
-        <h3>${translate('reports.topEquipment.title', 'المعدات الأكثر استخداماً', 'Most Used Equipment')}</h3>
-      </div>
-      <div class="reports-table-wrapper">
-        <table class="reports-table">
-          <thead>
-            <tr>
-              <th>${translate('reports.topEquipment.name', 'المعدة', 'Equipment')}</th>
-              <th>${translate('reports.topEquipment.count', 'عدد الحجوزات', 'Bookings')}</th>
-              <th>${translate('reports.topEquipment.revenue', 'الإيرادات', 'Revenue')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map((row) => `
-              <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="equipment" data-search="${escapeAttribute(row.name)}">
-                <td>${escapeHtml(row.name)}</td>
-                <td>${formatNumber(row.count)}</td>
-                <td>${formatCurrency(row.revenue)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="equipment" data-search="${escapeAttribute(row.name)}">
+        <td>${escapeHtml(row.name)}</td>
+        <td>${formatNumber(row.count)}</td>
+        <td>${formatCurrency(row.revenue)}</td>
+      </tr>
+    `)
     .join('');
 }

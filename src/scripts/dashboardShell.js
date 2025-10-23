@@ -1,6 +1,3 @@
-import { apiRequest } from './apiClient.js';
-import { getCurrentUser } from './auth.js';
-import { saveData } from './storage.js';
 function getElements() {
   const sidebar = document.getElementById('dashboard-sidebar');
   const backdrop = document.getElementById('sidebar-backdrop');
@@ -70,43 +67,6 @@ function initDashboardGreetingToggle() {
 }
 
 export function initDashboardShell() {
-  // جلب بيانات التابات عند تحميل الداشبورد
-  async function fetchAndStoreDashboardData() {
-    const user = await getCurrentUser();
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-    try {
-      const emit = (type) => {
-        try {
-          document.dispatchEvent(new CustomEvent(type));
-        } catch {}
-        try {
-          window.dispatchEvent(new CustomEvent(type));
-        } catch {}
-      };
-      const [equipmentRes, maintenanceRes, reservationsRes] = await Promise.all([
-        apiRequest('equipment/'),
-        apiRequest('maintenance/'),
-        apiRequest('reservations/')
-      ]);
-      saveData({
-        equipment: equipmentRes?.data || [],
-        maintenance: maintenanceRes?.data || [],
-        reservations: reservationsRes?.data || []
-      });
-      // Notify listeners across both document and window for compatibility
-      emit('equipment:changed');
-      emit('maintenance:changed');
-      emit('maintenance:updated');
-      emit('reservations:changed');
-    } catch (err) {
-      console.error('فشل جلب بيانات الداشبورد', err);
-    }
-  }
-
-  fetchAndStoreDashboardData();
   const elements = getElements();
   const { sidebar, backdrop, openTrigger, closeTrigger } = elements;
 

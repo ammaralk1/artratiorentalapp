@@ -280,7 +280,7 @@
                     <div class="stat-figure text-primary">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
+                        <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"></path>
                         <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"></path>
                         <path d="M12 12l0 .01"></path>
                         <path d="M3 13a20 20 0 0 0 18 0"></path>
@@ -294,7 +294,7 @@
                   <div class="stat-figure text-secondary">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"></path>
+                        <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"></path>
                         <path d="M16 3v4"></path>
                         <path d="M8 3v4"></path>
                         <path d="M4 11h16"></path>
@@ -690,6 +690,8 @@
             </div>
           </div>
         </div>
+      </div> <!-- نهاية تبويب الفريق الفني -->
+
 
       <!-- ✅ تبويب: المعدات -->
       <div class="tab" id="equipment-tab">
@@ -1249,9 +1251,6 @@
                         <option value="" selected disabled>📦 اختر الحزمة</option>
                       </select>
                     </div>
-                    <div class="reservation-equipment-field reservation-equipment-field--package-action">
-                      <button type="button" class="btn btn-primary" id="add-reservation-package" data-i18n data-i18n-key="reservations.create.packages.addButton">➕ إضافة الحزمة</button>
-                    </div>
                     <div class="reservation-equipment-hint" id="reservation-package-hint" data-i18n data-i18n-key="reservations.create.packages.hint">سيتم إضافة الحزمة مباشرة بمجرد اختيارها.</div>
                   </div>
                 </div>
@@ -1310,7 +1309,7 @@
                     <div class="reservation-payment-progress" id="res-payment-progress">
                       <label class="form-label reservation-payment-progress__label" for="res-payment-progress-value" data-i18n data-i18n-key="reservations.create.paymentProgress.label">💰 الدفعة المستلمة</label>
                       <div class="reservation-payment-progress__grid">
-                        <select id="res-payment-progress-type" class="form-select reservation-payment-progress__select">
+                        <select id="res-payment-progress-type" class="form-select reservation-billing-input reservation-payment-progress__select">
                           <option value="amount" data-i18n data-i18n-key="reservations.create.paymentProgress.amount">💵 مبلغ</option>
                           <option value="percent" selected data-i18n data-i18n-key="reservations.create.paymentProgress.percent">٪ نسبة</option>
                         </select>
@@ -1886,7 +1885,7 @@
 
             <div class="col-12">
               <div class="edit-reservation-field-row edit-reservation-field-row--single">
-                <div class="edit-reservation-field">
+                <div class="edit-reservation-field edit-reservation-field--wide">
                   <label class="form-label edit-reservation-notes-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
                   <textarea class="form-control reservation-notes reservation-notes--compact reservation-notes--short" id="edit-res-notes" rows="2" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
                 </div>
