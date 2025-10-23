@@ -98,7 +98,7 @@ import{d as V,n as _,b as U,A as Qe,s as rn,a as oi,m as si,c as ci,i as ri,l as
           </div>
         </div>
         <footer class="crew-position-card__footer">
-          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${a.id}">
+          <button type="button" class="btn btn-primary crew-position-add-btn" data-position-id="${a.id}">
             ${b}
           </button>
         </footer>

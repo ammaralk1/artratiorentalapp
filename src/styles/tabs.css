@@ -475,36 +475,19 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   font-weight: 600;
   border-radius: 999px;
   padding-inline: 1.8rem;
-  /* Themed blue highlight inside the outline */
-  color: hsl(var(--p));
-  border-color: hsl(var(--p) / 0.6);
-  background: linear-gradient(145deg, hsl(var(--p) / 0.12), hsl(var(--p) / 0.08));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--p) / 0.35),
-    0 8px 18px hsl(var(--p) / 0.18);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .crew-position-add-btn:hover {
   transform: translateY(-2px);
-  color: hsl(var(--pc));
-  border-color: hsl(var(--p));
-  background: linear-gradient(145deg, hsl(var(--p) / 0.28), hsl(var(--p) / 0.18));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--p) / 0.45),
-    0 14px 30px hsl(var(--p) / 0.32);
+  box-shadow: 0 14px 30px rgba(76, 110, 245, 0.28);
 }
 
-.crew-position-add-btn:focus-visible {
-  outline: 3px solid hsl(var(--p) / 0.45);
-  outline-offset: 2px;
-}
+.crew-position-add-btn:focus-visible { outline: 3px solid rgba(76, 110, 245, 0.45); outline-offset: 2px; }
 
 .crew-position-add-btn:active {
   transform: translateY(0);
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--p) / 0.5),
-    0 6px 14px hsl(var(--p) / 0.22);
+  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.22);
 }
 
 .crew-assignment-column {
@@ -944,42 +927,13 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   color: hsla(var(--pc));
 }
 
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn {
-  color: hsla(var(--pc));
-  border-color: hsla(var(--p) / 0.6);
-  background: linear-gradient(145deg, hsla(var(--p) / 0.28), hsla(var(--p) / 0.2));
-  box-shadow:
-    inset 0 0 0 1px hsla(var(--p) / 0.45),
-    0 18px 36px hsla(var(--p) / 0.45);
-}
-
-:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover {
-  background: linear-gradient(145deg, hsla(var(--p) / 0.36), hsla(var(--p) / 0.28));
-  border-color: hsla(var(--p));
-  box-shadow:
-    inset 0 0 0 1px hsla(var(--p) / 0.55),
-    0 22px 44px hsla(var(--p) / 0.58);
-}
+:where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-position-add-btn:hover { box-shadow: 0 22px 44px rgba(59, 130, 246, 0.58); }
 
 /* Stronger specificity inside the technicians modal */
-#selectTechniciansModal .crew-position-add-btn {
-  color: hsl(var(--p));
-  border-color: hsl(var(--p) / 0.6);
-  background: linear-gradient(145deg, hsl(var(--p) / 0.12), hsl(var(--p) / 0.08));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--p) / 0.35),
-    0 8px 18px hsl(var(--p) / 0.18);
-}
+#selectTechniciansModal .crew-position-add-btn { /* keep default .btn-primary visuals, only enhance elevation */ box-shadow: 0 8px 18px rgba(76, 110, 245, 0.24); }
 
 #selectTechniciansModal .crew-position-add-btn:hover,
-#selectTechniciansModal .crew-position-add-btn:focus-visible {
-  color: hsl(var(--pc));
-  border-color: hsl(var(--p));
-  background: linear-gradient(145deg, hsl(var(--p) / 0.28), hsl(var(--p) / 0.18));
-  box-shadow:
-    inset 0 0 0 1px hsl(var(--p) / 0.45),
-    0 14px 30px hsl(var(--p) / 0.32);
-}
+#selectTechniciansModal .crew-position-add-btn:focus-visible { box-shadow: 0 14px 30px rgba(76, 110, 245, 0.32); }
 
 :where(html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .crew-assignment-empty {
   background: hsla(var(--b1) / 0.22);

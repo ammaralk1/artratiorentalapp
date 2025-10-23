@@ -592,7 +592,7 @@ function renderPositionList() {
           </div>
         </div>
         <footer class="crew-position-card__footer">
-          <button type="button" class="btn btn-sm btn-outline-primary crew-position-add-btn" data-position-id="${position.id}">
+          <button type="button" class="btn btn-primary crew-position-add-btn" data-position-id="${position.id}">
             ${addButtonLabel}
           </button>
         </footer>
