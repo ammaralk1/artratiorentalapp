@@ -355,7 +355,7 @@ function buildTechnicianOptions(currentAssignmentId) {
     const isConflicting = hasInterval
       ? hasTechnicianConflict(id, start, end, ignoreReservationId)
       : false;
-    const label = normalizeNumbers(tech.name || id);
+    const label = normalizeNumbers(tech.name || tech.full_name || tech.fullName || tech.email || id);
     return {
       id,
       label,
@@ -917,7 +917,10 @@ function setupCrewPickerInternal() {
 
   const modalEl = document.getElementById('selectTechniciansModal');
   if (modalEl && !modalEl.dataset.listenerAttached && window.bootstrap?.Modal) {
-    modalEl.addEventListener('shown.bs.modal', () => {
+    modalEl.addEventListener('shown.bs.modal', async () => {
+      if (!cachedTechnicians.length && (!loadData().technicians || loadData().technicians.length === 0)) {
+        try { await refreshTechniciansFromApi(); } catch (e) { console.warn('[crew-picker] fetch on show failed', e); }
+      }
       renderPositionList();
       renderAssignmentsTable();
       updateCrewPickerInfo();
