@@ -198,13 +198,16 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
   let positionLabel = entry.position_name
     ?? entry.positionName
     ?? entry.position_label
+    ?? entry.position_title
     ?? entry.role
     ?? entry.position
     ?? '';
   if (!positionLabel) {
     positionLabel = entry.position_label_ar
+      ?? entry.position_title_ar
       ?? entry.position_name_ar
       ?? entry.position_label_en
+      ?? entry.position_title_en
       ?? entry.position_name_en
       ?? '';
   }
@@ -225,6 +228,8 @@ function normalizeCrewAssignmentEntry(entry, index = 0) {
   const positionClientPriceRaw = entry.position_client_price
     ?? entry.positionClientPrice
     ?? entry.client_price
+    ?? entry.customer_price
+    ?? entry.position_price
     ?? entry.clientPrice
     ?? entry.daily_total
     ?? entry.dailyTotal

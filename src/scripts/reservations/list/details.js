@@ -842,15 +842,18 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     let resolvedPositionLabel = assignment.positionLabel
       ?? assignment.position_name
       ?? assignment.position_label
+      ?? assignment.position_title
       ?? assignment.role
       ?? assignment.position
       ?? null;
     if (!resolvedPositionLabel || resolvedPositionLabel.trim() === '') {
       resolvedPositionLabel = assignment.positionLabelAr
         ?? assignment.position_label_ar
+        ?? assignment.position_title_ar
         ?? assignment.positionLabelEn
         ?? assignment.position_label_en
         ?? assignment.position_name_ar
+        ?? assignment.position_title_en
         ?? assignment.position_name_en
         ?? null;
     }
@@ -885,6 +888,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       assignment.positionClientPrice
         ?? assignment.position_client_price
         ?? assignment.client_price
+        ?? assignment.customer_price
+        ?? assignment.position_price
         ?? assignment.clientPrice
         ?? assignment.daily_total
         ?? assignment.dailyTotal
