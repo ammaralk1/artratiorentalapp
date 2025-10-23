@@ -359,6 +359,21 @@ export async function createReservationApi(payload) {
       created.paymentHistory = fallbackHistory;
     }
   }
+  // If backend doesn't echo rich crew assignments, fall back to payload
+  if ((!Array.isArray(created.crewAssignments) || created.crewAssignments.length === 0)
+      && Array.isArray(payload?.technicians) && payload.technicians.length) {
+    const fromPayload = payload.technicians
+      .map((entry, idx) => normalizeCrewAssignmentEntry(entry, idx))
+      .filter(Boolean);
+    if (fromPayload.length) {
+      created.crewAssignments = fromPayload;
+      // Compose a details collection to keep labels/prices for edit/details views
+      created.techniciansDetails = fromPayload.map((assignment, idx) => {
+        const src = payload.technicians[idx];
+        return typeof src === 'object' ? { ...src, ...assignment } : assignment;
+      });
+    }
+  }
   if (Array.isArray(payload?.packages) && payload.packages.length) {
     const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
     created.packages = mergePackageCollections(created.packages, fallbackPackages);
@@ -404,6 +419,20 @@ export async function updateReservationApi(id, payload) {
     if (fallbackHistory.length) {
       updated.paymentHistory = fallbackHistory;
       console.debug('[reservationsService] updateReservationApi applied fallback history', updated.paymentHistory);
+    }
+  }
+  // If backend response lacks crewAssignments, derive them from the submitted payload
+  if ((!Array.isArray(updated.crewAssignments) || updated.crewAssignments.length === 0)
+      && Array.isArray(payload?.technicians) && payload.technicians.length) {
+    const fromPayload = payload.technicians
+      .map((entry, idx) => normalizeCrewAssignmentEntry(entry, idx))
+      .filter(Boolean);
+    if (fromPayload.length) {
+      updated.crewAssignments = fromPayload;
+      updated.techniciansDetails = fromPayload.map((assignment, idx) => {
+        const src = payload.technicians[idx];
+        return typeof src === 'object' ? { ...src, ...assignment } : assignment;
+      });
     }
   }
   if (Array.isArray(payload?.packages) && payload.packages.length) {
@@ -498,12 +527,12 @@ export function toInternalReservation(raw = {}) {
 
   let packages = mapReservationPackagesFromSource(raw);
 
-  // Prefer rich assignments if backend returns them
+  // Prefer richest source first: crewAssignments > techniciansDetails > technicians
   const technicianEntriesSource = Array.isArray(raw.crewAssignments) && raw.crewAssignments.length
     ? raw.crewAssignments
-    : (Array.isArray(raw.technicians) && raw.technicians.length
-        ? raw.technicians
-        : (Array.isArray(raw.techniciansDetails) ? raw.techniciansDetails : []));
+    : (Array.isArray(raw.techniciansDetails) && raw.techniciansDetails.length
+        ? raw.techniciansDetails
+        : (Array.isArray(raw.technicians) ? raw.technicians : []));
 
   const crewAssignments = technicianEntriesSource
     .map((entry, index) => normalizeCrewAssignmentEntry(entry, index))
