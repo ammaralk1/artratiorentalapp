@@ -320,6 +320,20 @@ body {
   padding: 0;
 }
 
+/* Ensure events appear above any day backgrounds/highlights */
+.fc .fc-daygrid-day-events,
+.fc .fc-daygrid-event-harness,
+.calendar-event-card {
+  position: relative;
+  z-index: 3;
+}
+
+/* Month view: remove heavy shadows to avoid perceived blocks under cells */
+.fc .fc-dayGridMonth-view .fc-daygrid-event,
+.fc .fc-dayGridMonth-view .calendar-event-card {
+  box-shadow: none;
+}
+
 /* Event cards */
 .calendar-event-wrapper {
   width: 100%;
@@ -331,7 +345,7 @@ body {
   padding: 0.85rem 1.05rem;
   background: rgba(248, 250, 255, 0.9);
   border: 1px solid rgba(148, 163, 255, 0.18);
-  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.14);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -342,7 +356,7 @@ body {
 
 .calendar-event-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 30px 60px rgba(14, 37, 89, 0.22);
+  box-shadow: 0 22px 44px rgba(14, 37, 89, 0.2);
 }
 
 .calendar-event-card__head {
