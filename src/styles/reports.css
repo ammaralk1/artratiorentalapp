@@ -1380,3 +1380,9 @@ html[dir="rtl"] .reports-table-card .reports-card-title,
 body[dir="rtl"] .reports-table-card .reports-card-title {
   flex-direction: row-reverse;
 }
+
+/* Harden RTL override inside table card headers in case of cascade conflicts */
+html[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title,
+body[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title {
+  flex-direction: row-reverse !important;
+}
