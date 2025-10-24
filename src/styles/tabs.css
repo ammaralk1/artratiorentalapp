@@ -167,6 +167,18 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   overflow: hidden;
 }
 
+.tab-scroll-track {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  gap: 0.5rem;
+  padding-inline: 2.4rem;
+  touch-action: pan-x;
+}
+
 .subtab-scroll-card .tab-scroll {
   width: 100%;
 }
