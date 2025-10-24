@@ -769,7 +769,7 @@ export function renderCalendar() {
         initialView: getResponsiveCalendarView(),
         locale: getCurrentLanguage(),
         timeZone: 'local',
-        expandRows: true,
+        expandRows: false,
         height: 'auto',
         contentHeight: 'auto',
         headerToolbar: {

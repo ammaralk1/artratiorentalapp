@@ -125,6 +125,27 @@ body {
 /* Improve day number contrast on darker month tiles */
 .fc .fc-dayGridMonth-view .fc-daygrid-day-number {
   color: #e2e8f0;
+  padding: 0.5rem;
+  font-size: 0.86rem;
+}
+
+/* Compact month view spacing */
+.fc .fc-dayGridMonth-view .fc-daygrid-event-harness { margin-block: 4px; }
+.fc .fc-dayGridMonth-view .calendar-event-card {
+  padding: 0.6rem 0.7rem;
+  border-radius: 14px;
+  gap: 0.35rem;
+}
+.fc .fc-dayGridMonth-view .calendar-event-card__head { font-size: 0.72rem; gap: 0.5rem; }
+.fc .fc-dayGridMonth-view .calendar-event-card__customer {
+  font-size: 0.92rem;
+  -webkit-line-clamp: 1;
+}
+.fc .fc-dayGridMonth-view .calendar-event-card__chips { gap: 0.3rem; }
+.fc .fc-dayGridMonth-view .calendar-chip {
+  font-size: 0.62rem;
+  padding-inline: 0.55rem;
+  padding-block: 0.22rem;
 }
 
 .calendar-panel.is-loading .calendar-shell,
