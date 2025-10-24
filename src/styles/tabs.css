@@ -1240,6 +1240,17 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
     padding: 8px;
   }
 
+/* Center crew management (technicians) sub-tabs on wider screens */
+@media (min-width: 769px) {
+  .tech-subtabs-container .tabs {
+    justify-content: center;
+    margin-inline: auto;
+  }
+  .tech-subtabs-container .tab-scroll-track {
+    justify-content: center;
+  }
+}
+
   .reservations-subtabs-container .tabs::-webkit-scrollbar,
   .tech-subtabs-container .tabs::-webkit-scrollbar,
   .dashboard-subtabbar .tabs::-webkit-scrollbar {
