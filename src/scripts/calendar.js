@@ -65,11 +65,11 @@ function getCalendarElements() {
   return { calendarEl, panelEl, statusEl };
 }
 
-function getFullCalendarGlobal() {
-  if (typeof FullCalendar !== 'undefined') return FullCalendar;
-  if (typeof window !== 'undefined' && window.FullCalendar) return window.FullCalendar;
-  if (typeof globalThis !== 'undefined' && globalThis.FullCalendar) return globalThis.FullCalendar;
-  return null;
+function getToastUICalendarGlobal() {
+  // Support both legacy tui namespace and newer toastui namespace
+  if (typeof window === 'undefined') return null;
+  const maybe = window.tui?.Calendar || window.toastui?.Calendar || window.Calendar;
+  return typeof maybe === 'function' ? maybe : null;
 }
 
 function getLegendFallback(key) {
@@ -254,11 +254,7 @@ function setCalendarStatus({ loading = false, error = '', empty = false } = {}) 
 }
 
 
-function destroyCalendarInstance() {
-  if (!calendarInstance) return;
-  calendarInstance.destroy();
-  calendarInstance = null;
-}
+// removed earlier duplicate destroy handler in favor of version below
 
 function normalizeReservationForEvent(reservation, project = null) {
   if (!reservation || typeof reservation !== 'object') return null;
@@ -345,14 +341,7 @@ function buildCalendarEvents(reservations = []) {
 }
 
 
-function getCalendarButtonText() {
-  return {
-    today: t('calendar.buttons.today', 'اليوم'),
-    month: t('calendar.buttons.month', 'شهر'),
-    week: t('calendar.buttons.week', 'أسبوع'),
-    day: t('calendar.buttons.day', 'يوم'),
-  };
-}
+// No custom header buttons; TUI has its own minimal controls we won't skin here
 
 async function loadCalendarData() {
   if (isCalendarLoading) {
@@ -376,12 +365,16 @@ async function loadCalendarData() {
   return getReservationsState();
 }
 
-function updateCalendarEvents(events) {
+function destroyCalendarInstance() {
   if (!calendarInstance) return;
-  calendarInstance.batchRendering(() => {
-    calendarInstance.removeAllEvents();
-    calendarInstance.addEventSource(events);
-  });
+  try {
+    if (typeof calendarInstance.destroy === 'function') {
+      calendarInstance.destroy();
+    }
+  } catch (_e) {
+    /* noop */
+  }
+  calendarInstance = null;
 }
 
 function dispatchCalendarUpdated(events) {
@@ -394,21 +387,8 @@ function dispatchCalendarUpdated(events) {
 }
 
 function refreshCalendarFromState() {
-  const reservations = getReservationsState();
-  const events = buildCalendarEvents(reservations);
-
-  if (!calendarInstance) {
-    renderCalendar();
-    return;
-  }
-
-  calendarInstance.setOption('locale', getCurrentLanguage());
-  updateCalendarEvents(events);
-  applyResponsiveCalendarView();
-  setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
-  dispatchCalendarUpdated(events);
-  renderCalendarLegend();
-  decorateCalendarControls();
+  // With TUI Calendar, we will re-render the instance for simplicity and reliability
+  renderCalendar();
 }
 
 function ensureCalendarListeners() {
@@ -437,14 +417,12 @@ function getWidthBucket(w) {
 }
 
 function getResponsiveCalendarView() {
-  if (typeof window === 'undefined') {
-    return 'dayGridMonth';
-  }
+  if (typeof window === 'undefined') return 'month';
   const w = window.innerWidth || 1024;
   const bucket = getWidthBucket(w);
-  if (bucket === 'xs') return 'listDay';
-  if (bucket === 'sm') return 'listWeek';
-  return 'dayGridMonth';
+  if (bucket === 'xs') return 'day';
+  if (bucket === 'sm') return 'week';
+  return 'month';
 }
 
 function applyResponsiveCalendarView() {
@@ -452,12 +430,10 @@ function applyResponsiveCalendarView() {
   const w = typeof window !== 'undefined' ? (window.innerWidth || 1024) : 1024;
   const bucket = getWidthBucket(w);
   const desiredView = getResponsiveCalendarView();
-  // Avoid thrashing: only change view if width bucket changed
-  if (calendarWidthBucket !== bucket && calendarInstance.view?.type !== desiredView) {
+  if (calendarWidthBucket !== bucket && typeof calendarInstance.changeView === 'function') {
     calendarWidthBucket = bucket;
-    calendarInstance.changeView(desiredView);
+    calendarInstance.changeView(desiredView, true);
   }
-  calendarInstance.updateSize();
 }
 
 function ensureResponsiveListener() {
@@ -476,42 +452,7 @@ function ensureResponsiveListener() {
 }
 
 function ensureSwipeNavigation() {
-  if (!SWIPE_NAV_ENABLED) return;
-  if (calendarSwipeListenerAttached) return;
-  const { calendarEl } = getCalendarElements();
-  if (!calendarEl) return;
-
-  let startX = 0;
-  let startY = 0;
-  let tracking = false;
-
-  const onTouchStart = (e) => {
-    const t = e.changedTouches?.[0];
-    if (!t) return;
-    startX = t.clientX;
-    startY = t.clientY;
-    tracking = true;
-  };
-  const onTouchEnd = (e) => {
-    if (!tracking) return;
-    tracking = false;
-    const t = e.changedTouches?.[0];
-    if (!t) return;
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
-    // Horizontal swipe dominant and long enough
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx < 0) {
-        calendarInstance?.next();
-      } else {
-        calendarInstance?.prev();
-      }
-    }
-  };
-
-  calendarEl.addEventListener('touchstart', onTouchStart, { passive: true });
-  calendarEl.addEventListener('touchend', onTouchEnd, { passive: true });
-  calendarSwipeListenerAttached = true;
+  // TUI Calendar supports wheel/toolbar navigation; keep swipe disabled
 }
 
 function ensureThemeListener() {
@@ -523,7 +464,6 @@ function ensureThemeListener() {
       clearTimeout(calendarThemeDebounce);
     }
     calendarThemeDebounce = setTimeout(() => {
-      if (!calendarInstance) return;
       refreshCalendarFromState();
     }, 80);
   };
@@ -539,53 +479,7 @@ function ensureThemeListener() {
 
 
 
-function buildEventContent(arg) {
-  const { reservationId, customerName, paid, confirmed, completed } = arg.event.extendedProps;
-  const isPaid = paid === true || paid === 'paid';
-  const isConfirmed = confirmed === true || confirmed === 'true';
-  const isCompleted = completed === true || completed === 'true';
-  const wrapper = document.createElement('div');
-  wrapper.className = 'calendar-event-wrapper';
-
-  const confirmedLabel = isConfirmed
-    ? t('calendar.badges.confirmed', 'مؤكد')
-    : t('calendar.badges.pending', 'غير مؤكد');
-  const paidLabel = isPaid
-    ? t('calendar.badges.paid', 'مدفوع')
-    : t('calendar.badges.unpaid', 'غير مدفوع');
-  const completedLabel = t('calendar.badges.completed', 'منتهي');
-  const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
-
-  const chips = [
-    `<span class="reservation-chip calendar-chip ${isConfirmed ? 'status-confirmed' : 'status-pending'}">${escapeHtml(confirmedLabel)}</span>`,
-    `<span class="reservation-chip calendar-chip ${isPaid ? 'status-paid' : 'status-unpaid'}">${escapeHtml(paidLabel)}</span>`
-  ];
-  if (isCompleted) {
-    chips.push(`<span class="reservation-chip calendar-chip status-completed">${escapeHtml(completedLabel)}</span>`);
-  }
-
-  const timeLabel = formatEventTimeRange(arg.event.startStr, arg.event.endStr, arg.event.allDay);
-  const safeTime = escapeHtml(timeLabel || '');
-  const safeReservationId = escapeHtml(reservationId || '—');
-  const safeCustomer = escapeHtml(customerName || unknownCustomer);
-
-  const timeMarkup = safeTime
-    ? `<span class="calendar-event-card__time">${safeTime}</span>`
-    : '';
-
-  wrapper.innerHTML = `
-    <article class="calendar-event-card">
-      <header class="calendar-event-card__head">
-        ${timeMarkup}
-        <span class="calendar-event-card__id">${safeReservationId}</span>
-      </header>
-      <div class="calendar-event-card__customer">${safeCustomer}</div>
-      <div class="calendar-event-card__chips">${chips.join('')}</div>
-    </article>
-  `;
-
-  return { domNodes: [wrapper] };
-}
+// TUI Calendar will use HTML template via template.time(schedule) below
 
 
 function showReservationModal(reservation) {
@@ -742,8 +636,8 @@ export function renderCalendar() {
   const { calendarEl } = getCalendarElements();
   if (!calendarEl) return;
 
-  const FullCalendarLib = getFullCalendarGlobal();
-  if (!FullCalendarLib || typeof FullCalendarLib.Calendar !== 'function') {
+  const TuiCalendar = getToastUICalendarGlobal();
+  if (!TuiCalendar) {
     const fallbackMessage = t('calendar.status.missingLibrary', 'تعذر تحميل مكتبة التقويم. يرجى تحديث الصفحة.');
     setCalendarStatus({ error: fallbackMessage });
     destroyCalendarInstance();
@@ -762,59 +656,81 @@ export function renderCalendar() {
       return;
     }
 
-    const events = buildCalendarEvents(reservations);
+    const events = buildCalendarSchedules(reservations);
 
-    if (!calendarInstance) {
-      calendarInstance = new FullCalendarLib.Calendar(calendarEl, {
-        initialView: getResponsiveCalendarView(),
-        locale: getCurrentLanguage(),
-        timeZone: 'local',
-        expandRows: false,
-        height: 'auto',
-        contentHeight: 'auto',
-        headerToolbar: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay',
+    // Always recreate for simplicity and to avoid API differences
+    destroyCalendarInstance();
+    const defaultView = getResponsiveCalendarView();
+    calendarInstance = new TuiCalendar('#calendar', {
+      defaultView,
+      usageStatistics: false,
+      isReadOnly: true,
+      week: {
+        taskView: false,
+        hourStart: 6,
+        hourEnd: 24,
+      },
+      month: {
+        visibleWeeksCount: 0,
+        startDayOfWeek: 0,
+      },
+      template: {
+        time(schedule) {
+          // DaisyUI/Tailwind styled card content
+          const paid = schedule?.raw?.paid === true || schedule?.raw?.paid === 'paid';
+          const confirmed = schedule?.raw?.confirmed === true || schedule?.raw?.confirmed === 'true';
+          const completed = schedule?.raw?.completed === true || schedule?.raw?.completed === 'true';
+          const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
+          const timeLabel = formatEventTimeRange(schedule.start?.toString?.() || schedule.start, schedule.end?.toString?.() || schedule.end, schedule.isAllDay);
+          const idLabel = schedule?.raw?.reservationId ? String(schedule.raw.reservationId) : '—';
+          const customer = schedule?.raw?.customerName || unknownCustomer;
+          const chip = (cls, text) => `<span class="badge ${cls} badge-sm">${escapeHtml(text)}</span>`;
+          const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
+          const paidLabel = paid ? t('calendar.badges.paid', 'مدفوع') : t('calendar.badges.unpaid', 'غير مدفوع');
+          const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paid ? 'badge-info' : 'badge-error', paidLabel)];
+          if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'منتهي')));
+          return `
+            <div class="card bg-base-100/90 border border-base-200 shadow-sm rounded-xl p-2">
+              <div class="flex items-baseline justify-between text-[0.8rem]">
+                <span class="font-bold">${escapeHtml(timeLabel || '')}</span>
+                <span class="font-semibold">${escapeHtml(idLabel)}</span>
+              </div>
+              <div class="mt-1 font-semibold text-sm truncate">${escapeHtml(customer)}</div>
+              <div class="mt-1 flex gap-1 flex-wrap">${chips.join('')}</div>
+            </div>
+          `;
         },
-        dayMaxEventRows: 3,
-        lazyFetching: false,
-        noEventsContent() {
-          return t('calendar.noEvents', 'لا توجد حجوزات لعرضها في هذا النطاق');
-        },
-        buttonText: getCalendarButtonText(),
-        events,
-        eventContent: buildEventContent,
-        eventClick(info) {
-          showReservationModal(info.event.extendedProps);
-        },
-        windowResize: applyResponsiveCalendarView,
-        datesSet() {
-          decorateCalendarControls();
-        }
-      });
-      calendarInstance.render();
-      // Initialize width bucket once rendered
-      if (typeof window !== 'undefined') {
-        calendarWidthBucket = getWidthBucket(window.innerWidth || 1024);
+      },
+    });
+
+    // Bind click to open the existing modal of reservation details
+    const openDetails = (raw) => {
+      if (!raw) return;
+      try { showReservationModal(raw); } catch (_e) { /* ignore */ }
+    };
+    if (typeof calendarInstance.on === 'function') {
+      // v1 style
+      calendarInstance.on('clickSchedule', (ev) => openDetails(ev?.schedule?.raw || ev?.schedule));
+      // v2 style
+      calendarInstance.on('clickEvent', (ev) => openDetails(ev?.event?.raw || ev?.event));
+    }
+
+    // Feed events
+    try {
+      if (typeof calendarInstance.createSchedules === 'function') {
+        calendarInstance.createSchedules(events);
+      } else if (typeof calendarInstance.createEvents === 'function') {
+        calendarInstance.createEvents(events);
       }
-      ensureSwipeNavigation();
-      decorateCalendarControls();
-    } else {
-      calendarInstance.setOption('locale', getCurrentLanguage());
-      calendarInstance.setOption('buttonText', getCalendarButtonText());
-      updateCalendarEvents(events);
-      decorateCalendarControls();
+    } catch (_e) {
+      /* ignore failed feed for incompatible API */
     }
 
     applyResponsiveCalendarView();
     dispatchCalendarUpdated(events);
     setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
-    renderCalendarLegend();
-    decorateCalendarControls();
     setTimeout(() => {
       applyResponsiveCalendarView();
-      decorateCalendarControls();
     }, 120);
   })().catch((error) => {
     console.error('❌ [calendar] renderCalendar failed', error);
@@ -823,4 +739,34 @@ export function renderCalendar() {
     setCalendarStatus({ loading: false, error: calendarErrorMessage || fallback });
     destroyCalendarInstance();
   });
+}
+
+// Build TUI schedules from reservations state
+function buildCalendarSchedules(reservations = []) {
+  const { projects = [] } = loadData();
+  const projectsMap = new Map(projects.map((p) => [String(p.id), p]));
+
+  return reservations.map((reservation) => {
+    const projectId = reservation?.projectId ?? reservation?.project_id ?? null;
+    const project = projectId != null ? (projectsMap.get(String(projectId)) || null) : null;
+    const normalized = normalizeReservationForEvent(reservation, project);
+    if (!normalized) return null;
+    return {
+      id: String(normalized.id),
+      calendarId: 'default',
+      title: '',
+      category: 'time',
+      isAllDay: false,
+      start: normalized.start,
+      end: normalized.end,
+      raw: {
+        ...reservation,
+        paid: normalized.paid,
+        confirmed: normalized.confirmed,
+        completed: normalized.completed,
+        reservationId: normalized.reservationId,
+        customerName: normalized.customerName,
+      },
+    };
+  }).filter(Boolean);
 }
