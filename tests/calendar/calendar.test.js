@@ -1,23 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const calendarMocks = vi.hoisted(() => {
-  const renderMock = vi.fn();
   const destroyMock = vi.fn();
   const changeViewMock = vi.fn();
-  const setOptionMock = vi.fn();
+  const onMock = vi.fn();
+  const createSchedulesMock = vi.fn();
+  const createEventsMock = undefined; // prefer createSchedules path
   const constructorMock = vi.fn(() => ({
-    render: renderMock,
     destroy: destroyMock,
     changeView: changeViewMock,
-    updateSize: vi.fn(),
-    setOption: setOptionMock,
-    removeAllEvents: vi.fn(),
-    addEventSource: vi.fn(),
-    batchRendering: (fn) => {
-      if (typeof fn === 'function') fn();
-    }
+    on: onMock,
+    createSchedules: createSchedulesMock,
+    createEvents: createEventsMock,
   }));
-  return { renderMock, destroyMock, changeViewMock, setOptionMock, constructorMock };
+  return { destroyMock, changeViewMock, onMock, createSchedulesMock, constructorMock };
 });
 
 const loadDataMock = vi.hoisted(() => vi.fn());
@@ -49,8 +45,9 @@ vi.mock('../../src/scripts/utils.js', () => ({
   normalizeNumbers: (value) => String(value)
 }));
 
-// FullCalendar is accessed as a global by the module under test.
-global.FullCalendar = { Calendar: calendarMocks.constructorMock };
+// TUI Calendar is accessed via window.toastui.Calendar by the module
+global.window = global.window || {};
+global.window.toastui = { Calendar: calendarMocks.constructorMock };
 
 import { renderCalendar } from '../../src/scripts/calendar.js';
 import { setReservationsState } from '../../src/scripts/reservationsService.js';
@@ -61,10 +58,10 @@ describe('calendar module', () => {
     loadDataMock.mockReset();
     saveDataMock.mockReset();
     ensureReservationsLoadedMock.mockClear();
-    calendarMocks.renderMock.mockClear();
     calendarMocks.destroyMock.mockClear();
     calendarMocks.changeViewMock.mockClear();
-    calendarMocks.setOptionMock.mockClear();
+    calendarMocks.onMock.mockClear();
+    calendarMocks.createSchedulesMock.mockClear();
     calendarMocks.constructorMock.mockClear();
   });
 
@@ -76,7 +73,7 @@ describe('calendar module', () => {
     expect(calendarMocks.constructorMock).not.toHaveBeenCalled();
   });
 
-  it('builds events with correct palette and destroys previous instance on re-render', async () => {
+  it('creates schedules and destroys previous instance on re-render', async () => {
     document.body.innerHTML = '<div id="calendar"></div>';
 
     const reservations = [
@@ -99,29 +96,21 @@ describe('calendar module', () => {
       expect(calendarMocks.constructorMock).toHaveBeenCalledTimes(1);
     });
 
-    const [, options] = calendarMocks.constructorMock.mock.calls[0];
-    expect(options.events).toHaveLength(4);
-
-    const backgrounds = options.events.map((event) => event.backgroundColor);
-    expect(backgrounds).toEqual([
-      'transparent',
-      'transparent',
-      'transparent',
-      'transparent'
-    ]);
-
-    expect(options.events[0].extendedProps.customerName).toBe('عميل');
-    expect(typeof options.eventContent).toBe('function');
-    expect(typeof options.eventClick).toBe('function');
-
-    expect(calendarMocks.renderMock).toHaveBeenCalledTimes(1);
+    // Schedules should be created once with the reservations mapped
+    expect(calendarMocks.createSchedulesMock).toHaveBeenCalledTimes(1);
+    const schedulesArg = calendarMocks.createSchedulesMock.mock.calls[0][0];
+    expect(Array.isArray(schedulesArg)).toBe(true);
+    expect(schedulesArg).toHaveLength(4);
+    expect(schedulesArg[0].raw.customerName).toBe('عميل');
 
     renderCalendar();
 
     await vi.waitFor(() => {
-      expect(calendarMocks.constructorMock).toHaveBeenCalledTimes(1);
+      // Re-render should recreate TUI calendar instance
+      expect(calendarMocks.constructorMock).toHaveBeenCalledTimes(2);
     });
 
-    expect(calendarMocks.destroyMock).not.toHaveBeenCalled();
+    // Previous instance destroyed
+    expect(calendarMocks.destroyMock).toHaveBeenCalled();
   });
 });
