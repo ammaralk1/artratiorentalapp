@@ -114,6 +114,19 @@ body {
   --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(14, 165, 233, 0.18));
 }
 
+/* Unify month view background with day/week: remove gray and use deep blue palette */
+.fc .fc-dayGridMonth-view {
+  /* Override day color tokens for month only */
+  --calendar-day-bg: linear-gradient(180deg, rgba(30, 64, 175, 0.22), rgba(17, 24, 39, 0.86));
+  --calendar-day-bg-hover: rgba(30, 64, 175, 0.32);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.28), rgba(14, 165, 233, 0.24));
+}
+
+/* Improve day number contrast on darker month tiles */
+.fc .fc-dayGridMonth-view .fc-daygrid-day-number {
+  color: #e2e8f0;
+}
+
 .calendar-panel.is-loading .calendar-shell,
 .calendar-panel.has-error .calendar-shell,
 .calendar-panel.is-empty .calendar-shell {
