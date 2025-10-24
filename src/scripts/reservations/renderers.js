@@ -116,9 +116,9 @@ export function renderReservationDetails(index, {
   const customer = customers.find((c) => String(c.id) === String(reservation.customerId));
   const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
+  const modalEl = document.getElementById('reservationDetailsModal');
 
   const bindDetailsActions = () => {
-    const modalEl = document.getElementById('reservationDetailsModal');
     const closeModal = () => {
       if (modalEl && window.bootstrap?.Modal) {
         window.bootstrap.Modal.getInstance(modalEl)?.hide();
