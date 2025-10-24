@@ -168,7 +168,7 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 }
 
 .tab-scroll-track {
-  display: flex;
+  display: block;
   align-items: center;
   overflow-x: auto;
   scrollbar-width: none;
