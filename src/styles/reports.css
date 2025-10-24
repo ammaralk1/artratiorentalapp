@@ -1374,3 +1374,9 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 :is(html.dark-mode, body.dark-mode) .reports-panel-empty {
   color: rgba(203, 213, 225, 0.75);
 }
+
+/* RTL: ensure reports table card header title flows right-to-left with icon on the right */
+html[dir="rtl"] .reports-table-card .reports-card-title,
+body[dir="rtl"] .reports-table-card .reports-card-title {
+  flex-direction: row-reverse;
+}
