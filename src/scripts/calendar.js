@@ -60,6 +60,15 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#39;');
 }
 
+function getCalendarButtonText() {
+  return {
+    today: t('calendar.buttons.today', 'اليوم'),
+    month: t('calendar.buttons.month', 'شهر'),
+    week: t('calendar.buttons.week', 'أسبوع'),
+    day: t('calendar.buttons.day', 'يوم'),
+  };
+}
+
 function getCalendarElements() {
   const calendarEl = document.getElementById('calendar');
   const panelEl = document.getElementById('calendar-panel') || calendarEl?.parentElement || null;
