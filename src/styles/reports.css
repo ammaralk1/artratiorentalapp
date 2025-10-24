@@ -1022,11 +1022,11 @@ body[dir="ltr"] .reports-card-text {
 
 /* Base RTL flow for reports table card titles */
 html[dir="rtl"] .reports-table-card .reports-card-title {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 body[dir="rtl"] .reports-table-card .reports-card-title {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 .reports-table-card .reports-card-text {
@@ -1379,11 +1379,11 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 /* RTL: ensure reports table card header title flows right-to-left with icon on the right */
 html[dir="rtl"] .reports-table-card .reports-card-title,
 body[dir="rtl"] .reports-table-card .reports-card-title {
-  flex-direction: row-reverse;
+  flex-direction: row;
 }
 
 /* Harden RTL override inside table card headers in case of cascade conflicts */
 html[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title,
 body[dir="rtl"] .reports-table-card .reports-card-header .reports-card-title {
-  flex-direction: row-reverse !important;
+  flex-direction: row !important;
 }
