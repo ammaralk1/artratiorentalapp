@@ -329,6 +329,17 @@ body {
   color: rgba(226, 232, 240, 0.85);
 }
 
+/* Neutralize FC sticky section default background to avoid mismatched bands */
+.fc .fc-scrollgrid-section-sticky > * {
+  background: transparent !important;
+}
+
+/* Remove any inherited table thead gradient inside FullCalendar */
+.fc table thead,
+.fc .fc-col-header {
+  background: transparent !important;
+}
+
 :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar {
   background: rgba(2, 6, 23, 0.78);
   border-color: rgba(99, 102, 241, 0.35);
@@ -432,7 +443,12 @@ body {
 }
 
 /* Reduce internal padding of month day cells for a tighter grid */
-.fc .fc-daygrid-day-frame { padding: 4px 4px; }
+.fc .fc-daygrid-day-frame { padding: 2px 4px; }
+
+/* Unify top/bottom areas spacing within month cells */
+.fc .fc-dayGridMonth-view .fc-daygrid-day-top { padding: 2px 4px; }
+.fc .fc-dayGridMonth-view .fc-daygrid-day-bottom { padding: 0 4px; margin-top: 2px; }
+.fc .fc-dayGridMonth-view .fc-daygrid-day-events { margin: 0 !important; }
 
 .fc .fc-daygrid-event {
   border: none;
