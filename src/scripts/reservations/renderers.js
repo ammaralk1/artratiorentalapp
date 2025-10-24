@@ -10,6 +10,7 @@ import {
   buildReservationDetailsHtml
 } from './list/index.js';
 import { exportReservationPdf } from './reservationPdf.js';
+import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
 
 export function renderReservationsList({
   containerId = 'reservations-list',
@@ -116,8 +117,19 @@ export function renderReservationDetails(index, {
   const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
   if (body) {
+    // Initial synchronous render using current cache
     const techniciansList = syncTechniciansStatuses() || [];
     body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, techniciansList, index, project);
+
+    // Try to refresh positions cache asynchronously, then re-render for accurate labels
+    ensureTechnicianPositionsLoaded()
+      .then(() => {
+        const refreshedTechs = syncTechniciansStatuses() || [];
+        body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, refreshedTechs, index, project);
+      })
+      .catch(() => {
+        /* non-fatal */
+      });
   }
 
   const modalEl = document.getElementById('reservationDetailsModal');

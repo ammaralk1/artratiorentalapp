@@ -62,7 +62,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       ?? assignment.position_label
       ?? assignment.role
       ?? assignment.position
-      ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+      ?? '';
     if (!positionLabel || positionLabel.trim() === '') {
       positionLabel = assignment.positionLabelAr
         ?? assignment.position_label_ar
@@ -70,7 +70,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.position_label_en
         ?? assignment.position_name_ar
         ?? assignment.position_name_en
-        ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+        ?? '';
     }
     const positionLabelAlt = assignment.positionLabelAlt
       ?? assignment.position_label_alt
@@ -106,6 +106,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return {
       assignmentId: assignment.assignmentId ?? assignment.assignment_id ?? `crew-${index}`,
       positionId: assignment.positionId ?? assignment.position_id ?? null,
+      positionKey: assignment.positionKey
+        ?? assignment.position_key
+        ?? assignment.positionName
+        ?? assignment.position_name
+        ?? assignment.position
+        ?? null,
       positionLabel,
       positionLabelAlt,
       positionLabelAr: assignment.positionLabelAr ?? assignment.position_label_ar ?? null,
