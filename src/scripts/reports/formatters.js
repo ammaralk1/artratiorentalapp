@@ -23,16 +23,22 @@ export function getFormatters() {
   if (
     language !== reportsState.formatters.cachedLocale
     || !reportsState.formatters.numberFormatter
+    || !reportsState.formatters.currencyFormatter
   ) {
     reportsState.formatters.cachedLocale = language;
     const locale = getActiveLocale();
     reportsState.formatters.numberFormatter = new Intl.NumberFormat(locale, {
       maximumFractionDigits: 0,
     });
+    reportsState.formatters.currencyFormatter = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   return {
     numberFormatter: reportsState.formatters.numberFormatter,
+    currencyFormatter: reportsState.formatters.currencyFormatter,
   };
 }
 
@@ -43,7 +49,10 @@ export function formatNumber(value) {
 }
 
 export function formatCurrency(value) {
-  return `${formatNumber(value)} SR`;
+  const { currencyFormatter } = getFormatters();
+  const number = Number.isFinite(Number(value)) ? Number(value) : 0;
+  const formatted = currencyFormatter.format(number);
+  return `${normalizeNumbers(formatted)} SR`;
 }
 
 export function formatDateInput(value) {

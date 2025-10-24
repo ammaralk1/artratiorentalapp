@@ -34,15 +34,19 @@ export function updateKpiCards(metrics) {
 
   if (revenueEl) revenueEl.textContent = formatCurrency(revenue);
   if (revenueMetaEl) {
-    const template = translate(
-      'reservations.reports.kpi.revenue.meta',
-      'صافي الربح {net} • نسبة الشركة {share} • متوسط الحجز {average}',
-      'Net profit {net} • Company share {share} • Average reservation {average}',
-    );
-    revenueMetaEl.textContent = template
-      .replace('{net}', formatCurrency(net))
-      .replace('{share}', formatCurrency(companyShareTotal))
-      .replace('{average}', formatCurrency(avg));
+    if (total === 0) {
+      revenueMetaEl.textContent = translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.');
+    } else {
+      const template = translate(
+        'reservations.reports.kpi.revenue.meta',
+        'صافي الربح {net} • نسبة الشركة {share} • متوسط الحجز {average}',
+        'Net profit {net} • Company share {share} • Average reservation {average}',
+      );
+      revenueMetaEl.textContent = template
+        .replace('{net}', formatCurrency(net))
+        .replace('{share}', formatCurrency(companyShareTotal))
+        .replace('{average}', formatCurrency(avg));
+    }
   }
 
   if (revenueDetailsEl) {

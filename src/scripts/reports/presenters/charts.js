@@ -63,8 +63,21 @@ export async function renderTrendChart(data) {
 
     const categories = sanitized.map((item) => item.label);
     const reservationsSeries = sanitized.map((item) => Math.round(item.count || 0));
-    const revenueSeries = sanitized.map((item) => Math.round(item.revenue || 0));
-    const netSeries = sanitized.map((item) => Math.round(item.netProfit || 0));
+    const revenueSeries = sanitized.map((item) => Number(item.revenue || 0));
+    const netSeries = sanitized.map((item) => Number(item.netProfit || 0));
+
+    const totalReservations = reservationsSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+    const totalRevenue = revenueSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+    const totalNet = netSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
+
+    if (totalReservations === 0 && totalRevenue === 0 && totalNet === 0) {
+      if (reportsState.charts.trend) {
+        reportsState.charts.trend.destroy();
+        reportsState.charts.trend = null;
+      }
+      container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      return;
+    }
 
     const series = [
       {
@@ -183,7 +196,10 @@ export async function renderStatusChart(data) {
   const sanitized = Array.isArray(data) ? data : [];
   reportsState.lastStatusData = sanitized;
 
-  if (!sanitized.length) {
+  const series = sanitized.map((item) => Math.max(0, item.value || 0));
+  const sumSeries = series.reduce((a, b) => a + b, 0);
+
+  if (!sanitized.length || sumSeries === 0) {
     if (reportsState.charts.status) {
       reportsState.charts.status.destroy();
       reportsState.charts.status = null;
@@ -201,7 +217,6 @@ export async function renderStatusChart(data) {
       return;
     }
 
-    const series = sanitized.map((item) => Math.max(0, item.value || 0));
     const labels = sanitized.map((item) => item.label);
 
     const options = {
@@ -282,7 +297,10 @@ export async function renderPaymentChart(data) {
   const sanitized = Array.isArray(data) ? data : [];
   reportsState.lastPaymentData = sanitized;
 
-  if (!sanitized.length) {
+  const series = sanitized.map((item) => Math.max(0, item.value || 0));
+  const sumSeries = series.reduce((a, b) => a + b, 0);
+
+  if (!sanitized.length || sumSeries === 0) {
     if (reportsState.charts.payment) {
       reportsState.charts.payment.destroy();
       reportsState.charts.payment = null;
@@ -300,7 +318,6 @@ export async function renderPaymentChart(data) {
       return;
     }
 
-    const series = sanitized.map((item) => Math.max(0, item.value || 0));
     const labels = sanitized.map((item) => item.label);
 
     const options = {
