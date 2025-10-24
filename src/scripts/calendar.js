@@ -230,67 +230,6 @@ function renderCalendarLegend() {
 function decorateCalendarControls() {
   const { calendarEl } = getCalendarElements();
   if (!calendarEl) return;
-
-  // If FullCalendar is available, prefer it (legacy calendar with our theme)
-  const FC = getFullCalendarGlobal();
-  if (FC && typeof FC.Calendar === 'function') {
-    (async () => {
-      setCalendarStatus({ loading: true });
-      const reservations = await loadCalendarData();
-      if (calendarErrorMessage) {
-        const fallback = t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
-        setCalendarStatus({ loading: false, error: calendarErrorMessage || fallback });
-        destroyCalendarInstance();
-        return;
-      }
-      const events = buildCalendarEvents(reservations);
-      if (!calendarInstance) {
-        calendarInstance = new FC.Calendar(calendarEl, {
-          initialView: getResponsiveFcView(),
-          locale: getCurrentLanguage(),
-          timeZone: 'local',
-          expandRows: false,
-          height: 'auto',
-          contentHeight: 'auto',
-          headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-          dayMaxEventRows: 3,
-          lazyFetching: false,
-          noEventsContent() { return t('calendar.noEvents', 'لا توجد حجوزات لعرضها في هذا النطاق'); },
-          buttonText: getCalendarButtonText(),
-          events,
-          eventContent: buildEventContent,
-          eventClick(info) { showReservationModal(info.event.extendedProps); },
-          windowResize: applyResponsiveCalendarView,
-          datesSet() { decorateCalendarControls(); }
-        });
-        calendarInstance.render();
-        calendarInstance.__isFullCalendar = true;
-        if (typeof window !== 'undefined') {
-          calendarWidthBucket = getWidthBucket(window.innerWidth || 1024);
-        }
-        ensureSwipeNavigation();
-        decorateCalendarControls();
-      } else {
-        calendarInstance.setOption('locale', getCurrentLanguage());
-        calendarInstance.setOption('buttonText', getCalendarButtonText());
-        calendarInstance.batchRendering?.(() => {
-          calendarInstance.removeAllEvents();
-          calendarInstance.addEventSource(events);
-        });
-        decorateCalendarControls();
-      }
-      applyResponsiveCalendarView();
-      dispatchCalendarUpdated(events);
-      setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
-      setTimeout(() => { applyResponsiveCalendarView(); decorateCalendarControls(); }, 120);
-    })().catch((error) => {
-      console.error('❌ [calendar] renderCalendar (FC) failed', error);
-      const fallback = t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
-      setCalendarStatus({ loading: false, error: fallback });
-      destroyCalendarInstance();
-    });
-    return;
-  }
   const toolbar = calendarEl.querySelector('.fc-header-toolbar');
   if (!toolbar) return;
   toolbar.classList.add('calendar-toolbar');
