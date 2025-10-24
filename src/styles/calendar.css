@@ -637,7 +637,14 @@ body {
 
   .calendar-toolbar {
     gap: 0.8rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
   }
+
+  .calendar-toolbar__chunk { flex-wrap: nowrap; }
+  .fc .fc-button-group { gap: 0.35rem; flex-wrap: nowrap; }
 
   .calendar-toolbar__button {
     padding: 0.5rem 1.1rem !important;
