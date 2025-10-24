@@ -379,7 +379,8 @@ body {
 
 .fc .fc-daygrid-event-harness { margin-block: 4px; }
 /* Month needs tighter spacing than general daygrid */
-.fc .fc-dayGridMonth-view .fc-daygrid-event-harness { margin-block: 0 !important; }
+.fc .fc-dayGridMonth-view .fc-daygrid-event-harness { margin: 0 !important; }
+.fc .fc-dayGridMonth-view .fc-daygrid-event-harness + .fc-daygrid-event-harness { margin-top: 2px !important; }
 
 /* Week/Day time grid: tighter vertical rhythm */
 .fc .fc-timegrid-event-harness { margin-block: 2px; }
@@ -447,7 +448,7 @@ body {
 
 /* Unify top/bottom areas spacing within month cells */
 .fc .fc-dayGridMonth-view .fc-daygrid-day-top { padding: 2px 4px; }
-.fc .fc-dayGridMonth-view .fc-daygrid-day-bottom { padding: 0 4px; margin-top: 2px; }
+.fc .fc-dayGridMonth-view .fc-daygrid-day-bottom { padding: 0 4px; margin-top: 1px; }
 .fc .fc-dayGridMonth-view .fc-daygrid-day-events {
   margin: 0 !important;
   display: flex;
