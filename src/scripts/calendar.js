@@ -762,7 +762,11 @@ export function renderCalendar() {
           height: 'auto',
           contentHeight: 'auto',
           headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-          dayMaxEventRows: 3,
+          dayMaxEventRows: 2,
+          views: {
+            dayGridMonth: { dayMaxEventRows: 2 },
+          },
+          moreLinkClick: 'popover',
           lazyFetching: false,
           noEventsContent() { return t('calendar.noEvents', 'لا توجد حجوزات لعرضها في هذا النطاق'); },
           buttonText: { today: t('calendar.buttons.today', 'اليوم'), month: t('calendar.buttons.month', 'شهر'), week: t('calendar.buttons.week', 'أسبوع'), day: t('calendar.buttons.day', 'يوم') },
