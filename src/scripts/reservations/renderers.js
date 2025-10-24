@@ -116,77 +116,83 @@ export function renderReservationDetails(index, {
   const customer = customers.find((c) => String(c.id) === String(reservation.customerId));
   const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
+
+  const bindDetailsActions = () => {
+    const modalEl = document.getElementById('reservationDetailsModal');
+    const closeModal = () => {
+      if (modalEl && window.bootstrap?.Modal) {
+        window.bootstrap.Modal.getInstance(modalEl)?.hide();
+      }
+    };
+
+    const editBtn = document.getElementById('reservation-details-edit-btn');
+    if (editBtn) {
+      editBtn.onclick = () => {
+        closeModal();
+        if (typeof onEdit === 'function') {
+          onEdit(index, {
+            reservation,
+            customer,
+            getEditContext
+          });
+        }
+      };
+    }
+
+    const deleteBtn = document.getElementById('reservation-details-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.onclick = () => {
+        closeModal();
+        if (typeof onDelete === 'function') {
+          onDelete(index, { reservation, customer });
+        }
+      };
+    }
+
+    const openProjectBtn = body?.querySelector('[data-action="open-project"]');
+    if (openProjectBtn && project) {
+      openProjectBtn.addEventListener('click', () => {
+        closeModal();
+        const projectId = project?.id != null ? String(project.id) : '';
+        const target = projectId ? `projects.html?project=${encodeURIComponent(projectId)}` : 'projects.html';
+        window.location.href = target;
+      });
+    }
+
+    const exportBtn = document.getElementById('reservation-details-export-btn');
+    if (exportBtn) {
+      exportBtn.onclick = async (event) => {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        exportBtn.blur();
+        try {
+          await exportReservationPdf({ reservation, customer, project });
+        } catch (error) {
+          console.error('❌ [reservations] export to PDF failed', error);
+          showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
+        }
+      };
+    }
+  };
+
   if (body) {
     // Initial synchronous render using current cache
     const techniciansList = syncTechniciansStatuses() || [];
     body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, techniciansList, index, project);
+    bindDetailsActions();
 
     // Try to refresh positions cache asynchronously, then re-render for accurate labels
     ensureTechnicianPositionsLoaded()
       .then(() => {
         const refreshedTechs = syncTechniciansStatuses() || [];
         body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, refreshedTechs, index, project);
+        bindDetailsActions();
       })
       .catch(() => {
         /* non-fatal */
       });
   }
 
-  const modalEl = document.getElementById('reservationDetailsModal');
-  const closeModal = () => {
-    if (modalEl && window.bootstrap?.Modal) {
-      window.bootstrap.Modal.getInstance(modalEl)?.hide();
-    }
-  };
-
-  const editBtn = document.getElementById('reservation-details-edit-btn');
-  if (editBtn) {
-    editBtn.onclick = () => {
-      closeModal();
-      if (typeof onEdit === 'function') {
-        onEdit(index, {
-          reservation,
-          customer,
-          getEditContext
-        });
-      }
-    };
-  }
-
-  const deleteBtn = document.getElementById('reservation-details-delete-btn');
-  if (deleteBtn) {
-    deleteBtn.onclick = () => {
-      closeModal();
-      if (typeof onDelete === 'function') {
-        onDelete(index, { reservation, customer });
-      }
-    };
-  }
-
-  const openProjectBtn = body?.querySelector('[data-action="open-project"]');
-  if (openProjectBtn && project) {
-    openProjectBtn.addEventListener('click', () => {
-      closeModal();
-      const projectId = project?.id != null ? String(project.id) : '';
-      const target = projectId ? `projects.html?project=${encodeURIComponent(projectId)}` : 'projects.html';
-      window.location.href = target;
-    });
-  }
-
-  const exportBtn = document.getElementById('reservation-details-export-btn');
-  if (exportBtn) {
-    exportBtn.onclick = async (event) => {
-      event?.preventDefault?.();
-      event?.stopPropagation?.();
-      exportBtn.blur();
-      try {
-        await exportReservationPdf({ reservation, customer, project });
-      } catch (error) {
-        console.error('❌ [reservations] export to PDF failed', error);
-        showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
-      }
-    };
-  }
 
   if (modalEl && window.bootstrap?.Modal) {
     window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
