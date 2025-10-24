@@ -92,10 +92,26 @@
   padding: clamp(1rem, 1.5vw, 1.5rem);
 }
 
+/* Calendar day palette (light) */
+:root,
+html,
+body {
+  --calendar-day-bg: rgba(248, 250, 255, 0.82);
+  --calendar-day-bg-hover: rgba(224, 231, 255, 0.55);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(14, 165, 233, 0.16));
+}
+
 :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-shell {
   background: rgba(15, 23, 42, 0.92);
   border-color: rgba(99, 102, 241, 0.35);
   box-shadow: 0 40px 80px rgba(4, 7, 15, 0.6);
+}
+
+/* Calendar day palette (dark) */
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) {
+  --calendar-day-bg: rgba(17, 24, 39, 0.75);
+  --calendar-day-bg-hover: rgba(30, 64, 175, 0.18);
+  --calendar-day-bg-today: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(14, 165, 233, 0.18));
 }
 
 .calendar-panel.is-loading .calendar-shell,
@@ -250,16 +266,25 @@
 }
 
 .fc .fc-daygrid-day {
-  background: rgba(248, 250, 255, 0.72);
+  background: var(--calendar-day-bg);
   transition: background 0.15s ease;
 }
 
 .fc .fc-daygrid-day:hover {
-  background: rgba(224, 231, 255, 0.55);
+  background: var(--calendar-day-bg-hover);
 }
 
 .fc .fc-daygrid-day.fc-day-today {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(14, 165, 233, 0.16));
+  background: var(--calendar-day-bg-today);
+}
+
+/* Fade other-month days slightly to match theme */
+.fc .fc-day-other {
+  filter: saturate(85%) opacity(0.88);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-day-other {
+  filter: saturate(90%) brightness(0.95) opacity(0.9);
 }
 
 .fc .fc-daygrid-day-number {
