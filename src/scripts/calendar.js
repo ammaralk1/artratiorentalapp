@@ -246,7 +246,7 @@ function decorateCalendarControls() {
       const events = buildCalendarEvents(reservations);
       if (!calendarInstance) {
         calendarInstance = new FC.Calendar(calendarEl, {
-          initialView: getResponsiveCalendarView(),
+          initialView: getResponsiveFcView(),
           locale: getCurrentLanguage(),
           timeZone: 'local',
           expandRows: false,
@@ -264,6 +264,7 @@ function decorateCalendarControls() {
           datesSet() { decorateCalendarControls(); }
         });
         calendarInstance.render();
+        calendarInstance.__isFullCalendar = true;
         if (typeof window !== 'undefined') {
           calendarWidthBucket = getWidthBucket(window.innerWidth || 1024);
         }
@@ -564,7 +565,9 @@ function applyResponsiveCalendarView() {
   if (!calendarInstance) return;
   const w = typeof window !== 'undefined' ? (window.innerWidth || 1024) : 1024;
   const bucket = getWidthBucket(w);
-  const desiredView = getResponsiveCalendarView();
+  const desiredView = calendarInstance.__isFullCalendar
+    ? getResponsiveFcView()
+    : getResponsiveCalendarView();
   if (calendarWidthBucket !== bucket && typeof calendarInstance.changeView === 'function') {
     calendarWidthBucket = bucket;
     calendarInstance.changeView(desiredView, true);
@@ -813,7 +816,7 @@ export function renderCalendar() {
       const events = buildCalendarEvents(reservations);
       if (!calendarInstance) {
         calendarInstance = new FC.Calendar(calendarEl, {
-          initialView: getResponsiveCalendarView(),
+          initialView: getResponsiveFcView(),
           locale: getCurrentLanguage(),
           timeZone: 'local',
           expandRows: false,
@@ -831,6 +834,7 @@ export function renderCalendar() {
           datesSet() { decorateCalendarControls(); }
         });
         calendarInstance.render();
+        calendarInstance.__isFullCalendar = true;
       } else {
         calendarInstance.batchRendering?.(() => {
           calendarInstance.removeAllEvents();
@@ -905,6 +909,7 @@ export function renderCalendar() {
         },
       },
     });
+    calendarInstance.__isTui = true;
 
     // Bind click to open the existing modal of reservation details
     const openDetails = (raw) => {
@@ -978,4 +983,12 @@ function buildCalendarSchedules(reservations = []) {
       },
     };
   }).filter(Boolean);
+}
+function getResponsiveFcView() {
+  if (typeof window === 'undefined') return 'dayGridMonth';
+  const w = window.innerWidth || 1024;
+  const bucket = getWidthBucket(w);
+  if (bucket === 'xs') return 'timeGridDay';
+  if (bucket === 'sm') return 'timeGridWeek';
+  return 'dayGridMonth';
 }
