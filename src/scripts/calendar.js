@@ -761,6 +761,9 @@ export function renderCalendar() {
           expandRows: false,
           height: 'auto',
           contentHeight: 'auto',
+          slotMinTime: '06:00:00',
+          slotMaxTime: '24:00:00',
+          slotDuration: '00:30:00',
           headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
           dayMaxEventRows: 2,
           views: {

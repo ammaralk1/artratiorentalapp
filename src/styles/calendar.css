@@ -359,6 +359,67 @@ body {
 
 .fc .fc-daygrid-event-harness { margin-block: 4px; }
 
+/* Week/Day time grid: tighter vertical rhythm */
+.fc .fc-timegrid-event-harness { margin-block: 2px; }
+.fc .fc-timegrid-event { min-height: 1.7em; }
+
+/* Prevent letter-by-letter wrapping in tight columns (week/day) */
+.fc .fc-timeGridWeek-view .calendar-event-card,
+.fc .fc-timeGridDay-view .calendar-event-card {
+  word-break: normal;
+}
+.fc .fc-timeGridWeek-view .calendar-event-card__customer,
+.fc .fc-timeGridDay-view .calendar-event-card__customer {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: unset;
+}
+.fc .fc-timeGridWeek-view .calendar-event-card__head,
+.fc .fc-timeGridDay-view .calendar-event-card__head {
+  letter-spacing: 0.02em;
+}
+
+/* Slightly smaller padding for time grid cards */
+.fc .fc-timeGridWeek-view .calendar-event-card,
+.fc .fc-timeGridDay-view .calendar-event-card {
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+}
+
+/* Popover (more events) theming */
+.fc .fc-popover {
+  background: rgba(248, 250, 255, 0.96);
+  border: 1px solid rgba(148, 163, 255, 0.28);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fc .fc-popover .fc-popover-header {
+  background: rgba(99, 102, 241, 0.12);
+  color: rgba(30, 41, 59, 0.86);
+  font-weight: 700;
+}
+.fc .fc-popover .fc-popover-body {
+  background: transparent;
+}
+.fc .fc-popover .fc-event { border: none; background: transparent; }
+.fc .fc-popover .calendar-event-card {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-popover {
+  background: rgba(15, 23, 42, 0.96);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 30px 60px rgba(4, 7, 15, 0.65);
+}
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-popover .fc-popover-header {
+  background: rgba(99, 102, 241, 0.18);
+  color: rgba(226, 232, 240, 0.9);
+}
+
 /* Reduce internal padding of month day cells for a tighter grid */
 .fc .fc-daygrid-day-frame { padding: 6px 4px; }
 
