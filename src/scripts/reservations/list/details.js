@@ -1,5 +1,5 @@
 import { t } from '../../language.js';
-import { getTechnicianPositionsCache } from '../../technicianPositions.js';
+import { getTechnicianPositionsCache, findPositionByName } from '../../technicianPositions.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../../reservationsShared.js';
@@ -79,6 +79,48 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       ?? assignment.positionLabelAr
       ?? assignment.position_label_ar
       ?? '';
+    // Ensure we resolve a readable label from positions cache if not present on assignment
+    let finalPositionLabel = positionLabel;
+    let finalPositionLabelAlt = positionLabelAlt;
+    if (!finalPositionLabel || finalPositionLabel.trim() === '') {
+      try {
+        const positions = getTechnicianPositionsCache ? getTechnicianPositionsCache() : [];
+        let resolved = null;
+        if (assignment.positionId != null) {
+          resolved = positions.find((p) => String(p.id) === String(assignment.positionId)) || null;
+        }
+        if (!resolved) {
+          const key = assignment.positionKey
+            ?? assignment.position_key
+            ?? assignment.positionName
+            ?? assignment.position_name
+            ?? assignment.position
+            ?? '';
+          if (key) {
+            resolved = (typeof findPositionByName === 'function') ? findPositionByName(key) : null;
+            if (!resolved && positions.length) {
+              const lower = String(key).trim().toLowerCase();
+              resolved = positions.find((p) => [p.name, p.labelAr, p.labelEn]
+                .filter(Boolean)
+                .map((v) => String(v).toLowerCase())
+                .includes(lower)) || null;
+            }
+          }
+        }
+        if (resolved) {
+          finalPositionLabel = resolved.labelAr || resolved.labelEn || resolved.name || '';
+          if (!finalPositionLabelAlt || String(finalPositionLabelAlt).trim() === '') {
+            if (resolved.labelAr && resolved.labelEn) {
+              finalPositionLabelAlt = finalPositionLabel === resolved.labelAr ? resolved.labelEn : resolved.labelAr;
+            } else {
+              finalPositionLabelAlt = resolved.labelAr || resolved.labelEn || '';
+            }
+          }
+        }
+      } catch (_e) {
+        /* optional cache fallback only */
+      }
+    }
     const positionCost = sanitizePriceValue(parsePriceValue(
       assignment.positionCost
         ?? assignment.position_cost
@@ -112,8 +154,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.position_name
         ?? assignment.position
         ?? null,
-      positionLabel,
-      positionLabelAlt,
+      positionLabel: finalPositionLabel,
+      positionLabelAlt: finalPositionLabelAlt,
       positionLabelAr: assignment.positionLabelAr ?? assignment.position_label_ar ?? null,
       positionLabelEn: assignment.positionLabelEn ?? assignment.position_label_en ?? null,
       positionCost,

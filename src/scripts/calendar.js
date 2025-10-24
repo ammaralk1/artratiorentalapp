@@ -3,6 +3,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, isApiError as isReservationsApiError } from './reservationsService.js';
 import { loadData } from './storage.js';
+import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 import { buildReservationDetailsHtml } from './reservations/list/details.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
 
@@ -171,6 +172,39 @@ function getEventClassNames({ paid, confirmed, completed }) {
     classNames.push('calendar-event--unpaid');
   }
   return classNames;
+}
+
+// Render a styled event card for FullCalendar
+function buildEventContent(arg) {
+  try {
+    const { event } = arg || {};
+    const props = event?.extendedProps || {};
+    const timeLabel = formatEventTimeRange(event?.startStr, event?.endStr, event?.allDay);
+    const idLabel = props?.reservationId ? String(props.reservationId) : (event?.id != null ? String(event.id) : '—');
+    const customer = props?.customerName || t('calendar.labels.unknownCustomer', 'غير معروف');
+    const confirmed = props?.confirmed === true || props?.confirmed === 'true';
+    const paid = props?.paid === true || props?.paid === 'paid';
+    const completed = props?.completed === true || props?.completed === 'true';
+    const chip = (cls, text) => `<span class="calendar-chip ${cls}">${escapeHtml(text)}</span>`;
+    const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
+    const paidLabel = paid ? t('calendar.badges.paid', 'مدفوع') : t('calendar.badges.unpaid', 'غير مدفوع');
+    const chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paid ? 'status-paid' : 'status-unpaid', paidLabel)];
+    if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'منتهي')));
+    const html = `
+      <div class="calendar-event-wrapper">
+        <div class="calendar-event-card">
+          <div class="calendar-event-card__head">
+            <span class="calendar-event-card__time">${escapeHtml(timeLabel || '')}</span>
+            <span class="calendar-event-card__id">${escapeHtml(idLabel)}</span>
+          </div>
+          <div class="calendar-event-card__customer">${escapeHtml(customer)}</div>
+          <div class="calendar-event-card__chips">${chips.join('')}</div>
+        </div>
+      </div>`;
+    return { html };
+  } catch (_e) {
+    return { html: '' };
+  }
 }
 
 function renderCalendarLegend() {
@@ -683,6 +717,26 @@ function showReservationModal(reservation) {
 
   container.innerHTML = detailsHtml;
   container.classList.add('calendar-reservation-details');
+
+  // Refresh positions cache from API if needed, then re-render details to ensure position labels are accurate
+  try {
+    ensureTechnicianPositionsLoaded()?.then(() => {
+      try {
+        const refreshedTechs = Array.from(new Map((syncTechniciansStatuses() || []).map((t) => [String(t.id), t])).values());
+        const refreshedHtml = buildReservationDetailsHtml(
+          mergedReservation,
+          customer,
+          refreshedTechs,
+          matchedIndex >= 0 ? matchedIndex : 0,
+          project
+        );
+        container.innerHTML = refreshedHtml;
+        container.classList.add('calendar-reservation-details');
+      } catch (_e) { /* ignore */ }
+    }).catch(() => { /* ignore */ });
+  } catch (_e) {
+    /* non-fatal */
+  }
 
   const actionsSection = container.querySelector('.reservation-modal-actions');
   actionsSection?.remove();
