@@ -20,6 +20,7 @@ let calendarThemeObserver = null;
 let calendarThemeDebounce = null;
 let isCalendarLoading = false;
 let calendarErrorMessage = '';
+let fullCalendarLoadPromise = null;
 // Disable swipe-based period navigation to avoid accidental month changes on mobile
 const SWIPE_NAV_ENABLED = false;
 const CALENDAR_LEGEND_ITEMS = [
@@ -74,6 +75,26 @@ function getFullCalendarGlobal() {
   if (typeof global !== 'undefined' && global.FullCalendar) return global.FullCalendar;
   if (typeof globalThis !== 'undefined' && globalThis.FullCalendar) return globalThis.FullCalendar;
   return null;
+}
+
+async function ensureFullCalendarLoaded() {
+  const existing = getFullCalendarGlobal();
+  if (existing) return existing;
+  if (fullCalendarLoadPromise) return fullCalendarLoadPromise;
+  fullCalendarLoadPromise = new Promise((resolve) => {
+    try {
+      const src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js';
+      const el = document.createElement('script');
+      el.src = src;
+      el.async = true;
+      el.onload = () => resolve(getFullCalendarGlobal());
+      el.onerror = () => resolve(null);
+      document.head.appendChild(el);
+    } catch (_e) {
+      resolve(null);
+    }
+  });
+  return fullCalendarLoadPromise;
 }
 
 function getToastUICalendarGlobal() {
@@ -709,9 +730,54 @@ export function renderCalendar() {
 
   const TuiCalendar = getToastUICalendarGlobal();
   if (!TuiCalendar) {
-    const fallbackMessage = t('calendar.status.missingLibrary', 'تعذر تحميل مكتبة التقويم. يرجى تحديث الصفحة.');
-    setCalendarStatus({ error: fallbackMessage });
-    destroyCalendarInstance();
+    // Try FullCalendar fallback dynamically
+    (async () => {
+      const FC = await ensureFullCalendarLoaded();
+      if (!FC || typeof FC.Calendar !== 'function') {
+        const fallbackMessage = t('calendar.status.missingLibrary', 'تعذر تحميل مكتبة التقويم. يرجى تحديث الصفحة.');
+        setCalendarStatus({ error: fallbackMessage });
+        destroyCalendarInstance();
+        return;
+      }
+      setCalendarStatus({ loading: true });
+      const reservations = await loadCalendarData();
+      if (calendarErrorMessage) {
+        const fallback = t('calendar.status.error', 'تعذر تحميل بيانات الحجوزات. حاول مجدداً.');
+        setCalendarStatus({ loading: false, error: calendarErrorMessage || fallback });
+        destroyCalendarInstance();
+        return;
+      }
+      const events = buildCalendarEvents(reservations);
+      if (!calendarInstance) {
+        calendarInstance = new FC.Calendar(calendarEl, {
+          initialView: getResponsiveCalendarView(),
+          locale: getCurrentLanguage(),
+          timeZone: 'local',
+          expandRows: false,
+          height: 'auto',
+          contentHeight: 'auto',
+          headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+          dayMaxEventRows: 3,
+          lazyFetching: false,
+          noEventsContent() { return t('calendar.noEvents', 'لا توجد حجوزات لعرضها في هذا النطاق'); },
+          buttonText: { today: t('calendar.buttons.today', 'اليوم'), month: t('calendar.buttons.month', 'شهر'), week: t('calendar.buttons.week', 'أسبوع'), day: t('calendar.buttons.day', 'يوم') },
+          events,
+          eventContent: buildEventContent,
+          eventClick(info) { showReservationModal(info.event.extendedProps); },
+          windowResize: applyResponsiveCalendarView,
+          datesSet() { decorateCalendarControls(); }
+        });
+        calendarInstance.render();
+      } else {
+        calendarInstance.batchRendering?.(() => {
+          calendarInstance.removeAllEvents();
+          calendarInstance.addEventSource(events);
+        });
+      }
+      applyResponsiveCalendarView();
+      dispatchCalendarUpdated(events);
+      setCalendarStatus({ loading: false, error: '', empty: events.length === 0 });
+    })();
     return;
   }
 
