@@ -765,6 +765,7 @@ function buildCalendarSchedules(reservations = []) {
       title: singleLineTitle,
       category: 'time',
       isAllDay: false,
+      isAllday: false,
       start: normalized.start,
       end: normalized.end,
       raw: {

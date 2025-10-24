@@ -103,6 +103,20 @@
   }
 }
 
+/* Ensure TUI Calendar internal wrappers stretch to fill container height */
+#calendar .toastui-calendar-root,
+#calendar .toastui-calendar-panel,
+#calendar .toastui-calendar-month,
+#calendar .toastui-calendar-month-daygrid,
+#calendar .tui-full-calendar-layout,
+#calendar .tui-full-calendar,
+#calendar .tui-full-calendar-month,
+#calendar .tui-full-calendar-month-week,
+#calendar .tui-full-calendar-month-view {
+  height: 100% !important;
+  min-height: inherit;
+}
+
 /* Calendar day palette (light) */
 :root,
 html,
