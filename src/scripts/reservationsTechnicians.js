@@ -264,6 +264,9 @@ function getAssignmentsForContext(context = 'create') {
 }
 
 function setAssignmentsForContext(context = 'create', assignments = []) {
+  // Ensure the positions cache is populated before we normalize assignments
+  // so that enrichAssignment/resolvePositionSnapshot can resolve readable labels.
+  try { ensurePositionsCached(); } catch (_) { /* non-fatal */ }
   const normalized = normalizeAssignmentsInput(assignments);
   if (context === 'edit') {
     editingAssignments = normalized;
@@ -390,6 +393,9 @@ function renderAssignmentsTable() {
     return;
   }
 
+  // Keep positions cache fresh for label resolution
+  ensurePositionsCached();
+
   tbody.innerHTML = assignments.map((assignment, index) => {
     const rowIndex = normalizeNumbers(String(index + 1));
     const clientPrice = formatCurrency(assignment.positionClientPrice || 0);
@@ -424,6 +430,27 @@ function renderAssignmentsTable() {
       `;
     }).join('');
 
+    // Resolve a robust, human-readable position label on-the-fly to avoid cases
+    // where older assignments carry only an id/number.
+    let resolvedPrimaryLabel = assignment.positionLabel
+      ?? assignment.position_label
+      ?? assignment.position_name
+      ?? assignment.role
+      ?? assignment.position
+      ?? '';
+    if (!resolvedPrimaryLabel || String(resolvedPrimaryLabel).trim() === '') {
+      const byId = assignment.positionId
+        ? cachedPositions.find((p) => String(p.id) === String(assignment.positionId))
+        : null;
+      const byKey = !byId && assignment.positionKey
+        ? cachedPositions.find((p) => String(p.name).toLowerCase() === String(assignment.positionKey).toLowerCase())
+        : null;
+      if (byId || byKey) {
+        const pos = byId || byKey;
+        resolvedPrimaryLabel = resolvePositionLabel(pos, getCurrentLanguage()) || pos?.name || '';
+      }
+    }
+
     const positionSubtitle = assignment.positionLabelAlt
       ? `<div class="text-muted small">${normalizeNumbers(assignment.positionLabelAlt)}</div>`
       : '';
@@ -438,7 +465,7 @@ function renderAssignmentsTable() {
         </td>
         <td class="crew-assignment-cell-position">
           <div class="crew-assignment-position-card">
-            <div class="crew-assignment-position">${normalizeNumbers(assignment.positionLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
+            <div class="crew-assignment-position">${normalizeNumbers(resolvedPrimaryLabel || t('reservations.crew.positionFallback', 'منصب بدون اسم'))}</div>
             ${positionSubtitle}
           </div>
         </td>
