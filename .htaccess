@@ -17,6 +17,11 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L,NC]
 RewriteRule ^js/(.*)$ dist/js/$1 [L,NC]
 
+# Serve favicon and related PWA assets from the built folder
+RewriteRule ^favicon\.ico$ dist/favicon.ico [L,NC]
+RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
+RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
+
 RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
 RewriteRule ^$ dist/src/pages/login.html [L]
 
