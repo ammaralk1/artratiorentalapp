@@ -673,6 +673,9 @@ export function renderCalendar() {
       month: {
         visibleWeeksCount: 0,
         startDayOfWeek: 0,
+        isAlways6Weeks: true,
+        maxVisibleEventCount: 6,
+        moreLayerSize: 420,
       },
       template: {
         time(schedule) {
@@ -751,10 +754,15 @@ function buildCalendarSchedules(reservations = []) {
     const project = projectId != null ? (projectsMap.get(String(projectId)) || null) : null;
     const normalized = normalizeReservationForEvent(reservation, project);
     if (!normalized) return null;
+    // Build a readable one-line title for month view
+    const timeLabel = formatEventTimeRange(normalized.start, normalized.end, false);
+    const customer = normalized.customerName || '';
+    const singleLineTitle = [timeLabel, customer].filter(Boolean).join(' · ');
+
     return {
       id: String(normalized.id),
       calendarId: 'default',
-      title: '',
+      title: singleLineTitle,
       category: 'time',
       isAllDay: false,
       start: normalized.start,
