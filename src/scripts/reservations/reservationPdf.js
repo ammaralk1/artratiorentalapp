@@ -1,5 +1,6 @@
 import { loadData } from '../storage.js';
 import { syncTechniciansStatuses } from '../technicians.js';
+import { getTechnicianPositionsCache, findPositionByName } from '../technicianPositions.js';
 import { t } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast, showToastWithAction } from '../utils.js';
 import {
@@ -1637,6 +1638,41 @@ function collectReservationCrewAssignments(reservation) {
         ?? assignment.position_name_en
         ?? technicianRecord?.role
         ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+    }
+
+    // Try to resolve a nicer label using the positions cache (id or key/name lookup)
+    try {
+      const positions = typeof getTechnicianPositionsCache === 'function' ? (getTechnicianPositionsCache() || []) : [];
+      let resolved = null;
+      if (assignment?.positionId != null) {
+        resolved = positions.find((p) => String(p?.id) === String(assignment.positionId)) || null;
+      }
+      if (!resolved) {
+        const key = assignment.positionKey
+          ?? assignment.position_key
+          ?? assignment.positionName
+          ?? assignment.position_name
+          ?? assignment.position
+          ?? '';
+        if (key) {
+          resolved = typeof findPositionByName === 'function' ? (findPositionByName(key) || null) : null;
+          if (!resolved && positions.length) {
+            const lower = String(key).trim().toLowerCase();
+            resolved = positions.find((p) => [p.name, p.labelAr, p.labelEn]
+              .filter(Boolean)
+              .map((v) => String(v).toLowerCase())
+              .includes(lower)) || null;
+          }
+        }
+      }
+      if (resolved) {
+        const better = resolved.labelAr || resolved.labelEn || resolved.name || '';
+        if (better && better.trim()) {
+          positionLabel = better;
+        }
+      }
+    } catch (_err) {
+      // non-fatal; keep existing fallback
     }
     const positionCost = sanitizePriceValue(parsePriceValue(
       assignment.positionCost
