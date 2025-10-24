@@ -239,6 +239,10 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(99, 102, 241, 0.10);
+  border: 1px solid rgba(99, 102, 241, 0.22);
 }
 
 .calendar-toolbar__chunk {
@@ -321,8 +325,13 @@ body {
 }
 
 :where(html.dark, body.dark, html.dark-mode, body.dark-mode) .fc .fc-col-header-cell {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgba(99, 102, 241, 0.22);
   color: rgba(226, 232, 240, 0.85);
+}
+
+:where(html.dark, body.dark, html.dark-mode, body.dark-mode) .calendar-toolbar {
+  background: rgba(2, 6, 23, 0.78);
+  border-color: rgba(99, 102, 241, 0.35);
 }
 
 .fc .fc-daygrid-day {
@@ -358,6 +367,8 @@ body {
 }
 
 .fc .fc-daygrid-event-harness { margin-block: 4px; }
+/* Month needs tighter spacing than general daygrid */
+.fc .fc-dayGridMonth-view .fc-daygrid-event-harness { margin-block: 1px !important; }
 
 /* Week/Day time grid: tighter vertical rhythm */
 .fc .fc-timegrid-event-harness { margin-block: 2px; }
@@ -421,7 +432,7 @@ body {
 }
 
 /* Reduce internal padding of month day cells for a tighter grid */
-.fc .fc-daygrid-day-frame { padding: 6px 4px; }
+.fc .fc-daygrid-day-frame { padding: 4px 4px; }
 
 .fc .fc-daygrid-event {
   border: none;
