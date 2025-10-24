@@ -636,24 +636,32 @@ body {
   }
 
   .calendar-toolbar {
-    gap: 0.8rem;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    white-space: nowrap;
+    gap: 0.6rem;
+    flex-wrap: nowrap; /* سطر واحد */
+    overflow: visible; /* بدون سكرول أفقي */
+    white-space: normal;
   }
 
-  .calendar-toolbar__chunk { flex-wrap: nowrap; }
-  .fc .fc-button-group { gap: 0.35rem; flex-wrap: nowrap; }
-
-  .calendar-toolbar__button {
-    padding: 0.5rem 1.1rem !important;
-    font-size: 0.95rem !important;
+  .calendar-toolbar__chunk {
+    flex-wrap: nowrap;
+    min-width: 0; /* يسمح بالانكماش */
   }
 
   .calendar-toolbar__title {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap; /* تمنع لف العنوان وتجعله يختصر */
   }
+
+  .fc .fc-button-group { gap: 0.25rem; flex-wrap: nowrap; }
+
+  .calendar-toolbar__button {
+    padding: 0.38rem 0.75rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  .calendar-toolbar__title { font-size: 1.05rem; }
 
   .calendar-event-card {
     padding: 0.9rem 1rem;
