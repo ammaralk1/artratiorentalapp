@@ -1020,6 +1020,7 @@ body[dir="ltr"] .reports-card-text {
   gap: 14px;
 }
 
+/* Base RTL flow for reports table card titles */
 html[dir="rtl"] .reports-table-card .reports-card-title {
   flex-direction: row-reverse;
 }
