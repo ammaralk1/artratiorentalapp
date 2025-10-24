@@ -92,6 +92,17 @@
   padding: clamp(1rem, 1.5vw, 1.5rem);
 }
 
+/* Ensure TUI calendar gets a reasonable height */
+#calendar.calendar-shell {
+  min-height: clamp(520px, 62vh, 780px);
+}
+
+@media (max-width: 768px) {
+  #calendar.calendar-shell {
+    min-height: 68vh;
+  }
+}
+
 /* Calendar day palette (light) */
 :root,
 html,
