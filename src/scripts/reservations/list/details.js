@@ -1,4 +1,5 @@
 import { t } from '../../language.js';
+import { getTechnicianPositionsCache } from '../../technicianPositions.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../../reservationsShared.js';
