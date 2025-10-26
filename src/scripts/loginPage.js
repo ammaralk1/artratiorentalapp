@@ -5,22 +5,26 @@ import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { initLanguageToggle, t } from './language.js';
 import './translations/common.js';
 
-window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
+function initLoginPage() {
+  const form = document.getElementById('login-form');
+  if (!form) {
+    return; // Not on login page; avoid side effects and logs
+  }
 
-applyStoredTheme({ skipRemote: true });
-initThemeToggle();
-initLanguageToggle();
+  window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
+  applyStoredTheme({ skipRemote: true });
+  initThemeToggle();
+  initLanguageToggle();
 
-const form = document.getElementById('login-form');
-const usernameInput = document.getElementById('username');
-const passwordInput = document.getElementById('password');
-const passwordToggleButton = document.querySelector('[data-action="toggle-password"]');
-const passwordToggleLabel = passwordToggleButton?.querySelector('[data-role="password-toggle-label"]') || null;
-const showPasswordIcon = passwordToggleButton?.querySelector('[data-icon="show"]') || null;
-const hidePasswordIcon = passwordToggleButton?.querySelector('[data-icon="hide"]') || null;
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const passwordToggleButton = document.querySelector('[data-action="toggle-password"]');
+  const passwordToggleLabel = passwordToggleButton?.querySelector('[data-role=\"password-toggle-label\"]') || null;
+  const showPasswordIcon = passwordToggleButton?.querySelector('[data-icon=\"show\"]') || null;
+  const hidePasswordIcon = passwordToggleButton?.querySelector('[data-icon=\"hide\"]') || null;
 
-async function attemptCredentialAutofill() {
-  if (!usernameInput || !passwordInput) return;
+  async function attemptCredentialAutofill() {
+    if (!usernameInput || !passwordInput) return;
   try {
     if (typeof navigator === 'undefined' || typeof window === 'undefined') return;
     if (!('credentials' in navigator) || typeof navigator.credentials.get !== 'function') return;
@@ -42,10 +46,10 @@ async function attemptCredentialAutofill() {
   } catch (error) {
     console.warn('⚠️ [login-page] Failed to retrieve stored credentials', error);
   }
-}
+  }
 
-function updatePasswordToggleState(isVisible) {
-  if (!passwordToggleButton || !passwordInput) return;
+  function updatePasswordToggleState(isVisible) {
+    if (!passwordToggleButton || !passwordInput) return;
 
   if (showPasswordIcon) {
     showPasswordIcon.classList.toggle('hidden', isVisible);
@@ -63,10 +67,10 @@ function updatePasswordToggleState(isVisible) {
   if (passwordToggleLabel) {
     passwordToggleLabel.textContent = labelText;
   }
-}
+  }
 
-if (passwordToggleButton && passwordInput) {
-  updatePasswordToggleState(passwordInput.type === 'text');
+  if (passwordToggleButton && passwordInput) {
+    updatePasswordToggleState(passwordInput.type === 'text');
 
   passwordToggleButton.addEventListener('click', () => {
     const willShow = passwordInput.type === 'password';
@@ -84,19 +88,24 @@ if (passwordToggleButton && passwordInput) {
   document.addEventListener('language:changed', () => {
     updatePasswordToggleState(passwordInput.type === 'text');
   });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const username = usernameInput ? usernameInput.value.trim() : '';
+      const password = passwordInput ? passwordInput.value.trim() : '';
+
+      await login(username, password, { form });
+    });
+  }
+
+  attemptCredentialAutofill();
 }
 
-if (form) {
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const username = usernameInput ? usernameInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value.trim() : '';
-
-    await login(username, password, { form });
-  });
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLoginPage, { once: true });
 } else {
-  console.warn('[login-page] #login-form not found');
+  initLoginPage();
 }
-
-attemptCredentialAutofill();
