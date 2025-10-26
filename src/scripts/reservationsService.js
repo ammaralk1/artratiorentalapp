@@ -1967,11 +1967,31 @@ function mergePackageCollections(primary = [], secondary = []) {
   const result = [];
   const indexByKey = new Map();
 
+  // Build a lookup from code -> normalized id using snapshot, to unify keys
+  const snapshot = getPackagesSnapshot();
+  const codeToId = new Map();
+  snapshot.forEach((def) => {
+    const idNorm = normalizePackageIdentifier(def?.id ?? def?.packageId ?? def?.package_id ?? def?.code ?? '');
+    const code = String(def?.package_code ?? def?.code ?? '').trim().toLowerCase();
+    if (code) codeToId.set(code, idNorm || code);
+  });
+
+  const deriveKey = (entry) => {
+    const idNorm = normalizePackageIdentifier(
+      entry?.packageId ?? entry?.package_id ?? entry?.id ?? null
+    );
+    const codeRaw = String(entry?.package_code ?? entry?.code ?? entry?.barcode ?? '').trim().toLowerCase();
+    const code = codeRaw ? normalizeNumbers(codeRaw) : '';
+    if (idNorm) return idNorm;
+    if (code && codeToId.has(code)) return codeToId.get(code);
+    return code || null;
+  };
+
   const append = (collection) => {
     if (!Array.isArray(collection)) return;
     collection.forEach((entry) => {
       if (!entry || typeof entry !== 'object') return;
-      const key = entry.packageId || entry.package_id || entry.package_code || entry.id;
+      const key = deriveKey(entry);
       if (!key) return;
       if (indexByKey.has(key)) {
         const existingIndex = indexByKey.get(key);
