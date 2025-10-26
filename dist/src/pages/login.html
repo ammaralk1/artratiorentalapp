@@ -10,12 +10,17 @@
 
   <script src="../../js/godaddy-monitor.js" defer></script>
   <script src="../../js/page-boot.js"></script>
+  <script>
+    // Prevent remote preferences/auth fetches on the login page to avoid 401 toasts/flicker
+    // This must run before any module imports that may read preferences/language.
+    window.__ART_RATIO_SKIP_PREF_FETCH__ = true;
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script type="module" crossorigin src="../../assets/modulepreload-polyfill.B5Qt9EMX.js"></script>
-  <script type="module" crossorigin src="../../assets/app.BZzNEMRE.js"></script>
+  <script type="module" crossorigin src="../../assets/app.D89s6SjY.js"></script>
   <link rel="stylesheet" crossorigin href="../../assets/app.CrjMcXs8.css">
 </head>
 <body class="page-shell theme-loading" data-theme="light">
