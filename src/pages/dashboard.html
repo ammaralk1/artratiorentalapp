@@ -104,8 +104,8 @@
     <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
-        <div class="tab-buttons tab-buttons-vertical" role="tablist">
-          <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">
+        <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical">
+          <button class="tab-button" id="tab-trigger-customers-tab" aria-controls="customers-tab" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -119,7 +119,7 @@
               <span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span>
             </span>
           </button>
-          <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">
+          <button class="tab-button" id="tab-trigger-equipment-tab" aria-controls="equipment-tab" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -129,7 +129,7 @@
               <span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span>
             </span>
           </button>
-          <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">
+          <button class="tab-button" id="tab-trigger-maintenance-tab" aria-controls="maintenance-tab" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -143,7 +143,7 @@
               <span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span>
             </span>
           </button>
-          <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">
+          <button class="tab-button" id="tab-trigger-technicians-tab" aria-controls="technicians-tab" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -160,7 +160,7 @@
               <span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span>
             </span>
           </button>
-          <button class="tab-button" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">
+          <button class="tab-button" id="tab-trigger-reservations-tab" aria-controls="reservations-tab" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">
             <span class="flex items-center gap-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -366,13 +366,13 @@
         <div class="dashboard-main-inner space-y-8">
 
           <div class="glass-card hidden lg:block dashboard-tabbar">
-            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-              <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
-              <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
-              <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
-              <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
-              <button class="tab-button" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
-            </div>
+              <div class="tab-buttons tab-buttons-horizontal" role="tablist" aria-orientation="horizontal">
+                <button class="tab-button" id="tab-trigger-customers-tab-secondary" aria-controls="customers-tab" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
+                <button class="tab-button" id="tab-trigger-equipment-tab-secondary" aria-controls="equipment-tab" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
+                <button class="tab-button" id="tab-trigger-maintenance-tab-secondary" aria-controls="maintenance-tab" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
+                <button class="tab-button" id="tab-trigger-technicians-tab-secondary" aria-controls="technicians-tab" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
+                <button class="tab-button" id="tab-trigger-reservations-tab-secondary" aria-controls="reservations-tab" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
+              </div>
           </div>
 
           <div class="glass-card dashboard-tabbar p-3 lg:hidden">
@@ -381,13 +381,13 @@
                 <span aria-hidden="true">‹</span>
               </button>
               <div class="tab-scroll-track" data-tab-scroll-track>
-                <div class="tab-buttons tab-buttons-horizontal" role="tablist">
-                  <button class="tab-button" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
-                  <button class="tab-button" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
-                  <button class="tab-button" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
-                  <button class="tab-button" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
-                  <button class="tab-button" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
-                </div>
+              <div class="tab-buttons tab-buttons-horizontal" role="tablist" aria-orientation="horizontal">
+                <button class="tab-button" id="tab-trigger-customers-tab-tertiary" aria-controls="customers-tab" data-tab="customers-tab" data-i18n data-i18n-key="tabs.customers">👤 العملاء</button>
+                <button class="tab-button" id="tab-trigger-equipment-tab-tertiary" aria-controls="equipment-tab" data-tab="equipment-tab" data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</button>
+                <button class="tab-button" id="tab-trigger-maintenance-tab-tertiary" aria-controls="maintenance-tab" data-tab="maintenance-tab" data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</button>
+                <button class="tab-button" id="tab-trigger-technicians-tab-tertiary" aria-controls="technicians-tab" data-tab="technicians-tab" data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</button>
+                <button class="tab-button" id="tab-trigger-reservations-tab-tertiary" aria-controls="reservations-tab" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
+              </div>
               </div>
               <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
                 <span aria-hidden="true">›</span>
@@ -399,7 +399,7 @@
     <div class="tab-content-wrapper">
 
       <!-- ✅ تبويب: العملاء -->
-      <div class="tab" id="customers-tab">
+      <div class="tab" id="customers-tab" role="tabpanel" aria-labelledby="tab-trigger-customers-tab" tabindex="0">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="customers.section.title">📋 إدارة العملاء</h2>
         </div>
@@ -494,7 +494,7 @@
       </div> <!-- نهاية تبويب العملاء -->
 
       <!-- ✅ تبويب: الفريق الفني -->
-      <div class="tab" id="technicians-tab">
+      <div class="tab" id="technicians-tab" role="tabpanel" aria-labelledby="tab-trigger-technicians-tab" tabindex="0">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="technicians.section.title">😎 إدارة طاقم العمل</h2>
         </div>
@@ -505,7 +505,7 @@
               <span aria-hidden="true">‹</span>
             </button>
             <div class="tab-scroll-track" data-tab-scroll-track>
-              <div class="sub-tab-buttons tabs tabs-boxed" role="tablist">
+              <div class="sub-tab-buttons tabs tabs-boxed" role="tablist" aria-orientation="horizontal">
                 <button
                   type="button"
                   class="sub-tab-button tab tab-active tech-subtab-button"
@@ -687,7 +687,7 @@
 
 
       <!-- ✅ تبويب: المعدات -->
-      <div class="tab" id="equipment-tab">
+      <div class="tab" id="equipment-tab" role="tabpanel" aria-labelledby="tab-trigger-equipment-tab" tabindex="0">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="equipment.section.title">🎥 إدارة المعدات</h2>
         </div>
@@ -888,7 +888,7 @@
       </div> <!-- نهاية تبويب المعدات -->
 
       <!-- ✅ تبويب: الصيانة -->
-      <div class="tab" id="maintenance-tab">
+      <div class="tab" id="maintenance-tab" role="tabpanel" aria-labelledby="tab-trigger-maintenance-tab" tabindex="0">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="maintenance.section.title">🛠️ إدارة الصيانة</h2>
         </div>
@@ -1044,7 +1044,7 @@
       </div>
 
       <!-- ✅ تبويب: الحجوزات -->
-      <div class="tab" id="reservations-tab">
+      <div class="tab" id="reservations-tab" role="tabpanel" aria-labelledby="tab-trigger-reservations-tab" tabindex="0">
         <div class="tab-section-header">
           <h2 class="tab-section-title" data-i18n data-i18n-key="reservations.section.title">📅 إدارة الحجوزات</h2>
         </div>

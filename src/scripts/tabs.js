@@ -262,6 +262,67 @@ export function setupTabs() {
 
   activateTabRef = activateTab;
 
+  // Keyboard navigation for tabs (Arrow keys + Home/End)
+  const setupKeyboardNavigation = (tablist) => {
+    if (!tablist || tablist.dataset.tabKeyboardBound === 'true') return;
+    const isVertical = tablist.getAttribute('aria-orientation') === 'vertical';
+    tablist.addEventListener('keydown', (event) => {
+      const key = event.key;
+      const tabs = Array.from(tablist.querySelectorAll('[role="tab"], .tab-button, .sub-tab-button'))
+        .filter((el) => el.matches('[data-tab], [data-sub-tab]'));
+      if (!tabs.length) return;
+      const current = event.target;
+      const index = Math.max(0, tabs.indexOf(current));
+      let nextIndex = index;
+
+      const prev = () => { nextIndex = (index - 1 + tabs.length) % tabs.length; };
+      const next = () => { nextIndex = (index + 1) % tabs.length; };
+      const first = () => { nextIndex = 0; };
+      const last = () => { nextIndex = tabs.length - 1; };
+
+      let handled = false;
+      switch (key) {
+        case 'ArrowLeft':
+          if (!isVertical) { prev(); handled = true; }
+          break;
+        case 'ArrowRight':
+          if (!isVertical) { next(); handled = true; }
+          break;
+        case 'ArrowUp':
+          if (isVertical) { prev(); handled = true; }
+          break;
+        case 'ArrowDown':
+          if (isVertical) { next(); handled = true; }
+          break;
+        case 'Home':
+          first(); handled = true; break;
+        case 'End':
+          last(); handled = true; break;
+        case 'Enter':
+        case ' ': // Space
+          // Activate current focused tab
+          handled = true;
+          current?.click();
+          break;
+        default:
+          break;
+      }
+
+      if (handled) {
+        event.preventDefault();
+        const targetEl = tabs[nextIndex];
+        if (targetEl && targetEl !== current) {
+          targetEl.focus();
+          // Activate on focus to keep UX consistent
+          targetEl.click();
+        }
+      }
+    });
+    tablist.dataset.tabKeyboardBound = 'true';
+  };
+
+  document.querySelectorAll('[role="tablist"]').forEach(setupKeyboardNavigation);
+
   tabButtons.forEach((btn) => {
     if (!btn) return;
     if (!btn.getAttribute('type')) {
