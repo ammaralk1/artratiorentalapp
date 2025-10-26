@@ -25,6 +25,7 @@ const container = document.getElementById('technician-details');
 const heroNameEl = document.getElementById('technician-hero-name');
 const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
+const heroEmailEl = document.getElementById('technician-hero-email');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
@@ -721,7 +722,8 @@ function setStatusBadge(status) {
 function setHeroData(technician) {
   if (!technician) {
     setHeroBadge(heroNameEl, '😎', '—');
-    setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
+  setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
+  setHeroBadge(heroEmailEl, '📧', '', { hideWhenEmpty: true });
     if (greetingNameEl) greetingNameEl.textContent = '—';
     if (greetingRoleEl) greetingRoleEl.textContent = '—';
     setHeroBadge(greetingRoleBadgeEl, '🎯', '', { hideWhenEmpty: true });
@@ -731,6 +733,7 @@ function setHeroData(technician) {
 
   setHeroBadge(heroNameEl, '😎', technician.name || '—');
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
+  setHeroBadge(heroEmailEl, '📧', technician.email || '', { hideWhenEmpty: true });
   if (greetingNameEl) {
     greetingNameEl.textContent = technician.name || '—';
   }
@@ -963,6 +966,10 @@ function renderTechnicianDetails(technician) {
     ? normalizeNumbers(technician.phone)
     : `<span data-i18n data-i18n-key="reservations.details.technicians.phoneUnknown">${t('reservations.details.technicians.phoneUnknown', 'غير متوفر')}</span>`;
 
+  const emailValue = technician.email
+    ? technician.email
+    : `<span data-i18n data-i18n-key="technicianDetails.fallback.email">${t('technicianDetails.fallback.email', '—')}</span>`;
+
   const roleValue = technician.role
     ? technician.role
     : `<span data-i18n data-i18n-key="technicianDetails.fallback.role">${t('technicianDetails.fallback.role', 'غير محدد')}</span>`;
@@ -994,8 +1001,7 @@ function renderTechnicianDetails(technician) {
     { key: 'technicianDetails.fields.role', value: roleValue },
     { key: 'technicianDetails.fields.department', value: departmentValue },
     { key: 'technicianDetails.fields.phone', value: phoneValue },
-    { key: 'technicianDetails.fields.wage', value: wageValue },
-    { key: 'technicianDetails.fields.total', value: totalValue || `0 ${currencySpan}` },
+    { key: 'technicianDetails.fields.email', value: emailValue },
     { key: 'technicianDetails.fields.notes', value: notesValue },
   ];
 
