@@ -1007,17 +1007,58 @@ export function getTechnicianById(id) {
   return getTechnicians().find((tech) => String(tech.id) === String(id)) || null;
 }
 
+function collectReservationTechnicianIds(reservation) {
+  // Returns a de-duplicated array of string IDs from different shapes
+  const ids = new Set();
+  const pushId = (value) => {
+    if (value == null) return;
+    const str = String(value).trim();
+    if (str) ids.add(str);
+  };
+
+  const fromArray = (arr) => {
+    if (!Array.isArray(arr)) return;
+    arr.forEach((entry) => {
+      if (entry == null) return;
+      if (typeof entry === 'object') {
+        const objId = entry.id
+          ?? entry.technicianId
+          ?? entry.technician_id
+          ?? (entry.technician && (entry.technician.id ?? entry.technician.technicianId ?? entry.technician.technician_id));
+        pushId(objId);
+      } else {
+        pushId(entry);
+      }
+    });
+  };
+
+  fromArray(reservation?.technicians);
+  fromArray(reservation?.techniciansDetails);
+
+  return Array.from(ids);
+}
+
+function resolveReservationTimeRange(reservation) {
+  // Normalize potential field names for start/end
+  const start = reservation?.start ?? reservation?.startDatetime ?? reservation?.start_datetime ?? reservation?.start_date ?? null;
+  const end = reservation?.end ?? reservation?.endDatetime ?? reservation?.end_datetime ?? reservation?.end_date ?? null;
+  return { start, end };
+}
+
 function isTechnicianActiveNow(technicianId, reservations = [], now) {
   const normalizedId = normalizeTechnicianId(technicianId);
   if (!normalizedId) return false;
 
   return reservations.some((reservation) => {
-    if (!reservation || !reservation.start || !reservation.end) return false;
-    const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
-    if (!assigned.some((id) => normalizeTechnicianId(id) === normalizedId)) return false;
+    if (!reservation) return false;
+    const assignedIds = collectReservationTechnicianIds(reservation);
+    if (!assignedIds.includes(normalizedId)) return false;
 
-    const resStart = new Date(reservation.start);
-    const resEnd = new Date(reservation.end);
+    const { start, end } = resolveReservationTimeRange(reservation);
+    if (!start || !end) return false;
+
+    const resStart = new Date(start);
+    const resEnd = new Date(end);
     if (Number.isNaN(resStart.getTime()) || Number.isNaN(resEnd.getTime())) return false;
 
     return resStart <= now && now < resEnd;
@@ -1063,6 +1104,25 @@ export function syncTechniciansStatuses() {
 
   return technicians;
 }
+
+// Keep technician busy/available in sync with reservations updates
+document.addEventListener('reservations:changed', () => {
+  const before = getTechniciansState();
+  const after = syncTechniciansStatuses();
+  // If state changed, table will be redrawn by technicians:updated handler
+  if (after === before) {
+    // Force light refresh of the table view
+    try { renderTechniciansTable(); } catch (_) { /* ignore */ }
+  }
+});
+
+document.addEventListener('reservations:updated', () => {
+  const before = getTechniciansState();
+  const after = syncTechniciansStatuses();
+  if (after === before) {
+    try { renderTechniciansTable(); } catch (_) { /* ignore */ }
+  }
+});
 
 function setupTechnicianModule() {
   const form = document.getElementById("technician-form");
