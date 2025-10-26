@@ -1,5 +1,5 @@
 import { normalizeNumbers } from './utils.js';
-import { resolvePackageItems, normalizePackageId } from './reservationsPackages.js';
+import { resolvePackageItems, normalizePackageId, getPackagesSnapshot } from './reservationsPackages.js';
 
 function stripExtraDots(candidate) {
   const parts = candidate.split('.');
@@ -285,20 +285,44 @@ export function buildReservationDisplayGroups(reservation = {}) {
   const items = Array.isArray(reservation?.items) ? reservation.items : [];
   const groupedItems = groupReservationItems(items);
 
+  // Build snapshot maps to unify package keys (id/code)
+  const pkgDefs = getPackagesSnapshot();
+  const pkgIdSet = new Set();
+  const codeToId = new Map();
+  pkgDefs.forEach((def) => {
+    const normId = normalizePackageId(def?.id ?? def?.packageId ?? def?.package_id ?? def?.code);
+    if (normId) pkgIdSet.add(normId);
+    const normCode = normalizeNumbers(String(def?.package_code ?? def?.code ?? '')).trim().toLowerCase();
+    if (normCode) codeToId.set(normCode, normId || normCode);
+  });
+
+  const derivePackageKey = (entry, indexHint = 0) => {
+    const idNorm = normalizePackageId(
+      entry?.package_code
+      ?? entry?.packageId
+      ?? entry?.package_id
+      ?? entry?.code
+      ?? entry?.id
+      ?? null
+    );
+    const codeNorm = normalizeNumbers(String(
+      entry?.package_code
+      ?? entry?.code
+      ?? entry?.barcode
+      ?? ''
+    )).trim().toLowerCase();
+
+    if (idNorm) return idNorm;
+    if (codeNorm && codeToId.has(codeNorm)) return codeToId.get(codeNorm);
+    return codeNorm || `pkg-${indexHint}`;
+  };
+
   const packagesMap = new Map();
 
   const registerPackageSource = (pkg, indexHint = 0, origin = 'packages') => {
     if (!pkg || typeof pkg !== 'object') return;
 
-    const normalizedId = normalizePackageId(
-      pkg?.package_code
-      ?? pkg?.packageId
-      ?? pkg?.package_id
-      ?? pkg?.code
-      ?? pkg?.id
-      ?? pkg?.barcode
-      ?? `pkg-${indexHint}`
-    );
+    const normalizedId = derivePackageKey(pkg, indexHint);
 
     const key = normalizedId || `pkg-${indexHint}`;
     if (!packagesMap.has(key)) {
@@ -338,7 +362,9 @@ export function buildReservationDisplayGroups(reservation = {}) {
 
   items.forEach((item, idx) => {
     if (item && typeof item === 'object' && (item.type === 'package' || Array.isArray(item?.packageItems))) {
-      registerPackageSource(item, idx + packagesMap.size, 'items');
+      const key = derivePackageKey(item, idx + packagesMap.size);
+      // Avoid adding a second source with a different ad-hoc key for the same package
+      registerPackageSource({ ...item, package_id: key, packageId: key, package_code: item.package_code ?? item.code }, idx + packagesMap.size, 'items');
     }
   });
 
@@ -528,8 +554,24 @@ export function buildReservationDisplayGroups(reservation = {}) {
     return true;
   });
 
-  const displayGroups = packageGroups.length
-    ? [...packageGroups, ...filteredGroupedItems]
+  // Deduplicate packageGroups by their canonical key to avoid doubles
+  const seenPackages = new Set();
+  const uniquePackageGroups = [];
+  packageGroups.forEach((group) => {
+    const key = derivePackageKey({
+      package_code: group?.package_code,
+      packageId: group?.packageId,
+      package_id: group?.packageId,
+      code: group?.barcode,
+      id: group?.packageId,
+    });
+    if (!key || seenPackages.has(key)) return;
+    seenPackages.add(key);
+    uniquePackageGroups.push(group);
+  });
+
+  const displayGroups = uniquePackageGroups.length
+    ? [...uniquePackageGroups, ...filteredGroupedItems]
     : groupedItems;
 
   return {
