@@ -13,6 +13,7 @@ import {
 } from '../reservations/uiBridge.js';
 import {
   calculateReservationTotal,
+  calculateDraftFinancialBreakdown,
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
   determinePaymentStatus,
@@ -160,43 +161,106 @@ export function openProjectDetails(projectId) {
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
     : '';
 
-  const summaryDetails = [
-    {
-      icon: '💼',
-      label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'),
-      value: formatCurrency(projectTotal)
-    },
-    {
-      icon: '🔗',
-      label: t('projects.details.summary.reservationsTotal', 'إجمالي المعدات / طاقم العمل'),
-      value: formatCurrency(reservationsTotal)
-    },
-    {
-      icon: '🧮',
-      label: t('projects.details.summary.combinedTax', 'إجمالي الضريبة الكلية (15٪)'),
-      value: formatCurrency(combinedTaxAmount)
-    },
-    {
-      icon: '💰',
-      label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'),
-      value: formatCurrency(overallTotal)
-    },
-    {
-      icon: '💳',
-      label: t('projects.details.summary.paidAmount', 'إجمالي المدفوع'),
-      value: paidAmountDisplay
-    },
-    {
-      icon: '📊',
-      label: t('projects.details.summary.paidPercent', 'نسبة المدفوع'),
-      value: paidPercentDisplay
-    },
-    {
-      icon: '💸',
-      label: t('projects.details.summary.remainingAmount', 'المتبقي للدفع'),
-      value: remainingDisplay
-    }
-  ];
+  // Build detailed financial summary when there are linked reservations
+  let summaryDetails = [];
+  if (reservationsCount > 0) {
+    // Aggregate equipment/crew totals and crew cost across reservations (before any project discount)
+    const agg = reservationsForProject.reduce((acc, res) => {
+      const items = Array.isArray(res.items) ? res.items : [];
+      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+      const techniciansOrAssignments = crewAssignments.length
+        ? crewAssignments
+        : (Array.isArray(res.technicians) ? res.technicians : []);
+      const breakdown = calculateDraftFinancialBreakdown({
+        items,
+        technicianIds: Array.isArray(techniciansOrAssignments) && !techniciansOrAssignments.length ? techniciansOrAssignments : [],
+        crewAssignments: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object' ? techniciansOrAssignments : [],
+        discount: res.discount ?? 0,
+        discountType: res.discountType || 'percent',
+        applyTax: false,
+        start: res.start,
+        end: res.end,
+        companySharePercent: null,
+      });
+      acc.equipment += Number(breakdown.equipmentTotal || 0);
+      acc.crew += Number(breakdown.crewTotal || 0);
+      acc.crewCost += Number(breakdown.crewCostTotal || 0);
+      return acc;
+    }, { equipment: 0, crew: 0, crewCost: 0 });
+
+    const expensesTotalNumber = Number(expensesTotal || 0);
+    const gross = Number((agg.equipment + agg.crew).toFixed(2));
+
+    // Project-level discount applied on gross
+    const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+    const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : (gross * (discountVal / 100));
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > gross) discountAmount = gross;
+
+    // Company share after discount (independent from tax flag)
+    const applyTaxFlag = applyTax === true; // from resolveProjectTotals(project)
+    const shareEnabled = project?.companyShareEnabled === true
+      || project?.companyShareEnabled === 'true'
+      || project?.company_share_enabled === true
+      || project?.company_share_enabled === 'true';
+    const rawShare = Number.parseFloat(
+      project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+    ) || 0;
+    const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+    const baseAfterDiscount = Math.max(0, gross - discountAmount);
+    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+
+    // VAT after company share if enabled
+    const taxAmountAfterShare = applyTaxFlag
+      ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
+      : 0;
+
+    // Net profit = gross - discount - share - VAT - expenses - crew cost
+    const netProfit = Number((baseAfterDiscount - companyShareAmount - taxAmountAfterShare - expensesTotalNumber - agg.crewCost).toFixed(2));
+
+    // Final total = gross - discount + share + VAT
+    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+
+    if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
+    if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
+    if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrency(expensesTotalNumber) });
+    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrency(gross) });
+    if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
+    if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
+    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
+    summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrency(finalTotal) });
+  } else {
+    // Fallback legacy summary when no linked reservations
+    summaryDetails = [
+      {
+        icon: '💼',
+        label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'),
+        value: formatCurrency(projectTotal)
+      },
+      {
+        icon: '🔗',
+        label: t('projects.details.summary.reservationsTotal', 'إجمالي المعدات / طاقم العمل'),
+        value: formatCurrency(reservationsTotal)
+      },
+      {
+        icon: '🧮',
+        label: t('projects.details.summary.combinedTax', 'إجمالي الضريبة الكلية (15٪)'),
+        value: formatCurrency(combinedTaxAmount)
+      },
+      {
+        icon: '💰',
+        label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'),
+        value: formatCurrency(overallTotal)
+      }
+    ];
+  }
 
   const summaryDetailsHtml = summaryDetails.map(({ icon, label, value }) => `
     <div class="summary-details-row">
