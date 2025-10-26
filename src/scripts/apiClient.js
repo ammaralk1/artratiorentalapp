@@ -17,14 +17,23 @@ export function getApiBase() {
 }
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
-  if (typeof path !== 'string') {
+  // Normalize path: accept strings, URL, or objects with common keys
+  let pathStr = path;
+  if (pathStr && typeof pathStr === 'object') {
+    const candidate = pathStr.path || pathStr.url || pathStr.endpoint || null;
+    pathStr = candidate ? String(candidate) : String(pathStr);
     try {
-      console.warn('[apiClient] Invalid path passed to apiRequest:', path);
+      console.warn('[apiClient] Non-string path normalized:', path);
     } catch (_) { /* ignore logging issues */ }
-    path = String(path || '');
   }
-  const cleanedPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${getApiBase()}${cleanedPath}`;
+  if (typeof pathStr !== 'string') {
+    pathStr = String(pathStr || '');
+  }
+  const isAbsolute = /^https?:\/\//i.test(pathStr);
+  const cleanedPath = isAbsolute
+    ? pathStr
+    : (pathStr.startsWith('/') ? pathStr : `/${pathStr}`);
+  const url = isAbsolute ? cleanedPath : `${getApiBase()}${cleanedPath}`;
 
   const finalHeaders = {
     Accept: 'application/json',

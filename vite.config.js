@@ -1,73 +1,99 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-export default defineConfig({
-  root: '.',
-  publicDir: 'public',
-  base: './',
-  server: {
-    port: 5173,
-    open: '/src/pages/dashboard.html'
-  },
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: {
-        home: resolve(__dirname, 'src/pages/home.html'),
-        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
-        login: resolve(__dirname, 'src/pages/login.html'),
-        customer: resolve(__dirname, 'src/pages/customer.html'),
-        technician: resolve(__dirname, 'src/pages/technician.html'),
-        projects: resolve(__dirname, 'src/pages/projects.html'),
-        users: resolve(__dirname, 'src/pages/users.html')
-      },
-      output: {
-        // Use content hashes to avoid stale cache issues in production
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]',
-        manualChunks(id) {
-          // Vendor: everything from node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+export default defineConfig(async () => {
+  const analyze = process.env.ANALYZE === 'true';
+  /** @type {import('rollup').Plugin[]} */
+  const rollupPlugins = [];
 
-          // Group by major feature areas to improve cacheability
-          const inScripts = (p) => id.includes(`/src/scripts/${p}`);
-
-          // Reports module(s)
-          if (inScripts('reports/') || id.endsWith('/src/scripts/reports.js')) {
-            return 'reports';
-          }
-
-          // Reservations area (UI, service, controller, etc.)
-          if (
-            inScripts('reservations/') ||
-            id.endsWith('/src/scripts/reservationsUI.js') ||
-            id.endsWith('/src/scripts/reservationsService.js')
-          ) {
-            return 'reservations';
-          }
-
-          // Projects area
-          if (inScripts('projects/')) {
-            return 'projects';
-          }
-
-          // Maintenance area
-          if (
-            inScripts('maintenance/') ||
-            id.endsWith('/src/scripts/maintenance.js') ||
-            id.endsWith('/src/scripts/maintenanceService.js')
-          ) {
-            return 'maintenance';
-          }
-
-          // Otherwise: let Rollup decide
-          return undefined;
-        }
-      }
+  if (analyze) {
+    try {
+      const { visualizer } = await import('rollup-plugin-visualizer');
+      rollupPlugins.push(
+        visualizer({
+          filename: 'dist/stats.html',
+          template: 'treemap',
+          gzipSize: true,
+          brotliSize: true,
+          title: 'Bundle Visualizer'
+        })
+      );
+    } catch (err) {
+      // Plugin is optional; skip if not installed
+      // eslint-disable-next-line no-console
+      console.warn('[vite] Bundle analysis is enabled but rollup-plugin-visualizer is not installed.');
     }
   }
+
+  return {
+    root: '.',
+    publicDir: 'public',
+    base: './',
+    server: {
+      port: 5173,
+      open: '/src/pages/dashboard.html'
+    },
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+      rollupOptions: {
+        input: {
+          home: resolve(__dirname, 'src/pages/home.html'),
+          dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
+          login: resolve(__dirname, 'src/pages/login.html'),
+          customer: resolve(__dirname, 'src/pages/customer.html'),
+          technician: resolve(__dirname, 'src/pages/technician.html'),
+          projects: resolve(__dirname, 'src/pages/projects.html'),
+          users: resolve(__dirname, 'src/pages/users.html')
+        },
+        output: {
+          // Use content hashes to avoid stale cache issues in production
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
+          manualChunks(id) {
+            // Vendor: everything from node_modules
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+
+            // Group by major feature areas to improve cacheability
+            const inScripts = (p) => id.includes(`/src/scripts/${p}`);
+
+            // Reports module(s)
+            if (inScripts('reports/') || id.endsWith('/src/scripts/reports.js')) {
+              return 'reports';
+            }
+
+            // Reservations area (UI, service, controller, etc.)
+            if (
+              inScripts('reservations/') ||
+              id.endsWith('/src/scripts/reservationsUI.js') ||
+              id.endsWith('/src/scripts/reservationsService.js')
+            ) {
+              return 'reservations';
+            }
+
+            // Projects area
+            if (inScripts('projects/')) {
+              return 'projects';
+            }
+
+            // Maintenance area
+            if (
+              inScripts('maintenance/') ||
+              id.endsWith('/src/scripts/maintenance.js') ||
+              id.endsWith('/src/scripts/maintenanceService.js')
+            ) {
+              return 'maintenance';
+            }
+
+            // Otherwise: let Rollup decide
+            return undefined;
+          }
+        },
+        plugins: rollupPlugins
+      }
+    }
+  };
 });
