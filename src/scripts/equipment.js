@@ -1393,13 +1393,18 @@ export async function refreshEquipmentFromApi({ showToastOnError = true } = {}) 
     const records = rawItems.map(mapApiEquipment);
     setEquipment(records);
   } catch (error) {
-    equipmentErrorMessage = resolveApiErrorMessage(
-      error,
-      "equipment.toast.fetchFailed",
-      "تعذر تحميل قائمة المعدات"
-    );
-    if (showToastOnError) {
-      showToast(equipmentErrorMessage, "error");
+    // Suppress unauthorized errors (e.g., during logout) to avoid flicker/noisy toasts
+    if (error && typeof error === 'object' && Number(error.status) === 401) {
+      equipmentErrorMessage = "";
+    } else {
+      equipmentErrorMessage = resolveApiErrorMessage(
+        error,
+        "equipment.toast.fetchFailed",
+        "تعذر تحميل قائمة المعدات"
+      );
+      if (showToastOnError) {
+        showToast(equipmentErrorMessage, "error");
+      }
     }
   } finally {
     isEquipmentLoading = false;

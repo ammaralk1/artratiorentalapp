@@ -60,13 +60,19 @@ async function loadMaintenanceFromApi({ showToastOnError = true } = {}) {
     await refreshMaintenanceFromApi();
     maintenanceHasLoaded = true;
   } catch (error) {
-    maintenanceHasLoaded = maintenanceTickets.length > 0;
-    console.error('❌ [maintenance] Failed to load maintenance tickets', error);
-    maintenanceErrorMessage = isMaintenanceApiError(error)
-      ? error.message
-      : t('maintenance.toast.fetchFailed', 'تعذر تحميل بيانات الصيانة. حاول تحديث الصفحة.');
-    if (showToastOnError) {
-      showToast(maintenanceErrorMessage, 'error');
+    // Suppress noisy errors during logout/unauthorized state
+    if (error && typeof error === 'object' && Number(error.status) === 401) {
+      maintenanceHasLoaded = maintenanceTickets.length > 0;
+      maintenanceErrorMessage = '';
+    } else {
+      maintenanceHasLoaded = maintenanceTickets.length > 0;
+      console.error('❌ [maintenance] Failed to load maintenance tickets', error);
+      maintenanceErrorMessage = isMaintenanceApiError(error)
+        ? error.message
+        : t('maintenance.toast.fetchFailed', 'تعذر تحميل بيانات الصيانة. حاول تحديث الصفحة.');
+      if (showToastOnError) {
+        showToast(maintenanceErrorMessage, 'error');
+      }
     }
   } finally {
     maintenanceLoading = false;
