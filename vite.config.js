@@ -26,7 +26,47 @@ export default defineConfig({
         // Use content hashes to avoid stale cache issues in production
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]'
+        assetFileNames: 'assets/[name].[hash].[ext]',
+        manualChunks(id) {
+          // Vendor: everything from node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+
+          // Group by major feature areas to improve cacheability
+          const inScripts = (p) => id.includes(`/src/scripts/${p}`);
+
+          // Reports module(s)
+          if (inScripts('reports/') || id.endsWith('/src/scripts/reports.js')) {
+            return 'reports';
+          }
+
+          // Reservations area (UI, service, controller, etc.)
+          if (
+            inScripts('reservations/') ||
+            id.endsWith('/src/scripts/reservationsUI.js') ||
+            id.endsWith('/src/scripts/reservationsService.js')
+          ) {
+            return 'reservations';
+          }
+
+          // Projects area
+          if (inScripts('projects/')) {
+            return 'projects';
+          }
+
+          // Maintenance area
+          if (
+            inScripts('maintenance/') ||
+            id.endsWith('/src/scripts/maintenance.js') ||
+            id.endsWith('/src/scripts/maintenanceService.js')
+          ) {
+            return 'maintenance';
+          }
+
+          // Otherwise: let Rollup decide
+          return undefined;
+        }
       }
     }
   }
