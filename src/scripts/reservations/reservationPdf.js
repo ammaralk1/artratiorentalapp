@@ -2959,20 +2959,17 @@ function buildQuotationHtml(options) {
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
 
+    // Prefer the actual package code (as defined in packages manager) over ids or barcodes
     const packageCode = group?.packageDisplayCode
       ?? group?.package_code
-      ?? group?.packageCode
-      ?? group?.packageId
-      ?? group?.package_id
       ?? group?.code
+      ?? group?.packageCode
       ?? group?.barcode
       ?? (Array.isArray(group?.items) && group.items.length
-        ? group.items[0]?.package_code
-          ?? group.items[0]?.packageCode
-          ?? group.items[0]?.packageId
-          ?? group.items[0]?.package_id
+        ? (group.items[0]?.package_code
           ?? group.items[0]?.code
-          ?? group.items[0]?.barcode
+          ?? group.items[0]?.packageCode
+          ?? group.items[0]?.barcode)
         : null);
 
     const rawBarcode = isPackage

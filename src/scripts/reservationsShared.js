@@ -413,23 +413,20 @@ export function buildReservationDisplayGroups(reservation = {}) {
     }
     totalPrice = sanitizePriceValue(totalPrice);
 
+    // Prefer the actual package_code (as shown in Equipment > Packages) over ids or barcodes
     const packageDisplayCodeCandidates = [
+      primarySource?.package_code,
+      primarySource?.code,
+      primarySource?.packageCode,
       primarySource?.displayCode,
       primarySource?.display_code,
-      primarySource?.package_code,
-      primarySource?.packageCode,
-      primarySource?.code,
       primarySource?.barcode,
-      primarySource?.packageId,
-      primarySource?.package_id,
+      secondarySource?.package_code,
+      secondarySource?.code,
+      secondarySource?.packageCode,
       secondarySource?.displayCode,
       secondarySource?.display_code,
-      secondarySource?.package_code,
-      secondarySource?.packageCode,
-      secondarySource?.code,
       secondarySource?.barcode,
-      secondarySource?.packageId,
-      secondarySource?.package_id,
       normalizedId,
       mapKey,
     ];
