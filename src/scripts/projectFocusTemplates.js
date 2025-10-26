@@ -441,8 +441,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
       ?? project?.company_share
       ?? 0
     ) || 0;
-    // طبق نسبة الشركة متى ما كانت مفعّلة بغض النظر عن الضريبة
-    const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+    const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
     const baseAfterDiscount = Math.max(0, gross - discountAmount);
     const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
 
@@ -455,11 +454,10 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     // Final total = gross - discount + share + VAT
     const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
 
-    // أعرض البنود الأساسية دائماً لتكون القراءة واضحة حتى لو كانت 0
-    summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrencyLocalized(agg.equipment) });
-    summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrencyLocalized(agg.crew) });
-    summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrencyLocalized(agg.crewCost) });
-    summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrencyLocalized(expensesTotal) });
+    if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrencyLocalized(agg.equipment) });
+    if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrencyLocalized(agg.crew) });
+    if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrencyLocalized(agg.crewCost) });
+    if (expensesTotal > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrencyLocalized(expensesTotal) });
     summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrencyLocalized(gross) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrencyLocalized(discountAmount)}` });
     if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrencyLocalized(companyShareAmount)}` });
