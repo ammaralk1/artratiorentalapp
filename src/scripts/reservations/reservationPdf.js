@@ -113,7 +113,13 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
     id: 'code',
     labelKey: 'reservations.details.table.headers.code',
     fallback: 'الكود',
-    render: (item) => escapeHtml(item?.barcode || '-')
+    render: (item) => {
+      if (item?.isPackage) {
+        const code = item?.packageCodeResolved || item?.barcode || '';
+        return escapeHtml(code || '-');
+      }
+      return escapeHtml(item?.barcode || '-');
+    }
   },
   {
     id: 'description',
@@ -3020,6 +3026,7 @@ function buildQuotationHtml(options) {
       isPackage,
       desc: group?.description,
       barcode,
+      packageCodeResolved: packageCode || '',
       qty: count,
       price: totalPrice,
       totalPrice,
