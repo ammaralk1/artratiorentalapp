@@ -51,7 +51,14 @@ function setTextContent(id, value) {
 
 function updateMetrics() {
   updateScheduled = false;
-  const data = loadData();
+  let snapshot = null;
+  try {
+    snapshot = loadData();
+  } catch (error) {
+    // In very early boot or if storage throws, fallback to empty snapshot
+    snapshot = null;
+  }
+  const data = (snapshot && typeof snapshot === 'object') ? snapshot : {};
 
   const totalProjects = Array.isArray(data.projects) ? data.projects.length : 0;
   const totalReservations = Array.isArray(data.reservations) ? data.reservations.length : 0;
