@@ -12,6 +12,7 @@ import {
   calculateDraftFinancialBreakdown
 } from '../reservationsSummary.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
+import { findPackageById } from '../reservationsPackages.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 import {
@@ -2959,18 +2960,32 @@ function buildQuotationHtml(options) {
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
 
-    // Prefer the actual package code (as defined in packages manager) over ids or barcodes
-    const packageCode = group?.packageDisplayCode
+    // Resolve the real package code (fallback to definition by id when missing)
+    let packageCode = group?.packageDisplayCode
       ?? group?.package_code
       ?? group?.code
       ?? group?.packageCode
-      ?? group?.barcode
       ?? (Array.isArray(group?.items) && group.items.length
         ? (group.items[0]?.package_code
           ?? group.items[0]?.code
-          ?? group.items[0]?.packageCode
-          ?? group.items[0]?.barcode)
+          ?? group.items[0]?.packageCode)
         : null);
+
+    if (!packageCode) {
+      const pkgId = group?.packageId
+        ?? group?.package_id
+        ?? (Array.isArray(group?.items) && group.items.length ? (group.items[0]?.packageId ?? group.items[0]?.package_id) : null);
+      if (pkgId) {
+        try {
+          const def = findPackageById(pkgId);
+          if (def && def.package_code) {
+            packageCode = def.package_code;
+          }
+        } catch (_) {
+          // ignore lookup errors
+        }
+      }
+    }
 
     const rawBarcode = isPackage
       ? (packageCode ?? fallbackBarcode ?? '')
