@@ -915,7 +915,7 @@
                 <input type="text" id="maintenance-equipment-barcode" class="form-control" placeholder="🖨️ امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.barcode">
               </div>
               <div class="form-field">
-                <label for="maintenance-equipment-search" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.search">🎥 البحث باسم المعدة</label>
+                <label for="maintenance-equipment-search" class="form-label" data-i18n data-i18n-key="maintenance.form.labels.search">🎥 إضافة معدة بالاسم</label>
                 <input type="text" id="maintenance-equipment-search" class="form-control" list="maintenance-equipment-options" placeholder="اكتب اسم المعدة..." data-i18n data-i18n-placeholder-key="maintenance.form.placeholders.search">
                 <datalist id="maintenance-equipment-options"></datalist>
               </div>
@@ -955,6 +955,16 @@
               <option value="open" data-i18n data-i18n-key="maintenance.filters.status.open">قيد الصيانة</option>
               <option value="closed" data-i18n data-i18n-key="maintenance.filters.status.closed">مغلقة</option>
             </select>
+
+            <label for="maintenance-priority-filter" class="form-label" data-i18n data-i18n-key="maintenance.filters.priority.label">الأولوية</label>
+            <select id="maintenance-priority-filter" class="form-select">
+              <option value="all" data-i18n data-i18n-key="maintenance.filters.priority.all">كل الأولويات</option>
+              <option value="high" data-i18n data-i18n-key="maintenance.filters.priority.high">مرتفعة</option>
+              <option value="medium" data-i18n data-i18n-key="maintenance.filters.priority.medium">متوسطة</option>
+              <option value="low" data-i18n data-i18n-key="maintenance.filters.priority.low">منخفضة</option>
+            </select>
+
+            <input type="text" id="maintenance-search" class="form-control" placeholder="🔍 ابحث باسم المعدة أو الباركود..." data-i18n data-i18n-placeholder-key="maintenance.filters.search.placeholder">
           </div>
           <div class="customer-table-wrapper maintenance-table-wrapper table-responsive">
             <table class="customer-table maintenance-table align-middle">
