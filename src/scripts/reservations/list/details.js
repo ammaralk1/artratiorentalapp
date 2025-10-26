@@ -642,15 +642,32 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
           : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
 
-        const packageItemsSource = [];
+        // Build package items list without duplicates
+        let packageItemsSource = [];
         if (Array.isArray(group.packageItems) && group.packageItems.length) {
-          packageItemsSource.push(...group.packageItems);
+          packageItemsSource = [...group.packageItems];
+        } else {
+          const tmp = [];
+          group.items.forEach((item) => {
+            if (Array.isArray(item?.packageItems) && item.packageItems.length) {
+              tmp.push(...item.packageItems);
+            }
+          });
+          packageItemsSource = tmp;
         }
-        group.items.forEach((item) => {
-          if (Array.isArray(item?.packageItems) && item.packageItems.length) {
-            packageItemsSource.push(...item.packageItems);
-          }
-        });
+        // Deduplicate by normalized barcode or equipment id
+        if (Array.isArray(packageItemsSource) && packageItemsSource.length > 1) {
+          const seen = new Set();
+          packageItemsSource = packageItemsSource.filter((pkgItem) => {
+            const key = (pkgItem?.normalizedBarcode && String(pkgItem.normalizedBarcode).toLowerCase())
+              || (pkgItem?.barcode && String(pkgItem.barcode).toLowerCase())
+              || (pkgItem?.equipmentId != null ? `id:${pkgItem.equipmentId}` : null);
+            if (!key) return true;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        }
 
         const isPackageGroup = isPackageEntry(group)
           || group.items.some((item) => isPackageEntry(item))
