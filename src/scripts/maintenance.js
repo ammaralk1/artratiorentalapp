@@ -1352,10 +1352,28 @@ async function handleFormSubmit(event) {
   }
 }
 
-function filterTicketsByStatus(status) {
+function filterTickets({ status = 'all', query = '', priority = 'all' } = {}) {
   const tickets = loadTickets();
-  if (status === 'all') return tickets;
-  return tickets.filter((ticket) => ticket.status === status);
+  let result = tickets;
+
+  if (status !== 'all') {
+    result = result.filter((ticket) => ticket.status === status);
+  }
+
+  if (priority !== 'all') {
+    result = result.filter((ticket) => String(ticket.priority || 'medium') === priority);
+  }
+
+  const q = normalizeSearchValue(query || '');
+  if (q) {
+    result = result.filter((ticket) => {
+      const name = normalizeText(ticket.equipmentDesc || '');
+      const barcode = normalizeSearchValue(ticket.equipmentBarcode || '');
+      return name.includes(q) || barcode.includes(q);
+    });
+  }
+
+  return result;
 }
 
 export function renderMaintenance() {
@@ -1369,6 +1387,10 @@ export function renderMaintenance() {
     statusFilter.value = 'all';
   }
   const status = statusFilter?.value || 'all';
+  const searchEl = document.getElementById('maintenance-search');
+  const query = searchEl?.value || '';
+  const priorityEl = document.getElementById('maintenance-priority-filter');
+  const priority = priorityEl?.value || 'all';
 
   const tbody = document.getElementById('maintenance-table-body');
   const emptyState = document.getElementById('maintenance-empty-state');
@@ -1387,7 +1409,7 @@ export function renderMaintenance() {
     return;
   }
 
-  const tickets = filterTicketsByStatus(status);
+  const tickets = filterTickets({ status, query, priority });
   renderTable(tickets);
 }
 
@@ -1425,6 +1447,22 @@ export function initMaintenance() {
       renderMaintenance();
     });
     statusFilter.dataset.listenerAttached = 'true';
+  }
+
+  const priorityFilter = document.getElementById('maintenance-priority-filter');
+  if (priorityFilter && !priorityFilter.dataset.listenerAttached) {
+    priorityFilter.addEventListener('change', () => {
+      renderMaintenance();
+    });
+    priorityFilter.dataset.listenerAttached = 'true';
+  }
+
+  const searchInput = document.getElementById('maintenance-search');
+  if (searchInput && !searchInput.dataset.listenerAttached) {
+    const onInput = () => renderMaintenance();
+    searchInput.addEventListener('input', onInput);
+    searchInput.addEventListener('change', onInput);
+    searchInput.dataset.listenerAttached = 'true';
   }
 
   const table = document.querySelector('.maintenance-table');
