@@ -84,6 +84,7 @@ function scheduleUpdate() {
 export function initDashboardMetrics() {
   const observedEvents = [
     'reservations:changed',
+    'reservations:updated',
     'projects:changed',
     'equipment:changed',
     'technicians:changed',

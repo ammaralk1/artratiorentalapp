@@ -60,6 +60,28 @@ function scheduleDashboardMetricsInit() {
   }
 }
 
+function scheduleDashboardDataPrefetch() {
+  const kickoff = async () => {
+    try {
+      const tasks = [];
+      tasks.push(import('./scripts/projectsService.js').then((m) => m.refreshProjectsFromApi().catch(() => {})).catch(() => {}));
+      tasks.push(import('./scripts/reservationsService.js').then((m) => m.refreshReservationsFromApi().catch(() => {})).catch(() => {}));
+      tasks.push(import('./scripts/techniciansService.js').then((m) => m.refreshTechniciansFromApi().catch(() => {})).catch(() => {}));
+      tasks.push(import('./scripts/maintenanceService.js').then((m) => m.refreshMaintenanceFromApi().catch(() => {})).catch(() => {}));
+      tasks.push(import('./scripts/equipment.js').then((m) => m.refreshEquipmentFromApi({ showToastOnError: false }).catch(() => {})).catch(() => {}));
+      await Promise.allSettled(tasks);
+    } catch (_) {
+      // ignore background prefetch errors
+    }
+  };
+
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => { kickoff(); }, { timeout: 2500 });
+  } else {
+    setTimeout(kickoff, 500);
+  }
+}
+
 async function initApp() {
   const user = await checkAuth();
   if (!user) {
@@ -75,6 +97,7 @@ async function initApp() {
   // Calendar, Maintenance, and Reservations UI initialise lazily upon tab activation
 
   scheduleDashboardMetricsInit();
+  scheduleDashboardDataPrefetch();
 
   // ✅ رفع ملف إكسل
   const excelUploadInput = document.getElementById("excel-upload");
