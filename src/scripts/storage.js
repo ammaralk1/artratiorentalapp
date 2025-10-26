@@ -46,16 +46,17 @@ export function loadData() {
   };
 }
 
-export function saveData({ customers, reservations, equipment, technicians, maintenance, projects, technicianPayouts, packages }) {
+export function saveData(payload = {}) {
   const store = getMemoryStore();
-  assignIfProvided(store, 'customers', customers);
-  assignIfProvided(store, 'reservations', reservations);
-  assignIfProvided(store, 'equipment', equipment);
-  assignIfProvided(store, 'technicians', technicians);
-  assignIfProvided(store, 'maintenance', maintenance);
-  assignIfProvided(store, 'projects', projects);
-  assignIfProvided(store, 'technicianPayouts', technicianPayouts);
-  assignIfProvided(store, 'packages', packages);
+  // Accept undefined/null payloads gracefully to avoid destructuring errors in production
+  assignIfProvided(store, 'customers', payload.customers);
+  assignIfProvided(store, 'reservations', payload.reservations);
+  assignIfProvided(store, 'equipment', payload.equipment);
+  assignIfProvided(store, 'technicians', payload.technicians);
+  assignIfProvided(store, 'maintenance', payload.maintenance);
+  assignIfProvided(store, 'projects', payload.projects);
+  assignIfProvided(store, 'technicianPayouts', payload.technicianPayouts);
+  assignIfProvided(store, 'packages', payload.packages);
 }
 
 // ✅ نقل البيانات من النظام القديم الذي يتم حقنه من الخادم مرة واحدة
