@@ -70,7 +70,7 @@
         <form id="login-form" class="space-y-5" autocomplete="on" method="post" action="/auth/login">
           <div class="form-field">
             <label for="username" class="form-label" data-i18n data-i18n-key="login.form.username">اسم المستخدم</label>
-            <input type="text" class="form-control" id="username" name="username" data-i18n data-i18n-placeholder-key="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[-A-Za-z0-9._@]{3,100}" minlength="3" maxlength="100">
+            <input type="text" class="form-control" id="username" name="username" data-i18n data-i18n-placeholder-key="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@\-]{3,100}" minlength="3" maxlength="100">
           </div>
           <div class="form-field">
             <label for="password" class="form-label" data-i18n data-i18n-key="login.form.password">كلمة المرور</label>
