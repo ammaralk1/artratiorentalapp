@@ -49,21 +49,21 @@ function setTextContent(id, value) {
   el.textContent = formatNumber(value);
 }
 
+function getArrayLengthSafely(getter) {
+  try {
+    const value = typeof getter === 'function' ? getter() : null;
+    return Array.isArray(value) ? value.length : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
 function updateMetrics() {
   updateScheduled = false;
-  let snapshot = null;
-  try {
-    snapshot = loadData();
-  } catch (error) {
-    // In very early boot or if storage throws, fallback to empty snapshot
-    snapshot = null;
-  }
-  const data = (snapshot && typeof snapshot === 'object') ? snapshot : {};
-
-  const totalProjects = Array.isArray(data.projects) ? data.projects.length : 0;
-  const totalReservations = Array.isArray(data.reservations) ? data.reservations.length : 0;
-  const totalEquipment = Array.isArray(data.equipment) ? data.equipment.length : 0;
-  const totalTechnicians = Array.isArray(data.technicians) ? data.technicians.length : 0;
+  const totalProjects = getArrayLengthSafely(() => loadData()?.projects);
+  const totalReservations = getArrayLengthSafely(() => loadData()?.reservations);
+  const totalEquipment = getArrayLengthSafely(() => loadData()?.equipment);
+  const totalTechnicians = getArrayLengthSafely(() => loadData()?.technicians);
 
   METRIC_IDS.projects.forEach((id) => setTextContent(id, totalProjects));
   METRIC_IDS.reservations.forEach((id) => setTextContent(id, totalReservations));
