@@ -69,6 +69,8 @@ function scheduleDashboardDataPrefetch() {
       tasks.push(import('./scripts/techniciansService.js').then((m) => m.refreshTechniciansFromApi().catch(() => {})).catch(() => {}));
       tasks.push(import('./scripts/maintenanceService.js').then((m) => m.refreshMaintenanceFromApi().catch(() => {})).catch(() => {}));
       tasks.push(import('./scripts/equipment.js').then((m) => m.refreshEquipmentFromApi({ showToastOnError: false }).catch(() => {})).catch(() => {}));
+      // Ensure packages snapshot is available early for PDF and UI grouping
+      tasks.push(import('./scripts/equipmentPackagesManager.js').then((m) => m.refreshPackagesFromApi().catch(() => {})).catch(() => {}));
       await Promise.allSettled(tasks);
     } catch (_) {
       // ignore background prefetch errors

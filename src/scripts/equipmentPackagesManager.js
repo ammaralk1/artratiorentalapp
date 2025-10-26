@@ -641,7 +641,7 @@ async function handlePackagesTableClick(event) {
   }
 }
 
-async function refreshPackagesFromApi() {
+export async function refreshPackagesFromApi() {
   try {
     const response = await apiRequest('/packages/?all=1');
     const data = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];

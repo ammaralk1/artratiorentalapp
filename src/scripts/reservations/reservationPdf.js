@@ -449,6 +449,23 @@ function showQuotePreviewStatus(type = 'render', {
   });
 }
 
+// Normalize display names to improve matching (Arabic/English, diacritics, whitespace)
+function normalizePackageNameForMatch(value) {
+  try {
+    const str = String(value || '')
+      .toLowerCase()
+      .normalize('NFKD')
+      // Remove Arabic diacritics and general marks
+      .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
+      // Collapse whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
+    return str;
+  } catch (_) {
+    return String(value || '').trim().toLowerCase();
+  }
+}
+
 function hideQuotePreviewStatus(type) {
   if (!quoteModalRefs?.statusIndicator || !quoteModalRefs?.statusText) return;
   if (type && quoteModalRefs.statusKind && quoteModalRefs.statusKind !== type) {
@@ -3003,12 +3020,20 @@ function buildQuotationHtml(options) {
     }
 
     if (!packageCode || isWeakCode(packageCode)) {
-      // Final fallback: match by package name from packages snapshot
+      // Final fallback: match by package name from packages snapshot (normalize names to be tolerant)
       try {
-        const name = (group?.description || '').trim().toLowerCase();
-        if (name) {
+        const targetName = normalizePackageNameForMatch(group?.description || '');
+        if (targetName) {
           const list = getPackagesSnapshot();
-          const match = list.find((p) => (p?.name || '').trim().toLowerCase() === name);
+          // Exact normalized match first
+          let match = list.find((p) => normalizePackageNameForMatch(p?.name || p?.title || p?.label || '') === targetName);
+          // If not found, try contains-either-way to cope with small differences
+          if (!match) {
+            match = list.find((p) => {
+              const n = normalizePackageNameForMatch(p?.name || p?.title || p?.label || '');
+              return n.includes(targetName) || targetName.includes(n);
+            });
+          }
           if (match && match.package_code) {
             packageCode = match.package_code;
           }
