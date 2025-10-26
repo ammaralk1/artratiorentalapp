@@ -13,7 +13,7 @@ import {
   calculateDraftFinancialBreakdown
 } from '../reservationsSummary.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
-import { findPackageById } from '../reservationsPackages.js';
+import { findPackageById, getPackagesSnapshot } from '../reservationsPackages.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 import {
@@ -2985,6 +2985,22 @@ function buildQuotationHtml(options) {
         } catch (_) {
           // ignore lookup errors
         }
+      }
+    }
+
+    if (!packageCode) {
+      // Final fallback: match by package name from packages snapshot
+      try {
+        const name = (group?.description || '').trim().toLowerCase();
+        if (name) {
+          const list = getPackagesSnapshot();
+          const match = list.find((p) => (p?.name || '').trim().toLowerCase() === name);
+          if (match && match.package_code) {
+            packageCode = match.package_code;
+          }
+        }
+      } catch (_) {
+        // ignore
       }
     }
 
