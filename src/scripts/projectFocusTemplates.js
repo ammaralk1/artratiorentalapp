@@ -402,13 +402,74 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
         `).join('')}</ul>`
     : `<div class="text-muted">${escapeHtml(t('projects.details.noItems', 'لا يوجد'))}</div>`;
 
-  const summaryDetails = [
-    { icon: '💳', label: t('projects.details.summary.paymentStatus', 'حالة الدفع'), value: paymentStatusText },
-    { icon: '💼', label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), value: formatCurrencyLocalized(projectTotals.subtotal) },
-    { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrencyLocalized(reservationsTotal) },
-    { icon: '🧮', label: t('projects.details.summary.combinedTax', 'إجمالي الضريبة الكلية (15٪)'), value: formatCurrencyLocalized(combinedTaxAmount) },
-    { icon: '💰', label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'), value: formatCurrencyLocalized(overallTotal) }
-  ];
+  // Build financial summary for the modal
+  let summaryDetails = [];
+  summaryDetails.push({ icon: '💳', label: t('projects.details.summary.paymentStatus', 'حالة الدفع'), value: paymentStatusText });
+
+  if (reservationsCount > 0) {
+    // Aggregate reservation financials
+    const agg = reservationList.reduce((acc, res) => {
+      const f = (typeof computeReservationFinancials === 'function') ? computeReservationFinancials(res) : null;
+      if (f && typeof f === 'object') {
+        acc.equipment += Number(f.equipmentTotal || 0);
+        acc.crew += Number(f.crewTotal || 0);
+        acc.crewCost += Number(f.crewCostTotal || 0);
+      }
+      return acc;
+    }, { equipment: 0, crew: 0, crewCost: 0 });
+
+    const expensesTotal = Number(projectTotals.expensesTotal || 0);
+    const gross = Number((agg.equipment + agg.crew).toFixed(2));
+
+    // Project discount on gross
+    const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+    const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : (gross * (discountVal / 100));
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > gross) discountAmount = gross;
+
+    // Company share after discount
+    const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+    const shareEnabled = project?.companyShareEnabled === true
+      || project?.companyShareEnabled === 'true'
+      || project?.company_share_enabled === true
+      || project?.company_share_enabled === 'true';
+    const rawShare = Number.parseFloat(
+      project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+    ) || 0;
+    const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
+    const baseAfterDiscount = Math.max(0, gross - discountAmount);
+    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+
+    // VAT after company share
+    const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+
+    // Net profit = gross - discount - share - VAT - expenses - crew cost
+    const netProfit = Number((baseAfterDiscount - companyShareAmount - taxAmount - expensesTotal - agg.crewCost).toFixed(2));
+
+    // Final total = gross - discount + share + VAT
+    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
+
+    if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrencyLocalized(agg.equipment) });
+    if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrencyLocalized(agg.crew) });
+    if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrencyLocalized(agg.crewCost) });
+    if (expensesTotal > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrencyLocalized(expensesTotal) });
+    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrencyLocalized(gross) });
+    if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrencyLocalized(discountAmount)}` });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrencyLocalized(companyShareAmount)}` });
+    if (taxAmount > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrencyLocalized(taxAmount)}` });
+    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrencyLocalized(netProfit) });
+    summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrencyLocalized(finalTotal) });
+  } else {
+    // Fallback: show existing simple summary when there are no reservations
+    summaryDetails.push({ icon: '💼', label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), value: formatCurrencyLocalized(projectTotals.subtotal) });
+    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.combinedTax', 'إجمالي الضريبة الكلية (15٪)'), value: formatCurrencyLocalized(combinedTaxAmount) });
+    summaryDetails.push({ icon: '💰', label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'), value: formatCurrencyLocalized(overallTotal) });
+  }
 
   const summaryDetailsHtml = summaryDetails.map(({ icon, label, value }) => `
     <div class="summary-details-row">
