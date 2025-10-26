@@ -12,6 +12,15 @@ const DASHBOARD_SUB_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_SUB_TAB__";
 const DEFAULT_RESERVATION_SUB_TAB = "create-tab";
 const TAB_ID_PATTERN = /^[a-z0-9\-]+$/i;
 
+// Development-only logger: silences logs in production builds
+const __IS_DEV__ = typeof import.meta !== 'undefined' && import.meta.env && Boolean(import.meta.env.DEV);
+function devLog(...args) {
+  if (__IS_DEV__) {
+    // eslint-disable-next-line no-console
+    console.log(...args);
+  }
+}
+
 function scrollTabButtonIntoView(button) {
   if (!button || typeof button.scrollIntoView !== 'function') return;
   try {
@@ -106,13 +115,13 @@ function ensureReportsModule() {
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
 export function setupTabs() {
-  console.log("🚀 [tabs.js] setupTabs()");
+  devLog("🚀 [tabs.js] setupTabs()");
 
   const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
   const tabContents = document.querySelectorAll('.tab-content-wrapper > .tab');
 
-  console.log("📌 tabButtons:", tabButtons);
-  console.log("📌 tabContents:", tabContents);
+  devLog("📌 tabButtons:", tabButtons);
+  devLog("📌 tabContents:", tabContents);
 
   const activateTab = (target, { skipStore = false, skipRender = false } = {}) => {
     if (!target) return;
@@ -171,23 +180,23 @@ export function setupTabs() {
 
     // 📌 استدعاء الدوال الخاصة بكل تبويب
     if (!skipRender && target === "customers-tab") {
-      console.log("👤 Rendering customers");
+      devLog("👤 Rendering customers");
       renderCustomers();
     }
     if (!skipRender && target === "equipment-tab") {
-      console.log("📦 Rendering equipment");
+      devLog("📦 Rendering equipment");
       renderEquipment();
     }
     if (!skipRender && target === "maintenance-tab") {
-      console.log("🛠️ Rendering maintenance");
+      devLog("🛠️ Rendering maintenance");
       renderMaintenance();
     }
     if (!skipRender && target === "technicians-tab") {
-      console.log("🛠️ Rendering technicians");
+      devLog("🛠️ Rendering technicians");
       renderTechnicians();
     }
     if (target === "reservations-tab") {
-      console.log("📅 Rendering reservations");
+      devLog("📅 Rendering reservations");
       if (!skipRender) {
         renderReservations();
       }
@@ -218,7 +227,7 @@ export function setupTabs() {
     }
     btn.addEventListener("click", () => {
       const target = btn.getAttribute("data-tab");
-      console.log("🖱️ Tab clicked:", target);
+      devLog("🖱️ Tab clicked:", target);
       activateTab(target);
 
       if (target === "reservations-tab") {
@@ -252,7 +261,7 @@ export function setupTabs() {
     const targetTab = candidateTabs.find((tabId) => document.getElementById(tabId)) || fallbackTab;
 
     if (targetTab && (!tabsInitialised || targetTab !== currentMainTab)) {
-      console.log('⭐ Initial tab:', targetTab);
+      devLog('⭐ Initial tab:', targetTab);
       activateTab(targetTab, { skipStore: true });
     }
 
@@ -316,13 +325,13 @@ export function setupTabs() {
 
 // ✅ إدارة التبويبات الفرعية للحجوزات
 function setupSubTabs() {
-  console.log("🚀 [tabs.js] setupSubTabs()");
+  devLog("🚀 [tabs.js] setupSubTabs()");
 
   const subTabButtons = document.querySelectorAll('#reservations-tab .sub-tab-button');
   const subTabContents = document.querySelectorAll('#reservations-tab .sub-tab');
 
-  console.log("📌 subTabButtons:", subTabButtons);
-  console.log("📌 subTabContents:", subTabContents);
+  devLog("📌 subTabButtons:", subTabButtons);
+  devLog("📌 subTabContents:", subTabContents);
 
   if (!subTabButtons.length) {
     console.warn('⚠️ [tabs.js] No reservation sub-tab buttons found');
@@ -433,17 +442,17 @@ function setupSubTabs() {
     }
 
     if (targetToActivate === "my-reservations-tab") {
-      console.log("📋 Rendering reservations list");
+      devLog("📋 Rendering reservations list");
       setTimeout(() => {
         renderReservations();
       }, 50); // ⏱ تأخير بسيط حتى يظهر العنصر فعليًا
     } else if (targetToActivate === "calendar-tab") {
-      console.log("📅 Rendering calendar view");
+      devLog("📅 Rendering calendar view");
       setTimeout(() => {
         renderCalendar();
       }, 100);
     } else if (targetToActivate === "reports-tab") {
-      console.log("📊 Rendering reports view");
+      devLog("📊 Rendering reports view");
       ensureReportsModule()
         .then((module) => {
           const { renderReports } = module;
@@ -489,7 +498,7 @@ function setupSubTabs() {
     if (!btn.dataset.subTabListenerAttached) {
       btn.addEventListener("click", () => {
         const subTarget = btn.getAttribute("data-sub-tab");
-        console.log("🖱️ Sub-tab clicked:", subTarget);
+        devLog("🖱️ Sub-tab clicked:", subTarget);
         activateSubTab(subTarget);
       });
       btn.dataset.subTabListenerAttached = 'true';
@@ -504,7 +513,7 @@ function setupSubTabs() {
     const fallbackSubTab = resolveFallbackSubTarget();
     const initialSubTarget = defaultSubTab?.getAttribute('data-sub-tab') || fallbackSubTab;
     if (initialSubTarget) {
-      console.log('⭐ Initial sub-tab:', initialSubTarget);
+      devLog('⭐ Initial sub-tab:', initialSubTarget);
       activateSubTab(initialSubTarget, { skipStore: true });
     }
   }
