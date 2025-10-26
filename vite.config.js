@@ -52,9 +52,8 @@ export default defineConfig(async () => {
           chunkFileNames: 'assets/[name].[hash].js',
           assetFileNames: 'assets/[name].[hash].[ext]',
           manualChunks(id) {
-            // Split vendor separately; bundle all app scripts into a single shared chunk
+            // Keep vendor separate for caching; allow Rollup to keep per-page entries distinct
             if (id.includes('node_modules')) return 'vendor';
-            if (id.includes('/src/scripts/')) return 'app';
             return undefined;
           }
         },
