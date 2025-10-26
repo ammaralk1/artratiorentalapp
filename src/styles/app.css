@@ -5668,6 +5668,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
 }
 
@@ -5693,6 +5694,31 @@
   border-radius: 12px;
   padding: 0.5rem;
   background: var(--surface-subtle);
+}
+
+/* Unify and center: "اختيار من قائمة المعدات" button */
+.equipment-packages-box #equipment-package-open-selector {
+  background: linear-gradient(135deg, var(--clr-primary) 0%, var(--clr-primary-soft) 100%);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.equipment-packages-box #equipment-package-open-selector:hover,
+.equipment-packages-box #equipment-package-open-selector:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.equipment-packages-box #equipment-package-open-selector:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:is(html.dark-mode, body.dark-mode) .equipment-packages-box #equipment-package-open-selector {
+  color: #e2e8f0;
 }
 
 .equipment-package-items-summary {
