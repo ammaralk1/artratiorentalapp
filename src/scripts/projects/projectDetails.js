@@ -189,12 +189,13 @@ export function openProjectDetails(projectId) {
     }, { equipment: 0, crew: 0, crewCost: 0 });
 
     const expensesTotalNumber = Number(expensesTotal || 0);
-    const gross = Number((agg.equipment + agg.crew).toFixed(2));
+    // إجمالي قبل الخصم = المعدات + الفريق + مصروفات المشروع
+    const grossBeforeDiscount = Number((agg.equipment + agg.crew + expensesTotalNumber).toFixed(2));
 
     // Project-level discount applied on gross
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
     const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-    let discountAmount = discountType === 'amount' ? discountVal : (gross * (discountVal / 100));
+    let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
     if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
     if (discountAmount > gross) discountAmount = gross;
 
@@ -212,7 +213,8 @@ export function openProjectDetails(projectId) {
       ?? 0
     ) || 0;
     const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
-    const baseAfterDiscount = Math.max(0, gross - discountAmount);
+    // الإجمالي بعد الخصم
+    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
     const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
 
     // VAT after company share if enabled
@@ -230,8 +232,10 @@ export function openProjectDetails(projectId) {
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
     if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
     if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrency(expensesTotalNumber) });
-    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrency(gross) });
+    // الخصم يظهر قبل الإجمالي
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
+    // الإجمالي بعد الخصم
+    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم'), value: formatCurrency(baseAfterDiscount) });
     if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
     if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
     summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
