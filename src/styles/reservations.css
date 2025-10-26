@@ -96,18 +96,26 @@
 
 /* Tighter widths for desktop to keep filters on one row */
 @media (min-width: 768px) {
-  /* Date fields: narrower than generic min-width */
+  /* Date fields: make even narrower so all filters fit in one row */
   .reservations-filter-date,
   .reservations-filter-date.flatpickr-input,
   .reservations-filter-date.flatpickr-input[readonly] {
-    min-width: 130px !important;
-    width: clamp(8rem, 12ch, 14rem) !important;
+    min-width: 110px !important;
+    width: clamp(7rem, 10ch, 12rem) !important;
+    flex: 0 1 auto !important;
+  }
+
+  /* When using flatpickr alt input, tighten width inside the filters bar */
+  .reservations-filters-bar .flatpickr-alt-input {
+    min-width: 110px !important;
+    width: clamp(7rem, 10ch, 12rem) !important;
+    padding-inline: 10px !important;
     flex: 0 1 auto !important;
   }
 
   /* Selects (range/status): slightly reduced min width */
   .reservations-filter-select {
-    min-width: 150px !important;
+    min-width: 140px !important;
     width: auto !important;
     flex: 0 1 auto !important;
   }
