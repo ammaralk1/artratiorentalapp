@@ -17,22 +17,32 @@ export function getApiBase() {
 }
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
-  // Normalize path: accept strings, URL, or objects with common keys
+  // Normalize path: accept strings, URL/Request objects, or plain objects with common keys
   let pathStr = path;
-  if (pathStr && typeof pathStr === 'object') {
-    const candidate = pathStr.path || pathStr.url || pathStr.endpoint || null;
-    pathStr = candidate ? String(candidate) : String(pathStr);
-    try {
-      console.warn('[apiClient] Non-string path normalized:', path);
-    } catch (_) { /* ignore logging issues */ }
+  try {
+    // URL instance
+    if (typeof URL !== 'undefined' && path instanceof URL) {
+      pathStr = path.href;
+    }
+    // Request instance
+    else if (typeof Request !== 'undefined' && path instanceof Request) {
+      pathStr = path.url;
+    }
+    // Plain object with known keys
+    else if (path && typeof path === 'object') {
+      const candidate = path.path || path.url || path.endpoint || null;
+      pathStr = candidate ? String(candidate) : String(path);
+    }
+  } catch {
+    // Fallback to string coercion below
   }
+
   if (typeof pathStr !== 'string') {
     pathStr = String(pathStr || '');
   }
+
   const isAbsolute = /^https?:\/\//i.test(pathStr);
-  const cleanedPath = isAbsolute
-    ? pathStr
-    : (pathStr.startsWith('/') ? pathStr : `/${pathStr}`);
+  const cleanedPath = isAbsolute ? pathStr : (pathStr.charAt(0) === '/' ? pathStr : `/${pathStr}`);
   const url = isAbsolute ? cleanedPath : `${getApiBase()}${cleanedPath}`;
 
   const finalHeaders = {
