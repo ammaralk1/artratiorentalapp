@@ -2967,7 +2967,7 @@ function buildQuotationHtml(options) {
       ? group.barcodes[0]
       : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
 
-    // Resolve the real package code (fallback to definition by id when missing)
+    // Resolve the real package code (fallback to definition by id/name when missing or weak)
     let packageCode = group?.packageDisplayCode
       ?? group?.package_code
       ?? group?.code
@@ -2978,7 +2978,15 @@ function buildQuotationHtml(options) {
           ?? group.items[0]?.packageCode)
         : null);
 
-    if (!packageCode) {
+    const isWeakCode = (value) => {
+      const s = (value == null ? '' : String(value)).trim();
+      if (!s) return true;
+      if (/^pkg-/i.test(s)) return true;
+      if (/^\d+$/.test(s) && s.length <= 4) return true; // ids like 3,4
+      return false;
+    };
+
+    if (!packageCode || isWeakCode(packageCode)) {
       const pkgId = group?.packageId
         ?? group?.package_id
         ?? (Array.isArray(group?.items) && group.items.length ? (group.items[0]?.packageId ?? group.items[0]?.package_id) : null);
@@ -2994,7 +3002,7 @@ function buildQuotationHtml(options) {
       }
     }
 
-    if (!packageCode) {
+    if (!packageCode || isWeakCode(packageCode)) {
       // Final fallback: match by package name from packages snapshot
       try {
         const name = (group?.description || '').trim().toLowerCase();
