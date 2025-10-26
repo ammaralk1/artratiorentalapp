@@ -94,6 +94,25 @@
   padding-inline: 1.1rem 2.4rem;
 }
 
+/* Tighter widths for desktop to keep filters on one row */
+@media (min-width: 768px) {
+  /* Date fields: narrower than generic min-width */
+  .reservations-filter-date,
+  .reservations-filter-date.flatpickr-input,
+  .reservations-filter-date.flatpickr-input[readonly] {
+    min-width: 130px !important;
+    width: clamp(8rem, 12ch, 14rem) !important;
+    flex: 0 1 auto !important;
+  }
+
+  /* Selects (range/status): slightly reduced min width */
+  .reservations-filter-select {
+    min-width: 150px !important;
+    width: auto !important;
+    flex: 0 1 auto !important;
+  }
+}
+
 :where(html.dark, body.dark) .reservations-filter-input,
 :where(html.dark, body.dark) .reservations-filter-select,
 :where(html.dark, body.dark) .reservations-filters-bar .enhanced-select,
