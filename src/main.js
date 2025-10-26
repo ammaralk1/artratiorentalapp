@@ -8,12 +8,8 @@ import {
   renderEquipment
 } from './scripts/equipment.js';
 import { initEquipmentPackages } from './scripts/equipmentPackagesManager.js';
-import { renderCalendar } from './scripts/calendar.js';
-import {
-  initializeReservationUI
-} from './scripts/reservationsUI.js';
 import { loadData } from './scripts/storage.js';
-import { initMaintenance } from './scripts/maintenance.js';
+// Lazy: calendar/reservations/maintenance now load per-tab in tabs.js
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
@@ -76,11 +72,7 @@ async function initApp() {
   renderEquipment();
   initEquipmentPackages();
   initEnhancedSelects();
-  renderCalendar();
-
-  initMaintenance();
-
-  await initializeReservationUI();
+  // Calendar, Maintenance, and Reservations UI initialise lazily upon tab activation
 
   scheduleDashboardMetricsInit();
 

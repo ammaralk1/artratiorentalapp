@@ -1,10 +1,9 @@
-// ✅ استيراد الدوال الخاصة بكل تبويب
+// ✅ استيراد الدوال الخفيفة فقط بشكل مباشر
 import { renderCustomers } from "./customers.js";
 import { renderEquipment } from "./equipment.js";
-import { renderReservations, setupReservationEvents } from "./reservationsUI.js";
-import { renderCalendar } from "./calendar.js";
 import { renderTechnicians } from "./technicians.js";
-import { renderMaintenance } from "./maintenance.js";
+// إبقاء renderReservations/setupReservationEvents متاحة للمسارات المتزامنة في الاختبارات
+import { renderReservations, setupReservationEvents } from "./reservationsUI.js";
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
 const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
@@ -90,6 +89,10 @@ let activateSubTabRef = null;
 let activateTabRef = null;
 let restorePendingTimeout = null;
 let reportsModulePromise = null;
+let reservationsModulePromise = null;
+let calendarModulePromise = null;
+let maintenanceModulePromise = null;
+let reservationsInitialised = false;
 
 function ensureReportsModule() {
   if (!reportsModulePromise) {
@@ -111,6 +114,27 @@ function ensureReportsModule() {
       });
   }
   return reportsModulePromise;
+}
+
+function ensureReservationsModule() {
+  if (!reservationsModulePromise) {
+    reservationsModulePromise = import('./reservationsUI.js');
+  }
+  return reservationsModulePromise;
+}
+
+function ensureCalendarModule() {
+  if (!calendarModulePromise) {
+    calendarModulePromise = import('./calendar.js');
+  }
+  return calendarModulePromise;
+}
+
+function ensureMaintenanceModule() {
+  if (!maintenanceModulePromise) {
+    maintenanceModulePromise = import('./maintenance.js');
+  }
+  return maintenanceModulePromise;
 }
 
 // ✅ الدالة الرئيسية لتفعيل التبويبات
@@ -189,7 +213,13 @@ export function setupTabs() {
     }
     if (!skipRender && target === "maintenance-tab") {
       devLog("🛠️ Rendering maintenance");
-      renderMaintenance();
+      ensureMaintenanceModule()
+        .then((module) => {
+          try { module.renderMaintenance?.(); } catch (error) {
+            console.error('❌ [tabs.js] Failed to render maintenance', error);
+          }
+        })
+        .catch((error) => console.error('❌ [tabs.js] Unable to load maintenance module', error));
     }
     if (!skipRender && target === "technicians-tab") {
       devLog("🛠️ Rendering technicians");
@@ -198,7 +228,23 @@ export function setupTabs() {
     if (target === "reservations-tab") {
       devLog("📅 Rendering reservations");
       if (!skipRender) {
-        renderReservations();
+        // Synchronous path for immediate UX/tests
+        try { setupReservationEvents(); } catch (_) { /* ignore */ }
+        try { renderReservations(); } catch (_) { /* ignore */ }
+
+        // Lazy initialise full reservations UI when module is ready
+        ensureReservationsModule()
+          .then(async (module) => {
+            try {
+              if (!reservationsInitialised && typeof module.initializeReservationUI === 'function') {
+                await module.initializeReservationUI();
+                reservationsInitialised = true;
+              }
+            } catch (error) {
+              console.error('❌ [tabs.js] Failed to initialise reservations UI', error);
+            }
+          })
+          .catch((error) => console.error('❌ [tabs.js] Unable to load reservations UI module', error));
       }
 
       if (!pendingSubTabPreference) {
@@ -444,12 +490,16 @@ function setupSubTabs() {
     if (targetToActivate === "my-reservations-tab") {
       devLog("📋 Rendering reservations list");
       setTimeout(() => {
-        renderReservations();
+        ensureReservationsModule()
+          .then((module) => { try { module.renderReservations?.(); } catch (e) { console.error('❌ [tabs.js] Failed to render reservations list', e); } })
+          .catch((error) => console.error('❌ [tabs.js] Unable to load reservations UI module', error));
       }, 50); // ⏱ تأخير بسيط حتى يظهر العنصر فعليًا
     } else if (targetToActivate === "calendar-tab") {
       devLog("📅 Rendering calendar view");
       setTimeout(() => {
-        renderCalendar();
+        ensureCalendarModule()
+          .then((module) => { try { module.renderCalendar?.(); } catch (e) { console.error('❌ [tabs.js] Failed to render calendar', e); } })
+          .catch((error) => console.error('❌ [tabs.js] Unable to load calendar module', error));
       }, 100);
     } else if (targetToActivate === "reports-tab") {
       devLog("📊 Rendering reports view");
@@ -518,7 +568,7 @@ function setupSubTabs() {
     }
   }
 
-  setupReservationEvents();
+  // ملاحظة: تهيئة أحداث الحجوزات ستتم عند فتح تبويب الحجوزات لأول مرة عبر initializeReservationUI
 }
 
 function activateStoredSubTab(subTarget) {
