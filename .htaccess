@@ -46,6 +46,10 @@ Header always set X-Frame-Options "SAMEORIGIN"
 </IfModule>
 
 <IfModule mod_headers.c>
+  # Serve HTML with no-cache so clients always fetch the latest page (and thus latest hashed assets)
+  <FilesMatch "\.(html?)$">
+    Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+  </FilesMatch>
   <FilesMatch "\.(css|js|json|xml|svg|png|jpe?g|webp|woff2?)$">
     Header set Cache-Control "public, max-age=604800, immutable"
   </FilesMatch>
