@@ -25,7 +25,6 @@ const container = document.getElementById('technician-details');
 const heroNameEl = document.getElementById('technician-hero-name');
 const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
-const heroEmailEl = document.getElementById('technician-hero-email');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
@@ -723,7 +722,6 @@ function setHeroData(technician) {
   if (!technician) {
     setHeroBadge(heroNameEl, '😎', '—');
   setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
-  setHeroBadge(heroEmailEl, '📧', '', { hideWhenEmpty: true });
     if (greetingNameEl) greetingNameEl.textContent = '—';
     if (greetingRoleEl) greetingRoleEl.textContent = '—';
     setHeroBadge(greetingRoleBadgeEl, '🎯', '', { hideWhenEmpty: true });
@@ -733,7 +731,6 @@ function setHeroData(technician) {
 
   setHeroBadge(heroNameEl, '😎', technician.name || '—');
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
-  setHeroBadge(heroEmailEl, '📧', technician.email || '', { hideWhenEmpty: true });
   if (greetingNameEl) {
     greetingNameEl.textContent = technician.name || '—';
   }
