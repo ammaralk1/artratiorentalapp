@@ -1,5 +1,14 @@
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from './preferencesService.js';
 
+const SKIP_PREF_KEY = '__ART_RATIO_SKIP_PREF_FETCH__';
+function shouldSkipRemotePreferences() {
+  try {
+    return typeof window !== 'undefined' && Boolean(window[SKIP_PREF_KEY]);
+  } catch {
+    return false;
+  }
+}
+
 const DEFAULT_LANGUAGE = 'ar';
 const RTL_LANGUAGE = 'ar';
 const LANGUAGE_LOADING_CLASS = 'language-loading';
@@ -28,19 +37,27 @@ function ensureLanguagePreference() {
       setLanguageInternal(cachedLanguage, { persist: false, dispatch: false });
     }
 
-    initialisationPromise = getPreferences()
-      .then((prefs) => {
-        const prefLanguage = normalizeLanguage(prefs?.language ?? DEFAULT_LANGUAGE);
-        setLanguageInternal(prefLanguage, { persist: false });
-        initialised = true;
-        return prefLanguage;
-      })
-      .catch((error) => {
-        console.warn('⚠️ تعذر تحميل تفضيل اللغة من الخادم', error);
-        setLanguageInternal(DEFAULT_LANGUAGE, { persist: false });
-        initialised = true;
-        return DEFAULT_LANGUAGE;
-      });
+    if (shouldSkipRemotePreferences()) {
+      // Avoid remote request on pages like login; use cached or default.
+      const fallback = cached?.language ? normalizeLanguage(cached.language) : DEFAULT_LANGUAGE;
+      setLanguageInternal(fallback, { persist: false });
+      initialised = true;
+      initialisationPromise = Promise.resolve(fallback);
+    } else {
+      initialisationPromise = getPreferences()
+        .then((prefs) => {
+          const prefLanguage = normalizeLanguage(prefs?.language ?? DEFAULT_LANGUAGE);
+          setLanguageInternal(prefLanguage, { persist: false });
+          initialised = true;
+          return prefLanguage;
+        })
+        .catch((error) => {
+          console.warn('⚠️ تعذر تحميل تفضيل اللغة من الخادم', error);
+          setLanguageInternal(DEFAULT_LANGUAGE, { persist: false });
+          initialised = true;
+          return DEFAULT_LANGUAGE;
+        });
+    }
   }
   return initialisationPromise;
 }
