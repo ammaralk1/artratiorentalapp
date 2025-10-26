@@ -25,6 +25,7 @@ const container = document.getElementById('technician-details');
 const heroNameEl = document.getElementById('technician-hero-name');
 const heroStatusEl = document.getElementById('technician-hero-status');
 const heroRoleEl = document.getElementById('technician-hero-role');
+const heroPositionEl = document.getElementById('technician-hero-position');
 const greetingNameEl = document.getElementById('dashboard-greeting-technician-name');
 const greetingRoleEl = document.getElementById('dashboard-greeting-technician-role');
 const greetingStatusEl = document.getElementById('dashboard-greeting-technician-status');
@@ -716,6 +717,65 @@ function setStatusBadge(status) {
     element.setAttribute('data-i18n-key', key);
     element.textContent = t(key, fallback);
   });
+
+  // Toggle current position badge in hero (only when busy)
+  if (heroPositionEl) {
+    if (isBusy) {
+      const label = getCurrentPositionLabelForTechnician(technicianId);
+      const text = label && String(label).trim().length ? label : '';
+      setHeroBadge(heroPositionEl, '🏷️', text, { hideWhenEmpty: true });
+    } else {
+      setHeroBadge(heroPositionEl, '🏷️', '', { hideWhenEmpty: true });
+    }
+  }
+}
+
+function getCurrentPositionLabelForTechnician(id) {
+  try {
+    const reservations = getReservationsState();
+    if (!Array.isArray(reservations) || reservations.length === 0) return '';
+    const normalizedId = id != null ? String(id) : null;
+    if (!normalizedId) return '';
+    const now = new Date();
+
+    // Find an active reservation for this technician
+    const active = reservations.find((res) => {
+      if (!res || (!res.start && !res.startDatetime && !res.start_datetime)) return false;
+      const ids = normalizeTechnicianAssignments(res.technicians);
+      if (!Array.isArray(ids) || !ids.includes(normalizedId)) return false;
+      const start = res.start ?? res.startDatetime ?? res.start_datetime;
+      const end = res.end ?? res.endDatetime ?? res.end_datetime;
+      if (!start || !end) return false;
+      const s = new Date(start);
+      const e = new Date(end);
+      if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return false;
+      return s <= now && now < e;
+    });
+
+    if (!active) return '';
+
+    // Try to resolve a position label from crew assignments or techniciansDetails
+    const detailsList = Array.isArray(active.crewAssignments) && active.crewAssignments.length
+      ? active.crewAssignments
+      : (Array.isArray(active.techniciansDetails) ? active.techniciansDetails : []);
+
+    const entry = detailsList.find((item) => {
+      const entryId = item?.id ?? item?.technicianId ?? item?.technician_id;
+      return entryId != null && String(entryId) === normalizedId;
+    });
+
+    if (!entry) return '';
+
+    const label = entry.positionLabel
+      ?? entry.position_name
+      ?? entry.position_label
+      ?? entry.positionKey
+      ?? entry.position;
+
+    return label || '';
+  } catch (_) {
+    return '';
+  }
 }
 
 function setHeroData(technician) {
