@@ -1,4 +1,5 @@
-import { loadData } from '../storage.js';
+import { loadData, saveData } from '../storage.js';
+import { apiRequest } from '../apiClient.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { getTechnicianPositionsCache, findPositionByName } from '../technicianPositions.js';
 import { t } from '../language.js';
@@ -3185,6 +3186,22 @@ function buildQuotationHtml(options) {
   `;
 }
 
+async function ensurePackagesAvailable() {
+  try {
+    const snapshot = loadData();
+    const existing = Array.isArray(snapshot?.packages) ? snapshot.packages : [];
+    if (existing.length > 0) return;
+    const response = await apiRequest('/packages/?all=1');
+    const data = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+    if (data.length) {
+      saveData({ packages: data });
+      document.dispatchEvent?.(new CustomEvent('packages:changed', { detail: { packages: data } }));
+    }
+  } catch (_) {
+    // ignore network errors; fallback to whatever is in cache
+  }
+}
+
 function waitForImage(image) {
   if (!image) return Promise.resolve();
   if (image.complete) {
@@ -4309,6 +4326,9 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
     return;
   }
+
+  // Ensure packages are available for package_code lookups in PDF
+  await ensurePackagesAvailable();
 
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
