@@ -192,12 +192,12 @@ export function openProjectDetails(projectId) {
     // إجمالي قبل الخصم = المعدات + الفريق + مصروفات المشروع
     const grossBeforeDiscount = Number((agg.equipment + agg.crew + expensesTotalNumber).toFixed(2));
 
-    // Project-level discount applied on gross
+    // Project-level discount applied on grossBeforeDiscount
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
     const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
     let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
     if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > gross) discountAmount = gross;
+    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
 
     // Company share after discount (independent from tax flag)
     const applyTaxFlag = applyTax === true; // from resolveProjectTotals(project)
@@ -222,10 +222,10 @@ export function openProjectDetails(projectId) {
       ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
       : 0;
 
-    // Net profit = gross - discount - share - VAT - expenses - crew cost
+    // Net profit = (equipment + crew - discount) - share - VAT - expenses - crew cost
     const netProfit = Number((baseAfterDiscount - companyShareAmount - taxAmountAfterShare - expensesTotalNumber - agg.crewCost).toFixed(2));
 
-    // Final total = gross - discount + share + VAT
+    // Final total = grossBeforeDiscount - discount + share + VAT
     const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
 
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
