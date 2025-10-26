@@ -1,6 +1,7 @@
 import { loadData } from './storage.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers, formatDateTime } from './utils.js';
+import { computeReservationFinancials } from './reports/calculations.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
 import {
   ensureProjectsLoaded,
@@ -590,6 +591,95 @@ function renderKpis(projects) {
       </div>
     </div>
   `).join('');
+
+  // Inject a detailed revenue breakdown similar to reservations reports
+  renderProjectsRevenueBreakdown(projects);
+}
+
+function renderProjectsRevenueBreakdown(projects) {
+  try {
+    const breakdown = computeProjectsRevenueBreakdown(projects);
+    const containerId = 'projects-revenue-breakdown';
+    let container = document.getElementById(containerId);
+    const rows = [
+      { label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
+      { label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
+      { label: t('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), value: formatCurrency(breakdown.taxTotal) },
+      { label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
+      { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
+      { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
+      { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'مصروفات المشروع', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
+      { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
+    ];
+
+    const detailsHtml = `
+      <div id="${containerId}" class="reports-kpi-details glass-card" style="margin-top: 12px;">
+        ${rows.map(({ label, value }) => `
+          <div class="reports-kpi-detail-row d-flex justify-content-between">
+            <span class="reports-kpi-detail-label">${escapeHtml(label)}</span>
+            <span class="reports-kpi-detail-value">${escapeHtml(value)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    if (!container) {
+      dom.kpiGrid.insertAdjacentHTML('afterend', detailsHtml);
+    } else {
+      container.outerHTML = detailsHtml;
+    }
+  } catch (error) {
+    console.warn('[projectsReports] Failed to render revenue breakdown', error);
+  }
+}
+
+function computeProjectsRevenueBreakdown(projects) {
+  const projectIds = new Set(projects.map((p) => String(p.id)));
+  const reservations = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
+
+  let grossReservations = 0;
+  let equipmentReservations = 0;
+  let crewTotal = 0;
+  let crewCostTotal = 0;
+  let companyShareTotal = 0;
+  let taxReservations = 0;
+  let netReservations = 0;
+
+  reservations.forEach((res) => {
+    const f = computeReservationFinancials(res);
+    grossReservations += f.finalTotal || 0;
+    equipmentReservations += f.equipmentTotal || 0;
+    crewTotal += f.crewTotal || 0;
+    crewCostTotal += f.crewCostTotal || 0;
+    companyShareTotal += f.companyShareAmount || 0;
+    taxReservations += f.taxAmount || 0;
+    netReservations += f.netProfit || 0;
+  });
+
+  const projectExpensesTotal = projects.reduce((sum, p) => sum + (Number(p.expensesTotal) || 0), 0);
+  const projectEquipmentEstimateTotal = projects.reduce((sum, p) => sum + (Number(p.raw?.equipmentEstimate) || 0), 0);
+  const taxOnProjectSubtotals = projects.reduce((sum, p) => {
+    const applyTax = p.applyTax === true;
+    const base = (Number(p.raw?.equipmentEstimate) || 0) + (Number(p.expensesTotal) || 0);
+    const tax = applyTax ? base * PROJECT_TAX_RATE : 0;
+    return sum + tax;
+  }, 0);
+
+  const grossRevenue = grossReservations + projectEquipmentEstimateTotal + taxOnProjectSubtotals;
+  const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
+  const taxTotal = taxReservations + taxOnProjectSubtotals;
+  const netProfit = netReservations - projectExpensesTotal;
+
+  return {
+    grossRevenue,
+    companyShareTotal,
+    taxTotal,
+    crewTotal,
+    crewCostTotal,
+    equipmentTotalCombined,
+    projectExpensesTotal,
+    netProfit,
+  };
 }
 
 function renderStatusChips() {

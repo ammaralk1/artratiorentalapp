@@ -710,6 +710,11 @@ export function filterReservations(reservations, filters, customers, equipment, 
   const technicianMap = new Map((technicians || []).map((tech) => [String(tech.id), tech]));
 
   return (reservations || []).filter((reservation) => {
+    // استبعاد الحجوزات المرتبطة بمشاريع من تقارير الحجوزات
+    if (reservation && reservation.projectId != null && String(reservation.projectId).trim() !== '') {
+      return false;
+    }
+
     const start = reservation?.start ? new Date(reservation.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
 
