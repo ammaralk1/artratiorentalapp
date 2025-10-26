@@ -1,7 +1,7 @@
 import { loadData, saveData } from './storage.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
-import { findPackageById, normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
+import { findPackageById, normalizePackageId, resolvePackageItems, getPackagesSnapshot, getPackageDisplayName, resolvePackagePrice } from './reservationsPackages.js';
 import {
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculateDraftFinancialBreakdown,
@@ -61,6 +61,89 @@ function writeReservationPackagesCache(cache) {
   } catch (error) {
     console.warn('[reservationsService] Failed to persist reservation packages cache', error);
   }
+}
+
+// Infer packages from a flat items list using the packages snapshot
+function inferPackagesFromItems(items = []) {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const defs = getPackagesSnapshot();
+  if (!Array.isArray(defs) || defs.length === 0) return [];
+
+  // Build available quantities per equipment id from items
+  const availableById = new Map();
+  items.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const id = item.equipmentId ?? item.equipment_id ?? item.id ?? null;
+    if (id == null) return;
+    const key = String(id);
+    const qty = (() => {
+      const candidates = [item.qty, item.quantity, item.count, 1];
+      for (const c of candidates) {
+        const n = Number(c);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+      return 1;
+    })();
+    availableById.set(key, (availableById.get(key) || 0) + qty);
+  });
+
+  const inferred = [];
+
+  defs.forEach((def, idx) => {
+    // Prepare requirement per equipment id for this package
+    const defItems = resolvePackageItems(def) || [];
+    const req = new Map();
+    let hasResolvableIds = true;
+    defItems.forEach((it) => {
+      const eqId = it?.equipmentId ?? it?.equipment_id ?? null;
+      const perPackageQty = Number.isFinite(Number(it?.qty)) && Number(it.qty) > 0 ? Number(it.qty) : 1;
+      if (eqId == null) {
+        hasResolvableIds = false;
+        return;
+      }
+      const key = String(eqId);
+      req.set(key, (req.get(key) || 0) + perPackageQty);
+    });
+
+    if (!hasResolvableIds || req.size === 0) return;
+
+    // Compute how many full packages can be formed from available items
+    let k = Infinity;
+    for (const [eqId, needed] of req.entries()) {
+      const available = availableById.get(eqId) || 0;
+      const ki = Math.floor(available / needed);
+      if (ki <= 0) { k = 0; break; }
+      if (ki < k) k = ki;
+    }
+
+    if (!Number.isFinite(k) || k <= 0) return;
+
+    // Allocate counts and build a package entry
+    for (const [eqId, needed] of req.entries()) {
+      const cur = availableById.get(eqId) || 0;
+      availableById.set(eqId, Math.max(0, cur - (k * needed)));
+    }
+
+    const normalizedId = normalizePackageId(def?.id ?? def?.packageId ?? def?.package_id ?? def?.code);
+    const entryItems = Array.from(req.entries()).map(([eqId, needed]) => ({
+      equipment_id: (/^\d+$/.test(eqId) ? Number(eqId) : eqId),
+      quantity: needed,
+      unit_price: 0,
+    }));
+
+    const resolvedCode = (def?.package_code ?? def?.code ?? normalizedId) || `pkg-${idx}`;
+    const resolvedName = getPackageDisplayName(def) || normalizedId || `package-${idx}`;
+    inferred.push({
+      package_code: resolvedCode,
+      name: resolvedName,
+      quantity: k,
+      unit_price: resolvePackagePrice(def) || 0,
+      items: entryItems,
+    });
+  });
+
+  return inferred;
 }
 
 function getCrewCacheStorage() {
@@ -772,6 +855,19 @@ export function toInternalReservation(raw = {}) {
     }
   } else {
     persistReservationPackagesToCache(reservationCacheKey, packages);
+  }
+
+  // Try to infer package groups from flat items when API doesn't return packages
+  if (!packages.length && Array.isArray(items) && items.length) {
+    try {
+      const inferred = inferPackagesFromItems(items);
+      if (Array.isArray(inferred) && inferred.length) {
+        packages = mergePackageCollections(packages, inferred);
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('[reservationsService] inference of packages from items failed', error);
+    }
   }
 
   const normalizedResult = normalizeItemsWithPackages(items, packages);
