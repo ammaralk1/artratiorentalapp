@@ -668,7 +668,7 @@ function bootstrapHome() {
     logoutBtn.dataset.listenerAttached = 'true';
   }
 
-  getCurrentUser({ refresh: true })
+  Promise.resolve(getCurrentUser({ refresh: true }))
     .then((user) => {
       cachedUsername = user?.username || '';
       cachedRole = (user?.role || '').toLowerCase();

@@ -81,7 +81,8 @@ export function initDashboardMetrics() {
     'equipment:changed',
     'technicians:changed',
     'customers:changed',
-    'maintenance:changed',
+    // maintenance service dispatches 'maintenance:updated'
+    'maintenance:updated',
     'language:changed'
   ];
 

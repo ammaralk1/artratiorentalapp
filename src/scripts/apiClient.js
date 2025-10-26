@@ -17,6 +17,12 @@ export function getApiBase() {
 }
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
+  if (typeof path !== 'string') {
+    try {
+      console.warn('[apiClient] Invalid path passed to apiRequest:', path);
+    } catch (_) { /* ignore logging issues */ }
+    path = String(path || '');
+  }
   const cleanedPath = path.startsWith('/') ? path : `/${path}`;
   const url = `${getApiBase()}${cleanedPath}`;
 
