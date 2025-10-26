@@ -31,7 +31,68 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paid = reservation.paid === true || reservation.paid === 'paid';
   const completed = isReservationCompleted(reservation);
   const items = reservation.items || [];
-  const { groups: displayGroups, packageGroups, groupedItems } = buildReservationDisplayGroups(reservation);
+  let { groups: displayGroups, packageGroups, groupedItems } = buildReservationDisplayGroups(reservation);
+
+  // Deduplicate package groups defensively (in case upstream produced two entries for same package)
+  const isPkgGroup = (g) => Boolean(
+    (g && typeof g === 'object') && (
+      g.type === 'package'
+      || (Array.isArray(g.packageItems) && g.packageItems.length)
+      || (Array.isArray(g.items) && g.items.some((it) => it && it.type === 'package'))
+    )
+  );
+  const pkgKey = (g) => {
+    const raw = (g?.package_code
+      ?? g?.packageDisplayCode
+      ?? g?.barcode
+      ?? g?.description
+      ?? (Array.isArray(g?.items) && g.items[0]?.barcode)
+      ?? '').toString().trim().toLowerCase();
+    return normalizeNumbers(raw);
+  };
+  const pickBetter = (a, b) => {
+    const getUnit = (g) => {
+      const rep = Array.isArray(g?.items) ? g.items[0] : null;
+      const candidates = [rep?.price, rep?.unit_price, rep?.unitPrice, g?.unitPrice, g?.totalPrice];
+      for (const c of candidates) {
+        const n = parsePriceValue(c);
+        if (Number.isFinite(n) && n > 0) return n;
+      }
+      return 0;
+    };
+    // Prefer the one with smaller stable unit price (avoid inflated duplicates)
+    const au = getUnit(a);
+    const bu = getUnit(b);
+    return (au && bu) ? (au <= bu ? a : b) : (au ? a : b);
+  };
+  const deduped = [];
+  const seen = new Map();
+  displayGroups.forEach((g) => {
+    if (!isPkgGroup(g)) {
+      deduped.push(g);
+      return;
+    }
+    const key = pkgKey(g);
+    if (!key) {
+      // Unknown key: keep first occurrence only
+      if (!seen.has('__unknown__')) {
+        seen.set('__unknown__', deduped.length);
+        deduped.push(g);
+      } else {
+        const idx = seen.get('__unknown__');
+        deduped[idx] = pickBetter(deduped[idx], g);
+      }
+      return;
+    }
+    if (!seen.has(key)) {
+      seen.set(key, deduped.length);
+      deduped.push(g);
+    } else {
+      const idx = seen.get(key);
+      deduped[idx] = pickBetter(deduped[idx], g);
+    }
+  });
+  displayGroups = deduped;
 
   const { technicians: storedTechnicians = [] } = loadData();
   const technicianSource = []
