@@ -33,9 +33,19 @@ body[dir="ltr"] .sub-tab-buttons {
 
 .tab-button,
 .sub-tab-button {
-  border: 1px solid rgba(76, 110, 245, 0.25);
-  background: linear-gradient(135deg, #f8faff, #e6edff);
-  color: #2c3e66;
+  /* Unified with theme variables */
+  --tab-primary: var(--clr-primary);
+  --tab-primary-soft: var(--clr-primary-soft);
+  --tab-border: color-mix(in srgb, var(--tab-primary) 25%, transparent);
+  --tab-bg: linear-gradient(135deg, #f8faff, #e6edff);
+  --tab-bg-hover: linear-gradient(135deg, #eff4ff, #d6e1ff);
+  --tab-bg-active: linear-gradient(135deg, var(--tab-primary), var(--tab-primary-soft));
+  --tab-shadow-hover: 0 8px 18px color-mix(in srgb, var(--tab-primary) 20%, transparent), 0 0 0 4px color-mix(in srgb, var(--tab-primary) 18%, transparent);
+  --tab-shadow-active: 0 10px 24px color-mix(in srgb, var(--tab-primary) 28%, transparent), 0 0 18px color-mix(in srgb, var(--tab-primary-soft) 25%, transparent);
+
+  border: 1px solid var(--tab-border);
+  background: var(--tab-bg);
+  color: var(--clr-text);
   padding: 10px 22px;
   cursor: pointer;
   border-radius: 999px;
@@ -50,24 +60,24 @@ body[dir="ltr"] .sub-tab-buttons {
 
 .tab-button:hover,
 .sub-tab-button:hover {
-  background: linear-gradient(135deg, #eff4ff, #d6e1ff);
-  color: #1f2d52;
+  background: var(--tab-bg-hover);
+  color: var(--clr-text);
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(76, 110, 245, 0.2), 0 0 0 4px rgba(76, 110, 245, 0.18);
+  box-shadow: var(--tab-shadow-hover);
 }
 
 .tab-button.active,
 .sub-tab-button.active,
 .sub-tab-button.tab-active {
-  background: linear-gradient(135deg, #4c6ef5, #5a8dff);
+  background: var(--tab-bg-active);
   color: #fff;
-  box-shadow: 0 10px 24px rgba(76, 110, 245, 0.28), 0 0 18px rgba(140, 170, 255, 0.25);
+  box-shadow: var(--tab-shadow-active);
   border-color: transparent;
 }
 
 :is(html.dark-mode, body.dark-mode) .tab-button,
 :is(html.dark-mode, body.dark-mode) .sub-tab-button {
-  border: 1px solid rgba(93, 133, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--tab-primary) 25%, transparent);
   background: linear-gradient(135deg, rgba(30, 42, 68, 0.95), rgba(24, 38, 64, 0.85));
   color: var(--clr-text);
   box-shadow: 0 4px 10px rgba(4, 10, 25, 0.55);
@@ -111,9 +121,9 @@ body.no-js .tab-content-wrapper > .tab:first-of-type {
 
 body.no-js .tab-buttons .tab-button:first-child,
 body.no-js .tab-buttons .tab-button:first-child:focus-visible {
-  background: linear-gradient(135deg, #4c6ef5, #5a8dff);
+  background: var(--tab-bg-active);
   color: #fff;
-  box-shadow: 0 6px 14px rgba(76, 110, 245, 0.25);
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--tab-primary) 25%, transparent);
   border-color: transparent;
 }
 
@@ -138,9 +148,9 @@ body.no-js .sub-tab:first-of-type {
 
 body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child,
 body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible {
-  background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-soft));
+  background: var(--tab-bg-active);
   color: #fff;
-  box-shadow: 0 6px 16px rgba(76, 110, 245, 0.25);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--tab-primary) 25%, transparent);
   border-color: transparent;
 }
 
@@ -174,9 +184,37 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
   gap: 0.5rem;
   padding-inline: 2.4rem;
   touch-action: pan-x;
+}
+
+.tab-scroll-track::-webkit-scrollbar { display: none; }
+
+.tab-scroll-track > .tab-buttons .tab-button,
+.tab-scroll-track > .sub-tab-buttons .sub-tab-button {
+  scroll-snap-align: center;
+}
+
+/* Focus styles for keyboard navigation */
+.tab-button:focus-visible,
+.sub-tab-button:focus-visible {
+  outline: 3px solid var(--clr-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--clr-primary) 22%, transparent);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .tab-button,
+  .sub-tab-button {
+    transition: none;
+  }
+  .tab-button:hover,
+  .sub-tab-button:hover {
+    transform: none;
+  }
 }
 
 .subtab-scroll-card .tab-scroll {
