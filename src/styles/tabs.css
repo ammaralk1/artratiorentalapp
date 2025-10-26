@@ -230,6 +230,22 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   max-width: min(96vw, 1080px);
 }
 
+/* Technicians: position summary alert themed styling */
+.technician-position-summary {
+  border-radius: 16px;
+  border: 1px solid hsl(var(--p, 220 90% 56%) / 0.25);
+  background: linear-gradient(135deg, hsl(var(--b1) / 0.98), hsl(var(--b2) / 0.94));
+  color: hsl(var(--bc));
+  box-shadow: 0 10px 26px hsl(var(--bc) / 0.08);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .technician-position-summary {
+  border-color: hsl(var(--p) / 0.3);
+  background: linear-gradient(135deg, hsl(var(--b1) / 0.96), hsl(var(--b2) / 0.9));
+  color: hsl(var(--bc));
+  box-shadow: 0 14px 32px hsl(var(--bc) / 0.18);
+}
+
 .crew-picker-modal {
   border-radius: 26px;
   border: 1px solid hsl(var(--bc) / 0.08);

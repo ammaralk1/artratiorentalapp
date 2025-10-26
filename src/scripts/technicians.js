@@ -356,6 +356,7 @@ function resetTechnicianForm() {
 function populateTechnicianForm(technician) {
   const nameInput = document.getElementById("technician-name");
   const phoneInput = document.getElementById("technician-phone");
+  const emailInput = document.getElementById("technician-email");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const notesInput = document.getElementById("technician-notes");
@@ -364,6 +365,7 @@ function populateTechnicianForm(technician) {
 
   nameInput.value = technician.name || "";
   phoneInput.value = normalizePhoneValue(technician.phone || "");
+  if (emailInput) emailInput.value = technician.email || "";
   roleInput.value = technician.role || "";
   if (departmentInput) departmentInput.value = technician.department || "";
   if (notesInput) notesInput.value = technician.notes || "";
@@ -377,6 +379,7 @@ function populateTechnicianForm(technician) {
 function collectTechnicianForm() {
   const nameInput = document.getElementById("technician-name");
   const phoneInput = document.getElementById("technician-phone");
+  const emailInput = document.getElementById("technician-email");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const notesInput = document.getElementById("technician-notes");
@@ -386,6 +389,7 @@ function collectTechnicianForm() {
   const name = nameInput.value.trim();
   const phone = normalizePhoneValue(phoneInput.value.trim());
   phoneInput.value = phone;
+  const email = (emailInput?.value || "").trim();
   const role = roleInput.value.trim();
   const department = departmentInput?.value.trim() || "";
   const status = 'available';
@@ -427,6 +431,7 @@ function collectTechnicianForm() {
   return {
     name,
     phone,
+    email,
     role,
     department,
     dailyWage: Number.isFinite(dailyWage) ? dailyWage : 0,
@@ -454,6 +459,7 @@ async function handleTechnicianSubmit(event) {
   const apiPayload = buildTechnicianPayload({
     name: payload.name,
     phone: payload.phone,
+    email: payload.email || null,
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
@@ -492,6 +498,7 @@ function populateTechnicianEditModal(technician) {
     id: document.getElementById("edit-technician-id"),
     name: document.getElementById("edit-technician-name"),
     phone: document.getElementById("edit-technician-phone"),
+    email: document.getElementById("edit-technician-email"),
     role: document.getElementById("edit-technician-role"),
     department: document.getElementById("edit-technician-department"),
     wage: document.getElementById("edit-technician-wage"),
@@ -506,6 +513,7 @@ function populateTechnicianEditModal(technician) {
   if (fields.name.value !== (technician.name || "")) fields.name.value = technician.name || "";
   const normalizedPhone = normalizePhoneValue(technician.phone || "");
   if (fields.phone.value !== normalizedPhone) fields.phone.value = normalizedPhone;
+  if (fields.email && fields.email.value !== (technician.email || "")) fields.email.value = technician.email || "";
   if (fields.role.value !== (technician.role || "")) fields.role.value = technician.role || "";
   if (fields.department && fields.department.value !== (technician.department || "")) {
     fields.department.value = technician.department || "";
@@ -527,6 +535,7 @@ function collectTechnicianEditModal() {
   const idInput = document.getElementById("edit-technician-id");
   const nameInput = document.getElementById("edit-technician-name");
   const phoneInput = document.getElementById("edit-technician-phone");
+  const emailInput = document.getElementById("edit-technician-email");
   const roleInput = document.getElementById("edit-technician-role");
   const departmentInput = document.getElementById("edit-technician-department");
   const wageInput = document.getElementById("edit-technician-wage");
@@ -540,6 +549,7 @@ function collectTechnicianEditModal() {
   const name = nameInput.value.trim();
   const phone = normalizePhoneValue(phoneInput.value.trim());
   phoneInput.value = phone;
+  const email = (emailInput?.value || "").trim();
   const role = roleInput.value.trim();
   const department = departmentInput?.value.trim() || "";
   const wageValue = normalizeMoneyValue(wageInput.value.trim());
@@ -590,6 +600,7 @@ function collectTechnicianEditModal() {
     id,
     name,
     phone,
+    email,
     role,
     department,
     dailyWage: Number.isFinite(wage) ? wage : 0,
@@ -607,6 +618,7 @@ async function handleTechnicianModalSave() {
   const apiPayload = buildTechnicianPayload({
     name: payload.name,
     phone: payload.phone,
+    email: payload.email || null,
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
@@ -670,6 +682,7 @@ function renderTechniciansTable() {
     const haystack = normalizeText([
       tech.name,
       tech.phone,
+      tech.email,
       tech.role,
       tech.department,
       tech.notes
