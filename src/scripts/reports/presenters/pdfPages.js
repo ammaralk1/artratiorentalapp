@@ -422,10 +422,14 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
           const row = new Uint8ClampedArray(width * 4);
           const isWhiteRow = (y) => {
             const data = ctx.getImageData(0, y, width, 1).data || row;
+            let darkCount = 0;
             for (let x = 0; x < width; x += 1) {
               const i4 = x * 4;
               const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
-              if (r < threshold || g < threshold || b < threshold) return false;
+              if (r < threshold || g < threshold || b < threshold) {
+                darkCount += 1;
+                if (darkCount > Math.max(2, Math.ceil(width * 0.003))) return false; // تحمّل بضع بكسلات غير بيضاء
+              }
             }
             return true;
           };
@@ -442,10 +446,14 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
           const { width, height } = canvas;
           const isWhiteRow = (y) => {
             const data = ctx.getImageData(0, y, width, 1).data;
+            let darkCount = 0;
             for (let x = 0; x < width; x += 1) {
               const i4 = x * 4;
               const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
-              if (r < threshold || g < threshold || b < threshold) return false;
+              if (r < threshold || g < threshold || b < threshold) {
+                darkCount += 1;
+                if (darkCount > Math.max(2, Math.ceil(width * 0.003))) return false;
+              }
             }
             return true;
           };
