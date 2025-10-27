@@ -66,7 +66,7 @@ export async function exportAsExcel(rows) {
   }
 }
 
-function buildPdfReportElement(rows = []) {
+export function buildPdfReportElement(rows = []) {
   const snapshot = reportsState.lastSnapshot || {};
   const metrics = snapshot.metrics || {};
   const date = new Date();

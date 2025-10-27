@@ -510,6 +510,20 @@ export function initReports() {
     }
     await exportReport(type, rows);
   });
+  // Preview PDF button
+  const previewBtn = document.getElementById('reports-preview-pdf');
+  if (previewBtn && !previewBtn.dataset.bound) {
+    previewBtn.addEventListener('click', async () => {
+      try {
+        const module = await import('./reports/preview.js');
+        const rows = reportsState.lastSnapshot.tableRows || [];
+        module.openReportsPdfPreview(rows);
+      } catch (error) {
+        console.error('⚠️ [reports] Failed to open PDF preview', error);
+      }
+    });
+    previewBtn.dataset.bound = 'true';
+  }
   setupDrilldownInteractions();
 
   if (!reportsState.themeListenerAttached) {
