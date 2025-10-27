@@ -604,16 +604,15 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
       if (pdfPageIndex === 0) throw new Error('PDF generation produced no pages');
 
       if (action === 'print') {
+        try { pdf.autoPrint({ variant: 'non-conform' }); } catch (_) {}
         const blobUrl = pdf.output('bloburl');
         if (safariWindow) {
           try { safariWindow.location.href = blobUrl; } catch (_) {}
         } else {
-          await new Promise((resolve) => {
-            const iframe = document.createElement('iframe');
-            Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
-            iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 700); };
-            iframe.src = blobUrl; document.body.appendChild(iframe);
-          });
+          const win = window.open(blobUrl, '_blank');
+          if (!win) {
+            const a = document.createElement('a'); a.href = blobUrl; a.download = 'reservations-report.pdf'; a.click();
+          }
         }
       } else {
         pdf.save('reservations-report.pdf');
@@ -622,8 +621,11 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
       // Fallback: html2pdf direct
       const chain = (window.html2pdf)().set({ margin: 10, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(root).toPdf();
       if (action === 'print') {
-        const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
-        await new Promise((resolve) => { const iframe = document.createElement('iframe'); Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' }); iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 700); }; iframe.src = blobUrl; document.body.appendChild(iframe); });
+        const pdfObj = await chain.get('pdf');
+        try { pdfObj.autoPrint({ variant: 'non-conform' }); } catch (_) {}
+        const blobUrl = pdfObj.output('bloburl');
+        const win = window.open(blobUrl, '_blank');
+        if (!win) { const a = document.createElement('a'); a.href = blobUrl; a.download = 'reservations-report.pdf'; a.click(); }
       } else {
         await chain.save('reservations-report.pdf');
       }
