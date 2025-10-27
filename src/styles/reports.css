@@ -368,11 +368,11 @@ body[dir="rtl"] .reports-filters {
   grid-template-columns: repeat(4, minmax(220px, 1fr));
 }
 
-/* Wide screens: keep all 4 filters in a single row by using 6 columns
-   and making payment/share span two columns each */
-@media (min-width: 1280px) {
+/* Keep all 4 filters in a single row from >=1024px by using 6 columns
+   (payment/share already span two columns each below). */
+@media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(6, minmax(160px, 1fr));
+    grid-template-columns: repeat(6, minmax(140px, 1fr));
   }
 }
 
@@ -386,10 +386,10 @@ body[dir="rtl"] .reports-filters {
 /* Make payment (3) and company share (4) dropdowns wider */
 .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3) .reports-filter-control,
 .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) .reports-filter-control {
-  min-width: 300px;
+  min-width: 340px;
 }
 
-/* Allow payment/share fields to span two columns on wide screens */
+/* Allow payment/share fields to span two columns on medium+ screens */
 @media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
