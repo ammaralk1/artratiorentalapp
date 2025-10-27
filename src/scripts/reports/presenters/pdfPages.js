@@ -390,6 +390,25 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(container);
 
   try {
+    // مسار صارم يطابق المعاينة 100% عبر الطباعة الأصلية للمتصفح (Save as PDF)
+    // هذا يضمن استخدام نفس HTML/CSS بدون تحويل إلى Canvas
+    const STRICT_NATIVE_PRINT = true;
+    if (STRICT_NATIVE_PRINT) {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) throw new Error('Popup blocked');
+      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;} /* ضمان إظهار كل صفحة كتلة مطبوعة */ .quote-preview-pages{gap:0 !important} .quote-page{box-shadow:none !important;border-radius:0 !important}</style></head><body></body></html>`;
+      try { printWindow.document.open(); printWindow.document.write(html); printWindow.document.close(); } catch (_) {}
+      // استخدم نسخة من الجذر حتى لا ننقل العقد بين المستندات
+      const cloneRoot = root.cloneNode(true);
+      try { printWindow.document.body.appendChild(cloneRoot); } catch (_) {}
+      // انتظر تحميل الخطوط/الصور
+      try { if (printWindow.document?.fonts?.ready) { await printWindow.document.fonts.ready; } } catch (_) {}
+      await new Promise((r) => setTimeout(r, 60));
+      try { printWindow.focus(); printWindow.print(); } catch (_) {}
+      // لا نغلق النافذة تلقائياً لإتاحة "حفظ كـ PDF" للمستخدم
+      return;
+    }
+
     // iOS Safari قد يحظر النوافذ المنبثقة إن لم تُفتح قبل حدث المستخدم
     const safariPopupRequired = isIosSafari() && !isMobileViewport();
     const safariWindow = safariPopupRequired ? window.open('', '_blank') : null;
