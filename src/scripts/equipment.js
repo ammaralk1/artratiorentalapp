@@ -271,7 +271,13 @@ function evaluateSelectionStateForItem(item) {
     };
   }
 
-  const availableVariants = uniqueVariants.filter(({ variant }) => isEquipmentAvailable(variant));
+  // Allow selecting items even if their status is currently "reserved" as long as
+  // there is no time conflict with the requested reservation interval.
+  // Only block globally unavailable statuses like maintenance/retired.
+  const availableVariants = uniqueVariants.filter(({ variant }) => {
+    const status = normalizeStatusValue(variant?.status);
+    return status !== 'maintenance' && status !== 'retired';
+  });
   if (!start || !end) {
     return {
       active: true,
