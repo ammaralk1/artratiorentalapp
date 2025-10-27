@@ -481,8 +481,8 @@ export function initReports() {
   printBtn?.addEventListener('click', async () => {
     try {
       const rows = reportsState.lastSnapshot.tableRows || [];
-      const { exportReportsPdf } = await import('./reports/presenters/pdfPages.js');
-      await exportReportsPdf(rows, { action: 'print' });
+      const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
+      await exportA4ReportPdf(rows, { action: 'print' });
     } catch (_) {
       try { window.print(); } catch (_) {}
     }
@@ -517,8 +517,8 @@ export function initReports() {
     if (type === 'pdf') {
       // استخدم مولد الصفحات المعتمد نفسه المستخدم في المعاينة والطباعة
       try {
-        const { exportReportsPdf } = await import('./reports/presenters/pdfPages.js');
-        await exportReportsPdf(rows, { action: 'save' });
+        const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
+        await exportA4ReportPdf(rows, { action: 'save' });
         return;
       } catch (e) {
         console.warn('[reports] page-based PDF export failed, falling back to legacy', e);

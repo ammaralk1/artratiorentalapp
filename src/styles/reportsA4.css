@@ -1,0 +1,48 @@
+@page { size: A4; margin: 0; }
+
+/* جذر وثيقة A4 للمعاينة/التصدير */
+#reports-a4-root {
+  color-scheme: light;
+  direction: rtl;
+  text-align: right;
+  font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif;
+  color: #000 !important;
+}
+
+/* إزالة تأثيرات الثيم والظلال كلياً داخل الجذر */
+#reports-a4-root, #reports-a4-root * {
+  color: #000 !important; background: #fff !important; box-shadow: none !important; filter: none !important;
+}
+
+/* حاوية الصفحات */
+#reports-a4-root [data-a4-pages] {
+  display: flex; flex-direction: column; gap: 0; padding: 0; margin: 0; align-items: center; justify-content: flex-start;
+}
+
+/* صفحة A4 ثابتة بالبكسل، بدون أي هوامش خارجية */
+.a4-page {
+  position: relative;
+  width: 794px; /* 210mm @ 96dpi */
+  height: 1123px; /* 297mm @ 96dpi */
+  overflow: hidden; background: #fff; border-radius: 0; margin: 0; padding: 0;
+}
+
+/* طبقة داخلية تمتد على كامل الصفحة وتُطبّق الحشوات بالـ mm */
+.a4-inner { position: absolute; inset: 0; padding: 12mm 14mm 12mm; }
+.a4-page--primary .a4-inner { padding-top: 6mm; }
+
+/* العناوين والـ KPI */
+.rpt-header { display: flex; flex-direction: column; gap: 6px; margin: 0 0 6mm 0; }
+.rpt-header h1 { margin: 0; font-weight: 800; font-size: 18px; text-align: right; }
+.rpt-subtitle { margin: 0; font-size: 12px; opacity: .9; text-align: right; }
+
+.rpt-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 6mm; }
+.rpt-kpi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+.rpt-kpi .label { font-size: 11px; opacity: .85; }
+.rpt-kpi .value { font-weight: 700; font-size: 14px; }
+
+/* الجدول */
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; font-weight: 800; }
+.rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; }
+

@@ -1,6 +1,6 @@
 import { translate } from '../reports/formatters.js';
 import reportsState from '../reports/state.js';
-import { buildReportsPdfPages, exportReportsPdf } from './presenters/pdfPages.js';
+import { buildA4ReportPages, exportA4ReportPdf } from './presenters/a4Unified.js';
 
 function createModal() {
   const modal = document.createElement('div');
@@ -79,7 +79,7 @@ export function openReportsPdfPreview(rows) {
 
   const frame = modal.querySelector('[data-preview-frame]');
   const dataRows = rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []);
-  const pagesRoot = buildReportsPdfPages(dataRows, { context: 'preview' });
+  const pagesRoot = buildA4ReportPages(dataRows, { context: 'preview' });
   frame.appendChild(pagesRoot);
 
   setupZoom(modal);
@@ -88,7 +88,7 @@ export function openReportsPdfPreview(rows) {
   const printBtn = modal.querySelector('[data-print-pdf]');
   if (printBtn) {
     printBtn.addEventListener('click', async () => {
-      await exportReportsPdf(dataRows, { action: 'save' });
+      await exportA4ReportPdf(dataRows, { action: 'save' });
     });
   }
 
