@@ -1753,6 +1753,7 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 
 .quote-preview {
   position: relative;
+  display: flex;               /* لضمان تمركز الإطار بصرف النظر عن الحاويات الداخلية */
   justify-content: center;
   align-items: flex-start;
   padding: 12px;
