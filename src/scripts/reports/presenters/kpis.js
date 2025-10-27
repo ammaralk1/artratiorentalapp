@@ -56,22 +56,27 @@ export function updateKpiCards(metrics) {
         {
           label: translate('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'),
           value: formatCurrency(revenue),
+          hint: translate('reservations.reports.kpi.revenue.details.grossHint', 'إجمالي قيمة الحجوزات (قبل الخصومات)', 'Total bookings value (before discounts)')
         },
         {
           label: translate('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'),
           value: formatCurrency(companyShareTotal),
+          hint: translate('reservations.reports.kpi.revenue.details.shareHint', 'تُحسب بعد الخصم، وتُضاف للإجمالي', 'Applied after discount and added to total')
         },
         {
           label: translate('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'),
           value: formatCurrency(taxTotal),
+          hint: translate('reservations.reports.kpi.revenue.details.taxHint', 'ضريبة 15% على (الإجمالي بعد الخصم + نسبة الشركة)', '15% VAT on (after-discount total + company share)')
         },
         {
           label: translate('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'),
           value: formatCurrency(crewGross),
+          hint: translate('reservations.reports.kpi.revenue.details.crewGrossHint', 'قيمة الطاقم للعميل', 'Crew price billed to client')
         },
         {
           label: translate('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'),
           value: formatCurrency(crewCost),
+          hint: translate('reservations.reports.kpi.revenue.details.crewHint', 'تكلفة الطاقم على الشركة', 'Crew cost to company')
         },
       ];
 
@@ -88,8 +93,8 @@ export function updateKpiCards(metrics) {
       });
 
       revenueDetailsEl.innerHTML = rows
-        .map(({ label, value }) => `
-          <div class="reports-kpi-detail-row">
+        .map(({ label, value, hint }) => `
+          <div class="reports-kpi-detail-row" title="${hint || ''}">
             <span class="reports-kpi-detail-label">${label}</span>
             <span class="reports-kpi-detail-value">${value}</span>
           </div>

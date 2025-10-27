@@ -1520,6 +1520,13 @@
                 </div>
               </div>
             </div>
+            <!-- KPIs skeleton while loading -->
+            <div class="reports-kpi-grid" id="reports-kpi-skeleton" aria-hidden="true" style="display:none">
+              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+            </div>
 
             <!-- بطاقة منفصلة لتفاصيل الإيرادات مثل تقارير المشاريع -->
             <div class="reports-chart-card glass-card" id="reservations-revenue-card">
@@ -1540,6 +1547,11 @@
               </div>
               <div class="reports-card-body reports-card-body--column">
                 <div id="reservations-revenue-breakdown" class="reports-breakdown-list"></div>
+                <div id="reservations-revenue-skeleton" class="reports-breakdown-list" aria-hidden="true" style="display:none">
+                  <div class="skeleton-line w-56"></div>
+                  <div class="skeleton-line w-64"></div>
+                  <div class="skeleton-line w-48"></div>
+                </div>
               </div>
             </div>
 
@@ -1693,6 +1705,13 @@
                 </div>
               </div>
               <div class="reports-table-wrapper">
+                <div id="reports-table-skeleton" aria-hidden="true" style="display:none">
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                  <div class="skeleton-row"></div>
+                </div>
                 <table class="reports-table" id="reports-reservations-table">
                   <thead>
                     <tr>

@@ -296,6 +296,18 @@ function toggleEmptyState(isEmpty) {
   setReportsEmptyState({ active: Boolean(isEmpty) });
 }
 
+function toggleSkeleton(loading) {
+  const kpiSkeleton = document.getElementById('reports-kpi-skeleton');
+  const kpiGrid = document.getElementById('reservations-reports-kpis');
+  const tableSkeleton = document.getElementById('reports-table-skeleton');
+  const table = document.getElementById('reports-reservations-table');
+  const revSkeleton = document.getElementById('reservations-revenue-skeleton');
+  const revList = document.getElementById('reservations-revenue-breakdown');
+  if (kpiSkeleton && kpiGrid) { kpiSkeleton.style.display = loading ? '' : 'none'; kpiGrid.style.opacity = loading ? '0.4' : '1'; }
+  if (tableSkeleton && table) { tableSkeleton.style.display = loading ? '' : 'none'; table.style.opacity = loading ? '0.4' : '1'; }
+  if (revSkeleton && revList) { revSkeleton.style.display = loading ? '' : 'none'; revList.style.opacity = loading ? '0.4' : '1'; }
+}
+
 function setupDrilldownInteractions() {
   if (reportsState.drilldownBound) return;
 
@@ -337,15 +349,7 @@ export function renderReports() {
     renderReports();
   } });
 
-  if (reportsState.loading) {
-    setReportsEmptyState({
-      active: true,
-      icon: '⏳',
-      title: translate('reservations.reports.status.loading', 'جارٍ تحميل التقارير...'),
-      subtitle: translate('reservations.reports.status.loadingHint', 'قد يستغرق هذا بضع ثوانٍ.'),
-    });
-    return;
-  }
+  if (reportsState.loading) { toggleSkeleton(true); return; }
 
   if (reportsState.errorMessage) {
     setReportsEmptyState({
@@ -357,6 +361,7 @@ export function renderReports() {
     return;
   }
 
+  toggleSkeleton(false);
   const { reservations, customers, equipment, technicians, maintenance } = reportsState.data;
   const filtered = filterReservations(reservations, filters, customers, equipment, technicians);
   const metrics = calculateMetrics(filtered);

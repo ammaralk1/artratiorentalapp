@@ -1364,6 +1364,40 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   display: flex;
   gap: 6px;
 }
+
+/* Skeleton loading */
+.skeleton-card {
+  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(248, 250, 255, 0.6);
+}
+:is(html.dark, body.dark) .skeleton-card {
+  background: rgba(24, 33, 59, 0.6);
+}
+.skeleton-line { height: 14px; border-radius: 10px; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06)); animation: skeleton 1.2s infinite; }
+.skeleton-line.w-40 { width: 10rem; margin-bottom: 8px; }
+.skeleton-line.w-48 { width: 12rem; margin-bottom: 8px; }
+.skeleton-line.w-56 { width: 14rem; margin-bottom: 8px; }
+.skeleton-line.w-64 { width: 16rem; margin-bottom: 8px; }
+.skeleton-amount { width: 7rem; height: 24px; border-radius: 8px; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06)); animation: skeleton 1.2s infinite; }
+.skeleton-row { height: 38px; border-radius: 10px; margin: 6px 0; background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06)); animation: skeleton 1.2s infinite; }
+
+@keyframes skeleton {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+/* Print stylesheet */
+@media print {
+  body { color: #000; }
+  .tab, .filters-bar, .reports-filters, .reports-active-filters, .reports-filters-footer, .reports-actions, .calendar-panel, .sidebar, .navbar { display: none !important; }
+  #reservations-report-printable { padding: 0; }
+  .reports-kpi-grid { gap: 10px; }
+  .reports-chart-card, .reports-detail-grid { page-break-inside: avoid; }
+  .reports-table-card .reports-table-wrapper { max-height: none; overflow: visible; }
+  .reports-table thead th { position: static; backdrop-filter: none; }
+}
 .reports-table-pagination .pager button {
   border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
   background: rgba(248, 250, 255, 0.8);
