@@ -1,5 +1,6 @@
 import { translate, formatDateInput } from '../formatters.js';
 import reportsState from '../state.js';
+import { ensureHtml2Pdf, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
 
 const CSS_DPI = 96;
@@ -131,16 +132,35 @@ export async function exportA4ReportPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(host);
 
   try {
-    // Ensure html2pdf bundle is available for html2canvas + jsPDF
-    // html2pdf exposes window.html2canvas and window.jspdf
-    if (!window.html2pdf) {
-      const mod = await import('../external.js');
-      await mod.ensureHtml2Pdf();
+    // Ensure html2pdf (bundled) then fall back to direct libs if needed
+    try { await ensureHtml2Pdf(); } catch (_) {}
+
+    let JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
+      || (window.jsPDF && window.jsPDF.jsPDF)
+      || (window.jspdf && window.jspdf.default && window.jspdf.default.jsPDF)
+      || (window.jsPDF && window.jsPDF.default && window.jsPDF.default.jsPDF);
+    let h2c = window.html2canvas;
+
+    if (typeof JsPdfCtor !== 'function') {
+      try {
+        await loadExternalScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+        JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
+          || (window.jsPDF && window.jsPDF.jsPDF)
+          || (window.jsPDF && window.jsPDF.default && window.jsPDF.default.jsPDF)
+          || (window.jspdf && window.jspdf.default && window.jspdf.default.jsPDF);
+      } catch (_) {}
     }
-    const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
-    const h2c = window.html2canvas;
+    if (typeof h2c !== 'function') {
+      try {
+        await loadExternalScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+        h2c = window.html2canvas;
+      } catch (_) {}
+    }
+
     if (typeof JsPdfCtor !== 'function' || typeof h2c !== 'function') {
-      throw new Error('PDF dependencies not available');
+      const jsPdfOk = typeof JsPdfCtor === 'function';
+      const h2cOk = typeof h2c === 'function';
+      throw new Error(`PDF dependencies not available (jsPDF: ${jsPdfOk}, html2canvas: ${h2cOk})`);
     }
 
     const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
@@ -180,4 +200,3 @@ export async function exportA4ReportPdf(rows = [], { action = 'save' } = {}) {
 }
 
 export default { buildA4ReportPages, exportA4ReportPdf };
-
