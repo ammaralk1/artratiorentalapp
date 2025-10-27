@@ -222,11 +222,12 @@ export function openProjectDetails(projectId) {
       ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
       : 0;
 
-    // Net profit = (equipment + crew - discount) - share - VAT - expenses - crew cost
-    const netProfit = Number((baseAfterDiscount - companyShareAmount - taxAmountAfterShare - expensesTotalNumber - agg.crewCost).toFixed(2));
-
     // Final total = grossBeforeDiscount - discount + share + VAT
     const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+
+    // Net profit should be derived from the final total (then subtract non-profit components)
+    // Net profit = finalTotal - share - VAT - expenses - crew cost
+    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber - agg.crewCost).toFixed(2));
 
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
