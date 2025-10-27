@@ -164,7 +164,8 @@ export function buildPdfReportElement(rows = []) {
   return wrapper;
 }
 
-export async function exportAsPdf(rows = []) {
+export async function exportAsPdf(rows = [], options = {}) {
+  const action = options?.action === 'print' ? 'print' : 'save';
   // Build and attach a clean, print-friendly element
   const pdfEl = buildPdfReportElement(rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []));
   document.body.appendChild(pdfEl);
@@ -198,7 +199,7 @@ export async function exportAsPdf(rows = []) {
   try {
     // الأساس: توليد PDF بقياس A4 بواحدة الملليمتر، مع تقسيم تلقائي لعدة صفحات
     await ensureHtml2Pdf();
-    await (window.html2pdf)().set({
+    const chain = (window.html2pdf)().set({
       margin: SAFE_MARGIN_MM,
       filename,
       html2canvas: {
@@ -214,7 +215,29 @@ export async function exportAsPdf(rows = []) {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'legacy'] },
       image: { type: 'jpeg', quality: 0.98 },
-    }).from(sheet || pdfEl).save();
+    }).from(sheet || pdfEl).toPdf();
+
+    if (action === 'save') {
+      await chain.save();
+    } else {
+      const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
+      // اطبع عبر iframe مخفي لتفادي حظر النوافذ المنبثقة
+      await new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        iframe.style.border = '0';
+        iframe.onload = () => {
+          try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {}
+          setTimeout(() => { iframe.remove(); resolve(); }, 1000);
+        };
+        iframe.src = blobUrl;
+        document.body.appendChild(iframe);
+      });
+    }
   } catch (error) {
     // احتياطي: التصدير عبر jsPDF + صورة واحدة (مع هوامش آمنة)
     try {

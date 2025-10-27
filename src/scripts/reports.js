@@ -478,8 +478,14 @@ export function initReports() {
     renderReports();
   });
 
-  printBtn?.addEventListener('click', () => {
-    try { window.print(); } catch (_) {}
+  printBtn?.addEventListener('click', async () => {
+    try {
+      const rows = reportsState.lastSnapshot.tableRows || [];
+      const module = await import('./reports/presenters/exporters.js');
+      await module.exportAsPdf(rows, { action: 'print' });
+    } catch (_) {
+      try { window.print(); } catch (_) {}
+    }
   });
 
   setupCustomRangePickers(startInput, endInput);
