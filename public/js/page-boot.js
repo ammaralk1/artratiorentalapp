@@ -68,6 +68,10 @@
   // Fallback: if app scripts fail to remove loading classes, ensure UI becomes visible
   const removeLoadingSafely = () => {
     try {
+      const html = document.documentElement;
+      // Ensure language visibility
+      html?.classList?.remove('language-loading');
+      html?.classList?.add('language-ready');
       document.body?.classList?.remove('no-js');
       document.body?.classList?.remove('tabs-loading');
     } catch (_) {}
