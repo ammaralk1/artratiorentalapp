@@ -359,8 +359,8 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-filters-grid {
   width: min(100%, 960px);
   margin-inline: auto;
-  column-gap: 12px;
-  row-gap: 8px;
+  column-gap: 8px; /* closer spacing between fields */
+  row-gap: 6px;    /* reduce vertical gap */
   justify-items: stretch;
 }
 
@@ -370,14 +370,24 @@ body[dir="rtl"] .reports-filters {
 
 .reports-wrapper--reservations .reports-filter-control {
   min-width: 220px;
-  min-height: 46px;
-  padding: 10px 14px;
+  min-height: 44px; /* slightly more compact */
+  padding: 8px 12px; /* reduce padding for tighter look */
   width: 100%;
 }
 
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(2) .reports-filter-control,
+/* Make payment (3) and company share (4) dropdowns wider */
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3) .reports-filter-control,
 .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) .reports-filter-control {
-  min-width: 240px;
+  min-width: 300px;
+}
+
+/* Allow payment/share fields to span two columns on wide screens */
+@media (min-width: 1024px) {
+  .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
+  .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
+    grid-column: span 2;
+    max-width: none;
+  }
 }
 
 .reports-filter-field {
@@ -391,6 +401,11 @@ body[dir="rtl"] .reports-filters {
   text-align: center;
   width: 100%;
   max-width: 240px;
+}
+/* Override max-width for the widened (3) payment and (4) share fields */
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
+  max-width: none;
 }
 
 .reports-filter-label {
