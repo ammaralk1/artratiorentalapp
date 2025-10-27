@@ -42,6 +42,11 @@ export const reportsState = {
     status: null,
     payment: null,
   },
+  chartsMeta: {
+    trend: { categoriesSig: '', theme: '' },
+    status: { labelsSig: '', theme: '' },
+    payment: { labelsSig: '', theme: '' },
+  },
   lastSnapshot: {
     filtered: [],
     metrics: null,

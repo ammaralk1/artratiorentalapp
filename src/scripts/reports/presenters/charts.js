@@ -183,7 +183,16 @@ export async function renderTrendChart(data) {
       },
     };
 
-    if (reportsState.charts.trend) {
+    const themeMode = getThemeMode();
+    const categoriesSig = String(categories.join('|'));
+    const prevMeta = reportsState.chartsMeta.trend;
+    const canSeriesOnly = reportsState.charts.trend
+      && prevMeta.theme === themeMode
+      && prevMeta.categoriesSig === categoriesSig;
+
+    if (reportsState.charts.trend && canSeriesOnly) {
+      reportsState.charts.trend.updateSeries(series, true);
+    } else if (reportsState.charts.trend) {
       reportsState.charts.trend.updateOptions({ ...options }, true, true);
       reportsState.charts.trend.updateSeries(series, true);
     } else {
@@ -191,6 +200,7 @@ export async function renderTrendChart(data) {
       reportsState.charts.trend = new ApexCharts(container, { ...options, series });
       reportsState.charts.trend.render();
     }
+    reportsState.chartsMeta.trend = { categoriesSig, theme: themeMode };
     toggleChartLoading('volume', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render trend chart', error);
@@ -286,7 +296,16 @@ export async function renderStatusChart(data) {
       },
     };
 
-    if (reportsState.charts.status) {
+    const themeMode = getThemeMode();
+    const labelsSig = String(labels.join('|'));
+    const prevMeta = reportsState.chartsMeta.status;
+    const canSeriesOnly = reportsState.charts.status
+      && prevMeta.theme === themeMode
+      && prevMeta.labelsSig === labelsSig;
+
+    if (reportsState.charts.status && canSeriesOnly) {
+      reportsState.charts.status.updateSeries(series, true);
+    } else if (reportsState.charts.status) {
       reportsState.charts.status.updateOptions({ ...options }, true, true);
       reportsState.charts.status.updateSeries(series, true);
     } else {
@@ -296,6 +315,7 @@ export async function renderStatusChart(data) {
     }
 
     renderProgressSection(listContainerId, sanitized);
+    reportsState.chartsMeta.status = { labelsSig, theme: themeMode };
     toggleChartLoading('status', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render status chart', error);
@@ -377,7 +397,16 @@ export async function renderPaymentChart(data) {
       },
     };
 
-    if (reportsState.charts.payment) {
+    const themeMode = getThemeMode();
+    const labelsSig = String(labels.join('|'));
+    const prevMeta = reportsState.chartsMeta.payment;
+    const canSeriesOnly = reportsState.charts.payment
+      && prevMeta.theme === themeMode
+      && prevMeta.labelsSig === labelsSig;
+
+    if (reportsState.charts.payment && canSeriesOnly) {
+      reportsState.charts.payment.updateSeries(series, true);
+    } else if (reportsState.charts.payment) {
       reportsState.charts.payment.updateOptions({ ...options }, true, true);
       reportsState.charts.payment.updateSeries(series, true);
     } else {
@@ -387,6 +416,7 @@ export async function renderPaymentChart(data) {
     }
 
     renderProgressSection(listContainerId, sanitized);
+    reportsState.chartsMeta.payment = { labelsSig, theme: themeMode };
     toggleChartLoading('payment', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render payment chart', error);
