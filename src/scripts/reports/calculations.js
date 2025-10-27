@@ -38,6 +38,42 @@ const PAYMENT_MAP = new Map([
 
 export const REPORT_MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// ------------------------------
+// Memoization helpers (lightweight)
+// ------------------------------
+const __memo = {
+  metrics: new Map(),
+  trend: new Map(),
+  status: new Map(),
+  payment: new Map(),
+  topCustomers: new Map(),
+  topEquipment: new Map(),
+};
+
+function listSignature(list) {
+  const len = Array.isArray(list) ? list.length : 0;
+  if (len === 0) return '0|';
+  const first = list[0] || {};
+  const last = list[len - 1] || {};
+  const a = `${first.id ?? first.reservationId ?? ''}-${first.start ?? ''}`;
+  const b = `${last.id ?? last.reservationId ?? ''}-${last.start ?? ''}`;
+  const locale = reportsState.formatters?.cachedLocale || 'ar';
+  return `${len}|${a}|${b}|${locale}`;
+}
+
+function memoGet(cache, key) {
+  return cache.get(key);
+}
+
+function memoSet(cache, key, value) {
+  cache.set(key, value);
+  if (cache.size > 64) {
+    const firstKey = cache.keys().next().value;
+    cache.delete(firstKey);
+  }
+  return value;
+}
+
 export function normalizeSearchText(value) {
   return normalizeNumbers(String(value || '')).toLowerCase().trim();
 }
@@ -461,6 +497,9 @@ export function applyMaintenanceExpenses(metrics, maintenanceExpense) {
 }
 
 export function calculateMonthlyTrend(reservations) {
+  const key = `trend:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.trend, key);
+  if (cached) return cached;
   const now = new Date();
   const result = [];
 
@@ -503,10 +542,13 @@ export function calculateMonthlyTrend(reservations) {
     });
   }
 
-  return result;
+  return memoSet(__memo.trend, key, result);
 }
 
 export function calculateStatusBreakdown(reservations) {
+  const key = `status:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.status, key);
+  if (cached) return cached;
   const counts = {
     confirmed: 0,
     pending: 0,
@@ -529,7 +571,7 @@ export function calculateStatusBreakdown(reservations) {
   const pending = counts.pending;
   const completed = counts.completed;
 
-  return [
+  const out = [
     {
       label: translate('reservations.reports.status.confirmedLabel', 'مؤكدة', 'Confirmed'),
       value: confirmedCount,
@@ -555,14 +597,18 @@ export function calculateStatusBreakdown(reservations) {
       filterKey: 'completed',
     },
   ];
+  return memoSet(__memo.status, key, out);
 }
 
 export function calculatePaymentBreakdown(reservations) {
+  const key = `payment:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.payment, key);
+  if (cached) return cached;
   const total = reservations.length || 1;
   const paid = reservations.filter((reservation) => computeReportStatus(reservation).paid).length;
   const unpaid = reservations.length - paid;
 
-  return [
+  const out = [
     {
       label: translate('reservations.reports.payment.paidLabel', 'مدفوعة', 'Paid'),
       value: paid,
@@ -580,9 +626,13 @@ export function calculatePaymentBreakdown(reservations) {
       filterKey: 'unpaid',
     },
   ];
+  return memoSet(__memo.payment, key, out);
 }
 
 export function calculateTopCustomers(reservations, customers) {
+  const key = `topCustomers:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.topCustomers, key);
+  if (cached) return cached;
   const totals = new Map();
   const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
 
@@ -595,7 +645,7 @@ export function calculateTopCustomers(reservations, customers) {
     totals.set(key, entry);
   });
 
-  return Array.from(totals.entries())
+  const out = Array.from(totals.entries())
     .map(([id, data]) => {
       const customer = customerMap.get(id);
       return {
@@ -607,9 +657,13 @@ export function calculateTopCustomers(reservations, customers) {
     })
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
+  return memoSet(__memo.topCustomers, key, out);
 }
 
 export function calculateTopEquipment(reservations, equipment) {
+  const key = `topEquipment:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.topEquipment, key);
+  if (cached) return cached;
   const totals = new Map();
   const equipmentMap = new Map((equipment || []).map((item) => [normalizeBarcode(item?.barcode), item]));
   const unknownLabel = translate('reservations.reports.topEquipment.unknown', 'معدة بدون اسم', 'Unnamed equipment');
@@ -639,12 +693,18 @@ export function calculateTopEquipment(reservations, equipment) {
     });
   });
 
-  return Array.from(totals.values())
+  const out = Array.from(totals.values())
     .sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;
       return b.revenue - a.revenue;
     })
     .slice(0, 5);
+  return memoSet(__memo.topEquipment, key, out);
+}
+
+// Allow other modules to clear memo when data/language changes
+export function clearReportsMemo() {
+  Object.values(__memo).forEach((m) => m.clear());
 }
 
 function matchesSearchTerm(reservation, searchTerm, customerMap, equipmentMap, technicianMap) {

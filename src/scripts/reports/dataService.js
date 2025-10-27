@@ -5,6 +5,7 @@ import { mapMaintenanceFromApi } from '../maintenanceService.js';
 import { loadData } from '../storage.js';
 import { translate } from './formatters.js';
 import reportsState from './state.js';
+import { clearReportsMemo } from './calculations.js';
 
 function mapCustomerFromApi(raw = {}) {
   return {
@@ -99,6 +100,8 @@ export function hydrateReportsFromCache() {
     : [];
   reportsState.techniciansIndex = new Map((reportsState.data.technicians || []).map((tech) => [String(tech.id), tech]));
 
+  try { clearReportsMemo(); } catch (_) {}
+
   return true;
 }
 
@@ -141,6 +144,7 @@ export async function loadReportsData({ silent = false } = {}) {
       ? maintenanceRes.data.map(mapMaintenanceFromApi)
       : [];
     reportsState.techniciansIndex = new Map((reportsState.data.technicians || []).map((tech) => [String(tech.id), tech]));
+    try { clearReportsMemo(); } catch (_) {}
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
     // Preserve last known snapshot to avoid wiping UI to zeros
