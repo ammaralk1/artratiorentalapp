@@ -368,11 +368,10 @@ body[dir="rtl"] .reports-filters {
   grid-template-columns: repeat(4, minmax(220px, 1fr));
 }
 
-/* Keep all 4 filters in a single row from >=1024px by using 6 columns
-   (payment/share already span two columns each below). */
+/* Keep all 4 filters in a single row from >=1024px with equal widths */
 @media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(6, minmax(140px, 1fr));
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
   }
 }
 
@@ -383,17 +382,16 @@ body[dir="rtl"] .reports-filters {
   width: 100%;
 }
 
-/* Make payment (3) and company share (4) dropdowns wider */
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3) .reports-filter-control,
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) .reports-filter-control {
-  min-width: 340px;
+/* Ensure consistent control width across all four filters */
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-control {
+  min-width: 240px;
 }
 
-/* Allow payment/share fields to span two columns on medium+ screens */
+/* Reset any spanning so all four occupy one column each */
 @media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
-    grid-column: span 2;
+    grid-column: auto;
     max-width: none;
   }
 }
@@ -405,10 +403,10 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filter-field {
-  align-items: center;
-  text-align: center;
+  align-items: stretch;
+  text-align: inherit;
   width: 100%;
-  max-width: 240px;
+  max-width: none; /* allow field to fill its grid cell */
 }
 /* Override max-width for the widened (3) payment and (4) share fields */
 .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
