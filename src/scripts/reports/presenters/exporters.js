@@ -4,7 +4,10 @@ import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
   enforceLegacyColorFallback,
-  revertStyleMutations
+  revertStyleMutations,
+  scrubUnsupportedColorFunctions,
+  injectExportSanitizer,
+  removeExportSanitizer,
 } from '../../canvasColorUtils.js';
 import { escapeAttribute, escapeHtml } from './utils.js';
 
@@ -76,8 +79,10 @@ export async function exportAsPdf() {
   patchHtml2CanvasColorParsing();
 
   const mutations = [];
+  const overlay = injectExportSanitizer(container);
   sanitizeComputedColorFunctions(container, window, mutations);
   enforceLegacyColorFallback(container, window, mutations);
+  scrubUnsupportedColorFunctions(container);
 
   try {
     await html2pdf().set({
@@ -98,6 +103,7 @@ export async function exportAsPdf() {
     console.error('⚠️ [reports] export failed', error);
   } finally {
     revertStyleMutations(mutations);
+    removeExportSanitizer(container, overlay);
   }
 }
 

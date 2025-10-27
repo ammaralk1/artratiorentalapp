@@ -1,4 +1,7 @@
 const COLOR_FUNCTION_REGEX = /color\([^)]*\)/gi;
+const COLOR_MIX_REGEX = /color-mix\([^)]*\)/gi;
+const OKLAB_REGEX = /oklab\([^)]*\)/gi;
+const OKLCH_REGEX = /oklch\([^)]*\)/gi;
 const MODERN_COLOR_REGEX = /(color\(|color-mix\(|oklab|oklch)/i;
 const COLOR_PROPERTIES = [
   'color',
@@ -146,25 +149,59 @@ export function enforceLegacyColorFallback(root, view = window, mutations = []) 
 export function scrubUnsupportedColorFunctions(root) {
   if (!root) return;
 
-  const replaceColorFunctions = (value = '') => (
-    typeof value === 'string' && value.includes('color(')
-      ? value.replace(COLOR_FUNCTION_REGEX, '#000')
-      : value
-  );
+  const replaceModernFunctions = (value = '') => {
+    if (typeof value !== 'string') return value;
+    let out = value;
+    if (MODERN_COLOR_REGEX.test(out)) {
+      out = out
+        .replace(COLOR_FUNCTION_REGEX, '#000')
+        .replace(COLOR_MIX_REGEX, '#000')
+        .replace(OKLAB_REGEX, '#000')
+        .replace(OKLCH_REGEX, '#000');
+    }
+    return out;
+  };
 
   root.querySelectorAll?.('style')?.forEach?.((styleNode) => {
     const text = styleNode.textContent;
-    if (typeof text === 'string' && text.includes('color(')) {
-      styleNode.textContent = replaceColorFunctions(text);
+    if (typeof text === 'string' && MODERN_COLOR_REGEX.test(text)) {
+      styleNode.textContent = replaceModernFunctions(text);
     }
   });
 
   root.querySelectorAll?.('[style]')?.forEach?.((element) => {
     const styleAttr = element.getAttribute('style');
-    if (typeof styleAttr === 'string' && styleAttr.includes('color(')) {
-      element.setAttribute('style', replaceColorFunctions(styleAttr));
+    if (typeof styleAttr === 'string' && MODERN_COLOR_REGEX.test(styleAttr)) {
+      element.setAttribute('style', replaceModernFunctions(styleAttr));
     }
   });
 }
 
 export { MODERN_COLOR_REGEX };
+
+// Inject a scoped style that disables pseudo-element backgrounds/gradients during export.
+export function injectExportSanitizer(root) {
+  if (!root || !root.ownerDocument) return null;
+  const doc = root.ownerDocument;
+  const id = `export-sanitize-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  root.setAttribute('data-export-root', id);
+  const style = doc.createElement('style');
+  style.setAttribute('data-export-style', id);
+  style.textContent = `
+    [data-export-root="${id}"] *,
+    [data-export-root="${id}"] *::before,
+    [data-export-root="${id}"] *::after {
+      background-image: none !important;
+    }
+  `;
+  doc.head.appendChild(style);
+  return { id, style };
+}
+
+export function removeExportSanitizer(root, handle) {
+  if (!handle || !root) return;
+  try {
+    root.removeAttribute('data-export-root');
+    handle.style?.parentNode?.removeChild?.(handle.style);
+  } catch (_) {}
+}
