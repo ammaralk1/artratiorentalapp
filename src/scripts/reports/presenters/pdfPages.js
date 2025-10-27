@@ -414,6 +414,29 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
       const pages = Array.from(root.querySelectorAll('.quote-page'));
       let pdfPageIndex = 0;
+      // Helper: يقيس عدد البيكسلات البيضاء من أعلى الصورة لتحديد الإزاحة الذاتية
+      const measureTopWhitespacePx = (canvas, threshold = 250) => {
+        try {
+          const ctx = canvas.getContext('2d');
+          const { width, height } = canvas;
+          const row = new Uint8ClampedArray(width * 4);
+          const isWhiteRow = (y) => {
+            const data = ctx.getImageData(0, y, width, 1).data || row;
+            for (let x = 0; x < width; x += 1) {
+              const i4 = x * 4;
+              const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+              if (r < threshold || g < threshold || b < threshold) return false;
+            }
+            return true;
+          };
+          let top = 0;
+          for (let y = 0; y < height; y += 2) { // نخطو سطرين لتسريع عملية المسح
+            if (!isWhiteRow(y)) { top = y; break; }
+          }
+          return top;
+        } catch (_) { return 0; }
+      };
+
       for (let i = 0; i < pages.length; i += 1) {
         const page = pages[i];
         const doc = page.ownerDocument || document;
@@ -456,6 +479,16 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         // تموضع أعلى-يسار (0,0) بدقة، مع إمكانية الإزاحة من الإعدادات
         let finalX = (Number(prefs.rightMm) || 0);
         let finalY = (Number(prefs.topMm) || 0);
+
+        // إزاحة تلقائية: خصم الفراغ الأبيض العلوي من الصورة
+        const topWhitePx = measureTopWhitespacePx(canvas, 246);
+        if (topWhitePx > 0) {
+          const mmPerCanvasPx = 1 / (PX_PER_MM * captureScale);
+          const autoShiftUpMm = topWhitePx * mmPerCanvasPx;
+          finalY -= autoShiftUpMm;
+          // قيد منطقي لمنع خروج مبالغ فيه خارج الصفحة
+          if (finalY < -40) finalY = -40;
+        }
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
