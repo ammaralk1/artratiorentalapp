@@ -38,12 +38,19 @@ function renderProgressSection(containerId, data) {
     .join('');
 }
 
+function toggleChartLoading(kind, loading) {
+  const el = document.querySelector(`[data-chart-loading="${kind}"]`);
+  if (!el) return;
+  el.style.display = loading ? '' : 'none';
+}
+
 export async function renderTrendChart(data) {
   const container = document.getElementById('reports-volume-chart');
   if (!container) return;
 
   const sanitized = Array.isArray(data) ? data : [];
   reportsState.lastTrendData = sanitized;
+  toggleChartLoading('volume', true);
 
   if (!sanitized.length) {
     if (reportsState.charts.trend) {
@@ -51,6 +58,7 @@ export async function renderTrendChart(data) {
       reportsState.charts.trend = null;
     }
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('volume', false);
     return;
   }
 
@@ -58,6 +66,7 @@ export async function renderTrendChart(data) {
     const ApexCharts = await ensureApexCharts();
     if (!ApexCharts) {
       container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      toggleChartLoading('volume', false);
       return;
     }
 
@@ -182,9 +191,11 @@ export async function renderTrendChart(data) {
       reportsState.charts.trend = new ApexCharts(container, { ...options, series });
       reportsState.charts.trend.render();
     }
+    toggleChartLoading('volume', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render trend chart', error);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('volume', false);
   }
 }
 
@@ -195,6 +206,7 @@ export async function renderStatusChart(data) {
 
   const sanitized = Array.isArray(data) ? data : [];
   reportsState.lastStatusData = sanitized;
+  toggleChartLoading('status', true);
 
   const series = sanitized.map((item) => Math.max(0, item.value || 0));
   const sumSeries = series.reduce((a, b) => a + b, 0);
@@ -206,6 +218,7 @@ export async function renderStatusChart(data) {
     }
     renderProgressSection(listContainerId, []);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('status', false);
     return;
   }
 
@@ -214,6 +227,7 @@ export async function renderStatusChart(data) {
     if (!ApexCharts) {
       renderProgressSection(listContainerId, []);
       container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      toggleChartLoading('status', false);
       return;
     }
 
@@ -282,10 +296,12 @@ export async function renderStatusChart(data) {
     }
 
     renderProgressSection(listContainerId, sanitized);
+    toggleChartLoading('status', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render status chart', error);
     renderProgressSection(listContainerId, []);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('status', false);
   }
 }
 
@@ -296,6 +312,7 @@ export async function renderPaymentChart(data) {
 
   const sanitized = Array.isArray(data) ? data : [];
   reportsState.lastPaymentData = sanitized;
+  toggleChartLoading('payment', true);
 
   const series = sanitized.map((item) => Math.max(0, item.value || 0));
   const sumSeries = series.reduce((a, b) => a + b, 0);
@@ -307,6 +324,7 @@ export async function renderPaymentChart(data) {
     }
     renderProgressSection(listContainerId, []);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('payment', false);
     return;
   }
 
@@ -315,6 +333,7 @@ export async function renderPaymentChart(data) {
     if (!ApexCharts) {
       renderProgressSection(listContainerId, []);
       container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+      toggleChartLoading('payment', false);
       return;
     }
 
@@ -368,9 +387,11 @@ export async function renderPaymentChart(data) {
     }
 
     renderProgressSection(listContainerId, sanitized);
+    toggleChartLoading('payment', false);
   } catch (error) {
     console.error('⚠️ [reports] Failed to render payment chart', error);
     renderProgressSection(listContainerId, []);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    toggleChartLoading('payment', false);
   }
 }

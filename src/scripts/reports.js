@@ -403,6 +403,7 @@ export function initReports() {
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
   const refreshBtn = document.getElementById('reports-refresh');
+  const printBtn = document.getElementById('reports-print');
   const customRangeWrapper = document.getElementById('reports-custom-range');
   const searchInput = document.getElementById('reports-search');
 
@@ -475,6 +476,10 @@ export function initReports() {
     }
     scheduleUrlUpdate();
     renderReports();
+  });
+
+  printBtn?.addEventListener('click', () => {
+    try { window.print(); } catch (_) {}
   });
 
   setupCustomRangePickers(startInput, endInput);
