@@ -65,6 +65,23 @@
     }
   }
 
+  // Fallback: if app scripts fail to remove loading classes, ensure UI becomes visible
+  const removeLoadingSafely = () => {
+    try {
+      document.body?.classList?.remove('no-js');
+      document.body?.classList?.remove('tabs-loading');
+    } catch (_) {}
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      // Give modules a moment; then force visibility
+      setTimeout(removeLoadingSafely, 1500);
+    }, { once: true });
+  } else {
+    setTimeout(removeLoadingSafely, 1500);
+  }
+
   // Configure API base fallback early (before modules load)
   try {
     if (typeof window !== 'undefined' && !window.APP_API_BASE) {
