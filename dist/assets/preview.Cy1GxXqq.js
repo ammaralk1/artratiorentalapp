@@ -1,4 +1,4 @@
-import{r as l,t as n}from"./calculations.D8gXLzDQ.js";import{b as c,e as p}from"./reports.Rwx0zipN.js";import"./reservationsService.CBaMxs2c.js";import"./auth.CnCTKnr9.js";import"./dashboard.BkYimuO1.js";import"./controller.BYjsK5lt.js";/* empty css              */import"./dashboardShell.Cdief_oN.js";import"./customers.Bbo8BFsN.js";import"./maintenanceService.BLNzplKK.js";function u(){const e=document.createElement("div");return e.className="modal fade quote-preview-modal",e.setAttribute("tabindex","-1"),e.setAttribute("aria-hidden","true"),e.innerHTML=`
+import{r as l,t as n}from"./calculations.D8gXLzDQ.js";import{b as c,e as p}from"./reports.B7JqaVqs.js";import"./reservationsService.CBaMxs2c.js";import"./auth.CnCTKnr9.js";import"./dashboard.CHi8knhS.js";import"./controller.BYjsK5lt.js";/* empty css              */import"./dashboardShell.Cdief_oN.js";import"./customers.Bbo8BFsN.js";import"./maintenanceService.BLNzplKK.js";function u(){const e=document.createElement("div");return e.className="modal fade quote-preview-modal",e.setAttribute("tabindex","-1"),e.setAttribute("aria-hidden","true"),e.innerHTML=`
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
@@ -17,7 +17,7 @@ import{r as l,t as n}from"./calculations.D8gXLzDQ.js";import{b as c,e as p}from"
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="1:1">1:1</button>
                   </div>
                   <div class="quote-preview-header-actions__right" style="display:flex; gap:8px;">
-                    <button type="button" class="btn btn-outline btn-sm" data-export-pdf>🖨️ ${n("reservations.reports.actions.exportPdf","تصدير PDF","Export PDF")}</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-export-pdf>${n("reservations.reports.actions.exportPdf","📄 تصدير PDF","Export PDF")}</button>
                   </div>
                 </div>
                 <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
