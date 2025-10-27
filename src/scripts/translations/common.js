@@ -120,3 +120,14 @@ registerTranslations({
     'home.summary.techniciansBusy': 'Crew Members Busy'
   }
 });
+// Additional equipment selection labels
+registerTranslations({
+  ar: {
+    'equipment.packages.selection.addToPackage': '➕ أضف إلى الحزمة',
+    'reservations.create.equipment.selector.addToReservation': '➕ أضف إلى الحجز'
+  },
+  en: {
+    'equipment.packages.selection.addToPackage': '➕ Add to package',
+    'reservations.create.equipment.selector.addToReservation': '➕ Add to reservation'
+  }
+});

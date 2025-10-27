@@ -1050,7 +1050,12 @@ function renderEquipmentItem({ item, index }) {
       </div>
     `;
 
-    const addLabel = t('reservations.create.equipment.selector.addToReservation', '➕ أضف إلى الحجز');
+    const selectionCtx = getActiveSelectionContext();
+    const selectionMode = selectionCtx?.mode || selectionCtx?.source || '';
+    const isPackageMode = selectionMode === 'package-manager' || selectionMode === 'equipment-packages';
+    const addLabel = isPackageMode
+      ? t('equipment.packages.selection.addToPackage', '➕ أضف إلى الحزمة')
+      : t('reservations.create.equipment.selector.addToReservation', '➕ أضف إلى الحجز');
     const disabledAttr = isSelectable ? '' : ' disabled';
     const reasonAttr = selectionState.reason ? ` title="${escapeHtml(selectionState.reason)}"` : '';
     const datasetAttrs = [
