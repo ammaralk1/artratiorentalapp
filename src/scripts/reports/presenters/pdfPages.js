@@ -60,7 +60,8 @@ function createRoot(context = 'preview') {
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
     /* تقليل الحافة العلوية قليلاً في حالة التصدير فقط لمطابقة المعاينة */
-    #quotation-pdf-root[data-quote-render-context="export"] .quote-page { padding: 4mm 12mm 10mm; }
+    /* اجعل الصفحة تبدأ من أعلى الحافة أثناء التصدير لتطابق المعاينة */
+    #quotation-pdf-root[data-quote-render-context="export"] .quote-page { padding: 0mm 12mm 10mm; }
   `;
   root.appendChild(extra);
 
@@ -444,17 +445,17 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         if (!canvas) continue;
 
-        const cw = canvas.width || 1; const ch = canvas.height || 1; const aspect = ch / cw;
-        let targetWmm = A4_W_MM; let targetHmm = targetWmm * aspect; let offsetXmm = 0;
-        if (targetHmm > A4_H_MM) { const s = A4_H_MM / targetHmm; targetHmm = A4_H_MM; targetWmm = targetWmm * s; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2); }
-        // استخدم تفضيلات التقريب من المعاينة
         const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
-        targetWmm *= shrink; targetHmm *= shrink; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2);
+        const targetWmm = A4_W_MM * shrink;
+        const targetHmm = A4_H_MM * shrink;
+        // تموضع أعلى-يسار بشكل افتراضي؛ مع إمكانية إزاحة حسب التفضيلات
+        let finalX = (A4_W_MM - targetWmm) / 2; // نحافظ على التمركز عند وجود تقليص
+        let finalY = (A4_H_MM - targetHmm) / 2;
+        finalX += (Number(prefs.rightMm) || 0);
+        finalY += (Number(prefs.topMm) || 0);
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
-        const finalX = Math.max(0, offsetXmm + (prefs.rightMm || 0));
-        const finalY = (prefs.topMm || 0); // يمكن أن تكون سالبة لرفع المحتوى
         pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
         // small yield
