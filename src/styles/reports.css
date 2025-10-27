@@ -365,13 +365,13 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* four equal columns */
 }
 
 /* Keep all 4 filters in a single row from >=1024px with equal widths */
 @media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -390,7 +390,6 @@ body[dir="rtl"] .reports-filters {
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
   .reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
     grid-column: auto;
-    max-width: none;
   }
 }
 
@@ -406,11 +405,8 @@ body[dir="rtl"] .reports-filters {
   width: 100%;
   max-width: none; /* allow field to fill its grid cell */
 }
-/* Override max-width for the widened (3) payment and (4) share fields */
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(3),
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field:nth-child(4) {
-  max-width: none;
-}
+/* Remove any per-field max-width; each cell stretches equally */
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-field { max-width: none; }
 
 .reports-filter-label {
   font-size: 0.95rem;
