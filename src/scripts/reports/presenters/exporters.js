@@ -92,7 +92,8 @@ export function buildPdfReportElement(rows = []) {
     .kpi .value { font-size: 16px; font-weight: 700; color:#000; }
     .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; color:#000; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; color:#000; }
-    thead th { text-align: center; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
+    table th, table td { background:#fff !important; color:#000 !important; border-color:#e5e7eb !important; }
+    thead th { text-align: center; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
     tbody td { border: 1px solid #e5e7eb; padding: 8px; color:#000; }
     tbody tr:nth-child(even) td { background: #fafafa; }
   `;
@@ -161,8 +162,10 @@ export async function exportAsPdf(rows = []) {
   document.body.appendChild(pdfEl);
   // قياس الأبعاد قبل الالتقاط
   const sheet = pdfEl.querySelector('.pdf');
-  const width = sheet ? sheet.offsetWidth : 794;
-  const height = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
+  // اضبط العرض ليتناسب مع هوامش PDF (10mm يمين/يسار ≈ 76px)
+  const fullWidthPx = sheet ? sheet.offsetWidth : 794;
+  const captureWidth = Math.max(680, Math.min(720, fullWidthPx - 76));
+  const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
 
   const html2pdf = await ensureHtml2Pdf();
   if (typeof html2pdf !== 'function') {
@@ -191,10 +194,10 @@ export async function exportAsPdf(rows = []) {
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        windowWidth: width,
-        windowHeight: height,
-        width,
-        height,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
+        width: captureWidth,
+        height: captureHeight,
         onclone: (clonedDoc) => {
           try {
             const cloneRoot = clonedDoc.getElementById('reports-pdf-root') || clonedDoc.getElementById('reservations-report-printable');

@@ -19,8 +19,8 @@ function createModal() {
           <div class="quote-preview-layout" style="display:block;grid-template-columns:1fr;">
             <section class="quote-preview-panel" style="flex:1;min-height:70vh;padding:18px;">
               <div class="quote-preview" data-preview-host>
-                <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                  <div class="quote-preview-zoom-controls" data-zoom-controls style="margin-inline-start:auto;">
+                <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:center;gap:12px;">
+                  <div class="quote-preview-zoom-controls" data-zoom-controls style="display:flex;align-items:center;gap:6px;">
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-out title="−">−</button>
                     <span class="quote-preview-zoom-value" data-zoom-value>100%</span>
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="+">+</button>

@@ -1,4 +1,4 @@
-import{r as l,t as n}from"./calculations.28JF9M5C.js";import{b as c,e as p}from"./reports.BwFA4tMZ.js";import"./reservationsService.DkN3KeLm.js";import"./auth.cd8ANcEu.js";import"./dashboard.DMx3e-zi.js";import"./controller.BtsD8MTy.js";/* empty css              */import"./dashboardShell.Br-txoC4.js";import"./customers.gxercBVz.js";import"./maintenanceService.BGih1fsV.js";function u(){const e=document.createElement("div");return e.className="modal fade quote-preview-modal",e.setAttribute("tabindex","-1"),e.setAttribute("aria-hidden","true"),e.innerHTML=`
+import{r as l,t as n}from"./calculations.BWA72XKY.js";import{b as c,e as p}from"./reports.yyvOj21_.js";import"./reservationsService.DvpLyPJo.js";import"./auth.icPZNsDz.js";import"./dashboard.DpyJbnQz.js";import"./controller.kxjnUPiG.js";/* empty css              */import"./dashboardShell.DgBjfDOH.js";import"./customers.D7TOJSiv.js";import"./maintenanceService.C_RUMBhQ.js";function u(){const e=document.createElement("div");return e.className="modal fade quote-preview-modal",e.setAttribute("tabindex","-1"),e.setAttribute("aria-hidden","true"),e.innerHTML=`
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
@@ -9,8 +9,8 @@ import{r as l,t as n}from"./calculations.28JF9M5C.js";import{b as c,e as p}from"
           <div class="quote-preview-layout" style="display:block;grid-template-columns:1fr;">
             <section class="quote-preview-panel" style="flex:1;min-height:70vh;padding:18px;">
               <div class="quote-preview" data-preview-host>
-                <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                  <div class="quote-preview-zoom-controls" data-zoom-controls style="margin-inline-start:auto;">
+                <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:center;gap:12px;">
+                  <div class="quote-preview-zoom-controls" data-zoom-controls style="display:flex;align-items:center;gap:6px;">
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-out title="−">−</button>
                     <span class="quote-preview-zoom-value" data-zoom-value>100%</span>
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="+">+</button>
