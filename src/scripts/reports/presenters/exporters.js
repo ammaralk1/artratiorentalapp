@@ -92,6 +92,17 @@ export async function exportAsPdf() {
         scale: 1.2,
         useCORS: true,
         allowTaint: false,
+        onclone: (clonedDoc) => {
+          try {
+            const cloneRoot = clonedDoc.getElementById('reservations-report-printable');
+            if (cloneRoot) {
+              // Sanitize inside the cloned DOM as well
+              sanitizeComputedColorFunctions(cloneRoot, clonedDoc.defaultView, []);
+              enforceLegacyColorFallback(cloneRoot, clonedDoc.defaultView, []);
+              scrubUnsupportedColorFunctions(cloneRoot);
+            }
+          } catch (_) {}
+        },
       },
       jsPDF: {
         unit: 'mm',

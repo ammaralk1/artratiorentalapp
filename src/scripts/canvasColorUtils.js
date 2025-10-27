@@ -13,7 +13,12 @@ const COLOR_PROPERTIES = [
   'borderLeftColor',
   'outlineColor',
   'fill',
-  'stroke'
+  'stroke',
+  'boxShadow',
+  'textShadow',
+  'accentColor',
+  'caretColor',
+  'columnRuleColor'
 ];
 
 const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
@@ -99,9 +104,13 @@ export function sanitizeComputedColorFunctions(root, view = window, mutations = 
       if (value && MODERN_COLOR_REGEX.test(value)) {
         const hyphenProp = getHyphenatedProperty(prop);
         recordMutation(mutations, element, hyphenProp);
-        const defaultFallback = prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000';
-        const fallback = normalizeColorValue(value, defaultFallback);
-        element.style.setProperty(hyphenProp, fallback, 'important');
+        if (prop === 'boxShadow' || prop === 'textShadow') {
+          element.style.setProperty(hyphenProp, 'none', 'important');
+        } else {
+          const defaultFallback = prop === 'backgroundColor' ? '#ffffff' : computed.color || '#000000';
+          const fallback = normalizeColorValue(value, defaultFallback);
+          element.style.setProperty(hyphenProp, fallback, 'important');
+        }
       }
     });
 
@@ -126,13 +135,17 @@ export function enforceLegacyColorFallback(root, view = window, mutations = []) 
     const computed = view.getComputedStyle(element);
     if (!computed) return;
 
-    ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor'].forEach((prop) => {
+    ['color', 'backgroundColor', 'borderColor', 'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor', 'boxShadow', 'textShadow', 'accentColor', 'caretColor', 'columnRuleColor'].forEach((prop) => {
       const value = computed[prop];
       if (value && MODERN_COLOR_REGEX.test(value)) {
         const hyphenProp = getHyphenatedProperty(prop);
         recordMutation(mutations, element, hyphenProp);
-        const fallback = prop === 'backgroundColor' ? '#ffffff' : '#000000';
-        element.style.setProperty(hyphenProp, fallback, 'important');
+        if (prop === 'boxShadow' || prop === 'textShadow') {
+          element.style.setProperty(hyphenProp, 'none', 'important');
+        } else {
+          const fallback = prop === 'backgroundColor' ? '#ffffff' : '#000000';
+          element.style.setProperty(hyphenProp, fallback, 'important');
+        }
       }
     });
 
