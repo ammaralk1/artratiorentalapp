@@ -390,9 +390,8 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(container);
 
   try {
-    // مسار صارم يطابق المعاينة 100% عبر الطباعة الأصلية للمتصفح (Save as PDF)
-    // هذا يضمن استخدام نفس HTML/CSS بدون تحويل إلى Canvas
-    const STRICT_NATIVE_PRINT = true;
+    // مسار الطباعة الأصلية (يفتح مربع الطباعة) — نستخدمه فقط لعملية الطباعة الفعلية
+    const STRICT_NATIVE_PRINT = action === 'print';
     if (STRICT_NATIVE_PRINT) {
       const printWindow = window.open('', '_blank');
       if (!printWindow) throw new Error('Popup blocked');
@@ -547,19 +546,7 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         clone.style.background = '#ffffff';
         clone.style.overflow = 'hidden';
         // حرك المحتوى داخل الصفحة للأعلى ليتوافق تماماً مع المعاينة
-        try {
-          const headerEl = clone.querySelector('.rpt-header') || clone.firstElementChild;
-          if (headerEl) {
-            const rect = headerEl.getBoundingClientRect();
-            const baseRect = clone.getBoundingClientRect();
-            const headerTopCssPx = Math.max(0, rect.top - baseRect.top);
-            const desiredTopCssPx = (clone.classList.contains('quote-page--primary') ? 6 : 4) * PX_PER_MM;
-            const deltaPx = headerTopCssPx - desiredTopCssPx;
-            if (deltaPx > 0) {
-              clone.style.transform = `translateY(${-deltaPx}px)`;
-            }
-          }
-        } catch (_) {}
+        // لا نطبق إزاحة داخل العنصر أثناء الالتقاط، سنعاير الموضع على مستوى jsPDF بوحدات mm لضمان الدقة
         scope.appendChild(clone);
         wrap.appendChild(scope);
         doc.body.appendChild(wrap);
@@ -589,15 +576,20 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         // تموضع أعلى-يسار (0,0) بدقة، مع إمكانية الإزاحة من الإعدادات
         let finalX = (Number(prefs.rightMm) || 0);
-        // أضف هامش علوي صغير لمضاهاة padding-top في المعاينة
         const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
-        // محاذاة دقيقة: حدد موضع أعلى محتوى (rpt-header) قبل الالتقاط ثم حوّله إلى mm بعد القص
-        // معايرة إضافية من الصورة نفسها: قِس أعلى محتوى في المنطقة اليمنى بعد القص
-        const regionTopAfterCropPx = measureRightRegionContentTopPx(cropped, 244);
-        const mmPerCanvasPx = targetWmm / cropped.width;
-        const headerTopMm = regionTopAfterCropPx * mmPerCanvasPx; // يجب أن يكون قريباً من 0 إن أزيل الفراغ
+        // محاذاة دقيقة مبنية على DOM الأصلي: حول offset-top للهيدر من px إلى mm مباشرة
+        let headerTopCssPx = 0;
+        try {
+          const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
+          if (headerEl) {
+            const rect = headerEl.getBoundingClientRect();
+            const baseRect = page.getBoundingClientRect();
+            headerTopCssPx = Math.max(0, rect.top - baseRect.top);
+          }
+        } catch (_) { headerTopCssPx = 0; }
+        const headerTopMm = headerTopCssPx / PX_PER_MM;
         let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
-        if (finalY < -60) finalY = -60; // قيد أمان
+        if (finalY < -80) finalY = -80; // قيد أمان
 
         const img = cropped.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
