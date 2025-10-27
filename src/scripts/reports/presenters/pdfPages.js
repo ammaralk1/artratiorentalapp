@@ -576,43 +576,35 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         if (!canvas) continue;
 
-        // للحفظ: نستخدم هندسة الصفحة الدقيقة كما في الطباعة الأصلية
-        if (action !== 'print') {
-          const img = canvas.toDataURL('image/jpeg', 0.95);
-          if (pdfPageIndex > 0) pdf.addPage();
-          pdf.addImage(img, 'JPEG', 0, 0, A4_W_MM, A4_H_MM, `page-${pdfPageIndex + 1}`, 'FAST');
-        } else {
-          // مسار الطباعة عبر jsPDF (نادراً ما يُستخدم لأن الطباعة الأصلية تُنفَّذ أعلاه)
-          // قص الفراغ الأبيض ثم محاذاة دقيقة
-          const topWhitePx = measureTopWhitespacePx(canvas, 246);
-          const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
-          const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
-          const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
-          const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
+        // قص الفراغ الأبيض ثم محاذاة دقيقة — نطبّق على الحفظ والطباعة لضمان تطابق المارجنز
+        const topWhitePx = measureTopWhitespacePx(canvas, 246);
+        const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+        const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
+        const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
+        const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
-          const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
-          const targetWmm = A4_W_MM * shrink;
-          const targetHmm = (cropped.height / cropped.width) * targetWmm;
+        const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
+        const targetWmm = A4_W_MM * shrink;
+        const targetHmm = (cropped.height / cropped.width) * targetWmm;
 
-          let finalX = (Number(prefs.rightMm) || 0);
-          const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 12; // مطابق لـ CSS
-          let headerTopCssPx = 0;
-          try {
-            const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
-            if (headerEl) {
-              const rect = headerEl.getBoundingClientRect();
-              const baseRect = page.getBoundingClientRect();
-              headerTopCssPx = Math.max(0, rect.top - baseRect.top);
-            }
-          } catch (_) { headerTopCssPx = 0; }
-          const headerTopMm = headerTopCssPx / PX_PER_MM;
-          let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
-          if (finalY < -80) finalY = -80;
+        let finalX = (Number(prefs.rightMm) || 0);
+        const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 12; // مطابق لـ CSS
+        let headerTopCssPx = 0;
+        try {
+          const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
+          if (headerEl) {
+            const rect = headerEl.getBoundingClientRect();
+            const baseRect = page.getBoundingClientRect();
+            headerTopCssPx = Math.max(0, rect.top - baseRect.top);
+          }
+        } catch (_) { headerTopCssPx = 0; }
+        const headerTopMm = headerTopCssPx / PX_PER_MM;
+        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
+        if (finalY < -80) finalY = -80;
 
-          const img = cropped.toDataURL('image/jpeg', 0.95);
-          if (pdfPageIndex > 0) pdf.addPage();
-          pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
-        }
+        const img = cropped.toDataURL('image/jpeg', 0.95);
+        if (pdfPageIndex > 0) pdf.addPage();
+        pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
         // small yield
         // eslint-disable-next-line no-await-in-loop
@@ -634,7 +626,17 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
           });
         }
       } else {
-        pdf.save('reservations-report.pdf');
+        // إجبار فتح مربع حفظ الملف مباشرة بدون معاينة
+        try {
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'reservations-report.pdf'; a.rel = 'noopener'; a.style.display = 'none';
+          document.body.appendChild(a); a.click();
+          setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (_) {} }, 1500);
+        } catch (_) {
+          pdf.save('reservations-report.pdf');
+        }
       }
     } else {
       // Fallback: html2pdf direct (بدون هوامش لضمان تطابق المارجنز)
