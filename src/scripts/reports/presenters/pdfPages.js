@@ -530,7 +530,11 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         let finalX = (Number(prefs.rightMm) || 0);
         // أضف هامش علوي صغير لمضاهاة padding-top في المعاينة
         const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
-        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm;
+        // احسب المتبقي من الفراغ العلوي بعد القص (لو بقي أي شيء) ثم عوّضه سلباً
+        const residualTopPx = measureTopWhitespacePx(cropped, 246);
+        const mmPerCanvasPx = targetWmm / cropped.width;
+        const autoRaiseMm = residualTopPx * mmPerCanvasPx;
+        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - autoRaiseMm;
 
         const img = cropped.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
