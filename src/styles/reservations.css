@@ -1845,6 +1845,9 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   overflow: auto;
   width: 100%;
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .quote-preview-header-actions {
