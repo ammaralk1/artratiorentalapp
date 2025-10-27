@@ -18,21 +18,22 @@ function createModal() {
         <div class="modal-body">
           <div class="quote-preview-layout" style="display:block;grid-template-columns:1fr;">
             <section class="quote-preview-panel" style="flex:1;min-height:70vh;padding:18px;">
-              <div class="quote-preview" data-preview-host>
-                <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:center;gap:12px;">
-                  <div class="quote-preview-zoom-controls" data-zoom-controls style="display:flex;align-items:center;gap:6px;">
-                    <button type="button" class="quote-preview-zoom-btn" data-zoom-out title="−">−</button>
-                    <span class="quote-preview-zoom-value" data-zoom-value>100%</span>
-                    <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="+">+</button>
-                    <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="1:1">1:1</button>
-                  </div>
-                  <div class="quote-preview-header-actions__right" style="display:flex; gap:8px;">
+                <div class="quote-preview" data-preview-host>
+                  <div class="quote-preview-header-actions" data-preview-actions style="display:flex;align-items:center;justify-content:center;gap:12px;">
+                    <div class="quote-preview-zoom-controls" data-zoom-controls style="display:flex;align-items:center;gap:6px;">
+                      <button type="button" class="quote-preview-zoom-btn" data-zoom-out title="−">−</button>
+                      <span class="quote-preview-zoom-value" data-zoom-value>100%</span>
+                      <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="+">+</button>
+                      <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="1:1">1:1</button>
+                    </div>
+                    <div class="quote-preview-header-actions__right" style="display:flex; gap:8px;">
+                    <button type="button" class="btn btn-outline btn-sm" data-print-pdf>${translate('reservations.reports.actions.print', '🖨️ طباعة', 'Print')}</button>
                     <button type="button" class="btn btn-primary btn-sm" data-export-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
+                    </div>
                   </div>
-                </div>
-                <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
-                  <div class="quote-preview-scroll" style="overflow:auto;max-height:65vh;display:flex;justify-content:center;width:100%;">
-                    <div class="quote-preview-frame" data-preview-frame style="background:#fff;border-radius:12px;box-shadow:0 0 0 1px rgba(148,163,184,.25);"></div>
+                  <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
+                    <div class="quote-preview-scroll" style="overflow:auto;max-height:65vh;display:flex;justify-content:center;width:100%;">
+                      <div class="quote-preview-frame" data-preview-frame style="background:#fff;border-radius:12px;box-shadow:0 0 0 1px rgba(148,163,184,.25);"></div>
                   </div>
                 </div>
               </div>
@@ -84,9 +85,21 @@ export function openReportsPdfPreview(rows) {
 
   setupZoom(modal);
 
-  modal.querySelector('[data-export-pdf]').addEventListener('click', async () => {
-    await exportReportsPdf(dataRows, { action: 'save' });
-  });
+  // Print directly from modal using the same path as the main Print button
+  const printBtn = modal.querySelector('[data-print-pdf]');
+  if (printBtn) {
+    printBtn.addEventListener('click', async () => {
+      await exportReportsPdf(dataRows, { action: 'print' });
+    });
+  }
+
+  // Export for saving a file
+  const exportBtn = modal.querySelector('[data-export-pdf]');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async () => {
+      await exportReportsPdf(dataRows, { action: 'save' });
+    });
+  }
 
   // Bootstrap modal API (if available) or fallback
   try {
