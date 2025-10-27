@@ -80,7 +80,7 @@ export function buildPdfReportElement(rows = []) {
   const style = document.createElement('style');
   style.textContent = `
     /* عزل تام لألوان وضع الداكن داخل جذر التقرير */
-    #reports-pdf-root, #reports-pdf-root * { color: #000 !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
+    #reports-pdf-root, #reports-pdf-root * { color: #000 !important; background:#fff !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
     .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; }
@@ -163,7 +163,6 @@ export async function exportAsPdf(rows = []) {
   document.body.appendChild(pdfEl);
   // قياس الأبعاد قبل الالتقاط
   const sheet = pdfEl.querySelector('.pdf');
-  // اضبط العرض ليتناسب مع هوامش PDF (10mm يمين/يسار ≈ 76px)
   const fullWidthPx = sheet ? Math.ceil(sheet.getBoundingClientRect().width) : 794;
   const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
 
@@ -188,7 +187,7 @@ export async function exportAsPdf(rows = []) {
       margin: 10,
       filename,
       html2canvas: {
-        scale: 2.2,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
@@ -243,8 +242,9 @@ export async function exportAsPdf(rows = []) {
         format: 'a4',
         orientation: 'portrait',
       },
+      pagebreak: { mode: ['css', 'legacy'] },
       image: { type: 'jpeg', quality: 0.98 },
-    }).from(pdfEl).save();
+    }).from(sheet || pdfEl).save();
   } catch (error) {
     console.error('⚠️ [reports] export failed', error);
   } finally {
