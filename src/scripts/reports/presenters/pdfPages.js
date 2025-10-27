@@ -16,6 +16,7 @@ const A4_W_MM = 210;
 const A4_H_MM = 297;
 const A4_W_PX = Math.round((A4_W_MM / MM_PER_INCH) * CSS_DPI);
 const A4_H_PX = Math.round((A4_H_MM / MM_PER_INCH) * CSS_DPI);
+const PX_PER_MM = CSS_DPI / MM_PER_INCH;
 
 // Browser detection similar to reservationPdf.js
 const SAFARI_REGEX = /safari/i;
@@ -64,6 +65,99 @@ function createRoot(context = 'preview') {
   root.appendChild(extra);
 
   return root;
+}
+
+function loadAlignmentPrefs() {
+  try {
+    const right = Number(localStorage.getItem('reportsPdf.shiftRightMm'));
+    const top = Number(localStorage.getItem('reportsPdf.shiftTopMm'));
+    const scalePct = Number(localStorage.getItem('reportsPdf.scalePct'));
+    return {
+      rightMm: Number.isFinite(right) ? right : 6,
+      topMm: Number.isFinite(top) ? top : -10,
+      scale: Number.isFinite(scalePct) ? Math.max(90, Math.min(100, scalePct)) / 100 : 0.985,
+    };
+  } catch (_) {
+    return { rightMm: 6, topMm: -10, scale: 0.985 };
+  }
+}
+
+function saveAlignmentPrefs({ rightMm, topMm, scale }) {
+  try {
+    localStorage.setItem('reportsPdf.shiftRightMm', String(rightMm));
+    localStorage.setItem('reportsPdf.shiftTopMm', String(topMm));
+    localStorage.setItem('reportsPdf.scalePct', String(Math.round((scale || 1) * 1000) / 10));
+  } catch (_) {}
+}
+
+function buildPreviewControls(root) {
+  try {
+    const prefs = loadAlignmentPrefs();
+    const panel = document.createElement('div');
+    panel.setAttribute('data-rpt-controls', '');
+    Object.assign(panel.style, {
+      position: 'sticky',
+      top: '6px',
+      zIndex: '10',
+      display: 'inline-flex',
+      gap: '6px',
+      alignItems: 'center',
+      background: 'rgba(15, 23, 42, 0.75)',
+      color: '#fff',
+      padding: '6px 10px',
+      borderRadius: '10px',
+      boxShadow: '0 2px 8px rgba(0,0,0,.35)'
+    });
+    const style = 'min-width:68px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:#fff;color:#111;padding:0 6px;';
+    panel.innerHTML = `
+      <span style="opacity:.9">محاذاة PDF</span>
+      <label style="display:inline-flex;gap:4px;align-items:center;">
+        <span style="opacity:.85">يمين(mm)</span>
+        <input type="number" step="0.5" value="${prefs.rightMm}" data-rpt-right style="${style}">
+      </label>
+      <label style="display:inline-flex;gap:4px;align-items:center;">
+        <span style="opacity:.85">أعلى(mm)</span>
+        <input type="number" step="0.5" value="${prefs.topMm}" data-rpt-top style="${style}">
+      </label>
+      <label style="display:inline-flex;gap:4px;align-items:center;">
+        <span style="opacity:.85">تقليص(%)</span>
+        <input type="number" step="0.1" min="90" max="100" value="${Math.round(prefs.scale*1000)/10}" data-rpt-scale style="${style}">
+      </label>
+      <button type="button" data-rpt-apply style="height:28px;border-radius:8px;background:#22c55e;color:#0b1e15;border:0;padding:0 10px;font-weight:700;">تطبيق</button>
+      <button type="button" data-rpt-reset style="height:28px;border-radius:8px;background:#cbd5e1;color:#0b1e15;border:0;padding:0 10px;">إعادة ضبط</button>
+    `;
+
+    // place panel before pages (top of root)
+    const pagesHost = root.querySelector('[data-quote-pages]');
+    root.insertBefore(panel, pagesHost);
+
+    const applyTransform = () => {
+      const rightMm = Number(panel.querySelector('[data-rpt-right]').value);
+      const topMm = Number(panel.querySelector('[data-rpt-top]').value);
+      const scalePct = Number(panel.querySelector('[data-rpt-scale]').value);
+      const scale = Math.max(0.9, Math.min(1, scalePct / 100));
+      // save
+      saveAlignmentPrefs({ rightMm, topMm, scale });
+      // visually apply to preview pages
+      const shiftX = rightMm * PX_PER_MM;
+      const shiftY = topMm * PX_PER_MM;
+      Object.assign(pagesHost.style, { transformOrigin: 'top left', transform: `translate(${shiftX}px, ${shiftY}px) scale(${scale})` });
+    };
+    panel.querySelector('[data-rpt-apply]').addEventListener('click', applyTransform);
+    panel.querySelector('[data-rpt-reset]').addEventListener('click', () => {
+      panel.querySelector('[data-rpt-right]').value = 0;
+      panel.querySelector('[data-rpt-top]').value = 0;
+      panel.querySelector('[data-rpt-scale]').value = 100;
+      saveAlignmentPrefs({ rightMm: 0, topMm: 0, scale: 1 });
+      const pagesHost = root.querySelector('[data-quote-pages]');
+      Object.assign(pagesHost.style, { transform: 'none' });
+    });
+
+    // apply current prefs initially
+    const shiftX = prefs.rightMm * PX_PER_MM;
+    const shiftY = prefs.topMm * PX_PER_MM;
+    Object.assign(pagesHost.style, { transformOrigin: 'top left', transform: `translate(${shiftX}px, ${shiftY}px) scale(${prefs.scale})` });
+  } catch (_) {}
 }
 
 function createPage({ primary = false } = {}) {
@@ -282,6 +376,10 @@ export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
   // Detach from phantom; return root for caller to insert where needed
   root.parentElement?.removeChild(root);
   phantom.parentElement?.removeChild(phantom);
+  // Add preview alignment controls
+  if (context === 'preview') {
+    buildPreviewControls(root);
+  }
   return root;
 }
 
@@ -309,6 +407,7 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
     const h2c = window.html2canvas;
 
     if (typeof JsPdfCtor === 'function' && typeof h2c === 'function') {
+      const prefs = loadAlignmentPrefs();
       const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
       const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
       const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false }; 
@@ -348,13 +447,14 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         const cw = canvas.width || 1; const ch = canvas.height || 1; const aspect = ch / cw;
         let targetWmm = A4_W_MM; let targetHmm = targetWmm * aspect; let offsetXmm = 0;
         if (targetHmm > A4_H_MM) { const s = A4_H_MM / targetHmm; targetHmm = A4_H_MM; targetWmm = targetWmm * s; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2); }
-        // تقليص آمن بسيط قبل تطبيق الإزاحة
-        targetWmm *= SAFE_SCALE; targetHmm *= SAFE_SCALE; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2);
+        // استخدم تفضيلات التقريب من المعاينة
+        const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
+        targetWmm *= shrink; targetHmm *= shrink; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2);
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
-        const finalX = Math.max(0, offsetXmm + EXTRA_SHIFT_RIGHT_MM);
-        const finalY = EXTRA_SHIFT_UP_MM; // jsPDF يسمح بإحداثيات سالبة لقص الفراغ العلوي
+        const finalX = Math.max(0, offsetXmm + (prefs.rightMm || 0));
+        const finalY = (prefs.topMm || 0); // يمكن أن تكون سالبة لرفع المحتوى
         pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
         // small yield
