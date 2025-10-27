@@ -526,6 +526,21 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         clone.style.minHeight = `${A4_H_PX}px`;
         clone.style.position = 'relative';
         clone.style.background = '#ffffff';
+        clone.style.overflow = 'hidden';
+        // حرك المحتوى داخل الصفحة للأعلى ليتوافق تماماً مع المعاينة
+        try {
+          const headerEl = clone.querySelector('.rpt-header') || clone.firstElementChild;
+          if (headerEl) {
+            const rect = headerEl.getBoundingClientRect();
+            const baseRect = clone.getBoundingClientRect();
+            const headerTopCssPx = Math.max(0, rect.top - baseRect.top);
+            const desiredTopCssPx = (clone.classList.contains('quote-page--primary') ? 6 : 4) * PX_PER_MM;
+            const deltaPx = headerTopCssPx - desiredTopCssPx;
+            if (deltaPx > 0) {
+              clone.style.transform = `translateY(${-deltaPx}px)`;
+            }
+          }
+        } catch (_) {}
         scope.appendChild(clone);
         wrap.appendChild(scope);
         doc.body.appendChild(wrap);
