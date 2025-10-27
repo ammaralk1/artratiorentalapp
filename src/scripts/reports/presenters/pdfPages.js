@@ -414,7 +414,7 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
       const pages = Array.from(root.querySelectorAll('.quote-page'));
       let pdfPageIndex = 0;
-      // Helper: يقيس عدد البيكسلات البيضاء من أعلى الصورة لتحديد الإزاحة الذاتية
+      // Helper: يقيس عدد البيكسلات البيضاء من أعلى/أسفل الصورة لتحديد الفراغات
       const measureTopWhitespacePx = (canvas, threshold = 250) => {
         try {
           const ctx = canvas.getContext('2d');
@@ -435,6 +435,41 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
           }
           return top;
         } catch (_) { return 0; }
+      };
+      const measureBottomWhitespacePx = (canvas, threshold = 250) => {
+        try {
+          const ctx = canvas.getContext('2d');
+          const { width, height } = canvas;
+          const isWhiteRow = (y) => {
+            const data = ctx.getImageData(0, y, width, 1).data;
+            for (let x = 0; x < width; x += 1) {
+              const i4 = x * 4;
+              const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+              if (r < threshold || g < threshold || b < threshold) return false;
+            }
+            return true;
+          };
+          let bottom = 0;
+          for (let y = height - 1; y >= 0; y -= 2) {
+            if (!isWhiteRow(y)) { bottom = (height - 1 - y); break; }
+          }
+          return bottom;
+        } catch (_) { return 0; }
+      };
+      // Helper: يقص أعلى/أسفل الصورة لإزالة الفراغ الأبيض دون تمديد
+      const cropCanvasVertical = (canvas, topPx, bottomPx) => {
+        try {
+          const { width, height } = canvas;
+          const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx)));
+          const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx)));
+          const newH = Math.max(1, height - cropTop - cropBottom);
+          if (cropTop === 0 && cropBottom === 0) return canvas;
+          const out = document.createElement('canvas');
+          out.width = width; out.height = newH;
+          const ctx = out.getContext('2d');
+          ctx.drawImage(canvas, 0, -cropTop);
+          return out;
+        } catch (_) { return canvas; }
       };
 
       for (let i = 0; i < pages.length; i += 1) {
@@ -473,24 +508,23 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         if (!canvas) continue;
 
+        // قص الفراغ الأبيض العلوي/السفلي بدقة
+        const topWhitePx = measureTopWhitespacePx(canvas, 246);
+        const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
+        const cropped = cropCanvasVertical(canvas, topWhitePx, bottomWhitePx);
+
         const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
         const targetWmm = A4_W_MM * shrink;
-        const targetHmm = A4_H_MM * shrink;
+        // احسب الارتفاع النهائي بناء على نسبة الصورة لتفادي تمديد رأسي
+        const targetHmm = (cropped.height / cropped.width) * targetWmm;
+
         // تموضع أعلى-يسار (0,0) بدقة، مع إمكانية الإزاحة من الإعدادات
         let finalX = (Number(prefs.rightMm) || 0);
-        let finalY = (Number(prefs.topMm) || 0);
+        // أضف هامش علوي صغير لمضاهاة padding-top في المعاينة
+        const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
+        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm;
 
-        // إزاحة تلقائية: خصم الفراغ الأبيض العلوي من الصورة
-        const topWhitePx = measureTopWhitespacePx(canvas, 246);
-        if (topWhitePx > 0) {
-          const mmPerCanvasPx = 1 / (PX_PER_MM * captureScale);
-          const autoShiftUpMm = topWhitePx * mmPerCanvasPx;
-          finalY -= autoShiftUpMm;
-          // قيد منطقي لمنع خروج مبالغ فيه خارج الصفحة
-          if (finalY < -40) finalY = -40;
-        }
-
-        const img = canvas.toDataURL('image/jpeg', 0.95);
+        const img = cropped.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
         pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
