@@ -83,8 +83,9 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root, #reports-pdf-root * { color: #000 !important; background:#fff !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
-    #reports-pdf-root { width: 794px; margin: 0 auto; }
-    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
+    /* استخدم حجم A4 بالملليمتر لضمان التوافق مع الطباعة */
+    #reports-pdf-root { width: 210mm; margin: 0 auto; }
+    .pdf { width: 210mm; padding: 10mm; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
     .pdf h1, .pdf .subtitle, .section-title { text-align: right; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
@@ -170,14 +171,17 @@ export async function exportAsPdf(rows = []) {
 
   const sheet = pdfEl.querySelector('.pdf');
   const A4W_MM = 210; const A4H_MM = 297; // A4 in millimeters
-  const SAFE_MARGIN_MM = 6;               // هامش أمان لمنع القص
-  const CSS_A4W_PX = 794;                 // for consistent capture width
-  const CSS_A4H_PX = Math.round((A4H_MM / 25.4) * 96);
+  const SAFE_MARGIN_MM = 10;              // هامش أمان لمنع القص
+  const CSS_DPI = 96;
+  const CSS_A4W_PX = Math.round((A4W_MM / 25.4) * CSS_DPI);
+  const CSS_A4H_PX = Math.round((A4H_MM / 25.4) * CSS_DPI);
   const filename = getExportFileName('pdf');
 
   // Force sheet width and pure colors for capture
   if (sheet) {
-    sheet.style.width = `${CSS_A4W_PX}px`;
+    // تأكد من الالتزام بعرض A4 ليتوافق مع تقسيم html2pdf
+    sheet.style.width = '210mm';
+    sheet.style.maxWidth = '210mm';
     sheet.style.padding = '0';
     sheet.style.margin = '0 auto';
     sheet.style.background = '#ffffff';
@@ -192,16 +196,12 @@ export async function exportAsPdf(rows = []) {
   scrubUnsupportedColorFunctions(pdfEl);
 
   try {
+    // الأساس: توليد PDF بقياس A4 بواحدة الملليمتر، مع تقسيم تلقائي لعدة صفحات
     await ensureHtml2Pdf();
-    const h2c = window.html2canvas;
-    const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
-      || (window.jsPDF && window.jsPDF.jsPDF);
-
-    let manualSucceeded = false;
-    if (typeof h2c === 'function' && typeof JsPdfCtor === 'function') {
-      await (document.fonts?.ready || Promise.resolve());
-      const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4H_PX;
-      const canvas = await h2c(sheet || pdfEl, {
+    await (window.html2pdf)().set({
+      margin: SAFE_MARGIN_MM,
+      filename,
+      html2canvas: {
         scale: 2,
         useCORS: true,
         allowTaint: false,
@@ -209,50 +209,20 @@ export async function exportAsPdf(rows = []) {
         scrollX: 0,
         scrollY: 0,
         windowWidth: CSS_A4W_PX,
-        windowHeight: captureHeight,
-      });
-
-      if ((canvas?.width || 0) > 10 && (canvas?.height || 0) > 10) {
-        try {
-          const img = canvas.toDataURL('image/jpeg', 0.98);
-          const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-
-          const cw = canvas.width;
-          const ch = canvas.height;
-          const aspect = ch / cw;
-
-          const availableW = Math.max(1, A4W_MM - (2 * SAFE_MARGIN_MM));
-          const availableH = Math.max(1, A4H_MM - (2 * SAFE_MARGIN_MM));
-
-          // Scale to fit within printable area leaving safe margins
-          let targetW = availableW;
-          let targetH = targetW * aspect;
-          if (targetH > availableH) {
-            const s = availableH / targetH;
-            targetH = availableH;
-            targetW = targetW * s;
-          }
-
-          // Center within margins to balance visually and avoid clipping
-          const offsetX = SAFE_MARGIN_MM + Math.max(0, (availableW - targetW) / 2);
-          const offsetY = SAFE_MARGIN_MM + Math.max(0, (availableH - targetH) / 2);
-
-          pdf.addImage(img, 'JPEG', offsetX, offsetY, targetW, targetH);
-          pdf.save(filename);
-          manualSucceeded = true;
-        } catch (_) {
-          manualSucceeded = false;
-        }
-      }
-    }
-
-    if (!manualSucceeded) {
-      // Fallback: html2pdf direct with px sizing (no margins)
-      const marginPx = Math.round((SAFE_MARGIN_MM / 25.4) * 96);
-      await (window.html2pdf)().set({
-        margin: marginPx,
-        filename,
-        html2canvas: {
+        windowHeight: sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4H_PX,
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] },
+      image: { type: 'jpeg', quality: 0.98 },
+    }).from(sheet || pdfEl).save();
+  } catch (error) {
+    // احتياطي: التصدير عبر jsPDF + صورة واحدة (مع هوامش آمنة)
+    try {
+      const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
+      const h2c = window.html2canvas;
+      if (typeof JsPdfCtor === 'function' && typeof h2c === 'function') {
+        await (document.fonts?.ready || Promise.resolve());
+        const canvas = await h2c(sheet || pdfEl, {
           scale: 2,
           useCORS: true,
           allowTaint: false,
@@ -261,14 +231,24 @@ export async function exportAsPdf(rows = []) {
           scrollY: 0,
           windowWidth: CSS_A4W_PX,
           windowHeight: sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4H_PX,
-        },
-        jsPDF: { unit: 'px', format: [CSS_A4W_PX, CSS_A4H_PX], orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] },
-        image: { type: 'jpeg', quality: 0.98 },
-      }).from(sheet || pdfEl).save();
+        });
+        const img = canvas.toDataURL('image/jpeg', 0.98);
+        const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+        const cw = canvas.width; const ch = canvas.height; const aspect = ch / cw;
+        const availableW = Math.max(1, A4W_MM - (2 * SAFE_MARGIN_MM));
+        const availableH = Math.max(1, A4H_MM - (2 * SAFE_MARGIN_MM));
+        let targetW = availableW; let targetH = targetW * aspect;
+        if (targetH > availableH) { const s = availableH / targetH; targetH = availableH; targetW = targetW * s; }
+        const offsetX = SAFE_MARGIN_MM + Math.max(0, (availableW - targetW) / 2);
+        const offsetY = SAFE_MARGIN_MM + Math.max(0, (availableH - targetH) / 2);
+        pdf.addImage(img, 'JPEG', offsetX, offsetY, targetW, targetH);
+        pdf.save(filename);
+      } else {
+        console.error('⚠️ [reports] export failed', error);
+      }
+    } catch (fallbackErr) {
+      console.error('⚠️ [reports] export fallback failed', fallbackErr);
     }
-  } catch (error) {
-    console.error('⚠️ [reports] export failed', error);
   } finally {
     revertStyleMutations(mutations);
     removeExportSanitizer(pdfEl, overlay);
