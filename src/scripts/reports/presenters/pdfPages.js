@@ -390,8 +390,9 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(container);
 
   try {
-    // مسار الطباعة الأصلية (يفتح مربع الطباعة) — نستخدمه فقط لعملية الطباعة الفعلية
-    const STRICT_NATIVE_PRINT = action === 'print';
+    // مسار الطباعة الأصلية (يفتح مربع الطباعة): عطّلته افتراضياً لأنه يعتمد على إعدادات المتصفح
+    // لتفعيله يدوياً ضع localStorage.reportsPdf.nativePrint = 'on'
+    const STRICT_NATIVE_PRINT = (action === 'print') && (localStorage.getItem('reportsPdf.nativePrint') === 'on');
     if (STRICT_NATIVE_PRINT) {
       const printWindow = window.open('', '_blank');
       if (!printWindow) throw new Error('Popup blocked');
