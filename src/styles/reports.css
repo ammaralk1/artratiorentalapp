@@ -245,7 +245,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  width: min(100%, 1200px);
+  width: 100%;
   margin-inline: auto;
   padding: 12px;
 }
@@ -357,35 +357,33 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-wrapper--reservations .reports-filters-grid {
-  width: min(100%, 1200px);
+  width: 100%;
   margin-inline: auto;
-  column-gap: 8px; /* closer spacing between fields */
+  column-gap: 6px; /* even closer spacing between fields */
   row-gap: 6px;    /* reduce vertical gap */
   justify-items: stretch;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
 }
 
 /* Keep all 4 filters in a single row from >=1024px with equal widths */
 @media (min-width: 1024px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(4, minmax(240px, 1fr));
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
   }
 }
 
 .reports-wrapper--reservations .reports-filter-control {
-  min-width: 220px;
+  min-width: 0; /* allow shrink to balance columns */
   min-height: 44px; /* slightly more compact */
   padding: 8px 12px; /* reduce padding for tighter look */
   width: 100%;
 }
 
 /* Ensure consistent control width across all four filters */
-.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-control {
-  min-width: 240px;
-}
+.reports-wrapper--reservations .reports-filters-grid--primary .reports-filter-control { min-width: 0; }
 
 /* Reset any spanning so all four occupy one column each */
 @media (min-width: 1024px) {
