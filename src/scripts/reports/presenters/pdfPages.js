@@ -448,11 +448,9 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
         const targetWmm = A4_W_MM * shrink;
         const targetHmm = A4_H_MM * shrink;
-        // تموضع أعلى-يسار بشكل افتراضي؛ مع إمكانية إزاحة حسب التفضيلات
-        let finalX = (A4_W_MM - targetWmm) / 2; // نحافظ على التمركز عند وجود تقليص
-        let finalY = (A4_H_MM - targetHmm) / 2;
-        finalX += (Number(prefs.rightMm) || 0);
-        finalY += (Number(prefs.topMm) || 0);
+        // تموضع أعلى-يسار (0,0) بدقة، مع إمكانية الإزاحة من الإعدادات
+        let finalX = (Number(prefs.rightMm) || 0);
+        let finalY = (Number(prefs.topMm) || 0);
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
