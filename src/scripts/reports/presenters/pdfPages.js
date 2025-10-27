@@ -440,6 +440,29 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
           return top;
         } catch (_) { return 0; }
       };
+      // قياس أعلى محتوى في القسم الأيمن (حيث العنوان)، أدق من الفحص الكامل
+      const measureRightRegionContentTopPx = (canvas, threshold = 245) => {
+        try {
+          const ctx = canvas.getContext('2d');
+          const { width, height } = canvas;
+          const xStart = Math.floor(width * 0.55);
+          const regionW = Math.max(10, width - xStart);
+          const minDark = Math.max(3, Math.ceil(regionW * 0.015));
+          for (let y = 0; y < height; y += 2) {
+            const data = ctx.getImageData(xStart, y, regionW, 1).data;
+            let darkCount = 0;
+            for (let x = 0; x < regionW; x += 1) {
+              const i4 = x * 4;
+              const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+              if (r < threshold || g < threshold || b < threshold) {
+                darkCount += 1;
+                if (darkCount >= minDark) return y;
+              }
+            }
+          }
+          return 0;
+        } catch (_) { return 0; }
+      };
       const measureBottomWhitespacePx = (canvas, threshold = 250) => {
         try {
           const ctx = canvas.getContext('2d');
@@ -509,7 +532,8 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         let canvas;
         try {
-          canvas = await h2c(scope, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
+          // الالتقاط من العنصر نفسه داخل نطاق مسمى لضمان تطبيق CSS بدون إدراج مساحة إضافية من الحاوية
+          canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
         } finally {
           wrap.parentNode?.removeChild(wrap);
         }
@@ -518,8 +542,11 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         // قص الفراغ الأبيض العلوي/السفلي بدقة
         const topWhitePx = measureTopWhitespacePx(canvas, 246);
+        const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+        // اختر الأكبر لضمان إزالة كل الفراغ حتى بداية المحتوى الفعلي يميناً
+        const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
         const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
-        const cropped = cropCanvasVertical(canvas, topWhitePx, bottomWhitePx);
+        const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
         const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
         const targetWmm = A4_W_MM * shrink;
@@ -531,21 +558,12 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         // أضف هامش علوي صغير لمضاهاة padding-top في المعاينة
         const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
         // محاذاة دقيقة: حدد موضع أعلى محتوى (rpt-header) قبل الالتقاط ثم حوّله إلى mm بعد القص
-        const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
-        let headerTopCssPx = 0;
-        try {
-          if (headerEl) {
-            const rect = headerEl.getBoundingClientRect();
-            const baseRect = page.getBoundingClientRect();
-            headerTopCssPx = Math.max(0, rect.top - baseRect.top);
-          }
-        } catch (_) { headerTopCssPx = 0; }
-        // html2canvas يستخدم scale، لذا حول موضع الـ DOM إلى بكسل canvas
-        const headerTopCanvasPx = headerTopCssPx * captureScale;
-        const residualHeaderTopAfterCropPx = Math.max(0, headerTopCanvasPx - topWhitePx);
+        // معايرة إضافية من الصورة نفسها: قِس أعلى محتوى في المنطقة اليمنى بعد القص
+        const regionTopAfterCropPx = measureRightRegionContentTopPx(cropped, 244);
         const mmPerCanvasPx = targetWmm / cropped.width;
-        const headerTopMm = residualHeaderTopAfterCropPx * mmPerCanvasPx;
+        const headerTopMm = regionTopAfterCropPx * mmPerCanvasPx; // يجب أن يكون قريباً من 0 إن أزيل الفراغ
         let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
+        if (finalY < -60) finalY = -60; // قيد أمان
 
         const img = cropped.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
