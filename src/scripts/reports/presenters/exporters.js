@@ -168,13 +168,14 @@ export async function exportAsPdf(rows = []) {
   document.body.appendChild(pdfEl);
 
   const sheet = pdfEl.querySelector('.pdf');
-  const A4W_PX = 794; const A4H_PX = 1123; // A4 @ 96dpi
+  const A4W_MM = 210; const A4H_MM = 297; // A4 in millimeters
+  const CSS_A4W_PX = 794; // for consistent capture width
   const filename = getExportFileName('pdf');
 
-  // Force sheet to full width and solid colors for capture
+  // Force sheet width and pure colors for capture
   if (sheet) {
-    sheet.style.width = `${A4W_PX}px`;
-    sheet.style.padding = '0';            // إزالة الحشو لمنع الفراغ الأيمن
+    sheet.style.width = `${CSS_A4W_PX}px`;
+    sheet.style.padding = '0';
     sheet.style.margin = '0 auto';
     sheet.style.background = '#ffffff';
     sheet.style.color = '#000000';
@@ -188,21 +189,19 @@ export async function exportAsPdf(rows = []) {
   scrubUnsupportedColorFunctions(pdfEl);
 
   try {
-    await ensureHtml2Pdf(); // يحمّل html2canvas/jsPDF إن لم تكن موجودة
+    await ensureHtml2Pdf();
     const h2c = window.html2canvas;
     const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
-      || (window.jsPDF && window.jsPDF.jsPDF)
-      || window.jsPDF
-      || window.jspdf;
+      || (window.jsPDF && window.jsPDF.jsPDF);
 
     if (typeof h2c !== 'function' || typeof JsPdfCtor !== 'function') {
-      // كاحتياط، إن تعذّر المسار اليدوي
+      // fallback to html2pdf auto
       await (window.html2pdf)().set({ margin: 0, filename }).from(sheet || pdfEl).save();
       return;
     }
 
     await (document.fonts?.ready || Promise.resolve());
-    const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : A4H_PX;
+    const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : Math.round((A4H_MM / 25.4) * 96);
     const canvas = await h2c(sheet || pdfEl, {
       scale: 2,
       useCORS: true,
@@ -210,24 +209,24 @@ export async function exportAsPdf(rows = []) {
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
-      windowWidth: A4W_PX,
+      windowWidth: CSS_A4W_PX,
       windowHeight: captureHeight,
     });
 
     const img = canvas.toDataURL('image/jpeg', 0.98);
-    const pdf = new JsPdfCtor({ unit: 'px', format: [A4W_PX, A4H_PX], orientation: 'portrait', compress: true });
+    const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 
     const cw = canvas.width || 1;
     const ch = canvas.height || 1;
     const aspect = ch / cw;
-    let targetW = A4W_PX;
+    let targetW = A4W_MM;
     let targetH = targetW * aspect;
     let offsetX = 0;
-    if (targetH > A4H_PX) {
-      const s = A4H_PX / targetH;
-      targetH = A4H_PX;
+    if (targetH > A4H_MM) {
+      const s = A4H_MM / targetH;
+      targetH = A4H_MM;
       targetW = targetW * s;
-      offsetX = Math.max(0, (A4W_PX - targetW) / 2);
+      offsetX = Math.max(0, (A4W_MM - targetW) / 2);
     }
     pdf.addImage(img, 'JPEG', offsetX, 0, targetW, targetH, 'page-1', 'FAST');
     pdf.save(filename);

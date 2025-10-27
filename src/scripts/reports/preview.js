@@ -27,7 +27,7 @@ function createModal() {
                     <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="1:1">1:1</button>
                   </div>
                   <div class="quote-preview-header-actions__right" style="display:flex; gap:8px;">
-                    <button type="button" class="btn btn-outline btn-sm" data-export-pdf>🖨️ ${translate('reservations.reports.actions.exportPdf', 'تصدير PDF', 'Export PDF')}</button>
+                    <button type="button" class="btn btn-primary btn-sm" data-export-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
                   </div>
                 </div>
                 <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
