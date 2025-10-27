@@ -1433,6 +1433,7 @@
                     <input type="date" id="reports-end" class="form-control reports-filter-control" placeholder="yyyy-mm-dd">
                   </label>
                 </div>
+                <div id="reservations-active-filters" class="reports-active-filters"></div>
                 <div class="reports-filters-footer">
                   <details class="reports-column-toggles" id="reports-column-controls">
                     <summary class="reports-column-summary">
@@ -1695,14 +1696,14 @@
                 <table class="reports-table" id="reports-reservations-table">
                   <thead>
                     <tr>
-                      <th data-report-column="code" data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
-                      <th data-report-column="customer" data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
-                      <th data-report-column="date" data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
-                      <th data-report-column="status" data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
+                      <th class="sortable" data-sort-key="code" data-report-column="code" data-i18n data-i18n-key="reservations.reports.results.headers.id">الحجز</th>
+                      <th class="sortable" data-sort-key="customer" data-report-column="customer" data-i18n data-i18n-key="reservations.reports.results.headers.customer">العميل</th>
+                      <th class="sortable" data-sort-key="date" data-report-column="date" data-i18n data-i18n-key="reservations.reports.results.headers.date">التاريخ</th>
+                      <th class="sortable" data-sort-key="status" data-report-column="status" data-i18n data-i18n-key="reservations.reports.results.headers.status">الحالة</th>
                       <th data-report-column="payment" data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
-                      <th data-report-column="total" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
-                      <th data-report-column="share" data-i18n data-i18n-key="reservations.reports.results.headers.share">نسبة الشركة</th>
-                      <th data-report-column="net" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</th>
+                      <th class="sortable" data-sort-key="total" data-report-column="total" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
+                      <th class="sortable" data-sort-key="share" data-report-column="share" data-i18n data-i18n-key="reservations.reports.results.headers.share">نسبة الشركة</th>
+                      <th class="sortable" data-sort-key="net" data-report-column="net" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</th>
                     </tr>
                   </thead>
                   <tbody id="reports-reservations-body">
@@ -1710,6 +1711,7 @@
                   </tbody>
                 </table>
               </div>
+              <div class="reports-table-pagination" id="reports-table-pagination"></div>
             </div>
 
             <div class="reports-empty-state hidden" id="reports-empty-state">

@@ -38,6 +38,7 @@ import {
   handlePaymentDrilldown,
   handleTopListDrilldown,
 } from './reports/presenters/ui.js';
+import { renderActiveFilters } from './reports/presenters/ui.js';
 
 const filters = reportsState.filters;
 
@@ -206,6 +207,55 @@ function syncFilterControls() {
   toggleCustomRange(customRangeWrapper, filters.range === 'custom');
 }
 
+function readFiltersFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const get = (k) => params.get(k);
+    const v = (x) => (x == null || x === '' ? null : x);
+    filters.range = get('range') || filters.range;
+    filters.status = get('status') || filters.status;
+    filters.payment = get('payment') || filters.payment;
+    filters.share = get('share') || filters.share;
+    filters.search = get('search') || '';
+    filters.start = v(get('start'));
+    filters.end = v(get('end'));
+    // Normalize if range not custom
+    if (filters.range !== 'custom') {
+      filters.start = null;
+      filters.end = null;
+    }
+  } catch (_) {
+    // ignore URL parse errors
+  }
+}
+
+let urlUpdateTimer = null;
+function scheduleUrlUpdate() {
+  if (urlUpdateTimer) clearTimeout(urlUpdateTimer);
+  urlUpdateTimer = setTimeout(() => {
+    try {
+      const params = new URLSearchParams();
+      const setIf = (key, value, def) => {
+        if (value != null && value !== '' && value !== def) params.set(key, value);
+      };
+      setIf('range', filters.range, 'all');
+      setIf('status', filters.status, 'all');
+      setIf('payment', filters.payment, 'all');
+      setIf('share', filters.share, 'all');
+      setIf('search', filters.search, '');
+      if (filters.range === 'custom') {
+        setIf('start', filters.start, null);
+        setIf('end', filters.end, null);
+      }
+      const qs = params.toString();
+      const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+      window.history.replaceState({}, '', url);
+    } catch (_) {
+      // ignore history errors
+    }
+  }, 120);
+}
+
 function setReportsEmptyState({ active, icon, title, subtitle }) {
   const emptyState = document.getElementById('reports-empty-state');
   if (!emptyState) return;
@@ -278,6 +328,14 @@ function handleReportsDataMutation() {
 
 export function renderReports() {
   syncFilterControls();
+  scheduleUrlUpdate();
+
+  // Active filter chips
+  renderActiveFilters({ onClear: () => {
+    syncFilterControls();
+    scheduleUrlUpdate();
+    renderReports();
+  } });
 
   if (reportsState.loading) {
     setReportsEmptyState({
@@ -347,6 +405,7 @@ export function initReports() {
     return;
   }
 
+  readFiltersFromUrl();
   syncFilterControls();
 
   const hydrated = hydrateReportsFromCache();
@@ -361,21 +420,25 @@ export function initReports() {
       filters.start = null;
       filters.end = null;
     }
+    scheduleUrlUpdate();
     renderReports();
   });
 
   statusSelect?.addEventListener('change', () => {
     filters.status = statusSelect.value;
+    scheduleUrlUpdate();
     renderReports();
   });
 
   paymentSelect?.addEventListener('change', () => {
     filters.payment = paymentSelect.value;
+    scheduleUrlUpdate();
     renderReports();
   });
 
   shareSelect?.addEventListener('change', () => {
     filters.share = shareSelect.value;
+    scheduleUrlUpdate();
     renderReports();
   });
 
@@ -383,17 +446,20 @@ export function initReports() {
     const value = searchInput.value || '';
     applySearchFilter(value, () => {
       syncFilterControls();
+      scheduleUrlUpdate();
       renderReports();
     });
   });
 
   startInput?.addEventListener('change', () => {
     filters.start = startInput.value || null;
+    scheduleUrlUpdate();
     renderIfCustomRange();
   });
 
   endInput?.addEventListener('change', () => {
     filters.end = endInput.value || null;
+    scheduleUrlUpdate();
     renderIfCustomRange();
   });
 
@@ -402,6 +468,7 @@ export function initReports() {
       filters.start = startInput?.value || null;
       filters.end = endInput?.value || null;
     }
+    scheduleUrlUpdate();
     renderReports();
   });
 

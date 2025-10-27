@@ -1292,18 +1292,88 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   #reports-top-sections > .reports-table-card:nth-child(1) { order: 1; }
   #reports-top-sections > .reports-table-card:nth-child(2) { order: 2; }
 
-  .reports-table-card .reports-table-wrapper {
-    overflow-x: auto;
-    overflow-y: hidden;
-    margin-inline: -12px;
-    padding-inline: 12px;
-    border-radius: 16px;
-    -webkit-overflow-scrolling: touch;
-  }
+.reports-table-card .reports-table-wrapper {
+  overflow: auto;
+  margin-inline: -12px;
+  padding-inline: 12px;
+  border-radius: 16px;
+  -webkit-overflow-scrolling: touch;
+}
 
-  .reports-table-card .reports-table {
-    min-width: 640px;
+.reports-table-card .reports-table {
+  min-width: 640px;
+}
+
+/* Desktop sticky header + scrollable body */
+@media (min-width: 1024px) {
+  .reports-table-card .reports-table-wrapper {
+    max-height: 60vh;
   }
+  .reports-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--reports-surface-contrast, rgba(248, 250, 255, 0.85));
+    backdrop-filter: blur(6px);
+  }
+  :is(html.dark, body.dark) .reports-table thead th {
+    background: rgba(24, 33, 59, 0.85);
+  }
+  .reports-table th.sortable {
+    cursor: pointer;
+  }
+}
+
+/* Active filters chips */
+.reports-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.reports-active-filters .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
+  background: rgba(248, 250, 255, 0.8);
+  font-weight: 600;
+}
+:is(html.dark, body.dark) .reports-active-filters .filter-chip {
+  background: rgba(24, 33, 59, 0.7);
+  border-color: rgba(93, 133, 255, 0.26);
+}
+.filter-chip button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 1;
+  color: inherit;
+}
+
+.reports-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0 0;
+}
+.reports-table-pagination .pager {
+  display: flex;
+  gap: 6px;
+}
+.reports-table-pagination .pager button {
+  border: 1px solid var(--reports-border, rgba(148, 163, 184, 0.32));
+  background: rgba(248, 250, 255, 0.8);
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+:is(html.dark, body.dark) .reports-table-pagination .pager button {
+  background: rgba(24, 33, 59, 0.7);
+  border-color: rgba(93, 133, 255, 0.26);
+}
 }
 
 @media (max-width: 600px) {

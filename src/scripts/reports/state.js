@@ -80,6 +80,14 @@ export const reportsState = {
     onStatusDrilldown: null,
     onPaymentDrilldown: null,
   },
+  sort: {
+    key: 'date',
+    dir: 'desc',
+  },
+  pagination: {
+    page: 1,
+    pageSize: 50,
+  },
 };
 
 export function setRenderCallback(callback) {

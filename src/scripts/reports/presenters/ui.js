@@ -88,3 +88,67 @@ export function handleTopListDrilldown(searchValue, renderCallback) {
   filters.search = searchValue;
   renderCallback();
 }
+
+export function renderActiveFilters({ onClear } = {}) {
+  const host = document.getElementById('reservations-active-filters');
+  if (!host) return;
+
+  const chips = [];
+  const pushChip = (key, label, clearTo) => {
+    chips.push(`<span class="filter-chip" data-chip="${key}">${label} <button type="button" aria-label="clear" data-clear="${key}">✕</button></span>`);
+  };
+
+  // Range
+  if (filters.range && filters.range !== 'all') {
+    let label = '';
+    switch (filters.range) {
+      case 'last30': label = translate('reservations.reports.filters.range.last30', 'آخر 30 يوم', 'Last 30 days'); break;
+      case 'thisWeek': label = translate('reservations.reports.filters.range.thisWeek', 'هذا الأسبوع', 'This week'); break;
+      case 'thisMonth': label = translate('reservations.reports.filters.range.thisMonth', 'هذا الشهر', 'This month'); break;
+      case 'thisQuarter': label = translate('reservations.reports.filters.range.thisQuarter', 'هذا الربع', 'This quarter'); break;
+      case 'thisYear': label = translate('reservations.reports.filters.range.thisYear', 'هذا العام', 'This year'); break;
+      case 'custom': label = `${translate('reservations.reports.filters.range.custom', 'مخصص', 'Custom')} (${filters.start || '—'} → ${filters.end || '—'})`; break;
+      default: label = filters.range;
+    }
+    pushChip('range', label, 'all');
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    const label = translate(`reservations.reports.filters.status.${filters.status}`, filters.status, filters.status);
+    pushChip('status', label, 'all');
+  }
+
+  if (filters.payment && filters.payment !== 'all') {
+    const label = translate(`reservations.reports.filters.payment.${filters.payment}`, filters.payment, filters.payment);
+    pushChip('payment', label, 'all');
+  }
+
+  if (filters.share && filters.share !== 'all') {
+    const label = translate(`reservations.reports.filters.share.${filters.share}`, filters.share, filters.share);
+    pushChip('share', label, 'all');
+  }
+
+  if (filters.search && filters.search.trim().length) {
+    pushChip('search', `🔍 ${filters.search.trim()}`, '');
+  }
+
+  host.innerHTML = chips.join('');
+  host.querySelectorAll('[data-clear]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.clear;
+      if (!key) return;
+      if (key === 'range') {
+        filters.range = 'all';
+        filters.start = null;
+        filters.end = null;
+      } else if (key in filters) {
+        if (key === 'search') {
+          filters.search = '';
+        } else {
+          filters[key] = 'all';
+        }
+      }
+      onClear?.(key);
+    });
+  });
+}

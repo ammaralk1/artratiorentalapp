@@ -2,6 +2,7 @@ import { translate, formatNumber, formatCurrency, formatDateTime, formatDateInpu
 import { escapeHtml, escapeAttribute } from './utils.js';
 import { computeReservationFinancials, computeReportStatus, paymentLabelText } from '../calculations.js';
 import { normalizeNumbers } from '../../utils.js';
+import reportsState from '../state.js';
 
 export function renderReservationsTable(reservations, customers, technicians) {
   const tbody = document.getElementById('reports-reservations-body');
@@ -26,9 +27,11 @@ export function renderReservationsTable(reservations, customers, technicians) {
     net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
   };
 
-  const rows = [...reservations]
-    .sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0))
-    .slice(0, 20)
+  const sorted = sortReservations([...reservations]);
+  const { page, pageSize } = reportsState.pagination;
+  const startIndex = Math.max(0, (page - 1) * pageSize);
+  const pageItems = sorted.slice(startIndex, startIndex + pageSize);
+  const rows = pageItems
     .map((reservation) => {
       const formatted = formatReservationRow(reservation, customerMap, technicianMap);
       const exportRow = {
@@ -59,7 +62,116 @@ export function renderReservationsTable(reservations, customers, technicians) {
     `)
     .join('');
 
+  renderPagination(sorted.length);
+  bindSortEvents();
   return rows.map(({ exportRow }) => exportRow);
+}
+
+function bindSortEvents() {
+  const thead = document.querySelector('#reports-reservations-table thead');
+  if (!thead) return;
+  thead.querySelectorAll('th.sortable').forEach((th) => {
+    if (th.dataset.sortBound === 'true') return;
+    th.addEventListener('click', () => {
+      const key = th.dataset.sortKey;
+      if (!key) return;
+      if (reportsState.sort.key === key) {
+        reportsState.sort.dir = reportsState.sort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        reportsState.sort.key = key;
+        reportsState.sort.dir = 'asc';
+      }
+      reportsState.pagination.page = 1;
+      reportsState.callbacks.onRender?.();
+    });
+    th.dataset.sortBound = 'true';
+  });
+}
+
+function sortReservations(list) {
+  const { key, dir } = reportsState.sort || { key: 'date', dir: 'desc' };
+  const factor = dir === 'asc' ? 1 : -1;
+  return list.sort((a, b) => factor * compareByKey(a, b, key));
+}
+
+function compareByKey(a, b, key) {
+  switch (key) {
+    case 'code':
+      return String(a?.reservationId ?? a?.id ?? '').localeCompare(String(b?.reservationId ?? b?.id ?? ''), 'ar', { numeric: true });
+    case 'customer':
+      return String(a?.customerName ?? a?.customerId ?? '').localeCompare(String(b?.customerName ?? b?.customerId ?? ''), 'ar', { numeric: true });
+    case 'date':
+      return new Date(a?.start || 0) - new Date(b?.start || 0);
+    case 'status': {
+      const sA = computeReportStatus(a)?.statusValue || '';
+      const sB = computeReportStatus(b)?.statusValue || '';
+      return String(sA).localeCompare(String(sB), 'ar');
+    }
+    case 'total': {
+      const finA = computeReservationFinancials(a)?.finalTotal || 0;
+      const finB = computeReservationFinancials(b)?.finalTotal || 0;
+      return finA - finB;
+    }
+    case 'share': {
+      const finA = computeReservationFinancials(a)?.companyShareAmount || 0;
+      const finB = computeReservationFinancials(b)?.companyShareAmount || 0;
+      return finA - finB;
+    }
+    case 'net': {
+      const finA = computeReservationFinancials(a)?.netProfit || 0;
+      const finB = computeReservationFinancials(b)?.netProfit || 0;
+      return finA - finB;
+    }
+    default:
+      return new Date(a?.start || 0) - new Date(b?.start || 0);
+  }
+}
+
+function renderPagination(totalItems) {
+  const host = document.getElementById('reports-table-pagination');
+  if (!host) return;
+  const { page, pageSize } = reportsState.pagination;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const prevDisabled = page <= 1 ? 'disabled' : '';
+  const nextDisabled = page >= totalPages ? 'disabled' : '';
+  const rangeStart = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const rangeEnd = Math.min(page * pageSize, totalItems);
+  host.innerHTML = `
+    <div class="pager">
+      <button type="button" ${prevDisabled} data-page="prev">◀</button>
+      <button type="button" ${nextDisabled} data-page="next">▶</button>
+    </div>
+    <div class="page-info">${formatNumber(rangeStart)}–${formatNumber(rangeEnd)} / ${formatNumber(totalItems)}</div>
+    <div class="pager page-size">
+      <label>${translate('reservations.reports.pageSize', 'لكل صفحة', 'Per page')}</label>
+      <button type="button" data-size="25">25</button>
+      <button type="button" data-size="50">50</button>
+      <button type="button" data-size="100">100</button>
+    </div>
+  `;
+  host.querySelector('[data-page="prev"]')?.addEventListener('click', () => {
+    if (reportsState.pagination.page > 1) {
+      reportsState.pagination.page -= 1;
+      reportsState.callbacks.onRender?.();
+    }
+  });
+  host.querySelector('[data-page="next"]')?.addEventListener('click', () => {
+    const totalPagesLocal = Math.max(1, Math.ceil(totalItems / reportsState.pagination.pageSize));
+    if (reportsState.pagination.page < totalPagesLocal) {
+      reportsState.pagination.page += 1;
+      reportsState.callbacks.onRender?.();
+    }
+  });
+  host.querySelectorAll('[data-size]')?.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const size = Number(btn.dataset.size);
+      if (Number.isFinite(size) && size > 0) {
+        reportsState.pagination.pageSize = size;
+        reportsState.pagination.page = 1;
+        reportsState.callbacks.onRender?.();
+      }
+    });
+  });
 }
 
 function formatReservationRow(reservation, customerMap, technicianMap) {
