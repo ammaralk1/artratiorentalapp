@@ -83,6 +83,7 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root, #reports-pdf-root * { color: #000 !important; background:#fff !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
+    #reports-pdf-root { width: 794px; margin: 0 auto; }
     .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
@@ -167,8 +168,9 @@ export async function exportAsPdf(rows = []) {
   document.body.appendChild(pdfEl);
   // قياس الأبعاد قبل الالتقاط
   const sheet = pdfEl.querySelector('.pdf');
-  const fullWidthPx = sheet ? Math.ceil(sheet.getBoundingClientRect().width) : 794;
-  const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
+  const A4W = 794; const A4H = 1123; // A4 @ 96dpi
+  const fullWidthPx = A4W;
+  const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : A4H;
 
   const html2pdf = await ensureHtml2Pdf();
   if (typeof html2pdf !== 'function') {
@@ -243,8 +245,9 @@ export async function exportAsPdf(rows = []) {
         },
       },
       jsPDF: {
-        unit: 'mm',
-        format: 'a4',
+        unit: 'px',
+        // A4 fixed page size in px to match preview width exactly
+        format: [A4W, A4H],
         orientation: 'portrait',
       },
       pagebreak: { mode: ['css', 'legacy'] },
