@@ -189,50 +189,51 @@ export async function exportAsPdf(rows = []) {
   scrubUnsupportedColorFunctions(pdfEl);
 
   try {
-    // نحصل على html2canvas و jsPDF من الحزمة التي تم تحميلها
-    const h2c = window.html2canvas;
-    const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
-      || (window.jsPDF && window.jsPDF.jsPDF)
-      || window.jsPDF
-      || window.jspdf;
-
-    if (typeof h2c !== 'function' || typeof JsPdfCtor !== 'function') {
-      // كرجوع احتياطي: استخدم المسار السابق
-      await (window.html2pdf || html2pdf)().set({ margin: 0, filename }).from(sheet || pdfEl).save();
-    } else {
-      // التقط القالب المطلوب بما يطابق عرض المعاينة
-      await (document.fonts?.ready || Promise.resolve());
-      const canvas = await h2c(sheet || pdfEl, {
+    // المسار الأساسي: html2pdf مع ضبط صارم للحجم والتمركز والهوامش
+    const A4W_PX = fullWidthPx; // 794px
+    const A4H_PX = A4H;        // 1123px
+    await (window.html2pdf || html2pdf)().set({
+      margin: 0,
+      filename,
+      html2canvas: {
         scale: 2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        windowWidth: fullWidthPx,
+        windowWidth: A4W_PX,
         windowHeight: captureHeight,
-      });
-
-      const img = canvas.toDataURL('image/jpeg', 0.98);
-      // توليد PDF بوحدات mm وضبط التمركز والأبعاد بدقة A4
-      const A4W_MM = 210;
-      const A4H_MM = 297;
-      const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-      const cw = canvas.width || 1;
-      const ch = canvas.height || 1;
-      const aspect = ch / cw;
-      let targetW = A4W_MM;
-      let targetH = targetW * aspect;
-      let offsetX = 0;
-      if (targetH > A4H_MM) {
-        const s = A4H_MM / targetH;
-        targetH = A4H_MM;
-        targetW = targetW * s;
-        offsetX = Math.max(0, (A4W_MM - targetW) / 2);
-      }
-      pdf.addImage(img, 'JPEG', offsetX, 0, targetW, targetH, 'page-1', 'FAST');
-      pdf.save(filename);
-    }
+        onclone: (clonedDoc) => {
+          try {
+            const cloneRoot = clonedDoc.getElementById('reports-pdf-root') || clonedDoc.getElementById('reservations-report-printable');
+            if (cloneRoot) {
+              cloneRoot.style.position = 'fixed';
+              cloneRoot.style.left = '0';
+              cloneRoot.style.top = '0';
+              cloneRoot.style.zIndex = '999999';
+            }
+            const sheetClone = cloneRoot?.querySelector('.pdf') || clonedDoc.querySelector('.pdf');
+            if (sheetClone) {
+              sheetClone.style.width = `${A4W_PX}px`;
+              sheetClone.style.margin = '0 auto';
+              sheetClone.style.color = '#000';
+              sheetClone.style.background = '#fff';
+            }
+            const style = clonedDoc.createElement('style');
+            style.textContent = `*{color:#000 !important; background:#fff !important; text-shadow:none !important; box-shadow:none !important}`;
+            clonedDoc.head.appendChild(style);
+          } catch (_) {}
+        },
+      },
+      jsPDF: {
+        unit: 'px',
+        format: [A4W_PX, A4H_PX],
+        orientation: 'portrait',
+      },
+      pagebreak: { mode: ['css', 'legacy'] },
+      image: { type: 'jpeg', quality: 0.98 },
+    }).from(sheet || pdfEl).save();
   } catch (error) {
     console.error('⚠️ [reports] export failed', error);
   } finally {
