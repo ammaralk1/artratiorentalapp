@@ -83,7 +83,7 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root, #reports-pdf-root * { color: #000 !important; background:#fff !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
-    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 0 0 auto; }
+    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
     .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
@@ -188,8 +188,8 @@ export async function exportAsPdf(rows = []) {
 
   try {
     await html2pdf().set({
-      // [top, right, bottom, left] to push content slightly towards the right edge on A4
-      margin: [10, 8, 10, 18],
+      // صفر هوامش لضبط عرض الصفحة تمامًا مثل المعاينة (794px)
+      margin: 0,
       filename,
       html2canvas: {
         scale: 2,
