@@ -59,9 +59,7 @@ function createRoot(context = 'preview') {
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
-    /* تقليل الحافة العلوية قليلاً في حالة التصدير فقط لمطابقة المعاينة */
-    /* اجعل الصفحة تبدأ من أعلى الحافة أثناء التصدير لتطابق المعاينة */
-    #quotation-pdf-root[data-quote-render-context="export"] .quote-page { padding: 0mm 12mm 10mm; }
+    /* تطابق كامل بين المعاينة والتصدير دون تغييرات خاصة بالتصدير */
   `;
   root.appendChild(extra);
 
@@ -404,6 +402,7 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
     }
 
     await ensureHtml2Pdf();
+    try { if (document?.fonts?.ready) { await document.fonts.ready; } } catch (_) {}
     const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
     const h2c = window.html2canvas;
 
@@ -415,15 +414,20 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
       const pages = Array.from(root.querySelectorAll('.quote-page'));
       let pdfPageIndex = 0;
-
-      const EXTRA_SHIFT_RIGHT_MM = 6;   // تحريك إضافي لليمين بناءً على المعاينة
-      const EXTRA_SHIFT_UP_MM = -10;    // رفع المحتوى ليبدأ من أعلى الصفحة
-      const SAFE_SCALE = 0.985;         // تقليص طفيف لتجنّب أي قص سفلي بعد الرفع
       for (let i = 0; i < pages.length; i += 1) {
         const page = pages[i];
         const doc = page.ownerDocument || document;
         const wrap = doc.createElement('div');
         Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
+        // أنشئ حاوية بنفس النطاق لتطبيق القواعد المعتمدة على #quotation-pdf-root
+        const scope = doc.createElement('div');
+        scope.id = 'quotation-pdf-root';
+        scope.setAttribute('data-quote-render-context', 'export');
+        // نجعل العرض ثابتاً لمضاهاة A4 بالبيكسل (مثل المعاينة)
+        scope.style.width = `${A4_W_PX}px`;
+        scope.style.maxWidth = `${A4_W_PX}px`;
+        scope.style.minWidth = `${A4_W_PX}px`;
+        scope.style.background = '#ffffff';
         const clone = page.cloneNode(true);
         clone.style.width = `${A4_W_PX}px`;
         clone.style.maxWidth = `${A4_W_PX}px`;
@@ -433,12 +437,13 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         clone.style.minHeight = `${A4_H_PX}px`;
         clone.style.position = 'relative';
         clone.style.background = '#ffffff';
-        wrap.appendChild(clone);
+        scope.appendChild(clone);
+        wrap.appendChild(scope);
         doc.body.appendChild(wrap);
 
         let canvas;
         try {
-          canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0 });
+          canvas = await h2c(scope, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
         } finally {
           wrap.parentNode?.removeChild(wrap);
         }
