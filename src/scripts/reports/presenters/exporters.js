@@ -75,12 +75,12 @@ export function buildPdfReportElement(rows = []) {
   wrapper.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
   // اجعل القالب مرئياً أعلى الصفحة للحظة أثناء الالتقاط لتفادي خروج الإطار عن نافذة html2canvas
   // ملاحظات: لا نستخدم visibility:hidden ولا opacity:0 لأنها قد تمنع الرسم.
-  wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;background:#ffffff;';
+  wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;background:#ffffff;width:100%;display:flex;justify-content:center;';
 
   const style = document.createElement('style');
   style.textContent = `
     /* عزل تام لألوان وضع الداكن داخل جذر التقرير */
-    #reports-pdf-root, #reports-pdf-root * { color: #000 !important; box-sizing: border-box; }
+    #reports-pdf-root, #reports-pdf-root * { color: #000 !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
     .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; }
@@ -92,7 +92,8 @@ export function buildPdfReportElement(rows = []) {
     .kpi .value { font-size: 16px; font-weight: 700; color:#000; }
     .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; color:#000; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; color:#000; }
-    table th, table td { background:#fff !important; color:#000 !important; border-color:#e5e7eb !important; }
+    table, thead, tbody, tr, th, td { background:#fff !important; color:#000 !important; border-color:#e5e7eb !important; }
+    tbody tr:hover { background:#fff !important; }
     thead th { text-align: center; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
     tbody td { border: 1px solid #e5e7eb; padding: 8px; color:#000; }
     tbody tr:nth-child(even) td { background: #fafafa; }
@@ -163,8 +164,7 @@ export async function exportAsPdf(rows = []) {
   // قياس الأبعاد قبل الالتقاط
   const sheet = pdfEl.querySelector('.pdf');
   // اضبط العرض ليتناسب مع هوامش PDF (10mm يمين/يسار ≈ 76px)
-  const fullWidthPx = sheet ? sheet.offsetWidth : 794;
-  const captureWidth = Math.max(680, Math.min(720, fullWidthPx - 76));
+  const fullWidthPx = sheet ? Math.ceil(sheet.getBoundingClientRect().width) : 794;
   const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
 
   const html2pdf = await ensureHtml2Pdf();
@@ -188,16 +188,14 @@ export async function exportAsPdf(rows = []) {
       margin: 10,
       filename,
       html2canvas: {
-        scale: 1.2,
+        scale: 2.2,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
-        windowWidth: captureWidth,
+        windowWidth: fullWidthPx,
         windowHeight: captureHeight,
-        width: captureWidth,
-        height: captureHeight,
         onclone: (clonedDoc) => {
           try {
             const cloneRoot = clonedDoc.getElementById('reports-pdf-root') || clonedDoc.getElementById('reservations-report-printable');
@@ -245,6 +243,7 @@ export async function exportAsPdf(rows = []) {
         format: 'a4',
         orientation: 'portrait',
       },
+      image: { type: 'jpeg', quality: 0.98 },
     }).from(pdfEl).save();
   } catch (error) {
     console.error('⚠️ [reports] export failed', error);

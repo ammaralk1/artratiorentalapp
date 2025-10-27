@@ -1456,7 +1456,7 @@ body[dir="rtl"] .reservation-modal .reservation-info-card .res-info-row .label {
 }
 
 .quote-preview-modal .modal-dialog {
-  max-width: min(96vw, 1200px);
+  max-width: min(94vw, 1100px);
   width: 100%;
   margin: 1.25rem auto;
   pointer-events: none;

@@ -82,7 +82,10 @@ export function openReportsPdfPreview(rows) {
   const pdfRoot = buildPdfReportElement(dataRows);
   // استخدم نسخة للمعاينة فقط
   const sheet = pdfRoot.querySelector('.pdf');
-  if (sheet) sheet.style.width = '794px';
+  if (sheet) {
+    sheet.style.width = '794px';
+    sheet.style.margin = '0 auto';
+  }
   frame.appendChild(pdfRoot);
 
   setupZoom(modal);
