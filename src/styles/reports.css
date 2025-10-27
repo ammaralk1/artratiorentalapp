@@ -377,8 +377,8 @@ body[dir="rtl"] .reports-filters {
 
 .reports-wrapper--reservations .reports-filter-control {
   min-width: 0; /* allow shrink to balance columns */
-  min-height: 44px; /* slightly more compact */
-  padding: 8px 12px; /* reduce padding for tighter look */
+  min-height: 52px; /* increase vertical hit area slightly */
+  padding: 10px 16px; /* add a bit more vertical padding */
   width: 100%;
 }
 
