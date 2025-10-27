@@ -163,25 +163,24 @@ export function buildPdfReportElement(rows = []) {
 }
 
 export async function exportAsPdf(rows = []) {
-  // Build a clean, print-friendly element (detached)
+  // Build and attach a clean, print-friendly element
   const pdfEl = buildPdfReportElement(rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []));
   document.body.appendChild(pdfEl);
-  // قياس الأبعاد قبل الالتقاط
-  const sheet = pdfEl.querySelector('.pdf');
-  const A4W = 794; const A4H = 1123; // A4 @ 96dpi
-  const fullWidthPx = A4W;
-  const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : A4H;
 
-  const html2pdf = await ensureHtml2Pdf();
-  if (typeof html2pdf !== 'function') {
-    console.warn('[reports] html2pdf unavailable, skipping PDF export');
-    pdfEl.remove();
-    return;
+  const sheet = pdfEl.querySelector('.pdf');
+  const A4W_PX = 794; const A4H_PX = 1123; // A4 @ 96dpi
+  const filename = getExportFileName('pdf');
+
+  // Force sheet to full width and solid colors for capture
+  if (sheet) {
+    sheet.style.width = `${A4W_PX}px`;
+    sheet.style.padding = '0';            // إزالة الحشو لمنع الفراغ الأيمن
+    sheet.style.margin = '0 auto';
+    sheet.style.background = '#ffffff';
+    sheet.style.color = '#000000';
   }
 
-  const filename = getExportFileName('pdf');
   patchHtml2CanvasColorParsing();
-
   const mutations = [];
   const overlay = injectExportSanitizer(pdfEl);
   sanitizeComputedColorFunctions(pdfEl, window, mutations);
@@ -189,51 +188,49 @@ export async function exportAsPdf(rows = []) {
   scrubUnsupportedColorFunctions(pdfEl);
 
   try {
-    // المسار الأساسي: html2pdf مع ضبط صارم للحجم والتمركز والهوامش
-    const A4W_PX = fullWidthPx; // 794px
-    const A4H_PX = A4H;        // 1123px
-    await (window.html2pdf || html2pdf)().set({
-      margin: 0,
-      filename,
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: A4W_PX,
-        windowHeight: captureHeight,
-        onclone: (clonedDoc) => {
-          try {
-            const cloneRoot = clonedDoc.getElementById('reports-pdf-root') || clonedDoc.getElementById('reservations-report-printable');
-            if (cloneRoot) {
-              cloneRoot.style.position = 'fixed';
-              cloneRoot.style.left = '0';
-              cloneRoot.style.top = '0';
-              cloneRoot.style.zIndex = '999999';
-            }
-            const sheetClone = cloneRoot?.querySelector('.pdf') || clonedDoc.querySelector('.pdf');
-            if (sheetClone) {
-              sheetClone.style.width = `${A4W_PX}px`;
-              sheetClone.style.margin = '0 auto';
-              sheetClone.style.color = '#000';
-              sheetClone.style.background = '#fff';
-            }
-            const style = clonedDoc.createElement('style');
-            style.textContent = `*{color:#000 !important; background:#fff !important; text-shadow:none !important; box-shadow:none !important}`;
-            clonedDoc.head.appendChild(style);
-          } catch (_) {}
-        },
-      },
-      jsPDF: {
-        unit: 'px',
-        format: [A4W_PX, A4H_PX],
-        orientation: 'portrait',
-      },
-      pagebreak: { mode: ['css', 'legacy'] },
-      image: { type: 'jpeg', quality: 0.98 },
-    }).from(sheet || pdfEl).save();
+    await ensureHtml2Pdf(); // يحمّل html2canvas/jsPDF إن لم تكن موجودة
+    const h2c = window.html2canvas;
+    const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF)
+      || (window.jsPDF && window.jsPDF.jsPDF)
+      || window.jsPDF
+      || window.jspdf;
+
+    if (typeof h2c !== 'function' || typeof JsPdfCtor !== 'function') {
+      // كاحتياط، إن تعذّر المسار اليدوي
+      await (window.html2pdf)().set({ margin: 0, filename }).from(sheet || pdfEl).save();
+      return;
+    }
+
+    await (document.fonts?.ready || Promise.resolve());
+    const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : A4H_PX;
+    const canvas = await h2c(sheet || pdfEl, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: A4W_PX,
+      windowHeight: captureHeight,
+    });
+
+    const img = canvas.toDataURL('image/jpeg', 0.98);
+    const pdf = new JsPdfCtor({ unit: 'px', format: [A4W_PX, A4H_PX], orientation: 'portrait', compress: true });
+
+    const cw = canvas.width || 1;
+    const ch = canvas.height || 1;
+    const aspect = ch / cw;
+    let targetW = A4W_PX;
+    let targetH = targetW * aspect;
+    let offsetX = 0;
+    if (targetH > A4H_PX) {
+      const s = A4H_PX / targetH;
+      targetH = A4H_PX;
+      targetW = targetW * s;
+      offsetX = Math.max(0, (A4W_PX - targetW) / 2);
+    }
+    pdf.addImage(img, 'JPEG', offsetX, 0, targetW, targetH, 'page-1', 'FAST');
+    pdf.save(filename);
   } catch (error) {
     console.error('⚠️ [reports] export failed', error);
   } finally {

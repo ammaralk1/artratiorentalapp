@@ -1921,6 +1921,7 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   justify-content: center;
   align-items: flex-start;
   flex: 1;
+  margin-inline: auto; /* سنتر الحاوية داخل المودال بدقة */
 }
 
 .quote-preview-frame {
