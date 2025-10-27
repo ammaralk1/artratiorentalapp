@@ -1,0 +1,240 @@
+import { translate, formatDateInput, formatNumber, formatCurrency } from '../formatters.js';
+import reportsState from '../state.js';
+import { ensureHtml2Pdf } from '../external.js';
+import quotePdfStyles from '../../../styles/quotePdf.css?raw';
+import {
+  sanitizeComputedColorFunctions,
+  enforceLegacyColorFallback,
+  scrubUnsupportedColorFunctions,
+} from '../../canvasColorUtils.js';
+
+const CSS_DPI = 96;
+const MM_PER_INCH = 25.4;
+const A4_W_MM = 210;
+const A4_H_MM = 297;
+const A4_W_PX = Math.round((A4_W_MM / MM_PER_INCH) * CSS_DPI);
+const A4_H_PX = Math.round((A4_H_MM / MM_PER_INCH) * CSS_DPI);
+
+function createRoot(context = 'preview') {
+  const root = document.createElement('div');
+  root.id = 'quotation-pdf-root';
+  root.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
+  root.setAttribute('data-quote-render-context', context);
+  const style = document.createElement('style');
+  style.textContent = String(quotePdfStyles || '').trim();
+  root.appendChild(style);
+  const pages = document.createElement('div');
+  pages.className = 'quote-preview-pages';
+  pages.setAttribute('data-quote-pages', '');
+  root.appendChild(pages);
+
+  // Extra report-specific CSS (inside same encapsulated scope)
+  const extra = document.createElement('style');
+  extra.textContent = `
+    .rpt-header { display:flex; flex-direction:column; gap:6px; }
+    .rpt-header h1 { margin:0; font-weight:800; font-size:18px; text-align:right; }
+    .rpt-subtitle { margin:0; font-size:12px; opacity:.8; text-align:right; }
+    .rpt-kpis { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin:8px 0 4px; }
+    .rpt-kpi { border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; background:#fff; }
+    .rpt-kpi .label { font-size:11px; opacity:.8; }
+    .rpt-kpi .value { font-weight:700; font-size:14px; }
+    .rpt-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .rpt-table th { background:#f3f4f6; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
+    .rpt-table td { border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
+  `;
+  root.appendChild(extra);
+
+  return root;
+}
+
+function createPage({ primary = false } = {}) {
+  const page = document.createElement('div');
+  page.className = 'quote-page';
+  if (primary) page.classList.add('quote-page--primary');
+  return page;
+}
+
+function buildHeader(metrics) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rpt-header';
+  const h1 = document.createElement('h1');
+  h1.textContent = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
+  const sub = document.createElement('p');
+  sub.className = 'rpt-subtitle';
+  sub.textContent = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
+  wrap.appendChild(h1);
+  wrap.appendChild(sub);
+
+  const kpis = document.createElement('div');
+  kpis.className = 'rpt-kpis';
+  const card = (label, value) => {
+    const d = document.createElement('div');
+    d.className = 'rpt-kpi';
+    d.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+    return d;
+  };
+  kpis.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), formatNumber(metrics.total || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), formatCurrency(metrics.revenue || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), formatCurrency(metrics.netProfit || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), formatCurrency(metrics.companyShareTotal || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), formatCurrency(metrics.taxTotal || 0)));
+  kpis.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), formatCurrency(metrics.maintenanceExpense || 0)));
+
+  wrap.appendChild(kpis);
+  return wrap;
+}
+
+function buildTable(headers) {
+  const table = document.createElement('table');
+  table.className = 'rpt-table';
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  headers.forEach((h) => {
+    const th = document.createElement('th'); th.textContent = h; trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  const tbody = document.createElement('tbody');
+  table.appendChild(thead); table.appendChild(tbody);
+  return { table, tbody };
+}
+
+function measureOverflows(page) {
+  const h = page.getBoundingClientRect().height || A4_H_PX;
+  const sh = page.scrollHeight || (page.firstElementChild?.scrollHeight || h);
+  return sh > h - 1; // small tolerance
+}
+
+function paginateRowsIntoPages(root, rows, headers, metrics) {
+  const pagesHost = root.querySelector('[data-quote-pages]');
+  const primary = createPage({ primary: true });
+  pagesHost.appendChild(primary);
+  const header = buildHeader(metrics);
+  primary.appendChild(header);
+
+  // Table on first page
+  let { table, tbody } = buildTable(headers);
+  primary.appendChild(table);
+
+  const pushRow = (row) => {
+    const tr = document.createElement('tr');
+    headers.forEach((h) => {
+      const td = document.createElement('td');
+      td.textContent = row[h] != null ? String(row[h]) : '';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+    if (measureOverflows(primary)) {
+      tbody.removeChild(tr);
+      return false;
+    }
+    return true;
+  };
+
+  const addContinuationPage = () => {
+    const page = createPage({ primary: false });
+    pagesHost.appendChild(page);
+    const built = buildTable(headers);
+    page.appendChild(built.table);
+    return { page, tbody: built.tbody };
+  };
+
+  let i = 0;
+  // Attach to DOM for accurate measurements
+  while (i < rows.length) {
+    const ok = pushRow(rows[i]);
+    if (!ok) {
+      // new page
+      const next = addContinuationPage();
+      table = next.page.querySelector('table');
+      tbody = next.tbody;
+      // retry pushing the same row on new page
+      const okNext = pushRow(rows[i]);
+      if (!okNext) {
+        // If a single row is too tall, force insert to prevent infinite loop
+        tbody.appendChild(next.tbody.lastElementChild || document.createElement('tr'));
+        i++;
+      } else {
+        i++;
+      }
+    } else {
+      i++;
+    }
+  }
+}
+
+export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
+  const snapshot = reportsState.lastSnapshot || {};
+  const metrics = snapshot.metrics || {};
+  const headers = rows && rows.length ? Object.keys(rows[0]) : [
+    translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
+    translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
+    translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
+    translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
+    translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
+    translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
+    translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+    translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
+  ];
+
+  const root = createRoot(context);
+  // Attach temporarily for measurement
+  const phantom = document.createElement('div');
+  phantom.style.position = 'fixed';
+  phantom.style.left = '-10000px';
+  phantom.style.top = '0';
+  phantom.style.width = `${A4_W_PX}px`;
+  phantom.style.zIndex = '-1';
+  document.body.appendChild(phantom);
+  phantom.appendChild(root);
+
+  // Sanitize colors to avoid html2canvas oddities
+  try {
+    scrubUnsupportedColorFunctions(root);
+    sanitizeComputedColorFunctions(root);
+    enforceLegacyColorFallback(root);
+  } catch (_) {}
+
+  paginateRowsIntoPages(root, rows || [], headers, metrics);
+
+  // Detach from phantom; return root for caller to insert where needed
+  root.parentElement?.removeChild(root);
+  phantom.parentElement?.removeChild(phantom);
+  return root;
+}
+
+export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
+  const root = buildReportsPdfPages(rows, { context: 'export' });
+  const container = document.createElement('div');
+  Object.assign(container.style, { position: 'fixed', top: '0', left: '0', pointerEvents: 'none', zIndex: '-1' });
+  container.appendChild(root);
+  document.body.appendChild(container);
+
+  try {
+    await ensureHtml2Pdf();
+    const chain = (window.html2pdf)().set({
+      margin: 0,
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] },
+      image: { type: 'jpeg', quality: 0.98 },
+    }).from(root).toPdf();
+
+    if (action === 'print') {
+      const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
+      await new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
+        iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 1000); };
+        iframe.src = blobUrl;
+        document.body.appendChild(iframe);
+      });
+    } else {
+      await chain.save('reservations-report.pdf');
+    }
+  } finally {
+    container.remove();
+  }
+}
+
+export default { buildReportsPdfPages, exportReportsPdf };
+

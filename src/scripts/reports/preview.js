@@ -1,6 +1,6 @@
 import { translate } from '../reports/formatters.js';
 import reportsState from '../reports/state.js';
-import { buildPdfReportElement, exportAsPdf } from './presenters/exporters.js';
+import { buildReportsPdfPages, exportReportsPdf } from './presenters/pdfPages.js';
 
 function createModal() {
   const modal = document.createElement('div');
@@ -79,22 +79,13 @@ export function openReportsPdfPreview(rows) {
 
   const frame = modal.querySelector('[data-preview-frame]');
   const dataRows = rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []);
-  const pdfRoot = buildPdfReportElement(dataRows);
-  // استخدم نسخة للمعاينة فقط
-  const sheet = pdfRoot.querySelector('.pdf');
-  if (sheet) {
-    sheet.style.width = '794px';
-    // center exactly like the exported page (no custom offsets)
-    sheet.style.margin = '0 auto';
-    sheet.style.direction = 'rtl';
-  }
-  frame.appendChild(pdfRoot);
+  const pagesRoot = buildReportsPdfPages(dataRows, { context: 'preview' });
+  frame.appendChild(pagesRoot);
 
   setupZoom(modal);
 
   modal.querySelector('[data-export-pdf]').addEventListener('click', async () => {
-    const exportRows = dataRows;
-    await exportAsPdf(exportRows);
+    await exportReportsPdf(dataRows, { action: 'save' });
   });
 
   // Bootstrap modal API (if available) or fallback

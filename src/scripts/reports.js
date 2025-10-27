@@ -514,6 +514,16 @@ export function initReports() {
       console.warn('[reports] No reservation data to export');
       return;
     }
+    if (type === 'pdf') {
+      // استخدم مولد الصفحات المعتمد نفسه المستخدم في المعاينة والطباعة
+      try {
+        const { exportReportsPdf } = await import('./reports/presenters/pdfPages.js');
+        await exportReportsPdf(rows, { action: 'save' });
+        return;
+      } catch (e) {
+        console.warn('[reports] page-based PDF export failed, falling back to legacy', e);
+      }
+    }
     await exportReport(type, rows);
   });
   // Preview PDF button
