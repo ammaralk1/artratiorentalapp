@@ -98,12 +98,6 @@ function buildTable(headers) {
   return { table, tbody };
 }
 
-function measureOverflows(page) {
-  const h = page.getBoundingClientRect().height || A4_H_PX;
-  const sh = page.scrollHeight || (page.firstElementChild?.scrollHeight || h);
-  return sh > h - 1; // small tolerance
-}
-
 function paginateRowsIntoPages(root, rows, headers, metrics) {
   const pagesHost = root.querySelector('[data-quote-pages]');
   const primary = createPage({ primary: true });
@@ -115,51 +109,51 @@ function paginateRowsIntoPages(root, rows, headers, metrics) {
   let { table, tbody } = buildTable(headers);
   primary.appendChild(table);
 
-  const pushRow = (row) => {
+  // Heuristic pagination to avoid measurement edge-cases on some browsers
+  // - الصفحة الأولى تحوي هيدر + KPI، لذا نضع عدد صفوف أقل.
+  // - الصفحات التالية تحمل صفوف أكثر.
+  const rowsPerFirstPage = 18;
+  const rowsPerNextPage = 28;
+
+  const chunks = [];
+  for (let i = 0; i < rows.length; i += rowsPerNextPage) {
+    chunks.push(rows.slice(i, i + rowsPerNextPage));
+  }
+  // Ensure first chunk smaller to account for header block
+  if (chunks.length) {
+    const first = chunks[0];
+    if (first.length > rowsPerFirstPage) {
+      const overflow = first.splice(rowsPerFirstPage);
+      if (chunks.length > 1) {
+        chunks[1] = overflow.concat(chunks[1]);
+      } else {
+        chunks.push(overflow);
+      }
+    }
+  }
+
+  // Fill first page body
+  const addRow = (hostTbody, row) => {
     const tr = document.createElement('tr');
     headers.forEach((h) => {
       const td = document.createElement('td');
       td.textContent = row[h] != null ? String(row[h]) : '';
       tr.appendChild(td);
     });
-    tbody.appendChild(tr);
-    if (measureOverflows(primary)) {
-      tbody.removeChild(tr);
-      return false;
-    }
-    return true;
+    hostTbody.appendChild(tr);
   };
 
-  const addContinuationPage = () => {
+  const firstRows = chunks.shift() || rows;
+  firstRows.forEach((r) => addRow(tbody, r));
+
+  // Other pages
+  chunks.forEach((group) => {
     const page = createPage({ primary: false });
     pagesHost.appendChild(page);
     const built = buildTable(headers);
     page.appendChild(built.table);
-    return { page, tbody: built.tbody };
-  };
-
-  let i = 0;
-  // Attach to DOM for accurate measurements
-  while (i < rows.length) {
-    const ok = pushRow(rows[i]);
-    if (!ok) {
-      // new page
-      const next = addContinuationPage();
-      table = next.page.querySelector('table');
-      tbody = next.tbody;
-      // retry pushing the same row on new page
-      const okNext = pushRow(rows[i]);
-      if (!okNext) {
-        // If a single row is too tall, force insert to prevent infinite loop
-        tbody.appendChild(next.tbody.lastElementChild || document.createElement('tr'));
-        i++;
-      } else {
-        i++;
-      }
-    } else {
-      i++;
-    }
-  }
+    group.forEach((r) => addRow(built.tbody, r));
+  });
 }
 
 export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
@@ -212,7 +206,7 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   try {
     await ensureHtml2Pdf();
     const chain = (window.html2pdf)().set({
-      margin: 0,
+      margin: 10, /* mm: هامش آمن للطابعات */
       html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'legacy'] },
@@ -237,4 +231,3 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 }
 
 export default { buildReportsPdfPages, exportReportsPdf };
-
