@@ -1,4 +1,5 @@
 import reportsState from '../state.js';
+import { translate } from '../formatters.js';
 
 const filters = reportsState.filters;
 
