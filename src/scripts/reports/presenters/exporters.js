@@ -164,9 +164,10 @@ export function buildPdfReportElement(rows = []) {
   return wrapper;
 }
 
-export async function exportAsPdf(rows = []) {
+export async function exportAsPdf(rows = [], options = {}) {
   const { exportReportsPdf } = await import('./pdfPages.js');
-  await exportReportsPdf(rows, { action: 'save' });
+  const action = options?.action === 'print' ? 'print' : 'save';
+  await exportReportsPdf(rows, { action });
 }
 
 export async function exportReport(type, rows) {

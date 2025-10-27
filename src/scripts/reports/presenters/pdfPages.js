@@ -1,4 +1,4 @@
-import { translate, formatDateInput, formatNumber, formatCurrency } from '../formatters.js';
+import { translate, formatDateInput, formatNumber, formatCurrency, formatDateTime } from '../formatters.js';
 import reportsState from '../state.js';
 import { ensureHtml2Pdf } from '../external.js';
 import quotePdfStyles from '../../../styles/quotePdf.css?raw';
@@ -7,6 +7,8 @@ import {
   enforceLegacyColorFallback,
   scrubUnsupportedColorFunctions,
 } from '../../canvasColorUtils.js';
+import { computeReservationFinancials, computeReportStatus, paymentLabelText } from '../calculations.js';
+import { normalizeNumbers } from '../../utils.js';
 
 const CSS_DPI = 96;
 const MM_PER_INCH = 25.4;
@@ -84,6 +86,77 @@ function buildHeader(metrics) {
   return wrap;
 }
 
+function buildExportRowsFromState() {
+  try {
+    const data = reportsState?.data || {};
+    const filtered = reportsState?.lastSnapshot?.filtered || data.reservations || [];
+    const customers = new Map((data.customers || []).map((c) => [String(c.id), c]));
+    // Sort by date desc
+    const sorted = [...filtered].sort((a, b) => new Date(b?.start || 0) - new Date(a?.start || 0));
+    const exportHeaders = {
+      code: translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
+      customer: translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
+      date: translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
+      status: translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
+      payment: translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
+      total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
+      share: translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+      net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
+    };
+    const headers = [
+      exportHeaders.code,
+      exportHeaders.customer,
+      exportHeaders.date,
+      exportHeaders.status,
+      exportHeaders.payment,
+      exportHeaders.total,
+      exportHeaders.share,
+      exportHeaders.net,
+    ];
+    const rows = sorted.map((res) => {
+      const rawCode = res?.reservationId || res?.id || '—';
+      const codeText = normalizeNumbers(String(rawCode));
+      const customer = customers.get(String(res?.customerId));
+      const customerName = customer?.customerName || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
+      const dateLabel = formatDateTime(res?.start);
+      const statusInfo = computeReportStatus(res);
+      const statusText = (() => {
+        switch (statusInfo.statusValue) {
+          case 'completed':
+            return String(translate('reservations.list.status.completed', 'منتهي', 'Completed')).replace(/^\W+/, '');
+          case 'confirmed':
+            return String(translate('reservations.list.status.confirmed', 'مؤكد', 'Confirmed')).replace(/^\W+/, '');
+          case 'pending':
+            return String(translate('reservations.list.status.pending', 'غير مؤكد', 'Pending')).replace(/^\W+/, '');
+          default:
+            return normalizeNumbers(String(statusInfo.statusValue || '—'));
+        }
+      })();
+      const paymentText = paymentLabelText(statusInfo.paidStatus);
+      const fin = computeReservationFinancials(res);
+      const totalLabel = formatCurrency(fin.finalTotal);
+      const shareLabel = fin.companySharePercent > 0
+        ? `${formatNumber(fin.companySharePercent)}% (${formatCurrency(fin.companyShareAmount)})`
+        : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
+      const netLabel = formatCurrency(fin.netProfit);
+      return {
+        [exportHeaders.code]: codeText,
+        [exportHeaders.customer]: customerName,
+        [exportHeaders.date]: dateLabel,
+        [exportHeaders.status]: statusText,
+        [exportHeaders.payment]: paymentText,
+        [exportHeaders.total]: totalLabel,
+        [exportHeaders.share]: shareLabel,
+        [exportHeaders.net]: netLabel,
+      };
+    });
+    return { headers, rows };
+  } catch (e) {
+    console.warn('[reports/pdf] failed to build export rows from state', e);
+    return { headers: [], rows: [] };
+  }
+}
+
 function buildTable(headers) {
   const table = document.createElement('table');
   table.className = 'rpt-table';
@@ -159,16 +232,15 @@ function paginateRowsIntoPages(root, rows, headers, metrics) {
 export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
   const snapshot = reportsState.lastSnapshot || {};
   const metrics = snapshot.metrics || {};
-  const headers = rows && rows.length ? Object.keys(rows[0]) : [
-    translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
-    translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
-    translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
-    translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
-    translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
-    translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
-    translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
-    translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
-  ];
+  let headers;
+  let rowModels = rows && rows.length ? rows : null;
+  if (!rowModels) {
+    const built = buildExportRowsFromState();
+    headers = built.headers;
+    rowModels = built.rows;
+  } else {
+    headers = Object.keys(rowModels[0] || {});
+  }
 
   const root = createRoot(context);
   // Attach temporarily for measurement
@@ -188,7 +260,7 @@ export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
     enforceLegacyColorFallback(root);
   } catch (_) {}
 
-  paginateRowsIntoPages(root, rows || [], headers, metrics);
+  paginateRowsIntoPages(root, rowModels || [], headers, metrics);
 
   // Detach from phantom; return root for caller to insert where needed
   root.parentElement?.removeChild(root);

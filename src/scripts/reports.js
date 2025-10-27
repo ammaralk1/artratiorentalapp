@@ -481,8 +481,8 @@ export function initReports() {
   printBtn?.addEventListener('click', async () => {
     try {
       const rows = reportsState.lastSnapshot.tableRows || [];
-      const module = await import('./reports/presenters/exporters.js');
-      await module.exportAsPdf(rows, { action: 'print' });
+      const { exportReportsPdf } = await import('./reports/presenters/pdfPages.js');
+      await exportReportsPdf(rows, { action: 'print' });
     } catch (_) {
       try { window.print(); } catch (_) {}
     }
