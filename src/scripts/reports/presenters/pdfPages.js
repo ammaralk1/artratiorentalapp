@@ -52,9 +52,12 @@ function createRoot(context = 'preview') {
     .rpt-kpi { border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; background:#fff; }
     .rpt-kpi .label { font-size:11px; opacity:.8; }
     .rpt-kpi .value { font-weight:700; font-size:14px; }
-    .rpt-table { width:100%; border-collapse:collapse; font-size:12px; }
-    .rpt-table th { background:#f3f4f6; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
-    .rpt-table td { border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
+    .rpt-table { width:100%; border-collapse:collapse; font-size:12px; color:#000 !important; }
+    .rpt-table th { background:#f3f4f6 !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
+    .rpt-table td { background:#ffffff !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
+    /* force light mode inside PDF root regardless of app theme */
+    #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
+    #quotation-pdf-root { color-scheme: light; }
   `;
   root.appendChild(extra);
 
@@ -300,31 +303,82 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
     }
 
     await ensureHtml2Pdf();
-    const chain = (window.html2pdf)().set({
-      margin: 10, /* mm: هامش آمن للطابعات */
-      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] },
-      image: { type: 'jpeg', quality: 0.98 },
-    }).from(root).toPdf();
+    const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
+    const h2c = window.html2canvas;
 
-    if (action === 'print') {
-      const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
-      if (safariWindow) {
+    if (typeof JsPdfCtor === 'function' && typeof h2c === 'function') {
+      const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+      const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
+      const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false }; 
+
+      const pages = Array.from(root.querySelectorAll('.quote-page'));
+      let pdfPageIndex = 0;
+
+      for (let i = 0; i < pages.length; i += 1) {
+        const page = pages[i];
+        const doc = page.ownerDocument || document;
+        const wrap = doc.createElement('div');
+        Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
+        const clone = page.cloneNode(true);
+        clone.style.width = `${A4_W_PX}px`;
+        clone.style.maxWidth = `${A4_W_PX}px`;
+        clone.style.minWidth = `${A4_W_PX}px`;
+        clone.style.height = `${A4_H_PX}px`;
+        clone.style.maxHeight = `${A4_H_PX}px`;
+        clone.style.minHeight = `${A4_H_PX}px`;
+        clone.style.position = 'relative';
+        clone.style.background = '#ffffff';
+        wrap.appendChild(clone);
+        doc.body.appendChild(wrap);
+
+        let canvas;
         try {
-          safariWindow.location.href = blobUrl;
-        } catch (_) {}
+          canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0 });
+        } finally {
+          wrap.parentNode?.removeChild(wrap);
+        }
+
+        if (!canvas) continue;
+
+        const cw = canvas.width || 1; const ch = canvas.height || 1; const aspect = ch / cw;
+        let targetWmm = A4_W_MM; let targetHmm = targetWmm * aspect; let offsetXmm = 0;
+        if (targetHmm > A4_H_MM) { const s = A4_H_MM / targetHmm; targetHmm = A4_H_MM; targetWmm = targetWmm * s; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2); }
+
+        const img = canvas.toDataURL('image/jpeg', 0.95);
+        if (pdfPageIndex > 0) pdf.addPage();
+        pdf.addImage(img, 'JPEG', offsetXmm, 0, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
+        pdfPageIndex += 1;
+        // small yield
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+
+      if (pdfPageIndex === 0) throw new Error('PDF generation produced no pages');
+
+      if (action === 'print') {
+        const blobUrl = pdf.output('bloburl');
+        if (safariWindow) {
+          try { safariWindow.location.href = blobUrl; } catch (_) {}
+        } else {
+          await new Promise((resolve) => {
+            const iframe = document.createElement('iframe');
+            Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
+            iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 700); };
+            iframe.src = blobUrl; document.body.appendChild(iframe);
+          });
+        }
       } else {
-        await new Promise((resolve) => {
-          const iframe = document.createElement('iframe');
-          Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
-          iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 1000); };
-          iframe.src = blobUrl;
-          document.body.appendChild(iframe);
-        });
+        pdf.save('reservations-report.pdf');
       }
     } else {
-      await chain.save('reservations-report.pdf');
+      // Fallback: html2pdf direct
+      const chain = (window.html2pdf)().set({ margin: 10, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(root).toPdf();
+      if (action === 'print') {
+        const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
+        await new Promise((resolve) => { const iframe = document.createElement('iframe'); Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' }); iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 700); }; iframe.src = blobUrl; document.body.appendChild(iframe); });
+      } else {
+        await chain.save('reservations-report.pdf');
+      }
     }
   } finally {
     container.remove();
