@@ -86,10 +86,10 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root { width: 794px; margin: 0 auto; }
     .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
-    .pdf h1, .pdf .subtitle, .section-title { text-align: left; }
+    .pdf h1, .pdf .subtitle, .section-title { text-align: right; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
     .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; text-align: left; }
+    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; text-align: right; }
     .kpi .label { font-size: 12px; color: #000; opacity: 0.8; }
     .kpi .value { font-size: 16px; font-weight: 700; color:#000; }
     .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; color:#000; }
@@ -100,8 +100,8 @@ export function buildPdfReportElement(rows = []) {
     .status-confirmed,
     .status-pending,
     .status-completed { background:#fff !important; color:#000 !important; border:1px solid #e5e7eb !important; box-shadow:none !important; }
-    thead th { text-align: left; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 800; color:#000; }
-    tbody td { border: 1px solid #e5e7eb; padding: 8px 10px; color:#000; text-align:left; }
+    thead th { text-align: right; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 800; color:#000; }
+    tbody td { border: 1px solid #e5e7eb; padding: 8px 10px; color:#000; text-align:right; }
     tbody tr:nth-child(even) td { background: #fafafa; }
   `;
   wrapper.appendChild(style);
@@ -170,14 +170,16 @@ export async function exportAsPdf(rows = []) {
 
   const sheet = pdfEl.querySelector('.pdf');
   const A4W_MM = 210; const A4H_MM = 297; // A4 in millimeters
-  const CSS_A4W_PX = 794; // for consistent capture width
+  const SAFE_MARGIN_MM = 6;               // هامش أمان لمنع القص
+  const CSS_A4W_PX = 794;                 // for consistent capture width
+  const CSS_A4H_PX = Math.round((A4H_MM / 25.4) * 96);
   const filename = getExportFileName('pdf');
 
   // Force sheet width and pure colors for capture
   if (sheet) {
     sheet.style.width = `${CSS_A4W_PX}px`;
     sheet.style.padding = '0';
-    sheet.style.margin = '0';         // محاذاة لليسار بدل التمركز
+    sheet.style.margin = '0 auto';
     sheet.style.background = '#ffffff';
     sheet.style.color = '#000000';
   }
@@ -198,7 +200,7 @@ export async function exportAsPdf(rows = []) {
     let manualSucceeded = false;
     if (typeof h2c === 'function' && typeof JsPdfCtor === 'function') {
       await (document.fonts?.ready || Promise.resolve());
-      const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : Math.round((A4H_MM / 25.4) * 96);
+      const captureHeight = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4H_PX;
       const canvas = await h2c(sheet || pdfEl, {
         scale: 2,
         useCORS: true,
@@ -218,17 +220,24 @@ export async function exportAsPdf(rows = []) {
           const cw = canvas.width;
           const ch = canvas.height;
           const aspect = ch / cw;
-          let targetW = A4W_MM;
+
+          const availableW = Math.max(1, A4W_MM - (2 * SAFE_MARGIN_MM));
+          const availableH = Math.max(1, A4H_MM - (2 * SAFE_MARGIN_MM));
+
+          // Scale to fit within printable area leaving safe margins
+          let targetW = availableW;
           let targetH = targetW * aspect;
-          let offsetX = 0;
-          if (targetH > A4H_MM) {
-            const s = A4H_MM / targetH;
-            targetH = A4H_MM;
+          if (targetH > availableH) {
+            const s = availableH / targetH;
+            targetH = availableH;
             targetW = targetW * s;
-            // محاذاة لليسار: لا نضيف تمركز
-            offsetX = 0;
           }
-          pdf.addImage(img, 'JPEG', offsetX, 0, targetW, targetH);
+
+          // Center within margins to balance visually and avoid clipping
+          const offsetX = SAFE_MARGIN_MM + Math.max(0, (availableW - targetW) / 2);
+          const offsetY = SAFE_MARGIN_MM + Math.max(0, (availableH - targetH) / 2);
+
+          pdf.addImage(img, 'JPEG', offsetX, offsetY, targetW, targetH);
           pdf.save(filename);
           manualSucceeded = true;
         } catch (_) {
@@ -239,8 +248,9 @@ export async function exportAsPdf(rows = []) {
 
     if (!manualSucceeded) {
       // Fallback: html2pdf direct with px sizing (no margins)
+      const marginPx = Math.round((SAFE_MARGIN_MM / 25.4) * 96);
       await (window.html2pdf)().set({
-        margin: 0,
+        margin: marginPx,
         filename,
         html2canvas: {
           scale: 2,
@@ -250,9 +260,9 @@ export async function exportAsPdf(rows = []) {
           scrollX: 0,
           scrollY: 0,
           windowWidth: CSS_A4W_PX,
-          windowHeight: sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4W_PX,
+          windowHeight: sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : CSS_A4H_PX,
         },
-        jsPDF: { unit: 'px', format: [CSS_A4W_PX, Math.round((A4H_MM / 25.4) * 96)], orientation: 'portrait' },
+        jsPDF: { unit: 'px', format: [CSS_A4W_PX, CSS_A4H_PX], orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] },
         image: { type: 'jpeg', quality: 0.98 },
       }).from(sheet || pdfEl).save();
