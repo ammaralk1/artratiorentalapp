@@ -84,8 +84,9 @@ export function openReportsPdfPreview(rows) {
 
   setupZoom(modal);
 
+  // وحّدنا طريقة الطباعة مع زر التب الرئيسي: استخدم action='print'
   modal.querySelector('[data-export-pdf]').addEventListener('click', async () => {
-    await exportReportsPdf(dataRows, { action: 'save' });
+    await exportReportsPdf(dataRows, { action: 'print' });
   });
 
   // Bootstrap modal API (if available) or fallback
