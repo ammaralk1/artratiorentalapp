@@ -73,7 +73,9 @@ function buildPdfReportElement(rows = []) {
   const wrapper = document.createElement('div');
   wrapper.id = 'reports-pdf-root';
   wrapper.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
-  wrapper.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;';
+  // اجعل القالب مرئياً أعلى الصفحة للحظة أثناء الالتقاط لتفادي خروج الإطار عن نافذة html2canvas
+  // ملاحظات: لا نستخدم visibility:hidden ولا opacity:0 لأنها قد تمنع الرسم.
+  wrapper.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;background:#ffffff;';
 
   const style = document.createElement('style');
   style.textContent = `
@@ -156,6 +158,10 @@ export async function exportAsPdf(rows = []) {
   // Build a clean, print-friendly element (detached)
   const pdfEl = buildPdfReportElement(rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []));
   document.body.appendChild(pdfEl);
+  // قياس الأبعاد قبل الالتقاط
+  const sheet = pdfEl.querySelector('.pdf');
+  const width = sheet ? sheet.offsetWidth : 794;
+  const height = sheet ? Math.max(sheet.scrollHeight, sheet.offsetHeight) : 1123; // ~A4@96dpi
 
   const html2pdf = await ensureHtml2Pdf();
   if (typeof html2pdf !== 'function') {
@@ -181,9 +187,16 @@ export async function exportAsPdf(rows = []) {
         scale: 1.2,
         useCORS: true,
         allowTaint: false,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: width,
+        windowHeight: height,
+        width,
+        height,
         onclone: (clonedDoc) => {
           try {
-            const cloneRoot = clonedDoc.getElementById('reservations-report-printable');
+            const cloneRoot = clonedDoc.getElementById('reports-pdf-root') || clonedDoc.getElementById('reservations-report-printable');
             if (cloneRoot) {
               // Sanitize inside the cloned DOM as well
               sanitizeComputedColorFunctions(cloneRoot, clonedDoc.defaultView, []);
@@ -196,6 +209,7 @@ export async function exportAsPdf(rows = []) {
               html, body { background: #ffffff !important; background-image: none !important; }
               * { text-shadow: none !important; box-shadow: none !important; }
               *::before, *::after { background-image: none !important; }
+              #reports-pdf-root { position: fixed !important; left: 0 !important; top: 0 !important; z-index: 999999 !important; }
             `;
             clonedDoc.head.appendChild(style);
 
