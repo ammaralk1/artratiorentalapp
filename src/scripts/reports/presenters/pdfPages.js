@@ -530,11 +530,22 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         let finalX = (Number(prefs.rightMm) || 0);
         // أضف هامش علوي صغير لمضاهاة padding-top في المعاينة
         const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
-        // احسب المتبقي من الفراغ العلوي بعد القص (لو بقي أي شيء) ثم عوّضه سلباً
-        const residualTopPx = measureTopWhitespacePx(cropped, 246);
+        // محاذاة دقيقة: حدد موضع أعلى محتوى (rpt-header) قبل الالتقاط ثم حوّله إلى mm بعد القص
+        const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
+        let headerTopCssPx = 0;
+        try {
+          if (headerEl) {
+            const rect = headerEl.getBoundingClientRect();
+            const baseRect = page.getBoundingClientRect();
+            headerTopCssPx = Math.max(0, rect.top - baseRect.top);
+          }
+        } catch (_) { headerTopCssPx = 0; }
+        // html2canvas يستخدم scale، لذا حول موضع الـ DOM إلى بكسل canvas
+        const headerTopCanvasPx = headerTopCssPx * captureScale;
+        const residualHeaderTopAfterCropPx = Math.max(0, headerTopCanvasPx - topWhitePx);
         const mmPerCanvasPx = targetWmm / cropped.width;
-        const autoRaiseMm = residualTopPx * mmPerCanvasPx;
-        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - autoRaiseMm;
+        const headerTopMm = residualHeaderTopAfterCropPx * mmPerCanvasPx;
+        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
 
         const img = cropped.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
