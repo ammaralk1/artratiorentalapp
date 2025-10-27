@@ -17,6 +17,18 @@ const A4_H_MM = 297;
 const A4_W_PX = Math.round((A4_W_MM / MM_PER_INCH) * CSS_DPI);
 const A4_H_PX = Math.round((A4_H_MM / MM_PER_INCH) * CSS_DPI);
 
+// Browser detection similar to reservationPdf.js
+const SAFARI_REGEX = /safari/i;
+const IOS_REGEX = /(iphone|ipad|ipod)/i;
+const IOS_EXCLUDED = /(crios|fxios|edgios|opios)/i;
+function isIosSafari() {
+  try {
+    const ua = navigator.userAgent || '';
+    return IOS_REGEX.test(ua) && SAFARI_REGEX.test(ua) && !IOS_EXCLUDED.test(ua);
+  } catch (_) { return false; }
+}
+function isMobileViewport() { try { return Math.min(window.innerWidth, window.innerHeight) <= 820; } catch (_) { return false; } }
+
 function createRoot(context = 'preview') {
   const root = document.createElement('div');
   root.id = 'quotation-pdf-root';
@@ -276,6 +288,17 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(container);
 
   try {
+    // iOS Safari قد يحظر النوافذ المنبثقة إن لم تُفتح قبل حدث المستخدم
+    const safariPopupRequired = isIosSafari() && !isMobileViewport();
+    const safariWindow = safariPopupRequired ? window.open('', '_blank') : null;
+    if (safariWindow) {
+      try {
+        safariWindow.document.open();
+        safariWindow.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${translate('reservations.quote.status.exporting', 'جاري تجهيز ملف PDF...', 'Preparing PDF...')}</title><style>body{font-family:'Tajawal',sans-serif;margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;text-align:center;padding:24px;} .loader{width:42px;height:42px;border-radius:50%;border:4px solid rgba(248,250,252,0.35);border-top-color:#38bdf8;animation:spin 1s linear infinite;margin:0 auto 18px;}@keyframes spin{to{transform:rotate(360deg);}} h1{margin:0 0 6px;font-size:1.05rem;} p{margin:0;font-size:0.9rem;opacity:0.8;}</style></head><body><div><div class="loader" aria-hidden="true"></div><h1>${translate('reservations.quote.status.exporting', 'جاري تجهيز ملف PDF...', 'Preparing PDF...')}</h1><p>${translate('reservations.quote.status.exportingHint', 'قد يستغرق ذلك بضع ثوانٍ، الرجاء الانتظار...', 'This may take a few seconds...')}</p></div></body></html>`);
+        safariWindow.document.close();
+      } catch (_) {}
+    }
+
     await ensureHtml2Pdf();
     const chain = (window.html2pdf)().set({
       margin: 10, /* mm: هامش آمن للطابعات */
@@ -287,13 +310,19 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
     if (action === 'print') {
       const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
-      await new Promise((resolve) => {
-        const iframe = document.createElement('iframe');
-        Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
-        iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 1000); };
-        iframe.src = blobUrl;
-        document.body.appendChild(iframe);
-      });
+      if (safariWindow) {
+        try {
+          safariWindow.location.href = blobUrl;
+        } catch (_) {}
+      } else {
+        await new Promise((resolve) => {
+          const iframe = document.createElement('iframe');
+          Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' });
+          iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 1000); };
+          iframe.src = blobUrl;
+          document.body.appendChild(iframe);
+        });
+      }
     } else {
       await chain.save('reservations-report.pdf');
     }
