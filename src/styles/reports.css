@@ -1406,6 +1406,10 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
     margin: 0 auto !important;
     background: #ffffff !important;
   }
+  /* اطبع المحتوى بعرض الصفحة دون محاذاة وسطية أو حدود قص */
+  #reservations-report-printable.reports-wrapper--reservations { align-items: stretch !important; padding: 0 !important; }
+  #reservations-report-printable .reports-surface-card { width: 100% !important; max-width: 100% !important; }
+  #reservations-report-printable .reports-table-card { overflow: visible !important; box-shadow: none !important; }
   /* تأكد من أن بطاقات المحتوى تتمدد بعرض الصفحة داخل الطباعة */
   #reservations-report-printable .reports-surface-card,
   #reservations-report-printable .reports-table-card,
