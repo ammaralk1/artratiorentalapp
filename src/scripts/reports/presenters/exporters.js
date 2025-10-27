@@ -83,7 +83,7 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root, #reports-pdf-root * { color: #000 !important; background:#fff !important; box-sizing: border-box; box-shadow:none !important; outline:0 !important; }
     :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
-    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; }
+    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 0 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
     .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
@@ -94,6 +94,10 @@ export function buildPdfReportElement(rows = []) {
     table { width: 100%; border-collapse: collapse; font-size: 12px; color:#000; }
     table, thead, tbody, tr, th, td { background:#fff !important; color:#000 !important; border-color:#e5e7eb !important; }
     tbody tr:hover { background:#fff !important; }
+    .reservation-chip,
+    .status-confirmed,
+    .status-pending,
+    .status-completed { background:#fff !important; color:#000 !important; border:1px solid #e5e7eb !important; box-shadow:none !important; }
     thead th { text-align: center; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
     tbody td { border: 1px solid #e5e7eb; padding: 8px; color:#000; }
     tbody tr:nth-child(even) td { background: #fafafa; }
@@ -184,7 +188,8 @@ export async function exportAsPdf(rows = []) {
 
   try {
     await html2pdf().set({
-      margin: 10,
+      // [top, right, bottom, left] to push content slightly towards the right edge on A4
+      margin: [10, 8, 10, 18],
       filename,
       html2canvas: {
         scale: 2,

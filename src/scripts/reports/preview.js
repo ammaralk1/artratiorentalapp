@@ -84,7 +84,9 @@ export function openReportsPdfPreview(rows) {
   const sheet = pdfRoot.querySelector('.pdf');
   if (sheet) {
     sheet.style.width = '794px';
-    sheet.style.margin = '0 auto';
+    // align preview page to the right inside modal so right edge isn't clipped
+    sheet.style.margin = '0 0 0 auto';
+    sheet.style.direction = 'rtl';
   }
   frame.appendChild(pdfRoot);
 
