@@ -84,11 +84,11 @@ export function openReportsPdfPreview(rows) {
 
   setupZoom(modal);
 
-  // Print (renamed visually to "Export PDF") using the same path as the main Print button
+  // Export directly (download PDF) without opening print preview
   const printBtn = modal.querySelector('[data-print-pdf]');
   if (printBtn) {
     printBtn.addEventListener('click', async () => {
-      await exportReportsPdf(dataRows, { action: 'print' });
+      await exportReportsPdf(dataRows, { action: 'save' });
     });
   }
 
