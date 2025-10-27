@@ -576,39 +576,43 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         if (!canvas) continue;
 
-        // قص الفراغ الأبيض العلوي/السفلي بدقة
-        const topWhitePx = measureTopWhitespacePx(canvas, 246);
-        const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
-        // اختر الأكبر لضمان إزالة كل الفراغ حتى بداية المحتوى الفعلي يميناً
-        const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
-        const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
-        const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
+        // للحفظ: نستخدم هندسة الصفحة الدقيقة كما في الطباعة الأصلية
+        if (action !== 'print') {
+          const img = canvas.toDataURL('image/jpeg', 0.95);
+          if (pdfPageIndex > 0) pdf.addPage();
+          pdf.addImage(img, 'JPEG', 0, 0, A4_W_MM, A4_H_MM, `page-${pdfPageIndex + 1}`, 'FAST');
+        } else {
+          // مسار الطباعة عبر jsPDF (نادراً ما يُستخدم لأن الطباعة الأصلية تُنفَّذ أعلاه)
+          // قص الفراغ الأبيض ثم محاذاة دقيقة
+          const topWhitePx = measureTopWhitespacePx(canvas, 246);
+          const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+          const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
+          const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
+          const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
-        const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
-        const targetWmm = A4_W_MM * shrink;
-        // احسب الارتفاع النهائي بناء على نسبة الصورة لتفادي تمديد رأسي
-        const targetHmm = (cropped.height / cropped.width) * targetWmm;
+          const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
+          const targetWmm = A4_W_MM * shrink;
+          const targetHmm = (cropped.height / cropped.width) * targetWmm;
 
-        // تموضع أعلى-يسار (0,0) بدقة، مع إمكانية الإزاحة من الإعدادات
-        let finalX = (Number(prefs.rightMm) || 0);
-        const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 4;
-        // محاذاة دقيقة مبنية على DOM الأصلي: حول offset-top للهيدر من px إلى mm مباشرة
-        let headerTopCssPx = 0;
-        try {
-          const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
-          if (headerEl) {
-            const rect = headerEl.getBoundingClientRect();
-            const baseRect = page.getBoundingClientRect();
-            headerTopCssPx = Math.max(0, rect.top - baseRect.top);
-          }
-        } catch (_) { headerTopCssPx = 0; }
-        const headerTopMm = headerTopCssPx / PX_PER_MM;
-        let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
-        if (finalY < -80) finalY = -80; // قيد أمان
+          let finalX = (Number(prefs.rightMm) || 0);
+          const pageTopPaddingMm = page.classList.contains('quote-page--primary') ? 6 : 12; // مطابق لـ CSS
+          let headerTopCssPx = 0;
+          try {
+            const headerEl = page.querySelector('.rpt-header') || page.firstElementChild;
+            if (headerEl) {
+              const rect = headerEl.getBoundingClientRect();
+              const baseRect = page.getBoundingClientRect();
+              headerTopCssPx = Math.max(0, rect.top - baseRect.top);
+            }
+          } catch (_) { headerTopCssPx = 0; }
+          const headerTopMm = headerTopCssPx / PX_PER_MM;
+          let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
+          if (finalY < -80) finalY = -80;
 
-        const img = cropped.toDataURL('image/jpeg', 0.95);
-        if (pdfPageIndex > 0) pdf.addPage();
-        pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
+          const img = cropped.toDataURL('image/jpeg', 0.95);
+          if (pdfPageIndex > 0) pdf.addPage();
+          pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
+        }
         pdfPageIndex += 1;
         // small yield
         // eslint-disable-next-line no-await-in-loop
@@ -633,8 +637,8 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         pdf.save('reservations-report.pdf');
       }
     } else {
-      // Fallback: html2pdf direct
-      const chain = (window.html2pdf)().set({ margin: 10, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(root).toPdf();
+      // Fallback: html2pdf direct (بدون هوامش لضمان تطابق المارجنز)
+      const chain = (window.html2pdf)().set({ margin: 0, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(root).toPdf();
       if (action === 'print') {
         const blobUrl = await chain.get('pdf').then((pdf) => pdf.output('bloburl'));
         await new Promise((resolve) => { const iframe = document.createElement('iframe'); Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0' }); iframe.onload = () => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {} setTimeout(() => { iframe.remove(); resolve(); }, 700); }; iframe.src = blobUrl; document.body.appendChild(iframe); });
