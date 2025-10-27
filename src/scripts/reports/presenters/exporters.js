@@ -86,9 +86,10 @@ export function buildPdfReportElement(rows = []) {
     #reports-pdf-root { width: 794px; margin: 0 auto; }
     .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; direction: rtl; margin: 0 auto; }
     .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
+    .pdf h1, .pdf .subtitle, .section-title { text-align: right; }
     .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
     .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; }
+    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; text-align: right; }
     .kpi .label { font-size: 12px; color: #000; opacity: 0.8; }
     .kpi .value { font-size: 16px; font-weight: 700; color:#000; }
     .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; color:#000; }
@@ -99,8 +100,8 @@ export function buildPdfReportElement(rows = []) {
     .status-confirmed,
     .status-pending,
     .status-completed { background:#fff !important; color:#000 !important; border:1px solid #e5e7eb !important; box-shadow:none !important; }
-    thead th { text-align: center; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
-    tbody td { border: 1px solid #e5e7eb; padding: 8px; color:#000; }
+    thead th { text-align: right; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 800; color:#000; }
+    tbody td { border: 1px solid #e5e7eb; padding: 8px 10px; color:#000; text-align:right; }
     tbody tr:nth-child(even) td { background: #fafafa; }
   `;
   wrapper.appendChild(style);
