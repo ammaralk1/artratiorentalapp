@@ -390,21 +390,36 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(container);
 
   try {
-    // مسار الطباعة الأصلية (يفتح مربع الطباعة) — نستخدمه فقط لعملية الطباعة الفعلية
+    // مسار الطباعة الأصلية — افتح مربع الطباعة مباشرة داخل نفس الصفحة بدون نافذة جديدة
     const STRICT_NATIVE_PRINT = action === 'print';
     if (STRICT_NATIVE_PRINT) {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) throw new Error('Popup blocked');
-      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;} /* ضمان إظهار كل صفحة كتلة مطبوعة */ .quote-preview-pages{gap:0 !important} .quote-page{box-shadow:none !important;border-radius:0 !important}</style></head><body></body></html>`;
-      try { printWindow.document.open(); printWindow.document.write(html); printWindow.document.close(); } catch (_) {}
-      // استخدم نسخة من الجذر حتى لا ننقل العقد بين المستندات
+      // لبعض حالات iOS Safari، نلجأ لنافذة منبثقة لضمان عمل الطباعة
+      if (isIosSafari()) {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) throw new Error('Popup blocked');
+        const html = `<!DOCTYPE html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;} .quote-preview-pages{gap:0 !important} .quote-page{box-shadow:none !important;border-radius:0 !important}</style></head><body></body></html>`;
+        try { printWindow.document.open(); printWindow.document.write(html); printWindow.document.close(); } catch (_) {}
+        const cloneRoot = root.cloneNode(true);
+        try { printWindow.document.body.appendChild(cloneRoot); } catch (_) {}
+        try { if (printWindow.document?.fonts?.ready) { await printWindow.document.fonts.ready; } } catch (_) {}
+        await new Promise((r) => setTimeout(r, 60));
+        try { printWindow.focus(); printWindow.print(); } catch (_) {}
+        return;
+      }
+
+      // باقي المتصفحات: iframe مخفي يفتح مربع الطباعة فوراً بدون تغيير الصفحة
+      const iframe = document.createElement('iframe');
+      Object.assign(iframe.style, { position: 'fixed', right: '0', bottom: '0', width: '1px', height: '1px', border: '0', opacity: '0', pointerEvents: 'none' });
+      document.body.appendChild(iframe);
+      const idoc = iframe.contentWindow?.document;
+      const html = `<!DOCTYPE html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;} .quote-preview-pages{gap:0 !important} .quote-page{box-shadow:none !important;border-radius:0 !important}</style></head><body></body></html>`;
+      try { idoc.open(); idoc.write(html); idoc.close(); } catch (_) {}
       const cloneRoot = root.cloneNode(true);
-      try { printWindow.document.body.appendChild(cloneRoot); } catch (_) {}
-      // انتظر تحميل الخطوط/الصور
-      try { if (printWindow.document?.fonts?.ready) { await printWindow.document.fonts.ready; } } catch (_) {}
+      try { idoc.body.appendChild(cloneRoot); } catch (_) {}
+      try { if (idoc.fonts?.ready) { await idoc.fonts.ready; } } catch (_) {}
       await new Promise((r) => setTimeout(r, 60));
-      try { printWindow.focus(); printWindow.print(); } catch (_) {}
-      // لا نغلق النافذة تلقائياً لإتاحة "حفظ كـ PDF" للمستخدم
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {}
+      setTimeout(() => { try { iframe.remove(); } catch (_) {} }, 1500);
       return;
     }
 
