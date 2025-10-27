@@ -101,6 +101,35 @@ export async function exportAsPdf() {
               enforceLegacyColorFallback(cloneRoot, clonedDoc.defaultView, []);
               scrubUnsupportedColorFunctions(cloneRoot);
             }
+            // Force-safe base styles for the clone viewport as a last resort
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              html, body { background: #ffffff !important; background-image: none !important; }
+              * { text-shadow: none !important; box-shadow: none !important; }
+              *::before, *::after { background-image: none !important; }
+            `;
+            clonedDoc.head.appendChild(style);
+
+            // Patch html2canvas color parser inside the cloned window, if available
+            const win = clonedDoc.defaultView;
+            const h2c = win && win.html2canvas;
+            if (h2c?.Color && !h2c.Color.__artRatioPatchedClone) {
+              const original = h2c.Color.fromString.bind(h2c.Color);
+              const RE = /(color\(|color-mix\(|oklab|oklch)/i;
+              h2c.Color.fromString = (value) => {
+                try {
+                  return original(value);
+                } catch (err) {
+                  if (typeof value === 'string' && RE.test(value)) {
+                    try { return original('#000'); } catch { /* ignore */ }
+                    // Fallback color object (opaque black)
+                    return original('rgb(0,0,0)');
+                  }
+                  throw err;
+                }
+              };
+              h2c.Color.__artRatioPatchedClone = true;
+            }
           } catch (_) {}
         },
       },
