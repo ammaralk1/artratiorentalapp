@@ -1,4 +1,5 @@
 import { translate, formatDateInput, formatNumber, formatCurrency } from '../formatters.js';
+import reportsState from '../state.js';
 import { ensureHtml2Pdf, ensureXlsx } from '../external.js';
 import {
   patchHtml2CanvasColorParsing,
@@ -65,13 +66,101 @@ export async function exportAsExcel(rows) {
   }
 }
 
-export async function exportAsPdf() {
-  const container = document.getElementById('reservations-report-printable');
-  if (!container) return;
+function buildPdfReportElement(rows = []) {
+  const snapshot = reportsState.lastSnapshot || {};
+  const metrics = snapshot.metrics || {};
+  const date = new Date();
+  const wrapper = document.createElement('div');
+  wrapper.id = 'reports-pdf-root';
+  wrapper.setAttribute('dir', document.documentElement.getAttribute('dir') || 'rtl');
+  wrapper.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1;';
+
+  const style = document.createElement('style');
+  style.textContent = `
+    :root { --pdf-text:#111827; --pdf-muted:#6b7280; --pdf-border:#e5e7eb; }
+    * { box-sizing: border-box; }
+    html, body { font-family: Tajawal, Arial, sans-serif; }
+    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: var(--pdf-text); }
+    .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; }
+    .pdf .subtitle { margin: 0 0 18px; color: var(--pdf-muted); font-size: 13px; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+    .kpi { border:1px solid var(--pdf-border); border-radius:10px; padding:10px 12px; }
+    .kpi .label { font-size: 12px; color: var(--pdf-muted); }
+    .kpi .value { font-size: 16px; font-weight: 700; }
+    .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { text-align: center; background: #f3f4f6; border: 1px solid var(--pdf-border); padding: 8px; font-weight: 800; }
+    tbody td { border: 1px solid var(--pdf-border); padding: 8px; }
+    tbody tr:nth-child(even) td { background: #fafafa; }
+  `;
+  wrapper.appendChild(style);
+
+  const root = document.createElement('div');
+  root.className = 'pdf';
+  root.innerHTML = `
+    <h1>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</h1>
+    <p class="subtitle">${formatDateInput(date)} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}</p>
+    <div class="kpis">
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations')}</div><div class="value">${formatNumber(metrics.total || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue')}</div><div class="value">${formatCurrency(metrics.revenue || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit')}</div><div class="value">${formatCurrency(metrics.netProfit || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share')}</div><div class="value">${formatCurrency(metrics.companyShareTotal || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax')}</div><div class="value">${formatCurrency(metrics.taxTotal || 0)}</div></div>
+      <div class="kpi"><div class="label">${translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance')}</div><div class="value">${formatCurrency((metrics.maintenanceExpense) || 0)}</div></div>
+    </div>
+    <div class="section-title">${translate('reservations.reports.results.title', 'تفاصيل الحجوزات', 'Reservations details')}</div>
+  `;
+
+  // Build table
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const tbody = document.createElement('tbody');
+
+  const headers = rows && rows.length ? Object.keys(rows[0]) : [
+    translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
+    translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
+    translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
+    translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
+    translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
+    translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
+    translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+    translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
+  ];
+
+  const trHead = document.createElement('tr');
+  headers.forEach((h) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    trHead.appendChild(th);
+  });
+  thead.appendChild(trHead);
+
+  (rows || []).forEach((row) => {
+    const tr = document.createElement('tr');
+    headers.forEach((h) => {
+      const td = document.createElement('td');
+      td.textContent = row[h] != null ? String(row[h]) : '';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  root.appendChild(table);
+  wrapper.appendChild(root);
+  return wrapper;
+}
+
+export async function exportAsPdf(rows = []) {
+  // Build a clean, print-friendly element (detached)
+  const pdfEl = buildPdfReportElement(rows && rows.length ? rows : (reportsState.lastSnapshot.tableRows || []));
+  document.body.appendChild(pdfEl);
 
   const html2pdf = await ensureHtml2Pdf();
   if (typeof html2pdf !== 'function') {
     console.warn('[reports] html2pdf unavailable, skipping PDF export');
+    pdfEl.remove();
     return;
   }
 
@@ -79,10 +168,10 @@ export async function exportAsPdf() {
   patchHtml2CanvasColorParsing();
 
   const mutations = [];
-  const overlay = injectExportSanitizer(container);
-  sanitizeComputedColorFunctions(container, window, mutations);
-  enforceLegacyColorFallback(container, window, mutations);
-  scrubUnsupportedColorFunctions(container);
+  const overlay = injectExportSanitizer(pdfEl);
+  sanitizeComputedColorFunctions(pdfEl, window, mutations);
+  enforceLegacyColorFallback(pdfEl, window, mutations);
+  scrubUnsupportedColorFunctions(pdfEl);
 
   try {
     await html2pdf().set({
@@ -138,19 +227,20 @@ export async function exportAsPdf() {
         format: 'a4',
         orientation: 'portrait',
       },
-    }).from(container).save();
+    }).from(pdfEl).save();
   } catch (error) {
     console.error('⚠️ [reports] export failed', error);
   } finally {
     revertStyleMutations(mutations);
-    removeExportSanitizer(container, overlay);
+    removeExportSanitizer(pdfEl, overlay);
+    pdfEl.remove();
   }
 }
 
 export async function exportReport(type, rows) {
   switch (type) {
     case 'pdf':
-      await exportAsPdf();
+      await exportAsPdf(rows);
       break;
     case 'excel':
       await exportAsExcel(rows);
