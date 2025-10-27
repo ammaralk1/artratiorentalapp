@@ -5,7 +5,8 @@ export function updateKpiCards(metrics) {
   const totalMetaEl = document.getElementById('reports-kpi-total-meta');
   const revenueEl = document.getElementById('reports-kpi-revenue');
   const revenueMetaEl = document.getElementById('reports-kpi-revenue-meta');
-  const revenueDetailsEl = document.getElementById('reports-revenue-breakdown');
+  // تفاصيل الإيرادات تُعرض الآن في بطاقة مستقلة خارج كروت KPI
+  const revenueDetailsEl = document.getElementById('reservations-revenue-breakdown');
   const confirmedEl = document.getElementById('reports-kpi-confirmed');
   const confirmedMetaEl = document.getElementById('reports-kpi-confirmed-meta');
   const paidEl = document.getElementById('reports-kpi-paid');
