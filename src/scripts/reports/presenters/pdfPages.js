@@ -314,6 +314,8 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
       const pages = Array.from(root.querySelectorAll('.quote-page'));
       let pdfPageIndex = 0;
 
+      const EXTRA_SHIFT_RIGHT_MM = 2;   // حرّك الصورة قليلاً لليمين لتفادي قص الحافة اليمنى
+      const EXTRA_SHIFT_UP_MM = -2;     // ارفع الصورة قليلاً للأعلى لتبدأ من أعلى الصفحة
       for (let i = 0; i < pages.length; i += 1) {
         const page = pages[i];
         const doc = page.ownerDocument || document;
@@ -346,7 +348,9 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
-        pdf.addImage(img, 'JPEG', offsetXmm, 0, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
+        const finalX = Math.max(0, offsetXmm + EXTRA_SHIFT_RIGHT_MM);
+        const finalY = EXTRA_SHIFT_UP_MM; // jsPDF يسمح بإحداثيات سالبة لقص الفراغ العلوي الآمن
+        pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
         // small yield
         // eslint-disable-next-line no-await-in-loop
