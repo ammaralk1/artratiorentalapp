@@ -79,20 +79,21 @@ export function buildPdfReportElement(rows = []) {
 
   const style = document.createElement('style');
   style.textContent = `
-    :root { --pdf-text:#111827; --pdf-muted:#6b7280; --pdf-border:#e5e7eb; }
-    * { box-sizing: border-box; }
+    /* عزل تام لألوان وضع الداكن داخل جذر التقرير */
+    #reports-pdf-root, #reports-pdf-root * { color: #000 !important; box-sizing: border-box; }
+    :where(html.dark-mode, body.dark-mode) #reports-pdf-root, :where(html.dark-mode, body.dark-mode) #reports-pdf-root * { color: #000 !important; }
     html, body { font-family: Tajawal, Arial, sans-serif; }
-    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: var(--pdf-text); }
-    .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; }
-    .pdf .subtitle { margin: 0 0 18px; color: var(--pdf-muted); font-size: 13px; }
+    .pdf { width: 794px; /* A4 width at 96dpi */ padding: 24px; color: #000; background: #fff; }
+    .pdf h1 { margin: 0 0 8px; font-size: 22px; font-weight: 800; color:#000; }
+    .pdf .subtitle { margin: 0 0 18px; color: #000; font-size: 13px; opacity: 0.85; }
     .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .kpi { border:1px solid var(--pdf-border); border-radius:10px; padding:10px 12px; }
-    .kpi .label { font-size: 12px; color: var(--pdf-muted); }
-    .kpi .value { font-size: 16px; font-weight: 700; }
-    .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    thead th { text-align: center; background: #f3f4f6; border: 1px solid var(--pdf-border); padding: 8px; font-weight: 800; }
-    tbody td { border: 1px solid var(--pdf-border); padding: 8px; }
+    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px; background:#fff; }
+    .kpi .label { font-size: 12px; color: #000; opacity: 0.8; }
+    .kpi .value { font-size: 16px; font-weight: 700; color:#000; }
+    .section-title { margin: 14px 0 8px; font-weight: 800; font-size: 16px; color:#000; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; color:#000; }
+    thead th { text-align: center; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 8px; font-weight: 800; color:#000; }
+    tbody td { border: 1px solid #e5e7eb; padding: 8px; color:#000; }
     tbody tr:nth-child(even) td { background: #fafafa; }
   `;
   wrapper.appendChild(style);

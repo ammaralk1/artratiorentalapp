@@ -52,14 +52,25 @@ function setupZoom(modal) {
   let zoom = 1;
   const frame = modal.querySelector('[data-preview-frame]');
   const zoomValue = modal.querySelector('[data-zoom-value]');
+  const wrapper = modal.querySelector('.quote-preview-frame-wrapper');
   const apply = () => {
+    frame.style.transformOrigin = 'top center';
     frame.style.transform = `scale(${zoom})`;
     zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+  };
+  const fitToWidth = () => {
+    const targetWidth = 794; // A4 px in our template
+    const available = wrapper?.clientWidth || frame.parentElement?.clientWidth || targetWidth;
+    const nextZoom = Math.min(1.2, Math.max(0.4, (available - 24) / targetWidth));
+    zoom = nextZoom;
+    apply();
   };
   modal.querySelector('[data-zoom-in]').addEventListener('click', () => { zoom = Math.min(2, zoom + 0.1); apply(); });
   modal.querySelector('[data-zoom-out]').addEventListener('click', () => { zoom = Math.max(0.4, zoom - 0.1); apply(); });
   modal.querySelector('[data-zoom-reset]').addEventListener('click', () => { zoom = 1; apply(); });
-  apply();
+  // initial fit
+  setTimeout(fitToWidth, 0);
+  window.addEventListener('resize', fitToWidth);
 }
 
 export function openReportsPdfPreview(rows) {
@@ -95,4 +106,3 @@ export function openReportsPdfPreview(rows) {
 export default {
   openReportsPdfPreview,
 };
-
