@@ -58,6 +58,8 @@ function createRoot(context = 'preview') {
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
+    /* تقليل الحافة العلوية قليلاً في حالة التصدير فقط لمطابقة المعاينة */
+    #quotation-pdf-root[data-quote-render-context="export"] .quote-page { padding: 4mm 12mm 10mm; }
   `;
   root.appendChild(extra);
 
@@ -314,8 +316,9 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
       const pages = Array.from(root.querySelectorAll('.quote-page'));
       let pdfPageIndex = 0;
 
-      const EXTRA_SHIFT_RIGHT_MM = 2;   // حرّك الصورة قليلاً لليمين لتفادي قص الحافة اليمنى
-      const EXTRA_SHIFT_UP_MM = -2;     // ارفع الصورة قليلاً للأعلى لتبدأ من أعلى الصفحة
+      const EXTRA_SHIFT_RIGHT_MM = 6;   // تحريك إضافي لليمين بناءً على المعاينة
+      const EXTRA_SHIFT_UP_MM = -10;    // رفع المحتوى ليبدأ من أعلى الصفحة
+      const SAFE_SCALE = 0.985;         // تقليص طفيف لتجنّب أي قص سفلي بعد الرفع
       for (let i = 0; i < pages.length; i += 1) {
         const page = pages[i];
         const doc = page.ownerDocument || document;
@@ -345,11 +348,13 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         const cw = canvas.width || 1; const ch = canvas.height || 1; const aspect = ch / cw;
         let targetWmm = A4_W_MM; let targetHmm = targetWmm * aspect; let offsetXmm = 0;
         if (targetHmm > A4_H_MM) { const s = A4_H_MM / targetHmm; targetHmm = A4_H_MM; targetWmm = targetWmm * s; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2); }
+        // تقليص آمن بسيط قبل تطبيق الإزاحة
+        targetWmm *= SAFE_SCALE; targetHmm *= SAFE_SCALE; offsetXmm = Math.max(0, (A4_W_MM - targetWmm) / 2);
 
         const img = canvas.toDataURL('image/jpeg', 0.95);
         if (pdfPageIndex > 0) pdf.addPage();
         const finalX = Math.max(0, offsetXmm + EXTRA_SHIFT_RIGHT_MM);
-        const finalY = EXTRA_SHIFT_UP_MM; // jsPDF يسمح بإحداثيات سالبة لقص الفراغ العلوي الآمن
+        const finalY = EXTRA_SHIFT_UP_MM; // jsPDF يسمح بإحداثيات سالبة لقص الفراغ العلوي
         pdf.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
         pdfPageIndex += 1;
         // small yield
