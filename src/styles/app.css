@@ -1417,23 +1417,26 @@
   .customer-table .table-actions-cell .table-action-buttons { gap: 0.35rem; }
   .customer-table .customer-action-btn { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
 
-  /* Keep company on one line, but allow slightly smaller min width with ellipsis */
+  /* Company column: target ~25% of table width with safe minimum */
   .customer-table thead th:nth-child(3),
   .customer-table tbody td:nth-child(3) {
-    min-width: 14rem;
+    width: 25% !important;
+    min-width: 12rem;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    padding-inline: 0.6rem;
   }
 
-  /* Shrink customer name a bit more to accomodate company */
+  /* Name column: target ~25% of table width with safe minimum */
   .customer-table thead th:nth-child(1),
   .customer-table tbody td:nth-child(1) {
-    width: 8.5rem;
-    min-width: 8.5rem;
+    width: 25% !important;
+    min-width: 10rem;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+    padding-inline: 0.6rem;
   }
 
   /* Reduce padding specifically for name and company columns to save width */
@@ -1447,13 +1450,13 @@
   /* Phone column: keep compact to save width */
   .customer-table thead th:nth-child(2),
   .customer-table tbody td:nth-child(2) {
-    width: 9rem;
-    min-width: 9rem;
+    width: 8.5rem;
+    min-width: 8.5rem;
   }
 
-  /* Notes column: reduce share to keep table inside wrapper */
+  /* Notes column: auto width so name/company percentages fit better */
   .customer-table .table-notes-head,
-  .customer-table tbody .table-notes-cell { width: 28%; min-width: 12rem; }
+  .customer-table tbody .table-notes-cell { width: auto !important; min-width: 12rem; }
 
   /* Compact action buttons a bit more */
   .customer-table .customer-action-btn { padding: 0.24rem 0.52rem; font-size: 0.7rem; }
