@@ -42,7 +42,10 @@
 .rpt-kpi .value { font-weight: 700; font-size: 14px; }
 
 /* الجدول */
-.rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e5e7eb; }
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e5e7eb; table-layout: fixed; }
 .rpt-table tbody tr:last-child td { border-bottom: 1px solid #e5e7eb; }
+.rpt-table td, .rpt-table th { vertical-align: middle; }
+/* تفاصيل الجسم فقط أصغر وبسطر واحد */
+.rpt-table tbody td { font-size: 10px; line-height: 1.35; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; font-weight: 800; }
 .rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; }
