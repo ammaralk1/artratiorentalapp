@@ -542,7 +542,8 @@ async function refreshTechnicianFinancialSummary(technician) {
   }
   const relevantReservations = reservations.filter((reservation) => {
     if (!reservation) return false;
-    if (String(reservation.status || '').toLowerCase() === 'cancelled') {
+    const rawStatus = String(reservation.status || '').toLowerCase();
+    if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
       return false;
     }
     const technicianIds = Array.isArray(reservation.technicians)
