@@ -369,6 +369,54 @@ body[dir="rtl"] .reports-filters {
   width: 100%;
 }
 
+/* Presets row: dropdown + actions on a single horizontal line */
+.reports-presets-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap; /* wrap on small screens */
+}
+
+/* Keep one row on medium+ screens */
+@media (min-width: 768px) {
+  .reports-presets-controls { flex-wrap: nowrap; }
+}
+
+/* Preset select sizing to match filters */
+.reports-presets-select { min-width: clamp(16rem, 28vw, 22rem); }
+.reports-presets-select .reports-filter-control { min-height: 48px; }
+
+/* Preset actions grouping */
+.reports-presets-actions { display: flex; gap: 8px; align-items: center; }
+
+/* Unify preset buttons with theme look and feel */
+.reports-presets-actions .reports-preset-btn {
+  border-radius: 12px;
+  min-height: 40px;
+  padding-inline: 12px;
+  border-color: var(--reports-border);
+  color: var(--clr-text);
+}
+
+.reports-presets-actions .reports-preset-btn:hover,
+.reports-presets-actions .reports-preset-btn:focus-visible {
+  border-color: var(--reports-accent);
+  box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 76,110,245), 0.18);
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn {
+  border-color: var(--reports-border-strong);
+  color: var(--reports-text);
+  background: rgba(24, 33, 59, 0.5);
+}
+
+:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:hover,
+:is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:focus-visible {
+  border-color: var(--reports-accent);
+  box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 147,197,253), 0.25);
+}
+
 
 .reports-filters-grid {
   display: grid;
