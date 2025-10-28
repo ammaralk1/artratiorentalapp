@@ -545,10 +545,12 @@ export function calculateMonthlyTrend(reservations) {
     const year = date.getFullYear();
     const month = date.getMonth();
 
-    const monthReservations = reservations.filter((res) => {
-      const start = res?.start ? new Date(res.start) : null;
-      return start && start.getFullYear() === year && start.getMonth() === month;
-    });
+    const monthReservations = reservations
+      .filter((res) => {
+        const start = res?.start ? new Date(res.start) : null;
+        return start && start.getFullYear() === year && start.getMonth() === month;
+      })
+      .filter((res) => computeReportStatus(res).statusValue !== 'cancelled'); // exclude cancelled from trend
 
     const count = monthReservations.length;
     let revenue = 0;

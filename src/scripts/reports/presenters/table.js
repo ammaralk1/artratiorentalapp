@@ -166,6 +166,13 @@ function renderPagination(totalItems) {
   const nextDisabled = page >= totalPages ? 'disabled' : '';
   const rangeStart = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeEnd = Math.min(page * pageSize, totalItems);
+
+  // إذا لم نكن بحاجة للترقيم (كل النتائج في صفحة واحدة) نخفي الأسهم وخيارات الحجم
+  if (totalItems <= pageSize) {
+    host.innerHTML = `<div class="page-info">${formatNumber(rangeStart)}–${formatNumber(rangeEnd)} / ${formatNumber(totalItems)}</div>`;
+    return;
+  }
+
   host.innerHTML = `
     <div class="pager">
       <button type="button" ${prevDisabled} data-page="prev">◀</button>
