@@ -403,7 +403,6 @@ export function initReports() {
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
   const refreshBtn = document.getElementById('reports-refresh');
-  const printBtn = document.getElementById('reports-print');
   const customRangeWrapper = document.getElementById('reports-custom-range');
   const searchInput = document.getElementById('reports-search');
 
@@ -478,15 +477,7 @@ export function initReports() {
     renderReports();
   });
 
-  printBtn?.addEventListener('click', async () => {
-    try {
-      const rows = reportsState.lastSnapshot.tableRows || [];
-      const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
-      await exportA4ReportPdf(rows, { action: 'print', strict: true });
-    } catch (_) {
-      try { window.print(); } catch (_) {}
-    }
-  });
+  // تمت إزالة زر الطباعة من التبويب لتفادي التكرار مع تصدير PDF
 
   setupCustomRangePickers(startInput, endInput);
   toggleCustomRange(customRangeWrapper, filters.range === 'custom');
