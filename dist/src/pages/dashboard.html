@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard.I5Mcw0GV.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.JZrLedpn.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.B1hsYPEN.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.BzUaX7iX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.BOz0qBLn.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.D4PMCgmj.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.BnBq_NNs.css">
-  <link rel="stylesheet" crossorigin href="../../assets/index.CUo9sM62.css">
+  <script type="module" crossorigin src="../../assets/dashboard.B7GhTIDQ.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Cojl8C1z.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.CvB8O3yO.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.DcQpxKgZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.O60astIp.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.CsW77HM0.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.BKcP8X7a.css">
+  <link rel="stylesheet" crossorigin href="../../assets/index.D802TwJc.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -1361,6 +1361,7 @@
               <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
               <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
               <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+              <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
             </select>
           </div>
 
@@ -1405,6 +1406,7 @@
                       <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
                       <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
                       <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
+                      <option value="cancelled" data-i18n data-i18n-key="reservations.reports.filters.status.cancelled">ملغاة</option>
                     </select>
                   </label>
                   <label class="reports-filter-field">
@@ -1412,6 +1414,7 @@
                     <select id="reports-payment-filter" class="form-select reports-filter-control">
                       <option value="all" data-i18n data-i18n-key="reservations.reports.filters.payment.all">الكل</option>
                       <option value="paid" data-i18n data-i18n-key="reservations.reports.filters.payment.paid">مدفوعة</option>
+                      <option value="partial" data-i18n data-i18n-key="reservations.reports.filters.payment.partial">مدفوعة جزئياً</option>
                       <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
                     </select>
                   </label>
@@ -2004,6 +2007,13 @@
             <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
               <label class="form-label" for="edit-res-confirmed-btn">✅ حالة التأكيد</label>
               <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" data-pending-label="⏳ بانتظار التأكيد" data-confirm-label="✅ تم التأكيد" aria-pressed="false">⏳ بانتظار التأكيد</button>
+            </div>
+            <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">
+              <label class="form-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
+                <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+              </div>
             </div>
 
             <div class="col-12">

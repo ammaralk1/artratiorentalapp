@@ -17,14 +17,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/customer.DaHNok2y.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.JZrLedpn.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.BOz0qBLn.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.B1hsYPEN.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.BzUaX7iX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/form.DEquLjqk.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.C821DTtY.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.BnBq_NNs.css">
+  <script type="module" crossorigin src="../../assets/customer.DChlRN5R.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Cojl8C1z.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.O60astIp.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.CvB8O3yO.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.DcQpxKgZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/form.Q_bujcAa.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.N1biXP03.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.BKcP8X7a.css">
 </head>
 <body class="page-shell theme-loading customer-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -391,6 +391,7 @@
                 <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
                 <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
                 <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+                <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
               </select>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
@@ -509,6 +510,12 @@
                 <div class="form-check">
                   <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
                   <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
+                    <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+                  </div>
                 </div>
               </div>
             </div>
