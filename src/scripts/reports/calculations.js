@@ -297,11 +297,16 @@ export function computeReportStatus(reservation) {
     statusValue = 'completed';
   }
 
-  const confirmed = projectState.effectiveConfirmed
+  let confirmed = projectState.effectiveConfirmed
     || statusValue === 'confirmed'
     || statusValue === 'completed';
 
-  if (confirmed && statusValue !== 'completed') {
+  // If reservation is cancelled, do NOT mark as confirmed and do NOT override label
+  if (statusValue === 'cancelled') {
+    confirmed = false;
+  }
+
+  if (confirmed && statusValue !== 'completed' && statusValue !== 'cancelled') {
     statusValue = 'confirmed';
   }
 
