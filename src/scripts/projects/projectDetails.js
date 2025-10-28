@@ -511,16 +511,40 @@ export function bindProjectDetailsEvents(project) {
   const reservationContainer = dom.detailsBody.querySelector('.project-reservations-list');
 
   if (createBtn && project) {
-    // Ensure the button is always enabled to allow multiple linked reservations
     try {
+      const linked = getReservationsForProject(project.id) || [];
+      const hasActiveLinked = linked.some((res) => {
+        const raw = String(res?.status || res?.reservationStatus || '').toLowerCase();
+        return raw !== 'cancelled' && raw !== 'canceled';
+      });
+
+      if (hasActiveLinked) {
+        // Disable creation when there is already an active linked reservation
+        createBtn.disabled = true;
+        createBtn.classList?.add('disabled');
+        createBtn.setAttribute?.('aria-disabled', 'true');
+        createBtn.title = t('projects.details.reservations.createDisabled', '⚠️ يوجد حجز مرتبط بالفعل بهذا المشروع');
+      } else {
+        createBtn.disabled = false;
+        createBtn.classList?.remove('disabled');
+        createBtn.removeAttribute?.('aria-disabled');
+        createBtn.removeAttribute?.('title');
+        createBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          startReservationForProject(project);
+        });
+      }
+    } catch (_) {
+      // Fallback to enabling when any error occurs
       createBtn.disabled = false;
       createBtn.classList?.remove('disabled');
       createBtn.removeAttribute?.('aria-disabled');
-    } catch (_) { /* noop */ }
-    createBtn.addEventListener('click', (event) => {
-      event.preventDefault();
-      startReservationForProject(project);
-    });
+      createBtn.removeAttribute?.('title');
+      createBtn.addEventListener('click', (event) => {
+        event.preventDefault();
+        startReservationForProject(project);
+      });
+    }
   }
 
   if (editBtn && project) {
