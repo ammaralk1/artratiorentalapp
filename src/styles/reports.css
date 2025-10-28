@@ -69,6 +69,12 @@ body.dark-mode {
   padding: 24px 32px;
 }
 
+/* Center all top-level containers inside reservations reports tab */
+.reports-wrapper--reservations > * {
+  width: min(100%, 1140px);
+  margin-inline: auto;
+}
+
 .reports-surface-card,
 .reports-kpi-card,
 .reports-chart-card,
