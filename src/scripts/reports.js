@@ -30,6 +30,7 @@ import {
   renderTopCustomers,
   renderTopEquipment,
   renderTopOutstanding,
+  renderCrewWork,
 } from './reports/presenters/exporters.js';
 import {
   setupColumnControls,
@@ -385,7 +386,7 @@ export function renderReports() {
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
   renderTopOutstanding(topOutstanding);
-  try { (await import('./reports/presenters/exporters.js')).renderCrewWork(crewWork); } catch (_) {}
+  renderCrewWork(crewWork);
   const tableRows = renderReservationsTable(filtered, customers, technicians);
   applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
