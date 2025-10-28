@@ -113,25 +113,27 @@ body.dark-mode {
   backdrop-filter: blur(10px);
 }
 
+#reservations-report-printable .reports-header-card,
 .reports-header-card {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
-  position: sticky; /* keep filters visible */
-  top: var(--reports-sticky-offset, 64px);
-  z-index: 30; /* below page header (z-40), above normal cards */
+  position: sticky !important; /* force sticky behavior */
+  top: var(--reports-sticky-offset, 72px) !important; /* keep under page header */
+  z-index: 30 !important; /* below page header (z-40), above normal cards */
   flex-wrap: wrap;
 }
 
+#reservations-report-printable .reports-header-card,
 .reports-wrapper--reservations .reports-header-card {
   flex-direction: column;
-  align-items: stretch;
+  align-items: stretch !important;
   gap: 10px;
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
-  display: flex; /* override inline-flex from base card */
+  display: flex !important; /* override inline-flex from base card */
 }
 
 .reports-header-leading {
@@ -235,6 +237,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   text-align: left;
 }
 
+#reservations-report-printable .reports-filters,
 .reports-filters {
   display: flex;
   flex-wrap: wrap;
@@ -245,7 +248,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   border-radius: var(--reports-radius-md);
   padding: 16px 18px;
   position: relative;
-  z-index: 20; /* keep dropdowns above cards, but under header */
+  z-index: 20 !important; /* keep dropdowns above cards, but under header */
 }
 
 .reports-wrapper--reservations .reports-filters {
@@ -278,9 +281,11 @@ body[dir="rtl"] .reports-filters {
 }
 
 /* when focused, ensure the control sits above nearby content */
+#reservations-report-printable .reports-filters .form-control:focus,
+#reservations-report-printable .reports-filters .form-select:focus,
 .reports-filters .form-control:focus,
 .reports-filters .form-select:focus {
-  z-index: 35; /* under page header (z-40) */
+  z-index: 35 !important; /* under page header (z-40) */
 }
 
 .reports-status-filter {
