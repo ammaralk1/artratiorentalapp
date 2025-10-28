@@ -16,6 +16,7 @@ import {
   applyMaintenanceExpenses,
   calculateMonthlyTrend,
   calculateStatusBreakdown,
+  calculateMonthlyStatusStack,
   calculatePaymentBreakdown,
   calculateTopCustomers,
   calculateTopEquipment,
