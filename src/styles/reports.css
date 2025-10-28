@@ -121,7 +121,10 @@ body.dark-mode {
   gap: 18px;
   position: sticky !important; /* force sticky behavior */
   top: var(--reports-sticky-offset, 72px) !important; /* keep under page header */
-  z-index: 30 !important; /* below page header (z-40), above normal cards */
+  z-index: 5 !important; /* lower than cards & under header */
+  backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
   flex-wrap: wrap;
 }
 
@@ -248,7 +251,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   border-radius: var(--reports-radius-md);
   padding: 16px 18px;
   position: relative;
-  z-index: 20 !important; /* keep dropdowns above cards, but under header */
+  z-index: 4 !important; /* keep dropdowns above cards, but under header */
 }
 
 .reports-wrapper--reservations .reports-filters {
@@ -281,12 +284,11 @@ body[dir="rtl"] .reports-filters {
 }
 
 /* when focused, ensure the control sits above nearby content */
+/* keep focus elements below header */
 #reservations-report-printable .reports-filters .form-control:focus,
 #reservations-report-printable .reports-filters .form-select:focus,
 .reports-filters .form-control:focus,
-.reports-filters .form-select:focus {
-  z-index: 35 !important; /* under page header (z-40) */
-}
+.reports-filters .form-select:focus { z-index: 6 !important; }
 
 .reports-status-filter {
   display: flex;
