@@ -13,6 +13,8 @@ export function updateKpiCards(metrics) {
   const paidMetaEl = document.getElementById('reports-kpi-paid-meta');
 
   const total = metrics.total || 0;
+  const cancelled = metrics.cancelled || 0;
+  const activeTotal = metrics.activeTotal != null ? metrics.activeTotal : Math.max(0, total - cancelled);
   const revenue = metrics.revenue || 0;
   const confirmed = metrics.confirmed || 0;
   const paid = metrics.paidCount || 0;
@@ -24,13 +26,18 @@ export function updateKpiCards(metrics) {
   const net = metrics.netProfit || 0;
   const maintenanceExpense = metrics.maintenanceExpense || 0;
   const confirmedRate = total ? Math.round((confirmed / total) * 100) : 0;
-  const paidRate = total ? Math.round((paid / total) * 100) : 0;
+  // لا تُحسب الحجوزات الملغية ضمن نسبة المدفوع
+  const paidRate = activeTotal ? Math.round((paid / activeTotal) * 100) : 0;
 
   if (totalEl) totalEl.textContent = formatNumber(total);
   if (totalMetaEl) {
     const completedText = translate('reservations.reports.kpi.total.dynamicMeta', 'منها {count} منتهية', 'Includes {count} completed')
       .replace('{count}', formatNumber(metrics.completed || 0));
-    totalMetaEl.textContent = completedText;
+    const cancelledPart = cancelled > 0
+      ? ' ' + translate('reservations.reports.kpi.total.cancelledPart', '• {count} ملغاة', '• {count} cancelled')
+          .replace('{count}', formatNumber(cancelled))
+      : '';
+    totalMetaEl.textContent = completedText + cancelledPart;
   }
 
   if (revenueEl) revenueEl.textContent = formatCurrency(revenue);

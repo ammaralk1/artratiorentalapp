@@ -331,6 +331,7 @@ export function calculateMetrics(reservations) {
   const total = reservations.length;
   let confirmed = 0;
   let completed = 0;
+  let cancelled = 0;
   let paidCount = 0;
   let revenue = 0;
   let companyShareTotal = 0;
@@ -344,20 +345,26 @@ export function calculateMetrics(reservations) {
     if (statusValue === 'completed') {
       completed += 1;
     }
+    if (statusValue === 'cancelled') {
+      cancelled += 1;
+    }
     if (isConfirmed) {
       confirmed += 1;
     }
-    if (paid) {
+    if (paid && statusValue !== 'cancelled') {
       paidCount += 1;
     }
 
-    const financials = computeReservationFinancials(reservation);
-    revenue += financials.finalTotal;
-    companyShareTotal += financials.companyShareAmount;
-    taxTotal += financials.taxAmount;
-    crewTotal += financials.crewTotal;
-    crewCostTotal += financials.crewCostTotal ?? 0;
-    netProfit += financials.netProfit;
+    // لا تُحسب الحجوزات الملغية ضمن الإيرادات أو الضرائب أو نسب/تكاليف الطاقم
+    if (statusValue !== 'cancelled') {
+      const financials = computeReservationFinancials(reservation);
+      revenue += financials.finalTotal;
+      companyShareTotal += financials.companyShareAmount;
+      taxTotal += financials.taxAmount;
+      crewTotal += financials.crewTotal;
+      crewCostTotal += financials.crewCostTotal ?? 0;
+      netProfit += financials.netProfit;
+    }
   });
 
   const average = total ? revenue / total : 0;
@@ -366,6 +373,8 @@ export function calculateMetrics(reservations) {
     total,
     confirmed,
     completed,
+    cancelled,
+    activeTotal: Math.max(0, total - cancelled),
     paidCount,
     revenue,
     average,
@@ -910,7 +919,8 @@ export function calculateTopOutstanding(reservations, customers, limit = 5) {
   const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
   const rows = [];
   (reservations || []).forEach((res) => {
-    const { paidStatus } = computeReportStatus(res);
+    const { paidStatus, statusValue } = computeReportStatus(res);
+    if (statusValue === 'cancelled') return; // لا تُدرج الملغية في أعلى المستحقات
     if (paidStatus !== 'unpaid' && paidStatus !== 'partial') return;
     const outstanding = computeOutstandingAmount(res);
     if (!Number.isFinite(outstanding) || outstanding <= 0) return;
