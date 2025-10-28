@@ -892,6 +892,64 @@ export function isReservationConfirmed(reservation) {
   return computeReportStatus(reservation).confirmed;
 }
 
+// ------------------------------
+// Crew work aggregation (per technician)
+// ------------------------------
+export function calculateCrewWorkReport(reservations, technicians) {
+  const techMap = new Map((technicians || []).map((t) => [String(t.id), t]));
+  const byTech = new Map();
+
+  (reservations || []).forEach((res) => {
+    const { statusValue } = computeReportStatus(res);
+    if (statusValue === 'cancelled') return; // ignore cancelled work
+    const days = calculateReservationDaysForReports(res.start, res.end);
+    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+
+    if (crewAssignments.length) {
+      crewAssignments.forEach((a) => {
+        const techId = a?.technicianId != null ? String(a.technicianId) : null;
+        if (!techId) return;
+        const tech = techMap.get(techId) || getTechnicianRecordById(techId) || {};
+        const perDayBillable = Number.isFinite(Number(a?.positionClientPrice)) && Number(a.positionClientPrice) > 0
+          ? Number(a.positionClientPrice)
+          : resolveTechnicianTotalRateForReports(tech);
+        const perDayCost = Number.isFinite(Number(a?.positionCost)) && Number(a.positionCost) > 0
+          ? Number(a.positionCost)
+          : resolveTechnicianDailyRateForReports(tech);
+        const billable = perDayBillable * days;
+        const cost = perDayCost * days;
+        const rec = byTech.get(techId) || { id: techId, name: tech?.name || String(techId), days: 0, billable: 0, cost: 0 };
+        rec.days += days;
+        rec.billable += billable;
+        rec.cost += cost;
+        byTech.set(techId, rec);
+      });
+      return;
+    }
+
+    // Fallback: technicians listed without rich assignments
+    const techIds = Array.isArray(res.technicians) ? res.technicians.map((x) => String(x)) : [];
+    techIds.forEach((techId) => {
+      const tech = techMap.get(techId) || getTechnicianRecordById(techId) || {};
+      const perDayBillable = resolveTechnicianTotalRateForReports(tech);
+      const perDayCost = resolveTechnicianDailyRateForReports(tech);
+      const billable = perDayBillable * days;
+      const cost = perDayCost * days;
+      const rec = byTech.get(techId) || { id: techId, name: tech?.name || String(techId), days: 0, billable: 0, cost: 0 };
+      rec.days += days;
+      rec.billable += billable;
+      rec.cost += cost;
+      byTech.set(techId, rec);
+    });
+  });
+
+  const rows = Array.from(byTech.values()).map((r) => ({
+    ...r,
+    net: r.billable - r.cost,
+  })).sort((a, b) => b.net - a.net);
+  return rows;
+}
+
 function getPaidAmountFromHistory(history = []) {
   if (!Array.isArray(history) || !history.length) return 0;
   // Sum explicit amounts; ignore percentages here

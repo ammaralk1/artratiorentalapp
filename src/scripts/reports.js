@@ -20,6 +20,7 @@ import {
   calculateTopCustomers,
   calculateTopEquipment,
   calculateTopOutstanding,
+  calculateCrewWorkReport,
 } from './reports/calculations.js';
 import { renderTrendChart, renderStatusChart, renderPaymentChart } from './reports/presenters/charts.js';
 import { updateKpiCards } from './reports/presenters/kpis.js';
@@ -374,6 +375,7 @@ export function renderReports() {
   const paymentBreakdown = calculatePaymentBreakdown(filtered);
   const topCustomers = calculateTopCustomers(filtered, customers);
   const topEquipment = calculateTopEquipment(filtered, equipment);
+  const crewWork = calculateCrewWorkReport(filtered, technicians);
   const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
 
   updateKpiCards(metricsWithMaintenance);
@@ -383,6 +385,7 @@ export function renderReports() {
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
   renderTopOutstanding(topOutstanding);
+  try { (await import('./reports/presenters/exporters.js')).renderCrewWork(crewWork); } catch (_) {}
   const tableRows = renderReservationsTable(filtered, customers, technicians);
   applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
