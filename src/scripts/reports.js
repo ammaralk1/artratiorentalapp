@@ -49,6 +49,14 @@ import { renderActiveFilters, renderQuickChips } from './reports/presenters/ui.j
 
 const filters = reportsState.filters;
 
+function updateReportsStickyOffset() {
+  try {
+    const header = document.querySelector('.dashboard-header');
+    const h = Math.max(0, Math.round(header?.getBoundingClientRect()?.height || 64));
+    document.documentElement.style.setProperty('--reports-sticky-offset', `${h}px`);
+  } catch (_) { /* ignore */ }
+}
+
 // Presets (save/load/share)
 const PRESETS_KEY = 'reports.presets.v1';
 function loadPresets() {
@@ -139,13 +147,16 @@ function handleLanguageChange() {
     resetFormatters();
     renderReports();
     setupCustomRangePickers();
+    updateReportsStickyOffset();
   }, 0);
   setTimeout(() => {
     resetFormatters();
     renderReports();
     setupCustomRangePickers();
+    updateReportsStickyOffset();
   }, 60);
   setupCustomRangePickers();
+  updateReportsStickyOffset();
 }
 
 function renderIfCustomRange() {
@@ -528,6 +539,7 @@ export function initReports() {
 
   readFiltersFromUrl();
   syncFilterControls();
+  updateReportsStickyOffset();
 
   const hydrated = hydrateReportsFromCache();
   if (hydrated) {
@@ -670,9 +682,18 @@ export function initReports() {
 
   if (!reportsState.themeListenerAttached) {
     document.addEventListener('theme:changed', () => {
-      setTimeout(() => renderReports(), 0);
+      setTimeout(() => { renderReports(); updateReportsStickyOffset(); }, 0);
     });
     reportsState.themeListenerAttached = true;
+  }
+
+  // Keep sticky offset in sync with header height on resize/layout changes
+  if (!reportsState.stickyOffsetListenerAttached) {
+    const onResize = () => updateReportsStickyOffset();
+    window.addEventListener('resize', onResize);
+    setTimeout(onResize, 100);
+    setTimeout(onResize, 500);
+    reportsState.stickyOffsetListenerAttached = true;
   }
 
   setRenderCallback(renderReports);
