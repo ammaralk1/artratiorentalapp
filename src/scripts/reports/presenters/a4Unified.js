@@ -217,7 +217,7 @@ export async function exportA4ReportPdf(rows = [], { action = 'save' } = {}) {
     const pages = Array.from(root.querySelectorAll('.a4-page'));
     for (let i = 0; i < pages.length; i += 1) {
       const page = pages[i];
-      const canvas = await h2c(page, { scale: captureScale, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true, allowTaint: false, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
+      const canvas = await h2c(page, { scale: captureScale, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true, allowTaint: false, windowWidth: A4_W_PX, windowHeight: A4_H_PX, letterRendering: true, imageTimeout: 0 });
       const img = canvas.toDataURL('image/jpeg', 0.98);
       if (i > 0) pdf.addPage();
       pdf.addImage(img, 'JPEG', 0, 0, A4_W_MM, A4_H_MM, `page-${i + 1}`, 'FAST');
