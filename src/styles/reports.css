@@ -805,6 +805,14 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   margin-inline: auto;  /* center within the grid row */
 }
 
+/* Center a specific chart card (e.g., Payment status pie) */
+.reports-chart-card--centered {
+  grid-column: 1 / -1; /* occupy full row in grid */
+  max-width: 760px;    /* readable width similar to tables */
+  width: 100%;
+  margin-inline: auto; /* center horizontally */
+}
+
 .reports-chart-card {
   padding: 24px;
   display: flex;
