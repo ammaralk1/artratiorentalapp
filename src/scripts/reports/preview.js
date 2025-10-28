@@ -229,8 +229,24 @@ export function openReportsPdfPreview(rows) {
   const printBtn = modal.querySelector('[data-print-pdf]');
   if (printBtn) {
     printBtn.addEventListener('click', async () => {
-      // تنزيل مباشر بدون فتح معاينة الطباعة (strict=false)
-      await exportA4ReportPdf(dataRows, { action: 'save', strict: false });
+      // على iOS (Safari/Chrome)، استخدم نافذة منبثقة تُفتح مباشرة من حدث النقر
+      const ua = navigator.userAgent || '';
+      const isIOS = /(iphone|ipad|ipod)/i.test(ua)
+        || (/macintosh/i.test(ua) && 'ontouchend' in document); // iPadOS 13+ يعرّف نفسه كـ Macintosh
+      if (isIOS) {
+        // افتح نافذة مسبقًا لتحاشي الحظر، ثم مررها للمصدّر ليطبع بداخلها
+        const w = window.open('', '_blank');
+        try {
+          if (w && w.document) {
+            w.document.write('<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>تحضير الطباعة…</title></head><body style="font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif;padding:16px;">جاري التحضير للطباعة…</body></html>');
+            w.document.close();
+          }
+        } catch (_) { /* ignore */ }
+        await exportA4ReportPdf(dataRows, { action: 'print', strict: true, popupWindow: w });
+      } else {
+        // تنزيل مباشر بدون فتح معاينة الطباعة (strict=false)
+        await exportA4ReportPdf(dataRows, { action: 'save', strict: false });
+      }
     });
   }
 

@@ -286,7 +286,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
   return root;
 }
 
-export async function exportA4ReportPdf(rows = [], { action = 'save', strict = false } = {}) {
+export async function exportA4ReportPdf(rows = [], { action = 'save', strict = false, popupWindow = null } = {}) {
   const root = buildA4ReportPages(rows, { context: 'export' });
   const host = document.createElement('div');
   Object.assign(host.style, { position: 'fixed', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none', zIndex: -1 });
@@ -297,12 +297,31 @@ export async function exportA4ReportPdf(rows = [], { action = 'save', strict = f
     const STRICT_NATIVE = strict || (localStorage.getItem('reportsPdf.strict') === 'on');
     if (STRICT_NATIVE) {
       // طباعة/حفظ أصلية بنفس الـ HTML لضمان تطابق 100%
+      // في iOS يُفضّل نافذة منبثقة تم فتحها من حدث المستخدم
+      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;}#reports-a4-root{width:${A4_W_PX}px;height:auto} .a4-page{width:${A4_W_PX}px;height:${A4_H_PX}px}</style></head><body></body></html>`;
+
+      if (popupWindow && typeof popupWindow.document?.open === 'function') {
+        // تمت تهيئة النافذة مسبقًا ضمن حدث المستخدم (لتفادي حظر النوافذ في iOS)
+        const wdoc = popupWindow.document;
+        try { wdoc.open(); wdoc.write(html); wdoc.close(); } catch (_) {}
+        try {
+          const clone = root.cloneNode(true);
+          wdoc.body.appendChild(clone);
+          if (wdoc.fonts?.ready) { await wdoc.fonts.ready; }
+        } catch (_) {}
+        await new Promise((r) => setTimeout(r, 60));
+        try { popupWindow.focus(); popupWindow.print(); } catch (_) {}
+        // أغلق النافذة بعد مهلة قصيرة (يتجاهله iOS أحيانًا، لا مشكلة)
+        setTimeout(() => { try { popupWindow.close(); } catch (_) {} }, 1500);
+        return;
+      }
+
+      // المسار التقليدي عبر iframe (لغير iOS)
       await new Promise((resolve) => setTimeout(resolve, 0));
       const iframe = document.createElement('iframe');
       Object.assign(iframe.style, { position: 'fixed', width: '1px', height: '1px', right: '0', bottom: '0', border: '0', opacity: '0', pointerEvents: 'none' });
       document.body.appendChild(iframe);
       const idoc = iframe.contentWindow?.document;
-      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;}#reports-a4-root{width:${A4_W_PX}px;height:auto} .a4-page{width:${A4_W_PX}px;height:${A4_H_PX}px}</style></head><body></body></html>`;
       try { idoc.open(); idoc.write(html); idoc.close(); } catch (_) {}
       try {
         const clone = root.cloneNode(true);
