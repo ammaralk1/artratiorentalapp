@@ -22,6 +22,7 @@ import {
   calculateTopEquipment,
   calculateTopOutstanding,
   calculateCrewWorkReport,
+  calculatePaymentForecast,
 } from './reports/calculations.js';
 import { renderTrendChart, renderStatusChart, renderPaymentChart, renderStatusStackedMonthly } from './reports/presenters/charts.js';
 import { updateKpiCards } from './reports/presenters/kpis.js';
