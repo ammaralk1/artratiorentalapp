@@ -42,7 +42,6 @@
 .rpt-kpi .value { font-weight: 700; font-size: 14px; }
 
 /* الجدول */
-.rpt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; font-weight: 800; }
 .rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; }
-

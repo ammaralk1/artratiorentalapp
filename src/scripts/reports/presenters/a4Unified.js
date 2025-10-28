@@ -1,4 +1,4 @@
-import { translate, formatDateInput } from '../formatters.js';
+import { translate, formatDateInput, formatCurrency, formatNumber } from '../formatters.js';
 import reportsState from '../state.js';
 import { ensureHtml2Pdf, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
@@ -38,6 +38,8 @@ function buildHeader() {
   return box;
 }
 
+function round2(n) { return Number.isFinite(Number(n)) ? Math.round(Number(n) * 100) / 100 : 0; }
+
 function buildKpis() {
   const metrics = reportsState.lastSnapshot?.metrics || {};
   const k = document.createElement('div');
@@ -48,17 +50,20 @@ function buildKpis() {
     d.innerHTML = `<div class="label">${label}</div><div class="value">${value ?? '—'}</div>`;
     return d;
   };
-  // نستخدم القيم المنسقة الجاهزة من snapshot إن توفرت
-  const f = (key, fallback) => {
-    const v = metrics[key];
-    return (v == null || v === '') ? fallback : String(v);
-  };
-  k.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), f('total', '0')));
-  k.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), f('revenueFormatted', metrics.revenue)));
-  k.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), f('netProfitFormatted', metrics.netProfit)));
-  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), f('companyShareTotalFormatted', metrics.companyShareTotal)));
-  k.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), f('taxTotalFormatted', metrics.taxTotal)));
-  k.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), f('maintenanceExpenseFormatted', metrics.maintenanceExpense)));
+  // تنسيق مضبوط: رقم صحيح للحجوزات، عملات بدقتين عشرية (تقريب .5 للأعلى)
+  const totalLabel = formatNumber(metrics.total || 0);
+  const revenueLabel = formatCurrency(round2(metrics.revenue));
+  const netLabel = formatCurrency(round2(metrics.netProfit));
+  const shareLabel = formatCurrency(round2(metrics.companyShareTotal));
+  const taxLabel = formatCurrency(round2(metrics.taxTotal));
+  const maintLabel = formatCurrency(round2(metrics.maintenanceExpense));
+
+  k.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), totalLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), revenueLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), netLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), shareLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), taxLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), maintLabel));
   return k;
 }
 
