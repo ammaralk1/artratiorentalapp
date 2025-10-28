@@ -2216,6 +2216,9 @@ function normalizeStatusValue(status) {
       return 'completed';
     case 'cancelled':
     case 'ملغي':
+    case 'ملغية':
+    case 'ملغى':
+    case 'canceled':
       return 'cancelled';
     default:
       return 'pending';

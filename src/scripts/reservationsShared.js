@@ -643,6 +643,9 @@ export function normalizeProjectStatus(value = '') {
       return 'completed';
     case 'cancelled':
     case 'ملغي':
+    case 'ملغية':
+    case 'ملغى':
+    case 'canceled':
       return 'cancelled';
     case 'pending':
     case 'draft':

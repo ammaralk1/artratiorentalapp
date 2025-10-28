@@ -21,6 +21,9 @@ const STATUS_MAP = new Map([
   ['finished', 'completed'],
   ['cancelled', 'cancelled'],
   ['ملغي', 'cancelled'],
+  ['ملغية', 'cancelled'],
+  ['ملغى', 'cancelled'],
+  ['canceled', 'cancelled'],
 ]);
 
 const PAYMENT_MAP = new Map([

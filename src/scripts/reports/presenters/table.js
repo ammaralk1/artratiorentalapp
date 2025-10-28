@@ -259,6 +259,8 @@ function getReservationStatusLabel(statusValue) {
       return stripLeadingSymbols(translate('reservations.list.status.confirmed', '✅ مؤكد', 'Confirmed'));
     case 'pending':
       return stripLeadingSymbols(translate('reservations.list.status.pending', '⏳ غير مؤكد', 'Pending'));
+    case 'cancelled':
+      return stripLeadingSymbols(translate('reservations.list.status.cancelled', '❌ ملغي', 'Cancelled'));
     default:
       return normalizeNumbers(statusValue || '—');
   }
