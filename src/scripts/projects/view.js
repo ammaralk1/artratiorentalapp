@@ -3,6 +3,7 @@ import { t } from '../language.js';
 import { normalizeNumbers, showToast } from '../utils.js';
 import { calculateReservationTotal } from '../reservationsSummary.js';
 import { state, dom } from './state.js';
+import { resolveReservationProjectState } from '../reservationsShared.js';
 import {
   MAX_FOCUS_CARDS,
   ONE_HOUR_IN_MS,
@@ -643,9 +644,12 @@ export function resolveReservationNetTotal(reservation) {
 export function buildProjectReservationCard(reservation, index, project = null) {
   if (!reservation) return '';
   const reservationId = reservation.reservationId || reservation.id || `RES-${index + 1}`;
-  const status = reservation.status || reservation.state || 'pending';
-  const statusLabel = t(`reservations.status.${status}`, status);
-  const normalizedStatus = String(status).toLowerCase();
+  const rawStatus = reservation.status || reservation.state || 'pending';
+  const normalizedStatus = String(rawStatus).toLowerCase();
+  // Link confirmation: if project is confirmed, reflect that on the tag regardless of stale reservation.status
+  const { effectiveConfirmed } = resolveReservationProjectState(reservation, project);
+  const finalStatus = effectiveConfirmed ? 'confirmed' : normalizedStatus;
+  const statusLabel = t(`reservations.status.${finalStatus}`, finalStatus);
   const statusClassMap = {
     confirmed: 'project-reservation-card__badge--confirmed',
     pending: 'project-reservation-card__badge--pending',
@@ -653,10 +657,22 @@ export function buildProjectReservationCard(reservation, index, project = null) 
     in_progress: 'project-reservation-card__badge--info',
     ongoing: 'project-reservation-card__badge--info'
   };
-  const statusClass = statusClassMap[normalizedStatus] || 'project-reservation-card__badge--info';
-  const paid = reservation.paid === true || reservation.paid === 'paid' || reservation.paidStatus === 'paid';
-  const paidLabel = paid ? t('reservations.details.paid', 'مدفوع') : t('reservations.details.unpaid', 'غير مدفوع');
-  const paidClass = paid ? 'project-reservation-card__badge--paid' : 'project-reservation-card__badge--unpaid';
+  const statusClass = statusClassMap[finalStatus] || 'project-reservation-card__badge--info';
+  // Link payment tag: support partial
+  const paidStatusRaw = String(
+    reservation.paidStatus || reservation.paymentStatus || (reservation.paid ? 'paid' : 'unpaid')
+  ).toLowerCase();
+  const paidStatus = paidStatusRaw === 'paid' ? 'paid' : (paidStatusRaw === 'partial' ? 'partial' : 'unpaid');
+  const paidLabel = paidStatus === 'paid'
+    ? t('reservations.list.payment.paid', '💳 مدفوع')
+    : paidStatus === 'partial'
+      ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
+      : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
+  const paidClass = paidStatus === 'paid'
+    ? 'project-reservation-card__badge--paid'
+    : paidStatus === 'partial'
+      ? 'project-reservation-card__badge--partial'
+      : 'project-reservation-card__badge--unpaid';
   const completed = reservation.completed === true || reservation.completed === 'true';
   const completedLabel = t('reservations.details.completed', 'مكتمل');
   const completedBadge = completed
