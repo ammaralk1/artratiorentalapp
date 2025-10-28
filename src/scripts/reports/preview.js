@@ -13,7 +13,7 @@ function createModal() {
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">${translate('reservations.reports.preview.title', 'معاينة تقرير الحجوزات', 'Reservations Report Preview')}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn btn-ghost btn-sm" data-bs-dismiss="modal" aria-label="${translate('actions.close', 'إغلاق', 'Close')}" title="${translate('actions.close', 'إغلاق', 'Close')}"><span aria-hidden="true">✕</span></button>
         </div>
         <div class="modal-body">
           <div class="quote-preview-layout" style="display:block;grid-template-columns:1fr;">
@@ -71,7 +71,7 @@ function createModal() {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn" data-bs-dismiss="modal">${translate('actions.close', 'إغلاق', 'Close')}</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-bs-dismiss="modal">${translate('actions.close', 'إغلاق', 'Close')}</button>
         </div>
       </div>
     </div>
