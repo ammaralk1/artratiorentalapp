@@ -110,7 +110,11 @@ body.dark-mode {
 
 .reports-surface-card {
   padding: 24px;
-  backdrop-filter: blur(10px);
+  /* منع إنشاء سياق تكديس/طبقة GPU قد يطفو فوق العناصر اللاصقة */
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  position: relative;
+  z-index: 0;
 }
 
 #reservations-report-printable .reports-header-card,
