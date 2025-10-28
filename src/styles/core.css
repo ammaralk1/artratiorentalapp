@@ -2373,35 +2373,43 @@ textarea {
 /* زر الرجوع للأعلى في تبويب المعدات */
 #equipment-tab .back-to-top-btn {
   position: fixed;
-  inset-inline-end: 20px;
-  bottom: 22px;
+  inset-inline-end: 22px;
+  bottom: 24px;
   z-index: 60;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid hsl(var(--bc) / 0.15);
-  background: hsl(var(--b1) / 0.92);
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  border: 1px solid hsl(var(--bc) / 0.14);
+  background: linear-gradient(135deg, hsl(var(--b1) / 0.88), hsl(var(--b2) / 0.82));
   color: hsl(var(--bc));
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 24px hsl(var(--bc) / 0.12);
+  font-size: 1.35rem;
+  box-shadow: 0 14px 30px hsl(var(--bc) / 0.14);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
 #equipment-tab .back-to-top-btn:hover,
 #equipment-tab .back-to-top-btn:focus-visible {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 36px hsl(var(--bc) / 0.18);
+  transform: translateY(-3px);
+  border-color: hsl(var(--p) / 0.35);
+  box-shadow: 0 20px 42px hsl(var(--bc) / 0.2), 0 0 0 4px hsl(var(--p) / 0.12);
   outline: none;
 }
 
+#equipment-tab .back-to-top-btn:active {
+  transform: translateY(-1px);
+}
+
 :where(html.dark-mode, body.dark-mode, html.dark, body.dark) #equipment-tab .back-to-top-btn {
-  border-color: hsl(var(--p) / 0.35);
-  background: hsl(var(--b1) / 0.9);
+  border-color: hsl(var(--p) / 0.32);
+  background: linear-gradient(135deg, hsl(var(--b1) / 0.94), hsl(var(--b2) / 0.88));
   color: hsl(var(--bc));
-  box-shadow: 0 16px 32px hsl(var(--bc) / 0.22);
+  box-shadow: 0 18px 36px hsl(var(--bc) / 0.25);
 }
 
 :is(html.dark-mode, body.dark-mode) .theme-toggle-btn {
