@@ -45,11 +45,19 @@ export function renderReservationsTable(reservations, customers, technicians) {
   const rows = pageItems
     .map((reservation) => {
       const formatted = formatReservationRow(reservation, customerMap, technicianMap);
+      const customerInfo = customerMap.get(String(reservation?.customerId));
+      const normalizedPaymentHistory = Array.isArray(reservation.paymentHistory)
+        ? reservation.paymentHistory
+        : Array.isArray(reservation.payment_history)
+          ? reservation.payment_history
+          : [];
+      const historyCount = normalizedPaymentHistory.length;
+      const financials = computeReservationFinancials(reservation);
       const exportRow = {
         [exportHeaders.code]: formatted.code.text,
         [exportHeaders.customer]: formatted.customer.text,
-        [exportHeaders.company]: customer?.companyName || '',
-        [exportHeaders.phone]: customer?.phone || '',
+        [exportHeaders.company]: customerInfo?.companyName || '',
+        [exportHeaders.phone]: customerInfo?.phone || '',
         [exportHeaders.date]: formatted.date.text,
         [exportHeaders.status]: formatted.status.text,
         [exportHeaders.payment]: formatted.payment.text,
