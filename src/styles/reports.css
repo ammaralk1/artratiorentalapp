@@ -123,9 +123,10 @@ body.dark-mode {
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
-  position: sticky !important; /* force sticky behavior */
-  top: var(--reports-sticky-offset, 72px) !important; /* keep under page header */
-  z-index: 5 !important; /* lower than cards & under header */
+  /* Disable sticky so filters block does not float over content */
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
   backdrop-filter: none !important;
   filter: none !important;
   box-shadow: none !important;
