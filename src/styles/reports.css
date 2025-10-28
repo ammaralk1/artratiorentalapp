@@ -801,6 +801,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 18px;
+  justify-content: center; /* center tracks when leftover space exists */
 }
 
 /* Center a specific table card (e.g., Top Outstanding) */
@@ -828,7 +829,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 }
 
 .reports-chart-card--wide {
-  grid-column: span 2;
+  grid-column: 1 / -1; /* take full row and center with parent width */
+  margin-inline: auto;
 }
 
 .reports-card-body--column {
@@ -845,8 +847,21 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Revenue details card: keep a compact width and center */
 #reservations-revenue-card {
-  width: min(100%, 680px);
+  /* make it half of the previous width and keep centered */
+  width: min(100%, 340px);
   margin-inline: auto;
+}
+
+/* In analytics grid, keep non-wide charts at a pleasant max width and centered */
+.reports-analytics-grid .reports-chart-card:not(.reports-chart-card--wide) {
+  max-width: 560px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* If a centered modifier is present inside analytics grid, constrain to same width */
+.reports-analytics-grid .reports-chart-card--centered {
+  max-width: 560px;
 }
 
 .reports-chart-area .apexcharts-title-text,
