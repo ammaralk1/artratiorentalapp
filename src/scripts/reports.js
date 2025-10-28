@@ -402,7 +402,7 @@ export function initReports() {
   const shareSelect = document.getElementById('reports-share-filter');
   const startInput = document.getElementById('reports-start');
   const endInput = document.getElementById('reports-end');
-  const refreshBtn = document.getElementById('reports-refresh');
+  // تمت إزالة زر التحديث من التبويب
   const customRangeWrapper = document.getElementById('reports-custom-range');
   const searchInput = document.getElementById('reports-search');
 
@@ -468,14 +468,7 @@ export function initReports() {
     renderIfCustomRange();
   });
 
-  refreshBtn?.addEventListener('click', () => {
-    if (filters.range === 'custom') {
-      filters.start = startInput?.value || null;
-      filters.end = endInput?.value || null;
-    }
-    scheduleUrlUpdate();
-    renderReports();
-  });
+  // لا يوجد زر تحديث الآن؛ يتم التحديث تلقائياً عند تغيير الفلاتر
 
   // تمت إزالة زر الطباعة من التبويب لتفادي التكرار مع تصدير PDF
 
@@ -498,7 +491,8 @@ export function initReports() {
     reportsState.dataListenersAttached = true;
   }
 
-  setupColumnControls(applyColumnVisibility);
+  // تمت إزالة واجهة تخصيص الأعمدة من التبويب (المعاينة توفر البديل)
+  setupColumnControls?.(applyColumnVisibility);
   setupExportButtons(async (type) => {
     const rows = reportsState.lastSnapshot.tableRows || [];
     if (!rows.length) {
