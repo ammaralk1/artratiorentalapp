@@ -7,7 +7,7 @@ import {
   escapeHtml,
   formatCurrencyLocalized
 } from './projectsCommon.js';
-import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT } from './reservationsSummary.js';
+import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
 import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { getReservationsState, updateReservationApi } from './reservationsService.js';
 
@@ -146,22 +146,65 @@ export function buildProjectFocusCard(project, {
     const items = Array.isArray(reservation?.items) ? reservation.items : [];
     const equipmentCount = items.reduce((sum, item) => sum + (Number(item?.qty) || 0), 0);
     const crewCount = Array.isArray(reservation?.technicians) ? reservation.technicians.length : 0;
+    // Draft breakdown (without tax) to match finalTotal logic used in details view
+    const crewAssignments = Array.isArray(reservation?.crewAssignments) ? reservation.crewAssignments : [];
+    const techniciansOrAssignments = crewAssignments.length
+      ? crewAssignments
+      : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: Array.isArray(techniciansOrAssignments) && !techniciansOrAssignments.length ? techniciansOrAssignments : [],
+      crewAssignments: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object' ? techniciansOrAssignments : [],
+      discount: reservation?.discount ?? 0,
+      discountType: reservation?.discountType || 'percent',
+      applyTax: false,
+      start: reservation?.start,
+      end: reservation?.end,
+      companySharePercent: null,
+    });
+
     return {
       total: acc.total + net,
-      equipment: acc.equipment + equipmentCount,
-      crew: acc.crew + crewCount
+      equipment: acc.equipment + Number(breakdown.equipmentTotal || 0),
+      crew: acc.crew + Number(breakdown.crewTotal || 0),
+      crewCost: acc.crewCost + Number(breakdown.crewCostTotal || 0),
+      equipmentCountTotal: (acc.equipmentCountTotal || 0) + equipmentCount,
+      crewCountTotal: (acc.crewCountTotal || 0) + crewCount,
     };
-  }, { total: 0, equipment: 0, crew: 0 });
+  }, { total: 0, equipment: 0, crew: 0, crewCost: 0, equipmentCountTotal: 0, crewCountTotal: 0 });
 
   const reservationsTotal = Number(totals.total.toFixed(2));
-  const equipmentCountTotal = totals.equipment;
-  const crewAssignmentsTotal = totals.crew || crewIds.length;
+  const equipmentCountTotal = totals.equipmentCountTotal || 0;
+  const crewAssignmentsTotal = totals.crewCountTotal || crewIds.length;
 
   const projectTotals = resolveProjectTotals(project);
-  const combinedTaxAmount = projectTotals.applyTax
-    ? Number(((projectTotals.subtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+  // Compute final total (same logic as details):
+  const expensesTotalNumber = Number(projectTotals.expensesTotal || 0);
+  const grossBeforeDiscount = Number((totals.equipment + totals.crew + expensesTotalNumber).toFixed(2));
+  const discountValueRaw = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  let discountAmount = discountType === 'amount' ? discountValueRaw : (grossBeforeDiscount * (discountValueRaw / 100));
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+
+  const shareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true';
+  const rawShare = Number.parseFloat(
+    project?.companySharePercent
+    ?? project?.company_share_percent
+    ?? project?.companyShare
+    ?? project?.company_share
+    ?? 0
+  ) || 0;
+  const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+  const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+  const taxAmountAfterShare = projectTotals.applyTax
+    ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
     : 0;
-  const overallTotal = Number((projectTotals.subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
 
   const metaRows = [
     projectCodeDisplay
@@ -241,19 +284,9 @@ export function buildProjectFocusCard(project, {
       value: formatCurrencyLocalized(projectTotals.expensesTotal)
     },
     {
-      icon: '💰',
-      label: t('projectCards.stats.projectSubtotal', 'التكلفة التقديرية'),
-      value: formatCurrencyLocalized(projectTotals.subtotal)
-    },
-    {
-      icon: '🧾',
-      label: t('projectCards.stats.taxTotal', 'الضريبة'),
-      value: formatCurrencyLocalized(combinedTaxAmount)
-    },
-    {
       icon: '💵',
-      label: t('projectCards.stats.overallTotal', 'المجموع الكلي'),
-      value: formatCurrencyLocalized(overallTotal)
+      label: t('projects.details.summary.finalTotal', 'الإجمالي النهائي', 'Final Total'),
+      value: formatCurrencyLocalized(finalTotal)
     }
   ];
 
