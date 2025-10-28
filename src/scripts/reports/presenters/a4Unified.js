@@ -153,7 +153,14 @@ export function buildA4ReportPages(rows = [], { context = 'preview' } = {}) {
     const { table, tbody } = buildTable(headers);
     chunk.forEach((row) => {
       const tr = document.createElement('tr');
-      headers.forEach((h) => { const td = document.createElement('td'); td.textContent = row[h] != null ? String(row[h]) : ''; tr.appendChild(td); });
+      headers.forEach((h) => {
+        const td = document.createElement('td');
+        const inner = document.createElement('div');
+        inner.className = 'rpt-cell';
+        inner.textContent = row[h] != null ? String(row[h]) : '';
+        td.appendChild(inner);
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     });
     inner.appendChild(table);
