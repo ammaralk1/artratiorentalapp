@@ -42,11 +42,16 @@
 .rpt-kpi .value { font-weight: 700; font-size: 14px; }
 
 /* الجدول */
-.rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #e5e7eb; table-layout: fixed; }
-.rpt-table tbody tr:last-child td { border-bottom: 1px solid #e5e7eb; }
-.rpt-table td, .rpt-table th { vertical-align: middle; }
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #9ca3af; table-layout: fixed; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+.rpt-table tbody tr:last-child td { border-bottom: 1px solid #9ca3af; }
+.rpt-table td, .rpt-table th { vertical-align: middle; border-color: #9ca3af; }
+/* تأكيد إغلاق الحواف الخارجية يمين/يسار وأعلى/أسفل */
+.rpt-table thead tr:first-child th { border-top: 1px solid #9ca3af; }
+.rpt-table thead th:first-child, .rpt-table tbody td:first-child { border-right: 1px solid #9ca3af; }
+.rpt-table thead th:last-child, .rpt-table tbody td:last-child { border-left: 1px solid #9ca3af; }
+.rpt-table tbody tr + tr td { border-top: 1px solid #9ca3af; }
 /* تفاصيل الجسم فقط أصغر وبسطر واحد */
-.rpt-table tbody td { font-size: 10px; line-height: 1.35; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rpt-table tbody td { font-size: 10px; line-height: 1.35; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid #9ca3af; }
 
 /* تفاصيل الإيرادات داخل المعاينة */
 .rpt-revenue {
@@ -55,9 +60,9 @@
   gap: 8px 12px;
   margin: 6mm 0 6mm;
 }
-.rpt-revenue__item { display: flex; align-items: center; justify-content: space-between; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+.rpt-revenue__item { display: flex; align-items: center; justify-content: space-between; border: 1px solid #9ca3af; border-radius: 8px; padding: 8px 10px; }
 .rpt-revenue__label { font-size: 11px; opacity: .9; }
 .rpt-revenue__value { font-weight: 700; font-size: 13px; }
 .rpt-revenue__title { margin: 0 0 6px 0; font-size: 13px; font-weight: 800; }
-.rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; font-weight: 800; }
-.rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; }
+.rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #9ca3af; padding: 6px 8px; text-align: right; font-weight: 800; }
+.rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #9ca3af; padding: 6px 8px; text-align: right; }
