@@ -35,9 +35,12 @@
 .a4-page--primary .a4-inner { padding-top: 6mm; }
 
 /* العناوين والـ KPI */
-.rpt-header { display: flex; flex-direction: column; gap: 6px; margin: 0 0 6mm 0; }
+.rpt-header { display: flex; flex-direction: column; gap: 8px; margin: 0 0 6mm 0; }
+.rpt-header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rpt-titleblock { display: flex; flex-direction: column; gap: 4px; text-align: right; }
 .rpt-header h1 { margin: 0; font-weight: 800; font-size: 18px; text-align: right; }
 .rpt-subtitle { margin: 0; font-size: 12px; opacity: .9; text-align: right; }
+.rpt-logo { width: 56px; height: 56px; object-fit: contain; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; }
 
 .rpt-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 6mm; }
 .rpt-kpi { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }

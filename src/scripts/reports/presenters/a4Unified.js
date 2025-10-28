@@ -49,12 +49,31 @@ function createRoot(context = 'preview') {
 function buildHeader() {
   const box = document.createElement('div');
   box.className = 'rpt-header';
+
+  const top = document.createElement('div');
+  top.className = 'rpt-header-top';
+
+  const titleBlock = document.createElement('div');
+  titleBlock.className = 'rpt-titleblock';
   const h1 = document.createElement('h1');
   h1.textContent = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
   const sub = document.createElement('p');
   sub.className = 'rpt-subtitle';
   sub.textContent = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
-  box.appendChild(h1); box.appendChild(sub);
+  titleBlock.appendChild(h1);
+  titleBlock.appendChild(sub);
+
+  const logo = document.createElement('img');
+  logo.className = 'rpt-logo';
+  logo.alt = 'Logo';
+  logo.decoding = 'async';
+  logo.loading = 'lazy';
+  logo.src = resolveLogoUrl();
+
+  // RTL: العنوان يمين، اللوغو يسار
+  top.appendChild(titleBlock);
+  top.appendChild(logo);
+  box.appendChild(top);
   return box;
 }
 
@@ -382,3 +401,11 @@ export async function exportA4ReportPdf(rows = [], { action = 'save', strict = f
 }
 
 export default { buildA4ReportPages, exportA4ReportPdf };
+const DEFAULT_LOGO_URL = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
+function resolveLogoUrl() {
+  try {
+    const v = localStorage.getItem('reportsPdf.logoUrl');
+    if (v && /^https?:|^data:|^blob:/.test(v)) return v;
+  } catch (_) {}
+  return DEFAULT_LOGO_URL;
+}
