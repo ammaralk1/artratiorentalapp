@@ -1243,6 +1243,9 @@ export function syncEquipmentStatuses() {
 
 function isReservationActiveNow(reservation, now) {
   if (!reservation?.start || !reservation?.end) return false;
+  // Ignore cancelled reservations entirely when computing active usage
+  const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+  if (rawStatus === 'cancelled' || rawStatus === 'canceled') return false;
   const start = new Date(reservation.start);
   const end = new Date(reservation.end);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;

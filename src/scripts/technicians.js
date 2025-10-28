@@ -1051,6 +1051,8 @@ function isTechnicianActiveNow(technicianId, reservations = [], now) {
 
   return reservations.some((reservation) => {
     if (!reservation) return false;
+    const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (rawStatus === 'cancelled' || rawStatus === 'canceled') return false;
     const assignedIds = collectReservationTechnicianIds(reservation);
     if (!assignedIds.includes(normalizedId)) return false;
 

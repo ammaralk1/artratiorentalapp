@@ -18,6 +18,7 @@ import {
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
 import { renderEquipment, syncEquipmentStatuses } from './equipment.js';
+import { syncTechniciansStatuses } from './technicians.js';
 import {
   getReservationsState,
   updateReservationApi,
@@ -1137,6 +1138,7 @@ export async function saveReservationChanges({
     });
     await refreshReservationsFromApi();
     syncEquipmentStatuses();
+    syncTechniciansStatuses();
     renderEquipment();
     showToast(t('reservations.toast.updated', '✅ تم حفظ التعديلات على الحجز'));
 

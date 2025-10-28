@@ -181,6 +181,10 @@ export function hasEquipmentConflict(barcode, startIso, endIso, ignoreReservatio
 
     if (!reservation.start || !reservation.end) return false;
 
+    // Exclude cancelled reservations from conflict checks
+    const statusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (statusValue === 'cancelled' || statusValue === 'canceled') return false;
+
     const resStart = parseDateFlexible(reservation.start);
     const resEnd = parseDateFlexible(reservation.end);
     if (!resStart || !resEnd) return false;
@@ -236,6 +240,8 @@ export function hasPackageConflict(packageId, startIso, endIso, ignoreReservatio
     if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) {
       return false;
     }
+    const statusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (statusValue === 'cancelled' || statusValue === 'canceled') return false;
 
     const resStart = parseDateFlexible(reservation.start);
     const resEnd = parseDateFlexible(reservation.end);
@@ -783,6 +789,9 @@ export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreRese
     if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) {
       return false;
     }
+
+    const statusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (statusValue === 'cancelled' || statusValue === 'canceled') return false;
 
     const resStart = new Date(reservation.start);
     const resEnd = new Date(reservation.end);
