@@ -2494,6 +2494,14 @@ async function handleReservationSubmit() {
     syncTechniciansStatuses();
     resetForm();
     showToast(t('reservations.toast.created', '✅ تم إنشاء الحجز'));
+    // بعد النجاح: الانتقال تلقائياً إلى تبويب "حجوزاتي"
+    try {
+      const myTabBtn = document.getElementById('sub-tab-trigger-my-reservations-tab');
+      if (myTabBtn && typeof myTabBtn.click === 'function') {
+        // انقر زر التبويب لضمان تفعيل جميع مستمعي الأحداث وتحديث التفضيلات
+        setTimeout(() => myTabBtn.click(), 0);
+      }
+    } catch (_) { /* تجاهل أي أخطاء غير متوقعة */ }
     if (typeof afterSubmitCallback === 'function') {
       afterSubmitCallback({ type: 'created', reservation: createdReservation });
     }
