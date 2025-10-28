@@ -46,6 +46,10 @@ function createModal() {
                           <input type="checkbox" data-toggle-outstanding checked>
                           <span>إظهار أعلى المستحقات</span>
                         </label>
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-crew checked>
+                          <span>إظهار تقرير عمل الطاقم</span>
+                        </label>
                         <hr style="border:none;border-top:1px solid var(--dropdown-br,#e5e7eb);margin:6px 0;">
                         <div data-columns-wrap style="display:flex; flex-direction:column; gap:4px;">
                           <strong style="font-size:12px; opacity:.8;">الأعمدة الظاهرة</strong>
@@ -137,6 +141,7 @@ export function openReportsPdfPreview(rows) {
     const cbKpis = menu?.querySelector('[data-toggle-kpis]');
     const cbRevenue = menu?.querySelector('[data-toggle-revenue]');
     const cbOutstanding = menu?.querySelector('[data-toggle-outstanding]');
+    const cbCrew = menu?.querySelector('[data-toggle-crew]');
     const columnsWrap = menu?.querySelector('[data-columns-wrap]');
     const rowsWrap = menu?.querySelector('[data-rows-wrap]');
     const getPref = (k, def=true) => {
@@ -147,15 +152,18 @@ export function openReportsPdfPreview(rows) {
       const hideKpis = cbKpis && !cbKpis.checked;
       const hideRevenue = cbRevenue && !cbRevenue.checked;
       const hideOutstanding = cbOutstanding && !cbOutstanding.checked;
+      const hideCrew = cbCrew && !cbCrew.checked;
       pagesRoot.toggleAttribute('data-hide-header', hideHeader);
       pagesRoot.toggleAttribute('data-hide-kpis', hideKpis);
       pagesRoot.toggleAttribute('data-hide-revenue', hideRevenue);
       pagesRoot.toggleAttribute('data-hide-outstanding', hideOutstanding);
+      pagesRoot.toggleAttribute('data-hide-crew', hideCrew);
       try {
         localStorage.setItem('reportsPdf.hide.header', hideHeader ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.kpis', hideKpis ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.revenue', hideRevenue ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.outstanding', hideOutstanding ? '1' : '0');
+        localStorage.setItem('reportsPdf.hide.crew', hideCrew ? '1' : '0');
       } catch (_) {}
 
       // إعادة بناء الصفحات عند تغيير الأعمدة/الصفوف
@@ -238,6 +246,7 @@ export function openReportsPdfPreview(rows) {
     if (cbKpis) cbKpis.checked = getPref('kpis', true);
     if (cbRevenue) cbRevenue.checked = getPref('revenue', true);
     if (cbOutstanding) cbOutstanding.checked = getPref('outstanding', true);
+    if (cbCrew) cbCrew.checked = getPref('crew', true);
     // حفظ إعدادات صفوف للـ LocalStorage عند التبديل
     const bindRowPref = (sel, key) => {
       const el = rowsWrap?.querySelector(sel);
@@ -284,7 +293,7 @@ export function openReportsPdfPreview(rows) {
     };
     buildColumns();
     // مستمعي التغييرات للأقسام والثيم
-    [cbHeader, cbKpis, cbRevenue, cbOutstanding].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
+    [cbHeader, cbKpis, cbRevenue, cbOutstanding, cbCrew].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
     rowsWrap?.querySelectorAll('input[type="checkbox"]').forEach((el) => el.addEventListener('change', () => apply({ rebuild: true })));
 
     // تكييف ألوان القائمة مع الداكن/الفاتح

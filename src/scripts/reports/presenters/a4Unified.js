@@ -18,6 +18,7 @@ function loadHidePrefs() {
       kpis: localStorage.getItem('reportsPdf.hide.kpis') === '1',
       revenue: localStorage.getItem('reportsPdf.hide.revenue') === '1',
       outstanding: localStorage.getItem('reportsPdf.hide.outstanding') === '1',
+      crew: localStorage.getItem('reportsPdf.hide.crew') === '1',
     };
   } catch (_) { return { header: false, kpis: false, revenue: false }; }
 }
@@ -28,6 +29,7 @@ function applyHidePrefs(root, prefs) {
   root.toggleAttribute('data-hide-kpis', !!prefs.kpis);
   root.toggleAttribute('data-hide-revenue', !!prefs.revenue);
   root.toggleAttribute('data-hide-outstanding', !!prefs.outstanding);
+  root.toggleAttribute('data-hide-crew', !!prefs.crew);
 }
 
 function createRoot(context = 'preview') {
@@ -146,6 +148,7 @@ function buildRevenueDetails() {
 }
 
 function buildOutstandingSection() {
+function buildOutstandingSection() {
   const list = (reportsState.lastSnapshot?.outstanding || []).slice(0, 6);
   const wrap = document.createElement('section');
   wrap.className = 'rpt-outstanding-section';
@@ -182,6 +185,55 @@ function buildOutstandingSection() {
     const c1 = document.createElement('td'); c1.textContent = `#${row.code} — ${row.customer || ''}`; tr.appendChild(c1);
     const c2 = document.createElement('td'); c2.textContent = paymentLabelText(row.paidStatus); tr.appendChild(c2);
     const c3 = document.createElement('td'); c3.textContent = formatCurrency(row.outstanding); tr.appendChild(c3);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(thead); table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+function buildCrewSection() {
+  const list = (reportsState.lastSnapshot?.crewWork || []).slice(0, 12);
+  const wrap = document.createElement('section');
+  wrap.className = 'rpt-crew-section';
+  const title = document.createElement('h4');
+  title.className = 'rpt-crew__title';
+  title.textContent = translate('reservations.reports.crew.title', 'تقرير عمل الطاقم', 'Crew work report');
+  wrap.appendChild(title);
+
+  if (!list.length) {
+    const p = document.createElement('p');
+    p.style.fontSize = '11px';
+    p.style.opacity = '.8';
+    p.textContent = translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.');
+    wrap.appendChild(p);
+    return wrap;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'rpt-crew__table';
+  const thead = document.createElement('thead');
+  const thr = document.createElement('tr');
+  const headers = [
+    translate('reservations.reports.crew.headers.technician', 'الفني', 'Technician'),
+    translate('reservations.reports.crew.headers.days', 'أيام العمل', 'Work days'),
+    translate('reservations.reports.crew.headers.billable', 'فوتر الطاقم', 'Crew billable'),
+    translate('reservations.reports.crew.headers.cost', 'تكلفة الطاقم', 'Crew cost'),
+    translate('reservations.reports.crew.headers.net', 'صافي المساهمة', 'Net contribution'),
+  ];
+  headers.forEach((h) => { const th = document.createElement('th'); th.textContent = h; thr.appendChild(th); });
+  thead.appendChild(thr);
+  const tbody = document.createElement('tbody');
+  list.forEach((row) => {
+    const tr = document.createElement('tr');
+    const cells = [
+      row.name || String(row.id || ''),
+      formatNumber(row.days || 0),
+      formatCurrency(row.billable || 0),
+      formatCurrency(row.cost || 0),
+      formatCurrency((row.billable || 0) - (row.cost || 0)),
+    ];
+    cells.forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
     tbody.appendChild(tr);
   });
   table.appendChild(thead); table.appendChild(tbody);
@@ -331,6 +383,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
       inner.appendChild(buildKpis());
       inner.appendChild(buildRevenueDetails());
       inner.appendChild(buildOutstandingSection());
+      inner.appendChild(buildCrewSection());
       // عنوان جدول تفاصيل الحجوزات
       const tableTitle = document.createElement('h4');
       tableTitle.className = 'rpt-table-title';

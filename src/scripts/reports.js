@@ -399,6 +399,7 @@ export function renderReports() {
   reportsState.lastSnapshot.tableRows = tableRows;
   reportsState.lastSnapshot.maintenance = maintenanceSummary;
   reportsState.lastSnapshot.outstanding = topOutstanding;
+  reportsState.lastSnapshot.crewWork = crewWork;
 }
 
 export function initReports() {
