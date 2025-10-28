@@ -511,6 +511,12 @@ export function bindProjectDetailsEvents(project) {
   const reservationContainer = dom.detailsBody.querySelector('.project-reservations-list');
 
   if (createBtn && project) {
+    // Ensure the button is always enabled to allow multiple linked reservations
+    try {
+      createBtn.disabled = false;
+      createBtn.classList?.remove('disabled');
+      createBtn.removeAttribute?.('aria-disabled');
+    } catch (_) { /* noop */ }
     createBtn.addEventListener('click', (event) => {
       event.preventDefault();
       startReservationForProject(project);
@@ -770,8 +776,15 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const computePaymentSnapshot = () => {
     const context = computeFinanceContext();
     const payments = ensurePayments();
+    // Use combined total (project subtotal after discount/share + linked reservations + combined VAT)
+    const linkedReservations = getReservationsForProject(project.id) || [];
+    const reservationsTotal = linkedReservations.reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
+    const projectTaxableBase = Number(context.finance?.taxableAmount || 0);
+    const combinedTax = context.applyTax ? Number(((projectTaxableBase + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    const combinedTotalWithTax = Number((projectTaxableBase + reservationsTotal + combinedTax).toFixed(2));
+
     const progress = calculatePaymentProgress({
-      totalAmount: context.finance.totalWithTax,
+      totalAmount: combinedTotalWithTax,
       paidAmount: editState.basePaidAmount || 0,
       paidPercent: editState.basePaidPercent || 0,
       history: payments,
@@ -779,6 +792,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
     return {
       ...context,
+      combinedTotalWithTax,
       payments,
       progress,
     };
@@ -791,8 +805,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
   const renderPaymentSummary = () => {
     if (!paymentSummaryContainer) return;
-    const { finance, progress } = computePaymentSnapshot();
-    const total = Number.isFinite(Number(finance.totalWithTax)) ? Number(finance.totalWithTax) : 0;
+    const { combinedTotalWithTax, progress } = computePaymentSnapshot();
+    const total = Number.isFinite(Number(combinedTotalWithTax)) ? Number(combinedTotalWithTax) : 0;
     const paidAmount = Number.isFinite(Number(progress.paidAmount)) ? Number(progress.paidAmount) : 0;
     const paidPercent = Number.isFinite(Number(progress.paidPercent)) ? Number(progress.paidPercent) : 0;
     const remainingAmount = Math.max(0, Math.round((total - paidAmount) * 100) / 100);
