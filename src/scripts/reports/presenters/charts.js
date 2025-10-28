@@ -74,6 +74,7 @@ export async function renderTrendChart(data) {
     const reservationsSeries = sanitized.map((item) => Math.round(item.count || 0));
     const revenueSeries = sanitized.map((item) => Number(item.revenue || 0));
     const netSeries = sanitized.map((item) => Number(item.netProfit || 0));
+    const maSeries = sanitized.map((item) => (item.movingAvgRevenue != null ? Number(item.movingAvgRevenue) : null));
 
     const totalReservations = reservationsSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
     const totalRevenue = revenueSeries.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0);
@@ -98,11 +99,18 @@ export async function renderTrendChart(data) {
         name: translate('reservations.reports.chart.volume.series.revenue', 'الإيرادات (SR)', 'Revenue (SR)'),
         type: 'line',
         data: revenueSeries,
+        yAxisIndex: 1,
       },
       {
         name: translate('reservations.reports.chart.volume.series.net', 'صافي الربح (SR)', 'Net profit (SR)'),
         type: 'line',
         data: netSeries,
+        yAxisIndex: 1,
+      },
+      {
+        name: translate('reservations.reports.chart.volume.series.movingAvg', 'متوسط متحرك (٣ أشهر)', '3-mo Moving Avg'),
+        type: 'line',
+        data: maSeries,
         yAxisIndex: 1,
       },
     ];
@@ -131,11 +139,12 @@ export async function renderTrendChart(data) {
         curve: 'smooth',
       },
       markers: {
-        size: [0, 5, 5],
+        size: [0, 4, 4, 0],
       },
-      colors: ['#6366f1', '#22c55e', '#f97316'],
+      colors: ['#6366f1', '#22c55e', '#f97316', '#0ea5e9'],
       dataLabels: { enabled: false },
       fill: { type: 'solid', opacity: 1 },
+      stroke: { curve: 'smooth', width: [0, 2, 2, 2], dashArray: [0, 0, 0, 6] },
       xaxis: {
         categories,
         labels: {
@@ -175,10 +184,33 @@ export async function renderTrendChart(data) {
       tooltip: {
         shared: true,
         intersect: false,
-        y: {
-          formatter: (value, { seriesIndex }) => (
-            seriesIndex === 0 ? formatNumber(value) : formatCurrency(value)
-          ),
+        custom: ({ series, dataPointIndex, w }) => {
+          const item = reportsState.lastTrendData?.[dataPointIndex] || {};
+          const cat = categories?.[dataPointIndex] || '';
+          const lines = [];
+          // Reservations count
+          const s0 = series?.[0]?.[dataPointIndex];
+          if (s0 != null) lines.push(`<div><span>📦</span> ${formatNumber(s0)}</div>`);
+          // Revenue with YoY/MoM
+          const s1 = series?.[1]?.[dataPointIndex];
+          if (s1 != null) {
+            const yoy = Number.isFinite(item.yoyChange) ? `${item.yoyChange >= 0 ? '+' : ''}${formatNumber(Math.round(item.yoyChange))}% YoY` : '';
+            const mom = Number.isFinite(item.momChange) ? `${item.momChange >= 0 ? '+' : ''}${formatNumber(Math.round(item.momChange))}% MoM` : '';
+            const deltas = [yoy, mom].filter(Boolean).join(' · ');
+            lines.push(`<div><span>💰</span> ${formatCurrency(s1)}${deltas ? ` <small class="text-base-content/60">(${deltas})</small>` : ''}</div>`);
+          }
+          // Net profit
+          const s2 = series?.[2]?.[dataPointIndex];
+          if (s2 != null) lines.push(`<div><span>🧮</span> ${formatCurrency(s2)}</div>`);
+          // Moving average
+          const s3 = series?.[3]?.[dataPointIndex];
+          if (s3 != null) lines.push(`<div><span>📈</span> ${formatCurrency(s3)}</div>`);
+          return `
+            <div class="apex-tooltip">
+              <div class="mb-1 font-semibold">${cat}</div>
+              ${lines.join('')}
+            </div>
+          `;
         },
       },
     };
@@ -425,5 +457,41 @@ export async function renderPaymentChart(data) {
     renderProgressSection(listContainerId, []);
     container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
     toggleChartLoading('payment', false);
+  }
+}
+
+export async function renderStatusStackedMonthly(data) {
+  const container = document.getElementById('reports-status-stacked-chart');
+  if (!container) return;
+
+  const rows = Array.isArray(data) ? data : [];
+  if (!rows.length) {
+    container.innerHTML = `<p class="text-base-content/60 text-sm">${translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.')}</p>`;
+    return;
+  }
+
+  try {
+    const ApexCharts = await ensureApexCharts();
+    const categories = rows.map((r) => r.label);
+    const confirmed = rows.map((r) => r.confirmed || 0);
+    const cancelled = rows.map((r) => r.cancelled || 0);
+    const series = [
+      { name: translate('reservations.reports.status.confirmedLabel', 'مؤكدة', 'Confirmed'), data: confirmed },
+      { name: translate('reservations.reports.status.cancelledLabel', 'ملغاة', 'Cancelled'), data: cancelled },
+    ];
+    const options = {
+      chart: { type: 'bar', height: 320, stacked: true, toolbar: { show: false } },
+      series,
+      xaxis: { categories },
+      plotOptions: { bar: { columnWidth: '55%', borderRadius: 6 } },
+      colors: ['#22c55e', '#ef4444'],
+      dataLabels: { enabled: false },
+      legend: { position: 'bottom' },
+    };
+    container.innerHTML = '';
+    const chart = new ApexCharts(container, options);
+    chart.render();
+  } catch (e) {
+    console.error('[reports] failed to render stacked status chart', e);
   }
 }

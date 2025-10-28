@@ -1546,6 +1546,26 @@
                     <span class="reports-card-icon" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M3 12h18"></path>
+                        <path d="M12 3v18"></path>
+                      </svg>
+                    </span>
+                    <div class="reports-card-text">
+                      <h4 data-i18n data-i18n-key="reservations.reports.chart.statusStack.title">التوزيع الشهري (مؤكد مقابل ملغي)</h4>
+                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.statusStack.hint">مقارنة الحالات شهرياً</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="reports-card-body">
+                  <div id="reports-status-stacked-chart" class="reports-chart-area"></div>
+                </div>
+              </div>
+              <div class="reports-chart-card">
+                <div class="reports-card-header">
+                  <div class="reports-card-title">
+                    <span class="reports-card-icon" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                         <path d="M12 3v9h9"></path>
                         <path d="M20.4 12.6a8 8 0 1 1 -8.4 -8.5"></path>
                       </svg>
@@ -1668,13 +1688,14 @@
                     <span class="reports-card-icon" aria-hidden="true">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M5 3l3 8l-3 8l11 -8z"></path>
-                        <path d="M14 12l7 -5v10z"></path>
+                        <path d="M5 12h14"></path>
+                        <path d="M5 16h10"></path>
+                        <path d="M5 8h6"></path>
                       </svg>
                     </span>
                     <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.topEquipment.title">المعدات الأكثر استخدامًا</h4>
-                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.topEquipment.hint">عدد مرات الحجز</span>
+                      <h4 data-i18n data-i18n-key="reservations.reports.forecast.title">خريطة الدفعات القادمة</h4>
+                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.forecast.hint">تجميع الدفعات المتوقعة خلال الأسابيع القادمة</span>
                     </div>
                   </div>
                 </div>
@@ -1682,12 +1703,12 @@
                   <table class="reports-table">
                     <thead>
                       <tr>
-                        <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.item">المعدة</th>
-                        <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.usage">عدد مرات الاستخدام</th>
-                        <th data-i18n data-i18n-key="reservations.reports.topEquipment.headers.revenue">الإيراد المرتبط</th>
+                        <th data-i18n data-i18n-key="reservations.reports.forecast.headers.date">التاريخ</th>
+                        <th data-i18n data-i18n-key="reservations.reports.forecast.headers.count">العدد</th>
+                        <th data-i18n data-i18n-key="reservations.reports.forecast.headers.amount">المبلغ المتوقع</th>
                       </tr>
                     </thead>
-                    <tbody id="reports-top-equipment">
+                    <tbody id="reports-payment-forecast">
                       <tr><td colspan="3" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
                     </tbody>
                   </table>

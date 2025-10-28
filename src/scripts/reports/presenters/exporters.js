@@ -249,6 +249,24 @@ export function renderCrewWork(rows) {
     .join('');
 }
 
+export function renderPaymentForecast(rows) {
+  const tbody = document.getElementById('reports-payment-forecast');
+  if (!tbody) return;
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows
+    .map((r) => `
+      <tr>
+        <td>${r.date}</td>
+        <td>${translate('reservations.reports.forecast.count', '{count} حجوزات', '{count} reservations').replace('{count}', String(r.count || 0))}</td>
+        <td>${formatCurrency(r.amount || 0)}</td>
+      </tr>
+    `)
+    .join('');
+}
+
 export function renderTopOutstanding(rows) {
   const tbody = document.getElementById('reports-top-outstanding');
   if (!tbody) return;

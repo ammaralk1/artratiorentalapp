@@ -139,6 +139,10 @@ export async function loadReportsData({ silent = false } = {}) {
       params.set('offset', String(offset));
       if (startYmd) params.set('start_date', startYmd);
       if (endYmd) params.set('end_date', endYmd);
+      // Pass server-supported filters to reduce payload
+      const f = reportsState.filters || {};
+      if (f?.status && f.status !== 'all') params.set('status', String(f.status));
+      if (f?.search) params.set('search', String(f.search));
       const res = await apiRequest(`/reservations/?${params.toString()}`);
       const chunk = Array.isArray(res?.data) ? res.data : [];
       allReservations = allReservations.concat(chunk);

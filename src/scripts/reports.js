@@ -22,7 +22,7 @@ import {
   calculateTopOutstanding,
   calculateCrewWorkReport,
 } from './reports/calculations.js';
-import { renderTrendChart, renderStatusChart, renderPaymentChart } from './reports/presenters/charts.js';
+import { renderTrendChart, renderStatusChart, renderPaymentChart, renderStatusStackedMonthly } from './reports/presenters/charts.js';
 import { updateKpiCards } from './reports/presenters/kpis.js';
 import { renderReservationsTable } from './reports/presenters/table.js';
 import {
@@ -31,6 +31,7 @@ import {
   renderTopEquipment,
   renderTopOutstanding,
   renderCrewWork,
+  renderPaymentForecast,
 } from './reports/presenters/exporters.js';
 import {
   setupColumnControls,
@@ -373,20 +374,24 @@ export function renderReports() {
   const metricsWithMaintenance = applyMaintenanceExpenses(metrics, maintenanceSummary.total);
   const trend = calculateMonthlyTrend(filtered);
   const statusBreakdown = calculateStatusBreakdown(filtered);
+  const statusStack = calculateMonthlyStatusStack(filtered);
   const paymentBreakdown = calculatePaymentBreakdown(filtered);
   const topCustomers = calculateTopCustomers(filtered, customers);
   const topEquipment = calculateTopEquipment(filtered, equipment);
   const crewWork = calculateCrewWorkReport(filtered, technicians);
+  const forecast = calculatePaymentForecast(filtered);
   const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
 
   updateKpiCards(metricsWithMaintenance);
   renderTrendChart(trend);
   renderStatusChart(statusBreakdown);
+  renderStatusStackedMonthly(statusStack);
   renderPaymentChart(paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
   renderTopOutstanding(topOutstanding);
   renderCrewWork(crewWork);
+  try { renderPaymentForecast(forecast); } catch (_) {}
   const tableRows = renderReservationsTable(filtered, customers, technicians);
   applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
@@ -400,6 +405,7 @@ export function renderReports() {
   reportsState.lastSnapshot.maintenance = maintenanceSummary;
   reportsState.lastSnapshot.outstanding = topOutstanding;
   reportsState.lastSnapshot.crewWork = crewWork;
+  reportsState.lastSnapshot.paymentForecast = forecast;
 }
 
 export function initReports() {

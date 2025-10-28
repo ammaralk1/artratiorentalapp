@@ -118,8 +118,9 @@ body.dark-mode {
   justify-content: space-between;
   align-items: flex-start;
   gap: 18px;
-  position: relative; /* keep header above analytics cards */
-  z-index: 3000;
+  position: sticky; /* keep filters visible */
+  top: 10px;
+  z-index: 3000; /* keep header above analytics cards */
   flex-wrap: wrap;
 }
 

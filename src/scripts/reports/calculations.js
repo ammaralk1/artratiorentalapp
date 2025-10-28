@@ -581,7 +581,95 @@ export function calculateMonthlyTrend(reservations) {
     });
   }
 
+  // --- Enrich with MoM/YoY and Moving Average (3 months) ---
+  try {
+    // Build a month-key revenue map from provided reservations for YoY reference
+    const monthRevenueMap = new Map(); // key: YYYY-MM => revenue
+    (reservations || []).forEach((res) => {
+      if (computeReportStatus(res).statusValue === 'cancelled') return;
+      const start = res?.start ? new Date(res.start) : null;
+      if (!start || Number.isNaN(start.getTime())) return;
+      const keyYm = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+      const fin = computeReservationFinancials(res);
+      const cur = monthRevenueMap.get(keyYm) || 0;
+      monthRevenueMap.set(keyYm, cur + (Number(fin.finalTotal) || 0));
+    });
+
+    // Pre-calc moving average over this result window (revenue)
+    const revSeries = result.map((r) => Number(r.revenue || 0));
+    const movingAvg = result.map((_r, idx) => {
+      if (idx < 2) return null; // require 3 points
+      const sum = revSeries[idx] + revSeries[idx - 1] + revSeries[idx - 2];
+      return sum / 3;
+    });
+
+    result.forEach((row, idx) => {
+      // MoM change (revenue)
+      const prev = idx > 0 ? Number(result[idx - 1]?.revenue || 0) : null;
+      let momChange = null;
+      if (prev != null && Number.isFinite(prev) && prev > 0) {
+        momChange = ((Number(row.revenue || 0) - prev) / prev) * 100;
+      }
+
+      // YoY change (revenue) using monthRevenueMap if available
+      const d = row.periodStart instanceof Date ? row.periodStart : null;
+      let yoyChange = null;
+      if (d && !Number.isNaN(d.getTime())) {
+        const lastYearKey = `${d.getFullYear() - 1}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const ref = monthRevenueMap.get(lastYearKey);
+        if (Number.isFinite(ref) && ref > 0) {
+          yoyChange = ((Number(row.revenue || 0) - ref) / ref) * 100;
+        }
+      }
+
+      row.momChange = momChange;
+      row.yoyChange = yoyChange;
+      row.movingAvgRevenue = movingAvg[idx];
+    });
+  } catch (_) {
+    // ignore enrichment errors; return base result
+  }
+
   return memoSet(__memo.trend, key, result);
+}
+
+export function calculateMonthlyStatusStack(reservations) {
+  const now = new Date();
+  const starts = (reservations || [])
+    .map((r) => (r?.start ? new Date(r.start) : null))
+    .filter((d) => d && !Number.isNaN(d.getTime()));
+  let monthsSpan = 6;
+  let endAnchor = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (starts.length) {
+    const min = new Date(Math.min(...starts.map((d) => d.getTime())));
+    const max = new Date(Math.max(...starts.map((d) => d.getTime())));
+    const startAnchor = new Date(min.getFullYear(), min.getMonth(), 1);
+    endAnchor = new Date(max.getFullYear(), max.getMonth(), 1);
+    const years = endAnchor.getFullYear() - startAnchor.getFullYear();
+    const months = endAnchor.getMonth() - startAnchor.getMonth();
+    const diff = years * 12 + months;
+    monthsSpan = Math.min(12, Math.max(6, diff + 1));
+  }
+  const rows = [];
+  for (let i = monthsSpan - 1; i >= 0; i -= 1) {
+    const date = new Date(endAnchor.getFullYear(), endAnchor.getMonth() - i, 1);
+    const y = date.getFullYear();
+    const m = date.getMonth();
+    let confirmed = 0;
+    let cancelled = 0;
+    (reservations || []).forEach((res) => {
+      const start = res?.start ? new Date(res.start) : null;
+      if (!start || start.getFullYear() !== y || start.getMonth() !== m) return;
+      const { statusValue, confirmed: conf } = computeReportStatus(res);
+      if (statusValue === 'cancelled') {
+        cancelled += 1;
+      } else if (conf || statusValue === 'confirmed' || statusValue === 'completed') {
+        confirmed += 1;
+      }
+    });
+    rows.push({ label: getMonthLabel(date), confirmed, cancelled });
+  }
+  return rows;
 }
 
 export function calculateStatusBreakdown(reservations) {
@@ -997,4 +1085,28 @@ export function calculateTopOutstanding(reservations, customers, limit = 5) {
     });
   });
   return rows.sort((a, b) => b.outstanding - a.outstanding).slice(0, limit);
+}
+
+export function calculatePaymentForecast(reservations, { horizonDays = 90 } = {}) {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + horizonDays * REPORT_MS_PER_DAY);
+  const buckets = new Map();
+  (reservations || []).forEach((res) => {
+    const { statusValue, paidStatus } = computeReportStatus(res);
+    if (statusValue === 'cancelled') return;
+    if (paidStatus === 'paid') return;
+    const outstanding = computeOutstandingAmount(res);
+    if (!Number.isFinite(outstanding) || outstanding <= 0) return;
+    const start = res?.start ? new Date(res.start) : null;
+    const end = res?.end ? new Date(res.end) : start;
+    let due = end && !Number.isNaN(end.getTime()) ? end : start;
+    if (!due || Number.isNaN(due.getTime())) due = new Date(now.getTime() + 7 * REPORT_MS_PER_DAY);
+    if (due < now || due > horizon) return;
+    const key = formatDateInput(new Date(due.getFullYear(), due.getMonth(), due.getDate()));
+    const cur = buckets.get(key) || { date: key, amount: 0, count: 0 };
+    cur.amount += outstanding;
+    cur.count += 1;
+    buckets.set(key, cur);
+  });
+  return Array.from(buckets.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
 }
