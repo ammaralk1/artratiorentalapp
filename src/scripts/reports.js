@@ -527,16 +527,16 @@ export function initReports() {
     }
     await exportReport(type, rows);
   });
-  // Export PDF button (renamed from preview)
+  // Export PDF button (opens preview modal, then export)
   const previewBtn = document.getElementById('reports-preview-pdf');
   if (previewBtn && !previewBtn.dataset.bound) {
     previewBtn.addEventListener('click', async () => {
       try {
+        const module = await import('./reports/preview.js');
         const rows = reportsState.lastSnapshot.tableRows || [];
-        const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
-        await exportA4ReportPdf(rows, { action: 'save', strict: true });
+        module.openReportsPdfPreview(rows);
       } catch (error) {
-        console.error('⚠️ [reports] Failed to export PDF', error);
+        console.error('⚠️ [reports] Failed to open PDF preview', error);
       }
     });
     previewBtn.dataset.bound = 'true';
