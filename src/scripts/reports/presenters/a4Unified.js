@@ -148,7 +148,6 @@ function buildRevenueDetails() {
 }
 
 function buildOutstandingSection() {
-function buildOutstandingSection() {
   const list = (reportsState.lastSnapshot?.outstanding || []).slice(0, 6);
   const wrap = document.createElement('section');
   wrap.className = 'rpt-outstanding-section';
