@@ -514,6 +514,14 @@ export function initReports() {
       } catch (e) {
         console.warn('[reports] page-based PDF export failed, falling back to legacy', e);
       }
+    } else if (type === 'excel') {
+      try {
+        const { exportA4ReportExcel } = await import('./reports/presenters/a4Unified.js');
+        await exportA4ReportExcel(rows);
+        return;
+      } catch (e) {
+        console.warn('[reports] A4-based Excel export failed, falling back to legacy', e);
+      }
     }
     await exportReport(type, rows);
   });

@@ -1,6 +1,6 @@
 import { translate, formatDateInput, formatCurrency, formatNumber } from '../formatters.js';
 import reportsState from '../state.js';
-import { ensureHtml2Pdf, loadExternalScript } from '../external.js';
+import { ensureHtml2Pdf, ensureXlsx, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
 
 const CSS_DPI = 96;
@@ -401,6 +401,82 @@ export async function exportA4ReportPdf(rows = [], { action = 'save', strict = f
 }
 
 export default { buildA4ReportPages, exportA4ReportPdf };
+
+// =========================
+// Excel export (same template semantics)
+// =========================
+export async function exportA4ReportExcel(rows = []) {
+  await ensureXlsx();
+  const XLSX = window.XLSX;
+  if (!XLSX) throw new Error('XLSX dependency not available');
+
+  // Resolve headers/filters like PDF
+  const first = rows && rows[0] ? Object.keys(rows[0]) : Object.keys(reportsState.lastSnapshot?.tableRows?.[0] || {});
+  const visible = loadColumnPrefs(first);
+  const headers = first.filter((h) => visible.has(h));
+  const rowFilters = {
+    showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+    showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
+    showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
+    showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
+    showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+  };
+  const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
+  const filtered = filterRowsByPrefs(model, headers, rowFilters);
+
+  // Sheet data: title + date + KPIs, then header row, then rows
+  const title = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
+  const dateLine = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
+  const metrics = reportsState.lastSnapshot?.metrics || {};
+
+  const aoa = [];
+  aoa.push([title]);
+  aoa.push([dateLine]);
+  aoa.push([]);
+  aoa.push([
+    translate('reservations.reports.kpi.total.label', 'إجمالي الحجوزات', 'Total'), String(metrics.total ?? 0),
+    translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), String(metrics.revenue ?? 0),
+    translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net'), String(metrics.netProfit ?? 0),
+  ]);
+  aoa.push([
+    translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), String(metrics.companyShareTotal ?? 0),
+    translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), String(metrics.taxTotal ?? 0),
+    translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), String(metrics.maintenanceExpense ?? 0),
+  ]);
+  aoa.push([]);
+  aoa.push(headers);
+
+  filtered.forEach((r) => {
+    const row = headers.map((h) => (r[h] != null ? String(r[h]) : ''));
+    aoa.push(row);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+  // Merge title row across headers
+  if (!ws['!merges']) ws['!merges'] = [];
+  const lastCol = Math.max(1, headers.length) - 1;
+  ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: Math.max(3, lastCol) } });
+  ws['!merges'].push({ s: { r: 1, c: 0 }, e: { r: 1, c: Math.max(3, lastCol) } });
+
+  // Auto width
+  const colWidths = headers.map((h, i) => {
+    const headerLen = (h || '').length + 2;
+    let maxLen = headerLen;
+    for (let r = 7; r < aoa.length; r += 1) {
+      const cell = aoa[r][i] || '';
+      maxLen = Math.max(maxLen, String(cell).length);
+    }
+    return { wch: Math.min(40, Math.max(10, maxLen)) };
+  });
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, translate('reservations.reports.export.sheetName', 'الحجوزات', 'Reservations'));
+  const fname = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
 const DEFAULT_LOGO_URL = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
 function resolveLogoUrl() {
   try {
