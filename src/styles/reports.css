@@ -706,6 +706,14 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   gap: 18px;
 }
 
+/* Center a specific table card (e.g., Top Outstanding) */
+.reports-table-card--centered {
+  grid-column: 1 / -1; /* span full width row */
+  max-width: 760px;     /* readable width */
+  width: 100%;
+  margin-inline: auto;  /* center within the grid row */
+}
+
 .reports-chart-card {
   padding: 24px;
   display: flex;
