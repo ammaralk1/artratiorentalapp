@@ -19,11 +19,22 @@ export function renderReservationsTable(reservations, customers, technicians) {
   const exportHeaders = {
     code: translate('reservations.reports.results.headers.id', 'الحجز', 'Reservation'),
     customer: translate('reservations.reports.results.headers.customer', 'العميل', 'Customer'),
+    company: translate('reservations.reports.results.headers.company', 'الشركة', 'Company'),
+    phone: translate('reservations.reports.results.headers.phone', 'الهاتف', 'Phone'),
     date: translate('reservations.reports.results.headers.date', 'التاريخ', 'Date'),
     status: translate('reservations.reports.results.headers.status', 'الحالة', 'Status'),
     payment: translate('reservations.reports.results.headers.payment', 'الدفع', 'Payment'),
+    paymentsCount: translate('reservations.reports.results.headers.paymentsCount', 'عدد الدفعات', 'Payments count'),
+    days: translate('reservations.reports.results.headers.days', 'الأيام', 'Days'),
+    equipment: translate('reservations.reports.results.headers.equipment', 'إجمالي المعدات', 'Equipment'),
+    crewGross: translate('reservations.reports.results.headers.crewGross', 'إجمالي الطاقم', 'Crew total'),
+    crewCost: translate('reservations.reports.results.headers.crewCost', 'تكلفة الطاقم', 'Crew cost'),
+    discount: translate('reservations.reports.results.headers.discount', 'الخصم', 'Discount'),
+    tax: translate('reservations.reports.results.headers.tax', 'الضريبة', 'Tax'),
     total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
     share: translate('reservations.reports.results.headers.share', 'نسبة الشركة', 'Company share'),
+    sharePercent: translate('reservations.reports.results.headers.sharePercent', 'نسبة الشركة %', 'Company share %'),
+    shareAmount: translate('reservations.reports.results.headers.shareAmount', 'مبلغ نسبة الشركة', 'Company share amount'),
     net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
   };
 
@@ -37,11 +48,22 @@ export function renderReservationsTable(reservations, customers, technicians) {
       const exportRow = {
         [exportHeaders.code]: formatted.code.text,
         [exportHeaders.customer]: formatted.customer.text,
+        [exportHeaders.company]: customer?.companyName || '',
+        [exportHeaders.phone]: customer?.phone || '',
         [exportHeaders.date]: formatted.date.text,
         [exportHeaders.status]: formatted.status.text,
         [exportHeaders.payment]: formatted.payment.text,
+        [exportHeaders.paymentsCount]: String(historyCount),
+        [exportHeaders.days]: String(financials.rentalDays ?? 0),
+        [exportHeaders.equipment]: formatCurrency(financials.equipmentTotal),
+        [exportHeaders.crewGross]: formatCurrency(financials.crewTotal),
+        [exportHeaders.crewCost]: formatCurrency(financials.crewCostTotal ?? 0),
+        [exportHeaders.discount]: formatCurrency(financials.discountAmount ?? 0),
+        [exportHeaders.tax]: formatCurrency(financials.taxAmount ?? 0),
         [exportHeaders.total]: formatted.total.text,
         [exportHeaders.share]: formatted.share.text,
+        [exportHeaders.sharePercent]: `${formatNumber(financials.companySharePercent ?? 0)}%`,
+        [exportHeaders.shareAmount]: formatCurrency(financials.companyShareAmount ?? 0),
         [exportHeaders.net]: formatted.net.text,
       };
       return { formatted, exportRow };
@@ -236,7 +258,7 @@ function getReservationStatusLabel(statusValue) {
 
 function createStatusChip(statusValue, label) {
   const safeLabel = stripLeadingSymbols(label);
-  const slug = ['completed', 'confirmed', 'pending'].includes(statusValue) ? statusValue : 'info';
+  const slug = ['completed', 'confirmed', 'pending', 'cancelled'].includes(statusValue) ? statusValue : 'info';
   const chipHtml = `<span class="reservation-chip status-${slug}">${escapeHtml(safeLabel)}</span>`;
   return { html: chipHtml, text: safeLabel };
 }

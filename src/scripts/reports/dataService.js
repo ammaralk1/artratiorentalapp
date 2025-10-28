@@ -5,7 +5,7 @@ import { mapMaintenanceFromApi } from '../maintenanceService.js';
 import { loadData } from '../storage.js';
 import { translate } from './formatters.js';
 import reportsState from './state.js';
-import { clearReportsMemo } from './calculations.js';
+import { clearReportsMemo, resolveRange } from './calculations.js';
 
 function mapCustomerFromApi(raw = {}) {
   return {
@@ -115,8 +115,38 @@ export async function loadReportsData({ silent = false } = {}) {
   }
 
   try {
-    const [reservationsRes, customersRes, equipmentRes, techniciansRes, projectsRes, maintenanceRes] = await Promise.all([
-      apiRequest('/reservations/?limit=500'),
+    // Build server-side date filters from current UI filters to reduce payload
+    const { startDate, endDate } = resolveRange(reportsState.filters || {});
+    const toYmd = (d) => {
+      if (!d) return null;
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const startYmd = toYmd(startDate);
+    const endYmd = toYmd(endDate);
+
+    // Paginated fetch for reservations to avoid server caps (<=200 per page)
+    const pageSize = 200;
+    let offset = 0;
+    let allReservations = [];
+    // Defensive breaker to avoid infinite loops in case of server issues
+    const MAX_PAGES = 50; // 50 * 200 = 10k
+    for (let page = 0; page < MAX_PAGES; page += 1) {
+      const params = new URLSearchParams();
+      params.set('limit', String(pageSize));
+      params.set('offset', String(offset));
+      if (startYmd) params.set('start_date', startYmd);
+      if (endYmd) params.set('end_date', endYmd);
+      const res = await apiRequest(`/reservations/?${params.toString()}`);
+      const chunk = Array.isArray(res?.data) ? res.data : [];
+      allReservations = allReservations.concat(chunk);
+      if (chunk.length < pageSize) break; // last page
+      offset += pageSize;
+    }
+
+    const [customersRes, equipmentRes, techniciansRes, projectsRes, maintenanceRes] = await Promise.all([
       apiRequest('/customers/?limit=500'),
       apiRequest('/equipment/?limit=500'),
       apiRequest('/technicians/?limit=500'),
@@ -124,8 +154,8 @@ export async function loadReportsData({ silent = false } = {}) {
       apiRequest('/maintenance/?limit=500'),
     ]);
 
-    reportsState.data.reservations = Array.isArray(reservationsRes?.data)
-      ? reservationsRes.data.map((item) => mapReservationFromApi(item))
+    reportsState.data.reservations = Array.isArray(allReservations)
+      ? allReservations.map((item) => mapReservationFromApi(item))
       : [];
     reportsState.data.customers = Array.isArray(customersRes?.data)
       ? customersRes.data.map(mapCustomerFromApi)

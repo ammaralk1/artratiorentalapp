@@ -87,6 +87,13 @@
 #reports-a4-root[data-hide-header] .rpt-header { display: none !important; }
 #reports-a4-root[data-hide-kpis] .rpt-kpis { display: none !important; }
 #reports-a4-root[data-hide-revenue] .rpt-revenue-section { display: none !important; }
+#reports-a4-root[data-hide-outstanding] .rpt-outstanding-section { display: none !important; }
+
+.rpt-outstanding-section { margin: 4mm 0 6mm; }
+.rpt-outstanding__title { margin: 0 0 6px 0; font-size: 13px; font-weight: 800; }
+.rpt-outstanding__table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #9ca3af; }
+.rpt-outstanding__table th { background: #f3f4f6; border: 1px solid #9ca3af; padding: 6px 8px; text-align: right; }
+.rpt-outstanding__table td { border: 1px solid #9ca3af; padding: 4px 8px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* قواعد الطباعة لتفادي الصفحات الفارغة في iOS/Safari */
 @media print {

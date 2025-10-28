@@ -42,6 +42,10 @@ function createModal() {
                           <input type="checkbox" data-toggle-revenue checked>
                           <span>إظهار تفاصيل الإيرادات</span>
                         </label>
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-outstanding checked>
+                          <span>إظهار أعلى المستحقات</span>
+                        </label>
                         <hr style="border:none;border-top:1px solid var(--dropdown-br,#e5e7eb);margin:6px 0;">
                         <div data-columns-wrap style="display:flex; flex-direction:column; gap:4px;">
                           <strong style="font-size:12px; opacity:.8;">الأعمدة الظاهرة</strong>
@@ -51,10 +55,12 @@ function createModal() {
                         <div data-rows-wrap style="display:flex; flex-direction:column; gap:4px;">
                           <strong style="font-size:12px; opacity:.8;">تصفية الصفوف</strong>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-paid checked><span>مدفوعة</span></label>
+                          <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-partial checked><span>مدفوعة جزئياً</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-unpaid checked><span>غير مدفوعة</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-confirmed checked><span>مؤكدة</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-pending checked><span>قيد التأكيد</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-completed checked><span>منتهية</span></label>
+                          <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-cancelled checked><span>ملغاة</span></label>
                         </div>
                       </div>
                     </div>
@@ -130,6 +136,7 @@ export function openReportsPdfPreview(rows) {
     const cbHeader = menu?.querySelector('[data-toggle-header]');
     const cbKpis = menu?.querySelector('[data-toggle-kpis]');
     const cbRevenue = menu?.querySelector('[data-toggle-revenue]');
+    const cbOutstanding = menu?.querySelector('[data-toggle-outstanding]');
     const columnsWrap = menu?.querySelector('[data-columns-wrap]');
     const rowsWrap = menu?.querySelector('[data-rows-wrap]');
     const getPref = (k, def=true) => {
@@ -139,13 +146,16 @@ export function openReportsPdfPreview(rows) {
       const hideHeader = cbHeader && !cbHeader.checked;
       const hideKpis = cbKpis && !cbKpis.checked;
       const hideRevenue = cbRevenue && !cbRevenue.checked;
+      const hideOutstanding = cbOutstanding && !cbOutstanding.checked;
       pagesRoot.toggleAttribute('data-hide-header', hideHeader);
       pagesRoot.toggleAttribute('data-hide-kpis', hideKpis);
       pagesRoot.toggleAttribute('data-hide-revenue', hideRevenue);
+      pagesRoot.toggleAttribute('data-hide-outstanding', hideOutstanding);
       try {
         localStorage.setItem('reportsPdf.hide.header', hideHeader ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.kpis', hideKpis ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.revenue', hideRevenue ? '1' : '0');
+        localStorage.setItem('reportsPdf.hide.outstanding', hideOutstanding ? '1' : '0');
       } catch (_) {}
 
       // إعادة بناء الصفحات عند تغيير الأعمدة/الصفوف
@@ -155,10 +165,12 @@ export function openReportsPdfPreview(rows) {
           .map((el) => el.getAttribute('data-col'));
         const rowFilters = {
           showPaid: rowsWrap?.querySelector('[data-filter-paid]')?.checked !== false,
+          showPartial: rowsWrap?.querySelector('[data-filter-partial]')?.checked !== false,
           showUnpaid: rowsWrap?.querySelector('[data-filter-unpaid]')?.checked !== false,
           showConfirmed: rowsWrap?.querySelector('[data-filter-confirmed]')?.checked !== false,
           showPending: rowsWrap?.querySelector('[data-filter-pending]')?.checked !== false,
           showCompleted: rowsWrap?.querySelector('[data-filter-completed]')?.checked !== false,
+          showCancelled: rowsWrap?.querySelector('[data-filter-cancelled]')?.checked !== false,
         };
         // حفظ الأعمدة
         try {
@@ -225,6 +237,7 @@ export function openReportsPdfPreview(rows) {
     if (cbHeader) cbHeader.checked = getPref('header', true);
     if (cbKpis) cbKpis.checked = getPref('kpis', true);
     if (cbRevenue) cbRevenue.checked = getPref('revenue', true);
+    if (cbOutstanding) cbOutstanding.checked = getPref('outstanding', true);
     // حفظ إعدادات صفوف للـ LocalStorage عند التبديل
     const bindRowPref = (sel, key) => {
       const el = rowsWrap?.querySelector(sel);
@@ -238,9 +251,11 @@ export function openReportsPdfPreview(rows) {
     };
     bindRowPref('[data-filter-paid]', 'paid');
     bindRowPref('[data-filter-unpaid]', 'unpaid');
+    bindRowPref('[data-filter-partial]', 'partial');
     bindRowPref('[data-filter-confirmed]', 'confirmed');
     bindRowPref('[data-filter-pending]', 'pending');
     bindRowPref('[data-filter-completed]', 'completed');
+    bindRowPref('[data-filter-cancelled]', 'cancelled');
     // أول تطبيق
     apply();
     // تهيئة عموديات
@@ -252,7 +267,15 @@ export function openReportsPdfPreview(rows) {
         const label = document.createElement('label');
         label.style.cssText = 'display:flex;gap:6px;align-items:center;padding:2px 0;';
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('data-col', h);
-        try { cb.checked = (localStorage.getItem(`reportsPdf.column.${h}`) ?? '1') === '1'; } catch (_) { cb.checked = true; }
+        try {
+          const v = localStorage.getItem(`reportsPdf.column.${h}`);
+          if (v == null) {
+            // نفس منطق A4: عرض الأعمدة الأساسية كافتراض
+            cb.checked = /(الحجز|reservation|العميل|customer|التاريخ|date|الحالة|status|الدفع|payment|الإجمالي|total)/i.test(h);
+          } else {
+            cb.checked = v === '1';
+          }
+        } catch (_) { cb.checked = true; }
         label.appendChild(cb);
         const span = document.createElement('span'); span.textContent = h; label.appendChild(span);
         columnsWrap.appendChild(label);
@@ -261,7 +284,7 @@ export function openReportsPdfPreview(rows) {
     };
     buildColumns();
     // مستمعي التغييرات للأقسام والثيم
-    [cbHeader, cbKpis, cbRevenue].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
+    [cbHeader, cbKpis, cbRevenue, cbOutstanding].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
     rowsWrap?.querySelectorAll('input[type="checkbox"]').forEach((el) => el.addEventListener('change', () => apply({ rebuild: true })));
 
     // تكييف ألوان القائمة مع الداكن/الفاتح

@@ -1,4 +1,5 @@
 import { translate, formatDateInput, formatCurrency, formatNumber } from '../formatters.js';
+import { paymentLabelText } from '../calculations.js';
 import reportsState from '../state.js';
 import { ensureHtml2Pdf, ensureXlsx, ensureJsZip, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
@@ -16,6 +17,7 @@ function loadHidePrefs() {
       header: localStorage.getItem('reportsPdf.hide.header') === '1',
       kpis: localStorage.getItem('reportsPdf.hide.kpis') === '1',
       revenue: localStorage.getItem('reportsPdf.hide.revenue') === '1',
+      outstanding: localStorage.getItem('reportsPdf.hide.outstanding') === '1',
     };
   } catch (_) { return { header: false, kpis: false, revenue: false }; }
 }
@@ -25,6 +27,7 @@ function applyHidePrefs(root, prefs) {
   root.toggleAttribute('data-hide-header', !!prefs.header);
   root.toggleAttribute('data-hide-kpis', !!prefs.kpis);
   root.toggleAttribute('data-hide-revenue', !!prefs.revenue);
+  root.toggleAttribute('data-hide-outstanding', !!prefs.outstanding);
 }
 
 function createRoot(context = 'preview') {
@@ -142,6 +145,50 @@ function buildRevenueDetails() {
   return wrap;
 }
 
+function buildOutstandingSection() {
+  const list = (reportsState.lastSnapshot?.outstanding || []).slice(0, 6);
+  const wrap = document.createElement('section');
+  wrap.className = 'rpt-outstanding-section';
+  const title = document.createElement('h4');
+  title.className = 'rpt-outstanding__title';
+  title.textContent = translate('reservations.reports.topOutstanding.title', 'أعلى المستحقات', 'Top outstanding');
+  wrap.appendChild(title);
+
+  if (!list.length) {
+    const p = document.createElement('p');
+    p.style.fontSize = '11px';
+    p.style.opacity = '.8';
+    p.textContent = translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.');
+    wrap.appendChild(p);
+    return wrap;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'rpt-outstanding__table';
+  const thead = document.createElement('thead');
+  const thr = document.createElement('tr');
+  ['الحجز / العميل', 'حالة الدفع', 'المستحق'].forEach((label, idx) => {
+    const th = document.createElement('th');
+    const lbl = idx === 0
+      ? translate('reservations.reports.topOutstanding.headers.reservation', 'الحجز / العميل', 'Reservation / Customer')
+      : idx === 1
+        ? translate('reservations.reports.topOutstanding.headers.status', 'حالة الدفع', 'Payment status')
+        : translate('reservations.reports.topOutstanding.headers.amount', 'المستحق', 'Outstanding');
+    th.textContent = lbl; thead.appendChild(th);
+  });
+  const tbody = document.createElement('tbody');
+  list.forEach((row) => {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = `#${row.code} — ${row.customer || ''}`; tr.appendChild(c1);
+    const c2 = document.createElement('td'); c2.textContent = paymentLabelText(row.paidStatus); tr.appendChild(c2);
+    const c3 = document.createElement('td'); c3.textContent = formatCurrency(row.outstanding); tr.appendChild(c3);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(thead); table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
 function buildTable(headers) {
   const table = document.createElement('table');
   table.className = 'rpt-table';
@@ -167,6 +214,18 @@ function paginateRows(rows, headers) {
   return chunks;
 }
 
+function isCoreHeaderLabel(label = '') {
+  const s = String(label || '').toLowerCase();
+  return (
+    /الحجز|reservation/.test(s)
+    || /العميل|customer/.test(s)
+    || /التاريخ|date/.test(s)
+    || /الحالة|status/.test(s)
+    || /الدفع|payment/.test(s)
+    || /الإجمالي|total/.test(s)
+  );
+}
+
 function loadColumnPrefs(headers = []) {
   try {
     const visible = new Set();
@@ -174,11 +233,14 @@ function loadColumnPrefs(headers = []) {
       const key = `reportsPdf.column.${h}`;
       const v = localStorage.getItem(key);
       if (v == null) {
-        visible.add(h);
+        // Default: show core headers only; others hidden until toggled
+        if (isCoreHeaderLabel(h)) visible.add(h);
       } else if (v === '1') {
         visible.add(h);
       }
     });
+    // If nothing selected (e.g., no detection matched), fall back to all
+    if (visible.size === 0) headers.forEach((h) => visible.add(h));
     return visible;
   } catch (_) { return new Set(headers); }
 }
@@ -199,23 +261,27 @@ function resolveDarkMode() {
 function filterRowsByPrefs(rows, headers, prefs) {
   if (!prefs) return rows;
   const showPaid = prefs.showPaid ?? true;
+  const showPartial = prefs.showPartial ?? true;
   const showUnpaid = prefs.showUnpaid ?? true;
   const showConfirmed = prefs.showConfirmed ?? true;
   const showPending = prefs.showPending ?? true;
   const showCompleted = prefs.showCompleted ?? true;
+  const showCancelled = prefs.showCancelled ?? true;
 
   // Locate important columns by label (supports ar/en)
   const statusKey = headers.find((h) => /الحالة|status/i.test(h)) || null;
   const paymentKey = headers.find((h) => /الدفع|payment/i.test(h)) || null;
   if (!statusKey && !paymentKey) return rows;
 
-  const isPaidLabel = (txt) => /مدفوعة|مدفوع|paid|partial/i.test(txt || '');
-  const isUnpaidLabel = (txt) => /غير مدفوعة|غير مدفوع|unpaid/i.test(txt || '');
+  const isPartialLabel = (txt) => /جزئ|partial/i.test(String(txt || ''));
+  const isPaidLabel = (txt) => /مدفوعة|مدفوع|paid/i.test(String(txt || '')) && !isPartialLabel(txt);
+  const isUnpaidLabel = (txt) => /غير مدفوعة|غير مدفوع|unpaid/i.test(String(txt || ''));
   const statusVal = (txt) => {
     const s = String(txt || '').toLowerCase();
     if (/completed|منته/.test(s)) return 'completed';
     if (/confirmed|مؤكد/.test(s)) return 'confirmed';
     if (/pending|غير مؤكد|قيد التأكيد/.test(s)) return 'pending';
+    if (/cancel|ملغ/.test(s)) return 'cancelled';
     return 'other';
   };
 
@@ -224,6 +290,7 @@ function filterRowsByPrefs(rows, headers, prefs) {
     if (paymentKey) {
       const ptxt = r[paymentKey];
       if (!showPaid && isPaidLabel(ptxt)) ok = false;
+      if (!showPartial && isPartialLabel(ptxt)) ok = false;
       if (!showUnpaid && isUnpaidLabel(ptxt)) ok = false;
     }
     if (statusKey) {
@@ -231,6 +298,7 @@ function filterRowsByPrefs(rows, headers, prefs) {
       if (!showCompleted && st === 'completed') ok = false;
       if (!showConfirmed && st === 'confirmed') ok = false;
       if (!showPending && st === 'pending') ok = false;
+      if (!showCancelled && st === 'cancelled') ok = false;
     }
     return ok;
   });
@@ -262,6 +330,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
       inner.appendChild(buildHeader());
       inner.appendChild(buildKpis());
       inner.appendChild(buildRevenueDetails());
+      inner.appendChild(buildOutstandingSection());
     }
 
     const { table, tbody } = buildTable(headers);
@@ -287,7 +356,16 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
 }
 
 export async function exportA4ReportPdf(rows = [], { action = 'save', strict = false, popupWindow = null } = {}) {
-  const root = buildA4ReportPages(rows, { context: 'export' });
+  const rowFilters = {
+    showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+    showPartial: localStorage.getItem('reportsPdf.rows.partial') !== '0',
+    showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
+    showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
+    showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
+    showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+    showCancelled: localStorage.getItem('reportsPdf.rows.cancelled') !== '0',
+  };
+  const root = buildA4ReportPages(rows, { context: 'export', rowFilters });
   const host = document.createElement('div');
   Object.assign(host.style, { position: 'fixed', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none', zIndex: -1 });
   host.appendChild(root);
@@ -435,10 +513,12 @@ export async function exportA4ReportExcel(rows = []) {
   const headers = first.filter((h) => visible.has(h));
   const rowFilters = {
     showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+    showPartial: localStorage.getItem('reportsPdf.rows.partial') !== '0',
     showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
     showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
     showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
     showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+    showCancelled: localStorage.getItem('reportsPdf.rows.cancelled') !== '0',
   };
   const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
   const filtered = filterRowsByPrefs(model, headers, rowFilters);
@@ -506,10 +586,12 @@ export async function exportA4ReportCsv(rows = []) {
   const headers = first.filter((h) => visible.has(h));
   const rowFilters = {
     showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+    showPartial: localStorage.getItem('reportsPdf.rows.partial') !== '0',
     showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
     showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
     showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
     showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+    showCancelled: localStorage.getItem('reportsPdf.rows.cancelled') !== '0',
   };
   const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
   const filtered = filterRowsByPrefs(model, headers, rowFilters);

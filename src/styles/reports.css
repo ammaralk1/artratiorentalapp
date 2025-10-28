@@ -1005,6 +1005,14 @@ body[dir="ltr"] .reports-card-text {
   background: linear-gradient(90deg, rgba(var(--reports-error-rgb, 224, 49, 49), 0.9), rgba(var(--reports-error-rgb, 224, 49, 49), 0.65));
 }
 
+.reports-progress-fill.status-partial {
+  background: linear-gradient(90deg, rgba(var(--reports-warning-rgb, 240, 140, 0), 0.95), rgba(var(--reports-warning-rgb, 240, 140, 0), 0.68));
+}
+
+.reports-progress-fill.status-cancelled {
+  background: linear-gradient(90deg, rgba(var(--reports-error-rgb, 224, 49, 49), 0.95), rgba(var(--reports-error-rgb, 224, 49, 49), 0.7));
+}
+
 .reports-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

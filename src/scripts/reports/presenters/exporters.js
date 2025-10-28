@@ -1,4 +1,5 @@
 import { translate, formatDateInput, formatNumber, formatCurrency } from '../formatters.js';
+import { paymentLabelText } from '../calculations.js';
 import reportsState from '../state.js';
 import { ensureHtml2Pdf, ensureXlsx } from '../external.js';
 import {
@@ -221,6 +222,26 @@ export function renderTopEquipment(rows) {
         <td>${escapeHtml(row.name)}</td>
         <td>${formatNumber(row.count)}</td>
         <td>${formatCurrency(row.revenue)}</td>
+      </tr>
+    `)
+    .join('');
+}
+
+export function renderTopOutstanding(rows) {
+  const tbody = document.getElementById('reports-top-outstanding');
+  if (!tbody) return;
+
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr class="hover:bg-base-200 cursor-pointer" data-drilldown="reservation" data-search="${escapeAttribute(row.code)}">
+        <td>#${escapeHtml(String(row.code))} — ${escapeHtml(row.customer || '')}</td>
+        <td>${escapeHtml(paymentLabelText(row.paidStatus))}</td>
+        <td>${formatCurrency(row.outstanding)}</td>
       </tr>
     `)
     .join('');

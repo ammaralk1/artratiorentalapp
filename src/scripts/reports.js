@@ -19,6 +19,7 @@ import {
   calculatePaymentBreakdown,
   calculateTopCustomers,
   calculateTopEquipment,
+  calculateTopOutstanding,
 } from './reports/calculations.js';
 import { renderTrendChart, renderStatusChart, renderPaymentChart } from './reports/presenters/charts.js';
 import { updateKpiCards } from './reports/presenters/kpis.js';
@@ -27,6 +28,7 @@ import {
   exportReport,
   renderTopCustomers,
   renderTopEquipment,
+  renderTopOutstanding,
 } from './reports/presenters/exporters.js';
 import {
   setupColumnControls,
@@ -372,6 +374,7 @@ export function renderReports() {
   const paymentBreakdown = calculatePaymentBreakdown(filtered);
   const topCustomers = calculateTopCustomers(filtered, customers);
   const topEquipment = calculateTopEquipment(filtered, equipment);
+  const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
 
   updateKpiCards(metricsWithMaintenance);
   renderTrendChart(trend);
@@ -379,6 +382,7 @@ export function renderReports() {
   renderPaymentChart(paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
+  renderTopOutstanding(topOutstanding);
   const tableRows = renderReservationsTable(filtered, customers, technicians);
   applyColumnVisibility();
   toggleEmptyState(filtered.length === 0);
@@ -390,6 +394,7 @@ export function renderReports() {
   reportsState.lastSnapshot.paymentBreakdown = paymentBreakdown;
   reportsState.lastSnapshot.tableRows = tableRows;
   reportsState.lastSnapshot.maintenance = maintenanceSummary;
+  reportsState.lastSnapshot.outstanding = topOutstanding;
 }
 
 export function initReports() {
@@ -427,6 +432,8 @@ export function initReports() {
     }
     scheduleUrlUpdate();
     renderReports();
+    // Background refresh to align server-side dataset with selected range
+    loadReportsData({ silent: true }).catch(() => {});
   });
 
   statusSelect?.addEventListener('change', () => {
@@ -460,12 +467,18 @@ export function initReports() {
     filters.start = startInput.value || null;
     scheduleUrlUpdate();
     renderIfCustomRange();
+    if (filters.range === 'custom') {
+      loadReportsData({ silent: true }).catch(() => {});
+    }
   });
 
   endInput?.addEventListener('change', () => {
     filters.end = endInput.value || null;
     scheduleUrlUpdate();
     renderIfCustomRange();
+    if (filters.range === 'custom') {
+      loadReportsData({ silent: true }).catch(() => {});
+    }
   });
 
   // لا يوجد زر تحديث الآن؛ يتم التحديث تلقائياً عند تغيير الفلاتر

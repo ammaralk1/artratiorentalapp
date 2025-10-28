@@ -264,7 +264,8 @@ export async function renderStatusChart(data) {
       theme: { mode: getThemeMode() },
       labels,
       series,
-      colors: ['#22c55e', '#f97316', '#6366f1'],
+      // confirmed, pending, completed, cancelled
+      colors: ['#22c55e', '#f97316', '#6366f1', '#ef4444'],
       legend: { position: 'bottom' },
       dataLabels: {
         formatter: (val) => `${Math.round(val)}%`,
@@ -380,7 +381,8 @@ export async function renderPaymentChart(data) {
       theme: { mode: getThemeMode() },
       labels,
       series,
-      colors: ['#00ac69', '#f43f5e'],
+      // paid, partial, unpaid
+      colors: ['#00ac69', '#f59e0b', '#f43f5e'],
       legend: { position: 'bottom' },
       dataLabels: {
         formatter: (val) => `${Math.round(val)}%`,

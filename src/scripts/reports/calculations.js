@@ -281,15 +281,16 @@ export function computeReportStatus(reservation) {
       ?? ''
   );
 
-  if (projectState.projectLinked && projectStatus) {
+  if (projectState.projectLinked && projectStatus && statusValue !== 'cancelled') {
     statusValue = projectStatus;
   }
 
-  if (!statusValue || statusValue === 'cancelled') {
+  // Keep explicit cancelled state; only fallback when status is missing
+  if (!statusValue) {
     statusValue = projectState.effectiveConfirmed ? 'confirmed' : 'pending';
   }
 
-  if (isReservationCompleted(reservation) || projectStatus === 'completed') {
+  if (statusValue !== 'cancelled' && (isReservationCompleted(reservation) || projectStatus === 'completed')) {
     statusValue = 'completed';
   }
 
@@ -500,11 +501,30 @@ export function calculateMonthlyTrend(reservations) {
   const key = `trend:${listSignature(reservations)}`;
   const cached = memoGet(__memo.trend, key);
   if (cached) return cached;
+
   const now = new Date();
   const result = [];
 
-  for (let i = 5; i >= 0; i -= 1) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  // Determine months span from filtered reservations; clamp between 6 and 12 months
+  const starts = (reservations || [])
+    .map((r) => (r?.start ? new Date(r.start) : null))
+    .filter((d) => d && !Number.isNaN(d.getTime()));
+
+  let monthsSpan = 6;
+  let endAnchor = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (starts.length) {
+    const min = new Date(Math.min(...starts.map((d) => d.getTime())));
+    const max = new Date(Math.max(...starts.map((d) => d.getTime())));
+    const startAnchor = new Date(min.getFullYear(), min.getMonth(), 1);
+    endAnchor = new Date(max.getFullYear(), max.getMonth(), 1);
+    const years = endAnchor.getFullYear() - startAnchor.getFullYear();
+    const months = endAnchor.getMonth() - startAnchor.getMonth();
+    const diff = years * 12 + months;
+    monthsSpan = Math.min(12, Math.max(6, diff + 1));
+  }
+
+  for (let i = monthsSpan - 1; i >= 0; i -= 1) {
+    const date = new Date(endAnchor.getFullYear(), endAnchor.getMonth() - i, 1);
     const year = date.getFullYear();
     const month = date.getMonth();
 
@@ -553,12 +573,15 @@ export function calculateStatusBreakdown(reservations) {
     confirmed: 0,
     pending: 0,
     completed: 0,
+    cancelled: 0,
   };
 
   (reservations || []).forEach((reservation) => {
     const { statusValue, confirmed } = computeReportStatus(reservation);
     if (statusValue === 'completed') {
       counts.completed += 1;
+    } else if (statusValue === 'cancelled') {
+      counts.cancelled += 1;
     } else if (statusValue === 'confirmed' || confirmed) {
       counts.confirmed += 1;
     } else {
@@ -570,6 +593,7 @@ export function calculateStatusBreakdown(reservations) {
   const confirmedCount = counts.confirmed;
   const pending = counts.pending;
   const completed = counts.completed;
+  const cancelled = counts.cancelled;
 
   const out = [
     {
@@ -596,6 +620,14 @@ export function calculateStatusBreakdown(reservations) {
       className: 'status-completed',
       filterKey: 'completed',
     },
+    {
+      label: translate('reservations.reports.status.cancelledLabel', 'ملغاة', 'Cancelled'),
+      value: cancelled,
+      percent: Math.round((cancelled / total) * 100) || 0,
+      rawCount: cancelled,
+      className: 'status-cancelled',
+      filterKey: 'cancelled',
+    },
   ];
   return memoSet(__memo.status, key, out);
 }
@@ -605,8 +637,13 @@ export function calculatePaymentBreakdown(reservations) {
   const cached = memoGet(__memo.payment, key);
   if (cached) return cached;
   const total = reservations.length || 1;
-  const paid = reservations.filter((reservation) => computeReportStatus(reservation).paid).length;
-  const unpaid = reservations.length - paid;
+  let paid = 0; let partial = 0; let unpaid = 0;
+  (reservations || []).forEach((reservation) => {
+    const { paidStatus } = computeReportStatus(reservation);
+    if (paidStatus === 'paid') paid += 1;
+    else if (paidStatus === 'partial') partial += 1;
+    else unpaid += 1;
+  });
 
   const out = [
     {
@@ -616,6 +653,14 @@ export function calculatePaymentBreakdown(reservations) {
       rawCount: paid,
       className: 'status-paid',
       filterKey: 'paid',
+    },
+    {
+      label: translate('reservations.reports.payment.partialLabel', 'مدفوعة جزئياً', 'Partially paid'),
+      value: partial,
+      percent: Math.round((partial / total) * 100) || 0,
+      rawCount: partial,
+      className: 'status-partial',
+      filterKey: 'partial',
     },
     {
       label: translate('reservations.reports.payment.unpaidLabel', 'غير مدفوعة', 'Unpaid'),
@@ -777,18 +822,23 @@ export function filterReservations(reservations, filters, customers, equipment, 
 
     const start = reservation?.start ? new Date(reservation.start) : null;
     if (!start || Number.isNaN(start.getTime())) return false;
+    let end = reservation?.end ? new Date(reservation.end) : start;
+    if (Number.isNaN(end.getTime())) end = start;
 
-    if (startDate && start < startDate) return false;
+    // Overlap logic: include if (start <= endDate) and (end >= startDate)
+    if (startDate && end < startDate) return false;
     if (endDate && start > endDate) return false;
 
-    const { statusValue, confirmed, paid } = computeReportStatus(reservation);
+    const { statusValue, confirmed, paid, paidStatus } = computeReportStatus(reservation);
 
     if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed' || confirmed)) return false;
     if (filters.status === 'pending' && statusValue !== 'pending') return false;
     if (filters.status === 'completed' && statusValue !== 'completed') return false;
+    if (filters.status === 'cancelled' && statusValue !== 'cancelled') return false;
 
     if (filters.payment === 'paid' && !paid) return false;
     if (filters.payment === 'unpaid' && paid) return false;
+    if (filters.payment === 'partial' && paidStatus !== 'partial') return false;
 
     if (filters.share && filters.share !== 'all') {
       const financials = computeReservationFinancials(reservation);
@@ -818,4 +868,52 @@ export function paymentLabelText(paymentStatus) {
 
 export function isReservationConfirmed(reservation) {
   return computeReportStatus(reservation).confirmed;
+}
+
+function getPaidAmountFromHistory(history = []) {
+  if (!Array.isArray(history) || !history.length) return 0;
+  // Sum explicit amounts; ignore percentages here
+  let sum = 0;
+  history.forEach((entry) => {
+    const amount = Number(entry?.amount);
+    if (Number.isFinite(amount) && amount > 0) sum += amount;
+  });
+  return sum;
+}
+
+export function computeOutstandingAmount(reservation) {
+  const fin = computeReservationFinancials(reservation);
+  const total = Number(fin.finalTotal || 0);
+  let paid = Number(reservation?.paidAmount);
+  if (!Number.isFinite(paid) || paid <= 0) {
+    const historyPaid = getPaidAmountFromHistory(reservation?.paymentHistory || reservation?.payment_history || []);
+    if (Number.isFinite(historyPaid) && historyPaid > 0) paid = historyPaid;
+  }
+  if ((!Number.isFinite(paid) || paid <= 0) && Number.isFinite(Number(reservation?.paidPercent))) {
+    const pct = Number(reservation.paidPercent);
+    if (pct > 0 && pct <= 100) paid = (pct / 100) * total;
+  }
+  if (!Number.isFinite(paid)) paid = 0;
+  const outstanding = Math.max(0, Math.round((total - paid) * 100) / 100);
+  return outstanding;
+}
+
+export function calculateTopOutstanding(reservations, customers, limit = 5) {
+  const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
+  const rows = [];
+  (reservations || []).forEach((res) => {
+    const { paidStatus } = computeReportStatus(res);
+    if (paidStatus !== 'unpaid' && paidStatus !== 'partial') return;
+    const outstanding = computeOutstandingAmount(res);
+    if (!Number.isFinite(outstanding) || outstanding <= 0) return;
+    const customer = customerMap.get(String(res.customerId));
+    rows.push({
+      id: res.id || res.reservationId || '',
+      code: res.reservationCode || res.reservationId || res.id || '',
+      customer: customer?.customerName || res.customerName || '',
+      outstanding,
+      paidStatus,
+    });
+  });
+  return rows.sort((a, b) => b.outstanding - a.outstanding).slice(0, limit);
 }
