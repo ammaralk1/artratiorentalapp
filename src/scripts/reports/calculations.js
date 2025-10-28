@@ -701,6 +701,9 @@ export function calculateTopCustomers(reservations, customers) {
   const customerMap = new Map((customers || []).map((c) => [String(c.id), c]));
 
   reservations.forEach((res) => {
+    const { statusValue } = computeReportStatus(res);
+    // استبعاد الحجوزات الملغاة من أفضل العملاء
+    if (statusValue === 'cancelled') return;
     const key = String(res?.customerId ?? 'unknown');
     const entry = totals.get(key) || { count: 0, revenue: 0 };
     const financials = computeReservationFinancials(res);
