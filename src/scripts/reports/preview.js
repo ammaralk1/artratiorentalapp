@@ -59,7 +59,6 @@ function createModal() {
                       </div>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" data-print-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
-                    <button type="button" class="btn btn-outline btn-sm" data-export-csv title="CSV">${translate('reservations.reports.actions.exportCsv', '🧾 تصدير CSV', 'Export CSV')}</button>
                   </div>
                   </div>
                   <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
@@ -235,13 +234,6 @@ export function openReportsPdfPreview(rows) {
     });
   }
 
-  const csvBtn = modal.querySelector('[data-export-csv]');
-  if (csvBtn) {
-    csvBtn.addEventListener('click', async () => {
-      const { exportA4ReportCsv } = await import('./presenters/a4Unified.js');
-      await exportA4ReportCsv(dataRows);
-    });
-  }
 
   // Bootstrap modal API (if available) or fallback
   try {
