@@ -11,6 +11,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   const crewSeparator = t('reservations.list.crew.separator', '، ');
   const statusConfirmedText = t('reservations.list.status.confirmed', '✅ مؤكد');
   const statusPendingText = t('reservations.list.status.pending', '⏳ غير مؤكد');
+  const statusCompletedText = t('reservations.list.status.completed', '📁 منتهي');
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
@@ -59,7 +60,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     let completedAttr = '';
 
     if (completed) {
-      statusBadge = `<span class="reservation-chip status-chip status-completed">${statusConfirmedText}</span>`;
+      statusBadge = `<span class="reservation-chip status-chip status-completed">${statusCompletedText}</span>`;
       paymentBadge = `<span class="reservation-chip status-chip status-completed">${paymentLabel}</span>`;
       const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
       const ribbonTextAttr = ribbonTextRaw.replace(/"/g, '&quot;');
