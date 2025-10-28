@@ -100,7 +100,8 @@ export function buildPdfReportElement(rows = []) {
     .reservation-chip,
     .status-confirmed,
     .status-pending,
-    .status-completed { background:#fff !important; color:#000 !important; border:1px solid #e5e7eb !important; box-shadow:none !important; }
+    .status-completed,
+    .status-cancelled { background:#fff !important; color:#000 !important; border:1px solid #e5e7eb !important; box-shadow:none !important; }
     thead th { text-align: right; background: #f3f4f6 !important; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 800; color:#000; }
     tbody td { border: 1px solid #e5e7eb; padding: 8px 10px; color:#000; text-align:right; }
     tbody tr:nth-child(even) td { background: #fafafa; }

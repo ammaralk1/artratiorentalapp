@@ -29,7 +29,8 @@ const CALENDAR_LEGEND_ITEMS = [
   { key: 'pending', chipClass: 'reservation-chip status-pending' },
   { key: 'paid', chipClass: 'reservation-chip status-paid' },
   { key: 'unpaid', chipClass: 'reservation-chip status-unpaid' },
-  { key: 'completed', chipClass: 'reservation-chip status-completed' }
+  { key: 'completed', chipClass: 'reservation-chip status-completed' },
+  { key: 'cancelled', chipClass: 'reservation-chip status-cancelled' }
 ];
 
 const LEGEND_FALLBACK_AR = {
@@ -37,7 +38,8 @@ const LEGEND_FALLBACK_AR = {
   pending: 'بانتظار التأكيد',
   paid: 'مدفوع بالكامل',
   unpaid: 'لم يتم الدفع',
-  completed: 'منتهي'
+  completed: 'منتهي',
+  cancelled: 'ملغي'
 };
 
 const LEGEND_FALLBACK_EN = {
@@ -45,7 +47,8 @@ const LEGEND_FALLBACK_EN = {
   pending: 'Awaiting confirmation',
   paid: 'Paid in full',
   unpaid: 'Payment pending',
-  completed: 'Completed'
+  completed: 'Completed',
+  cancelled: 'Cancelled'
 };
 
 const TIME_FORMATTER_CACHE = new Map();
@@ -165,10 +168,13 @@ function formatEventTimeRange(startStr, endStr, isAllDay = false) {
   return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
 }
 
-function getEventClassNames({ paid, confirmed, completed }) {
+function getEventClassNames({ paid, confirmed, completed, cancelled }) {
   const classNames = ['calendar-event'];
   if (completed === true || completed === 'true') {
     classNames.push('calendar-event--completed');
+  }
+  if (cancelled === true || cancelled === 'true') {
+    classNames.push('calendar-event--cancelled');
   }
   if (confirmed === true || confirmed === 'true') {
     classNames.push('calendar-event--confirmed');
@@ -197,8 +203,14 @@ function buildEventContent(arg) {
     const chip = (cls, text) => `<span class="calendar-chip ${cls}">${escapeHtml(text)}</span>`;
     const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
     const paidLabel = paid ? t('calendar.badges.paid', 'مدفوع') : t('calendar.badges.unpaid', 'غير مدفوع');
-    const chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paid ? 'status-paid' : 'status-unpaid', paidLabel)];
-    if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'منتهي')));
+    const cancelled = props?.cancelled === true || props?.cancelled === 'true';
+    let chips = [];
+    if (cancelled) {
+      chips = [chip('status-cancelled', t('calendar.badges.cancelled', 'ملغي'))];
+    } else {
+      chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paid ? 'status-paid' : 'status-unpaid', paidLabel)];
+      if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'منتهي')));
+    }
     const html = `
       <div class="calendar-event-wrapper">
         <div class="calendar-event-card">
@@ -338,7 +350,7 @@ function normalizeReservationForEvent(reservation, project = null) {
   const endValue = reservation.end ?? reservation.endDatetime ?? reservation.end_datetime ?? start;
   if (!start) return null;
 
-  const statusValue = String(reservation.status ?? '').toLowerCase();
+  const statusValue = String(reservation.status ?? reservation.reservationStatus ?? '').toLowerCase();
   const paidStatus = reservation.paidStatus ?? reservation.paid_status ?? null;
   const paid = reservation.paid != null
     ? reservation.paid
@@ -366,6 +378,7 @@ function normalizeReservationForEvent(reservation, project = null) {
     paid,
     confirmed,
     completed,
+    cancelled: statusValue === 'cancelled' || statusValue === 'canceled',
     reservationId: reservationIdentifier ?? '',
     customerName,
     raw: reservation,
@@ -388,7 +401,8 @@ function buildCalendarEvents(reservations = []) {
       const classNames = getEventClassNames({
         paid: normalized.paid,
         confirmed: normalized.confirmed,
-        completed: normalized.completed
+        completed: normalized.completed,
+        cancelled: normalized.cancelled
       });
 
       return {
@@ -407,6 +421,7 @@ function buildCalendarEvents(reservations = []) {
           paid: normalized.paid,
           confirmed: normalized.confirmed,
           completed: normalized.completed,
+          cancelled: normalized.cancelled,
           reservationId: normalized.reservationId,
           customerName: normalized.customerName,
         },

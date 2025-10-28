@@ -563,6 +563,12 @@ body {
   color: #f8fafc;
 }
 
+.calendar-event--cancelled .calendar-event-card {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(109, 40, 217, 0.88));
+  border-color: rgba(167, 139, 250, 0.45);
+  color: #f8f5ff;
+}
+
 .calendar-event--confirmed .calendar-event-card__head,
 .calendar-event--confirmed .calendar-event-card__customer,
 .calendar-event--confirmed .calendar-event-card__chips,
@@ -578,6 +584,11 @@ body {
 .calendar-event--pending .calendar-chip.status-pending {
   background: rgba(30, 64, 175, 0.12);
   color: #312e81;
+}
+
+.calendar-event--cancelled .calendar-chip.status-cancelled {
+  background: rgba(124, 58, 237, 0.18);
+  color: #3b0764;
 }
 
 .calendar-event--completed .calendar-chip {
@@ -609,7 +620,8 @@ body {
 
 .calendar-event--confirmed .fc-list-event .calendar-event-card,
 .calendar-event--pending .fc-list-event .calendar-event-card,
-.calendar-event--completed .fc-list-event .calendar-event-card {
+.calendar-event--completed .fc-list-event .calendar-event-card,
+.calendar-event--cancelled .fc-list-event .calendar-event-card {
   background: inherit;
   border-color: inherit;
   color: inherit;

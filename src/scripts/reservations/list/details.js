@@ -634,22 +634,37 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
       }).join('')}</ul>`
     : `<div class="reservation-payment-history-empty">${escapeHtml(paymentHistoryEmpty)}</div>`;
 
-  const statusChipsData = [
-    {
-      text: confirmed ? statusConfirmedText : statusPendingText,
-      className: confirmed ? 'status-confirmed' : 'status-pending'
-    },
-    {
-      text: paymentStatusText,
-      className: paidStatus === 'paid'
-        ? 'status-paid'
-        : isPartial
-          ? 'status-partial'
-          : 'status-unpaid'
-    }
-  ];
+  const rawStatusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+  const isCancelled = rawStatusValue === 'cancelled' || rawStatusValue === 'canceled';
 
-  if (completed) {
+  const statusChipsData = isCancelled
+    ? [
+        { text: t('reservations.list.status.cancelled', '❌ ملغي'), className: 'status-cancelled' },
+        {
+          text: paymentStatusText,
+          className: paidStatus === 'paid'
+            ? 'status-paid'
+            : isPartial
+              ? 'status-partial'
+              : 'status-unpaid'
+        }
+      ]
+    : [
+        {
+          text: confirmed ? statusConfirmedText : statusPendingText,
+          className: confirmed ? 'status-confirmed' : 'status-pending'
+        },
+        {
+          text: paymentStatusText,
+          className: paidStatus === 'paid'
+            ? 'status-paid'
+            : isPartial
+              ? 'status-partial'
+              : 'status-unpaid'
+        }
+      ];
+
+  if (completed && !isCancelled) {
     statusChipsData.push({ text: completedText, className: 'status-completed' });
   }
 

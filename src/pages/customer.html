@@ -383,6 +383,7 @@
                 <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
                 <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
                 <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+                <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
               </select>
             </div>
             <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
@@ -501,6 +502,12 @@
                 <div class="form-check">
                   <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
                   <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
+                    <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+                  </div>
                 </div>
               </div>
             </div>

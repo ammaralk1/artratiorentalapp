@@ -66,9 +66,24 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
     }
 
-    const confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
+    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
       ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
       : '';
+    // If cancelled, override status badge and tile color
+    {
+      const raw = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+      if (raw === 'cancelled' || raw === 'canceled') {
+        const statusCancelledText = t('reservations.list.status.cancelled', '❌ ملغي');
+        statusBadge = `<span class="reservation-chip status-chip status-cancelled">${statusCancelledText}</span>`;
+        stateClass = ' tile-cancelled';
+        completedAttr = '';
+        // hide confirm button for cancelled reservations
+        if (typeof confirmButtonHtml !== 'undefined') {
+          confirmButtonHtml = '';
+        }
+      }
+    }
+
     const confirmSectionHtml = confirmButtonHtml
       ? `<div class="tile-actions">${confirmButtonHtml}</div>`
       : '';

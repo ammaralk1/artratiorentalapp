@@ -761,6 +761,16 @@ export async function editReservation(index, {
 
   setEditPaymentProgressValue(paymentProgressValueInput, null);
 
+  // Initialize cancelled control if present
+  const cancelledCheckboxInit = document.getElementById('edit-res-cancelled');
+  if (cancelledCheckboxInit) {
+    const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    cancelledCheckboxInit.checked = ['cancelled', 'canceled'].includes(rawStatus);
+    if (cancelledCheckboxInit.checked) {
+      updateConfirmedControls(initialConfirmed, { disable: true });
+    }
+  }
+
   let initialCrewAssignments = Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length
     ? reservation.crewAssignments
     : (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length
@@ -826,6 +836,8 @@ export async function saveReservationChanges({
   const paymentProgressType = getEditPaymentProgressType(paymentProgressTypeSelect);
   const paymentProgressValue = parseEditPaymentProgressValue(paymentProgressValueInput);
   const projectIdValue = document.getElementById('edit-res-project')?.value || '';
+  const cancelledToggle = document.getElementById('edit-res-cancelled');
+  const isCancelledToggle = cancelledToggle?.checked === true;
   const crewAssignments = getEditingCrewAssignments();
   const technicianIds = crewAssignments
     .map((assignment) => assignment?.technicianId)
@@ -1073,6 +1085,8 @@ export async function saveReservationChanges({
   let statusForPayload = reservation.status ?? 'pending';
   if (helperProjectLinked) {
     statusForPayload = selectedProject?.status ?? projectStatus ?? statusForPayload;
+  } else if (isCancelledToggle) {
+    statusForPayload = 'cancelled';
   } else if (!['completed', 'cancelled'].includes(String(statusForPayload).toLowerCase())) {
     statusForPayload = confirmed ? 'confirmed' : 'pending';
   }
@@ -1231,6 +1245,19 @@ export function setupEditReservationModalEvents(context = {}) {
       updateEditReservationSummary?.();
     });
     confirmedToggleBtn.dataset.listenerAttached = 'true';
+  }
+
+  const cancelledCheckbox = document.getElementById('edit-res-cancelled');
+  if (cancelledCheckbox && !cancelledCheckbox.dataset.listenerAttached) {
+    cancelledCheckbox.addEventListener('change', () => {
+      // Disable/enable the confirm toggle based on cancelled state
+      const btn = document.getElementById('edit-res-confirmed-btn');
+      if (btn) {
+        updateConfirmedControls(isReservationConfirmed(), { disable: cancelledCheckbox.checked });
+      }
+      updateEditReservationSummary?.();
+    });
+    cancelledCheckbox.dataset.listenerAttached = 'true';
   }
 
   const saveBtn = document.getElementById('save-reservation-changes');

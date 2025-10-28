@@ -622,6 +622,16 @@ html.dark-mode .projects-hero-text {
   --chip-shadow: 0 12px 24px rgba(71, 85, 105, 0.3), 0 0 0 2px rgba(148, 163, 184, 0.28);
 }
 
+.reservation-chip.status-cancelled,
+.status-chip.status-cancelled,
+.project-reservation-card__badge--cancelled {
+  --chip-bg: linear-gradient(135deg, rgba(124, 58, 237, 0.94), rgba(109, 40, 217, 0.9));
+  --chip-color: #f5f3ff;
+  --chip-shadow: 0 12px 24px rgba(124, 58, 237, 0.28), 0 0 0 2px rgba(167, 139, 250, 0.28);
+}
+
+/* duplicate cancelled style removed */
+
 .reservation-chip.status-info,
 .status-chip.status-info,
 .project-reservation-card__badge--info {

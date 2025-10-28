@@ -1354,6 +1354,7 @@
               <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
               <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
               <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+              <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
             </select>
           </div>
 
@@ -1398,6 +1399,7 @@
                       <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
                       <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
                       <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
+                      <option value="cancelled" data-i18n data-i18n-key="reservations.reports.filters.status.cancelled">ملغاة</option>
                     </select>
                   </label>
                   <label class="reports-filter-field">
@@ -1405,6 +1407,7 @@
                     <select id="reports-payment-filter" class="form-select reports-filter-control">
                       <option value="all" data-i18n data-i18n-key="reservations.reports.filters.payment.all">الكل</option>
                       <option value="paid" data-i18n data-i18n-key="reservations.reports.filters.payment.paid">مدفوعة</option>
+                      <option value="partial" data-i18n data-i18n-key="reservations.reports.filters.payment.partial">مدفوعة جزئياً</option>
                       <option value="unpaid" data-i18n data-i18n-key="reservations.reports.filters.payment.unpaid">غير مدفوعة</option>
                     </select>
                   </label>
@@ -1997,6 +2000,13 @@
             <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
               <label class="form-label" for="edit-res-confirmed-btn">✅ حالة التأكيد</label>
               <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" data-pending-label="⏳ بانتظار التأكيد" data-confirm-label="✅ تم التأكيد" aria-pressed="false">⏳ بانتظار التأكيد</button>
+            </div>
+            <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">
+              <label class="form-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
+                <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+              </div>
             </div>
 
             <div class="col-12">

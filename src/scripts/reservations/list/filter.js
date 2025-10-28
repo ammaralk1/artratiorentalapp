@@ -97,6 +97,10 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
     if (statusFilter === 'confirmed' && !effectiveConfirmed) return false;
     if (statusFilter === 'pending' && effectiveConfirmed) return false;
     if (statusFilter === 'completed' && !completed) return false;
+    if (statusFilter === 'cancelled') {
+      const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+      if (!['cancelled', 'canceled'].includes(rawStatus)) return false;
+    }
 
     if (startDateObj && reservationStart && reservationStart < startDateObj) return false;
     if (endDateObj && reservationStart && reservationStart > endDateObj) return false;
