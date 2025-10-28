@@ -29,7 +29,7 @@ function createModal() {
                   <div class="quote-preview-header-actions__right" style="display:flex; gap:8px; align-items:center;">
                     <div class="quote-preview-toggles" data-toggle-wrapper style="position:relative;">
                       <button type="button" class="quote-preview-zoom-btn" data-toggle-open title="إظهار/إخفاء أقسام">⚙️</button>
-                      <div data-toggle-menu style="position:absolute; top:36px; inset-inline-end:0; background:var(--dropdown-bg,#fff); color:var(--dropdown-fg,#111); border:1px solid var(--dropdown-br,#e5e7eb); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:10px 12px; min-width:240px; display:none; z-index:20;">
+                      <div data-toggle-menu style="position:absolute; top:36px; inset-inline-end:0; background:var(--dropdown-bg,#fff); color:var(--dropdown-fg,#111); border:1px solid var(--dropdown-br,#e5e7eb); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:10px 12px; min-width:240px; width:min(92vw, 360px); max-height:min(70vh, 480px); overflow:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; display:none; z-index:20;">
                         <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
                           <input type="checkbox" data-toggle-header checked>
                           <span>إظهار العنوان (الهيدر)</span>
@@ -43,7 +43,7 @@ function createModal() {
                           <span>إظهار تفاصيل الإيرادات</span>
                         </label>
                         <hr style="border:none;border-top:1px solid var(--dropdown-br,#e5e7eb);margin:6px 0;">
-                        <div data-columns-wrap style="display:flex; flex-direction:column; gap:4px; max-height:220px; overflow:auto;">
+                        <div data-columns-wrap style="display:flex; flex-direction:column; gap:4px;">
                           <strong style="font-size:12px; opacity:.8;">الأعمدة الظاهرة</strong>
                           <!-- عموديات ديناميكية هنا -->
                         </div>
