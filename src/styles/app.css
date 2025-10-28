@@ -1371,8 +1371,8 @@
     background: linear-gradient(140deg, rgba(248, 250, 255, 0.96) 0%, rgba(236, 242, 255, 0.92) 48%, rgba(225, 233, 255, 0.9) 100%);
     box-shadow: 0 28px 60px rgba(15, 23, 42, 0.16);
     padding: 0;
-    /* allow content (like action buttons) to render fully */
-    overflow: visible;
+    /* confine visuals to wrapper; content sized below to prevent clipping */
+    overflow: hidden;
     isolation: isolate;
     backdrop-filter: blur(18px);
   }
@@ -1395,13 +1395,13 @@
 
   /* Center customers table container and constrain width a bit */
   .customer-table-wrapper {
-    width: min(100%, 1000px);
+    width: min(100%, 960px);
     margin-inline: auto;
   }
 
   /* Center technicians table wrapper as well to align with other containers */
   .technician-table-wrapper {
-    width: min(100%, 1000px);
+    width: min(100%, 960px);
     margin-inline: auto;
   }
 
@@ -1412,14 +1412,14 @@
 
   /* Compact action buttons inside customers table */
   .customer-table .table-actions-head,
-  .customer-table .table-actions-cell { width: 9rem; min-width: 9rem; }
+  .customer-table .table-actions-cell { width: 8.5rem; min-width: 8.5rem; }
   .customer-table .table-actions-cell .table-action-buttons { gap: 0.35rem; }
   .customer-table .customer-action-btn { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
 
   /* Keep company on one line, but allow slightly smaller min width with ellipsis */
   .customer-table thead th:nth-child(3),
   .customer-table tbody td:nth-child(3) {
-    min-width: 16rem;
+    min-width: 14rem;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -1428,8 +1428,8 @@
   /* Shrink customer name a bit more to accomodate company */
   .customer-table thead th:nth-child(1),
   .customer-table tbody td:nth-child(1) {
-    width: 9rem;
-    min-width: 9rem;
+    width: 8.5rem;
+    min-width: 8.5rem;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
@@ -1442,6 +1442,20 @@
   .customer-table tbody td:nth-child(3) {
     padding-inline: 0.65rem;
   }
+
+  /* Phone column: keep compact to save width */
+  .customer-table thead th:nth-child(2),
+  .customer-table tbody td:nth-child(2) {
+    width: 9rem;
+    min-width: 9rem;
+  }
+
+  /* Notes column: reduce share to keep table inside wrapper */
+  .customer-table .table-notes-head,
+  .customer-table tbody .table-notes-cell { width: 28%; min-width: 12rem; }
+
+  /* Compact action buttons a bit more */
+  .customer-table .customer-action-btn { padding: 0.24rem 0.52rem; font-size: 0.7rem; }
 
   /* Slightly smaller text and padding for technicians table for better fit */
   .technician-table { font-size: 0.9rem; }
