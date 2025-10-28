@@ -128,33 +128,18 @@ export function openProjectDetails(projectId) {
   const hasPaymentHistory = paymentHistory.length > 0;
   const basePaidAmount = hasPaymentHistory ? 0 : Number(project.paidAmount) || 0;
   const basePaidPercent = hasPaymentHistory ? 0 : Number(project.paidPercent) || 0;
-  const paymentProgress = calculatePaymentProgress({
-    totalAmount: overallTotal,
-    paidAmount: basePaidAmount,
-    paidPercent: basePaidPercent,
-    history: paymentHistory,
-  });
-  const paymentStatusValue = determinePaymentStatus({
-    manualStatus: paymentStatusRaw || 'unpaid',
-    paidAmount: paymentProgress.paidAmount,
-    paidPercent: paymentProgress.paidPercent,
-    totalAmount: overallTotal,
-  });
-  const paymentStatusText = t(
-    `projects.paymentStatus.${paymentStatusValue}`,
-    paymentStatusValue === 'paid' ? 'Paid' : paymentStatusValue === 'partial' ? 'Partial' : 'Unpaid'
-  );
-  const paymentStatusChipClass = paymentStatusValue === 'paid'
-    ? 'status-paid'
-    : paymentStatusValue === 'partial'
-      ? 'status-partial'
-      : 'status-unpaid';
-  const paidAmountValue = Number.isFinite(Number(paymentProgress.paidAmount)) ? Number(paymentProgress.paidAmount) : 0;
-  const paidPercentValue = Number.isFinite(Number(paymentProgress.paidPercent)) ? Number(paymentProgress.paidPercent) : 0;
-  const remainingAmountValue = Math.max(0, Number((overallTotal - paidAmountValue).toFixed(2)));
-  const paidAmountDisplay = formatCurrency(paidAmountValue);
-  const paidPercentDisplay = `${normalizeNumbers(paidPercentValue.toFixed(2))}%`;
-  const remainingDisplay = formatCurrency(remainingAmountValue);
+  // defer computing paymentProgress until after we compute finalTotal below
+  let paymentTotalForProgress = overallTotal;
+  let paymentProgress;
+  let paymentStatusValue;
+  let paymentStatusText;
+  let paymentStatusChipClass;
+  let paidAmountValue;
+  let paidPercentValue;
+  let remainingAmountValue;
+  let paidAmountDisplay;
+  let paidPercentDisplay;
+  let remainingDisplay;
   const paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory);
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
@@ -241,6 +226,8 @@ export function openProjectDetails(projectId) {
     if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
     summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
     summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrency(finalTotal) });
+    // Use the same "final total" for payment progress to avoid discrepancies
+    paymentTotalForProgress = finalTotal;
   } else {
     // Fallback legacy summary when no linked reservations
     summaryDetails = [
@@ -266,6 +253,35 @@ export function openProjectDetails(projectId) {
       }
     ];
   }
+
+  // Compute payment progress and status against the chosen total (finalTotal when available)
+  paymentProgress = calculatePaymentProgress({
+    totalAmount: paymentTotalForProgress,
+    paidAmount: basePaidAmount,
+    paidPercent: basePaidPercent,
+    history: paymentHistory,
+  });
+  paymentStatusValue = determinePaymentStatus({
+    manualStatus: paymentStatusRaw || 'unpaid',
+    paidAmount: paymentProgress.paidAmount,
+    paidPercent: paymentProgress.paidPercent,
+    totalAmount: paymentTotalForProgress,
+  });
+  paymentStatusText = t(
+    `projects.paymentStatus.${paymentStatusValue}`,
+    paymentStatusValue === 'paid' ? 'Paid' : paymentStatusValue === 'partial' ? 'Partial' : 'Unpaid'
+  );
+  paymentStatusChipClass = paymentStatusValue === 'paid'
+    ? 'status-paid'
+    : paymentStatusValue === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
+  paidAmountValue = Number.isFinite(Number(paymentProgress.paidAmount)) ? Number(paymentProgress.paidAmount) : 0;
+  paidPercentValue = Number.isFinite(Number(paymentProgress.paidPercent)) ? Number(paymentProgress.paidPercent) : 0;
+  remainingAmountValue = Math.max(0, Number((paymentTotalForProgress - paidAmountValue).toFixed(2)));
+  paidAmountDisplay = formatCurrency(paidAmountValue);
+  paidPercentDisplay = `${normalizeNumbers(paidPercentValue.toFixed(2))}%`;
+  remainingDisplay = formatCurrency(remainingAmountValue);
 
   const summaryDetailsHtml = summaryDetails.map(({ icon, label, value }) => `
     <div class="summary-details-row">
@@ -392,7 +408,7 @@ export function openProjectDetails(projectId) {
       <div class="project-details-grid">
         <div class="project-details-grid-item">
           <span>${escapeHtml(t('projects.details.paymentOverview.total', 'الإجمالي الكلي'))}</span>
-          <strong>${escapeHtml(formatCurrency(overallTotal))}</strong>
+          <strong>${escapeHtml(formatCurrency(paymentTotalForProgress))}</strong>
         </div>
         <div class="project-details-grid-item">
           <span>${escapeHtml(t('projects.details.paymentOverview.paid', 'المدفوع'))}</span>
