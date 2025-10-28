@@ -47,5 +47,17 @@
 .rpt-table td, .rpt-table th { vertical-align: middle; }
 /* تفاصيل الجسم فقط أصغر وبسطر واحد */
 .rpt-table tbody td { font-size: 10px; line-height: 1.35; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* تفاصيل الإيرادات داخل المعاينة */
+.rpt-revenue {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+  margin: 6mm 0 6mm;
+}
+.rpt-revenue__item { display: flex; align-items: center; justify-content: space-between; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; }
+.rpt-revenue__label { font-size: 11px; opacity: .9; }
+.rpt-revenue__value { font-weight: 700; font-size: 13px; }
+.rpt-revenue__title { margin: 0 0 6px 0; font-size: 13px; font-weight: 800; }
 .rpt-table th { background: #f3f4f6 !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; font-weight: 800; }
 .rpt-table td { background: #ffffff !important; color: #000 !important; border: 1px solid #e5e7eb; padding: 6px 8px; text-align: right; }

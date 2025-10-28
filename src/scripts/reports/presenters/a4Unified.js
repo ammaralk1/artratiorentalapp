@@ -67,6 +67,41 @@ function buildKpis() {
   return k;
 }
 
+function buildRevenueDetails() {
+  const m = reportsState.lastSnapshot?.metrics || {};
+  const wrap = document.createElement('section');
+  const title = document.createElement('h4');
+  title.className = 'rpt-revenue__title';
+  title.textContent = translate('reservations.reports.kpi.revenue.details.title', 'تفاصيل الإيرادات', 'Revenue details');
+  const grid = document.createElement('div');
+  grid.className = 'rpt-revenue';
+
+  const add = (label, value) => {
+    const item = document.createElement('div');
+    item.className = 'rpt-revenue__item';
+    const l = document.createElement('span'); l.className = 'rpt-revenue__label'; l.textContent = label;
+    const v = document.createElement('strong'); v.className = 'rpt-revenue__value'; v.textContent = value;
+    item.appendChild(l); item.appendChild(v); grid.appendChild(item);
+  };
+
+  const fmt2 = (n) => formatCurrency(round2(n || 0));
+  add(translate('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), fmt2(m.revenue));
+  add(translate('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), fmt2(m.companyShareTotal));
+  add(translate('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), fmt2(m.taxTotal));
+  // عرض تفاصيل الطاقم (إجمالي للعميل وتكلفة على الشركة) إن توفرت
+  add(translate('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), fmt2(m.crewTotal));
+  add(translate('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), fmt2(m.crewCostTotal));
+  // مصاريف الصيانة إن وُجدت ضمن snapshot
+  if (Number.isFinite(Number(m.maintenanceExpense))) {
+    add(translate('reservations.reports.kpi.revenue.details.maintenance', 'مصاريف الصيانة', 'Maintenance'), fmt2(m.maintenanceExpense));
+  }
+  add(translate('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), fmt2(m.netProfit));
+
+  wrap.appendChild(title);
+  wrap.appendChild(grid);
+  return wrap;
+}
+
 function buildTable(headers) {
   const table = document.createElement('table');
   table.className = 'rpt-table';
@@ -112,6 +147,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview' } = {}) {
     if (index === 0) {
       inner.appendChild(buildHeader());
       inner.appendChild(buildKpis());
+      inner.appendChild(buildRevenueDetails());
     }
 
     const { table, tbody } = buildTable(headers);
