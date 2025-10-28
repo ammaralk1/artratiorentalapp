@@ -1,4 +1,4 @@
-import{r as P,t as o,e as F,d as T,b as E,p as M}from"./calculations.BamZslii.js";import{e as H,l as L,a as X,b as G}from"./reports.BMrfkSCT.js";import"./reservationsService.CVyv7NTI.js";import"./auth.CHJhb7pT.js";import"./dashboard.Kgfh1dWn.js";import"./controller.BbSh0_KX.js";/* empty css              */import"./dashboardShell.BOk2Lpbh.js";import"./customers.DRc1rCTq.js";import"./maintenanceService.BzwKkQm8.js";const W=`@page { size: A4; margin: 0; }
+import{r as P,t as o,e as F,d as T,b as E,p as M}from"./calculations.Dlt86tVY.js";import{e as H,l as L,a as X,b as G}from"./reports.DcDsKJPh.js";import"./reservationsService.CI0IIH9E.js";import"./auth.UkHr5P9y.js";import"./dashboard.C-KVPaax.js";import"./controller.Dc1Iilyl.js";/* empty css              */import"./dashboardShell.DgTefyoV.js";import"./customers.DKA9u5O3.js";import"./maintenanceService.BISNh3G0.js";const W=`@page { size: A4; margin: 0; }
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap');
 
 /* جذر وثيقة A4 للمعاينة/التصدير */
