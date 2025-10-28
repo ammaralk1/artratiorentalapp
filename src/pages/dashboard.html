@@ -1554,6 +1554,32 @@
                   <div id="reports-volume-chart" class="reports-chart-area"></div>
                 </div>
               </div>
+              <!-- Status Distribution moved up to sit next to Monthly Volume -->
+              <div class="reports-chart-card reports-chart-card--centered">
+                <div class="reports-card-header">
+                  <div class="reports-card-title">
+                    <span class="reports-card-icon" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 3v9h9"></path>
+                        <path d="M20.4 12.6a8 8 0 1 1 -8.4 -8.5"></path>
+                      </svg>
+                    </span>
+                    <div class="reports-card-text">
+                      <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">توزيع الحالات</h4>
+                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمنتهية</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="reports-card-body reports-card-body--column">
+                  <div class="reports-chart-loading" data-chart-loading="status" role="status" aria-live="polite">
+                    <span class="spinner-border text-primary" role="presentation"></span>
+                    <span class="reports-loading-text" data-i18n data-i18n-key="reservations.reports.loading.chart">جارٍ تحديث الرسم...</span>
+                  </div>
+                  <div id="reports-status-chart" class="reports-chart-area"></div>
+                  <div id="reports-status-breakdown" class="reports-breakdown-list"></div>
+                </div>
+              </div>
               <div class="reports-chart-card reports-chart-card--centered">
                 <div class="reports-card-header">
                   <div class="reports-card-title">
@@ -1599,31 +1625,7 @@
                   <div id="reports-payment-breakdown" class="reports-breakdown-list"></div>
                 </div>
               </div>
-              <div class="reports-chart-card reports-chart-card--centered">
-                <div class="reports-card-header">
-                  <div class="reports-card-title">
-                    <span class="reports-card-icon" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                        <path d="M12 3v9h9"></path>
-                        <path d="M20.4 12.6a8 8 0 1 1 -8.4 -8.5"></path>
-                      </svg>
-                    </span>
-                    <div class="reports-card-text">
-                      <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">توزيع الحالات</h4>
-                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمنتهية</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="reports-card-body reports-card-body--column">
-                  <div class="reports-chart-loading" data-chart-loading="status" role="status" aria-live="polite">
-                    <span class="spinner-border text-primary" role="presentation"></span>
-                    <span class="reports-loading-text" data-i18n data-i18n-key="reservations.reports.loading.chart">جارٍ تحديث الرسم...</span>
-                  </div>
-                  <div id="reports-status-chart" class="reports-chart-area"></div>
-                  <div id="reports-status-breakdown" class="reports-breakdown-list"></div>
-                </div>
-              </div>
+              
             </div>
 
             <div class="reports-detail-grid" id="reports-top-sections">
