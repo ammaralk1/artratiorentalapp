@@ -1010,7 +1010,7 @@ body[dir="ltr"] .reports-card-text {
 }
 
 .reports-progress-fill.status-cancelled {
-  background: linear-gradient(90deg, rgba(var(--reports-error-rgb, 224, 49, 49), 0.95), rgba(var(--reports-error-rgb, 224, 49, 49), 0.7));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.98), rgba(0, 0, 0, 0.7));
 }
 
 .reports-detail-grid {

@@ -314,8 +314,8 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 }
 
 .reservation-tile.tile-cancelled {
-  border-color: rgba(124, 58, 237, 0.22);
-  background: linear-gradient(165deg, rgba(124,58,237,0.14) 0%, rgba(255,255,255,0.96) 75%);
+  border-color: rgba(0, 0, 0, 0.32);
+  background: linear-gradient(165deg, rgba(0,0,0,0.18) 0%, rgba(255,255,255,0.96) 75%);
 }
 
 .reservation-tile.tile-completed::after {
@@ -365,8 +365,8 @@ body[dir="rtl"] .technician-reservations-section #technician-reservations > .res
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-cancelled {
-  border-color: rgba(167, 139, 250, 0.28);
-  background: linear-gradient(165deg, rgba(124,58,237,0.22) 0%, rgba(24,33,59,0.9) 75%);
+  border-color: rgba(0, 0, 0, 0.55);
+  background: linear-gradient(165deg, rgba(0,0,0,0.35) 0%, rgba(24,33,59,0.9) 75%);
 }
 
 :is(html.dark-mode, body.dark-mode) .reservation-tile.tile-completed::after {

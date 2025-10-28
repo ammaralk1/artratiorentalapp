@@ -652,11 +652,11 @@
 .maintenance-status-tag--cancelled,
 .maintenance-status-label--cancelled,
 .maintenance-table td .maintenance-status-tag--cancelled {
-  --maintenance-status-background: linear-gradient(135deg, #475569, #334155);
-  --maintenance-status-border: rgba(148, 163, 184, 0.78);
+  --maintenance-status-background: linear-gradient(135deg, #000000, #111827);
+  --maintenance-status-border: rgba(0, 0, 0, 0.55);
   --maintenance-status-color: #f8fafc;
-  --maintenance-status-shadow: 0 12px 22px rgba(51, 65, 85, 0.32);
-  --maintenance-status-dot: linear-gradient(135deg, #94a3b8, #475569);
+  --maintenance-status-shadow: 0 12px 22px rgba(0, 0, 0, 0.35);
+  --maintenance-status-dot: linear-gradient(135deg, #111827, #000000);
 }
 
 :is(html.dark-mode, body.dark-mode) .maintenance-priority-badge--high {
@@ -721,11 +721,11 @@
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-tag--cancelled,
 :is(html.dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-table td .maintenance-status-tag--cancelled,
 :is(html-dark-mode, body.dark-mode, html.dark, body.dark, html[data-theme="dark"], body[data-theme="dark"]) .maintenance-status-label--cancelled {
-  --maintenance-status-background: linear-gradient(135deg, #4b5563, #1f2937);
-  --maintenance-status-border: rgba(148, 163, 184, 0.88);
+  --maintenance-status-background: linear-gradient(135deg, #000000, #0b1324);
+  --maintenance-status-border: rgba(0, 0, 0, 0.65);
   --maintenance-status-color: #f8fafc;
-  --maintenance-status-shadow: 0 18px 30px rgba(51, 65, 85, 0.45);
-  --maintenance-status-dot: linear-gradient(135deg, #94a3b8, #475569);
+  --maintenance-status-shadow: 0 18px 30px rgba(0, 0, 0, 0.45);
+  --maintenance-status-dot: linear-gradient(135deg, #0b1324, #000000);
 }
 
 .maintenance-table-wrapper {
