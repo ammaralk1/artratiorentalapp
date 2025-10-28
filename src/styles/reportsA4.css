@@ -79,3 +79,8 @@
 /* توسيط المحتوى عمودياً داخل الخلايا بشكل صريح */
 .rpt-table th, .rpt-table td { vertical-align: middle !important; }
 .rpt-cell { display: flex; align-items: center; justify-content: flex-start; height: 26px; min-height: 26px; width: 100%; padding: 0 8px; box-sizing: border-box; line-height: 1; direction: rtl; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* إخفاء العناصر حسب التفضيلات */
+#reports-a4-root[data-hide-header] .rpt-header { display: none !important; }
+#reports-a4-root[data-hide-kpis] .rpt-kpis { display: none !important; }
+#reports-a4-root[data-hide-revenue] .rpt-revenue-section { display: none !important; }

@@ -26,9 +26,26 @@ function createModal() {
                       <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="+">+</button>
                       <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="1:1">1:1</button>
                     </div>
-                    <div class="quote-preview-header-actions__right" style="display:flex; gap:8px;">
-                    <button type="button" class="btn btn-primary btn-sm" data-print-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
+                  <div class="quote-preview-header-actions__right" style="display:flex; gap:8px; align-items:center;">
+                    <div class="quote-preview-toggles" data-toggle-wrapper style="position:relative;">
+                      <button type="button" class="quote-preview-zoom-btn" data-toggle-open title="إظهار/إخفاء أقسام">⚙️</button>
+                      <div data-toggle-menu style="position:absolute; top:36px; inset-inline-end:0; background:#fff; color:#111; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); padding:8px 10px; min-width:210px; display:none; z-index:20;">
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-header checked>
+                          <span>إظهار العنوان (الهيدر)</span>
+                        </label>
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-kpis checked>
+                          <span>إظهار البطاقات (KPIs)</span>
+                        </label>
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-revenue checked>
+                          <span>إظهار تفاصيل الإيرادات</span>
+                        </label>
+                      </div>
                     </div>
+                    <button type="button" class="btn btn-primary btn-sm" data-print-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
+                  </div>
                   </div>
                   <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">
                     <div class="quote-preview-scroll" style="overflow:auto;max-height:65vh;display:flex;justify-content:center;width:100%;">
@@ -83,6 +100,43 @@ export function openReportsPdfPreview(rows) {
   frame.appendChild(pagesRoot);
 
   setupZoom(modal);
+
+  // إعداد لوحة الإخفاء/الإظهار
+  (function setupToggles() {
+    const menu = modal.querySelector('[data-toggle-menu]');
+    const openBtn = modal.querySelector('[data-toggle-open]');
+    const cbHeader = menu?.querySelector('[data-toggle-header]');
+    const cbKpis = menu?.querySelector('[data-toggle-kpis]');
+    const cbRevenue = menu?.querySelector('[data-toggle-revenue]');
+    const getPref = (k, def=true) => {
+      try { const v = localStorage.getItem(`reportsPdf.hide.${k}`); return v === '1' ? false : def; } catch (_) { return def; }
+    };
+    const apply = () => {
+      const hideHeader = cbHeader && !cbHeader.checked;
+      const hideKpis = cbKpis && !cbKpis.checked;
+      const hideRevenue = cbRevenue && !cbRevenue.checked;
+      pagesRoot.toggleAttribute('data-hide-header', hideHeader);
+      pagesRoot.toggleAttribute('data-hide-kpis', hideKpis);
+      pagesRoot.toggleAttribute('data-hide-revenue', hideRevenue);
+      try {
+        localStorage.setItem('reportsPdf.hide.header', hideHeader ? '1' : '0');
+        localStorage.setItem('reportsPdf.hide.kpis', hideKpis ? '1' : '0');
+        localStorage.setItem('reportsPdf.hide.revenue', hideRevenue ? '1' : '0');
+      } catch (_) {}
+    };
+    if (menu && openBtn) {
+      openBtn.addEventListener('click', () => { menu.style.display = menu.style.display === 'none' || !menu.style.display ? 'block' : 'none'; });
+      document.addEventListener('click', (e) => { if (!modal.contains(e.target)) return; if (!menu.contains(e.target) && e.target !== openBtn) { menu.style.display = 'none'; } });
+    }
+    // تهيئة القيم من LocalStorage
+    if (cbHeader) cbHeader.checked = getPref('header', true);
+    if (cbKpis) cbKpis.checked = getPref('kpis', true);
+    if (cbRevenue) cbRevenue.checked = getPref('revenue', true);
+    // أول تطبيق
+    apply();
+    // مستمعي التغييرات
+    [cbHeader, cbKpis, cbRevenue].forEach((el) => el && el.addEventListener('change', apply));
+  }());
 
   // Export directly (download PDF) without opening print preview
   const printBtn = modal.querySelector('[data-print-pdf]');

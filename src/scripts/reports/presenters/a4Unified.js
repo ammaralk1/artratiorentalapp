@@ -10,6 +10,23 @@ const A4_H_MM = 297;
 const A4_W_PX = Math.round((A4_W_MM / MM_PER_INCH) * CSS_DPI); // 794
 const A4_H_PX = Math.round((A4_H_MM / MM_PER_INCH) * CSS_DPI); // 1123
 
+function loadHidePrefs() {
+  try {
+    return {
+      header: localStorage.getItem('reportsPdf.hide.header') === '1',
+      kpis: localStorage.getItem('reportsPdf.hide.kpis') === '1',
+      revenue: localStorage.getItem('reportsPdf.hide.revenue') === '1',
+    };
+  } catch (_) { return { header: false, kpis: false, revenue: false }; }
+}
+
+function applyHidePrefs(root, prefs) {
+  if (!root || !prefs) return;
+  root.toggleAttribute('data-hide-header', !!prefs.header);
+  root.toggleAttribute('data-hide-kpis', !!prefs.kpis);
+  root.toggleAttribute('data-hide-revenue', !!prefs.revenue);
+}
+
 function createRoot(context = 'preview') {
   const root = document.createElement('div');
   root.id = 'reports-a4-root';
@@ -23,6 +40,9 @@ function createRoot(context = 'preview') {
   const pages = document.createElement('div');
   pages.setAttribute('data-a4-pages', '');
   root.appendChild(pages);
+
+  // طبّق تفضيلات الإخفاء المحفوظة
+  applyHidePrefs(root, loadHidePrefs());
   return root;
 }
 
@@ -70,6 +90,7 @@ function buildKpis() {
 function buildRevenueDetails() {
   const m = reportsState.lastSnapshot?.metrics || {};
   const wrap = document.createElement('section');
+  wrap.className = 'rpt-revenue-section';
   const title = document.createElement('h4');
   title.className = 'rpt-revenue__title';
   title.textContent = translate('reservations.reports.kpi.revenue.details.title', 'تفاصيل الإيرادات', 'Revenue details');
