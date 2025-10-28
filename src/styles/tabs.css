@@ -289,6 +289,70 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   gap: 0.6rem;
 }
 
+/* ===================== Technicians › Positions table (unified theme) ===================== */
+.positions-list-box .table-responsive {
+  border-radius: 18px;
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.08), rgba(238, 243, 255, 0.92));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.positions-table {
+  width: 100%;
+  color: var(--clr-text);
+  background: transparent;
+  border-collapse: collapse;
+}
+
+.positions-table thead th {
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.18), rgba(59, 91, 220, 0.22));
+  color: rgba(29, 41, 72, 0.98);
+  font-weight: 700;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(76, 110, 245, 0.22);
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
+.positions-table tbody td {
+  padding: 0.9rem 1.25rem;
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  background: transparent;
+}
+
+.positions-table tbody tr:hover {
+  background: rgba(76, 110, 245, 0.06);
+}
+
+.positions-table .table-actions-head,
+.positions-table .table-actions-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-list-box .table-responsive {
+  border-color: rgba(59, 130, 246, 0.24);
+  background: linear-gradient(135deg, rgba(18, 28, 54, 0.92), rgba(10, 18, 40, 0.9));
+  box-shadow: 0 14px 32px rgba(3, 8, 26, 0.55);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table thead th {
+  background: linear-gradient(135deg, rgba(37, 55, 120, 0.45), rgba(59, 130, 246, 0.22));
+  color: rgba(226, 232, 240, 0.95);
+  border-color: rgba(93, 133, 255, 0.28);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody td {
+  border-color: rgba(93, 133, 255, 0.18);
+  color: var(--clr-text);
+}
+
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark) .positions-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.14);
+}
+
 .crew-picker-modal__body {
   background: hsl(var(--b1) / 0.98);
   padding: clamp(1rem, 3vw, 1.9rem) clamp(1.2rem, 3.2vw, 2.1rem);
