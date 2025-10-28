@@ -862,6 +862,14 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 /* If a centered modifier is present inside analytics grid, constrain to same width */
 .reports-analytics-grid .reports-chart-card--centered {
   max-width: 560px;
+  grid-column: auto; /* allow side-by-side placement inside grid */
+}
+
+/* Ensure two columns on large screens so status + payment sit side-by-side */
+@media (min-width: 1024px) {
+  .reports-analytics-grid {
+    grid-template-columns: repeat(2, minmax(320px, 1fr));
+  }
 }
 
 .reports-chart-area .apexcharts-title-text,
