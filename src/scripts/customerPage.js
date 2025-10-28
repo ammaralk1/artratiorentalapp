@@ -762,7 +762,7 @@ function updateHeroStats() {
   }
   if (heroStatPaymentDescEl) {
     const breakdownLabel = t('customerDetails.stats.paymentBreakdown', 'مدفوع / مستحق');
-    const outstandingText = projectFinancials.outstanding > 0
+    const outstandingText = totalOutstandingAmount > 0
       ? t('customerDetails.stats.paymentOutstanding', 'المتبقي: {amount}').replace('{amount}', outstandingDisplay)
       : t('customerDetails.stats.paymentAllSet', 'لا توجد مبالغ مستحقة');
     heroStatPaymentDescEl.textContent = `${breakdownLabel} • ${outstandingText}`;
