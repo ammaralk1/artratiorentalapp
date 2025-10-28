@@ -263,10 +263,18 @@ body[dir="rtl"] .reports-filters {
   box-shadow: none;
   padding: 12px 16px;
   min-height: 48px;
+  position: relative; /* create stacking context for opened dropdowns */
+  z-index: 1;
 }
 
 .reports-filters .filters-search {
   min-width: min(260px, 100%);
+}
+
+/* when focused, ensure the control sits above nearby content */
+.reports-filters .form-control:focus,
+.reports-filters .form-select:focus {
+  z-index: 3000;
 }
 
 .reports-status-filter {
