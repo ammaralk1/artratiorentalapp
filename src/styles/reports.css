@@ -126,9 +126,12 @@ body.dark-mode {
 
 .reports-wrapper--reservations .reports-header-card {
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 10px;
-  width: fit-content;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  display: flex; /* override inline-flex from base card */
 }
 
 .reports-header-leading {
