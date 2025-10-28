@@ -84,6 +84,9 @@ function setupZoom(modal) {
   const frame = modal.querySelector('[data-preview-frame]');
   const zoomValue = modal.querySelector('[data-zoom-value]');
   const wrapper = modal.querySelector('.quote-preview-frame-wrapper');
+  const ua = navigator.userAgent || '';
+  const isMobile = /(iphone|ipad|ipod|android)/i.test(ua)
+    || (window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
   const apply = () => {
     frame.style.transformOrigin = 'top center';
     frame.style.transform = `scale(${zoom})`;
@@ -99,9 +102,14 @@ function setupZoom(modal) {
   modal.querySelector('[data-zoom-in]').addEventListener('click', () => { zoom = Math.min(2, zoom + 0.1); apply(); });
   modal.querySelector('[data-zoom-out]').addEventListener('click', () => { zoom = Math.max(0.4, zoom - 0.1); apply(); });
   modal.querySelector('[data-zoom-reset]').addEventListener('click', () => { zoom = 1; apply(); });
-  // initial fit
-  setTimeout(fitToWidth, 0);
-  window.addEventListener('resize', fitToWidth);
+  // initial zoom: 40% on mobile, fit-to-width on desktop/tablet
+  if (isMobile) {
+    zoom = 0.4;
+    apply();
+  } else {
+    setTimeout(fitToWidth, 0);
+    window.addEventListener('resize', fitToWidth);
+  }
 }
 
 export function openReportsPdfPreview(rows) {
