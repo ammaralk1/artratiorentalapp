@@ -148,13 +148,87 @@ function paginateRows(rows, headers) {
   return chunks;
 }
 
-export function buildA4ReportPages(rows = [], { context = 'preview' } = {}) {
+function loadColumnPrefs(headers = []) {
+  try {
+    const visible = new Set();
+    headers.forEach((h) => {
+      const key = `reportsPdf.column.${h}`;
+      const v = localStorage.getItem(key);
+      if (v == null) {
+        visible.add(h);
+      } else if (v === '1') {
+        visible.add(h);
+      }
+    });
+    return visible;
+  } catch (_) { return new Set(headers); }
+}
+
+function saveColumnPref(header, isVisible) {
+  try { localStorage.setItem(`reportsPdf.column.${header}`, isVisible ? '1' : '0'); } catch (_) {}
+}
+
+function resolveDarkMode() {
+  try {
+    const themeAttr = document.documentElement.getAttribute('data-theme') || '';
+    if (themeAttr.toLowerCase().includes('dark')) return true;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return true;
+  } catch (_) {}
+  return false;
+}
+
+function filterRowsByPrefs(rows, headers, prefs) {
+  if (!prefs) return rows;
+  const showPaid = prefs.showPaid ?? true;
+  const showUnpaid = prefs.showUnpaid ?? true;
+  const showConfirmed = prefs.showConfirmed ?? true;
+  const showPending = prefs.showPending ?? true;
+  const showCompleted = prefs.showCompleted ?? true;
+
+  // Locate important columns by label (supports ar/en)
+  const statusKey = headers.find((h) => /الحالة|status/i.test(h)) || null;
+  const paymentKey = headers.find((h) => /الدفع|payment/i.test(h)) || null;
+  if (!statusKey && !paymentKey) return rows;
+
+  const isPaidLabel = (txt) => /مدفوعة|مدفوع|paid|partial/i.test(txt || '');
+  const isUnpaidLabel = (txt) => /غير مدفوعة|غير مدفوع|unpaid/i.test(txt || '');
+  const statusVal = (txt) => {
+    const s = String(txt || '').toLowerCase();
+    if (/completed|منته/.test(s)) return 'completed';
+    if (/confirmed|مؤكد/.test(s)) return 'confirmed';
+    if (/pending|غير مؤكد|قيد التأكيد/.test(s)) return 'pending';
+    return 'other';
+  };
+
+  return rows.filter((r) => {
+    let ok = true;
+    if (paymentKey) {
+      const ptxt = r[paymentKey];
+      if (!showPaid && isPaidLabel(ptxt)) ok = false;
+      if (!showUnpaid && isUnpaidLabel(ptxt)) ok = false;
+    }
+    if (statusKey) {
+      const st = statusVal(r[statusKey]);
+      if (!showCompleted && st === 'completed') ok = false;
+      if (!showConfirmed && st === 'confirmed') ok = false;
+      if (!showPending && st === 'pending') ok = false;
+    }
+    return ok;
+  });
+}
+
+export function buildA4ReportPages(rows = [], { context = 'preview', columns, rowFilters } = {}) {
   const root = createRoot(context);
   const pagesHost = root.querySelector('[data-a4-pages]');
   const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
-  const headers = Object.keys(model[0] || {});
+  let headers = Object.keys(model[0] || {});
 
-  const chunks = paginateRows(model, headers);
+  // Column visibility
+  const prefVisible = columns && columns.length ? new Set(columns) : loadColumnPrefs(headers);
+  headers = headers.filter((h) => prefVisible.has(h));
+
+  const filteredModel = filterRowsByPrefs(model, headers, rowFilters);
+  const chunks = paginateRows(filteredModel, headers);
   if (!chunks.length) chunks.push([]);
 
   chunks.forEach((chunk, index) => {
@@ -255,7 +329,26 @@ export async function exportA4ReportPdf(rows = [], { action = 'save', strict = f
     const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
     const captureScale = Math.min(2, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
 
-    const pages = Array.from(root.querySelectorAll('.a4-page'));
+    // طبّق تفضيلات الأعمدة/الصفوف عند التصدير أيضاً
+    const selectedHeaders = (() => {
+      try {
+        const first = rows && rows[0] ? Object.keys(rows[0]) : Object.keys(reportsState.lastSnapshot?.tableRows?.[0] || {});
+        const vis = loadColumnPrefs(first);
+        return first.filter((h) => vis.has(h));
+      } catch (_) { return null; }
+    })();
+    const rowFilters = {
+      showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+      showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
+      showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
+      showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
+      showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+    };
+    const exportRoot = buildA4ReportPages(rows, { context: 'export', columns: selectedHeaders || undefined, rowFilters });
+    host.innerHTML = '';
+    host.appendChild(exportRoot);
+
+    const pages = Array.from(exportRoot.querySelectorAll('.a4-page'));
     for (let i = 0; i < pages.length; i += 1) {
       const page = pages[i];
       const canvas = await h2c(page, { scale: captureScale, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true, allowTaint: false, windowWidth: A4_W_PX, windowHeight: A4_H_PX, letterRendering: true, imageTimeout: 0 });
