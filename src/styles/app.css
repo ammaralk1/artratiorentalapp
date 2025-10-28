@@ -1371,8 +1371,8 @@
     background: linear-gradient(140deg, rgba(248, 250, 255, 0.96) 0%, rgba(236, 242, 255, 0.92) 48%, rgba(225, 233, 255, 0.9) 100%);
     box-shadow: 0 28px 60px rgba(15, 23, 42, 0.16);
     padding: 0;
-    overflow: hidden;
-    overflow-x: clip;
+    /* allow content (like action buttons) to render fully */
+    overflow: visible;
     isolation: isolate;
     backdrop-filter: blur(18px);
   }
@@ -1615,8 +1615,8 @@
   /* Customer table: adjust columns to give company more room and keep it on one line */
   .customer-table thead th:nth-child(1),
   .customer-table tbody td:nth-child(1) {
-    width: 16rem;
-    min-width: 16rem;
+    width: 12rem;
+    min-width: 12rem;
   }
 
   .customer-table thead th:nth-child(3),
@@ -1634,7 +1634,8 @@
 
   .technician-table thead th:nth-child(1),
   .technician-table tbody td:nth-child(1) {
-    min-width: 14rem;
+    width: 25%;
+    min-width: 12rem;
   }
 
   .technician-table thead th:nth-child(2),
