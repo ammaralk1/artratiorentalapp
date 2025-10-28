@@ -1612,6 +1612,26 @@
     vertical-align: middle;
   }
 
+  /* Customer table: adjust columns to give company more room and keep it on one line */
+  .customer-table thead th:nth-child(1),
+  .customer-table tbody td:nth-child(1) {
+    width: 16rem;
+    min-width: 16rem;
+  }
+
+  .customer-table thead th:nth-child(3),
+  .customer-table tbody td:nth-child(3) {
+    width: auto;
+    min-width: 22rem;
+    white-space: nowrap;
+  }
+
+  .customer-table .table-notes-head,
+  .customer-table tbody .table-notes-cell {
+    width: 32%;
+    min-width: 14rem;
+  }
+
   .technician-table thead th:nth-child(1),
   .technician-table tbody td:nth-child(1) {
     min-width: 14rem;
