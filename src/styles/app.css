@@ -1406,14 +1406,48 @@
   }
 
   /* Slightly smaller text and padding for customers table to better fit page width */
-  .customer-table { font-size: 0.92rem; }
-  .customer-table thead th { padding: 0.9rem 1.2rem; }
-  .customer-table tbody td { padding: 0.85rem 1.2rem; }
+  .customer-table { font-size: 0.9rem; }
+  .customer-table thead th { padding: 0.8rem 1.05rem; }
+  .customer-table tbody td { padding: 0.75rem 1.05rem; }
+
+  /* Compact action buttons inside customers table */
+  .customer-table .table-actions-head,
+  .customer-table .table-actions-cell {
+    width: 10rem;
+    min-width: 10rem;
+  }
+  .customer-table .table-actions-cell .table-action-buttons { gap: 0.35rem; }
+  .customer-table .customer-action-btn { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
+
+  /* Keep company on one line, but allow slightly smaller min width with ellipsis */
+  .customer-table thead th:nth-child(3),
+  .customer-table tbody td:nth-child(3) {
+    min-width: 18rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  /* Shrink customer name a bit more to accomodate company */
+  .customer-table thead th:nth-child(1),
+  .customer-table tbody td:nth-child(1) {
+    width: 10rem;
+    min-width: 10rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
 
   /* Slightly smaller text and padding for technicians table for better fit */
-  .technician-table { font-size: 0.92rem; }
-  .technician-table thead th { padding: 0.9rem 1.2rem; }
-  .technician-table tbody td { padding: 0.85rem 1.2rem; }
+  .technician-table { font-size: 0.9rem; }
+  .technician-table thead th { padding: 0.8rem 1.05rem; }
+  .technician-table tbody td { padding: 0.75rem 1.05rem; }
+
+  /* Compact action column and buttons in technicians table */
+  .technician-table .table-actions-head,
+  .technician-table .table-actions-cell { width: 10rem; min-width: 10rem; }
+  .technician-table .table-actions-cell .table-action-buttons { gap: 0.35rem; }
+  .technician-table .technician-action-btn { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
 
   /* Reduce notes column share on technicians table to keep layout compact */
   .technician-table .table-notes-head,
