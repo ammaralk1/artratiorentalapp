@@ -54,8 +54,8 @@
 .rpt-table thead th:last-child, .rpt-table tbody td:last-child { border-left: 1px solid #9ca3af; }
 .rpt-table tbody tr + tr td { border-top: 1px solid #9ca3af; }
 /* تفاصيل الجسم فقط أصغر وبسطر واحد */
-.rpt-table tr { height: 24px; }
-.rpt-table tbody td { font-size: 10px; line-height: normal; height: 24px; padding: 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid #9ca3af; position: relative; }
+.rpt-table tr { height: 26px; }
+.rpt-table tbody td { font-size: 10px; line-height: 1; height: 26px; padding: 0 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid #9ca3af; position: relative; }
 
 /* تفاصيل الإيرادات داخل المعاينة */
 .rpt-revenue {
@@ -78,18 +78,4 @@
 
 /* توسيط المحتوى عمودياً داخل الخلايا بشكل صريح */
 .rpt-table th, .rpt-table td { vertical-align: middle !important; }
-.rpt-cell {
-  display: grid;
-  align-items: center;
-  align-content: center;
-  height: 100%;
-  min-height: 24px;
-  width: 100%;
-  padding: 0 8px;
-  box-sizing: border-box;
-  direction: rtl;
-  word-break: keep-all;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.rpt-cell { display: flex; align-items: center; justify-content: flex-start; height: 26px; min-height: 26px; width: 100%; padding: 0 8px; box-sizing: border-box; line-height: 1; direction: rtl; word-break: keep-all; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
