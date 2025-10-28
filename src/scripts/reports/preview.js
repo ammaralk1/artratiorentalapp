@@ -59,7 +59,7 @@ function createModal() {
                       </div>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" data-print-pdf>${translate('reservations.reports.actions.exportPdf', '📄 تصدير PDF', 'Export PDF')}</button>
-                    <button type="button" class="btn btn-outline btn-sm" data-export-csv title="CSV">${translate('reservations.reports.actions.exportCsv', '🧾 CSV', 'CSV')}</button>
+                    <button type="button" class="btn btn-outline btn-sm" data-export-csv title="CSV">${translate('reservations.reports.actions.exportCsv', '🧾 تصدير CSV', 'Export CSV')}</button>
                   </div>
                   </div>
                   <div class="quote-preview-frame-wrapper" style="display:flex;justify-content:center;align-items:flex-start;">

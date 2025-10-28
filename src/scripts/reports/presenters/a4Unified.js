@@ -1,6 +1,6 @@
 import { translate, formatDateInput, formatCurrency, formatNumber } from '../formatters.js';
 import reportsState from '../state.js';
-import { ensureHtml2Pdf, ensureXlsx, loadExternalScript } from '../external.js';
+import { ensureHtml2Pdf, ensureXlsx, ensureJsZip, loadExternalScript } from '../external.js';
 import reportsA4Css from '../../../styles/reportsA4.css?raw';
 
 const CSS_DPI = 96;
@@ -529,15 +529,43 @@ export async function exportA4ReportCsv(rows = []) {
     lines.push(vals.join(','));
   });
 
-  const csvBlob = new Blob(["\uFEFF" + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(csvBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.csv`;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  // حاول إنشاء ZIP يحوي metadata.csv + data.csv + logo.png إن أمكن
+  let zipped = false;
+  try {
+    await ensureJsZip();
+    const JSZip = window.JSZip;
+    if (JSZip) {
+      const zip = new JSZip();
+      const prefix = translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report');
+      const metadata = ["\uFEFF" + lines.slice(0, lines.indexOf(headers.map(escapeCsv).join(','))).join('\n')];
+      const dataSection = ["\uFEFF" + [headers.map(escapeCsv).join(','), ...filtered.map((r) => headers.map((h) => escapeCsv(r[h] ?? '')).join(','))].join('\n')];
+      zip.file(`${prefix}-metadata.csv`, metadata.join(''));
+      zip.file(`${prefix}.csv`, dataSection.join(''));
+      // أضف الشعار إن أمكن
+      try {
+        const resp = await fetch(logoUrl, { mode: 'cors' });
+        const blob = await resp.blob();
+        zip.file('logo.png', blob);
+      } catch (_) { /* ignore logo fetch errors */ }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${prefix}.zip`; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+      zipped = true;
+    }
+  } catch (_) { /* ignore zip errors */ }
+
+  if (!zipped) {
+    const csvBlob = new Blob(["\uFEFF" + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(csvBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.csv`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  }
 }
 
 const DEFAULT_LOGO_URL = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';

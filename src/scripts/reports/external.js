@@ -77,9 +77,21 @@ export function ensureXlsx() {
   return reportsState.xlsxReady;
 }
 
+export function ensureJsZip() {
+  if (typeof window !== 'undefined' && window.JSZip) {
+    return Promise.resolve(window.JSZip);
+  }
+  if (!reportsState.jsZipReady) {
+    reportsState.jsZipReady = loadExternalScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+      .then(() => window.JSZip);
+  }
+  return reportsState.jsZipReady;
+}
+
 export default {
   loadExternalScript,
   ensureApexCharts,
   ensureHtml2Pdf,
   ensureXlsx,
+  ensureJsZip,
 };
