@@ -1377,14 +1377,10 @@
     backdrop-filter: blur(18px);
   }
 
+  /* Remove decorative overlay to avoid visual overlap with table cells */
   :is(.customer-table-wrapper, .technician-table-wrapper)::before {
-    content: '';
-    position: absolute;
-    inset: -16% -18% 42% -20%;
-    background: radial-gradient(circle at top left, rgba(148, 173, 255, 0.38), rgba(104, 132, 242, 0.16) 46%, rgba(236, 242, 255, 0) 76%);
-    opacity: 0.78;
-    pointer-events: none;
-    z-index: 0;
+    content: none !important;
+    display: none !important;
   }
 
   :is(.customer-table, .technician-table) {
@@ -1396,6 +1392,17 @@
     position: relative;
     z-index: 1;
   }
+
+  /* Center customers table container and constrain width a bit */
+  .customer-table-wrapper {
+    width: min(100%, 1100px);
+    margin-inline: auto;
+  }
+
+  /* Slightly smaller text and padding for customers table to better fit page width */
+  .customer-table { font-size: 0.92rem; }
+  .customer-table thead th { padding: 0.9rem 1.2rem; }
+  .customer-table tbody td { padding: 0.85rem 1.2rem; }
 
   :is(.customer-table, .technician-table) thead th {
     background: linear-gradient(135deg, rgba(226, 232, 255, 0.92), rgba(210, 220, 255, 0.86));
