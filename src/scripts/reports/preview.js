@@ -173,8 +173,53 @@ export function openReportsPdfPreview(rows) {
       }
     };
     if (menu && openBtn) {
-      openBtn.addEventListener('click', () => { menu.style.display = menu.style.display === 'none' || !menu.style.display ? 'block' : 'none'; });
+      const positionMenu = () => {
+        const ua = navigator.userAgent || '';
+        const isMobile = /(iphone|ipad|ipod|android)/i.test(ua)
+          || (window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
+        if (!isMobile) {
+          // وضع سطح المكتب: ابقِ القائمة مطلقة ومحاذاة للزر
+          menu.style.position = 'absolute';
+          menu.style.insetInlineEnd = '0';
+          menu.style.left = 'auto';
+          menu.style.right = 'auto';
+          menu.style.top = '36px';
+          menu.style.transform = 'none';
+          menu.style.zIndex = '20';
+          return;
+        }
+        // وضع الجوال: وسط القائمة أفقياً وبشكل ثابت بالنسبة للنافذة
+        menu.style.position = 'fixed';
+        menu.style.insetInlineEnd = 'auto';
+        menu.style.left = '50%';
+        menu.style.right = 'auto';
+        menu.style.transform = 'translateX(-50%)';
+        menu.style.zIndex = '9999';
+        // حساب موضع رأسي أسفل الزر إن أمكن، وإلا منتصف الشاشة
+        try {
+          const btnRect = openBtn.getBoundingClientRect();
+          const desiredTop = Math.max(12, Math.min(btnRect.bottom + 8, window.innerHeight - 20));
+          // اجعلها مرئية مؤقتاً لحساب الارتفاع
+          const prev = menu.style.display;
+          menu.style.display = 'block';
+          const mh = Math.min(menu.scrollHeight, Math.min(window.innerHeight * 0.75, 520));
+          // إذا كان هناك مساحة كافية أسفل الزر
+          const fitsBelow = desiredTop + mh <= window.innerHeight - 8;
+          const topPx = fitsBelow ? desiredTop : Math.max((window.innerHeight - mh) / 2, 10);
+          menu.style.top = `${Math.round(topPx)}px`;
+          // أعِد الحالة إذا كانت مغلقة
+          if (prev !== 'block') menu.style.display = prev;
+        } catch (_) {
+          menu.style.top = '64px';
+        }
+      };
+      openBtn.addEventListener('click', () => {
+        const willOpen = menu.style.display === 'none' || !menu.style.display;
+        menu.style.display = willOpen ? 'block' : 'none';
+        if (willOpen) positionMenu();
+      });
       document.addEventListener('click', (e) => { if (!modal.contains(e.target)) return; if (!menu.contains(e.target) && e.target !== openBtn) { menu.style.display = 'none'; } });
+      window.addEventListener('resize', () => { if (menu.style.display === 'block') positionMenu(); });
     }
     // تهيئة القيم من LocalStorage
     if (cbHeader) cbHeader.checked = getPref('header', true);
