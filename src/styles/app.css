@@ -1395,13 +1395,13 @@
 
   /* Center customers table container and constrain width a bit */
   .customer-table-wrapper {
-    width: min(100%, 1100px);
+    width: min(100%, 1000px);
     margin-inline: auto;
   }
 
   /* Center technicians table wrapper as well to align with other containers */
   .technician-table-wrapper {
-    width: min(100%, 1100px);
+    width: min(100%, 1000px);
     margin-inline: auto;
   }
 
@@ -1412,17 +1412,14 @@
 
   /* Compact action buttons inside customers table */
   .customer-table .table-actions-head,
-  .customer-table .table-actions-cell {
-    width: 10rem;
-    min-width: 10rem;
-  }
+  .customer-table .table-actions-cell { width: 9rem; min-width: 9rem; }
   .customer-table .table-actions-cell .table-action-buttons { gap: 0.35rem; }
   .customer-table .customer-action-btn { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
 
   /* Keep company on one line, but allow slightly smaller min width with ellipsis */
   .customer-table thead th:nth-child(3),
   .customer-table tbody td:nth-child(3) {
-    min-width: 18rem;
+    min-width: 16rem;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -1431,11 +1428,19 @@
   /* Shrink customer name a bit more to accomodate company */
   .customer-table thead th:nth-child(1),
   .customer-table tbody td:nth-child(1) {
-    width: 10rem;
-    min-width: 10rem;
+    width: 9rem;
+    min-width: 9rem;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+  }
+
+  /* Reduce padding specifically for name and company columns to save width */
+  .customer-table thead th:nth-child(1),
+  .customer-table tbody td:nth-child(1),
+  .customer-table thead th:nth-child(3),
+  .customer-table tbody td:nth-child(3) {
+    padding-inline: 0.65rem;
   }
 
   /* Slightly smaller text and padding for technicians table for better fit */
