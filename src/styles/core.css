@@ -2389,6 +2389,7 @@ textarea {
   overflow: hidden;
   color: #1f2d52;
   font-family: "Tajawal", sans-serif;
+  z-index: 99999; /* make sure calendar overlays cards below filters */
 }
 
 .flatpickr-calendar.arrowTop:before,

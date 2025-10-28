@@ -239,6 +239,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   border-radius: var(--reports-radius-md);
   padding: 16px 18px;
   position: relative;
+  z-index: 2000; /* keep dropdowns/calendars above following cards */
 }
 
 .reports-wrapper--reservations .reports-filters {
