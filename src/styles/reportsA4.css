@@ -87,3 +87,14 @@
 #reports-a4-root[data-hide-header] .rpt-header { display: none !important; }
 #reports-a4-root[data-hide-kpis] .rpt-kpis { display: none !important; }
 #reports-a4-root[data-hide-revenue] .rpt-revenue-section { display: none !important; }
+
+/* قواعد الطباعة لتفادي الصفحات الفارغة في iOS/Safari */
+@media print {
+  /* لا تستخدم Flex للحاوية أثناء الطباعة لتجنب حسابات الارتفاع غير الدقيقة */
+  #reports-a4-root [data-a4-pages] { display: block !important; }
+  /* أجبر فاصل صفحة بعد كل صفحة ما عدا الأخيرة */
+  .a4-page { page-break-after: always; break-after: page; }
+  .a4-page:last-child { page-break-after: auto; break-after: auto; }
+  /* لا تسمح بتقسيم محتويات صفحة واحدة بين صفحتين */
+  .a4-page, .a4-inner { break-inside: avoid; -webkit-column-break-inside: avoid; }
+}

@@ -298,7 +298,7 @@ export async function exportA4ReportPdf(rows = [], { action = 'save', strict = f
     if (STRICT_NATIVE) {
       // طباعة/حفظ أصلية بنفس الـ HTML لضمان تطابق 100%
       // في iOS يُفضّل نافذة منبثقة تم فتحها من حدث المستخدم
-      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;}#reports-a4-root{width:${A4_W_PX}px;height:auto} .a4-page{width:${A4_W_PX}px;height:${A4_H_PX}px}</style></head><body></body></html>`;
+      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;}#reports-a4-root{width:${A4_W_PX}px;height:auto} .a4-page{width:${A4_W_PX}px;height:${A4_H_PX}px} @media print { [data-a4-pages]{display:block!important}.a4-page{page-break-after:always;break-after:page}.a4-page:last-child{page-break-after:auto;break-after:auto}.a4-page,.a4-inner{break-inside:avoid;-webkit-column-break-inside:avoid} }</style></head><body></body></html>`;
 
       if (popupWindow && typeof popupWindow.document?.open === 'function') {
         // تمت تهيئة النافذة مسبقًا ضمن حدث المستخدم (لتفادي حظر النوافذ في iOS)
