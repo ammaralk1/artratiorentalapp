@@ -1354,9 +1354,9 @@ function normaliseStatus(?string $status): string
     return match ($normalized) {
         'pending', 'معلق', 'قيد الانتظار' => 'pending',
         'confirmed', 'مؤكد' => 'confirmed',
-        'in_progress', 'جاري', 'قيد التنفيذ' => 'in_progress',
-        'completed', 'مكتمل' => 'completed',
-        'cancelled', 'ملغي' => 'cancelled',
+        'in_progress', 'in-progress', 'جاري', 'قيد التنفيذ' => 'in_progress',
+        'completed', 'مكتمل', 'منتهي', 'منتهية' => 'completed',
+        'cancelled', 'canceled', 'ملغي', 'ملغى', 'ملغية' => 'cancelled',
         default => 'pending',
     };
 }
