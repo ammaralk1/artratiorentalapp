@@ -13,6 +13,7 @@ import { loadData } from './scripts/storage.js';
 import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
+import { initBackToTopForEquipment } from './scripts/ui/backToTop.js';
 import {
   getReservationUIHandler,
   waitForReservationUIHandler
@@ -91,6 +92,7 @@ async function initApp() {
   }
   initDashboardShell();
   setupTabs();
+  initBackToTopForEquipment();
   initCustomers();
   initThemeToggle();
   renderEquipment();

@@ -2370,6 +2370,40 @@ textarea {
   z-index: 1100;
 }
 
+/* زر الرجوع للأعلى في تبويب المعدات */
+#equipment-tab .back-to-top-btn {
+  position: fixed;
+  inset-inline-end: 20px;
+  bottom: 22px;
+  z-index: 60;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--bc) / 0.15);
+  background: hsl(var(--b1) / 0.92);
+  color: hsl(var(--bc));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 24px hsl(var(--bc) / 0.12);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+#equipment-tab .back-to-top-btn:hover,
+#equipment-tab .back-to-top-btn:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px hsl(var(--bc) / 0.18);
+  outline: none;
+}
+
+:where(html.dark-mode, body.dark-mode, html.dark, body.dark) #equipment-tab .back-to-top-btn {
+  border-color: hsl(var(--p) / 0.35);
+  background: hsl(var(--b1) / 0.9);
+  color: hsl(var(--bc));
+  box-shadow: 0 16px 32px hsl(var(--bc) / 0.22);
+}
+
 :is(html.dark-mode, body.dark-mode) .theme-toggle-btn {
   color: var(--clr-text);
   border-color: rgba(148, 163, 184, 0.55);
