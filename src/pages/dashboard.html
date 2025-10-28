@@ -1437,6 +1437,20 @@
                   </label>
                 </div>
                 <div id="reservations-active-filters" class="reports-active-filters"></div>
+                <div id="reports-quick-chips" class="reports-quick-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+                <div class="reports-presets-controls" style="display:flex;align-items:flex-end;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <label class="reports-filter-field" style="min-width:18rem;">
+                    <span class="reports-filter-label">القوالب</span>
+                    <select id="reports-preset-select" class="form-select">
+                      <option value="">—</option>
+                    </select>
+                  </label>
+                  <div class="reports-presets-actions" style="display:flex;gap:6px;">
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-save">حفظ</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-delete">حذف</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-share">نسخ الرابط</button>
+                  </div>
+                </div>
                 <div class="reports-filters-footer">
                   <div class="reports-actions">
                     <button type="button" class="btn btn-primary btn-sm reports-action-btn" id="reports-preview-pdf" data-i18n data-i18n-key="reservations.reports.actions.exportPdf">📄 تصدير PDF</button>

@@ -19,6 +19,7 @@ function loadHidePrefs() {
       revenue: localStorage.getItem('reportsPdf.hide.revenue') === '1',
       outstanding: localStorage.getItem('reportsPdf.hide.outstanding') === '1',
       crew: localStorage.getItem('reportsPdf.hide.crew') === '1',
+      forecast: localStorage.getItem('reportsPdf.hide.forecast') === '1',
     };
   } catch (_) { return { header: false, kpis: false, revenue: false }; }
 }
@@ -30,6 +31,7 @@ function applyHidePrefs(root, prefs) {
   root.toggleAttribute('data-hide-revenue', !!prefs.revenue);
   root.toggleAttribute('data-hide-outstanding', !!prefs.outstanding);
   root.toggleAttribute('data-hide-crew', !!prefs.crew);
+  root.toggleAttribute('data-hide-forecast', !!prefs.forecast);
 }
 
 function createRoot(context = 'preview') {
@@ -240,6 +242,49 @@ function buildCrewSection() {
   return wrap;
 }
 
+function buildForecastSection() {
+  const list = Array.isArray(reportsState.lastSnapshot?.paymentForecast)
+    ? reportsState.lastSnapshot.paymentForecast.slice(0, 16)
+    : [];
+  const wrap = document.createElement('section');
+  wrap.className = 'rpt-forecast-section';
+  const title = document.createElement('h4');
+  title.className = 'rpt-forecast__title';
+  title.textContent = translate('reservations.reports.forecast.title', 'خريطة الدفعات القادمة', 'Upcoming payments');
+  wrap.appendChild(title);
+
+  if (!list.length) {
+    const p = document.createElement('p');
+    p.style.fontSize = '11px';
+    p.style.opacity = '.8';
+    p.textContent = translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.');
+    wrap.appendChild(p);
+    return wrap;
+  }
+
+  const table = document.createElement('table');
+  table.className = 'rpt-forecast__table';
+  const thead = document.createElement('thead');
+  const thr = document.createElement('tr');
+  const headers = [
+    translate('reservations.reports.forecast.headers.date', 'التاريخ', 'Date'),
+    translate('reservations.reports.forecast.headers.count', 'عدد الحجوزات', 'Count'),
+    translate('reservations.reports.forecast.headers.amount', 'المبلغ المتوقع', 'Expected amount'),
+  ];
+  headers.forEach((h) => { const th = document.createElement('th'); th.textContent = h; thr.appendChild(th); });
+  thead.appendChild(thr);
+  const tbody = document.createElement('tbody');
+  list.forEach((row) => {
+    const tr = document.createElement('tr');
+    const cells = [row.date || '', formatNumber(row.count || 0), formatCurrency(row.amount || 0)];
+    cells.forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(thead); table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
 function buildTable(headers) {
   const table = document.createElement('table');
   table.className = 'rpt-table';
@@ -382,6 +427,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
       inner.appendChild(buildKpis());
       inner.appendChild(buildRevenueDetails());
       inner.appendChild(buildOutstandingSection());
+      inner.appendChild(buildForecastSection());
       inner.appendChild(buildCrewSection());
       // عنوان جدول تفاصيل الحجوزات
       const tableTitle = document.createElement('h4');

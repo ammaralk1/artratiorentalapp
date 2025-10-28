@@ -28,14 +28,14 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard.BX73jsLV.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.Bd_qICJc.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.DfT39y4i.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller._PjU6y9p.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.qxgU1gzO.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.7L69s2EO.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.Cm9rYN26.css">
-  <link rel="stylesheet" crossorigin href="../../assets/index.Bvya4DNV.css">
+  <script type="module" crossorigin src="../../assets/dashboard._a1KTsdo.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.BsMwxQv7.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.BfXAT2M3.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.D0nU95Nn.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.mWRK3b8H.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.CwHeucVh.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.DxGA24NK.css">
+  <link rel="stylesheet" crossorigin href="../../assets/index.4TZwS9nn.css">
 </head>
 <body class="no-js tabs-loading page-shell" data-theme="light">
 
@@ -1444,6 +1444,20 @@
                   </label>
                 </div>
                 <div id="reservations-active-filters" class="reports-active-filters"></div>
+                <div id="reports-quick-chips" class="reports-quick-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+                <div class="reports-presets-controls" style="display:flex;align-items:flex-end;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                  <label class="reports-filter-field" style="min-width:18rem;">
+                    <span class="reports-filter-label">القوالب</span>
+                    <select id="reports-preset-select" class="form-select">
+                      <option value="">—</option>
+                    </select>
+                  </label>
+                  <div class="reports-presets-actions" style="display:flex;gap:6px;">
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-save">حفظ</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-delete">حذف</button>
+                    <button type="button" class="btn btn-outline btn-sm" id="reports-preset-share">نسخ الرابط</button>
+                  </div>
+                </div>
                 <div class="reports-filters-footer">
                   <div class="reports-actions">
                     <button type="button" class="btn btn-primary btn-sm reports-action-btn" id="reports-preview-pdf" data-i18n data-i18n-key="reservations.reports.actions.exportPdf">📄 تصدير PDF</button>

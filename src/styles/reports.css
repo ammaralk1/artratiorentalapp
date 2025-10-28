@@ -560,6 +560,22 @@ body[dir="rtl"] .reports-filters {
   gap: 12px;
 }
 
+/* Quick filter chips */
+.reports-quick-chips .chip {
+  border: 1px solid var(--reports-border);
+  background: var(--reports-surface);
+  color: var(--reports-text);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: .85rem;
+  line-height: 1;
+  display: inline-flex;
+  gap: 6px;
+}
+.reports-quick-chips .chip .chip-count { opacity: .8; font-weight: 700; }
+.reports-quick-chips .chip:hover { border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.5); color: var(--reports-accent); }
+.reports-quick-chips .chip.chip-active { background: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.08); border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.66); color: var(--reports-accent); }
+
 .reports-actions .btn,
 .reports-action-btn {
   border-radius: 999px;

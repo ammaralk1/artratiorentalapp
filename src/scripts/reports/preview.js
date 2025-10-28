@@ -47,6 +47,10 @@ function createModal() {
                           <span>إظهار أعلى المستحقات</span>
                         </label>
                         <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
+                          <input type="checkbox" data-toggle-forecast checked>
+                          <span>إظهار توقعات الدفعات</span>
+                        </label>
+                        <label style="display:flex; gap:6px; align-items:center; padding:4px 2px;">
                           <input type="checkbox" data-toggle-crew checked>
                           <span>إظهار تقرير عمل الطاقم</span>
                         </label>
@@ -142,6 +146,7 @@ export function openReportsPdfPreview(rows) {
     const cbRevenue = menu?.querySelector('[data-toggle-revenue]');
     const cbOutstanding = menu?.querySelector('[data-toggle-outstanding]');
     const cbCrew = menu?.querySelector('[data-toggle-crew]');
+    const cbForecast = menu?.querySelector('[data-toggle-forecast]');
     const columnsWrap = menu?.querySelector('[data-columns-wrap]');
     const rowsWrap = menu?.querySelector('[data-rows-wrap]');
     const getPref = (k, def=true) => {
@@ -153,17 +158,20 @@ export function openReportsPdfPreview(rows) {
       const hideRevenue = cbRevenue && !cbRevenue.checked;
       const hideOutstanding = cbOutstanding && !cbOutstanding.checked;
       const hideCrew = cbCrew && !cbCrew.checked;
+      const hideForecast = cbForecast && !cbForecast.checked;
       pagesRoot.toggleAttribute('data-hide-header', hideHeader);
       pagesRoot.toggleAttribute('data-hide-kpis', hideKpis);
       pagesRoot.toggleAttribute('data-hide-revenue', hideRevenue);
       pagesRoot.toggleAttribute('data-hide-outstanding', hideOutstanding);
       pagesRoot.toggleAttribute('data-hide-crew', hideCrew);
+      pagesRoot.toggleAttribute('data-hide-forecast', hideForecast);
       try {
         localStorage.setItem('reportsPdf.hide.header', hideHeader ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.kpis', hideKpis ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.revenue', hideRevenue ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.outstanding', hideOutstanding ? '1' : '0');
         localStorage.setItem('reportsPdf.hide.crew', hideCrew ? '1' : '0');
+        localStorage.setItem('reportsPdf.hide.forecast', hideForecast ? '1' : '0');
       } catch (_) {}
 
       // إعادة بناء الصفحات عند تغيير الأعمدة/الصفوف
@@ -185,6 +193,9 @@ export function openReportsPdfPreview(rows) {
           selectedCols.forEach((h) => localStorage.setItem(`reportsPdf.column.${h}`, '1'));
           const allLabels = Array.from(columnsWrap?.querySelectorAll('input[type="checkbox"][data-col]') || []).map((el) => el.getAttribute('data-col'));
           allLabels.forEach((h) => { if (!selectedCols.includes(h)) localStorage.setItem(`reportsPdf.column.${h}`, '0'); });
+          // حفظ ترتيب الأعمدة (DOM order)
+          const order = Array.from(columnsWrap?.querySelectorAll('[data-drag-col]') || []).map((el) => el.getAttribute('data-drag-col'));
+          localStorage.setItem('reportsPdf.columns.order', JSON.stringify(order));
         } catch (_) {}
         // إعادة البناء
         const newRoot = buildA4ReportPages(dataRows, { context: 'preview', columns: selectedCols, rowFilters });
@@ -247,6 +258,7 @@ export function openReportsPdfPreview(rows) {
     if (cbRevenue) cbRevenue.checked = getPref('revenue', true);
     if (cbOutstanding) cbOutstanding.checked = getPref('outstanding', true);
     if (cbCrew) cbCrew.checked = getPref('crew', true);
+    if (cbForecast) cbForecast.checked = getPref('forecast', true);
     // حفظ إعدادات صفوف للـ LocalStorage عند التبديل
     const bindRowPref = (sel, key) => {
       const el = rowsWrap?.querySelector(sel);
@@ -271,10 +283,27 @@ export function openReportsPdfPreview(rows) {
     const buildColumns = () => {
       if (!columnsWrap) return;
       const headers = Object.keys((dataRows && dataRows[0]) || {});
+      // Apply stored order if exists
+      let ordered = headers.slice();
+      try {
+        const stored = JSON.parse(localStorage.getItem('reportsPdf.columns.order') || '[]');
+        if (Array.isArray(stored) && stored.length) {
+          ordered.sort((a, b) => {
+            const ia = stored.indexOf(a);
+            const ib = stored.indexOf(b);
+            if (ia === -1 && ib === -1) return 0;
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+          });
+        }
+      } catch (_) {}
       columnsWrap.querySelectorAll('[data-col]').forEach((n) => n.parentElement?.remove());
-      headers.forEach((h) => {
+      ordered.forEach((h) => {
         const label = document.createElement('label');
         label.style.cssText = 'display:flex;gap:6px;align-items:center;padding:2px 0;';
+        label.setAttribute('data-drag-col', h);
+        label.draggable = true;
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.setAttribute('data-col', h);
         try {
           const v = localStorage.getItem(`reportsPdf.column.${h}`);
@@ -289,11 +318,37 @@ export function openReportsPdfPreview(rows) {
         const span = document.createElement('span'); span.textContent = h; label.appendChild(span);
         columnsWrap.appendChild(label);
         cb.addEventListener('change', () => apply({ rebuild: true }));
+
+        // Drag handlers for ordering
+        label.addEventListener('dragstart', (e) => {
+          e.dataTransfer?.setData('text/plain', h);
+          label.classList.add('dragging');
+        });
+        label.addEventListener('dragend', () => {
+          label.classList.remove('dragging');
+          // Persist new order
+          try {
+            const order = Array.from(columnsWrap.querySelectorAll('[data-drag-col]')).map((el) => el.getAttribute('data-drag-col'));
+            localStorage.setItem('reportsPdf.columns.order', JSON.stringify(order));
+          } catch (_) {}
+          apply({ rebuild: true });
+        });
+        label.addEventListener('dragover', (e) => { e.preventDefault(); });
+        label.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const fromKey = e.dataTransfer?.getData('text/plain');
+          const target = e.currentTarget;
+          if (!fromKey || !target) return;
+          const dragged = columnsWrap.querySelector(`[data-drag-col="${CSS.escape(fromKey)}"]`);
+          if (!dragged || dragged === target) return;
+          // Insert before target
+          columnsWrap.insertBefore(dragged, target);
+        });
       });
     };
     buildColumns();
     // مستمعي التغييرات للأقسام والثيم
-    [cbHeader, cbKpis, cbRevenue, cbOutstanding, cbCrew].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
+    [cbHeader, cbKpis, cbRevenue, cbOutstanding, cbCrew, cbForecast].forEach((el) => el && el.addEventListener('change', () => apply({ rebuild: true })));
     rowsWrap?.querySelectorAll('input[type="checkbox"]').forEach((el) => el.addEventListener('change', () => apply({ rebuild: true })));
 
     // تكييف ألوان القائمة مع الداكن/الفاتح

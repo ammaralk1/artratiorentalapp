@@ -153,3 +153,30 @@ export function renderActiveFilters({ onClear } = {}) {
     });
   });
 }
+
+export function renderQuickChips(statusData = [], paymentData = []) {
+  const host = document.getElementById('reports-quick-chips');
+  if (!host) return;
+  const s = Array.isArray(statusData) ? statusData : [];
+  const p = Array.isArray(paymentData) ? paymentData : [];
+  const activeStatus = filters.status || 'all';
+  const activePayment = filters.payment || 'all';
+  const makeChip = (key, label, count, type, active) => {
+    const cls = `chip ${active ? 'chip-active' : ''}`;
+    return `<button type="button" class="${cls}" data-quick-${type}="${key}" title="${label}">${label} <span class="chip-count">${count}</span></button>`;
+  };
+  const find = (arr, k) => arr.find((x) => (x.filterKey || '').toLowerCase() === k);
+  const chips = [];
+  const statuses = ['confirmed','pending','completed','cancelled'];
+  statuses.forEach((k) => {
+    const item = find(s, k) || { label: k, rawCount: 0 };
+    chips.push(makeChip(k, item.label || k, item.rawCount || 0, 'status', activeStatus === k));
+  });
+  chips.push('<span style="padding:0 6px;opacity:.6;">|</span>');
+  const payments = ['paid','partial','unpaid'];
+  payments.forEach((k) => {
+    const item = find(p, k) || { label: k, rawCount: 0 };
+    chips.push(makeChip(k, item.label || k, item.rawCount || 0, 'payment', activePayment === k));
+  });
+  host.innerHTML = chips.join('');
+}

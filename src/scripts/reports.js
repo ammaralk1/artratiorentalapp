@@ -43,9 +43,91 @@ import {
   handlePaymentDrilldown,
   handleTopListDrilldown,
 } from './reports/presenters/ui.js';
-import { renderActiveFilters } from './reports/presenters/ui.js';
+import { renderActiveFilters, renderQuickChips } from './reports/presenters/ui.js';
 
 const filters = reportsState.filters;
+
+// Presets (save/load/share)
+const PRESETS_KEY = 'reports.presets.v1';
+function loadPresets() {
+  try {
+    const v = JSON.parse(localStorage.getItem(PRESETS_KEY) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch (_) { return []; }
+}
+function savePresets(arr) {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(Array.isArray(arr) ? arr : [])); } catch (_) {}
+}
+function applyPresetFilters(preset) {
+  if (!preset || !preset.filters) return;
+  const f = preset.filters;
+  filters.range = f.range ?? filters.range;
+  filters.status = f.status ?? filters.status;
+  filters.payment = f.payment ?? filters.payment;
+  filters.share = f.share ?? filters.share;
+  filters.search = f.search ?? '';
+  filters.start = f.start ?? null;
+  filters.end = f.end ?? null;
+  syncFilterControls();
+  scheduleUrlUpdate();
+  renderReports();
+}
+function refreshPresetsSelect() {
+  const sel = document.getElementById('reports-preset-select');
+  if (!sel) return;
+  const presets = loadPresets();
+  sel.innerHTML = '<option value="">—</option>' + presets.map((p, i) => `<option value="${i}">${p.name || 'Preset'}</option>`).join('');
+}
+function initPresetsUI() {
+  const sel = document.getElementById('reports-preset-select');
+  const btnSave = document.getElementById('reports-preset-save');
+  const btnDelete = document.getElementById('reports-preset-delete');
+  const btnShare = document.getElementById('reports-preset-share');
+  if (!sel || sel.dataset.bound) return;
+  refreshPresetsSelect();
+  sel.addEventListener('change', () => {
+    const idx = Number(sel.value);
+    const presets = loadPresets();
+    if (Number.isInteger(idx) && idx >= 0 && idx < presets.length) {
+      applyPresetFilters(presets[idx]);
+    }
+  });
+  btnSave?.addEventListener('click', () => {
+    const name = window.prompt(translate('reservations.reports.presets.savePrompt', 'أدخل اسم القالب', 'Enter preset name'), 'قالب');
+    if (!name) return;
+    const presets = loadPresets();
+    const f = { range: filters.range, status: filters.status, payment: filters.payment, share: filters.share, search: filters.search || '', start: filters.start || null, end: filters.end || null };
+    const existingIdx = presets.findIndex((p) => (p.name || '').toLowerCase() === name.toLowerCase());
+    if (existingIdx >= 0) presets[existingIdx] = { name, filters: f }; else presets.push({ name, filters: f });
+    savePresets(presets);
+    refreshPresetsSelect();
+  });
+  btnDelete?.addEventListener('click', () => {
+    const idx = Number(sel.value);
+    const presets = loadPresets();
+    if (!Number.isInteger(idx) || idx < 0 || idx >= presets.length) return;
+    if (window.confirm(translate('reservations.reports.presets.deleteConfirm', 'حذف القالب المختار؟', 'Delete selected preset?'))) {
+      presets.splice(idx, 1);
+      savePresets(presets);
+      refreshPresetsSelect();
+      sel.value = '';
+    }
+  });
+  btnShare?.addEventListener('click', async () => {
+    try {
+      scheduleUrlUpdate();
+      await new Promise((r) => setTimeout(r, 140));
+      const url = window.location.href;
+      await (navigator.clipboard?.writeText ? navigator.clipboard.writeText(url) : Promise.reject());
+      console.log('[reports] Link copied');
+    } catch (e) {
+      try {
+        const a = document.createElement('a'); a.href = window.location.href; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+      } catch (_) {}
+    }
+  });
+  sel.dataset.bound = 'true';
+}
 
 function handleLanguageChange() {
   resetFormatters();
@@ -319,6 +401,7 @@ function setupDrilldownInteractions() {
   const customerTable = document.getElementById('reports-top-customers');
   const equipmentTable = document.getElementById('reports-top-equipment');
   const reservationsBody = document.getElementById('reports-reservations-body');
+  const quickChips = document.getElementById('reports-quick-chips');
 
   const handler = (event) => {
     const target = event.target?.closest('[data-drilldown]');
@@ -333,6 +416,20 @@ function setupDrilldownInteractions() {
   customerTable?.addEventListener('click', handler);
   equipmentTable?.addEventListener('click', handler);
   reservationsBody?.addEventListener('click', handler);
+  quickChips?.addEventListener('click', (e) => {
+    const target = e.target?.closest('[data-quick-status], [data-quick-payment]');
+    if (!target) return;
+    if (target.hasAttribute('data-quick-status')) {
+      const key = target.getAttribute('data-quick-status') || 'all';
+      filters.status = filters.status === key ? 'all' : key;
+    } else if (target.hasAttribute('data-quick-payment')) {
+      const key = target.getAttribute('data-quick-payment') || 'all';
+      filters.payment = filters.payment === key ? 'all' : key;
+    }
+    syncFilterControls();
+    scheduleUrlUpdate();
+    renderReports();
+  });
 
   reportsState.drilldownBound = true;
 }
@@ -387,6 +484,7 @@ export function renderReports() {
   renderStatusChart(statusBreakdown);
   renderStatusStackedMonthly(statusStack);
   renderPaymentChart(paymentBreakdown);
+  renderQuickChips(statusBreakdown, paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
   renderTopOutstanding(topOutstanding);
@@ -498,6 +596,7 @@ export function initReports() {
 
   setupCustomRangePickers(startInput, endInput);
   toggleCustomRange(customRangeWrapper, filters.range === 'custom');
+  initPresetsUI();
 
   if (!reportsState.languageListenerAttached) {
     document.addEventListener('language:changed', handleLanguageChange);
