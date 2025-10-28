@@ -4897,6 +4897,16 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   pointer-events: none;
 }
 
+/* Ensure the PDF preview modal overlays filters/KPI cards */
+.quote-preview-modal {
+  z-index: 10050 !important;
+}
+
+/* Raise global backdrop so it dims content above filters */
+.modal-backdrop {
+  z-index: 10040 !important;
+}
+
 .quote-preview-modal .modal-content,
 .quote-preview-modal .modal-header,
 .quote-preview-modal .modal-body,
