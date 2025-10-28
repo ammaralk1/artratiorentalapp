@@ -13,7 +13,8 @@ import { mapProjectFromApi } from './projectsService.js';
 import { mapTechnicianFromApi } from './techniciansService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { formatCurrencyLocalized } from './projectsCommon.js';
-import { resolveProjectTotals } from './projectFocusTemplates.js';
+import { resolveProjectTotals, resolveReservationNetTotal, PROJECT_TAX_RATE } from './projectFocusTemplates.js';
+import { calculatePaymentProgress } from './reservationsSummary.js';
 
 applyStoredTheme();
 checkAuth();
@@ -599,24 +600,73 @@ function updateHeroStats() {
   });
   const totalProjects = relevantProjects.length;
 
-  const projectFinancials = relevantProjects.reduce((acc, project) => {
-    if (!project) return acc;
+  // Exclude cancelled reservations from financial/compliance calculations
+  const nonCancelledReservations = relevantReservations.filter((reservation) => {
+    const rawStatus = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    return !(rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية');
+  });
+
+  // Group reservations by project
+  const reservationsByProject = new Map();
+  nonCancelledReservations.forEach((res) => {
+    const pid = res?.projectId ?? res?.project_id ?? null;
+    if (pid == null) return;
+    const key = String(pid);
+    if (!reservationsByProject.has(key)) reservationsByProject.set(key, []);
+    reservationsByProject.get(key).push(res);
+  });
+
+  // Compute combined financials (projects + standalone reservations)
+  let totalPaidAmount = 0;
+  let totalOutstandingAmount = 0;
+  let compliancePaidEntries = 0;
+  let complianceTotalEntries = 0;
+
+  // Projects: include project-level subtotal plus its reservations total; use project paidAmount/percent
+  relevantProjects.forEach((project) => {
     const totals = resolveProjectTotals(project) || {};
-    const totalWithTax = Number(totals.totalWithTax ?? totals.subtotal ?? 0) || 0;
-    const paymentStatus = String(project?.paymentStatus ?? project?.status ?? '').toLowerCase();
-    const isPaid = paymentStatus === 'paid';
+    const pid = project?.id ?? project?.projectId ?? project?.project_id ?? null;
+    const linkedReservations = pid != null ? (reservationsByProject.get(String(pid)) || []) : [];
+    const reservationsTotal = linkedReservations.reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
+    const combinedTax = totals.applyTax ? Number(((Number(totals.subtotal || 0) + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    const overallTotal = Number(((Number(totals.subtotal || 0) + reservationsTotal + combinedTax)).toFixed(2));
 
-    if (isPaid) {
-      acc.paid += totalWithTax;
-      acc.paidCount += 1;
-    } else {
-      acc.outstanding += totalWithTax;
-    }
-    return acc;
-  }, { paid: 0, outstanding: 0, paidCount: 0 });
+    const progress = calculatePaymentProgress({
+      totalAmount: overallTotal,
+      paidAmount: Number(project?.paidAmount) || null,
+      paidPercent: Number(project?.paidPercent) || null,
+    });
 
-  const compliancePercentage = totalProjects > 0
-    ? Math.round((projectFinancials.paidCount / totalProjects) * 100)
+    const paidAmt = Math.max(0, Number(progress.paidAmount || 0));
+    const outstandingAmt = Math.max(0, Number((overallTotal - paidAmt).toFixed(2)));
+    totalPaidAmount += paidAmt;
+    totalOutstandingAmount += outstandingAmt;
+    complianceTotalEntries += 1;
+    if (outstandingAmt <= 0.5) compliancePaidEntries += 1;
+  });
+
+  // Standalone reservations (not linked to any project)
+  const standaloneReservations = nonCancelledReservations.filter((res) => res?.projectId == null && res?.project_id == null);
+  standaloneReservations.forEach((res) => {
+    const total = Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0;
+    const progress = calculatePaymentProgress({
+      totalAmount: total,
+      paidAmount: Number(res?.paidAmount) || null,
+      paidPercent: Number(res?.paidPercent) || null,
+      progressType: res?.paymentProgressType ?? null,
+      progressValue: res?.paymentProgressValue ?? null,
+      history: Array.isArray(res?.paymentHistory) ? res.paymentHistory : [],
+    });
+    const paidAmt = Math.max(0, Number(progress.paidAmount || 0));
+    const outstandingAmt = Math.max(0, Number((total - paidAmt).toFixed(2)));
+    totalPaidAmount += paidAmt;
+    totalOutstandingAmount += outstandingAmt;
+    complianceTotalEntries += 1;
+    if (outstandingAmt <= 0.5) compliancePaidEntries += 1;
+  });
+
+  const compliancePercentage = complianceTotalEntries > 0
+    ? Math.round((compliancePaidEntries / complianceTotalEntries) * 100)
     : 0;
 
   const activityCandidates = [];
@@ -705,8 +755,8 @@ function updateHeroStats() {
       : t('customerDetails.stats.projectsEmpty', 'لا توجد مشاريع مرتبطة بهذا العميل.');
   }
 
-  const paidDisplay = formatCurrencyLocalized(projectFinancials.paid);
-  const outstandingDisplay = formatCurrencyLocalized(projectFinancials.outstanding);
+  const paidDisplay = formatCurrencyLocalized(totalPaidAmount);
+  const outstandingDisplay = formatCurrencyLocalized(totalOutstandingAmount);
   if (heroStatPaymentEl) {
     heroStatPaymentEl.innerHTML = renderPaymentBreakdownHtml(paidDisplay, outstandingDisplay);
   }
@@ -744,7 +794,7 @@ function updateHeroStats() {
 
   if (heroStatComplianceEl) heroStatComplianceEl.textContent = `${formatNumberLocalized(compliancePercentage)}%`;
   if (heroStatComplianceDescEl) {
-    if (totalProjects > 0) {
+    if (complianceTotalEntries > 0) {
       const complianceLabelKey = (() => {
         if (compliancePercentage >= 90) return 'excellent';
         if (compliancePercentage >= 70) return 'good';
@@ -758,8 +808,8 @@ function updateHeroStats() {
         )
         : '';
       const projectsText = t('customerDetails.stats.complianceProjects', 'مشاريع مدفوعة بالكامل: {count} من {total}')
-        .replace('{count}', formatNumberLocalized(projectFinancials.paidCount))
-        .replace('{total}', formatNumberLocalized(totalProjects));
+        .replace('{count}', formatNumberLocalized(compliancePaidEntries))
+        .replace('{total}', formatNumberLocalized(complianceTotalEntries));
       heroStatComplianceDescEl.textContent = complianceLabel
         ? `${complianceLabel} • ${projectsText}`
         : projectsText;
