@@ -477,6 +477,69 @@ export async function exportA4ReportExcel(rows = []) {
   XLSX.writeFile(wb, fname);
 }
 
+// =========================
+// CSV export (same template semantics)
+// =========================
+export async function exportA4ReportCsv(rows = []) {
+  // Resolve headers/filters like PDF/Excel
+  const first = rows && rows[0] ? Object.keys(rows[0]) : Object.keys(reportsState.lastSnapshot?.tableRows?.[0] || {});
+  const visible = loadColumnPrefs(first);
+  const headers = first.filter((h) => visible.has(h));
+  const rowFilters = {
+    showPaid: localStorage.getItem('reportsPdf.rows.paid') !== '0',
+    showUnpaid: localStorage.getItem('reportsPdf.rows.unpaid') !== '0',
+    showConfirmed: localStorage.getItem('reportsPdf.rows.confirmed') !== '0',
+    showPending: localStorage.getItem('reportsPdf.rows.pending') !== '0',
+    showCompleted: localStorage.getItem('reportsPdf.rows.completed') !== '0',
+  };
+  const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
+  const filtered = filterRowsByPrefs(model, headers, rowFilters);
+
+  const title = translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report');
+  const dateLine = `${formatDateInput(new Date())} • ${translate('reservations.reports.print.generated', 'تاريخ التوليد', 'Generated on')}`;
+  const metrics = reportsState.lastSnapshot?.metrics || {};
+  const logoUrl = resolveLogoUrl();
+
+  const escapeCsv = (val) => {
+    const s = String(val ?? '');
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+
+  const lines = [];
+  lines.push(escapeCsv(title));
+  lines.push(escapeCsv(dateLine));
+  lines.push(`Logo,${escapeCsv(logoUrl)}`);
+  lines.push('');
+  lines.push([
+    translate('reservations.reports.kpi.total.label', 'إجمالي الحجوزات', 'Total'), metrics.total ?? 0,
+    translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), metrics.revenue ?? 0,
+    translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net'), metrics.netProfit ?? 0,
+  ].map(escapeCsv).join(','));
+  lines.push([
+    translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), metrics.companyShareTotal ?? 0,
+    translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), metrics.taxTotal ?? 0,
+    translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), metrics.maintenanceExpense ?? 0,
+  ].map(escapeCsv).join(','));
+  lines.push('');
+  lines.push(headers.map(escapeCsv).join(','));
+
+  filtered.forEach((row) => {
+    const vals = headers.map((h) => escapeCsv(row[h] != null ? row[h] : ''));
+    lines.push(vals.join(','));
+  });
+
+  const csvBlob = new Blob(["\uFEFF" + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(csvBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${translate('reservations.reports.export.filePrefix', 'تقرير-الحجوزات', 'reservations-report')}.csv`;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
 const DEFAULT_LOGO_URL = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
 function resolveLogoUrl() {
   try {

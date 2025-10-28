@@ -522,6 +522,14 @@ export function initReports() {
       } catch (e) {
         console.warn('[reports] A4-based Excel export failed, falling back to legacy', e);
       }
+    } else if (type === 'csv') {
+      try {
+        const { exportA4ReportCsv } = await import('./reports/presenters/a4Unified.js');
+        await exportA4ReportCsv(rows);
+        return;
+      } catch (e) {
+        console.warn('[reports] A4-based CSV export failed, falling back to legacy', e);
+      }
     }
     await exportReport(type, rows);
   });
