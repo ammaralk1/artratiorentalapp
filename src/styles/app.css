@@ -4100,6 +4100,15 @@
 
   .toast-container {
     @apply space-y-2;
+    position: fixed;
+    /* Keep toast messages above modal and backdrop */
+    z-index: 10070 !important;
+    /* Allow clicks to pass through empty areas while keeping toasts clickable */
+    pointer-events: none;
+  }
+
+  .toast-container > * {
+    pointer-events: auto;
   }
 
   .mobile-sidebar-toggle {
