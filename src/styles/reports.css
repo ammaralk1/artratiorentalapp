@@ -802,6 +802,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 18px;
   justify-content: center; /* center tracks when leftover space exists */
+  align-items: stretch;     /* make row items equal height */
 }
 
 /* Center a specific table card (e.g., Top Outstanding) */
@@ -857,12 +858,14 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   max-width: 560px;
   width: 100%;
   margin-inline: auto;
+  height: 100%; /* stretch to equal row height */
 }
 
 /* If a centered modifier is present inside analytics grid, constrain to same width */
 .reports-analytics-grid .reports-chart-card--centered {
   max-width: 560px;
   grid-column: auto; /* allow side-by-side placement inside grid */
+  height: 100%;
 }
 
 /* Ensure two columns on large screens so status + payment sit side-by-side */
@@ -871,6 +874,9 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
     grid-template-columns: repeat(2, minmax(320px, 1fr));
   }
 }
+
+/* Ensure the charts inside analytics grid visually align by raising their min-height */
+.reports-analytics-grid .reports-chart-area { min-height: 320px; }
 
 .reports-chart-area .apexcharts-title-text,
 .reports-chart-area .apexcharts-legend-text,
