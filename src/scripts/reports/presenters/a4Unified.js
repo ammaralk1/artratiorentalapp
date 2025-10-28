@@ -331,6 +331,11 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
       inner.appendChild(buildKpis());
       inner.appendChild(buildRevenueDetails());
       inner.appendChild(buildOutstandingSection());
+      // عنوان جدول تفاصيل الحجوزات
+      const tableTitle = document.createElement('h4');
+      tableTitle.className = 'rpt-table-title';
+      tableTitle.textContent = translate('reservations.reports.results.title', 'تفاصيل الحجوزات', 'Reservations details');
+      inner.appendChild(tableTitle);
     }
 
     const { table, tbody } = buildTable(headers);
