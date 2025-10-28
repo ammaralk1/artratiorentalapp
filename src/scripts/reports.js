@@ -482,7 +482,7 @@ export function initReports() {
     try {
       const rows = reportsState.lastSnapshot.tableRows || [];
       const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
-      await exportA4ReportPdf(rows, { action: 'print' });
+      await exportA4ReportPdf(rows, { action: 'print', strict: true });
     } catch (_) {
       try { window.print(); } catch (_) {}
     }
@@ -518,7 +518,7 @@ export function initReports() {
       // استخدم مولد الصفحات المعتمد نفسه المستخدم في المعاينة والطباعة
       try {
         const { exportA4ReportPdf } = await import('./reports/presenters/a4Unified.js');
-        await exportA4ReportPdf(rows, { action: 'save' });
+        await exportA4ReportPdf(rows, { action: 'save', strict: true });
         return;
       } catch (e) {
         console.warn('[reports] page-based PDF export failed, falling back to legacy', e);

@@ -172,7 +172,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview' } = {}) {
   return root;
 }
 
-export async function exportA4ReportPdf(rows = [], { action = 'save' } = {}) {
+export async function exportA4ReportPdf(rows = [], { action = 'save', strict = false } = {}) {
   const root = buildA4ReportPages(rows, { context: 'export' });
   const host = document.createElement('div');
   Object.assign(host.style, { position: 'fixed', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none', zIndex: -1 });
@@ -180,6 +180,26 @@ export async function exportA4ReportPdf(rows = [], { action = 'save' } = {}) {
   document.body.appendChild(host);
 
   try {
+    const STRICT_NATIVE = strict || (localStorage.getItem('reportsPdf.strict') === 'on');
+    if (STRICT_NATIVE) {
+      // طباعة/حفظ أصلية بنفس الـ HTML لضمان تطابق 100%
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const iframe = document.createElement('iframe');
+      Object.assign(iframe.style, { position: 'fixed', width: '1px', height: '1px', right: '0', bottom: '0', border: '0', opacity: '0', pointerEvents: 'none' });
+      document.body.appendChild(iframe);
+      const idoc = iframe.contentWindow?.document;
+      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${translate('reservations.reports.print.title', 'تقرير الحجوزات', 'Reservations report')}</title><style>@page{size:A4;margin:0;}html,body{margin:0;padding:0;background:#fff;direction:rtl;text-align:right;}#reports-a4-root{width:${A4_W_PX}px;height:auto} .a4-page{width:${A4_W_PX}px;height:${A4_H_PX}px}</style></head><body></body></html>`;
+      try { idoc.open(); idoc.write(html); idoc.close(); } catch (_) {}
+      try {
+        const clone = root.cloneNode(true);
+        idoc.body.appendChild(clone);
+        if (idoc.fonts?.ready) { await idoc.fonts.ready; }
+      } catch (_) {}
+      await new Promise((r) => setTimeout(r, 60));
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch (_) {}
+      setTimeout(() => { try { iframe.remove(); } catch (_) {} }, 1500);
+      return;
+    }
     // Ensure html2pdf (bundled) then fall back to direct libs if needed
     try { await ensureHtml2Pdf(); } catch (_) {}
 

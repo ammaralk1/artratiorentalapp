@@ -88,7 +88,8 @@ export function openReportsPdfPreview(rows) {
   const printBtn = modal.querySelector('[data-print-pdf]');
   if (printBtn) {
     printBtn.addEventListener('click', async () => {
-      await exportA4ReportPdf(dataRows, { action: 'save' });
+      // استخدم وضع التطابق الصارم: حفظ عبر مسار الطباعة الأصلية (Save as PDF)
+      await exportA4ReportPdf(dataRows, { action: 'save', strict: true });
     });
   }
 
