@@ -1109,6 +1109,173 @@
     </div>
   </div>
 
+  <!-- ✅ مودال تعديل الحجز (مطلوب لفتح التعديل مباشرة من تفاصيل المشروع) -->
+  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-reservation-form" class="row g-3">
+            <input type="hidden" id="edit-res-index">
+            <input type="hidden" id="edit-res-confirmed" value="false">
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+                  <input type="text" class="form-control" id="edit-res-id" disabled>
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+                  <input type="text" class="form-control" id="edit-res-customer" disabled>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+                  <input type="text" class="form-control" id="edit-res-start">
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+                  <input type="text" class="form-control" id="edit-res-end">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+                  <input type="text" class="form-control" id="edit-res-start-time">
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+                  <input type="text" class="form-control" id="edit-res-end-time">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row edit-reservation-field-row--single">
+                <div class="edit-reservation-field edit-reservation-field--wide">
+                  <label class="form-label edit-reservation-notes-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
+                  <textarea class="form-control reservation-notes reservation-notes--compact reservation-notes--short" id="edit-res-notes" rows="2" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
+              <select id="edit-res-project" class="form-select">
+                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-xl-8">
+              <div class="reservation-payment-card">
+                <div class="reservation-payment-card__header">
+                  <span class="reservation-payment-card__title">💰 تفاصيل الدفع</span>
+                </div>
+                <div class="reservation-payment-card__body">
+                  <div class="reservation-payment-card__toggles">
+                    <div class="reservation-option-card">
+                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-company-share" data-company-share="10">
+                      <label class="reservation-option-card__label" for="edit-res-company-share">
+                        <span class="reservation-option-card__check" aria-hidden="true"></span>
+                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</span>
+                      </label>
+                    </div>
+                    <div class="reservation-option-card">
+                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-tax">
+                      <label class="reservation-option-card__label" for="edit-res-tax">
+                        <span class="reservation-option-card__check" aria-hidden="true"></span>
+                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="reservation-payment-card__field">
+                    <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
+                    <div class="input-group">
+                      <select id="edit-res-discount-type" class="form-select">
+                        <option value="percent" selected>٪</option>
+                        <option value="amount">SR</option>
+                      </select>
+                      <input type="text" class="form-control" id="edit-res-discount" placeholder="0">
+                    </div>
+                  </div>
+
+                  <div class="reservation-payment-card__field">
+                    <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.create.labels.paymentStatus">💳 حالة الدفع</label>
+                    <select id="edit-res-paid" class="form-select">
+                      <option value="unpaid" data-i18n data-i18n-key="reservations.create.paymentStatus.unpaid">لم يتم الدفع</option>
+                      <option value="partial" data-i18n data-i18n-key="reservations.create.paymentStatus.partial">مدفوع جزئياً</option>
+                      <option value="paid" data-i18n data-i18n-key="reservations.create.paymentStatus.paid">مدفوع</option>
+                    </select>
+                  </div>
+
+                  <div class="reservation-payment-card__field">
+                    <label class="form-label" for="edit-res-payment-progress-type" data-i18n data-i18n-key="reservations.edit.labels.paymentProgress">نسبة/مبلغ دفعات</label>
+                    <div class="input-group">
+                      <select id="edit-res-payment-progress-type" class="form-select">
+                        <option value="percent" selected>%</option>
+                        <option value="amount">SR</option>
+                      </select>
+                      <input type="text" class="form-control" id="edit-res-payment-progress-value" placeholder="0">
+                      <button type="button" class="btn btn-primary" id="edit-res-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
+                    </div>
+                  </div>
+
+                  <div id="edit-res-payment-history" class="reservation-payment-history"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="edit-res-cancelled">
+                <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+              </div>
+              <div class="mt-3">
+                <div id="edit-res-summary" class="alert alert-info"></div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle reservation-items-table">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-items">
+                    <tr><td colspan="5" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-mode="view" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script type="module" src="/src/scripts/language.js"></script>
   <script type="module" src="/src/scripts/translations/common.js"></script>

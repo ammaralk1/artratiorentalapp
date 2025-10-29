@@ -4897,12 +4897,17 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   pointer-events: none;
 }
 
-/* Ensure the PDF preview modal overlays filters/KPI cards */
+/* Ensure the PDF preview modal always overlays any existing modal */
 .quote-preview-modal {
-  z-index: 10050 !important;
+  z-index: 10080 !important;
 }
 
-/* Raise global backdrop so it dims content above filters */
+/* Backdrop for the preview modal should sit above base backdrops and below its content */
+.quote-preview-modal .modal-backdrop {
+  z-index: 10070 !important;
+}
+
+/* Keep legacy global backdrop override for other contexts */
 .modal-backdrop {
   z-index: 10040 !important;
 }
