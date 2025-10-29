@@ -575,7 +575,7 @@ function renderKpis(projects) {
     },
     {
       icon: KPI_ICONS.expenses,
-      label: t('projects.reports.kpi.expenses', 'خدمات إنتاجية (التكلفة)'),
+      label: t('projects.reports.kpi.expenses', 'تكلفة الخدمات الإنتاجية'),
       value: formatCurrency(expensesTotal),
       meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة')
     }
@@ -608,7 +608,7 @@ function renderProjectsRevenueBreakdown(projects) {
       { label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
       { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
       { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
-      { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'مصروفات المشروع', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
+      { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
       { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
     ];
 
@@ -863,7 +863,7 @@ function renderExpenseChart(projects) {
   const series = labels.length
     ? [
         { name: t('projects.reports.datasets.value', 'Total value'), data: valueData },
-        { name: t('projects.reports.datasets.expenses', 'خدمات إنتاجية (التكلفة)'), data: expenseData }
+        { name: t('projects.reports.datasets.expenses', 'تكلفة الخدمات الإنتاجية'), data: expenseData }
       ]
     : [];
 
