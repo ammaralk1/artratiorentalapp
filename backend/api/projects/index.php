@@ -521,6 +521,7 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
 
                 $label = trim((string) ($expense['label'] ?? ''));
                 $amount = isset($expense['amount']) ? (float) $expense['amount'] : 0.0;
+                $salePrice = isset($expense['sale_price']) ? (float) $expense['sale_price'] : 0.0;
 
                 if ($label === '') {
                     $errors["expenses.$index.label"] = 'Expense label is required';
@@ -531,11 +532,15 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
                 if ($amount < 0) {
                     $errors["expenses.$index.amount"] = 'Expense amount must be zero or greater';
                 }
+                if ($salePrice < 0) {
+                    $errors["expenses.$index.sale_price"] = 'Expense sale price must be zero or greater';
+                }
 
-                if (!isset($errors["expenses.$index.label"]) && !isset($errors["expenses.$index.amount"])) {
+                if (!isset($errors["expenses.$index.label"]) && !isset($errors["expenses.$index.amount"]) && !isset($errors["expenses.$index.sale_price"])) {
                     $normalizedExpenses[] = [
                         'label' => $label,
                         'amount' => round($amount, 2),
+                        'sale_price' => round($salePrice, 2),
                     ];
                     $expensesTotal += round($amount, 2);
                 }
@@ -834,12 +839,13 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
         return;
     }
 
-    $insert = $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount) VALUES (:project_id, :label, :amount)');
+    $insert = $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
     foreach ($expenses as $expense) {
         $insert->execute([
             'project_id' => $projectId,
             'label' => $expense['label'],
             'amount' => $expense['amount'],
+            'sale_price' => $expense['sale_price'] ?? 0,
         ]);
     }
 }
@@ -1135,7 +1141,7 @@ function fetchProjectEquipment(PDO $pdo, int $projectId): array
 function fetchProjectExpenses(PDO $pdo, int $projectId): array
 {
     $statement = $pdo->prepare(
-        'SELECT id, label, amount
+        'SELECT id, label, amount, sale_price
          FROM project_expenses
          WHERE project_id = :project_id'
     );
@@ -1147,6 +1153,7 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
             'id' => (int) $row['id'],
             'label' => $row['label'],
             'amount' => (float) $row['amount'],
+            'sale_price' => isset($row['sale_price']) ? (float) $row['sale_price'] : 0.0,
         ];
     }
 

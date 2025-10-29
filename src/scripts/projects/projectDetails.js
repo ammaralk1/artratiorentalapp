@@ -747,6 +747,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
   const expenseLabelInput = form.querySelector('#project-edit-expense-label');
   const expenseAmountInput = form.querySelector('#project-edit-expense-amount');
+  const expenseSaleInput = form.querySelector('#project-edit-expense-sale');
   const addExpenseBtn = form.querySelector('[data-action="add-expense"]');
   const expensesContainer = form.querySelector('#project-edit-expense-list');
   const startDateInput = form.querySelector('[name="project-start-date"]');
@@ -1064,6 +1065,15 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     discountInput.dataset.listenerAttached = 'true';
   }
 
+  if (expenseSaleInput && !expenseSaleInput.dataset.listenerAttached) {
+    expenseSaleInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      input.value = normalizeNumbers(input.value || '');
+    });
+    expenseSaleInput.dataset.listenerAttached = 'true';
+  }
+
   if (discountTypeSelect && !discountTypeSelect.dataset.listenerAttached) {
     discountTypeSelect.addEventListener('change', () => {
       renderPaymentSummary();
@@ -1129,6 +1139,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       const label = expenseLabelInput?.value.trim() || '';
       const normalizedAmount = normalizeNumbers(expenseAmountInput?.value || '0');
       const amount = Number(normalizedAmount);
+      const normalizedSale = normalizeNumbers(expenseSaleInput?.value || '0');
+      const salePrice = Number(normalizedSale);
 
       if (!label) {
         showToast(t('projects.toast.missingExpenseLabel', '⚠️ يرجى إدخال وصف المصروف'));
@@ -1145,11 +1157,22 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       editState.expenses.push({
         id: `expense-${project.id}-${Date.now()}`,
         label,
-        amount
+        amount,
+        salePrice: Number.isFinite(salePrice) && salePrice > 0 ? salePrice : 0
       });
 
       if (expenseLabelInput) expenseLabelInput.value = '';
       if (expenseAmountInput) expenseAmountInput.value = '';
+      if (expenseSaleInput) expenseSaleInput.value = '';
+      // Sync services client price input to sum of sale prices
+      try {
+        const saleTotal = Array.isArray(editState.expenses)
+          ? editState.expenses.reduce((s, e) => s + (Number(e?.salePrice) || 0), 0)
+          : 0;
+        if (servicesClientPriceInput) {
+          servicesClientPriceInput.value = normalizeNumbers(String(saleTotal));
+        }
+      } catch (_) {}
       renderExpenses();
       renderPaymentSummary();
       syncPaymentStatusValue('auto');
@@ -1162,6 +1185,15 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       if (!removeBtn) return;
       const { id } = removeBtn.dataset;
       editState.expenses = editState.expenses.filter((expense) => String(expense.id) !== String(id));
+      // Update services client price sum after removal
+      try {
+        const saleTotal = Array.isArray(editState.expenses)
+          ? editState.expenses.reduce((s, e) => s + (Number(e?.salePrice) || 0), 0)
+          : 0;
+        if (servicesClientPriceInput) {
+          servicesClientPriceInput.value = normalizeNumbers(String(saleTotal));
+        }
+      } catch (_) {}
       renderExpenses();
       renderPaymentSummary();
       syncPaymentStatusValue('auto');
@@ -1608,6 +1640,9 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
           <div class="project-edit-expense-amount-col">
             <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
           </div>
+          <div class="project-edit-expense-amount-col">
+            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
+          </div>
           <div class="project-edit-expense-action-col">
             <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
           </div>
@@ -1639,26 +1674,52 @@ function buildProjectTypeOptionsMarkup(selectedType) {
 function buildProjectEditExpensesMarkup(expenses = []) {
   if (!Array.isArray(expenses) || expenses.length === 0) {
     const emptyText = escapeHtml(t('projects.selected.emptyExpenses', 'لم يتم تسجيل أي مصروف'));
-    return `<div class="text-muted small" data-empty>${emptyText}</div>`;
+    return `
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="text-center text-muted">${emptyText}</td></tr>
+          </tbody>
+        </table>
+      </div>`;
   }
 
   const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
-  return expenses
-    .map((expense) => {
-      const label = escapeHtml(expense?.label || '');
-      const amount = escapeHtml(formatCurrency(expense?.amount || 0));
-      const id = escapeHtml(String(expense?.id || ''));
-      return `
-        <div class="project-edit-expense-item d-flex align-items-center justify-content-between gap-3 border rounded px-3 py-2 mb-2">
-          <div>
-            <div class="fw-semibold">${label}</div>
-            <div class="text-muted small">${amount}</div>
-          </div>
-          <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
-        </div>
-      `;
-    })
-    .join('');
+  const rows = expenses.map((expense) => {
+    const label = escapeHtml(expense?.label || '');
+    const amount = escapeHtml(formatCurrency(expense?.amount || 0));
+    const sale = escapeHtml(formatCurrency(expense?.salePrice || expense?.sale_price || 0));
+    const id = escapeHtml(String(expense?.id || ''));
+    return `
+      <tr>
+        <td>${label}</td>
+        <td>${amount}</td>
+        <td>${sale}</td>
+        <td><button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button></td>
+      </tr>`;
+  }).join('');
+  return `
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function buildProjectPaymentHistoryMarkup(paymentHistory = []) {

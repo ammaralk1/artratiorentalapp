@@ -165,9 +165,11 @@ export function buildProjectPayload({
           const amount = Number.parseFloat(expense?.amount ?? expense?.value ?? 0) || 0;
           const label = (expense?.label ?? expense?.name ?? '').trim();
           if (!label) return null;
+          const sale = Number.parseFloat(expense?.salePrice ?? expense?.sale_price ?? 0) || 0;
           return {
             label,
             amount: Math.round(amount * 100) / 100,
+            sale_price: Math.max(0, Math.round(sale * 100) / 100),
           };
         })
         .filter(Boolean)
@@ -289,6 +291,7 @@ function toInternalProject(raw = {}) {
     id: expense?.id ?? `expense-${idValue ?? 'x'}-${index}`,
     label: expense?.label ?? '',
     amount: Number.parseFloat(expense?.amount ?? 0) || 0,
+    salePrice: Number.parseFloat(expense?.sale_price ?? expense?.salePrice ?? 0) || 0,
   }));
 
   const rawSharePercent = Number.parseFloat(raw.company_share_percent ?? raw.companySharePercent ?? 0) || 0;

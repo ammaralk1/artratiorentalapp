@@ -544,15 +544,59 @@ function renderEquipmentChips() {
 
 function renderExpenseList() {
   if (!dom.expenseList) return;
-  renderChipList(dom.expenseList, state.expenses, (expense) => {
+  const items = Array.isArray(state.expenses) ? state.expenses : [];
+  if (!items.length) {
+    const emptyText = escapeHtml(getEmptyText(dom.expenseList));
+    dom.expenseList.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="4" class="text-center text-muted">${emptyText}</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+    return;
+  }
+
+  const rows = items.map((expense) => {
+    const label = escapeHtml(expense.label || '');
+    const amount = formatCurrency(Number(expense.amount) || 0);
+    const sale = formatCurrency(Number(expense.salePrice) || 0);
+    const id = escapeHtml(String(expense.id));
+    const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
     return `
-      <div class="expense-item">
-        <span>${escapeHtml(expense.label)}</span>
-        <span>${formatCurrency(expense.amount)}</span>
-        <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${escapeHtml(String(expense.id))}" aria-label="${escapeHtml(t('actions.remove', 'إزالة'))}">✖</button>
-      </div>
-    `;
-  });
+      <tr>
+        <td>${label}</td>
+        <td>${escapeHtml(amount)}</td>
+        <td>${escapeHtml(sale)}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  dom.expenseList.innerHTML = `
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function renderChipList(container, items, templateFn) {
