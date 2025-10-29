@@ -441,12 +441,30 @@ function renderFocusCard(project, category) {
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
+  // Detect scheduling conflicts (overlap with any other project interval)
+  const hasConflict = (() => {
+    try {
+      const startA = project.start ? new Date(project.start) : null;
+      const endA = project.end ? new Date(project.end) : (startA ? new Date(startA.getTime() + ONE_HOUR_IN_MS) : null);
+      if (!startA || !endA || Number.isNaN(startA.getTime()) || Number.isNaN(endA.getTime())) return false;
+      return state.projects.some((other) => {
+        if (!other || String(other.id) === String(project.id)) return false;
+        const startB = other.start ? new Date(other.start) : null;
+        const endB = other.end ? new Date(other.end) : (startB ? new Date(startB.getTime() + ONE_HOUR_IN_MS) : null);
+        if (!startB || !endB || Number.isNaN(startB.getTime()) || Number.isNaN(endB.getTime())) return false;
+        const latestStart = Math.max(startA.getTime(), startB.getTime());
+        const earliestEnd = Math.min(endA.getTime(), endB.getTime());
+        return latestStart < earliestEnd; // overlap
+      });
+    } catch (_) { return false; }
+  })();
   // Unify visuals with timeline legend
-  const statusChipClass = status === 'upcoming'
+  const statusKey = (hasConflict && status !== 'completed') ? 'conflict' : status;
+  const statusChipClass = statusKey === 'upcoming'
     ? 'timeline-status-badge timeline-status-badge--upcoming'
-    : status === 'ongoing'
+    : statusKey === 'ongoing'
       ? 'timeline-status-badge timeline-status-badge--ongoing'
-      : status === 'completed'
+      : statusKey === 'completed'
         ? 'timeline-status-badge timeline-status-badge--completed'
         : 'timeline-status-badge timeline-status-badge--upcoming';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
@@ -520,7 +538,8 @@ function renderFocusCard(project, category) {
   const typeBadge = '';
   // Remove category tag (e.g., Today's Projects) from the card header per request
   const categoryMetaTag = '';
-  const statusChip = `<span class="${statusChipClass}">${escapeHtml(statusLabel)}</span>`;
+  const statusText = t(`projects.status.${statusKey}`, statusKey);
+  const statusChip = `<span class="${statusChipClass}">${escapeHtml(statusText)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const buildRow = (icon, label, value) => {

@@ -260,6 +260,7 @@ registerTranslations({
     'projects.status.upcoming': 'قادم',
     'projects.status.ongoing': 'قيد التنفيذ',
     'projects.status.completed': 'مكتمل',
+    'projects.status.conflict': 'تعارض',
 
     'projectCards.filters.search': '🔍 ابحث باسم المشروع أو الوصف...',
     'projectCards.filters.status.all': '⚙️ كل الحالات',
@@ -608,6 +609,7 @@ registerTranslations({
     'projects.status.upcoming': 'Upcoming',
     'projects.status.ongoing': 'In Progress',
     'projects.status.completed': 'Completed',
+    'projects.status.conflict': 'Conflict',
 
     'projectCards.filters.search': '🔍 Search by project name or description...',
     'projectCards.filters.status.all': '⚙️ All statuses',

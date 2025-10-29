@@ -112,14 +112,33 @@ export function openProjectDetails(projectId) {
 
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
+  // Determine conflicts vs other projects
+  const hasConflict = (() => {
+    try {
+      const startA = project.start ? new Date(project.start) : null;
+      const endA = project.end ? new Date(project.end) : (startA ? new Date(startA.getTime() + 60 * 60 * 1000) : null);
+      if (!startA || !endA || Number.isNaN(startA.getTime()) || Number.isNaN(endA.getTime())) return false;
+      return state.projects.some((other) => {
+        if (!other || String(other.id) === String(project.id)) return false;
+        const startB = other.start ? new Date(other.start) : null;
+        const endB = other.end ? new Date(other.end) : (startB ? new Date(startB.getTime() + 60 * 60 * 1000) : null);
+        if (!startB || !endB || Number.isNaN(startB.getTime()) || Number.isNaN(endB.getTime())) return false;
+        const latestStart = Math.max(startA.getTime(), startB.getTime());
+        const earliestEnd = Math.min(endA.getTime(), endB.getTime());
+        return latestStart < earliestEnd;
+      });
+    } catch (_) { return false; }
+  })();
+  const statusKey = (hasConflict && status !== 'completed') ? 'conflict' : status;
   const statusTextMap = { upcoming: 'قادم', ongoing: 'قيد التنفيذ', completed: 'مكتمل', conflict: 'تعارض' };
-  const statusDisplay = statusTextMap[status] || statusLabel;
+  const statusDisplay = statusTextMap[statusKey] || statusLabel;
   const statusChipClassMap = {
     upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
     ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
-    completed: 'timeline-status-badge timeline-status-badge--completed'
+    completed: 'timeline-status-badge timeline-status-badge--completed',
+    conflict: 'timeline-status-badge timeline-status-badge--conflict'
   };
-  const statusChipClass = statusChipClassMap[status] || 'status-confirmed';
+  const statusChipClass = statusChipClassMap[statusKey] || 'timeline-status-badge timeline-status-badge--upcoming';
   const vatChipText = applyTax
     ? t('projects.details.chips.vatOn', 'شامل الضريبة 15٪')
     : t('projects.details.chips.vatOff', 'غير شامل الضريبة');
