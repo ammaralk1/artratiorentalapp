@@ -1,5 +1,5 @@
 import { loadData, saveData } from '../storage.js';
-import { getReservationsState } from '../reservationsService.js';
+import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
 import { apiRequest } from '../apiClient.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { getTechnicianPositionsCache, findPositionByName } from '../technicianPositions.js';
@@ -4537,11 +4537,23 @@ export async function exportProjectPdf({ project }) {
   // Ensure packages are available so package codes resolve like reservation PDF
   await ensurePackagesAvailable();
 
-  const projectData = collectProjectQuoteData(project);
+  let projectData = collectProjectQuoteData(project);
   const { project: resolvedProject } = projectData;
   if (!resolvedProject) {
     showToast(t('projects.toast.notFound', '⚠️ تعذر العثور على بيانات المشروع'));
     return;
+  }
+
+  // If equipment items are empty, try to refresh reservations from API (in case state is stale)
+  try {
+    const hasNoEquipmentItems = !Array.isArray(projectData.equipmentItems) || projectData.equipmentItems.length === 0;
+    if (hasNoEquipmentItems && resolvedProject?.id != null) {
+      await refreshReservationsFromApi({ project_id: resolvedProject.id });
+      projectData = collectProjectQuoteData(resolvedProject);
+    }
+  } catch (error) {
+    // Non-fatal: proceed with whatever data we have
+    console.warn('[reservationPdf] refreshReservationsForProject failed, proceeding with snapshot/state', error);
   }
 
   const { sequence, quoteNumber } = peekNextQuoteSequence('project');
