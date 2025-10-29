@@ -517,32 +517,16 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     return Math.max(1, Math.min(9999, quantity));
   };
 
-  let totalItemsQuantity = (Array.isArray(items) ? items : []).reduce((sum, item) => {
-    if (!item || typeof item !== 'object') {
-      return sum;
-    }
-    if (isPackageChildEntry(item)) {
-      return sum;
-    }
-    return sum + resolveEntryQuantity(item);
-  }, 0);
-
-  if (totalItemsQuantity <= 0 && Array.isArray(displayGroups) && displayGroups.length) {
-    totalItemsQuantity = displayGroups.reduce((sum, group) => {
-      const quantity = resolveEntryQuantity({ ...group, type: group.type });
-      return sum + quantity;
-    }, 0);
-  }
+  // Compute items count strictly from normalized items, excluding package child entries
+  let totalItemsQuantity = (Array.isArray(items) ? items : [])
+    .filter((item) => item && typeof item === 'object' && !isPackageChildEntry(item))
+    .reduce((sum, item) => sum + resolveEntryQuantity(item), 0);
 
   if (!Number.isFinite(totalItemsQuantity) || totalItemsQuantity <= 0) {
+    // Fallback to number of display groups or items length
     totalItemsQuantity = Array.isArray(displayGroups) && displayGroups.length
       ? displayGroups.length
-      : (Array.isArray(items) ? items.length : 0) || 1;
-  } else if (totalItemsQuantity > 1_000_000) {
-    totalItemsQuantity = Math.min(totalItemsQuantity, (Array.isArray(displayGroups) ? displayGroups.length : totalItemsQuantity));
-    if (!Number.isFinite(totalItemsQuantity) || totalItemsQuantity <= 0) {
-      totalItemsQuantity = (Array.isArray(items) ? items.length : 0) || 1;
-    }
+      : ((Array.isArray(items) ? items.length : 0) || 1);
   }
 
   totalItemsQuantity = Math.max(1, Math.round(totalItemsQuantity));

@@ -345,7 +345,16 @@ export function calculateDraftFinancialBreakdown({
   companySharePercent = null
 } = {}) {
   const rentalDays = calculateReservationDays(start, end);
-  const equipmentDailyTotal = (items || []).reduce((sum, item) => {
+  // Filter out package child entries to avoid double counting when both parent package and children exist
+  const filteredItems = Array.isArray(items) ? items.filter((it) => {
+    if (!it || typeof it !== 'object') return false;
+    const type = String(it.type ?? it.kind ?? '').toLowerCase();
+    const hasPackageRef = [it.packageId, it.package_id, it.package_code, it.packageCode, it.bundleId, it.bundle_id]
+      .some((v) => v != null && v !== '');
+    // keep if it's an actual package or a standalone item without package reference
+    return type === 'package' || !hasPackageRef;
+  }) : [];
+  const equipmentDailyTotal = filteredItems.reduce((sum, item) => {
     const quantityCandidate = parsePriceValue(item?.qty ?? item?.quantity ?? item?.count ?? 1);
     const quantity = Number.isFinite(quantityCandidate) && quantityCandidate > 0 ? quantityCandidate : 1;
     const price = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
