@@ -1601,6 +1601,9 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         <!-- Payment status select removed: status is inferred automatically from payments -->
       </div>
 
+      <!-- Services block placed directly under project description -->
+      
+
       <div class="row g-3 align-items-start mt-1">
         <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
