@@ -297,31 +297,7 @@ export function renderFocusCards() {
 
   dom.focusCards.innerHTML = cards.join('');
 
-  // Attach one-time toggle handler to switch between financial and reservations sections
-  if (dom.focusCards && dom.focusCards.dataset.toggleAttached !== 'true') {
-    dom.focusCards.addEventListener('click', (event) => {
-      const btn = event.target.closest('.project-focus-toggle');
-      if (!btn) return;
-      const card = btn.closest('.project-focus-card');
-      if (!card) return;
-      const target = btn.dataset.toggleSection;
-      const financial = card.querySelector('[data-section="financial"]');
-      const reservations = card.querySelector('[data-section="reservations"]');
-      if (!financial || !reservations) return;
-      if (target === 'reservations') {
-        financial.style.display = 'none';
-        reservations.style.display = '';
-      } else {
-        financial.style.display = '';
-        reservations.style.display = 'none';
-      }
-      // Update pressed state
-      card.querySelectorAll('.project-focus-toggle').forEach((el) => {
-        el.setAttribute('aria-pressed', el === btn ? 'true' : 'false');
-      });
-    });
-    dom.focusCards.dataset.toggleAttached = 'true';
-  }
+  // Sections are always visible; no toggle required
 }
 
 function buildFocusCards() {
@@ -559,26 +535,23 @@ function renderFocusCard(project, category) {
         <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
         <p class="project-focus-card__description">${escapeHtml(descriptionText)}</p>
         <div class="project-focus-card__sections">
-          <div class="project-focus-card__toggle" role="tablist" aria-label="Focus card toggle">
-            <button type="button" class="reservation-chip project-focus-toggle" data-toggle-section="financial" aria-pressed="true">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</button>
-            <button type="button" class="reservation-chip project-focus-toggle" data-toggle-section="reservations" aria-pressed="false">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</button>
-          </div>
           <div class="project-focus-card__section">
             <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.project', 'ملخص المشروع'))}</span>
             <div class="project-focus-card__section-box">
               ${projectInfoRows}
             </div>
           </div>
-          <div class="project-focus-card__section" data-section="financial">
-            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</span>
-            <div class="project-focus-card__section-box">
-              ${financialRows}
-            </div>
-          </div>
-          <div class="project-focus-card__section" data-section="reservations" style="display:none;">
+          <!-- Show reservations above the financial summary -->
+          <div class="project-focus-card__section">
             <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</span>
             <div class="project-focus-card__section-box">
               ${reservationRows}
+            </div>
+          </div>
+          <div class="project-focus-card__section">
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</span>
+            <div class="project-focus-card__section-box">
+              ${financialRows}
             </div>
           </div>
         </div>
