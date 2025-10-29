@@ -25,7 +25,7 @@ registerTranslations({
     'projects.form.labels.equipment': 'إضافة معدة',
     'projects.form.labels.quantity': 'الكمية',
     'projects.form.labels.expenses': 'متطلبات المشروع',
-    'projects.form.labels.expenseLabel': 'خدمة إنتاجية',
+    'projects.form.labels.expenseLabel': 'خدمات إنتاجية',
     'projects.form.labels.expenseAmount': 'التكلفة (SR)',
 
     'projects.form.placeholders.title': 'مثال: تصوير منتج جديد',

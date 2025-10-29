@@ -1533,7 +1533,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
 
       <div class="row g-3 align-items-start mt-1">
         <div class="col-sm-6 col-lg-4 col-xl-3">
-          <label class="form-label" for="project-edit-services-client-price">${escapeHtml(t('projects.details.edit.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية (SR)'))}</label>
+          <label class="form-label" for="project-edit-services-client-price">${escapeHtml(t('projects.details.edit.servicesClientPrice', 'سعر البيع (SR)'))}</label>
           <input type="text" id="project-edit-services-client-price" class="form-control project-edit-input-xs" value="${escapeHtml(servicesClientPriceValue)}" placeholder="0" inputmode="decimal">
         </div>
         <div class="col-sm-6 col-lg-4 col-xl-3">
