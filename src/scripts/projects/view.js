@@ -474,21 +474,24 @@ function renderFocusCard(project, category) {
   const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
   // Hide top type badge; we will highlight type inside the project summary
   const typeBadge = '';
-  const categoryMetaTag = categoryLabel
-    ? `<span class="project-focus-card__meta-tag">${escapeHtml(categoryLabel)}</span>`
-    : '';
+  // Remove category tag (e.g., Today's Projects) from the card header per request
+  const categoryMetaTag = '';
   const statusChip = `<span class="status-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
-  const buildRow = (icon, label, value) => `
-    <div class="project-focus-card__row">
-      <span class="project-focus-card__row-label">
-        ${icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : ''}
-        ${escapeHtml(label)}
-      </span>
-      <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
-    </div>
-  `;
+  const buildRow = (icon, label, value) => {
+    const valueStr = String(value || '');
+    const isSafeHtml = valueStr.startsWith('<span class="status-chip');
+    return `
+      <div class="project-focus-card__row">
+        <span class="project-focus-card__row-label">
+          ${icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : ''}
+          ${escapeHtml(label)}
+        </span>
+        <span class="project-focus-card__row-value">${isSafeHtml ? valueStr : escapeHtml(valueStr)}</span>
+      </div>
+    `;
+  };
 
   const projectInfoRows = [
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },

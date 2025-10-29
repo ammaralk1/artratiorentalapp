@@ -113,8 +113,8 @@ export function openProjectDetails(projectId) {
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   const statusChipClassMap = {
-    upcoming: 'status-pending',
-    ongoing: 'status-confirmed',
+    upcoming: 'status-upcoming',
+    ongoing: 'status-ongoing',
     completed: 'status-completed'
   };
   const statusChipClass = statusChipClassMap[status] || 'status-confirmed';

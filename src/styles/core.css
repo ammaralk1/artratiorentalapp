@@ -497,7 +497,6 @@ html.dark-mode .projects-hero-text {
   font-size: 0.8rem;
   border-radius: 999px;
   padding: 0.35em 0.7em;
-  color: #fff;
 }
 
 .project-focus-card--paid {
@@ -508,9 +507,7 @@ html.dark-mode .projects-hero-text {
   background: linear-gradient(135deg, rgba(40, 167, 69, 0.16) 0%, rgba(248, 250, 255, 0) 60%);
 }
 
-.project-focus-card--paid .project-focus-card__payment-chip {
-  background: rgba(40, 167, 69, 0.85);
-}
+/* Use reservation-chip color scheme; no manual overrides per state */
 
 .project-focus-card--unpaid {
   border-color: rgba(224, 49, 49, 0.2);
@@ -520,9 +517,7 @@ html.dark-mode .projects-hero-text {
   background: linear-gradient(135deg, rgba(224, 49, 49, 0.16) 0%, rgba(248, 250, 255, 0) 60%);
 }
 
-.project-focus-card--unpaid .project-focus-card__payment-chip {
-  background: rgba(224, 49, 49, 0.85);
-}
+/* Use reservation-chip color scheme; no manual overrides per state */
 
 .project-focus-card__meta-tag,
 .project-focus-card__chip {
@@ -562,6 +557,31 @@ html.dark-mode .projects-hero-text {
   white-space: nowrap;
   line-height: 1;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Align status chips with timeline colors */
+.status-chip.status-upcoming {
+  --chip-bg: rgba(76, 110, 245, 0.12);
+  --chip-color: rgba(76, 110, 245, 0.92);
+  --chip-shadow: 0 12px 24px rgba(76, 110, 245, 0.18), 0 0 0 2px rgba(76, 110, 245, 0.18);
+}
+
+.status-chip.status-ongoing {
+  --chip-bg: rgba(240, 140, 0, 0.12);
+  --chip-color: rgba(240, 140, 0, 0.95);
+  --chip-shadow: 0 12px 24px rgba(240, 140, 0, 0.18), 0 0 0 2px rgba(240, 140, 0, 0.18);
+}
+
+.status-chip.status-completed {
+  --chip-bg: rgba(47, 158, 68, 0.12);
+  --chip-color: rgba(47, 158, 68, 0.95);
+  --chip-shadow: 0 12px 24px rgba(47, 158, 68, 0.18), 0 0 0 2px rgba(47, 158, 68, 0.18);
+}
+
+.status-chip.status-conflict {
+  --chip-bg: rgba(224, 49, 49, 0.12);
+  --chip-color: rgba(224, 49, 49, 0.95);
+  --chip-shadow: 0 12px 24px rgba(224, 49, 49, 0.2), 0 0 0 2px rgba(224, 49, 49, 0.18);
 }
 
 .reservation-chip:focus-visible,
