@@ -139,12 +139,7 @@ export function openProjectDetails(projectId) {
     conflict: 'timeline-status-badge timeline-status-badge--conflict'
   };
   const statusChipClass = statusChipClassMap[statusKey] || 'timeline-status-badge timeline-status-badge--upcoming';
-  const vatChipText = applyTax
-    ? t('projects.details.chips.vatOn', 'شامل الضريبة 15٪')
-    : t('projects.details.chips.vatOff', 'غير شامل الضريبة');
-  const vatChipClass = applyTax ? 'status-paid' : 'status-unpaid';
-  const reservationsChipText = t('projects.details.chips.reservations', '{count} حجوزات')
-    .replace('{count}', normalizeNumbers(String(reservationsCount)));
+  // VAT and reservations chips removed per updated UI requirements
   const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
   const paymentHistory = normalizeProjectPaymentHistoryForView(project);
   const hasPaymentHistory = paymentHistory.length > 0;
@@ -376,7 +371,7 @@ export function openProjectDetails(projectId) {
     {
       icon: '🏷️',
       label: t('projects.details.type', 'نوع المشروع'),
-      value: typeLabel
+      value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>`
     },
     resolveProjectScheduleItem('start', project.start),
     resolveProjectScheduleItem('end', project.end)
@@ -2023,8 +2018,8 @@ function resolveProjectScheduleItem(kind, value) {
   const isStart = kind === 'start';
   const icon = isStart ? '⏱️' : '⌛';
   const label = isStart
-    ? t('projects.details.labels.start', 'بداية الحجز')
-    : t('projects.details.labels.end', 'نهاية الحجز');
+    ? t('projects.details.labels.start', 'بداية المشروع')
+    : t('projects.details.labels.end', 'نهاية المشروع');
 
   return {
     icon,

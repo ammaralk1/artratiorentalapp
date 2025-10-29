@@ -203,14 +203,14 @@ function buildProjectDateTimeRows(start, end) {
   if (e.date && s.date === e.date) {
     // same-day project
     dateHtml = `<div class=\"date-range\"><div class=\"date-line\">${s.date}</div></div>`;
-    timeText = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
   } else {
     // multi-day project
     dateHtml = `<div class=\"date-range\">` +
       `<div class=\"date-line\">${s.date}</div>` +
       (e.date ? `<div class=\"date-line\">${e.date}</div>` : '') +
       `</div>`;
-    timeText = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
   }
 
   return { dateHtml, timeText };
@@ -466,7 +466,7 @@ function renderFocusCard(project, category) {
       ? 'timeline-status-badge timeline-status-badge--ongoing'
       : statusKey === 'completed'
         ? 'timeline-status-badge timeline-status-badge--completed'
-        : 'timeline-status-badge timeline-status-badge--upcoming';
+        : 'timeline-status-badge timeline-status-badge--conflict';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
   if (isConfirmed) {
@@ -564,7 +564,7 @@ function renderFocusCard(project, category) {
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
     // Hide company on the card per request
     // companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
-    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"status-chip status-info\">${escapeHtml(typeLabel)}</span>` },
+    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>` },
     { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: projectDateHtml },
     projectTimeText ? { icon: '⏰', label: t('projects.focus.summary.time', 'الوقت'), value: projectTimeText } : null
   ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
