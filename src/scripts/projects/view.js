@@ -296,6 +296,32 @@ export function renderFocusCards() {
   }
 
   dom.focusCards.innerHTML = cards.join('');
+
+  // Attach one-time toggle handler to switch between financial and reservations sections
+  if (dom.focusCards && dom.focusCards.dataset.toggleAttached !== 'true') {
+    dom.focusCards.addEventListener('click', (event) => {
+      const btn = event.target.closest('.project-focus-toggle');
+      if (!btn) return;
+      const card = btn.closest('.project-focus-card');
+      if (!card) return;
+      const target = btn.dataset.toggleSection;
+      const financial = card.querySelector('[data-section="financial"]');
+      const reservations = card.querySelector('[data-section="reservations"]');
+      if (!financial || !reservations) return;
+      if (target === 'reservations') {
+        financial.style.display = 'none';
+        reservations.style.display = '';
+      } else {
+        financial.style.display = '';
+        reservations.style.display = 'none';
+      }
+      // Update pressed state
+      card.querySelectorAll('.project-focus-toggle').forEach((el) => {
+        el.setAttribute('aria-pressed', el === btn ? 'true' : 'false');
+      });
+    });
+    dom.focusCards.dataset.toggleAttached = 'true';
+  }
 }
 
 function buildFocusCards() {
@@ -395,7 +421,14 @@ function renderFocusCard(project, category) {
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
-  const statusClass = statusBadgeClass[status] || 'bg-secondary';
+  // Unify chip visuals with details modal: use status-chip classes
+  const statusChipClass = status === 'upcoming'
+    ? 'status-pending'
+    : status === 'ongoing'
+      ? 'status-confirmed'
+      : status === 'completed'
+        ? 'status-completed'
+        : 'status-info';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
   if (isConfirmed) {
@@ -463,13 +496,12 @@ function renderFocusCard(project, category) {
   const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
 
   const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
-  const typeBadge = typeLabel
-    ? `<span class="badge project-focus-card__badge bg-primary">${escapeHtml(typeLabel)}</span>`
-    : '';
+  // Hide top type badge; we will highlight type inside the project summary
+  const typeBadge = '';
   const categoryMetaTag = categoryLabel
     ? `<span class="project-focus-card__meta-tag">${escapeHtml(categoryLabel)}</span>`
     : '';
-  const statusChip = `<span class="project-focus-card__status-chip ${statusClass}">${escapeHtml(statusLabel)}</span>`;
+  const statusChip = `<span class="status-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const buildRow = (icon, label, value) => `
@@ -486,7 +518,7 @@ function renderFocusCard(project, category) {
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
     // Hide company on the card per request
     // companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
-    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: typeLabel },
+    { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"status-chip status-info\">${escapeHtml(typeLabel)}</span>` },
     { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: combineProjectDateRange(project.start, project.end) }
   ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
@@ -494,7 +526,8 @@ function renderFocusCard(project, category) {
   const finalTotalLabel = `${t('projects.details.summary.finalTotal', 'المجموع النهائي', 'Final Total')}${includesTaxLabel}`;
 
   const financialRows = [
-    { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
+    // Hide payment status row per request
+    // { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
     // Hide total expenses on the card per request
     // { icon: '💸', label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'), value: formatCurrency(expensesTotal) },
     { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPrice) },
@@ -526,19 +559,23 @@ function renderFocusCard(project, category) {
         <h6 class="project-focus-card__title">${escapeHtml(title)}</h6>
         <p class="project-focus-card__description">${escapeHtml(descriptionText)}</p>
         <div class="project-focus-card__sections">
+          <div class="project-focus-card__toggle" role="tablist" aria-label="Focus card toggle">
+            <button type="button" class="reservation-chip project-focus-toggle" data-toggle-section="financial" aria-pressed="true">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</button>
+            <button type="button" class="reservation-chip project-focus-toggle" data-toggle-section="reservations" aria-pressed="false">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</button>
+          </div>
           <div class="project-focus-card__section">
             <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.project', 'ملخص المشروع'))}</span>
             <div class="project-focus-card__section-box">
               ${projectInfoRows}
             </div>
           </div>
-          <div class="project-focus-card__section">
+          <div class="project-focus-card__section" data-section="financial">
             <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</span>
             <div class="project-focus-card__section-box">
               ${financialRows}
             </div>
           </div>
-          <div class="project-focus-card__section">
+          <div class="project-focus-card__section" data-section="reservations" style="display:none;">
             <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.reservations', 'الحجوزات المرتبطة'))}</span>
             <div class="project-focus-card__section-box">
               ${reservationRows}
