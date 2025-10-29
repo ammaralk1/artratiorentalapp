@@ -231,29 +231,52 @@ export function openProjectDetails(projectId) {
     // Use the same "final total" for payment progress to avoid discrepancies
     paymentTotalForProgress = finalTotal;
   } else {
-    // Fallback legacy summary when no linked reservations
-    summaryDetails = [
-      {
-        icon: '💼',
-        label: t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'),
-        value: formatCurrency(projectTotal)
-      },
-      {
-        icon: '🔗',
-        label: t('projects.details.summary.reservationsTotal', 'إجمالي المعدات / طاقم العمل'),
-        value: formatCurrency(reservationsTotal)
-      },
-      {
-        icon: '🧮',
-        label: t('projects.details.summary.combinedTax', 'إجمالي الضريبة الكلية (15٪)'),
-        value: formatCurrency(combinedTaxAmount)
-      },
-      {
-        icon: '💰',
-        label: t('projects.details.summary.overallTotal', 'الإجمالي الكلي'),
-        value: formatCurrency(overallTotal)
-      }
-    ];
+    // Detailed summary when NO linked reservations
+    // Order: services total → discount → after discount → company share → tax → net profit → final total
+    const expensesTotalNumber = Number(expensesTotal || 0);
+    const servicesTotal = Math.max(0, Number(servicesClientPriceVal) || 0);
+
+    const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+    const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : (servicesTotal * (discountVal / 100));
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > servicesTotal) discountAmount = servicesTotal;
+
+    const baseAfterDiscount = Math.max(0, servicesTotal - discountAmount);
+
+    const applyTaxFlag = applyTax === true;
+    const shareEnabled = project?.companyShareEnabled === true
+      || project?.companyShareEnabled === 'true'
+      || project?.company_share_enabled === true
+      || project?.company_share_enabled === 'true';
+    const rawShare = Number.parseFloat(
+      project?.companySharePercent
+      ?? project?.company_share_percent
+      ?? project?.companyShare
+      ?? project?.company_share
+      ?? 0
+    ) || 0;
+    const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+    const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+
+    const taxAmountAfterShare = applyTaxFlag
+      ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
+      : 0;
+
+    const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
+
+    summaryDetails = [];
+    summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية'), value: formatCurrency(servicesTotal) });
+    if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
+    summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم'), value: formatCurrency(baseAfterDiscount) });
+    if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
+    if (taxAmountAfterShare > 0) summaryDetails.push({ icon: '💸', label: t('projects.details.summary.tax', 'الضريبة (15٪)'), value: `−${formatCurrency(taxAmountAfterShare)}` });
+    summaryDetails.push({ icon: '💵', label: t('projects.details.summary.netProfit', 'صافي الربح'), value: formatCurrency(netProfit) });
+    summaryDetails.push({ icon: '💰', label: t('projects.details.summary.finalTotal', 'المجموع النهائي'), value: formatCurrency(finalTotal) });
+
+    // Use the same final total for payment progress
+    paymentTotalForProgress = finalTotal;
   }
 
   // Compute payment progress and status against the chosen total (finalTotal when available)
