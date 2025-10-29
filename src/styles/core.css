@@ -3117,6 +3117,17 @@ body.dark-mode .project-services-table tbody tr:hover {
 .project-payment-progress-group .form-control {
   flex: 1 1 auto;
 }
+/* Shrink the amount/percent value input */
+.project-payment-progress-group #project-payment-progress-value {
+  text-align: center;
+  flex: 0 0 7.5rem;
+  max-width: 45%;
+}
+@media (min-width: 1200px) {
+  .project-payment-progress-group #project-payment-progress-value {
+    flex-basis: 9.5rem;
+  }
+}
 
 /* Add Payment button styling — outline + inner glow */
 .payment-add-btn {
