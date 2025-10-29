@@ -560,25 +560,29 @@ html.dark-mode .projects-hero-text {
 }
 
 /* Align status chips with timeline colors */
-.status-chip.status-upcoming {
+.status-chip.status-upcoming,
+.reservation-chip.status-upcoming {
   --chip-bg: rgba(76, 110, 245, 0.12);
   --chip-color: rgba(76, 110, 245, 0.92);
   --chip-shadow: 0 12px 24px rgba(76, 110, 245, 0.18), 0 0 0 2px rgba(76, 110, 245, 0.18);
 }
 
-.status-chip.status-ongoing {
+.status-chip.status-ongoing,
+.reservation-chip.status-ongoing {
   --chip-bg: rgba(240, 140, 0, 0.12);
   --chip-color: rgba(240, 140, 0, 0.95);
   --chip-shadow: 0 12px 24px rgba(240, 140, 0, 0.18), 0 0 0 2px rgba(240, 140, 0, 0.18);
 }
 
-.status-chip.status-completed {
+.status-chip.status-completed,
+.reservation-chip.status-completed {
   --chip-bg: rgba(47, 158, 68, 0.12);
   --chip-color: rgba(47, 158, 68, 0.95);
   --chip-shadow: 0 12px 24px rgba(47, 158, 68, 0.18), 0 0 0 2px rgba(47, 158, 68, 0.18);
 }
 
-.status-chip.status-conflict {
+.status-chip.status-conflict,
+.reservation-chip.status-conflict {
   --chip-bg: rgba(224, 49, 49, 0.12);
   --chip-color: rgba(224, 49, 49, 0.95);
   --chip-shadow: 0 12px 24px rgba(224, 49, 49, 0.2), 0 0 0 2px rgba(224, 49, 49, 0.18);
