@@ -112,7 +112,7 @@ export function openProjectDetails(projectId) {
   const overallTotal = Number((projectTotal + reservationsTotal + combinedTaxAmount).toFixed(2));
 
   const statusBase = determineProjectStatus(project);
-  const status = (project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
+  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   // Determine conflicts vs other projects
   const hasConflict = (() => {
@@ -1581,6 +1581,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const wantCancel = cancelProjectCheckbox?.checked === true;
     if (wantCancel) {
       payload.status = 'cancelled';
+      payload.cancelled = true;
     }
 
     form.dataset.submitting = 'true';

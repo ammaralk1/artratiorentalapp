@@ -440,7 +440,7 @@ function renderFocusCard(project, category) {
   const categoryKey = categoryKeyMap[category] || categoryKeyMap.recent;
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const statusBase = determineProjectStatus(project);
-  const status = (project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
+  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   // Detect scheduling conflicts (overlap with any other project interval)
   const hasConflict = (() => {

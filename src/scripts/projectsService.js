@@ -305,17 +305,29 @@ function toInternalProject(raw = {}) {
   const paymentsRaw = raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? null;
   const paymentHistory = normalizeProjectPaymentsCollection(paymentsRaw);
 
+  const cancelledFlag = (() => {
+    const v = raw.cancelled ?? raw.canceled ?? raw.is_cancelled ?? raw.isCanceled;
+    if (v === true || v === 'true' || v === 1 || v === '1') return true;
+    if (typeof v === 'string') {
+      const s = v.toLowerCase();
+      return s === 'yes' || s === 'cancelled' || s === 'canceled';
+    }
+    return false;
+  })();
+
   return {
     id: idValue != null ? String(idValue) : '',
     projectId: idValue != null ? Number(idValue) : null,
     status: (() => {
       const s = String(raw.status ?? raw.project_status ?? '').toLowerCase();
+      if (cancelledFlag) return 'cancelled';
       if (s === 'cancelled' || s === 'canceled' || s === 'ملغي' || s === 'ملغى') return 'cancelled';
       if (s === 'completed' || s === 'مكتمل') return 'completed';
       if (s === 'ongoing' || s === 'in_progress' || s === 'قيد التنفيذ') return 'ongoing';
       if (s === 'upcoming' || s === 'قادم') return 'upcoming';
       return undefined;
     })(),
+    cancelled: cancelledFlag,
     projectCode: raw.project_code ?? raw.projectCode ?? null,
     title: raw.title ?? '',
     type: raw.type ?? raw.projectType ?? '',
