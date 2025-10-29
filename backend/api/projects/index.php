@@ -461,6 +461,13 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         $errors['total_with_tax'] = 'Total with tax must be zero or greater';
     }
 
+    // New: services client price (revenue side for production services)
+    $servicesClientPriceExists = array_key_exists('services_client_price', $payload) || !$isUpdate;
+    $servicesClientPrice = $servicesClientPriceExists ? (float) ($payload['services_client_price'] ?? 0) : null;
+    if ($servicesClientPriceExists && $servicesClientPrice !== null && $servicesClientPrice < 0) {
+        $errors['services_client_price'] = 'Services client price must be zero or greater';
+    }
+
     $paidAmountExists = array_key_exists('paid_amount', $payload) || !$isUpdate;
     $paidAmount = $paidAmountExists ? (float) ($payload['paid_amount'] ?? 0) : null;
     if ($paidAmountExists && $paidAmount < 0) {
@@ -685,6 +692,9 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     if ($expensesTotalExists) {
         $fields['expenses_total'] = round($expensesTotal, 2);
     }
+    if ($servicesClientPriceExists) {
+        $fields['services_client_price'] = $servicesClientPrice !== null ? round($servicesClientPrice, 2) : 0;
+    }
     if ($taxAmountExists) {
         $fields['tax_amount'] = $taxAmount !== null ? round($taxAmount, 2) : 0;
     }
@@ -876,6 +886,7 @@ function mapProjectRow(PDO $pdo, array $row): array
         'company_share_amount' => isset($row['company_share_amount']) ? (float) $row['company_share_amount'] : 0.0,
         'equipment_estimate' => (float) $row['equipment_estimate'],
         'expenses_total' => (float) $row['expenses_total'],
+        'services_client_price' => isset($row['services_client_price']) ? (float) $row['services_client_price'] : 0.0,
         'tax_amount' => (float) $row['tax_amount'],
         'total_with_tax' => (float) $row['total_with_tax'],
         'paid_amount' => isset($row['paid_amount']) ? (float) $row['paid_amount'] : 0.0,
