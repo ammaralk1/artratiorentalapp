@@ -3092,6 +3092,7 @@ body.dark-mode .project-services-table tbody tr:hover {
   gap: 0.5rem;
   flex-wrap: nowrap; /* prevent wrapping that hides the button */
   width: 100%;
+  overflow: visible; /* ensure hover outlines are not clipped */
 }
 
 @media (min-width: 992px) {
@@ -3142,6 +3143,8 @@ body.dark-mode .project-services-table tbody tr:hover {
   background: linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 18%, transparent), color-mix(in hsl, hsl(var(--p)) 12%, transparent));
   color: var(--clr-text);
   cursor: pointer; /* make it feel clickable */
+  position: relative; /* allow ring to appear above siblings */
+  z-index: 1;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.10),
     0 10px 22px hsl(var(--p) / 0.22),
@@ -3186,4 +3189,27 @@ body.dark-mode .project-services-table tbody tr:hover {
     0 0 24px hsl(var(--a) / 0.52),
     0 16px 34px hsl(var(--p) / 0.38),
     0 0 0 3px hsl(var(--a) / 0.26);
+}
+
+/* Increase specificity to avoid conflicts with generic .btn rules */
+#project-payment-add.payment-add-btn:hover,
+#project-payment-add.payment-add-btn:focus-visible {
+  border-color: hsl(var(--p) / 0.85) !important;
+  outline: 2px solid transparent; /* fallback for older browsers */
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 16px 32px hsl(var(--p) / 0.34),
+    0 0 0 4px hsl(var(--p) / 0.30),
+    0 0 22px hsl(var(--p) / 0.40) !important;
+}
+
+:is(html.dark-mode, body.dark-mode) #project-payment-add.payment-add-btn:hover,
+:is(html.dark-mode, body.dark-mode) #project-payment-add.payment-add-btn:focus-visible {
+  border-color: hsl(var(--a) / 0.85) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 28px hsl(var(--a) / 0.60),
+    0 18px 36px hsl(var(--p) / 0.42),
+    0 0 0 4px hsl(var(--a) / 0.32) !important;
 }
