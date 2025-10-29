@@ -879,6 +879,39 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
   let isSyncingShareTax = false;
 
+  // Normalize Arabic/Persian numerals to English as user types in date/time inputs
+  const attachNumericNormalization = (inputEl) => {
+    if (!inputEl || inputEl.dataset.normalizedDigits === 'true') return;
+    const handler = () => {
+      const prev = inputEl.value || '';
+      const normalized = normalizeNumbers(prev);
+      if (normalized !== prev) {
+        // Try to preserve caret position when possible
+        const start = inputEl.selectionStart;
+        const end = inputEl.selectionEnd;
+        inputEl.value = normalized;
+        try {
+          if (typeof start === 'number' && typeof end === 'number') {
+            const delta = normalized.length - prev.length;
+            inputEl.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta));
+          }
+        } catch (_) {
+          // silently ignore selection issues in some browsers
+        }
+      }
+    };
+    inputEl.addEventListener('input', handler);
+    inputEl.addEventListener('blur', handler);
+    // Hint numeric keypad on mobile where applicable
+    try { inputEl.setAttribute('inputmode', 'numeric'); } catch (_) {}
+    inputEl.dataset.normalizedDigits = 'true';
+  };
+
+  attachNumericNormalization(startDateInput);
+  attachNumericNormalization(startTimeInput);
+  attachNumericNormalization(endDateInput);
+  attachNumericNormalization(endTimeInput);
+
   const ensurePayments = () => {
     if (!Array.isArray(editState.payments)) {
       editState.payments = [];
@@ -1313,8 +1346,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
     const title = titleInput?.value.trim() || '';
     const projectType = typeSelect?.value || '';
-    const startDateValue = startDateInput?.value.trim() || '';
-    const startTimeValue = startTimeInput?.value.trim() || '';
+    const startDateValue = normalizeNumbers(startDateInput?.value.trim() || '');
+    const startTimeValue = normalizeNumbers(startTimeInput?.value.trim() || '');
     const descriptionValue = descriptionInput?.value.trim() || '';
     const selectedPaymentStatus = (paymentStatusSelect?.value || 'unpaid').toLowerCase();
     const normalizedPaymentStatus = ['paid', 'partial'].includes(selectedPaymentStatus)
@@ -1327,8 +1360,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       return;
     }
 
-    const endDateValue = endDateInput?.value.trim() || '';
-    const endTimeValue = endTimeInput?.value.trim() || '';
+    const endDateValue = normalizeNumbers(endDateInput?.value.trim() || '');
+    const endTimeValue = normalizeNumbers(endTimeInput?.value.trim() || '');
 
     const startIso = combineProjectDateTime(startDateValue, startTimeValue);
     const endIso = endDateValue ? combineProjectDateTime(endDateValue, endTimeValue) : '';
