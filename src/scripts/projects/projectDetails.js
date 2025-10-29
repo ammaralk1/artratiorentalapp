@@ -619,14 +619,19 @@ export function bindProjectDetailsEvents(project) {
       });
 
       if (hasActiveLinked) {
-        // Disable creation when there is already an active linked reservation
-        createBtn.disabled = true;
+        // Make button visually disabled, but keep click to show a toast
         createBtn.classList?.add('disabled');
+        createBtn.classList?.add('btn-disabled');
         createBtn.setAttribute?.('aria-disabled', 'true');
         createBtn.title = t('projects.details.reservations.createDisabled', '⚠️ يوجد حجز مرتبط بالفعل بهذا المشروع');
+        createBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          showToast(t('projects.details.reservations.createDisabledToast', '⚠️ يوجد حجز مرتبط مسبقًا بهذا المشروع'));
+        }, { once: true });
       } else {
         createBtn.disabled = false;
         createBtn.classList?.remove('disabled');
+        createBtn.classList?.remove('btn-disabled');
         createBtn.removeAttribute?.('aria-disabled');
         createBtn.removeAttribute?.('title');
         createBtn.addEventListener('click', (event) => {
@@ -638,6 +643,7 @@ export function bindProjectDetailsEvents(project) {
       // Fallback to enabling when any error occurs
       createBtn.disabled = false;
       createBtn.classList?.remove('disabled');
+      createBtn.classList?.remove('btn-disabled');
       createBtn.removeAttribute?.('aria-disabled');
       createBtn.removeAttribute?.('title');
       createBtn.addEventListener('click', (event) => {
