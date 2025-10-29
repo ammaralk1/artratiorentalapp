@@ -1717,7 +1717,9 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
     || (applyTax && Number.isFinite(parsedSharePercent) && parsedSharePercent > 0);
   const paymentProgressType = 'percent';
   const paymentProgressValue = '';
-  const isCancelled = String(project?.status || '').toLowerCase() === 'cancelled' || String(project?.status || '').toLowerCase() === 'canceled';
+  const isCancelled = (project?.cancelled === true || project?.cancelled === 'true')
+    || String(project?.status || '').toLowerCase() === 'cancelled'
+    || String(project?.status || '').toLowerCase() === 'canceled';
 
   return `
     <form id="project-details-edit-form" class="project-edit-form">

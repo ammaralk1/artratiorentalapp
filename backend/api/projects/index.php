@@ -153,6 +153,8 @@ function handleProjectsGet(PDO $pdo): void
 
 function handleProjectsCreate(PDO $pdo): void
 {
+    // Ensure schema supports project status/cancelled flags
+    ensureProjectCancellationColumns($pdo);
     [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo);
 
     if ($errors) {
@@ -220,6 +222,9 @@ function handleProjectsUpdate(PDO $pdo): void
         respondError('Project not found', 404);
         return;
     }
+
+    // Ensure schema supports project status/cancelled flags
+    ensureProjectCancellationColumns($pdo);
 
     [$result, $errors] = validateProjectPayload(readJsonPayload(), true, $pdo, $id);
 
@@ -341,6 +346,18 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     $errors = [];
 
     $fields = [];
+
+    // Detect optional columns for status/cancelled on projects table
+    $hasStatusColumn = false;
+    $hasCancelledColumn = false;
+    try {
+        $colsStmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'status'");
+        $hasStatusColumn = (bool) ($colsStmt && $colsStmt->fetch());
+    } catch (Throwable $_) { /* ignore */ }
+    try {
+        $colsStmt2 = $pdo->query("SHOW COLUMNS FROM projects LIKE 'cancelled'");
+        $hasCancelledColumn = (bool) ($colsStmt2 && $colsStmt2->fetch());
+    } catch (Throwable $_) { /* ignore */ }
 
     $titleExists = array_key_exists('title', $payload) || !$isUpdate;
     $title = $titleExists ? trim((string) ($payload['title'] ?? '')) : null;
@@ -500,6 +517,32 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
     }
     if ($paymentProgressType === 'percent' && $paymentProgressValue !== null && $paymentProgressValue > 100) {
         $errors['payment_progress_value'] = 'Payment progress percentage must be 100 or less';
+    }
+
+    // Optional: project status normalisation
+    $statusExists = array_key_exists('status', $payload);
+    $statusRaw = $statusExists ? (string) $payload['status'] : '';
+    $normalizedProjectStatus = null;
+    if ($statusExists) {
+        $normalizedProjectStatus = normaliseProjectStatus($statusRaw);
+        if ($normalizedProjectStatus === null) {
+            $errors['status'] = 'Project status must be upcoming, ongoing, completed or cancelled';
+        }
+    }
+
+    // Optional: cancelled boolean flag (accept multiple aliases)
+    $cancelledExists = array_key_exists('cancelled', $payload)
+        || array_key_exists('canceled', $payload)
+        || array_key_exists('is_cancelled', $payload)
+        || array_key_exists('isCanceled', $payload);
+    $cancelledValue = null;
+    if ($cancelledExists) {
+        $rawCancelled = $payload['cancelled']
+            ?? $payload['canceled']
+            ?? $payload['is_cancelled']
+            ?? $payload['isCanceled']
+            ?? null;
+        $cancelledValue = filter_var($rawCancelled, FILTER_VALIDATE_BOOLEAN);
     }
 
     $expensesExists = array_key_exists('expenses', $payload);
@@ -740,6 +783,18 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         $fields['project_code'] = $projectCode;
     }
 
+    // Persist project status/cancelled only if columns exist and values provided
+    if ($hasStatusColumn && $statusExists && $normalizedProjectStatus !== null) {
+        $fields['status'] = $normalizedProjectStatus;
+    }
+    if ($hasCancelledColumn && $cancelledExists && $cancelledValue !== null) {
+        $fields['cancelled'] = $cancelledValue ? 1 : 0;
+        // If explicitly cancelled, default status to cancelled when applicable
+        if ($hasStatusColumn && (!isset($fields['status']) || $fields['status'] === null) && $cancelledValue) {
+            $fields['status'] = 'cancelled';
+        }
+    }
+
     $now = date('Y-m-d H:i:s');
     if (!$isUpdate) {
         $fields['created_at'] = $now;
@@ -884,6 +939,9 @@ function mapProjectRow(PDO $pdo, array $row): array
         'start_datetime' => $row['start_datetime'],
         'end_datetime' => $row['end_datetime'],
         'apply_tax' => (bool) $row['apply_tax'],
+        // Optional cancellation fields (guard when columns are absent)
+        'status' => $row['status'] ?? null,
+        'cancelled' => isset($row['cancelled']) ? (bool) $row['cancelled'] : null,
         'payment_status' => $row['payment_status'],
         'discount' => isset($row['discount']) ? (float) $row['discount'] : 0.0,
         'discount_type' => $row['discount_type'] ?? 'percent',
@@ -1190,6 +1248,68 @@ function normalizePaymentStatus(?string $status): ?string
         'unpaid', 'غير مدفوع' => 'unpaid',
         default => null,
     };
+}
+
+/**
+ * Normalize project status to one of: upcoming, ongoing, completed, cancelled
+ */
+function normaliseProjectStatus(?string $status): ?string
+{
+    if ($status === null) {
+        return null;
+    }
+
+    $normalized = strtolower(trim($status));
+
+    return match ($normalized) {
+        'upcoming', 'قادم' => 'upcoming',
+        'ongoing', 'in_progress', 'in-progress', 'قيد التنفيذ', 'جاري' => 'ongoing',
+        'completed', 'مكتمل', 'منتهي', 'منتهية' => 'completed',
+        'cancelled', 'canceled', 'ملغي', 'ملغى', 'ملغية' => 'cancelled',
+        default => null,
+    };
+}
+
+/**
+ * Ensure projects table has columns for status/cancelled. Best-effort and cached per request.
+ */
+function ensureProjectCancellationColumns(PDO $pdo): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+
+    try {
+        $statusExists = false;
+        $cancelledExists = false;
+
+        try {
+            $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'status'");
+            $statusExists = (bool) ($stmt && $stmt->fetch());
+        } catch (Throwable $_) { $statusExists = false; }
+
+        try {
+            $stmt2 = $pdo->query("SHOW COLUMNS FROM projects LIKE 'cancelled'");
+            $cancelledExists = (bool) ($stmt2 && $stmt2->fetch());
+        } catch (Throwable $_) { $cancelledExists = false; }
+
+        if (!$statusExists) {
+            try {
+                $pdo->exec("ALTER TABLE projects ADD COLUMN status VARCHAR(50) NULL DEFAULT NULL AFTER end_datetime");
+            } catch (Throwable $_) { /* ignore add failure */ }
+        }
+        if (!$cancelledExists) {
+            try {
+                $pdo->exec("ALTER TABLE projects ADD COLUMN cancelled TINYINT(1) NOT NULL DEFAULT 0 AFTER status");
+            } catch (Throwable $_) { /* ignore add failure */ }
+        }
+    } catch (Throwable $e) {
+        // Log and continue; cancellation linkage will still be handled at reservation level
+        error_log('ensureProjectCancellationColumns failed: ' . $e->getMessage());
+    } finally {
+        $checked = true;
+    }
 }
 
 function projectExists(PDO $pdo, int $id): bool
