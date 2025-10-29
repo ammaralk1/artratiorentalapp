@@ -182,6 +182,40 @@ function combineProjectDateRange(start, end) {
   `;
 }
 
+// Helper for focus card: split date and time into separate rows
+function buildProjectDateTimeRows(start, end) {
+  if (!start) return { dateHtml: '—', timeText: '' };
+  const startStr = formatDateTime(start);
+  const endStr = end ? formatDateTime(end) : '';
+
+  const split = (val) => {
+    const parts = String(val).split(' ').filter(Boolean);
+    const date = parts.shift() || '';
+    const time = parts.join(' ');
+    return { date, time };
+  };
+
+  const s = split(startStr);
+  const e = endStr ? split(endStr) : { date: '', time: '' };
+  let dateHtml = '';
+  let timeText = '';
+
+  if (e.date && s.date === e.date) {
+    // same-day project
+    dateHtml = `<div class=\"date-range\"><div class=\"date-line\">${s.date}</div></div>`;
+    timeText = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+  } else {
+    // multi-day project
+    dateHtml = `<div class=\"date-range\">` +
+      `<div class=\"date-line\">${s.date}</div>` +
+      (e.date ? `<div class=\"date-line\">${e.date}</div>` : '') +
+      `</div>`;
+    timeText = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+  }
+
+  return { dateHtml, timeText };
+}
+
 function renderTimeline(projectsForTimeline) {
   if (!dom.timeline) return;
 
@@ -407,14 +441,14 @@ function renderFocusCard(project, category) {
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
-  // Unify chip visuals with details modal: use status-chip classes
+  // Unify visuals with timeline legend
   const statusChipClass = status === 'upcoming'
-    ? 'status-pending'
+    ? 'timeline-status-badge timeline-status-badge--upcoming'
     : status === 'ongoing'
-      ? 'status-confirmed'
+      ? 'timeline-status-badge timeline-status-badge--ongoing'
       : status === 'completed'
-        ? 'status-completed'
-        : 'status-info';
+        ? 'timeline-status-badge timeline-status-badge--completed'
+        : 'timeline-status-badge timeline-status-badge--upcoming';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
   if (isConfirmed) {
@@ -486,7 +520,7 @@ function renderFocusCard(project, category) {
   const typeBadge = '';
   // Remove category tag (e.g., Today's Projects) from the card header per request
   const categoryMetaTag = '';
-  const statusChip = `<span class="status-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>`;
+  const statusChip = `<span class="${statusChipClass}">${escapeHtml(statusLabel)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const buildRow = (icon, label, value) => {
@@ -505,12 +539,15 @@ function renderFocusCard(project, category) {
     `;
   };
 
+  const { dateHtml: projectDateHtml, timeText: projectTimeText } = buildProjectDateTimeRows(project.start, project.end);
+
   const projectInfoRows = [
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
     // Hide company on the card per request
     // companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
     { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"status-chip status-info\">${escapeHtml(typeLabel)}</span>` },
-    { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: combineProjectDateRange(project.start, project.end) }
+    { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: projectDateHtml },
+    projectTimeText ? { icon: '⏰', label: t('projects.focus.summary.time', 'الوقت'), value: projectTimeText } : null
   ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
   const includesTaxLabel = (sharePercent > 0 && applyTax) ? ` ${t('projects.details.chips.vatOn', '(شامل الضريبة)', 'Includes VAT')}` : '';
