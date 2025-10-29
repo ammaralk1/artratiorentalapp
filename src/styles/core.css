@@ -3141,6 +3141,7 @@ body.dark-mode .project-services-table tbody tr:hover {
   border-radius: 0.65rem;
   background: linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 18%, transparent), color-mix(in hsl, hsl(var(--p)) 12%, transparent));
   color: var(--clr-text);
+  cursor: pointer; /* make it feel clickable */
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.10),
     0 10px 22px hsl(var(--p) / 0.22),
@@ -3155,8 +3156,9 @@ body.dark-mode .project-services-table tbody tr:hover {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.14),
     0 14px 28px hsl(var(--p) / 0.30),
-    0 0 0 3px hsl(var(--p) / 0.18);
-  outline: none;
+    0 0 0 3px hsl(var(--p) / 0.22), /* clearer outer outline ring */
+    0 0 18px hsl(var(--p) / 0.25);   /* soft glow */
+  outline: none; /* visual focus handled with ring above */
 }
 
 .payment-add-btn:active {
@@ -3181,7 +3183,7 @@ body.dark-mode .project-services-table tbody tr:hover {
   border-color: hsl(var(--a) / 0.7);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 22px hsl(var(--a) / 0.45),
-    0 14px 30px hsl(var(--p) / 0.36),
-    0 0 0 3px hsl(var(--a) / 0.22);
+    0 0 24px hsl(var(--a) / 0.52),
+    0 16px 34px hsl(var(--p) / 0.38),
+    0 0 0 3px hsl(var(--a) / 0.26);
 }
