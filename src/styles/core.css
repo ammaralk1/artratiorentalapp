@@ -3104,3 +3104,38 @@ body.dark-mode .project-services-table tbody tr:hover {
 .project-payment-progress-group .form-select {
   min-width: 6.5rem; /* ensure "٪ نسبة" text fits without truncation */
 }
+
+/* Add Payment button styling */
+.payment-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-inline: 0.85rem;
+  /* match default form-control height */
+  min-height: 2.5rem;
+  border: 1px solid hsl(var(--p) / 0.35);
+  background: linear-gradient(135deg, hsl(var(--p) / 0.96), hsl(var(--p) / 0.82));
+  color: #fff;
+  box-shadow: 0 10px 22px hsl(var(--p) / 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.payment-add-btn:hover,
+.payment-add-btn:focus-visible {
+  transform: translateY(-1px);
+  border-color: hsl(var(--p) / 0.5);
+  box-shadow: 0 14px 28px hsl(var(--p) / 0.3), 0 0 0 3px hsl(var(--p) / 0.18);
+  outline: none;
+}
+
+.payment-add-btn:active {
+  transform: translateY(0);
+}
+
+:is(html.dark-mode, body.dark-mode) .payment-add-btn {
+  border-color: hsl(var(--p) / 0.45);
+  background: linear-gradient(135deg, hsl(var(--p) / 0.94), hsl(var(--p) / 0.8));
+  color: #fff;
+  box-shadow: 0 12px 26px hsl(var(--p) / 0.35);
+}
