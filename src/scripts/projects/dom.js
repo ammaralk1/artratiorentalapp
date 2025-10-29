@@ -40,6 +40,8 @@ export function cacheDom() {
   dom.discountType = document.getElementById('project-discount-type');
   dom.discountValue = document.getElementById('project-discount');
   dom.servicesClientPrice = document.getElementById('project-services-client-price');
+  dom.paymentAddButton = document.getElementById('project-payment-add');
+  dom.paymentHistory = document.getElementById('project-payment-history');
   dom.companyShare = document.getElementById('project-company-share');
   dom.paymentProgressType = document.getElementById('project-payment-progress-type');
   dom.paymentProgressValue = document.getElementById('project-payment-progress-value');

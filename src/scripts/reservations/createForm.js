@@ -95,7 +95,6 @@ let isSyncingShareTaxCreate = false;
 let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
-let createPaymentHistory = [];
 
 function resolvePackageInfo(normalizedId) {
   if (!normalizedId) return null;
@@ -2044,17 +2043,6 @@ function renderDraftReservationSummary() {
 
   const crewAssignments = getSelectedCrewAssignments();
 
-  // Combine history entered via the list with the current input (if any) for live preview
-  const liveHistory = Array.isArray(createPaymentHistory) ? [...createPaymentHistory] : [];
-  if (paymentProgressValue != null && paymentProgressValue > 0) {
-    liveHistory.push({
-      type: paymentProgressType,
-      value: paymentProgressValue,
-      // amount/percentage computed inside renderDraftSummary based on type/value/total
-      recordedAt: new Date().toISOString(),
-    });
-  }
-
   renderDraftSummary({
     selectedItems: getSelectedItems(),
     crewAssignments,
@@ -2067,7 +2055,7 @@ function renderDraftReservationSummary() {
     start,
     end,
     companySharePercent: sharePercentForSummary,
-    paymentHistory: liveHistory
+    paymentHistory: []
   });
 
   const summaryResult = renderDraftSummary.lastResult;
@@ -2171,49 +2159,6 @@ function setupSummaryEvents() {
       renderDraftReservationSummary();
     });
     paymentProgressValueInput.dataset.listenerAttached = 'true';
-  }
-
-  // Add payment to history (create form)
-  const paymentAddButton = document.getElementById('res-payment-add');
-  if (paymentAddButton && !paymentAddButton.dataset.listenerAttached) {
-    paymentAddButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      if (isLinkedProjectSelected()) {
-        showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
-        return;
-      }
-      const type = getPaymentProgressType(paymentProgressTypeSelect);
-      const value = parsePaymentProgressValue(paymentProgressValueInput);
-      if (value == null || value <= 0) {
-        showToast(t('reservations.paymentHistory.invalid', '⚠️ يرجى إدخال قيمة دفعة صحيحة'), 'error');
-        return;
-      }
-      createPaymentHistory = Array.isArray(createPaymentHistory) ? createPaymentHistory : [];
-      createPaymentHistory.push({
-        type,
-        value,
-        recordedAt: new Date().toISOString(),
-      });
-      if (paymentProgressValueInput) paymentProgressValueInput.value = '';
-      renderCreatePaymentHistory();
-      renderDraftReservationSummary();
-    });
-    paymentAddButton.dataset.listenerAttached = 'true';
-  }
-
-  // History removal
-  const historyContainer = document.getElementById('res-payment-history');
-  if (historyContainer && !historyContainer.dataset.listenerAttached) {
-    historyContainer.addEventListener('click', (event) => {
-      const btn = event.target.closest('[data-action="remove-payment"]');
-      if (!btn) return;
-      const index = Number.parseInt(btn.dataset.index || '-1', 10);
-      if (!Number.isInteger(index) || index < 0) return;
-      createPaymentHistory.splice(index, 1);
-      renderCreatePaymentHistory();
-      renderDraftReservationSummary();
-    });
-    historyContainer.dataset.listenerAttached = 'true';
   }
 
   renderDraftReservationSummary();
@@ -2484,10 +2429,9 @@ async function handleReservationSubmit() {
   if (paymentProgressValueInput) {
     setPaymentProgressInputValue(paymentProgressValueInput, paymentProgress.paymentProgressValue);
   }
-  // Build combined history: saved entries + the current input if set
-  const combinedHistory = Array.isArray(createPaymentHistory) ? [...createPaymentHistory] : [];
+  const initialPaymentHistory = [];
   if (paymentProgress.paymentProgressValue != null && paymentProgress.paymentProgressValue > 0) {
-    combinedHistory.push({
+    initialPaymentHistory.push({
       type: paymentProgress.paymentProgressType || paymentProgressType,
       value: paymentProgress.paymentProgressValue,
       amount: paymentProgress.paidAmount,
@@ -2541,7 +2485,7 @@ async function handleReservationSubmit() {
     paidPercentage: projectLinked ? 0 : paymentProgress.paidPercent,
     paymentProgressType: projectLinked ? null : paymentProgress.paymentProgressType,
     paymentProgressValue: projectLinked ? null : paymentProgress.paymentProgressValue,
-    paymentHistory: projectLinked ? [] : combinedHistory,
+    paymentHistory: projectLinked ? [] : initialPaymentHistory,
   });
 
   try {
@@ -2692,64 +2636,12 @@ function resetForm() {
   if (paymentProgressValueInput) {
     paymentProgressValueInput.value = '';
   }
-  // reset payment history UI
-  createPaymentHistory = [];
-  const history = document.getElementById('res-payment-history');
-  if (history) history.innerHTML = '';
   resetSelectedTechnicians();
   setSelectedItems([]);
   clearEquipmentSelection('form-reset');
   renderReservationItems();
   updateCreateProjectTaxState();
   renderDraftReservationSummary();
-}
-
-function renderCreatePaymentHistory() {
-  const container = document.getElementById('res-payment-history');
-  if (!container) return;
-  const payments = Array.isArray(createPaymentHistory) ? createPaymentHistory : [];
-  if (payments.length === 0) {
-    container.innerHTML = `<div class="reservation-payment-history__empty">${t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة')}</div>`;
-    return;
-  }
-  const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const rows = payments.map((payment, index) => {
-    const amountDisplay = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
-      ? `${normalizeNumbers(Number(payment.amount).toFixed(2))} ${currencyLabel}`
-      : '—';
-    const percentDisplay = Number.isFinite(Number(payment?.percentage)) && Number(payment.percentage) > 0
-      ? `${normalizeNumbers(Number(payment.percentage).toFixed(2))}%`
-      : '—';
-    const recordedAt = payment?.recordedAt ? normalizeNumbers(new Date(payment.recordedAt).toLocaleString()) : '—';
-    const typeLabel = payment?.type === 'percent'
-      ? t('reservations.paymentHistory.type.percent', '٪ دفعة نسبة')
-      : t('reservations.paymentHistory.type.amount', '💵 دفعة مالية');
-    return `
-      <tr>
-        <td>${typeLabel}</td>
-        <td>${amountDisplay}</td>
-        <td>${percentDisplay}</td>
-        <td>${recordedAt}</td>
-        <td class="reservation-payment-history__actions">
-          <button type="button" class="btn btn-link btn-sm reservation-payment-history__remove" data-action="remove-payment" data-index="${index}" aria-label="${t('reservations.paymentHistory.actions.delete', 'حذف الدفعة')}">🗑️</button>
-        </td>
-      </tr>`;
-  }).join('');
-  container.innerHTML = `
-    <div class="reservation-payment-history__table-wrapper">
-      <table class="table table-sm reservation-payment-history__table">
-        <thead>
-          <tr>
-            <th>${t('reservations.paymentHistory.headers.method', 'نوع الدفعة')}</th>
-            <th>${t('reservations.paymentHistory.headers.amount', 'المبلغ')}</th>
-            <th>${t('reservations.paymentHistory.headers.percent', 'النسبة')}</th>
-            <th>${t('reservations.paymentHistory.headers.date', 'التاريخ')}</th>
-            <th>${t('reservations.paymentHistory.headers.note', 'ملاحظات')}</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
 }
 
 function setupReservationButtons() {
