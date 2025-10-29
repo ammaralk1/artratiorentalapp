@@ -1064,7 +1064,7 @@ function buildCustomerProjectDetailsMarkup(project, { customer, reservations }) 
     renderProjectInfoRow('🔗', t('projects.details.labels.reservationsCount', 'عدد الحجوزات'), normalizeNumbers(String(reservationsCount)))
   ].filter(Boolean).join('');
 
-  const expensesTitle = t('projects.details.expenses', 'المصروفات ({amount})')
+  const expensesTitle = t('projects.details.expenses', 'خدمات إنتاجية ({amount})')
     .replace('{amount}', formatCurrencyLocalized(projectTotals.expensesTotal));
   const expensesContent = projectTotals.expensesTotal > 0
     ? `<ul class="project-details-list">${(project?.expenses || []).map((expense) => `

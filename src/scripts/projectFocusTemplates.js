@@ -280,7 +280,7 @@ export function buildProjectFocusCard(project, {
     },
     {
       icon: '💸',
-      label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'),
+      label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'),
       value: formatCurrencyLocalized(projectTotals.expensesTotal)
     },
     {

@@ -126,13 +126,15 @@ function syncProjectTaxAndShare(source) {
 export function calculateProjectFinancials({
   equipmentEstimate = 0,
   expensesTotal = 0,
+  servicesClientPrice = 0,
   discountValue = 0,
   discountType = 'percent',
   applyTax = false,
   companyShareEnabled = false,
   companySharePercent = null,
 } = {}) {
-  const baseSubtotal = Number(equipmentEstimate) + Number(expensesTotal);
+  // الإيرادات = تقدير المعدات + سعر العميل للخدمات الإنتاجية (وليس تكلفة الخدمات)
+  const baseSubtotal = Number(equipmentEstimate) + Number(servicesClientPrice);
   const normalizedDiscountValue = Number.isFinite(Number(discountValue)) ? Number(discountValue) : 0;
   let discountAmount = 0;
   if (discountType === 'amount') {
@@ -656,6 +658,11 @@ async function handleSubmitProject(event) {
 
   const expensesTotal = calculateExpensesTotal();
   const equipmentEstimate = calculateEquipmentEstimate();
+  const servicesClientPriceRaw = normalizeNumbers(dom.servicesClientPrice?.value || '0');
+  let servicesClientPrice = Number.parseFloat(servicesClientPriceRaw);
+  if (!Number.isFinite(servicesClientPrice) || servicesClientPrice < 0) {
+    servicesClientPrice = 0;
+  }
   const applyTax = dom.taxCheckbox?.checked === true;
   const discountType = dom.discountType?.value === 'amount' ? 'amount' : 'percent';
   const discountRaw = normalizeNumbers(dom.discountValue?.value || '0');
@@ -676,6 +683,7 @@ async function handleSubmitProject(event) {
   const finance = calculateProjectFinancials({
     equipmentEstimate,
     expensesTotal,
+    servicesClientPrice,
     discountValue,
     discountType,
     applyTax,
@@ -750,6 +758,7 @@ async function handleSubmitProject(event) {
       label: expense.label,
       amount: expense.amount,
     })),
+    servicesClientPrice,
     discount: discountValue,
     discountType,
     companyShareEnabled: companyShareEnabled && applyTax,

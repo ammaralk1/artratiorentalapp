@@ -408,11 +408,11 @@
 
                     <div class="row g-3 align-items-end project-expense-row">
                       <div class="col-12 col-lg-5">
-                        <label class="form-label" for="project-expense-label" data-i18n data-i18n-key="projects.form.labels.expenseLabel">اسم المصروف</label>
+                        <label class="form-label" for="project-expense-label" data-i18n data-i18n-key="projects.form.labels.expenseLabel">خدمة إنتاجية</label>
                         <input type="text" id="project-expense-label" class="form-control input input-bordered w-full" placeholder="مثال: رسوم موقع التصوير" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseLabel">
                       </div>
                       <div class="col-12 col-lg-4">
-                        <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">المبلغ (SR)</label>
+                        <label class="form-label" for="project-expense-amount" data-i18n data-i18n-key="projects.form.labels.expenseAmount">التكلفة (SR)</label>
                         <input type="text" id="project-expense-amount" class="form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
                       </div>
                       <div class="col-12 col-lg-3 project-expense-action-col">
@@ -422,6 +422,10 @@
                     </div>
 
                     <div class="row g-3 align-items-start project-billing-row mt-3">
+                      <div class="col-12 col-lg-4">
+                        <label class="form-label" for="project-services-client-price">سعر العميل للخدمات الإنتاجية (SR)</label>
+                        <input type="text" id="project-services-client-price" class="form-control" inputmode="decimal" placeholder="0">
+                      </div>
                       <div class="col-12 col-lg-4">
                         <label class="form-label" for="project-discount" data-i18n data-i18n-key="projects.form.labels.discount">الخصم</label>
                         <div class="input-group project-discount-group">

@@ -121,6 +121,7 @@ export function buildProjectPayload({
   paymentStatus,
   equipmentEstimate = 0,
   expenses = [],
+  servicesClientPrice = 0,
   taxAmount = 0,
   totalWithTax = 0,
   discount = 0,
@@ -186,6 +187,9 @@ export function buildProjectPayload({
     payment_status: paymentStatus ?? 'unpaid',
     equipment_estimate: Number.parseFloat(equipmentEstimate) || 0,
     expenses_total: Math.round(expensesTotal * 100) / 100,
+    services_client_price: Number.isFinite(Number(servicesClientPrice))
+      ? Math.round(Number(servicesClientPrice) * 100) / 100
+      : 0,
     tax_amount: Math.round((Number.parseFloat(taxAmount) || 0) * 100) / 100,
     total_with_tax: Math.round((Number.parseFloat(totalWithTax) || 0) * 100) / 100,
     confirmed: Boolean(confirmed),
@@ -313,6 +317,7 @@ function toInternalProject(raw = {}) {
     paymentStatus: raw.payment_status ?? raw.paymentStatus ?? 'unpaid',
     equipmentEstimate: Number.parseFloat(raw.equipment_estimate ?? raw.equipmentEstimate ?? 0) || 0,
     expensesTotal: Number.parseFloat(raw.expenses_total ?? raw.expensesTotal ?? 0) || 0,
+    servicesClientPrice: Number.parseFloat(raw.services_client_price ?? raw.servicesClientPrice ?? 0) || 0,
     taxAmount: Number.parseFloat(raw.tax_amount ?? raw.taxAmount ?? 0) || 0,
     totalWithTax: Number.parseFloat(raw.total_with_tax ?? raw.totalWithTax ?? 0) || 0,
     discount: Number.parseFloat(raw.discount ?? raw.discount_value ?? 0) || 0,

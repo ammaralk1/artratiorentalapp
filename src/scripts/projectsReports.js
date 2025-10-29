@@ -575,9 +575,9 @@ function renderKpis(projects) {
     },
     {
       icon: KPI_ICONS.expenses,
-      label: t('projects.reports.kpi.expenses', 'Total expenses'),
+      label: t('projects.reports.kpi.expenses', 'خدمات إنتاجية (التكلفة)'),
       value: formatCurrency(expensesTotal),
-      meta: t('projects.reports.kpi.expensesMeta', 'Expenses for included projects')
+      meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة')
     }
   ];
 
@@ -863,7 +863,7 @@ function renderExpenseChart(projects) {
   const series = labels.length
     ? [
         { name: t('projects.reports.datasets.value', 'Total value'), data: valueData },
-        { name: t('projects.reports.datasets.expenses', 'Expenses'), data: expenseData }
+        { name: t('projects.reports.datasets.expenses', 'خدمات إنتاجية (التكلفة)'), data: expenseData }
       ]
     : [];
 

@@ -320,6 +320,7 @@ function renderFocusCard(project, category) {
   const reservationsForProject = getReservationsForProject(project.id);
   const reservationsCount = reservationsForProject.length;
   const expensesTotal = getProjectExpenses(project);
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? 0);
   const { subtotal: projectSubtotal, applyTax } = resolveProjectTotals(project);
   const description = (project.description || '').trim();
   const descriptionText = description
@@ -457,7 +458,8 @@ function renderFocusCard(project, category) {
 
   const financialRows = [
     { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
-    { icon: '💸', label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'), value: formatCurrency(expensesTotal) },
+    { icon: '💸', label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'), value: formatCurrency(expensesTotal) },
+    { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية'), value: formatCurrency(servicesClientPrice) },
     { icon: '💵', label: t('projects.details.summary.finalTotal', 'الإجمالي النهائي', 'Final Total'), value: formatCurrency(finalTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 

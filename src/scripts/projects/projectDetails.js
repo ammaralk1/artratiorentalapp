@@ -103,6 +103,7 @@ export function openProjectDetails(projectId) {
   const reservationsCount = reservationsForProject.length;
 
   const { subtotal, taxAmount, applyTax, expensesTotal } = resolveProjectTotals(project);
+  const servicesClientPriceVal = Number(project?.servicesClientPrice ?? project?.services_client_price ?? 0);
   const projectTotal = subtotal;
   const combinedTaxAmount = applyTax
     ? Number(((projectTotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
@@ -174,8 +175,8 @@ export function openProjectDetails(projectId) {
     }, { equipment: 0, crew: 0, crewCost: 0 });
 
     const expensesTotalNumber = Number(expensesTotal || 0);
-    // إجمالي قبل الخصم = المعدات + الفريق + مصروفات المشروع
-    const grossBeforeDiscount = Number((agg.equipment + agg.crew + expensesTotalNumber).toFixed(2));
+    // إجمالي قبل الخصم = المعدات + الفريق + سعر العميل للخدمات الإنتاجية
+    const grossBeforeDiscount = Number((agg.equipment + agg.crew + servicesClientPriceVal).toFixed(2));
 
     // Project-level discount applied on grossBeforeDiscount
     const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
@@ -217,7 +218,8 @@ export function openProjectDetails(projectId) {
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
     if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
-    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrency(expensesTotalNumber) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة خدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
+    if (servicesClientPriceVal > 0) summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية'), value: formatCurrency(servicesClientPriceVal) });
     // الخصم يظهر قبل الإجمالي
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
     // الإجمالي بعد الخصم
@@ -758,6 +760,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const discountTypeSelect = form.querySelector('#project-edit-discount-type');
   const paymentProgressTypeSelect = form.querySelector('#project-edit-payment-progress-type');
   const paymentProgressValueInput = form.querySelector('#project-edit-payment-progress-value');
+  const servicesClientPriceInput = form.querySelector('#project-edit-services-client-price');
   const paymentAddButton = form.querySelector('#project-edit-payment-add');
   const paymentHistoryContainer = form.querySelector('#project-edit-payment-history');
   const paymentSummaryContainer = form.querySelector('#project-edit-payment-summary');
@@ -777,6 +780,12 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const expensesTotal = Array.isArray(editState.expenses)
       ? editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0)
       : 0;
+    const servicesClientPrice = (() => {
+      const raw = servicesClientPriceInput?.value || (project?.servicesClientPrice ?? 0);
+      const norm = normalizeNumbers(String(raw));
+      const parsed = Number.parseFloat(norm);
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    })();
     const discountTypeValue = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
     const discountRaw = normalizeNumbers(discountInput?.value || '0');
     let discountValue = Number.parseFloat(discountRaw);
@@ -794,6 +803,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const finance = calculateProjectFinancials({
       equipmentEstimate,
       expensesTotal,
+      servicesClientPrice,
       discountValue,
       discountType: discountTypeValue,
       applyTax,
@@ -809,6 +819,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       applyTax,
       companyShareEnabled,
       companySharePercent,
+      servicesClientPrice,
       finance,
     };
   };
@@ -1452,6 +1463,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
   const paymentStatusValue = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
   const discountType = project.discountType === 'amount' ? 'amount' : 'percent';
   const discountValue = normalizeNumbers(String(project.discount ?? project.discountValue ?? 0));
+  const servicesClientPriceValue = normalizeNumbers(String(project.servicesClientPrice ?? project.services_client_price ?? 0));
   const sharePercentRaw = project.companySharePercent
     ?? project.company_share_percent
     ?? project.companyShare
@@ -1520,6 +1532,10 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </div>
 
       <div class="row g-3 align-items-start mt-1">
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+          <label class="form-label" for="project-edit-services-client-price">${escapeHtml(t('projects.details.edit.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية (SR)'))}</label>
+          <input type="text" id="project-edit-services-client-price" class="form-control project-edit-input-xs" value="${escapeHtml(servicesClientPriceValue)}" placeholder="0" inputmode="decimal">
+        </div>
         <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
           <div class="input-group project-edit-input-group">

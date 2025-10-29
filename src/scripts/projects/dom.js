@@ -37,6 +37,7 @@ export function cacheDom() {
   dom.expenseList = document.getElementById('project-expense-list');
   dom.discountType = document.getElementById('project-discount-type');
   dom.discountValue = document.getElementById('project-discount');
+  dom.servicesClientPrice = document.getElementById('project-services-client-price');
   dom.companyShare = document.getElementById('project-company-share');
   dom.paymentProgressType = document.getElementById('project-payment-progress-type');
   dom.paymentProgressValue = document.getElementById('project-payment-progress-value');
