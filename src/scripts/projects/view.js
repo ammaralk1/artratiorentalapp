@@ -148,28 +148,38 @@ function renderProjectRow(project) {
 function combineProjectDateRange(start, end) {
   if (!start) return '—';
   const startStr = formatDateTime(start);
-  if (!end) return startStr;
-  const endStr = formatDateTime(end);
+  const endStr = end ? formatDateTime(end) : '';
 
-  // Split to date/time parts
   const split = (val) => {
     const parts = String(val).split(' ').filter(Boolean);
     const date = parts.shift() || '';
     const time = parts.join(' ');
     return { date, time };
   };
-  const s = split(startStr);
-  const e = split(endStr);
 
-  // If the date is the same, show date once and time range
-  if (s.date && s.date === e.date) {
-    const range = (s.time && e.time)
-      ? `${s.date} من ${s.time} إلى ${e.time}`
-      : `${s.date}`;
-    return range;
+  const s = split(startStr);
+  const e = endStr ? split(endStr) : { date: '', time: '' };
+
+  // Same-day project: show one date, then time range
+  if (e.date && s.date === e.date) {
+    const timeLine = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+    return `
+      <div class="date-range">
+        <div class="date-line">${s.date}</div>
+        ${timeLine ? `<div class="time-line">${timeLine}</div>` : ''}
+      </div>
+    `;
   }
 
-  return `${startStr} - ${endStr}`;
+  // Multi-day project: start date, end date, then time range
+  const timeLine = (s.time && e.time) ? `من ${s.time} إلى ${e.time}` : '';
+  return `
+    <div class="date-range">
+      <div class="date-line">${s.date}</div>
+      ${e.date ? `<div class="date-line">${e.date}</div>` : ''}
+      ${timeLine ? `<div class="time-line">${timeLine}</div>` : ''}
+    </div>
+  `;
 }
 
 function renderTimeline(projectsForTimeline) {
@@ -481,7 +491,9 @@ function renderFocusCard(project, category) {
 
   const buildRow = (icon, label, value) => {
     const valueStr = String(value || '');
-    const isSafeHtml = valueStr.startsWith('<span class="status-chip');
+    const trimmed = valueStr.trim();
+    // Allow safe HTML for internally generated markup (chips, date/time blocks)
+    const isSafeHtml = trimmed.startsWith('<');
     return `
       <div class="project-focus-card__row">
         <span class="project-focus-card__row-label">
