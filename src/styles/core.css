@@ -3173,6 +3173,14 @@ html[data-user-role="technician"] .requires-admin {
   background-color: rgba(76, 110, 245, 0.08);
 }
 
+/* Center content for services tables inside project modals (details + edit) */
+.project-details-section .project-services-table th,
+.project-details-section .project-services-table td,
+.project-edit-form .project-services-table th,
+.project-edit-form .project-services-table td {
+  text-align: center;
+}
+
 /* Dark mode adjustments */
 html.dark-mode .project-services-table,
 body.dark-mode .project-services-table {

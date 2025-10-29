@@ -383,15 +383,22 @@ export function openProjectDetails(projectId) {
     <div class="project-details-outline">
       <h6 class="project-details-outline__title">${escapeHtml(projectInfoTitle)}</h6>
       <ul class="project-details-outline__list">
-        ${projectInfoItems.map(({ icon, label, value, meta }) => `
+        ${projectInfoItems.map(({ icon, label, value, meta }) => {
+          const valueStr = String(value ?? '');
+          const isSafeHtml = valueStr.trim().startsWith('<');
+          const renderedValue = isSafeHtml ? valueStr : escapeHtml(valueStr);
+          const metaStr = String(meta ?? '');
+          const renderedMeta = metaStr ? escapeHtml(metaStr) : '';
+          return `
           <li>
             <span class="project-details-outline__label">${escapeHtml(icon)} ${escapeHtml(label)}</span>
             <span class="project-details-outline__value-group">
-              <span class="project-details-outline__value">${escapeHtml(value)}</span>
-              ${meta ? `<span class="project-details-outline__meta">${escapeHtml(meta)}</span>` : ''}
+              <span class="project-details-outline__value">${renderedValue}</span>
+              ${meta ? `<span class="project-details-outline__meta">${renderedMeta}</span>` : ''}
             </span>
           </li>
-        `).join('')}
+          `;
+        }).join('')}
       </ul>
     </div>
   `;

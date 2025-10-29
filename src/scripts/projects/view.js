@@ -867,7 +867,7 @@ export function buildProjectReservationCard(reservation, index, project = null) 
         </div>
       </div>
       <div class="project-reservation-card__body">
-        <div class="project-reservation-card__range">${escapeHtml(rangeLabel)}</div>
+        <div class="project-reservation-card__range">${rangeLabel}</div>
         <div class="project-reservation-card__meta">
           <span>💵 ${escapeHtml(costLabel)}</span>
           <span>📦 ${escapeHtml(itemsLabel)}</span>
