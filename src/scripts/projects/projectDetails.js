@@ -709,7 +709,11 @@ export function startProjectEdit(project) {
     ? resolved.expenses.map((expense, index) => ({
         id: expense?.id || `expense-${resolved.id}-${index}-${Date.now()}`,
         label: expense?.label || '',
-        amount: Number(expense?.amount) || 0
+        amount: Number(expense?.amount) || 0,
+        // include sale price from backend (sale_price) or existing camelCase
+        salePrice: Number.isFinite(Number(expense?.sale_price ?? expense?.salePrice))
+          ? Number(expense?.sale_price ?? expense?.salePrice)
+          : 0,
       }))
     : [];
 
