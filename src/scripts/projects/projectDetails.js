@@ -364,6 +364,8 @@ export function openProjectDetails(projectId) {
 
   const expensesLabel = t('projects.details.expensesTotal', 'إجمالي المصاريف');
   const reservationsLabel = t('projects.details.reservationsTotal', 'إجمالي الحجوزات');
+  const expensesTableTitle = t('projects.details.expenses', 'خدمات إنتاجية ({amount})').replace('{amount}', formatCurrency(expensesTotal));
+  const expensesTableMarkup = buildProjectViewExpensesMarkup(Array.isArray(project.expenses) ? project.expenses : []);
 
   dom.detailsBody.innerHTML = `
     <section class="project-details-primary">
@@ -391,6 +393,10 @@ export function openProjectDetails(projectId) {
     <section class="project-details-section">
       <h5>${escapeHtml(t('projects.details.description', 'وصف المشروع'))}</h5>
       <p class="project-details-description">${escapeHtml(descriptionDisplay)}</p>
+    </section>
+    <section class="project-details-section">
+      <h5>${escapeHtml(expensesTableTitle)}</h5>
+      ${expensesTableMarkup}
     </section>
     <section class="project-details-section">
       <h5>${escapeHtml(t('projects.details.financialBreakdown', 'تفاصيل مالية'))}</h5>
@@ -473,6 +479,56 @@ export function openProjectDetails(projectId) {
     const modal = window.bootstrap.Modal.getOrCreateInstance(dom.detailsModalEl);
     modal.show();
   }
+}
+
+function buildProjectViewExpensesMarkup(expenses = []) {
+  const hasItems = Array.isArray(expenses) && expenses.length > 0;
+  if (!hasItems) {
+    const empty = escapeHtml(t('projects.expenses.table.empty', 'ستظهر المصاريف المسجلة هنا فور إضافتها.'));
+    return `
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle project-services-table">
+          <thead class="table-light">
+            <tr>
+              <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="3" class="text-center text-muted">${empty}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  const rows = expenses.map((expense) => {
+    const label = escapeHtml(expense?.label || '');
+    const amount = formatCurrency(Number(expense?.amount) || 0);
+    const sale = formatCurrency(Number(expense?.sale_price ?? expense?.salePrice ?? 0));
+    return `
+      <tr>
+        <td>${label}</td>
+        <td>${escapeHtml(amount)}</td>
+        <td>${escapeHtml(sale)}</td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle project-services-table">
+        <thead class="table-light">
+          <tr>
+            <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+            <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 export function bindFocusCards({ onOpenProject }) {
