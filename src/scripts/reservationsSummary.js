@@ -401,14 +401,9 @@ export function calculateDraftFinancialBreakdown({
 
   const subtotalAfterDiscount = Math.max(0, discountBase - discountAmount);
 
-  let normalizedSharePercent = Number.isFinite(companySharePercent)
+  // Use company share only when an explicit positive value is provided
+  const sharePercent = Number.isFinite(companySharePercent) && Number(companySharePercent) > 0
     ? Number(companySharePercent)
-    : null;
-  if (applyTax && (!Number.isFinite(normalizedSharePercent) || normalizedSharePercent <= 0)) {
-    normalizedSharePercent = DEFAULT_COMPANY_SHARE_PERCENT;
-  }
-  const sharePercent = normalizedSharePercent && normalizedSharePercent > 0
-    ? normalizedSharePercent
     : 0;
   const companyShareAmount = sharePercent > 0
     ? Math.max(0, subtotalAfterDiscount * (sharePercent / 100))

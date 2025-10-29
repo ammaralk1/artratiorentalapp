@@ -314,12 +314,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ?? reservation.companyShareApplied;
   const hasCompanyShare = (companyShareEnabledFlag === true)
     || (Number.isFinite(normalizedCompanyShare) && normalizedCompanyShare > 0);
-  let companySharePercentInput = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
+  const companySharePercentInput = hasCompanyShare && Number.isFinite(normalizedCompanyShare)
     ? normalizedCompanyShare
     : 0;
-  if (applyTaxFlag && companySharePercentInput <= 0) {
-    companySharePercentInput = DEFAULT_COMPANY_SHARE_PERCENT;
-  }
 
   const breakdown = calculateDraftFinancialBreakdown({
     items,
