@@ -453,7 +453,8 @@
                           </div>
                         </div>
                       </div>
-                      <div class="col-12 col-lg-4">
+                      <!-- إخفاء اختيار حالة الدفع عند إنشاء مشروع: لا نحتاجه في مرحلة الإنشاء -->
+                      <div class="col-12 col-lg-4 d-none" data-hide-on-create>
                         <label class="form-label" for="project-payment-status" data-i18n data-i18n-key="projects.form.labels.paymentStatus">حالة الدفع</label>
                         <select id="project-payment-status" name="project-payment-status" class="form-select select select-bordered payment-status-select">
                           <option value="unpaid" selected data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
