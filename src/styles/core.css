@@ -3152,29 +3152,29 @@ body.dark-mode .project-services-table tbody tr:hover {
   gap: 6px;
   padding-inline: 0.95rem;
   min-height: 2.5rem; /* match control height */
-  border: 1px solid hsl(var(--p) / 0.55);
+  border: 1px solid rgba(76, 110, 245, 0.55);
   border-radius: 0.65rem;
-  background: linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 18%, transparent), color-mix(in hsl, hsl(var(--p)) 12%, transparent));
+  background: linear-gradient(135deg, rgba(76, 110, 245, 0.18), rgba(76, 110, 245, 0.12));
   color: var(--clr-text);
   cursor: pointer; /* make it feel clickable */
   position: relative; /* allow ring to appear above siblings */
   z-index: 1;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.10),
-    0 10px 22px hsl(var(--p) / 0.22),
-    0 0 0 1px hsl(var(--p) / 0.28);
+    0 10px 22px rgba(76, 110, 245, 0.22),
+    0 0 0 1px rgba(76, 110, 245, 0.28);
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .payment-add-btn:hover,
 .payment-add-btn:focus-visible {
   transform: translateY(-1px);
-  border-color: hsl(var(--p) / 0.7);
+  border-color: rgba(76, 110, 245, 0.7);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-    0 14px 28px hsl(var(--p) / 0.30),
-    0 0 0 3px hsl(var(--p) / 0.22), /* clearer outer outline ring */
-    0 0 18px hsl(var(--p) / 0.25);   /* soft glow */
+    0 14px 28px rgba(76, 110, 245, 0.30),
+    0 0 0 3px rgba(76, 110, 245, 0.22), /* clearer outer outline ring */
+    0 0 18px rgba(76, 110, 245, 0.25);   /* soft glow */
   outline: none; /* visual focus handled with ring above */
 }
 
@@ -3184,46 +3184,47 @@ body.dark-mode .project-services-table tbody tr:hover {
 
 :is(html.dark-mode, body.dark-mode) .payment-add-btn {
   color: #e8edff;
-  border-color: hsl(var(--a) / 0.55); /* accent outline for contrast */
+  border-color: rgba(93, 133, 255, 0.55); /* accent outline for contrast */
   background:
-    radial-gradient(120% 140% at 50% 120%, color-mix(in hsl, hsl(var(--a)) 22%, transparent) 0%, transparent 60%),
-    linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 22%, transparent), color-mix(in hsl, hsl(var(--p)) 16%, transparent));
+    radial-gradient(120% 140% at 50% 120%, rgba(93, 133, 255, 0.22) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(76, 110, 245, 0.22), rgba(76, 110, 245, 0.16));
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),          /* inner subtle line */
-    0 0 18px hsl(var(--a) / 0.35),                       /* colored glow distinct from bg */
-    0 10px 26px hsl(var(--p) / 0.32),                    /* depth shadow */
-    0 0 0 1px hsl(var(--a) / 0.42);                      /* outer accent ring */
+    0 0 18px rgba(93, 133, 255, 0.35),                   /* colored glow distinct from bg */
+    0 10px 26px rgba(76, 110, 245, 0.32),                /* depth shadow */
+    0 0 0 1px rgba(93, 133, 255, 0.42);                  /* outer accent ring */
 }
 
 :is(html.dark-mode, body.dark-mode) .payment-add-btn:hover,
 :is(html.dark-mode, body.dark-mode) .payment-add-btn:focus-visible {
-  border-color: hsl(var(--a) / 0.7);
+  border-color: rgba(93, 133, 255, 0.7);
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 24px hsl(var(--a) / 0.52),
-    0 16px 34px hsl(var(--p) / 0.38),
-    0 0 0 3px hsl(var(--a) / 0.26);
+    0 0 24px rgba(93, 133, 255, 0.52),
+    0 16px 34px rgba(76, 110, 245, 0.38),
+    0 0 0 3px rgba(93, 133, 255, 0.26);
 }
 
 /* Increase specificity to avoid conflicts with generic .btn rules */
 #project-payment-add.payment-add-btn:hover,
 #project-payment-add.payment-add-btn:focus-visible {
-  border-color: hsl(var(--p) / 0.85) !important;
+  border-color: rgba(76, 110, 245, 0.85) !important;
   outline: 2px solid transparent; /* fallback for older browsers */
   outline-offset: 2px;
+  transform: translateY(-1px) !important;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.16),
-    0 16px 32px hsl(var(--p) / 0.34),
-    0 0 0 4px hsl(var(--p) / 0.30),
-    0 0 22px hsl(var(--p) / 0.40) !important;
+    0 16px 32px rgba(76, 110, 245, 0.34),
+    0 0 0 4px rgba(76, 110, 245, 0.30),
+    0 0 22px rgba(76, 110, 245, 0.40) !important;
 }
 
 :is(html.dark-mode, body.dark-mode) #project-payment-add.payment-add-btn:hover,
 :is(html.dark-mode, body.dark-mode) #project-payment-add.payment-add-btn:focus-visible {
-  border-color: hsl(var(--a) / 0.85) !important;
+  border-color: rgba(93, 133, 255, 0.85) !important;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    0 0 28px hsl(var(--a) / 0.60),
-    0 18px 36px hsl(var(--p) / 0.42),
-    0 0 0 4px hsl(var(--a) / 0.32) !important;
+    0 0 28px rgba(93, 133, 255, 0.60),
+    0 18px 36px rgba(76, 110, 245, 0.42),
+    0 0 0 4px rgba(93, 133, 255, 0.32) !important;
 }
