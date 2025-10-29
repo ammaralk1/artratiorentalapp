@@ -7,7 +7,7 @@ import {
   getEditingTechnicians,
 } from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
-import { sanitizePriceValue, parsePriceValue } from './reservationsShared.js';
+import { sanitizePriceValue, parsePriceValue, buildReservationDisplayGroups } from './reservationsShared.js';
 
 export const DEFAULT_COMPANY_SHARE_PERCENT = 10;
 
@@ -345,21 +345,12 @@ export function calculateDraftFinancialBreakdown({
   companySharePercent = null
 } = {}) {
   const rentalDays = calculateReservationDays(start, end);
-  // Filter out package child entries to avoid double counting when both parent package and children exist
-  const filteredItems = Array.isArray(items) ? items.filter((it) => {
-    if (!it || typeof it !== 'object') return false;
-    const type = String(it.type ?? it.kind ?? '').toLowerCase();
-    const hasPackageRef = [it.packageId, it.package_id, it.package_code, it.packageCode, it.bundleId, it.bundle_id]
-      .some((v) => v != null && v !== '');
-    // keep if it's an actual package or a standalone item without package reference
-    return type === 'package' || !hasPackageRef;
-  }) : [];
-  const equipmentDailyTotal = filteredItems.reduce((sum, item) => {
-    const quantityCandidate = parsePriceValue(item?.qty ?? item?.quantity ?? item?.count ?? 1);
-    const quantity = Number.isFinite(quantityCandidate) && quantityCandidate > 0 ? quantityCandidate : 1;
-    const price = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
-    const safePrice = Number.isFinite(price) ? price : 0;
-    return sum + (quantity * safePrice);
+  // Use the same grouping logic used in UI/PDF to avoid double counting
+  const { groups } = buildReservationDisplayGroups({ items: Array.isArray(items) ? items : [] });
+  const equipmentDailyTotal = (Array.isArray(groups) ? groups : []).reduce((sum, group) => {
+    const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
+    const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
+    return sum + (qty * unit);
   }, 0);
   const equipmentTotal = sanitizePriceValue(equipmentDailyTotal * rentalDays);
   const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
