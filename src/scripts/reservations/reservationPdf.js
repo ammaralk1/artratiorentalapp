@@ -3667,6 +3667,20 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   }
 }
 
+// Small helper to wait for next paint or a fixed delay
+function sleep(ms = 0) {
+  if (ms <= 0) {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pagesOverflow(root) {
+  if (!root) return false;
+  const pages = Array.from(root.querySelectorAll('.quote-page'));
+  return pages.some((page) => ((page.scrollHeight - page.clientHeight) > PAGE_OVERFLOW_TOLERANCE_PX));
+}
+
 function enforceQuoteTextColor(root, color = '#000000') {
   if (!root) return;
   const nodes = root.querySelectorAll('[style*="color"], [class*="text"], h1, h2, h3, h4, h5, h6, p, span, th, td, li, strong, em, label, dt, dd, caption, div');
@@ -3936,6 +3950,11 @@ function renderQuotePreview() {
       try {
         if (pdfRoot) {
           await layoutQuoteDocument(pdfRoot, { context: 'preview' });
+          // Re-validate after fonts/images stabilize to avoid single-page glitch
+          await sleep(120);
+          if (pagesOverflow(pdfRoot)) {
+            await layoutQuoteDocument(pdfRoot, { context: 'preview' });
+          }
           enforceQuoteTextColor(pdfRoot);
         }
       } catch (error) {
@@ -4436,6 +4455,11 @@ async function exportQuoteAsPdf() {
       pdfRoot.scrollLeft = 0;
     try {
       await layoutQuoteDocument(pdfRoot, { context: 'export' });
+      // Re-validate after assets stabilize to ensure correct pagination
+      await sleep(120);
+      if (pagesOverflow(pdfRoot)) {
+        await layoutQuoteDocument(pdfRoot, { context: 'export' });
+      }
       await waitForQuoteAssets(pdfRoot);
       enforceQuoteTextColor(pdfRoot);
       logPdfDebug('layout complete for export document');
