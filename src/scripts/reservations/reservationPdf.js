@@ -2244,7 +2244,10 @@ function collectProjectQuoteData(project) {
 
   const projectIdValue = resolvedProject.id != null ? String(resolvedProject.id) : null;
   const reservationsForProject = projectIdValue
-    ? reservations.filter((reservation) => String(reservation.projectId) === projectIdValue)
+    ? reservations.filter((reservation) => {
+        const pid = reservation?.projectId ?? reservation?.project_id ?? null;
+        return pid != null && String(pid) === projectIdValue;
+      })
     : [];
 
   const reservationsWithMeta = reservationsForProject

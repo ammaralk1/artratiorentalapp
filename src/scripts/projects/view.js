@@ -774,7 +774,10 @@ export function updateSummary() {
 
 export function getReservationsForProject(projectId) {
   if (!projectId) return [];
-  return state.reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  return state.reservations.filter((reservation) => {
+    const pid = reservation?.projectId ?? reservation?.project_id ?? null;
+    return pid != null && String(pid) === String(projectId);
+  });
 }
 
 export function resolveReservationNetTotal(reservation) {
