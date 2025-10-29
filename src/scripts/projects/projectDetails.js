@@ -388,7 +388,7 @@ export function openProjectDetails(projectId) {
     confirmedChipHtml
   ].filter(Boolean).join('');
 
-  const expensesLabel = t('projects.details.expensesTotal', 'إجمالي المصاريف');
+  const expensesLabel = t('projects.details.expensesTotal', 'تكلفة الخدمات الإنتاجية');
   const reservationsLabel = t('projects.details.reservationsTotal', 'إجمالي الحجوزات');
   const expensesTableTitle = t('projects.details.expenses', 'خدمات إنتاجية ({amount})').replace('{amount}', formatCurrency(expensesTotal));
   const expensesTableMarkup = buildProjectViewExpensesMarkup(Array.isArray(project.expenses) ? project.expenses : []);

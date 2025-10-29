@@ -26,7 +26,7 @@ import{v as oa,w as ia,x as Mt,o as dt,s as L,t as n,l as Rt,n as g,A as ca,e as
         `).join("")}
       </ul>
     </div>
-  `,Te=[`<span class="reservation-chip ${re}">${o(Pe)}</span>`,`<span class="reservation-chip ${ve}">${o(oe)}</span>`,`<span class="reservation-chip status-info">${o(ge)}</span>`,`<span class="reservation-chip ${H}">${o(F)}</span>`,Ge].filter(Boolean).join(""),Me=n("projects.details.expensesTotal","إجمالي المصاريف"),Qe=n("projects.details.reservationsTotal","إجمالي الحجوزات"),W=n("projects.details.expenses","خدمات إنتاجية ({amount})").replace("{amount}",x(J)),Ze=an(Array.isArray(t.expenses)?t.expenses:[]);f.detailsBody.innerHTML=`
+  `,Te=[`<span class="reservation-chip ${re}">${o(Pe)}</span>`,`<span class="reservation-chip ${ve}">${o(oe)}</span>`,`<span class="reservation-chip status-info">${o(ge)}</span>`,`<span class="reservation-chip ${H}">${o(F)}</span>`,Ge].filter(Boolean).join(""),Me=n("projects.details.expensesTotal","تكلفة الخدمات الإنتاجية"),Qe=n("projects.details.reservationsTotal","إجمالي الحجوزات"),W=n("projects.details.expenses","خدمات إنتاجية ({amount})").replace("{amount}",x(J)),Ze=an(Array.isArray(t.expenses)?t.expenses:[]);f.detailsBody.innerHTML=`
     <section class="project-details-primary">
       <header class="project-details-header">
         <div class="project-details-header__info">
