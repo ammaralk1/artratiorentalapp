@@ -15,7 +15,8 @@ export const state = {
   visibleProjects: [],
   editingProjectId: null,
   pendingProjectDetailId: null,
-  pendingProjectEditId: null
+  pendingProjectEditId: null,
+  pendingLinkedToast: false
 };
 
 export const dom = {};

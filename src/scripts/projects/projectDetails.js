@@ -1468,7 +1468,7 @@ function startReservationForProject(project) {
     // Signal reservations Create to return to this project details after success
     fromProjectForm: true,
     draftStorageKey: 'projects:create:draft',
-    returnUrl: `projects.html?project=${encodeURIComponent(project.id)}#projects-section`,
+    returnUrl: `projects.html?project=${encodeURIComponent(project.id)}&linked=1#projects-section`,
   };
   updatePreferences({
     dashboardTab: 'reservations-tab',
@@ -1606,6 +1606,28 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </div>
 
       <!-- Services block placed directly under project description -->
+      <section class="project-edit-expenses mt-4">
+        <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenseLabel', 'خدمات إنتاجية'))}</h6>
+        <div class="project-edit-expense-form">
+          <div class="project-edit-expense-label-col">
+            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
+          </div>
+          <div class="project-edit-expense-amount-col">
+            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
+          </div>
+          <div class="project-edit-expense-amount-col">
+            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
+          </div>
+          <div class="project-edit-expense-action-col">
+            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>
+          </div>
+        </div>
+        <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">
+          ${buildProjectEditExpensesMarkup(editState.expenses)}
+        </div>
+      </section>
+
+      <!-- Services block placed directly under project description -->
       
 
       <div class="row g-3 align-items-start mt-1">
@@ -1655,26 +1677,6 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         </div>
       </section>
 
-      <section class="project-edit-expenses mt-4">
-        <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenseLabel', 'خدمات إنتاجية'))}</h6>
-        <div class="project-edit-expense-form">
-          <div class="project-edit-expense-label-col">
-            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
-          </div>
-          <div class="project-edit-expense-amount-col">
-            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
-          </div>
-          <div class="project-edit-expense-amount-col">
-            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
-          </div>
-          <div class="project-edit-expense-action-col">
-            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>
-          </div>
-        </div>
-        <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">
-          ${buildProjectEditExpensesMarkup(editState.expenses)}
-        </div>
-      </section>
 
       <div class="project-edit-actions mt-4 d-flex justify-content-between">
         <button type="submit" class="btn btn-primary">${escapeHtml(t('projects.form.buttons.update', 'تحديث المشروع'))}</button>

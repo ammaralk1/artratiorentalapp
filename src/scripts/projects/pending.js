@@ -1,4 +1,6 @@
 import { state } from './state.js';
+import { showToast } from '../utils.js';
+import { t } from '../language.js';
 import {
   PENDING_PROJECT_EDIT_PARAM,
   PENDING_PROJECT_QUERY_PARAM
@@ -52,7 +54,7 @@ function clearPendingProjectParamsFromUrl() {
     const rawHash = window.location.hash ? window.location.hash.replace(/^#/, '') : '';
 
     let searchModified = false;
-    [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM].forEach((paramName) => {
+    [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM, 'linked'].forEach((paramName) => {
       if (searchParams.has(paramName)) {
         searchParams.delete(paramName);
         searchModified = true;
@@ -65,7 +67,7 @@ function clearPendingProjectParamsFromUrl() {
       try {
         const hashParams = new URLSearchParams(rawHash);
         let hashChanged = false;
-        [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM].forEach((paramName) => {
+        [PENDING_PROJECT_QUERY_PARAM, PENDING_PROJECT_EDIT_PARAM, 'linked'].forEach((paramName) => {
           if (hashParams.has(paramName)) {
             hashParams.delete(paramName);
             hashChanged = true;
@@ -96,6 +98,7 @@ function clearPendingProjectParamsFromUrl() {
 export function capturePendingProjectRequest() {
   const pendingId = readPendingProjectIdFromUrl();
   const pendingEditId = readPendingProjectEditIdFromUrl();
+  const linkedFlag = readPendingProjectParam('linked');
 
   if (pendingId) {
     state.pendingProjectDetailId = pendingId;
@@ -106,6 +109,10 @@ export function capturePendingProjectRequest() {
     if (!state.pendingProjectDetailId) {
       state.pendingProjectDetailId = pendingEditId;
     }
+  }
+
+  if (linkedFlag != null && String(linkedFlag) !== '' && String(linkedFlag) !== '0' && String(linkedFlag).toLowerCase() !== 'false') {
+    state.pendingLinkedToast = true;
   }
 
   if (pendingId || pendingEditId) {
@@ -126,6 +133,15 @@ export function openPendingProjectDetailIfReady() {
   state.pendingProjectDetailId = null;
   const projectIdentifier = targetProject?.id ?? targetProject?.projectId ?? targetProject?.project_id ?? normalizedPendingId;
   openProjectDetails(projectIdentifier);
+
+  if (state.pendingLinkedToast) {
+    state.pendingLinkedToast = false;
+    try {
+      showToast(t('projects.toast.linkedReservationCreated', '✅ تم ربط الحجز بالمشروع'));
+    } catch (_) {
+      // ignore toast issues
+    }
+  }
 
   if (state.pendingProjectEditId != null) {
     const normalizedEditId = String(state.pendingProjectEditId);
