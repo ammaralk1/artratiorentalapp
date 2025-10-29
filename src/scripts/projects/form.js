@@ -241,6 +241,7 @@ export function resetProjectFormState() {
   refreshProjectSubmitButton();
   renderLinkedReservationDraftSummary();
   syncProjectTaxAndShare('tax');
+  updateServicesClientTotalIndicator();
 }
 
 export function bindSelectionEvents() {
@@ -278,6 +279,8 @@ export function bindSelectionRemovalEvents() {
       state.expenses = state.expenses.filter((item) => String(item.id) !== String(expenseId));
       renderExpenseList();
       updateSummary();
+      recalcServicesClientPriceTotal();
+      updateServicesClientTotalIndicator();
     }
   });
 }
@@ -487,13 +490,11 @@ function handleAddExpense() {
   state.expenses.push({
     id: Date.now(),
     label,
-    amount
+    amount,
+    salePrice
   });
-
-  // Accumulate الخدمات الإنتاجية (سعر البيع) into running total for the project
-  if (salePrice > 0) {
-    state.servicesClientPriceTotal = Math.round((state.servicesClientPriceTotal + salePrice) * 100) / 100;
-  }
+  // Recalculate cumulative services client price from items (keeps totals correct on remove)
+  recalcServicesClientPriceTotal();
 
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = normalizeNumbers(String(normalizedAmount));
@@ -501,6 +502,7 @@ function handleAddExpense() {
 
   renderSelections();
   updateSummary();
+  updateServicesClientTotalIndicator();
 }
 
 export function renderSelections() {
@@ -508,6 +510,7 @@ export function renderSelections() {
   renderEquipmentChips();
   renderExpenseList();
   refreshProjectSubmitButton();
+  updateServicesClientTotalIndicator();
 }
 
 function renderTechnicianChips() {
@@ -986,6 +989,7 @@ export function restoreProjectFormDraft() {
 
   syncProjectTaxAndShare('tax');
   renderLinkedReservationDraftSummary();
+  updateServicesClientTotalIndicator();
   return true;
 }
 
@@ -1252,4 +1256,19 @@ function renderLinkedReservationDraftSummary() {
     button.setAttribute('aria-disabled', 'true');
     button.title = t('projects.form.linkedReservation.buttonDisabled', 'تم إنشاء حجز مرتبط لهذا المشروع. يمكنك تعديل الحجز بعد حفظ المشروع.');
   }
+}
+
+function recalcServicesClientPriceTotal() {
+  const total = Array.isArray(state.expenses)
+    ? state.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice) || 0), 0)
+    : 0;
+  state.servicesClientPriceTotal = Math.round(total * 100) / 100;
+}
+
+function updateServicesClientTotalIndicator() {
+  const indicator = dom.servicesClientTotalIndicator || document.getElementById('project-services-client-total-indicator');
+  const valueEl = dom.servicesClientTotalValue || document.getElementById('project-services-client-total-value');
+  if (!valueEl) return;
+  const total = Number(state.servicesClientPriceTotal) || 0;
+  valueEl.textContent = formatCurrency(total);
 }

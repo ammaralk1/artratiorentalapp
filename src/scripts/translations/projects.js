@@ -27,6 +27,7 @@ registerTranslations({
     'projects.form.labels.expenses': 'متطلبات المشروع',
     'projects.form.labels.expenseLabel': 'خدمات إنتاجية',
     'projects.form.labels.expenseAmount': 'التكلفة (SR)',
+    'projects.form.labels.servicesClientTotal': 'إجمالي سعر البيع',
 
     'projects.form.placeholders.title': 'مثال: تصوير منتج جديد',
     'projects.form.placeholders.description': 'ملخص عن المشروع والمتطلبات',
@@ -369,6 +370,7 @@ registerTranslations({
     'projects.form.labels.expenses': 'Project requirements',
     'projects.form.labels.expenseLabel': 'Expense Name',
     'projects.form.labels.expenseAmount': 'Amount (SR)',
+    'projects.form.labels.servicesClientTotal': 'Sales total',
 
     'projects.form.placeholders.title': 'Example: New product shoot',
     'projects.form.placeholders.description': 'Project brief and requirements',
