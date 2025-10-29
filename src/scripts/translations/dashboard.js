@@ -330,7 +330,7 @@ registerTranslations({
     'reservations.edit.tech.headers.total': 'التكلفة الإجمالية',
     'reservations.list.labels.start': '🗓️ بداية الحجز',
     'reservations.list.labels.end': '🗓️ نهاية الحجز',
-    'reservations.list.labels.cost': '💵 التكلفة',
+    'reservations.list.labels.cost': '💵 الإجمالي النهائي',
     'reservations.list.labels.equipment': '📦 المعدات',
     'reservations.list.labels.crew': '😎 الفريق',
     'reservations.details.labels.discount': 'الخصم',

@@ -23,7 +23,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     project: t('reservations.list.labels.project', '📁 المشروع'),
     start: t('reservations.list.labels.start', '🗓️ بداية الحجز'),
     end: t('reservations.list.labels.end', '🗓️ نهاية الحجز'),
-    cost: t('reservations.list.labels.cost', '💵 التكلفة'),
+    cost: t('reservations.list.labels.cost', '💵 الإجمالي النهائي'),
     equipment: t('reservations.list.labels.equipment', '📦 المعدات'),
     crew: t('reservations.list.labels.crew', '😎 الفريق')
   };
