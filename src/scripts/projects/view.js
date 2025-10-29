@@ -65,8 +65,21 @@ export function renderProjects() {
     return;
   }
 
+  // Sort by creation time (newest first). Fallback to start date when createdAt missing.
   const sortedProjects = [...filtered]
-    .sort((a, b) => new Date(b.start || 0) - new Date(a.start || 0));
+    .sort((a, b) => {
+      const aCreated = getProjectCreatedTimestamp(a);
+      const bCreated = getProjectCreatedTimestamp(b);
+      if (Number.isFinite(aCreated) && Number.isFinite(bCreated) && aCreated !== bCreated) {
+        return bCreated - aCreated;
+      }
+      const aStart = getProjectStartTimestamp(a);
+      const bStart = getProjectStartTimestamp(b);
+      if (Number.isFinite(aStart) && Number.isFinite(bStart)) {
+        return bStart - aStart;
+      }
+      return 0;
+    });
 
   state.visibleProjects = sortedProjects;
   setTableCount(sortedProjects.length);
