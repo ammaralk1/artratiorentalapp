@@ -112,6 +112,8 @@ export function openProjectDetails(projectId) {
 
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
+  const statusTextMap = { upcoming: 'قادم', ongoing: 'قيد التنفيذ', completed: 'مكتمل', conflict: 'تعارض' };
+  const statusDisplay = statusTextMap[status] || statusLabel;
   const statusChipClassMap = {
     upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
     ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
@@ -381,7 +383,7 @@ export function openProjectDetails(projectId) {
   `;
 
   const chips = [
-    `<span class="reservation-chip ${statusChipClass}">${escapeHtml(statusLabel)}</span>`,
+    `<span class="${statusChipClass}">${escapeHtml(statusDisplay)}</span>`,
     `<span class="reservation-chip ${vatChipClass}">${escapeHtml(vatChipText)}</span>`,
     `<span class="reservation-chip status-info">${escapeHtml(reservationsChipText)}</span>`,
     `<span class="reservation-chip ${paymentStatusChipClass}">${escapeHtml(paymentStatusText)}</span>`,
