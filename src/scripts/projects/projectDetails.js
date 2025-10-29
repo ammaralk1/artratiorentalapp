@@ -1326,6 +1326,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     const {
       equipmentEstimate,
       expensesTotal,
+      servicesClientPrice,
       discountValue,
       discountTypeValue,
       applyTax: computedApplyTax,
@@ -1439,8 +1440,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       paymentStatus: paymentStatusValue,
       equipmentEstimate,
       expenses: editState.expenses,
-      // Ensure we persist services client price from Edit form as well
-      servicesClientPrice: context.servicesClientPrice,
+      // Persist computed services client price derived from services table
+      servicesClientPrice,
       discount: discountValue,
       discountType: discountTypeValue,
       companyShareEnabled: contextShareEnabled && computedApplyTax,
