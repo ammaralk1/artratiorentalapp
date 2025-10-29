@@ -222,6 +222,9 @@ export function resetProjectFormState() {
   renderSelections();
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = '';
+  // Reset the running total for services client price
+  state.servicesClientPriceTotal = 0;
+  if (dom.servicesClientPrice) dom.servicesClientPrice.value = '';
   if (dom.taxCheckbox) dom.taxCheckbox.checked = false;
   if (dom.discountType) dom.discountType.value = 'percent';
   if (dom.discountValue) dom.discountValue.value = '';
@@ -468,6 +471,8 @@ function handleAddExpense() {
   const label = (dom.expenseLabel?.value || '').trim();
   const normalizedAmount = normalizeNumbers(dom.expenseAmount?.value || '0');
   const amount = Number(normalizedAmount);
+  const saleRaw = normalizeNumbers(dom.servicesClientPrice?.value || '0');
+  const salePrice = Number.parseFloat(saleRaw) || 0;
 
   if (!label) {
     showToast(t('projects.toast.missingExpenseLabel', '⚠️ يرجى إدخال وصف المصروف'));
@@ -485,8 +490,14 @@ function handleAddExpense() {
     amount
   });
 
+  // Accumulate الخدمات الإنتاجية (سعر البيع) into running total for the project
+  if (salePrice > 0) {
+    state.servicesClientPriceTotal = Math.round((state.servicesClientPriceTotal + salePrice) * 100) / 100;
+  }
+
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = normalizeNumbers(String(normalizedAmount));
+  if (dom.servicesClientPrice) dom.servicesClientPrice.value = '';
 
   renderSelections();
   updateSummary();
@@ -674,8 +685,9 @@ async function handleSubmitProject(event) {
 
   const expensesTotal = calculateExpensesTotal();
   const equipmentEstimate = calculateEquipmentEstimate();
-  const servicesClientPriceRaw = normalizeNumbers(dom.servicesClientPrice?.value || '0');
-  let servicesClientPrice = Number.parseFloat(servicesClientPriceRaw);
+  // Prefer the accumulated total when available; fallback to current input
+  const servicesClientPriceRaw = normalizeNumbers(dom.servicesClientPrice?.value || '');
+  let servicesClientPrice = state.servicesClientPriceTotal || Number.parseFloat(servicesClientPriceRaw);
   if (!Number.isFinite(servicesClientPrice) || servicesClientPrice < 0) {
     servicesClientPrice = 0;
   }
@@ -915,6 +927,7 @@ function captureProjectFormDraft() {
     endTime: dom.endTime?.value || '',
     description: dom.description?.value || '',
     expenses: Array.isArray(state.expenses) ? state.expenses.map((expense) => ({ ...expense })) : [],
+    servicesClientPriceTotal: Number.isFinite(Number(state.servicesClientPriceTotal)) ? state.servicesClientPriceTotal : 0,
     technicians: Array.isArray(state.selectedTechnicians) ? [...state.selectedTechnicians] : [],
     equipment: Array.isArray(state.selectedEquipment)
       ? state.selectedEquipment.map((item) => ({ ...item }))
@@ -958,6 +971,7 @@ export function restoreProjectFormDraft() {
   if (dom.paymentProgressValue) {
     dom.paymentProgressValue.value = draft.paymentProgressValue || '';
   }
+  state.servicesClientPriceTotal = Number.isFinite(Number(draft.servicesClientPriceTotal)) ? Number(draft.servicesClientPriceTotal) : 0;
   if (dom.startDate) dom.startDate.value = draft.startDate || '';
   if (dom.startTime) dom.startTime.value = draft.startTime || '';
   if (dom.endDate) dom.endDate.value = draft.endDate || '';

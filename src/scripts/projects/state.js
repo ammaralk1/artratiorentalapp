@@ -7,6 +7,8 @@ export const state = {
   selectedTechnicians: [],
   selectedEquipment: [],
   expenses: [],
+  // Running total of per-item "سعر البيع" added via the create form
+  servicesClientPriceTotal: 0,
   filters: {
     search: ''
   },
@@ -22,4 +24,5 @@ export function resetSelections() {
   state.selectedTechnicians = [];
   state.selectedEquipment = [];
   state.expenses = [];
+  state.servicesClientPriceTotal = 0;
 }

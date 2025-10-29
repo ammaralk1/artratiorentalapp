@@ -69,7 +69,7 @@ registerTranslations({
 
     'projects.form.buttons.addTechnician': '➕ إضافة للطاقم',
     'projects.form.buttons.addEquipment': '➕ إضافة للمشروع',
-    'projects.form.buttons.addExpense': '➕ إضافة مصروف',
+    'projects.form.buttons.addExpense': '➕ إضافة خدمة',
     'projects.form.buttons.save': '🆕 إنشاء المشروع',
     'projects.form.buttons.update': '🔁 تحديث المشروع',
     'projects.form.taxLabel': 'شامل الضريبة (15٪)',
@@ -196,7 +196,7 @@ registerTranslations({
     'projects.expenses.subtitle': 'تابع المصاريف المرتبطة بالحجوزات والمشاريع مع إمكانية الربط مع فواتير العملاء.',
     'projects.expenses.placeholder': 'ستتم إضافة لوحة مخصصة لربط مصاريف المشاريع بالحجوزات قريباً.',
     'projects.expenses.placeholderHint': 'جهز الفواتير والفئات الآن لتسريع الإطلاق القادم.',
-    'projects.expenses.actions.addExpense': '➕ إضافة مصروف',
+    'projects.expenses.actions.addExpense': '➕ إضافة خدمة',
     'projects.expenses.actions.importInvoice': '🧾 رفع فاتورة',
     'projects.expenses.actions.export': '⬇️ تصدير',
     'projects.expenses.kpi.total': 'إجمالي المصاريف',
