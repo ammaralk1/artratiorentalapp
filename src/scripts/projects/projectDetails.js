@@ -113,9 +113,9 @@ export function openProjectDetails(projectId) {
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   const statusChipClassMap = {
-    upcoming: 'status-upcoming',
-    ongoing: 'status-ongoing',
-    completed: 'status-completed'
+    upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
+    ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
+    completed: 'timeline-status-badge timeline-status-badge--completed'
   };
   const statusChipClass = statusChipClassMap[status] || 'status-confirmed';
   const vatChipText = applyTax
