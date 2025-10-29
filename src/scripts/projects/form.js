@@ -781,6 +781,20 @@ async function handleSubmitProject(event) {
       projectIdentifier = created?.projectId ?? created?.id ?? null;
       await handleProjectReservationSync(projectIdentifier, paymentStatus);
       showToast(t('projects.toast.saved', '✅ تم حفظ المشروع بنجاح'));
+      // بعد إنشاء المشروع بنجاح: الانتقال تلقائياً إلى تبويب "مشاريعي"
+      try {
+        updatePreferences({ projectsTab: 'projects-section', projectsSubTab: 'projects-list-tab' }).catch(() => {});
+        // فعّل التبويب بصرياً إن وُجدت الأزرار في الصفحة الحالية
+        const mainTabBtn = document.querySelector('.tab-button[data-tab-target="projects-section"]');
+        if (mainTabBtn && typeof mainTabBtn.click === 'function') {
+          mainTabBtn.click();
+        }
+        const listSubTabBtn = document.querySelector('.sub-tab-button[data-project-subtab-target="projects-list-tab"]');
+        if (listSubTabBtn && typeof listSubTabBtn.click === 'function') {
+          // تأخير بسيط لضمان تبديل التاب الرئيسي أولاً عند الحاجة
+          setTimeout(() => listSubTabBtn.click(), 0);
+        }
+      } catch (_) { /* تجاهل أي أخطاء غير متوقعة */ }
     }
 
     const pendingLinkedReservations = await linkDraftReservationsToProject(projectIdentifier);
