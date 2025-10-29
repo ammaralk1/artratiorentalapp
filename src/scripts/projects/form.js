@@ -1133,6 +1133,13 @@ export function bindLinkedReservationButton() {
 
 function handleLinkedReservationButtonClick(event) {
   event.preventDefault();
+  const button = event.currentTarget;
+  // If visually disabled (linked exists), show a toast and exit
+  const isVisuallyDisabled = button?.classList?.contains('btn-disabled') || button?.getAttribute('aria-disabled') === 'true';
+  if (isVisuallyDisabled) {
+    showToast(t('projects.form.linkedReservation.buttonDisabledToast', '⚠️ المشروع مربوط بحجز مسبقاً'));
+    return;
+  }
 
   const draft = captureProjectFormDraft();
 
@@ -1391,10 +1398,12 @@ function renderLinkedReservationDraftSummary() {
   summaryEl.innerHTML = `<ul class="project-linked-reservation__summary-list">${listItems}</ul>`;
 
   if (button) {
-    button.disabled = true;
+    // Keep button clickable to show toast, but style as disabled
+    button.disabled = false;
     button.classList.add('btn-disabled');
     button.setAttribute('aria-disabled', 'true');
-    button.title = t('projects.form.linkedReservation.buttonDisabled', 'تم إنشاء حجز مرتبط لهذا المشروع. يمكنك تعديل الحجز بعد حفظ المشروع.');
+    button.setAttribute('data-allow-click', 'true');
+    button.title = t('projects.form.linkedReservation.buttonDisabled', '⚠️ المشروع مربوط بحجز مسبقاً');
   }
 }
 

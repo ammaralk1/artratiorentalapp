@@ -738,6 +738,11 @@ select.form-select option {
   opacity: 0.65;
 }
 
+/* Allow showing a toast even when visually disabled */
+.project-linked-reservation__action.btn-disabled[data-allow-click='true'] {
+  pointer-events: auto; /* re-enable click for toast */
+}
+
 .project-linked-reservation__summary {
   width: 100%;
   display: flex;

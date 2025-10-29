@@ -218,7 +218,7 @@ export function openProjectDetails(projectId) {
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
     if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
-    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة خدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
     if (servicesClientPriceVal > 0) summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPriceVal) });
     // الخصم يظهر قبل الإجمالي
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
@@ -621,13 +621,12 @@ export function bindProjectDetailsEvents(project) {
       if (hasActiveLinked) {
         // Make button visually disabled, but keep click to show a toast
         createBtn.classList?.add('disabled');
-        createBtn.classList?.add('btn-disabled');
         createBtn.setAttribute?.('aria-disabled', 'true');
-        createBtn.title = t('projects.details.reservations.createDisabled', '⚠️ يوجد حجز مرتبط بالفعل بهذا المشروع');
+        createBtn.title = t('projects.details.reservations.createDisabled', '⚠️ المشروع مربوط بحجز مسبقاً');
         createBtn.addEventListener('click', (event) => {
           event.preventDefault();
-          showToast(t('projects.details.reservations.createDisabledToast', '⚠️ يوجد حجز مرتبط مسبقًا بهذا المشروع'));
-        }, { once: true });
+          showToast(t('projects.details.reservations.createDisabledToast', '⚠️ المشروع مربوط بحجز مسبقاً'));
+        });
       } else {
         createBtn.disabled = false;
         createBtn.classList?.remove('disabled');
