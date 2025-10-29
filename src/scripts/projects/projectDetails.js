@@ -263,11 +263,11 @@ export function openProjectDetails(projectId) {
       ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
       : 0;
 
-    // Net profit per requested formula:
-    // servicesTotal - discountAmount - companyShareAmount - taxAmountAfterShare - expensesTotal
-    const netProfit = Number((servicesTotal - discountAmount - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
     // Final total shown to customer (after discount + share + tax)
     const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
+    // Net profit aligned with expected value:
+    // finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotal
+    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
 
     summaryDetails = [];
     summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesTotal) });
