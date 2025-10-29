@@ -2345,6 +2345,9 @@ function collectProjectQuoteData(project) {
         const rawBarcode = isPackage ? (packageCode ?? fallbackBarcode ?? '') : (group?.barcode ?? fallbackBarcode ?? '');
         const barcode = rawBarcode != null ? String(rawBarcode) : '';
 
+        const safeTotal = Number.isFinite(Number(group?.totalPrice))
+          ? Number(group.totalPrice)
+          : Number((unitPrice * count).toFixed(2));
         equipmentItems.push({
           ...group,
           isPackage,
@@ -2354,7 +2357,7 @@ function collectProjectQuoteData(project) {
           qty: count,
           // In the table, the "price" column represents unit price, not row total
           price: unitPrice,
-          totalPrice,
+          totalPrice: sanitizePriceValue(safeTotal),
           unitPriceValue: unitPrice,
         });
       });
