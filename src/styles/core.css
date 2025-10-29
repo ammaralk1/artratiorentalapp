@@ -871,6 +871,12 @@ html.dark-mode .projects-hero-text {
   color: rgba(224, 49, 49, 0.95);
 }
 
+.timeline-status-badge--cancelled {
+  background: rgba(0, 0, 0, 0.85);
+  color: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.6);
+}
+
 /* Ensure modal chips inherit the exact timeline colors (override any cascade) */
 .project-details-chips .timeline-status-badge--upcoming {
   color: rgba(76, 110, 245, 0.92) !important;
@@ -891,6 +897,11 @@ html.dark-mode .projects-hero-text {
   color: rgba(224, 49, 49, 0.95) !important;
   background: rgba(224, 49, 49, 0.12) !important;
   border: 1px solid rgba(224, 49, 49, 0.28);
+}
+.project-details-chips .timeline-status-badge--cancelled {
+  color: #f8fafc !important;
+  background: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid rgba(15, 23, 42, 0.6);
 }
 
 /* Project type chips with per-type colors */
@@ -950,6 +961,31 @@ html.dark-mode .projects-hero-text {
   color: rgba(224, 49, 49, 0.95);
   background: rgba(224, 49, 49, 0.12);
   border: 1px solid rgba(224, 49, 49, 0.28);
+}
+.project-focus-card .timeline-status-badge--cancelled {
+  color: #f8fafc;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.6);
+}
+
+/* Cancelled project card appearance */
+.project-focus-card--cancelled {
+  background: #0b0f1a;
+  border-color: rgba(0, 0, 0, 0.85);
+  color: #e2e8f0;
+}
+.project-focus-card--cancelled .project-focus-card__accent {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.45) 0%, rgba(15, 23, 42, 0) 60%);
+}
+.project-focus-card--cancelled .project-focus-card__section-box {
+  background: rgba(2, 6, 23, 0.9);
+  border-color: rgba(15, 23, 42, 0.6);
+}
+.project-focus-card--cancelled .project-focus-card__title,
+.project-focus-card--cancelled .project-focus-card__description,
+.project-focus-card--cancelled .project-focus-card__row-label,
+.project-focus-card--cancelled .project-focus-card__row-value {
+  color: #e2e8f0;
 }
 
 .project-timeline-legend {

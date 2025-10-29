@@ -308,6 +308,14 @@ function toInternalProject(raw = {}) {
   return {
     id: idValue != null ? String(idValue) : '',
     projectId: idValue != null ? Number(idValue) : null,
+    status: (() => {
+      const s = String(raw.status ?? raw.project_status ?? '').toLowerCase();
+      if (s === 'cancelled' || s === 'canceled' || s === 'ملغي' || s === 'ملغى') return 'cancelled';
+      if (s === 'completed' || s === 'مكتمل') return 'completed';
+      if (s === 'ongoing' || s === 'in_progress' || s === 'قيد التنفيذ') return 'ongoing';
+      if (s === 'upcoming' || s === 'قادم') return 'upcoming';
+      return undefined;
+    })(),
     projectCode: raw.project_code ?? raw.projectCode ?? null,
     title: raw.title ?? '',
     type: raw.type ?? raw.projectType ?? '',

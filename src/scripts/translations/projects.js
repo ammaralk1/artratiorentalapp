@@ -261,6 +261,9 @@ registerTranslations({
     'projects.status.ongoing': 'قيد التنفيذ',
     'projects.status.completed': 'مكتمل',
     'projects.status.conflict': 'تعارض',
+    'projects.status.cancelled': 'ملغي',
+    'projects.form.labels.cancelled': 'إلغاء المشروع',
+    'projects.form.hints.cancelled': 'سيتم وسم المشروع كملغي وتحديث حالة جميع الحجوزات المرتبطة إلى ملغي.',
 
     'projectCards.filters.search': '🔍 ابحث باسم المشروع أو الوصف...',
     'projectCards.filters.status.all': '⚙️ كل الحالات',
@@ -612,6 +615,9 @@ registerTranslations({
     'projects.status.ongoing': 'In Progress',
     'projects.status.completed': 'Completed',
     'projects.status.conflict': 'Conflict',
+    'projects.status.cancelled': 'Cancelled',
+    'projects.form.labels.cancelled': 'Cancel project',
+    'projects.form.hints.cancelled': 'Marks the project as cancelled and updates all linked reservations to cancelled.',
 
     'projectCards.filters.search': '🔍 Search by project name or description...',
     'projectCards.filters.status.all': '⚙️ All statuses',

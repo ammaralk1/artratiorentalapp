@@ -15,11 +15,14 @@ export const PROJECT_SUB_TAB_ALIASES = {
 export const statusFallbackLabels = {
   upcoming: 'Upcoming',
   ongoing: 'In Progress',
-  completed: 'Completed'
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  conflict: 'Conflict'
 };
 
 export const statusBadgeClass = {
   upcoming: 'bg-info',
   ongoing: 'bg-warning',
-  completed: 'bg-success'
+  completed: 'bg-success',
+  cancelled: 'bg-secondary'
 };

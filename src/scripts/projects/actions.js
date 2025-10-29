@@ -157,3 +157,26 @@ export async function handleProjectReservationSync(projectId, paymentStatus) {
   }
   return reservationsUpdated;
 }
+
+export async function updateLinkedReservationsCancelled(projectId) {
+  if (!projectId) return false;
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  if (!targets.length) return false;
+  let changed = false;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    try {
+      await updateReservationApi(reservationId, { status: 'cancelled', cancelled: true });
+      changed = true;
+    } catch (e) {
+      console.warn('[projects] failed to cancel linked reservation', reservationId, e);
+    }
+  }
+  if (changed) {
+    state.reservations = getReservationsState();
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return changed;
+}

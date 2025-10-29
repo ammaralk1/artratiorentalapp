@@ -56,7 +56,8 @@ import {
 import {
   handleProjectReservationSync,
   updateLinkedReservationsConfirmation,
-  removeProject
+  removeProject,
+  updateLinkedReservationsCancelled
 } from './actions.js';
 
 export function openProjectDetails(projectId) {
@@ -110,7 +111,8 @@ export function openProjectDetails(projectId) {
     : 0;
   const overallTotal = Number((projectTotal + reservationsTotal + combinedTaxAmount).toFixed(2));
 
-  const status = determineProjectStatus(project);
+  const statusBase = determineProjectStatus(project);
+  const status = (project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   // Determine conflicts vs other projects
   const hasConflict = (() => {
@@ -129,14 +131,15 @@ export function openProjectDetails(projectId) {
       });
     } catch (_) { return false; }
   })();
-  const statusKey = (hasConflict && status !== 'completed') ? 'conflict' : status;
+  const statusKey = (hasConflict && (status === 'upcoming' || status === 'ongoing')) ? 'conflict' : status;
   const statusTextMap = { upcoming: 'قادم', ongoing: 'قيد التنفيذ', completed: 'مكتمل', conflict: 'تعارض' };
   const statusDisplay = statusTextMap[statusKey] || statusLabel;
   const statusChipClassMap = {
     upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
     ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
     completed: 'timeline-status-badge timeline-status-badge--completed',
-    conflict: 'timeline-status-badge timeline-status-badge--conflict'
+    conflict: 'timeline-status-badge timeline-status-badge--conflict',
+    cancelled: 'timeline-status-badge timeline-status-badge--cancelled'
   };
   const statusChipClass = statusChipClassMap[statusKey] || 'timeline-status-badge timeline-status-badge--upcoming';
   // VAT and reservations chips removed per updated UI requirements
@@ -871,6 +874,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const paymentHistoryContainer = form.querySelector('#project-edit-payment-history');
   const paymentSummaryContainer = form.querySelector('#project-edit-payment-summary');
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const cancelProjectCheckbox = form.querySelector('#project-cancelled');
 
   let isSyncingShareTax = false;
 
@@ -1574,12 +1578,20 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       payments: paymentHistory,
     });
 
+    const wantCancel = cancelProjectCheckbox?.checked === true;
+    if (wantCancel) {
+      payload.status = 'cancelled';
+    }
+
     form.dataset.submitting = 'true';
 
     try {
       const updated = await updateProjectApi(project.projectId ?? project.id, payload);
       const identifier = updated?.projectId ?? updated?.id ?? project.id;
       await handleProjectReservationSync(identifier, paymentStatusValue);
+      if (wantCancel) {
+        try { await updateLinkedReservationsCancelled(identifier); } catch (e) { console.warn('⚠️ failed to cancel linked reservations', e); }
+      }
       state.projects = getProjectsState();
       state.reservations = getReservationsState();
       showToast(t('projects.toast.updated', '✅ تم تحديث المشروع بنجاح'));
@@ -1704,6 +1716,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
     || (applyTax && Number.isFinite(parsedSharePercent) && parsedSharePercent > 0);
   const paymentProgressType = 'percent';
   const paymentProgressValue = '';
+  const isCancelled = String(project?.status || '').toLowerCase() === 'cancelled' || String(project?.status || '').toLowerCase() === 'canceled';
 
   return `
     <form id="project-details-edit-form" class="project-edit-form">
@@ -1743,6 +1756,13 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         <div class="col-12">
           <label class="form-label">${escapeHtml(t('projects.form.labels.description', 'الوصف'))}</label>
           <textarea class="form-control project-edit-textarea" name="project-description" rows="5">${escapeHtml(project.description || '')}</textarea>
+        </div>
+        <div class="col-12">
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" id="project-cancelled" name="project-cancelled" ${isCancelled ? 'checked' : ''}>
+            <label class="form-check-label" for="project-cancelled">${escapeHtml(t('projects.form.labels.cancelled', 'إلغاء المشروع'))}</label>
+          </div>
+          <div class="form-text">${escapeHtml(t('projects.form.hints.cancelled', 'سيتم وسم المشروع كملغي وتحديث حالة جميع الحجوزات المرتبطة إلى ملغي.'))}</div>
         </div>
         <!-- Payment status select removed: status is inferred automatically from payments -->
       </div>

@@ -439,7 +439,8 @@ function renderFocusCard(project, category) {
   };
   const categoryKey = categoryKeyMap[category] || categoryKeyMap.recent;
   const categoryLabel = t(categoryKey, categoryFallbackMap[category] || categoryFallbackMap.recent);
-  const status = determineProjectStatus(project);
+  const statusBase = determineProjectStatus(project);
+  const status = (project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
   const statusLabel = t(`projects.status.${status}`, statusFallbackLabels[status] || status);
   // Detect scheduling conflicts (overlap with any other project interval)
   const hasConflict = (() => {
@@ -459,18 +460,23 @@ function renderFocusCard(project, category) {
     } catch (_) { return false; }
   })();
   // Unify visuals with timeline legend
-  const statusKey = (hasConflict && status !== 'completed') ? 'conflict' : status;
+  const statusKey = (hasConflict && (status === 'upcoming' || status === 'ongoing')) ? 'conflict' : status;
   const statusChipClass = statusKey === 'upcoming'
     ? 'timeline-status-badge timeline-status-badge--upcoming'
     : statusKey === 'ongoing'
       ? 'timeline-status-badge timeline-status-badge--ongoing'
       : statusKey === 'completed'
         ? 'timeline-status-badge timeline-status-badge--completed'
-        : 'timeline-status-badge timeline-status-badge--conflict';
+        : statusKey === 'cancelled'
+          ? 'timeline-status-badge timeline-status-badge--cancelled'
+          : 'timeline-status-badge timeline-status-badge--conflict';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
   if (isConfirmed) {
     cardStateClasses.push('project-focus-card--confirmed');
+  }
+  if (statusKey === 'cancelled') {
+    cardStateClasses.push('project-focus-card--cancelled');
   }
 
   // Aggregate reservation totals in a tax-neutral way to avoid double counting tax
