@@ -871,6 +871,28 @@ html.dark-mode .projects-hero-text {
   color: rgba(224, 49, 49, 0.95);
 }
 
+/* Ensure modal chips inherit the exact timeline colors (override any cascade) */
+.project-details-chips .timeline-status-badge--upcoming {
+  color: rgba(76, 110, 245, 0.92) !important;
+  background: rgba(76, 110, 245, 0.12) !important;
+  border: 1px solid rgba(76, 110, 245, 0.28);
+}
+.project-details-chips .timeline-status-badge--ongoing {
+  color: rgba(240, 140, 0, 0.95) !important;
+  background: rgba(240, 140, 0, 0.12) !important;
+  border: 1px solid rgba(240, 140, 0, 0.28);
+}
+.project-details-chips .timeline-status-badge--completed {
+  color: rgba(47, 158, 68, 0.95) !important;
+  background: rgba(47, 158, 68, 0.12) !important;
+  border: 1px solid rgba(47, 158, 68, 0.28);
+}
+.project-details-chips .timeline-status-badge--conflict {
+  color: rgba(224, 49, 49, 0.95) !important;
+  background: rgba(224, 49, 49, 0.12) !important;
+  border: 1px solid rgba(224, 49, 49, 0.28);
+}
+
 .project-timeline-legend {
   text-align: start;
 }
