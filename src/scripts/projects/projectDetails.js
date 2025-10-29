@@ -821,7 +821,6 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const discountTypeSelect = form.querySelector('#project-edit-discount-type');
   const paymentProgressTypeSelect = form.querySelector('#project-edit-payment-progress-type');
   const paymentProgressValueInput = form.querySelector('#project-edit-payment-progress-value');
-  const servicesClientPriceInput = form.querySelector('#project-edit-services-client-price');
   const paymentAddButton = form.querySelector('#project-edit-payment-add');
   const paymentHistoryContainer = form.querySelector('#project-edit-payment-history');
   const paymentSummaryContainer = form.querySelector('#project-edit-payment-summary');
@@ -836,44 +835,17 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     return editState.payments;
   };
 
-  // Normalize Arabic numerals while typing into "سعر البيع" for edit form as well
-  if (servicesClientPriceInput && !servicesClientPriceInput.dataset.normalizeAttached) {
-    servicesClientPriceInput.addEventListener('input', (event) => {
-      const input = event.target;
-      if (!(input instanceof HTMLInputElement)) return;
-      const pos = input.selectionStart;
-      const normalized = normalizeNumbers(input.value || '');
-      input.value = normalized;
-      if (typeof pos === 'number') {
-        try { input.setSelectionRange(pos, pos); } catch (_) { /* ignore */ }
-      }
-    });
-    servicesClientPriceInput.dataset.normalizeAttached = 'true';
-  }
-
-  // Prefill "سعر البيع" in Edit with sum of per-item sale_price when available
-  if (servicesClientPriceInput) {
-    const sumSale = Array.isArray(editState.expenses)
-      ? editState.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price) || 0), 0)
-      : 0;
-    const currentVal = normalizeNumbers(String(servicesClientPriceInput.value || ''));
-    const currentNum = Number.parseFloat(currentVal);
-    if (!Number.isFinite(currentNum) || currentNum <= 0) {
-      servicesClientPriceInput.value = normalizeNumbers(String(Math.round(sumSale * 100) / 100));
-    }
-  }
+  // No manual input for "سعر البيع" in Edit modal; value is derived from services table
 
   const computeFinanceContext = () => {
     const equipmentEstimate = Number(project.equipmentEstimate) || 0;
     const expensesTotal = Array.isArray(editState.expenses)
       ? editState.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0)
       : 0;
-    const servicesClientPrice = (() => {
-      const raw = servicesClientPriceInput?.value || (project?.servicesClientPrice ?? 0);
-      const norm = normalizeNumbers(String(raw));
-      const parsed = Number.parseFloat(norm);
-      return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    })();
+    // Derive "سعر البيع" من مجموع salePrice داخل الجدول
+    const servicesClientPrice = Array.isArray(editState.expenses)
+      ? Math.max(0, Math.round(editState.expenses.reduce((s, e) => s + (Number(e?.salePrice ?? 0)), 0) * 100) / 100)
+      : Math.max(0, Number(project?.servicesClientPrice ?? 0));
     const discountTypeValue = discountTypeSelect?.value === 'amount' ? 'amount' : 'percent';
     const discountRaw = normalizeNumbers(discountInput?.value || '0');
     let discountValue = Number.parseFloat(discountRaw);
@@ -1236,15 +1208,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       if (expenseLabelInput) expenseLabelInput.value = '';
       if (expenseAmountInput) expenseAmountInput.value = '';
       if (expenseSaleInput) expenseSaleInput.value = '';
-      // Sync services client price input to sum of sale prices
-      try {
-        const saleTotal = Array.isArray(editState.expenses)
-          ? editState.expenses.reduce((s, e) => s + (Number(e?.salePrice) || 0), 0)
-          : 0;
-        if (servicesClientPriceInput) {
-          servicesClientPriceInput.value = normalizeNumbers(String(saleTotal));
-        }
-      } catch (_) {}
+      // servicesClientPrice is derived; no input update needed
       renderExpenses();
       renderPaymentSummary();
       syncPaymentStatusValue('auto');
@@ -1257,15 +1221,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       if (!removeBtn) return;
       const { id } = removeBtn.dataset;
       editState.expenses = editState.expenses.filter((expense) => String(expense.id) !== String(id));
-      // Update services client price sum after removal
-      try {
-        const saleTotal = Array.isArray(editState.expenses)
-          ? editState.expenses.reduce((s, e) => s + (Number(e?.salePrice) || 0), 0)
-          : 0;
-        if (servicesClientPriceInput) {
-          servicesClientPriceInput.value = normalizeNumbers(String(saleTotal));
-        }
-      } catch (_) {}
+      // servicesClientPrice is derived; no input update needed
       renderExpenses();
       renderPaymentSummary();
       syncPaymentStatusValue('auto');
@@ -1646,10 +1602,6 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </div>
 
       <div class="row g-3 align-items-start mt-1">
-        <div class="col-sm-6 col-lg-4 col-xl-3">
-          <label class="form-label" for="project-edit-services-client-price">${escapeHtml(t('projects.details.edit.servicesClientPrice', 'سعر البيع (SR)'))}</label>
-          <input type="text" id="project-edit-services-client-price" class="form-control project-edit-input-xs" value="${escapeHtml(servicesClientPriceValue)}" placeholder="0" inputmode="decimal">
-        </div>
         <div class="col-sm-6 col-lg-4 col-xl-3">
           <label class="form-label" for="project-edit-discount">${escapeHtml(t('projects.form.labels.discount', 'الخصم'))}</label>
           <div class="input-group project-edit-input-group">
