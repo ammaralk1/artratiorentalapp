@@ -319,6 +319,22 @@ function bindBillingEvents() {
     dom.paymentProgressValue.dataset.listenerAttached = 'true';
   }
 
+  // Normalize Arabic numerals to English for "سعر البيع" field in create project form
+  if (dom.servicesClientPrice && dom.servicesClientPrice.dataset.normalizeAttached !== 'true') {
+    dom.servicesClientPrice.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const cursorPosition = input.selectionStart;
+      const normalized = normalizeNumbers(input.value || '');
+      input.value = normalized;
+      if (cursorPosition != null) {
+        const newPos = Math.min(normalized.length, cursorPosition);
+        input.setSelectionRange(newPos, newPos);
+      }
+    });
+    dom.servicesClientPrice.dataset.normalizeAttached = 'true';
+  }
+
   syncProjectTaxAndShare(dom.companyShare?.checked ? 'share' : 'tax');
 }
 
