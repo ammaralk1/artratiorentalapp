@@ -537,6 +537,15 @@ export function buildReservationDisplayGroups(reservation = {}) {
       return false;
     }
 
+    const hasPackageRef = (entry = {}) => [
+      entry.packageId,
+      entry.package_id,
+      entry.package_code,
+      entry.packageCode,
+      entry.bundleId,
+      entry.bundle_id,
+    ].some((v) => v != null && v !== '');
+
     const everyItemFromPackage = group.items.every((item) => {
       const eqId = resolveEquipmentIdentifier(item);
       const normalizedEqId = eqId != null ? String(eqId) : null;
@@ -545,6 +554,10 @@ export function buildReservationDisplayGroups(reservation = {}) {
       }
       const normalizedBarcode = item?.barcode ? normalizeBarcodeValueLocal(item.barcode) : null;
       if (normalizedBarcode && normalizedPackageBarcodes.has(normalizedBarcode)) {
+        return true;
+      }
+      // Legacy data: children carry package reference but lack barcode/equipment id
+      if (hasPackageRef(item)) {
         return true;
       }
       return false;
