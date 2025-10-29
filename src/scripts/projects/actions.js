@@ -20,7 +20,18 @@ import { renderProjects, renderFocusCards, updateSummary } from './view.js';
 export async function removeProject(projectId) {
   const index = state.projects.findIndex((project) => String(project.id) === String(projectId));
   if (index === -1) return;
-  if (!window.confirm(t('projects.confirm.delete', 'هل أنت متأكد من حذف هذا المشروع؟'))) return;
+  // احسب عدد الحجوزات المرتبطة بالمشروع لإظهار تحذير أوضح قبل الحذف
+  let linkedCount = 0;
+  try {
+    const currentReservations = getReservationsState();
+    linkedCount = (currentReservations || []).filter((r) => String(r.projectId) === String(projectId)).length;
+  } catch (_) { /* ignore */ }
+
+  const cascadeMsg = linkedCount > 0
+    ? t('projects.confirm.deleteCascade', `⚠️ سيتم حذف المشروع وجميع الحجوزات المرتبطة به (${linkedCount}). هل أنت متأكد؟`)
+    : t('projects.confirm.delete', 'هل أنت متأكد من حذف هذا المشروع؟');
+
+  if (!window.confirm(cascadeMsg)) return;
 
   try {
     // احذف الحجوزات المرتبطة أولاً (إن وجدت) ثم احذف المشروع
