@@ -457,15 +457,15 @@
                         </div>
                       </div>
                       <div class="col-12 col-lg-4" data-hide-on-create>
-                        <label class="form-label" for="project-payment-status" data-i18n data-i18n-key="projects.form.labels.paymentStatus">حالة الدفع</label>
-                        <select id="project-payment-status" name="project-payment-status" class="form-select select select-bordered payment-status-select">
+                        <label class="form-label d-none" for="project-payment-status" data-i18n data-i18n-key="projects.form.labels.paymentStatus">حالة الدفع</label>
+                        <select id="project-payment-status" name="project-payment-status" class="form-select select select-bordered payment-status-select d-none">
                           <option value="unpaid" selected data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
                           <option value="partial" data-i18n data-i18n-key="projects.form.paymentStatus.partial">مدفوع جزئياً</option>
                           <option value="paid" data-i18n data-i18n-key="projects.form.paymentStatus.paid">مدفوع</option>
                         </select>
                         <div class="project-payment-progress mt-2">
                           <label class="form-label" for="project-payment-progress-value" data-i18n data-i18n-key="projects.form.paymentProgress.label">💰 الدفعة المستلمة</label>
-                          <div class="input-group">
+                          <div class="input-group project-payment-progress-group">
                             <select id="project-payment-progress-type" name="project-payment-progress-type" class="form-select">
                               <option value="amount" data-i18n data-i18n-key="projects.form.paymentProgress.amount">💵 مبلغ</option>
                               <option value="percent" selected data-i18n data-i18n-key="projects.form.paymentProgress.percent">٪ نسبة</option>

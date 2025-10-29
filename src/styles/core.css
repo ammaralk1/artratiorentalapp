@@ -3084,3 +3084,13 @@ html.dark-mode .project-services-table tbody tr:hover,
 body.dark-mode .project-services-table tbody tr:hover {
   background: rgba(59, 130, 246, 0.18);
 }
+
+/* Project create: shrink discount and payment progress inputs to quarter on large screens */
+@media (min-width: 992px) {
+  .project-discount-group {
+    max-width: 25%;
+  }
+  .project-payment-progress-group {
+    max-width: 25%;
+  }
+}
