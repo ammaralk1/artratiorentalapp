@@ -3085,13 +3085,21 @@ body.dark-mode .project-services-table tbody tr:hover {
   background: rgba(59, 130, 246, 0.18);
 }
 
-/* Project create: shrink discount and payment progress inputs to quarter on large screens */
+/* Project create: layout sizing */
+.project-payment-progress-group {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  flex-wrap: nowrap; /* prevent wrapping that hides the button */
+  width: 100%;
+}
+
 @media (min-width: 992px) {
   .project-discount-group {
-    max-width: 25%;
+    max-width: 25%; /* keep discount compact */
   }
   .project-payment-progress-group {
-    max-width: 25%;
+    max-width: 100%; /* fill its column to avoid truncation */
   }
 }
 
@@ -3101,31 +3109,42 @@ body.dark-mode .project-services-table tbody tr:hover {
   min-width: 0; /* allow flex to shrink without clipping */
 }
 
+/* Ensure "٪ نسبة" never truncates */
 .project-payment-progress-group .form-select {
-  min-width: 6.5rem; /* ensure "٪ نسبة" text fits without truncation */
+  flex: 0 0 auto;
+  min-width: 8.75rem;
+}
+.project-payment-progress-group .form-control {
+  flex: 1 1 auto;
 }
 
-/* Add Payment button styling */
+/* Add Payment button styling — outline + inner glow */
 .payment-add-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding-inline: 0.85rem;
-  /* match default form-control height */
-  min-height: 2.5rem;
-  border: 1px solid hsl(var(--p) / 0.35);
-  background: linear-gradient(135deg, hsl(var(--p) / 0.96), hsl(var(--p) / 0.82));
-  color: #fff;
-  box-shadow: 0 10px 22px hsl(var(--p) / 0.25);
+  padding-inline: 0.95rem;
+  min-height: 2.5rem; /* match control height */
+  border: 1px solid hsl(var(--p) / 0.55);
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 18%, transparent), color-mix(in hsl, hsl(var(--p)) 12%, transparent));
+  color: var(--clr-text);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+    0 10px 22px hsl(var(--p) / 0.22),
+    0 0 0 1px hsl(var(--p) / 0.28);
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .payment-add-btn:hover,
 .payment-add-btn:focus-visible {
   transform: translateY(-1px);
-  border-color: hsl(var(--p) / 0.5);
-  box-shadow: 0 14px 28px hsl(var(--p) / 0.3), 0 0 0 3px hsl(var(--p) / 0.18);
+  border-color: hsl(var(--p) / 0.7);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 14px 28px hsl(var(--p) / 0.30),
+    0 0 0 3px hsl(var(--p) / 0.18);
   outline: none;
 }
 
@@ -3134,8 +3153,11 @@ body.dark-mode .project-services-table tbody tr:hover {
 }
 
 :is(html.dark-mode, body.dark-mode) .payment-add-btn {
-  border-color: hsl(var(--p) / 0.45);
-  background: linear-gradient(135deg, hsl(var(--p) / 0.94), hsl(var(--p) / 0.8));
-  color: #fff;
-  box-shadow: 0 12px 26px hsl(var(--p) / 0.35);
+  color: #e8edff;
+  border-color: hsl(var(--p) / 0.6);
+  background: linear-gradient(135deg, color-mix(in hsl, hsl(var(--p)) 22%, transparent), color-mix(in hsl, hsl(var(--p)) 16%, transparent));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 12px 26px hsl(var(--p) / 0.34),
+    0 0 0 1px hsl(var(--p) / 0.38);
 }
