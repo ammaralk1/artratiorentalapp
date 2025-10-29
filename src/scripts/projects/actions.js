@@ -10,7 +10,8 @@ import {
 import {
   getReservationsState,
   refreshReservationsFromApi,
-  updateReservationApi
+  updateReservationApi,
+  deleteReservationApi
 } from '../reservationsService.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
 import { state } from './state.js';
@@ -22,6 +23,17 @@ export async function removeProject(projectId) {
   if (!window.confirm(t('projects.confirm.delete', 'هل أنت متأكد من حذف هذا المشروع؟'))) return;
 
   try {
+    // احذف الحجوزات المرتبطة أولاً (إن وجدت) ثم احذف المشروع
+    try {
+      const currentReservations = getReservationsState();
+      const linked = (currentReservations || []).filter((r) => String(r.projectId) === String(projectId));
+      for (const res of linked) {
+        const resId = res.id ?? res.reservationId ?? res.reservation_code;
+        if (!resId) continue;
+        try { await deleteReservationApi(resId); } catch (e) { console.warn('⚠️ failed to delete linked reservation', resId, e); }
+      }
+    } catch (e) { /* ignore */ }
+
     await deleteProjectApi(projectId);
     await refreshProjectsFromApi();
     await refreshReservationsFromApi();
@@ -35,7 +47,7 @@ export async function removeProject(projectId) {
 
     document.dispatchEvent(new CustomEvent('projects:changed'));
     document.dispatchEvent(new CustomEvent('reservations:changed'));
-    showToast(t('projects.toast.deleted', '🗑️ تم حذف المشروع'));
+    showToast(t('projects.toast.deleted', '🗑️ تم حذف المشروع والحجوزات المرتبطة به'));
   } catch (error) {
     console.error('❌ [projects] removeProject failed', error);
     const message = isProjectApiError(error)
