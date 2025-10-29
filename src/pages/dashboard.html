@@ -1327,6 +1327,13 @@
                         <input type="text" id="res-payment-progress-value" class="form-control reservation-billing-input reservation-payment-progress__input" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.create.paymentProgress.placeholder">
                       </div>
                       <small class="form-text reservation-payment-progress__hint" data-i18n data-i18n-key="reservations.create.paymentProgress.hint">اكتب المبلغ أو النسبة التي تم استلامها من إجمالي الحجز</small>
+                      <div class="d-flex align-items-center gap-2 mt-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="res-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
+                      </div>
+                      <div class="reservation-payment-history-block mt-2">
+                        <h6 class="reservation-payment-history__title" data-i18n data-i18n-key="reservations.paymentHistory.title">سجل الدفعات</h6>
+                        <div id="res-payment-history" class="reservation-payment-history"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
