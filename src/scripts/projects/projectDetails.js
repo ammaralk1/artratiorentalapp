@@ -1649,7 +1649,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
       </section>
 
       <section class="project-edit-expenses mt-4">
-        <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenses', 'متطلبات المشروع'))}</h6>
+        <h6 class="mb-2">${escapeHtml(t('projects.form.labels.expenseLabel', 'خدمات إنتاجية'))}</h6>
         <div class="project-edit-expense-form">
           <div class="project-edit-expense-label-col">
             <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'وصف المتطلب'))}">
@@ -1723,6 +1723,10 @@ function buildProjectEditExpensesMarkup(expenses = []) {
         <td><button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button></td>
       </tr>`;
   }).join('');
+
+  const saleTotal = expenses.reduce((sum, e) => sum + (Number(e?.salePrice ?? e?.sale_price) || 0), 0);
+  const saleTotalDisplay = escapeHtml(formatCurrency(saleTotal));
+  const totalLabel = escapeHtml(t('projects.expenses.table.totalSale', 'مجموع سعر البيع'));
   return `
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle project-services-table">
@@ -1735,6 +1739,13 @@ function buildProjectEditExpensesMarkup(expenses = []) {
           </tr>
         </thead>
         <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2" class="text-end">${totalLabel}</th>
+            <th>${saleTotalDisplay}</th>
+            <th></th>
+          </tr>
+        </tfoot>
       </table>
     </div>`;
 }
