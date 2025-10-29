@@ -263,11 +263,14 @@ export function openProjectDetails(projectId) {
       ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
       : 0;
 
+    // Net profit per requested formula:
+    // servicesTotal - discountAmount - companyShareAmount - taxAmountAfterShare - expensesTotal
+    const netProfit = Number((servicesTotal - discountAmount - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
+    // Final total shown to customer (after discount + share + tax)
     const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
-    const netProfit = Number((finalTotal - companyShareAmount - taxAmountAfterShare - expensesTotalNumber).toFixed(2));
 
     summaryDetails = [];
-    summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية'), value: formatCurrency(servicesTotal) });
+    summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesTotal) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
     summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.grossAfterDiscount', 'الإجمالي بعد الخصم'), value: formatCurrency(baseAfterDiscount) });
     if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrency(companyShareAmount)}` });
@@ -407,7 +410,7 @@ export function openProjectDetails(projectId) {
         </div>
         <div class="project-summary-right">
           <div class="project-summary-card project-details-outline">
-            <h6>${escapeHtml(t('projects.details.summary.title', 'ملخص مالي'))}</h6>
+            <h6>${escapeHtml(t('projects.details.summary.title', 'الملخص المالي'))}</h6>
             ${summaryDetailsHtml}
           </div>
         </div>
