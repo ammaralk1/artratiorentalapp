@@ -259,7 +259,7 @@ registerTranslations({
 
     'projects.status.upcoming': 'قادم',
     'projects.status.ongoing': 'قيد التنفيذ',
-    'projects.status.completed': 'منتهٍ',
+    'projects.status.completed': 'مكتمل',
 
     'projectCards.filters.search': '🔍 ابحث باسم المشروع أو الوصف...',
     'projectCards.filters.status.all': '⚙️ كل الحالات',
