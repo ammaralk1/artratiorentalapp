@@ -147,9 +147,29 @@ function renderProjectRow(project) {
 
 function combineProjectDateRange(start, end) {
   if (!start) return '—';
-  const startText = formatDateTime(start);
-  if (!end) return startText;
-  return `${startText} - ${formatDateTime(end)}`;
+  const startStr = formatDateTime(start);
+  if (!end) return startStr;
+  const endStr = formatDateTime(end);
+
+  // Split to date/time parts
+  const split = (val) => {
+    const parts = String(val).split(' ').filter(Boolean);
+    const date = parts.shift() || '';
+    const time = parts.join(' ');
+    return { date, time };
+  };
+  const s = split(startStr);
+  const e = split(endStr);
+
+  // If the date is the same, show date once and time range
+  if (s.date && s.date === e.date) {
+    const range = (s.time && e.time)
+      ? `${s.date} من ${s.time} إلى ${e.time}`
+      : `${s.date}`;
+    return range;
+  }
+
+  return `${startStr} - ${endStr}`;
 }
 
 function renderTimeline(projectsForTimeline) {
@@ -464,16 +484,21 @@ function renderFocusCard(project, category) {
 
   const projectInfoRows = [
     { icon: '👤', label: t('projects.details.client', 'العميل'), value: clientName },
-    companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
+    // Hide company on the card per request
+    // companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
     { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: typeLabel },
     { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: combineProjectDateRange(project.start, project.end) }
   ].filter(Boolean).map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
+  const includesTaxLabel = (sharePercent > 0 && applyTax) ? ` ${t('projects.details.chips.vatOn', '(شامل الضريبة)', 'Includes VAT')}` : '';
+  const finalTotalLabel = `${t('projects.details.summary.finalTotal', 'المجموع النهائي', 'Final Total')}${includesTaxLabel}`;
+
   const financialRows = [
     { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
-    { icon: '💸', label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'), value: formatCurrency(expensesTotal) },
-    { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'سعر العميل للخدمات الإنتاجية'), value: formatCurrency(servicesClientPrice) },
-    { icon: '💵', label: t('projects.details.summary.finalTotal', 'الإجمالي النهائي', 'Final Total'), value: formatCurrency(finalTotal) }
+    // Hide total expenses on the card per request
+    // { icon: '💸', label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'), value: formatCurrency(expensesTotal) },
+    { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPrice) },
+    { icon: '💵', label: finalTotalLabel, value: formatCurrency(finalTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
   const reservationRows = [
@@ -508,7 +533,7 @@ function renderFocusCard(project, category) {
             </div>
           </div>
           <div class="project-focus-card__section">
-            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الجانب المالي'))}</span>
+            <span class="project-focus-card__section-title">${escapeHtml(t('projects.focus.summary.payment', 'الملخص المالي'))}</span>
             <div class="project-focus-card__section-box">
               ${financialRows}
             </div>
