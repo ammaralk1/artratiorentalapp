@@ -1,4 +1,5 @@
 import { loadData, saveData } from '../storage.js';
+import { getReservationsState } from '../reservationsService.js';
 import { apiRequest } from '../apiClient.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { getTechnicianPositionsCache, findPositionByName } from '../technicianPositions.js';
@@ -2096,7 +2097,18 @@ function formatProjectDurationLabel(days) {
 
 function collectProjectQuoteData(project) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { customers = [], reservations = [], projects = [], technicians: storedTechnicians = [] } = loadData();
+  const snapshot = loadData() || {};
+  const customers = Array.isArray(snapshot.customers) ? snapshot.customers : [];
+  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
+  const storedTechnicians = Array.isArray(snapshot.technicians) ? snapshot.technicians : [];
+  // Prefer live state reservations; fallback to snapshot
+  let reservations = [];
+  try {
+    const stateReservations = getReservationsState?.() || [];
+    reservations = Array.isArray(stateReservations) && stateReservations.length ? stateReservations : (snapshot.reservations || []);
+  } catch (_) {
+    reservations = snapshot.reservations || [];
+  }
 
   const resolvedProject = project?.id != null
     ? projects.find((entry) => String(entry.id) === String(project.id)) || project

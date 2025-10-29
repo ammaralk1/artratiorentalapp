@@ -80,8 +80,8 @@ export function initProjectDatePickers() {
   if (!fp) return;
 
   const datePickers = [
-    ['#project-start-date', { dateFormat: 'Y-m-d' }],
-    ['#project-end-date', { dateFormat: 'Y-m-d' }]
+    ['#project-start-date', { dateFormat: 'Y-m-d', allowInput: true }],
+    ['#project-end-date', { dateFormat: 'Y-m-d', allowInput: true }]
   ];
 
   const timePickers = [
@@ -96,6 +96,7 @@ export function initProjectDatePickers() {
       defaultMinute: 0,
       minuteIncrement: 5,
       disableMobile: true,
+      allowInput: true,
       altInputClass: 'flatpickr-alt-input form-control'
     }],
     ['#project-end-time', {
@@ -109,15 +110,68 @@ export function initProjectDatePickers() {
       defaultMinute: 0,
       minuteIncrement: 5,
       disableMobile: true,
+      allowInput: true,
       altInputClass: 'flatpickr-alt-input form-control'
     }]
   ];
 
   [...datePickers, ...timePickers].forEach(([selector, config]) => {
-    if (document.querySelector(selector)) {
-      fp(selector, config);
+    const el = document.querySelector(selector);
+    if (el) {
+      fp(el, config);
     }
   });
+
+  // Normalize Arabic/Persian numerals to English as user types (including altInput)
+  const normalizeNumbers = (str) => {
+    if (str === null || str === undefined) return '';
+    const arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const english = ['0','1','2','3','4','5','6','7','8','9'];
+    return String(str).split('').map((ch) => {
+      const ai = arabic.indexOf(ch);
+      if (ai > -1) return english[ai];
+      const pi = persian.indexOf(ch);
+      if (pi > -1) return english[pi];
+      return ch;
+    }).join('');
+  };
+
+  const attachNumericNormalization = (inputEl) => {
+    if (!inputEl || inputEl.dataset.normalizedDigits === 'true') return;
+    const handler = () => {
+      const prev = inputEl.value || '';
+      const normalized = normalizeNumbers(prev);
+      if (normalized !== prev) {
+        const start = inputEl.selectionStart;
+        const end = inputEl.selectionEnd;
+        inputEl.value = normalized;
+        try {
+          if (typeof start === 'number' && typeof end === 'number') {
+            const delta = normalized.length - prev.length;
+            inputEl.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta));
+          }
+        } catch (_) {}
+      }
+    };
+    inputEl.addEventListener('input', handler);
+    inputEl.addEventListener('blur', handler);
+    try { inputEl.setAttribute('inputmode', 'numeric'); } catch (_) {}
+    inputEl.dataset.normalizedDigits = 'true';
+  };
+
+  // Base inputs
+  attachNumericNormalization(dom.startDate);
+  attachNumericNormalization(dom.endDate);
+  attachNumericNormalization(dom.startTime);
+  attachNumericNormalization(dom.endTime);
+  // Flatpickr alt inputs (time)
+  if (dom.startTime && dom.startTime._flatpickr?.altInput) {
+    attachNumericNormalization(dom.startTime._flatpickr.altInput);
+  }
+  if (dom.endTime && dom.endTime._flatpickr?.altInput) {
+    attachNumericNormalization(dom.endTime._flatpickr.altInput);
+  }
 }
 
 export function clearProjectDateInputs() {
