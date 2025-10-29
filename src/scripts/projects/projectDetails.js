@@ -1464,7 +1464,11 @@ function startReservationForProject(project) {
     customerId: project.clientId || null,
     start: project.start || null,
     end: project.end || null,
-    forceNotes: Boolean(project.description)
+    forceNotes: Boolean(project.description),
+    // Signal reservations Create to return to this project details after success
+    fromProjectForm: true,
+    draftStorageKey: 'projects:create:draft',
+    returnUrl: `projects.html?project=${encodeURIComponent(project.id)}#projects-section`,
   };
   updatePreferences({
     dashboardTab: 'reservations-tab',
