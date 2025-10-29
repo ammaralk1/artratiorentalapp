@@ -1222,9 +1222,20 @@ function renderLinkedReservationDraftSummary() {
 
   const draft = loadProjectFormDraft();
   const button = dom.linkedReservationBtn;
-  const ids = Array.isArray(draft?.linkedReservationIds)
+  let ids = Array.isArray(draft?.linkedReservationIds)
     ? Array.from(new Set(draft.linkedReservationIds.map((value) => String(value)).filter(Boolean)))
     : [];
+
+  // Clean up stale linked reservations that were deleted: keep only those that still exist
+  const lookup = buildReservationLookup();
+  const validIds = ids.filter((id) => lookup.has(id));
+  if (validIds.length !== ids.length) {
+    try {
+      const nextDraft = { ...(draft || {}), linkedReservationIds: validIds, savedAt: Date.now() };
+      saveProjectFormDraft(nextDraft);
+    } catch (e) { /* ignore */ }
+    ids = validIds;
+  }
 
   if (!ids.length) {
     summaryEl.dataset.state = 'empty';
@@ -1238,7 +1249,6 @@ function renderLinkedReservationDraftSummary() {
     return;
   }
 
-  const lookup = buildReservationLookup();
   const listItems = ids.map((id) => {
     const reservation = lookup.get(id);
     if (!reservation) {
