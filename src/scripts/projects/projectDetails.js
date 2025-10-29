@@ -451,19 +451,7 @@ export function openProjectDetails(projectId) {
       <h5>${escapeHtml(expensesTableTitle)}</h5>
       ${expensesTableMarkup}
     </section>
-    <section class="project-details-section">
-      <h5>${escapeHtml(t('projects.details.financialBreakdown', 'تفاصيل مالية'))}</h5>
-      <div class="project-details-grid">
-        <div class="project-details-grid-item">
-          <span>${escapeHtml(expensesLabel)}</span>
-          <strong>${formatCurrency(expensesTotal)}</strong>
-        </div>
-        <div class="project-details-grid-item">
-          <span>${escapeHtml(reservationsLabel)}</span>
-          <strong>${formatCurrency(reservationsTotal)}</strong>
-        </div>
-      </div>
-    </section>
+    
     <section class="project-details-section">
       <h5>${escapeHtml(t('reservations.paymentHistory.title', 'سجل الدفعات'))}</h5>
       <div class="project-details-grid">
