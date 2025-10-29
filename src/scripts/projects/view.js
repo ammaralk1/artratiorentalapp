@@ -1,7 +1,7 @@
 import { userCanManageDestructiveActions } from '../auth.js';
 import { t } from '../language.js';
 import { normalizeNumbers, showToast } from '../utils.js';
-import { calculateReservationTotal } from '../reservationsSummary.js';
+import { calculateReservationTotal, calculateDraftFinancialBreakdown } from '../reservationsSummary.js';
 import { state, dom } from './state.js';
 import { resolveReservationProjectState } from '../reservationsShared.js';
 import {
@@ -368,24 +368,65 @@ function renderFocusCard(project, category) {
     cardStateClasses.push('project-focus-card--confirmed');
   }
 
-  const reservationsTotals = reservationsForProject.reduce((acc, reservation) => {
-    const net = resolveReservationNetTotal(reservation);
-    const equipmentTotal = (reservation.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
-    const crewTotal = (reservation.technicians || []).length;
+  // Aggregate reservation totals in a tax-neutral way to avoid double counting tax
+  const agg = reservationsForProject.reduce((acc, res) => {
+    const items = Array.isArray(res.items) ? res.items : [];
+    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+    const techniciansOrAssignments = crewAssignments.length
+      ? crewAssignments
+      : (Array.isArray(res.technicians) ? res.technicians : []);
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: Array.isArray(techniciansOrAssignments) && !techniciansOrAssignments.length ? techniciansOrAssignments : [],
+      crewAssignments: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object' ? techniciansOrAssignments : [],
+      discount: res.discount ?? 0,
+      discountType: res.discountType || 'percent',
+      applyTax: false,
+      start: res.start,
+      end: res.end,
+      companySharePercent: null,
+    });
+    const net = resolveReservationNetTotal(res);
+    const equipmentCount = (res.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+    const crewCountLocal = (res.technicians || []).length;
     return {
-      total: acc.total + net,
-      equipment: acc.equipment + equipmentTotal,
-      crew: acc.crew + crewTotal
+      netTotal: acc.netTotal + net,
+      equipmentMoney: acc.equipmentMoney + Number(breakdown.equipmentTotal || 0),
+      crewMoney: acc.crewMoney + Number(breakdown.crewTotal || 0),
+      equipmentCount: acc.equipmentCount + equipmentCount,
+      crewCount: acc.crewCount + crewCountLocal,
     };
-  }, { total: 0, equipment: 0, crew: 0 });
+  }, { netTotal: 0, equipmentMoney: 0, crewMoney: 0, equipmentCount: 0, crewCount: 0 });
 
-  const reservationsTotal = Number(reservationsTotals.total.toFixed(2));
-  const equipmentCountTotal = reservationsTotals.equipment;
-  const crewAssignmentsTotal = reservationsTotals.crew || crewCount;
-  const combinedTaxAmount = applyTax
-    ? Number(((projectSubtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+  const reservationsTotal = Number(agg.netTotal.toFixed(2));
+  const equipmentCountTotal = agg.equipmentCount;
+  const crewAssignmentsTotal = agg.crewCount || crewCount;
+  // Compute final total using the same formula as project details/cards
+  const expensesNumber = Number(expensesTotal || 0);
+  const grossBeforeDiscount = Number((agg.equipmentMoney + agg.crewMoney + expensesNumber).toFixed(2));
+  const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+  const shareEnabled = project?.companyShareEnabled === true
+    || project?.companyShareEnabled === 'true'
+    || project?.company_share_enabled === true
+    || project?.company_share_enabled === 'true';
+  const rawShare = Number.parseFloat(
+    project?.companySharePercent
+    ?? project?.company_share_percent
+    ?? project?.companyShare
+    ?? project?.company_share
+    ?? 0
+  ) || 0;
+  const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+  const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
+  const taxAmountAfterShare = applyTax
+    ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))
     : 0;
-  const overallTotal = Number((projectSubtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
 
   const projectCodeBadge = `<span class="project-code-badge project-focus-card__code">#${escapeHtml(projectCodeDisplay)}</span>`;
   const typeBadge = typeLabel
@@ -417,7 +458,7 @@ function renderFocusCard(project, category) {
   const financialRows = [
     { icon: '💳', label: t('projectCards.stats.paymentStatus', 'حالة الدفع'), value: paymentStatusLabel },
     { icon: '💸', label: t('projectCards.stats.expensesTotal', 'إجمالي المصاريف'), value: formatCurrency(expensesTotal) },
-    { icon: '🧮', label: t('projectCards.stats.totalWithTax', 'الإجمالي مع الضريبة'), value: formatCurrency(overallTotal) }
+    { icon: '💵', label: t('projects.details.summary.finalTotal', 'الإجمالي النهائي', 'Final Total'), value: formatCurrency(finalTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
   const reservationRows = [
@@ -649,7 +690,11 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   // Link confirmation: if project is confirmed, reflect that on the tag regardless of stale reservation.status
   const { effectiveConfirmed } = resolveReservationProjectState(reservation, project);
   const finalStatus = effectiveConfirmed ? 'confirmed' : normalizedStatus;
-  const statusLabel = t(`reservations.status.${finalStatus}`, finalStatus);
+  // Use the same translation keys used across reservations list to unify language/appearance
+  const statusLabel = t(
+    `reservations.list.status.${finalStatus}`,
+    finalStatus === 'confirmed' ? '✅ مؤكد' : finalStatus === 'pending' ? '⏳ غير مؤكد' : finalStatus
+  );
   const statusClassMap = {
     confirmed: 'project-reservation-card__badge--confirmed',
     pending: 'project-reservation-card__badge--pending',
@@ -659,9 +704,13 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   };
   const statusClass = statusClassMap[finalStatus] || 'project-reservation-card__badge--info';
   // Link payment tag: support partial
-  const paidStatusRaw = String(
-    reservation.paidStatus || reservation.paymentStatus || (reservation.paid ? 'paid' : 'unpaid')
-  ).toLowerCase();
+  // When linked to a project, mirror the project's payment status on the reservation card
+  const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
+  const paidStatusRaw = projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw)
+    ? projectPaidRaw
+    : String(
+        reservation.paidStatus || reservation.paymentStatus || (reservation.paid ? 'paid' : 'unpaid')
+      ).toLowerCase();
   const paidStatus = paidStatusRaw === 'paid' ? 'paid' : (paidStatusRaw === 'partial' ? 'partial' : 'unpaid');
   const paidLabel = paidStatus === 'paid'
     ? t('reservations.list.payment.paid', '💳 مدفوع')
