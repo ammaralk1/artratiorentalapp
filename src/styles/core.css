@@ -3091,6 +3091,16 @@ body.dark-mode .project-services-table tbody tr:hover {
     max-width: 25%;
   }
   .project-payment-progress-group {
-    max-width: 25%;
+    max-width: 33%;
   }
+}
+
+/* Improve readability inside received payment group */
+.project-payment-progress-group .form-select,
+.project-payment-progress-group .form-control {
+  min-width: 0; /* allow flex to shrink without clipping */
+}
+
+.project-payment-progress-group .form-select {
+  min-width: 6.5rem; /* ensure "٪ نسبة" text fits without truncation */
 }
