@@ -507,8 +507,9 @@ function renderFocusCard(project, category) {
   const equipmentCountTotal = agg.equipmentCount;
   const crewAssignmentsTotal = agg.crewCount || crewCount;
   // Compute final total using the same formula as project details/cards
-  const expensesNumber = Number(expensesTotal || 0);
-  const grossBeforeDiscount = Number((agg.equipmentMoney + agg.crewMoney + expensesNumber).toFixed(2));
+  // Align with project details modal: use services client price (not expenses cost)
+  const servicesNumber = Number(servicesClientPrice || 0);
+  const grossBeforeDiscount = Number((agg.equipmentMoney + agg.crewMoney + servicesNumber).toFixed(2));
   const discountVal = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
   let discountAmount = discountType === 'amount' ? discountVal : (grossBeforeDiscount * (discountVal / 100));
