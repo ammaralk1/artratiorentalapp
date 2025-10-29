@@ -316,7 +316,7 @@ registerTranslations({
     'projects.details.summary.equipmentTotal': 'إجمالي المعدات',
     'projects.details.summary.crewTotal': 'إجمالي الفريق',
     'projects.details.summary.crewCostTotal': 'تكلفة الفريق',
-    'projects.details.summary.expensesTotal': 'مصروفات المشروع',
+    'projects.details.summary.expensesTotal': 'تكلفة الخدمات الإنتاجية',
     'projects.details.summary.gross': 'الإجمالي',
     'projects.details.summary.discount': 'الخصم',
     'projects.details.summary.companyShare': 'نسبة الشركة',

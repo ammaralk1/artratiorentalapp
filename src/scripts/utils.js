@@ -12,7 +12,8 @@ function ensureToastContainer() {
     container.style.top = '20px';
     container.style.left = '50%';
     container.style.transform = 'translateX(-50%)';
-    container.style.zIndex = '9999';
+    // Ensure toast is above any modal/backdrop
+    container.style.zIndex = '110000';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';

@@ -1456,6 +1456,20 @@ body[dir="rtl"] .project-details-chips {
   transform: translateY(0);
 }
 
+/* Disabled state for modal action buttons (visual only, still allows toast click) */
+.project-details-footer .modal-action-btn[aria-disabled='true'],
+.project-details-footer .modal-action-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.project-details-footer .modal-action-btn[aria-disabled='true']:hover,
+.project-details-footer .modal-action-btn[aria-disabled='true']:focus-visible,
+.project-details-footer .modal-action-btn.disabled:hover,
+.project-details-footer .modal-action-btn.disabled:focus-visible {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .project-details-footer .modal-action-btn--primary {
   background: linear-gradient(135deg, rgba(59, 91, 220, 0.96), rgba(37, 99, 235, 0.88));
   box-shadow:

@@ -490,7 +490,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrencyLocalized(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrencyLocalized(agg.crew) });
     if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrencyLocalized(agg.crewCost) });
-    if (expensesTotal > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'مصروفات المشروع'), value: formatCurrencyLocalized(expensesTotal) });
+    if (expensesTotal > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrencyLocalized(expensesTotal) });
     summaryDetails.push({ icon: '🧮', label: t('projects.details.summary.gross', 'الإجمالي'), value: formatCurrencyLocalized(gross) });
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrencyLocalized(discountAmount)}` });
     if (companyShareAmount > 0) summaryDetails.push({ icon: '🏦', label: t('projects.details.summary.companyShare', 'نسبة الشركة'), value: `−${formatCurrencyLocalized(companyShareAmount)}` });
