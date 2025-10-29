@@ -2450,6 +2450,14 @@ async function handleReservationSubmit() {
     updatePaymentStatusAppearance(paymentSelect, effectivePaidStatus);
   }
 
+  // Normalize project payment status for linked reservations (so tags follow the project immediately)
+  const projectPaidRaw = typeof selectedProject?.paymentStatus === 'string'
+    ? selectedProject.paymentStatus.toLowerCase()
+    : null;
+  const projectPaidStatus = projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw)
+    ? projectPaidRaw
+    : 'unpaid';
+
   const payload = buildReservationPayload({
     reservationCode,
     customerId: customerId,
@@ -2464,7 +2472,7 @@ async function handleReservationSubmit() {
     discount: projectLinked ? 0 : discount,
     discountType: projectLinked ? 'percent' : discountType,
     applyTax,
-    paidStatus: projectLinked ? 'unpaid' : effectivePaidStatus,
+    paidStatus: projectLinked ? projectPaidStatus : effectivePaidStatus,
     confirmed: projectConfirmed,
     items: draftItems.map((item) => ({
       ...item,

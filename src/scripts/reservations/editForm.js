@@ -362,10 +362,28 @@ function formatPaymentTypeLabel(type) {
 function renderEditPaymentHistory() {
   const container = document.getElementById('edit-res-payment-history');
   if (!container) return;
-
-  const payments = getEditingPayments();
+  
+  // When linked to a project, show the project's payment history in read-only mode
+  let payments = getEditingPayments();
+  const projectId = document.getElementById('edit-res-project')?.value || '';
+  if (projectId) {
+    try {
+      const projects = (loadData()?.projects) || [];
+      const project = projects.find((p) => String(p.id) === String(projectId));
+      const projectHistory = Array.isArray(project?.paymentHistory)
+        ? project.paymentHistory
+        : (Array.isArray(project?.payment_history)
+            ? project.payment_history
+            : (Array.isArray(project?.payments)
+                ? project.payments
+                : (Array.isArray(project?.paymentLogs) ? project.paymentLogs : [])));
+      if (Array.isArray(projectHistory) && projectHistory.length) {
+        payments = projectHistory;
+      }
+    } catch (_) { /* noop */ }
+  }
   if (!Array.isArray(payments) || payments.length === 0) {
-    container.innerHTML = `<div class="reservation-payment-history__empty">${t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة لهذا الحجز')}</div>`;
+    container.innerHTML = `<div class="reservation-payment-history__empty">${t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة')}</div>`;
     setupPaymentHistoryEvents();
     return;
   }
@@ -734,7 +752,18 @@ function setEditLinkedReservationControlState(projectLinked) {
       shareCheckbox.title = message;
     }
     if (paidSelect) {
-      paidSelect.value = 'unpaid';
+      // Reflect the linked project's current payment status on the disabled selector for clarity
+      const projectId = document.getElementById('edit-res-project')?.value || '';
+      let normalized = 'unpaid';
+      if (projectId) {
+        try {
+          const projects = (loadData()?.projects) || [];
+          const project = projects.find((p) => String(p.id) === String(projectId));
+          const raw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
+          if (raw && ['paid', 'partial', 'unpaid'].includes(raw)) normalized = raw;
+        } catch (_) { /* noop */ }
+      }
+      paidSelect.value = normalized;
       paidSelect.disabled = true;
       paidSelect.classList.add('reservation-input-disabled');
       paidSelect.title = message;
@@ -827,7 +856,22 @@ export function updateEditReservationSummary() {
   const taxCheckbox = document.getElementById('edit-res-tax');
   const applyTax = projectLinked ? false : (taxCheckbox?.checked || false);
   const manualPaymentOverride = !projectLinked && paidSelect?.dataset?.userSelected === 'true';
-  const paidStatus = projectLinked ? 'unpaid' : (manualPaymentOverride ? (paidSelect?.value || 'unpaid') : 'unpaid');
+  let paidStatus = 'unpaid';
+  if (projectLinked) {
+    const projectId = document.getElementById('edit-res-project')?.value || '';
+    if (projectId) {
+      try {
+        const projects = (loadData()?.projects) || [];
+        const project = projects.find((p) => String(p.id) === String(projectId));
+        const raw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
+        if (raw && ['paid', 'partial', 'unpaid'].includes(raw)) {
+          paidStatus = raw;
+        }
+      } catch (_) { /* noop */ }
+    }
+  } else {
+    paidStatus = manualPaymentOverride ? (paidSelect?.value || 'unpaid') : 'unpaid';
+  }
 
   let companySharePercent = null;
   if (!projectLinked && applyTax) {

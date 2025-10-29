@@ -32,11 +32,16 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
-    const paidStatus = reservation.paidStatus
+    // When linked to a project, reflect the project's payment status on the reservation tile
+    const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
+    const fallbackPaidStatus = reservation.paidStatus
       ?? reservation.paid_status
       ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
-    const paid = paidStatus === 'paid';
-    const isPartial = paidStatus === 'partial';
+    const effectivePaidStatus = projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw)
+      ? projectPaidRaw
+      : fallbackPaidStatus;
+    const paid = effectivePaidStatus === 'paid';
+    const isPartial = effectivePaidStatus === 'partial';
 
     const {
       effectiveConfirmed,

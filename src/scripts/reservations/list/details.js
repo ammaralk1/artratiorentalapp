@@ -414,9 +414,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paymentHistoryEmpty = t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
 
-  const paidStatus = reservation.paidStatus
-    ?? reservation.paid_status
-    ?? (paid ? 'paid' : 'unpaid');
+  // Reflect project payment status when linked to a project
+  const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
+  const paidStatus = (projectLinked && projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw))
+    ? projectPaidRaw
+    : (reservation.paidStatus
+      ?? reservation.paid_status
+      ?? (paid ? 'paid' : 'unpaid'));
   const isPartial = paidStatus === 'partial';
   const paymentStatusText = paidStatus === 'paid'
     ? paymentPaidText
@@ -591,19 +595,31 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   console.debug('[reservations/details] payment history raw', reservation.paymentHistory, reservation.payment_history);
   let originalHistory = [];
-  if (Array.isArray(reservation.paymentHistory)) {
-    originalHistory = reservation.paymentHistory;
-  } else if (Array.isArray(reservation.payment_history)) {
-    originalHistory = reservation.payment_history;
+  // Prefer project-level history when linked
+  if (projectLinked && project) {
+    if (Array.isArray(project.paymentHistory)) {
+      originalHistory = project.paymentHistory;
+    } else if (Array.isArray(project.payment_history)) {
+      originalHistory = project.payment_history;
+    } else if (Array.isArray(project.payments)) {
+      originalHistory = project.payments;
+    } else if (Array.isArray(project.paymentLogs)) {
+      originalHistory = project.paymentLogs;
+    }
+  }
+  if (!Array.isArray(originalHistory) || originalHistory.length === 0) {
+    if (Array.isArray(reservation.paymentHistory)) {
+      originalHistory = reservation.paymentHistory;
+    } else if (Array.isArray(reservation.payment_history)) {
+      originalHistory = reservation.payment_history;
+    } else if (Array.isArray(reservation.paymentLogs)) {
+      originalHistory = reservation.paymentLogs;
+    } else {
+      originalHistory = [];
+    }
   }
 
-  const fallbackHistory = Array.isArray(reservation.paymentLogs)
-    ? reservation.paymentLogs
-    : []; // تعويض لأي مصادر أخرى لاحقاً
-
-  const paymentHistory = Array.isArray(originalHistory) && originalHistory.length > 0
-    ? originalHistory
-    : fallbackHistory;
+  const paymentHistory = Array.isArray(originalHistory) ? originalHistory : [];
 
   const paymentHistoryHtml = paymentHistory.length
     ? `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
