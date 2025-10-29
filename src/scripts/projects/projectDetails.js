@@ -1642,14 +1642,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
           <label class="form-label">${escapeHtml(t('projects.form.labels.description', 'الوصف'))}</label>
           <textarea class="form-control project-edit-textarea" name="project-description" rows="5">${escapeHtml(project.description || '')}</textarea>
         </div>
-        <div class="col-12 col-md-4 col-xl-3">
-          <label class="form-label">${escapeHtml(t('projects.form.labels.paymentStatus', 'حالة الدفع'))}</label>
-          <select class="form-select project-edit-select-xs" name="project-payment-status" id="project-edit-payment-status">
-            <option value="unpaid" ${paymentStatusValue === 'unpaid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.unpaid', 'غير مدفوع'))}</option>
-            <option value="partial" ${paymentStatusValue === 'partial' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.partial', 'مدفوع جزئياً'))}</option>
-            <option value="paid" ${paymentStatusValue === 'paid' ? 'selected' : ''}>${escapeHtml(t('projects.paymentStatus.paid', 'مدفوع'))}</option>
-          </select>
-        </div>
+        <!-- Payment status select removed: status is inferred automatically from payments -->
       </div>
 
       <div class="row g-3 align-items-start mt-1">
