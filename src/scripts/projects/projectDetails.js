@@ -879,7 +879,61 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
   let isSyncingShareTax = false;
 
-  // Normalize Arabic/Persian numerals to English as user types in date/time inputs
+  // Initialize flatpickr on Edit modal date/time fields to match Create form style
+  const initEditDateTimePickers = () => {
+    const fp = (typeof window !== 'undefined' ? window.flatpickr : null)
+      || (typeof globalThis !== 'undefined' ? globalThis.flatpickr : null);
+    if (!fp) return;
+
+    if (startDateInput) {
+      fp(startDateInput, {
+        dateFormat: 'Y-m-d',
+        allowInput: true
+      });
+    }
+    if (endDateInput) {
+      fp(endDateInput, {
+        dateFormat: 'Y-m-d',
+        allowInput: true
+      });
+    }
+    if (startTimeInput) {
+      fp(startTimeInput, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        altInput: true,
+        altFormat: 'h:i K',
+        time_24hr: false,
+        defaultHour: 9,
+        defaultMinute: 0,
+        minuteIncrement: 5,
+        disableMobile: true,
+        allowInput: true,
+        altInputClass: 'flatpickr-alt-input form-control'
+      });
+    }
+    if (endTimeInput) {
+      fp(endTimeInput, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        altInput: true,
+        altFormat: 'h:i K',
+        time_24hr: false,
+        defaultHour: 9,
+        defaultMinute: 0,
+        minuteIncrement: 5,
+        disableMobile: true,
+        allowInput: true,
+        altInputClass: 'flatpickr-alt-input form-control'
+      });
+    }
+  };
+
+  initEditDateTimePickers();
+
+  // Normalize Arabic/Persian numerals to English as user types in date/time inputs (including altInput)
   const attachNumericNormalization = (inputEl) => {
     if (!inputEl || inputEl.dataset.normalizedDigits === 'true') return;
     const handler = () => {
@@ -907,10 +961,18 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     inputEl.dataset.normalizedDigits = 'true';
   };
 
+  // Attach to base inputs
   attachNumericNormalization(startDateInput);
   attachNumericNormalization(startTimeInput);
   attachNumericNormalization(endDateInput);
   attachNumericNormalization(endTimeInput);
+  // If flatpickr created alt inputs for time, attach normalization to them as well
+  if (startTimeInput && startTimeInput._flatpickr?.altInput) {
+    attachNumericNormalization(startTimeInput._flatpickr.altInput);
+  }
+  if (endTimeInput && endTimeInput._flatpickr?.altInput) {
+    attachNumericNormalization(endTimeInput._flatpickr.altInput);
+  }
 
   const ensurePayments = () => {
     if (!Array.isArray(editState.payments)) {
