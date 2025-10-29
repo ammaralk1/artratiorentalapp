@@ -1140,12 +1140,28 @@ function fetchProjectEquipment(PDO $pdo, int $projectId): array
 
 function fetchProjectExpenses(PDO $pdo, int $projectId): array
 {
-    $statement = $pdo->prepare(
-        'SELECT id, label, amount, sale_price
-         FROM project_expenses
-         WHERE project_id = :project_id'
-    );
-    $statement->execute(['project_id' => $projectId]);
+    // Prefer selecting sale_price; gracefully fall back if the column doesn't exist
+    try {
+        $statement = $pdo->prepare(
+            'SELECT id, label, amount, sale_price
+             FROM project_expenses
+             WHERE project_id = :project_id'
+        );
+        $statement->execute(['project_id' => $projectId]);
+    } catch (\PDOException $e) {
+        $message = strtolower($e->getMessage());
+        // Unknown column 'sale_price' in 'field list' → fallback to selecting without it
+        if (strpos($message, "unknown column 'sale_price'") !== false || strpos($message, 'unknown column \"sale_price\"') !== false) {
+            $statement = $pdo->prepare(
+                'SELECT id, label, amount
+                 FROM project_expenses
+                 WHERE project_id = :project_id'
+            );
+            $statement->execute(['project_id' => $projectId]);
+        } else {
+            throw $e;
+        }
+    }
 
     $expenses = [];
     while ($row = $statement->fetch()) {

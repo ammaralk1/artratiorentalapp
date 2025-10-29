@@ -917,6 +917,8 @@ async function handleSubmitProject(event) {
       id: expense.id,
       label: expense.label,
       amount: expense.amount,
+      // Persist per-item sale price so backend stores sale_price in project_expenses
+      salePrice: expense.salePrice,
     })),
     servicesClientPrice,
     discount: discountValue,
@@ -1308,9 +1310,18 @@ function renderLinkedReservationDraftSummary() {
 
   const draft = loadProjectFormDraft();
   const button = dom.linkedReservationBtn;
-  const ids = Array.isArray(draft?.linkedReservationIds)
+  let ids = Array.isArray(draft?.linkedReservationIds)
     ? Array.from(new Set(draft.linkedReservationIds.map((value) => String(value)).filter(Boolean)))
     : [];
+
+  // Cleanup: drop stale/deleted reservation IDs so the button can be re-enabled
+  const lookup = buildReservationLookup();
+  const filtered = ids.filter((id) => lookup.has(id));
+  if (filtered.length !== ids.length) {
+    ids = filtered;
+    const nextDraft = { ...(draft || {}), linkedReservationIds: ids, savedAt: Date.now() };
+    saveProjectFormDraft(nextDraft);
+  }
 
   if (!ids.length) {
     summaryEl.dataset.state = 'empty';
@@ -1324,7 +1335,6 @@ function renderLinkedReservationDraftSummary() {
     return;
   }
 
-  const lookup = buildReservationLookup();
   const listItems = ids.map((id) => {
     const reservation = lookup.get(id);
     if (!reservation) {

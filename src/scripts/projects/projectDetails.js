@@ -791,6 +791,18 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     servicesClientPriceInput.dataset.normalizeAttached = 'true';
   }
 
+  // Prefill "سعر البيع" in Edit with sum of per-item sale_price when available
+  if (servicesClientPriceInput) {
+    const sumSale = Array.isArray(editState.expenses)
+      ? editState.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price) || 0), 0)
+      : 0;
+    const currentVal = normalizeNumbers(String(servicesClientPriceInput.value || ''));
+    const currentNum = Number.parseFloat(currentVal);
+    if (!Number.isFinite(currentNum) || currentNum <= 0) {
+      servicesClientPriceInput.value = normalizeNumbers(String(Math.round(sumSale * 100) / 100));
+    }
+  }
+
   const computeFinanceContext = () => {
     const equipmentEstimate = Number(project.equipmentEstimate) || 0;
     const expensesTotal = Array.isArray(editState.expenses)
@@ -1644,7 +1656,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
             <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
           </div>
           <div class="project-edit-expense-action-col">
-            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
+            <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>
           </div>
         </div>
         <div id="project-edit-expense-list" class="project-edit-expense-list mt-3">

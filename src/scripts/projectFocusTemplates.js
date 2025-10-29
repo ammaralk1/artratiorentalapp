@@ -927,7 +927,7 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
             <input type="text" class="form-control" id="project-edit-expense-amount" inputmode="decimal" placeholder="0">
           </div>
           <div class="col-12 d-flex justify-content-end">
-            <button type="button" class="btn btn-sm btn-primary" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة مصروف'))}</button>
+            <button type="button" class="btn btn-sm btn-primary" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>
           </div>
           <div class="col-12">
             <div id="project-edit-expense-list" class="project-edit-expense-list">
