@@ -246,17 +246,31 @@ function resolvePackageQuantity(packageEntry = {}) {
 }
 
 function resolvePackageUnitPrice(packageEntry = {}, packageItems = [], quantityOverride = null) {
-  const candidate = packageEntry.unit_price
-    ?? packageEntry.unitPrice
-    ?? packageEntry.price;
+  // Always prefer the stored package price from Equipment > Packages
+  try {
+    const defId = normalizePackageId(
+      packageEntry?.id ?? packageEntry?.packageId ?? packageEntry?.package_id ?? packageEntry?.package_code ?? packageEntry?.code
+    );
+    if (defId) {
+      const def = findPackageById(defId);
+      if (def) {
+        const price = def.price ?? def.total_price ?? def.package_price;
+        const parsed = parsePriceValue(price);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          return sanitizePriceValue(parsed);
+        }
+      }
+    }
+  } catch (_) { /* ignore */ }
+
+  // Fallback: any explicit price on the entry itself
+  const candidate = packageEntry.unit_price ?? packageEntry.unitPrice ?? packageEntry.price;
   const parsed = parsePriceValue(candidate);
   if (Number.isFinite(parsed) && parsed > 0) {
     return sanitizePriceValue(parsed);
   }
 
-  const totalCandidate = packageEntry.total_price
-    ?? packageEntry.totalPrice
-    ?? packageEntry.total;
+  const totalCandidate = packageEntry.total_price ?? packageEntry.totalPrice ?? packageEntry.total;
   const totalParsed = parsePriceValue(totalCandidate);
   const quantityOverrideParsed = Number.parseFloat(normalizeNumbers(String(quantityOverride)).replace(/[^0-9.]/g, ''));
   const quantity = Number.isFinite(quantityOverrideParsed) && quantityOverrideParsed > 0
@@ -266,18 +280,7 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = [], quantityO
     return sanitizePriceValue(totalParsed / quantity);
   }
 
-  if (Array.isArray(packageItems) && packageItems.length) {
-    const itemsTotal = packageItems.reduce((sum, item) => {
-      const price = parsePriceValue(item.price ?? item.unit_price ?? item.unitPrice);
-      const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item.qty ?? item.quantity ?? 1)).replace(/[^0-9.]/g, ''));
-      const qty = Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
-      return sum + (price * qty);
-    }, 0);
-    if (itemsTotal > 0 && quantity > 0) {
-      return sanitizePriceValue(itemsTotal / quantity);
-    }
-  }
-
+  // Do NOT derive from child items sum; keep only authoritative package price
   return 0;
 }
 

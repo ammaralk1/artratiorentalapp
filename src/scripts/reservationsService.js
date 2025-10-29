@@ -1857,36 +1857,36 @@ function normalizeReservationPackageItemsFromEntry(entry = {}, fallbackPackageId
 }
 
 function derivePackageUnitPrice(entry = {}, packageItems = [], quantity = 1) {
-  if (Array.isArray(packageItems) && packageItems.length) {
-    const itemsTotal = packageItems.reduce((sum, item) => {
-      const itemPrice = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
-      const perPackageQty = Number.isFinite(Number(item.qtyPerPackage)) && Number(item.qtyPerPackage) > 0
-        ? Number(item.qtyPerPackage)
-        : Number.isFinite(Number(item.qty)) && Number(item.qty) > 0
-          ? Number(item.qty)
-          : 1;
-      return sum + (itemPrice * perPackageQty);
-    }, 0);
-    if (itemsTotal > 0) {
-      return Number(itemsTotal.toFixed(2));
+  // 1) Prefer the canonical package price from Equipment > Packages
+  try {
+    const candidateId = normalizePackageIdentifier(
+      entry.packageId ?? entry.package_id ?? entry.id ?? entry.package_code ?? entry.packageCode
+    );
+    if (candidateId) {
+      const def = findPackageById(candidateId);
+      if (def) {
+        const realPrice = resolvePackagePrice(def);
+        if (Number.isFinite(Number(realPrice)) && Number(realPrice) > 0) {
+          return Number(realPrice);
+        }
+      }
     }
+  } catch (_) { /* ignore lookup errors */ }
+
+  // 2) Fallback to explicit package price fields on the entry itself
+  const explicitUnit = entry.package_price ?? entry.packagePrice ?? entry.unit_price ?? entry.unitPrice ?? entry.price;
+  if (Number.isFinite(Number(explicitUnit)) && Number(explicitUnit) > 0) {
+    return toNumber(explicitUnit);
   }
 
-  const totalCandidate = entry.total_price
-    ?? entry.totalPrice
-    ?? entry.total
-    ?? entry.amount
-    ?? null;
-
+  // 3) Fallback to known total fields (convert to unit by quantity if sensible)
+  const totalCandidate = entry.total_price ?? entry.totalPrice ?? entry.total ?? entry.amount ?? null;
   if (Number.isFinite(Number(totalCandidate))) {
     const numericTotal = toNumber(totalCandidate);
     return quantity > 0 ? Number((numericTotal / quantity).toFixed(2)) : numericTotal;
   }
 
-  if (Number.isFinite(Number(entry.unit_price ?? entry.unitPrice ?? entry.price))) {
-    return toNumber(entry.unit_price ?? entry.unitPrice ?? entry.price);
-  }
-
+  // Do NOT derive from child items sum — use only real stored package price
   return 0;
 }
 
