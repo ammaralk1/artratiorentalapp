@@ -1947,6 +1947,13 @@ body[dir="rtl"] .project-details-list li {
   color: var(--clr-muted);
 }
 
+/* Force vertical stack meta layout when requested */
+.project-reservation-card__meta--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 /* footer removed */
 
 @media (max-width: 768px) {

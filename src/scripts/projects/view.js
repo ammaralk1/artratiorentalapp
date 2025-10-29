@@ -848,13 +848,14 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   const completedBadge = completed
     ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(completedLabel)}</span>`
     : '';
-  const rangeLabel = combineProjectDateRange(reservation.start, reservation.end);
+  // Vertical meta: crew count, equipment count, and total only
   const netTotal = resolveReservationNetTotal(reservation);
   const costLabel = formatCurrency(netTotal);
-  const itemsLabel = t('projects.details.reservations.items', '{count} عناصر')
-    .replace('{count}', normalizeNumbers(String((reservation.items || []).length)));
-  const crewLabel = t('projects.details.reservations.crew', '{count} من الطاقم')
-    .replace('{count}', normalizeNumbers(String((reservation.technicians || []).length)));
+  const equipmentCount = (reservation.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+  const crewCount = (reservation.technicians || []).length;
+  const crewTitle = t('projectCards.stats.crewCount', 'عدد الطاقم');
+  const equipmentTitle = t('projectCards.stats.equipmentCount', 'عدد المعدات');
+  const totalTitle = t('projectCards.stats.reservationTotal', 'إجمالي الحجز');
 
   return `
     <article class="project-reservation-card" data-action="view-reservation" data-index="${index}" data-reservation-index="${index}" data-project-id="${project ? project.id : ''}" role="button" tabindex="0">
@@ -867,11 +868,10 @@ export function buildProjectReservationCard(reservation, index, project = null) 
         </div>
       </div>
       <div class="project-reservation-card__body">
-        <div class="project-reservation-card__range">${rangeLabel}</div>
-        <div class="project-reservation-card__meta">
-          <span>💵 ${escapeHtml(costLabel)}</span>
-          <span>📦 ${escapeHtml(itemsLabel)}</span>
-          <span>😎 ${escapeHtml(crewLabel)}</span>
+        <div class="project-reservation-card__meta project-reservation-card__meta--vertical">
+          <span>😎 ${escapeHtml(crewTitle)}: ${normalizeNumbers(String(crewCount))}</span>
+          <span>📦 ${escapeHtml(equipmentTitle)}: ${normalizeNumbers(String(equipmentCount))}</span>
+          <span>💵 ${escapeHtml(totalTitle)}: ${escapeHtml(costLabel)}</span>
         </div>
       </div>
     </article>
