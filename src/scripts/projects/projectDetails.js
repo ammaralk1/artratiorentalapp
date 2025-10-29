@@ -401,10 +401,14 @@ export function openProjectDetails(projectId) {
     </div>
   `;
 
+  const linkChipText = reservationsCount > 0
+    ? t('projects.details.chips.linkedReservation', 'مربوط بحجز')
+    : t('projects.details.chips.notLinkedReservation', 'غير مربوط بحجز');
+  const linkChipClass = reservationsCount > 0 ? 'reservation-chip status-confirmed' : 'reservation-chip status-info';
+
   const chips = [
     `<span class="${statusChipClass}">${escapeHtml(statusDisplay)}</span>`,
-    `<span class="reservation-chip ${vatChipClass}">${escapeHtml(vatChipText)}</span>`,
-    `<span class="reservation-chip status-info">${escapeHtml(reservationsChipText)}</span>`,
+    `<span class="${linkChipClass}">${escapeHtml(linkChipText)}</span>`,
     `<span class="reservation-chip ${paymentStatusChipClass}">${escapeHtml(paymentStatusText)}</span>`,
     confirmedChipHtml
   ].filter(Boolean).join('');
