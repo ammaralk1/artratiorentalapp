@@ -549,7 +549,7 @@ function renderExpenseList() {
     const emptyText = escapeHtml(getEmptyText(dom.expenseList));
     dom.expenseList.innerHTML = `
       <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle">
+        <table class="table table-sm table-hover align-middle project-services-table">
           <thead class="table-light">
             <tr>
               <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
@@ -585,7 +585,7 @@ function renderExpenseList() {
 
   dom.expenseList.innerHTML = `
     <div class="table-responsive">
-      <table class="table table-sm table-hover align-middle">
+      <table class="table table-sm table-hover align-middle project-services-table">
         <thead class="table-light">
           <tr>
             <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
