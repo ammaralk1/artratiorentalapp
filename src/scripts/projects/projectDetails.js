@@ -775,6 +775,21 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     return editState.payments;
   };
 
+  // Normalize Arabic numerals while typing into "سعر البيع" for edit form as well
+  if (servicesClientPriceInput && !servicesClientPriceInput.dataset.normalizeAttached) {
+    servicesClientPriceInput.addEventListener('input', (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const pos = input.selectionStart;
+      const normalized = normalizeNumbers(input.value || '');
+      input.value = normalized;
+      if (typeof pos === 'number') {
+        try { input.setSelectionRange(pos, pos); } catch (_) { /* ignore */ }
+      }
+    });
+    servicesClientPriceInput.dataset.normalizeAttached = 'true';
+  }
+
   const computeFinanceContext = () => {
     const equipmentEstimate = Number(project.equipmentEstimate) || 0;
     const expensesTotal = Array.isArray(editState.expenses)
