@@ -2258,6 +2258,101 @@ function collectProjectQuoteData(project) {
 
   const reservationsTotal = reservationsWithMeta.reduce((sum, entry) => sum + (Number(entry.total) || 0), 0);
 
+  // Build equipment items using the same reservation grouping logic (packages, codes, etc.)
+  const equipmentItems = [];
+  try {
+    reservationsForProject.forEach((reservation) => {
+      const { groups } = buildReservationDisplayGroups(reservation);
+      groups.forEach((group) => {
+        const count = Number(group?.count ?? group?.quantity ?? 1) || 1;
+        const rawUnitPrice = Number(group?.unitPrice);
+        let unitPrice = Number.isFinite(rawUnitPrice) ? rawUnitPrice : 0;
+        if (!unitPrice || unitPrice <= 0) {
+          const totalCandidate = Number(group?.totalPrice);
+          if (Number.isFinite(totalCandidate) && count > 0) {
+            unitPrice = Number((totalCandidate / count).toFixed(2));
+          }
+        }
+        if (!Number.isFinite(unitPrice)) unitPrice = 0;
+
+        const isPackage = group?.type === 'package' || (Array.isArray(group?.items) && group.items.some((it) => it?.type === 'package'));
+        const fallbackBarcode = Array.isArray(group?.barcodes) && group.barcodes.length
+          ? group.barcodes[0]
+          : (Array.isArray(group?.items) && group.items.length ? group.items[0]?.barcode : null);
+
+        let packageCode = group?.packageDisplayCode
+          ?? group?.package_code
+          ?? group?.code
+          ?? group?.packageCode
+          ?? (Array.isArray(group?.items) && group.items.length
+              ? (group.items[0]?.package_code
+                ?? group.items[0]?.code
+                ?? group.items[0]?.packageCode)
+              : null);
+
+        const isWeakCode = (value) => {
+          const s = (value == null ? '' : String(value)).trim();
+          if (!s) return true;
+          if (/^pkg-/i.test(s)) return true;
+          if (/^\d+$/.test(s) && s.length <= 4) return true;
+          return false;
+        };
+
+        if (!packageCode || isWeakCode(packageCode)) {
+          const pkgId = group?.packageId
+            ?? group?.package_id
+            ?? (Array.isArray(group?.items) && group.items.length ? (group.items[0]?.packageId ?? group.items[0]?.package_id) : null);
+          if (pkgId) {
+            try {
+              const def = findPackageById(pkgId);
+              if (def && def.package_code) packageCode = def.package_code;
+            } catch (_) {}
+          }
+        }
+
+        if (!packageCode || isWeakCode(packageCode)) {
+          try {
+            const targetName = normalizePackageNameForMatch(group?.description || '');
+            if (targetName) {
+              const list = getPackagesSnapshot();
+              let match = list.find((p) => normalizePackageNameForMatch(p?.name || p?.title || p?.label || '') === targetName);
+              if (!match) {
+                match = list.find((p) => {
+                  const n = normalizePackageNameForMatch(p?.name || p?.title || p?.label || '');
+                  return n.includes(targetName) || targetName.includes(n);
+                });
+              }
+              if (match && match.package_code) packageCode = match.package_code;
+            }
+          } catch (_) {}
+        }
+
+        const rawBarcode = isPackage ? (packageCode ?? fallbackBarcode ?? '') : (group?.barcode ?? fallbackBarcode ?? '');
+        const barcode = rawBarcode != null ? String(rawBarcode) : '';
+
+        let totalPrice = Number.isFinite(Number(group?.totalPrice))
+          ? Number(group.totalPrice)
+          : Number((unitPrice * count).toFixed(2));
+        totalPrice = sanitizePriceValue(totalPrice);
+
+        equipmentItems.push({
+          ...group,
+          isPackage,
+          desc: group?.description,
+          barcode,
+          packageCodeResolved: packageCode || '',
+          qty: count,
+          price: totalPrice,
+          totalPrice,
+          unitPriceValue: unitPrice,
+        });
+      });
+    });
+  } catch (_) {
+    // Fallback silently
+  }
+
+  // Keep summarized equipment for optional sections
   const equipmentMap = new Map();
   reservationsForProject.forEach((reservation) => {
     const items = Array.isArray(reservation.items) ? reservation.items : [];
@@ -2279,9 +2374,7 @@ function collectProjectQuoteData(project) {
       existing.totalQuantity += qty;
       existing.reservationIds.add(String(reservationLabel));
       const computedCost = unitPrice * qty * Math.max(1, rentalDays);
-      if (Number.isFinite(computedCost)) {
-        existing.totalCost += computedCost;
-      }
+      if (Number.isFinite(computedCost)) existing.totalCost += computedCost;
       equipmentMap.set(key, existing);
     });
   });
@@ -2438,6 +2531,8 @@ function collectProjectQuoteData(project) {
     expenses,
     equipment,
     crew: projectCrew,
+    equipmentItems,
+    crewAssignments: reservationsForProject.flatMap((reservation) => collectReservationCrewAssignments(reservation)),
     totals: projectTotals,
     totalsDisplay,
     projectTotals: {
@@ -2565,18 +2660,20 @@ function buildProjectQuotationHtml({
       </section>`
     : '';
 
-  const crewColumns = PROJECT_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('projectCrew', column.id));
-const crewSectionMarkup = includeSection('projectCrew')
-    ? (crewColumns.length
+  // Use reservation-style crew columns (positions + client price) for projects
+  const projectCrewColumns = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
+  const crewAssignments = Array.isArray(activeQuoteState?.crewAssignments) ? activeQuoteState.crewAssignments : [];
+  const crewSectionMarkup = includeSection('projectCrew')
+    ? (projectCrewColumns.length
         ? `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.crew', 'طاقم العمل'))}</h3>
             <table class="quote-table">
               <thead>
-                <tr>${crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+                <tr>${projectCrewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
-              <tbody>${projectCrew.length
-                ? projectCrew.map((tech, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(tech, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
+              <tbody>${crewAssignments.length
+                ? crewAssignments.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
               </tbody>
             </table>
           </section>`
@@ -2650,18 +2747,20 @@ const crewSectionMarkup = includeSection('projectCrew')
           </section>`)
     : '';
 
-  const equipmentColumns = PROJECT_EQUIPMENT_COLUMN_DEFS.filter((column) => isFieldEnabled('projectEquipment', column.id));
+  // Use reservation-style items table for project equipment (code/desc/qty/price with package codes)
+  const itemColumns = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const equipmentItems = Array.isArray(activeQuoteState?.equipmentItems) ? activeQuoteState.equipmentItems : [];
   const equipmentSectionMarkup = includeSection('projectEquipment')
-    ? (equipmentColumns.length
+    ? (itemColumns.length
         ? `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.equipment', 'المعدات'))}</h3>
             <table class="quote-table">
               <thead>
-                <tr>${equipmentColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
+                <tr>${itemColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
-              <tbody>${projectEquipment.length
-                ? projectEquipment.map((item, index) => `<tr>${equipmentColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(equipmentColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
+              <tbody>${equipmentItems.length
+                ? equipmentItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
               </tbody>
             </table>
           </section>`
@@ -4427,6 +4526,9 @@ export async function exportProjectPdf({ project }) {
     return;
   }
 
+  // Ensure packages are available so package codes resolve like reservation PDF
+  await ensurePackagesAvailable();
+
   const projectData = collectProjectQuoteData(project);
   const { project: resolvedProject } = projectData;
   if (!resolvedProject) {
@@ -4449,6 +4551,9 @@ export async function exportProjectPdf({ project }) {
     projectCrew: projectData.crew,
     projectExpenses: projectData.expenses,
     projectEquipment: projectData.equipment,
+    // Unified lists that match reservation PDF rendering
+    equipmentItems: projectData.equipmentItems || [],
+    crewAssignments: projectData.crewAssignments || [],
     totals: projectData.totals,
     projectTotals: projectData.projectTotals,
     totalsDisplay: projectData.totalsDisplay,
