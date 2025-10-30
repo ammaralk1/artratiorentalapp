@@ -348,12 +348,23 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع' }
   ],
   payment: QUOTE_FIELD_DEFS.payment,
-  projectExpenses: PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-  projectCrew: [
-    ...PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false }
+  projectExpenses: [
+    ...PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'expensesSubtotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي الخدمات الإنتاجية' }
   ],
-  projectEquipment: PROJECT_EQUIPMENT_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectCrew: [
+    // Use reservation-style crew columns (position/unit/price), plus quantity + days, and subtotal toggle
+    ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
+    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
+  ],
+  projectEquipment: [
+    // Use reservation-style items columns (code/desc/unit/qty/price), plus days, and subtotal toggle
+    ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
+  ],
   projectNotes: []
 };
 
@@ -2780,9 +2791,9 @@ function buildProjectQuotationHtml({
     : '';
 
   // Use reservation-style crew columns (positions + client price) for projects
-  const projectCrewColumnsBase = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
+  const projectCrewColumnsBase = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('projectCrew', column.id));
   const crewAssignments = Array.isArray(activeQuoteState?.crewAssignments) ? activeQuoteState.crewAssignments : [];
-  const groupProjectCrew = isFieldEnabled('projectCrew', 'groupByPosition');
+  const groupProjectCrew = true; // always group by position for projects
   const projectCrewKeyOf = (a) => {
     const baseKey = (a && a.positionId != null)
       ? `id:${String(a.positionId)}`
@@ -2825,13 +2836,15 @@ function buildProjectQuotationHtml({
             return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
           }
         });
-        // Always show quantity column
-        cols.push({
-          id: 'quantity',
-          labelKey: 'reservations.details.table.headers.quantity',
-          fallback: 'الكمية',
-          render: (assignment) => escapeHtml(normalizeNumbers(String(Math.max(1, Number(assignment?.__count || 1)))))
-        });
+        // Quantity column (toggleable)
+        if (isFieldEnabled('projectCrew','quantity')) {
+          cols.push({
+            id: 'quantity',
+            labelKey: 'reservations.details.table.headers.quantity',
+            fallback: 'الكمية',
+            render: (assignment) => escapeHtml(normalizeNumbers(String(Math.max(1, Number(assignment?.__count || 1)))))
+          });
+        }
       } else if (col.id === 'price') {
         if (groupProjectCrew) {
           cols.push({
@@ -2875,16 +2888,18 @@ function buildProjectQuotationHtml({
         cols.push(col);
       }
     });
-    // Always show days column
-    const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-    const priceIndex = cols.findIndex((c) => c.id === 'price');
-    const insertionIndex = Math.max(0, priceIndex);
-    cols.splice(insertionIndex, 0, {
-      id: 'days',
-      labelKey: null,
-      fallback: 'الأيام',
-      render: () => escapeHtml(normalizeNumbers(String(days)))
-    });
+    // Days column (toggleable)
+    if (isFieldEnabled('projectCrew','days')) {
+      const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+      const priceIndex = cols.findIndex((c) => c.id === 'price');
+      const insertionIndex = Math.max(0, priceIndex);
+      cols.splice(insertionIndex, 0, {
+        id: 'days',
+        labelKey: null,
+        fallback: 'الأيام',
+        render: () => escapeHtml(normalizeNumbers(String(days)))
+      });
+    }
     // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
@@ -2939,12 +2954,14 @@ function buildProjectQuotationHtml({
                 : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
               </tbody>
             </table>
-            <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__pill">
-                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(`${projectCrewSubtotalDisplay} ${currencyLabel}`)}</span>
-              </span>
-            </div>
+            ${isFieldEnabled('projectCrew','crewSubtotal') ? `
+              <div class="quote-table-subtotal">
+                <span class="quote-table-subtotal__pill">
+                  <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${projectCrewSubtotalDisplay} ${currencyLabel}`)}</span>
+                </span>
+              </div>
+            ` : ''}
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.crew', 'طاقم العمل'))}</h3>
@@ -3009,12 +3026,14 @@ function buildProjectQuotationHtml({
                 : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد متطلبات مسجلة.'))}</td></tr>`}
               </tbody>
             </table>
-            <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__pill">
-                <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel))}</span>
-              </span>
-            </div>
+            ${isFieldEnabled('projectExpenses','expensesSubtotal') ? `
+              <div class="quote-table-subtotal">
+                <span class="quote-table-subtotal__pill">
+                  <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel))}</span>
+                </span>
+              </div>
+            ` : ''}
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.expenses', 'الخدمات الإنتاجية'))}</h3>
@@ -3023,7 +3042,7 @@ function buildProjectQuotationHtml({
     : '';
 
   // Use reservation-style items table for project equipment (code/desc/qty/price with package codes)
-  const itemColumnsBaseProject = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const itemColumnsBaseProject = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('projectEquipment', column.id));
   const itemColumns = (() => {
     let cols = [];
     itemColumnsBaseProject.forEach((col) => {
@@ -3050,15 +3069,17 @@ function buildProjectQuotationHtml({
         cols.push(col);
       }
     });
-    const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-    const priceIndex = cols.findIndex((c) => c.id === 'price');
-    const insertionIndex = Math.max(0, priceIndex);
-    cols.splice(insertionIndex, 0, {
-      id: 'days',
-      labelKey: null,
-      fallback: 'الأيام',
-      render: () => escapeHtml(normalizeNumbers(String(days)))
-    });
+    if (isFieldEnabled('projectEquipment','days')) {
+      const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+      const priceIndex = cols.findIndex((c) => c.id === 'price');
+      const insertionIndex = Math.max(0, priceIndex);
+      cols.splice(insertionIndex, 0, {
+        id: 'days',
+        labelKey: null,
+        fallback: 'الأيام',
+        render: () => escapeHtml(normalizeNumbers(String(days)))
+      });
+    }
     // Reorder tail: unitPrice -> quantity -> days -> price
     const map = new Map(cols.map((c) => [c.id, c]));
     const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
@@ -3091,12 +3112,14 @@ function buildProjectQuotationHtml({
                 : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
               </tbody>
             </table>
-            <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__pill">
-                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
-              </span>
-            </div>
+            ${isFieldEnabled('projectEquipment','equipmentSubtotal') ? `
+              <div class="quote-table-subtotal">
+                <span class="quote-table-subtotal__pill">
+                  <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
+                </span>
+              </div>
+            ` : ''}
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.equipment', 'المعدات'))}</h3>
