@@ -909,15 +909,34 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
         return;
     }
 
-    // Prefer `note` column; gracefully fall back to legacy `notes` column if present
-    $hasNote = projectExpensesHasColumn($pdo, 'note');
-    $hasNotes = !$hasNote && projectExpensesHasColumn($pdo, 'notes');
-    $sql = $hasNote
-        ? 'INSERT INTO project_expenses (project_id, label, amount, sale_price, note) VALUES (:project_id, :label, :amount, :sale_price, :note)'
-        : ($hasNotes
-          ? 'INSERT INTO project_expenses (project_id, label, amount, sale_price, notes) VALUES (:project_id, :label, :amount, :sale_price, :note)'
-          : 'INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
-    $insert = $pdo->prepare($sql);
+    // Build robust inserter that tries (note) then (notes) then (no note) without relying on SHOW COLUMNS permissions
+    $mode = null; // 'note' | 'notes' | 'none'
+    $insert = null;
+
+    $prepareForMode = static function (PDO $pdo, string $mode) {
+        if ($mode === 'note') {
+            return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price, note) VALUES (:project_id, :label, :amount, :sale_price, :note)');
+        }
+        if ($mode === 'notes') {
+            return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price, notes) VALUES (:project_id, :label, :amount, :sale_price, :note)');
+        }
+        // none
+        return $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
+    };
+
+    // Try to prepare with note then notes; if both fail, fall back to none
+    foreach (['note', 'notes', 'none'] as $candidate) {
+        try {
+            $insert = $prepareForMode($pdo, $candidate);
+            $mode = $candidate;
+            break;
+        } catch (\Throwable $_) {
+            $insert = null;
+            $mode = null;
+            continue;
+        }
+    }
+
     foreach ($expenses as $expense) {
         $params = [
             'project_id' => $projectId,
@@ -925,10 +944,49 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
             'amount' => $expense['amount'],
             'sale_price' => $expense['sale_price'] ?? 0,
         ];
-        if ($hasNote || $hasNotes) {
-            $params['note'] = $expense['note'] ?? ($expense['notes'] ?? null);
+        $noteValue = $expense['note'] ?? ($expense['notes'] ?? null);
+
+        // Attempt execution with current mode; if unknown column error occurs at runtime, fall through to next mode
+        $modesToTry = $mode ? [$mode] : [];
+        if (!$modesToTry) {
+            $modesToTry = ['note', 'notes', 'none'];
         }
-        $insert->execute($params);
+
+        $executed = false;
+        foreach ($modesToTry as $tryMode) {
+            try {
+                // Re-prepare if mode differs from current prepared statement
+                if ($insert === null || $tryMode !== $mode) {
+                    $insert = $prepareForMode($pdo, $tryMode);
+                    $mode = $tryMode;
+                }
+                $execParams = $params;
+                if ($tryMode === 'note' || $tryMode === 'notes') {
+                    $execParams['note'] = $noteValue;
+                }
+                $insert->execute($execParams);
+                $executed = true;
+                break;
+            } catch (\PDOException $e) {
+                $message = strtolower($e->getMessage());
+                $unknownColumn = (strpos($message, "unknown column 'note'") !== false) || (strpos($message, 'unknown column \"note\"') !== false) || (strpos($message, "unknown column 'notes'") !== false) || (strpos($message, 'unknown column \"notes\"') !== false);
+                if ($unknownColumn) {
+                    // Try next mode
+                    $insert = null;
+                    $mode = null;
+                    continue;
+                }
+                // Re-throw other DB errors
+                throw $e;
+            }
+        }
+
+        if (!$executed) {
+            // As a last resort, insert without note
+            $insert = $prepareForMode($pdo, 'none');
+            $insert->execute($params);
+            $mode = 'none';
+        }
     }
 }
 
