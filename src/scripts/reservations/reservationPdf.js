@@ -137,13 +137,13 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
   {
     id: 'unitPrice',
     labelKey: null,
-    fallback: 'سعر الوحدة',
+    fallback: 'لكل يوم',
     render: (item) => escapeHtml(normalizeNumbers((Number(item?.unitPriceValue || 0)).toFixed(2)))
   },
   {
     id: 'price',
     labelKey: null,
-    fallback: 'السعر الإجمالي',
+    fallback: 'المجموع',
     render: (item) => escapeHtml(normalizeNumbers((Number(item?.price || 0)).toFixed(2)))
   }
 ];
@@ -171,7 +171,7 @@ const QUOTE_CREW_COLUMN_DEFS = [
   {
     id: 'unitPrice',
     labelKey: null,
-    fallback: 'سعر الوحدة',
+    fallback: 'لكل يوم',
     render: (assignment) => {
       const value = Number.isFinite(Number(assignment?.positionClientPrice))
         ? Number(assignment.positionClientPrice)
@@ -182,7 +182,7 @@ const QUOTE_CREW_COLUMN_DEFS = [
   {
     id: 'price',
     labelKey: null,
-    fallback: 'السعر الإجمالي',
+    fallback: 'المجموع',
     render: (assignment) => {
       const value = Number.isFinite(Number(assignment?.positionClientPrice))
         ? Number(assignment.positionClientPrice)
@@ -2968,7 +2968,7 @@ function buildProjectQuotationHtml({
               </tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي متطلبات المشروع'))}</span>
+              <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
               <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.expensesTotal || '0.00'} ${currencyLabel}`)}</span>
             </div>
           </section>`
@@ -2981,18 +2981,31 @@ function buildProjectQuotationHtml({
   // Use reservation-style items table for project equipment (code/desc/qty/price with package codes)
   const itemColumnsBaseProject = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
   const itemColumns = (() => {
-    const cols = itemColumnsBaseProject.map((col) => (col.id === 'price'
-      ? {
+    const cols = [];
+    itemColumnsBaseProject.forEach((col) => {
+      if (col.id === 'price') {
+        cols.push({
           ...col,
           render: (item) => {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
             const total = unit * qty * days;
-            return escapeHtml(normalizeNumbers(total.toFixed(2)));
+            return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
           }
-        }
-      : col));
+        });
+      } else if (col.id === 'unitPrice') {
+        cols.push({
+          ...col,
+          render: (item) => {
+            const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
+            return escapeHtml(`${normalizeNumbers(unit.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
+      } else {
+        cols.push(col);
+      }
+    });
     const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
     const priceIndex = cols.findIndex((c) => c.id === 'price');
     const insertionIndex = Math.max(0, priceIndex);
@@ -3002,6 +3015,11 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
+    // Reorder tail: quantity -> days -> unitPrice -> price
+    const map = new Map(cols.map((c) => [c.id, c]));
+    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
+    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
+    cols = [...keep, ...tail];
     return cols;
   })();
   const equipmentItems = Array.isArray(activeQuoteState?.equipmentItems) ? activeQuoteState.equipmentItems : [];
@@ -3445,7 +3463,15 @@ function buildQuotationHtml(options) {
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
             const total = unit * qty * days;
-            return escapeHtml(normalizeNumbers(Number(total).toFixed(2)));
+            return escapeHtml(`${normalizeNumbers(Number(total).toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
+      } else if (col.id === 'unitPrice') {
+        cols.push({
+          ...col,
+          render: (item) => {
+            const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
+            return escapeHtml(`${normalizeNumbers(unit.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -3453,16 +3479,20 @@ function buildQuotationHtml(options) {
       }
     });
     const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-    if (days > 1) {
-      const priceIndex = cols.findIndex((c) => c.id === 'price');
-      const insertionIndex = Math.max(0, priceIndex);
-      cols.splice(insertionIndex, 0, {
-        id: 'days',
-        labelKey: null,
-        fallback: 'الأيام',
-        render: () => escapeHtml(normalizeNumbers(String(days)))
-      });
-    }
+    // Always show days column
+    const priceIndex = cols.findIndex((c) => c.id === 'price');
+    const insertionIndex = Math.max(0, priceIndex);
+    cols.splice(insertionIndex, 0, {
+      id: 'days',
+      labelKey: null,
+      fallback: 'الأيام',
+      render: () => escapeHtml(normalizeNumbers(String(days)))
+    });
+    // Reorder tail: quantity -> days -> unitPrice -> price
+    const map = new Map(cols.map((c) => [c.id, c]));
+    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
+    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
+    cols = [...keep, ...tail];
     return cols;
   })();
   const hasItemColumns = itemColumns.length > 0;
@@ -3541,8 +3571,8 @@ function buildQuotationHtml(options) {
             return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
           }
         });
-        // Always show quantity column (1 when not grouped)
-        cols.push({
+        // Prepare quantity column to insert after unitPrice
+        quantityColumn = {
           id: 'quantity',
           labelKey: 'reservations.details.table.headers.quantity',
           fallback: 'الكمية',
@@ -3550,7 +3580,7 @@ function buildQuotationHtml(options) {
             const qty = Number(assignment?.__count || 1);
             return escapeHtml(normalizeNumbers(String(Math.max(1, qty))));
           }
-        });
+        };
       } else if (col.id === 'price') {
         // When grouping by position, show client price multiplied by quantity
         if (groupCrew) {
@@ -3593,6 +3623,19 @@ function buildQuotationHtml(options) {
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
+    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
+    const map = new Map(cols.map((c) => [c.id, c]));
+    const seen = new Set();
+    const out = [];
+    const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
+    pushIf('rowNumber');
+    pushIf('position');
+    pushIf('quantity');
+    pushIf('days');
+    pushIf('unitPrice');
+    pushIf('price');
+    cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
+    cols = out;
     return cols;
   })();
   const crewHeader = hasCrewColumns
