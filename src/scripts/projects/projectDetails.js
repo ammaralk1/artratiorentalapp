@@ -768,6 +768,7 @@ export function startProjectEdit(project) {
         salePrice: Number.isFinite(Number(expense?.sale_price ?? expense?.salePrice))
           ? Number(expense?.sale_price ?? expense?.salePrice)
           : 0,
+        note: expense?.note ? String(expense.note) : ''
       }))
     : [];
 
