@@ -3050,7 +3050,7 @@ function buildProjectQuotationHtml({
                 <tr>${expensesColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
               <tbody>${projectExpenses.length
-                ? projectExpenses.map((expense, index) => `<tr>${expensesColumns.map((column) => `<td>${column.render(expense, index)}</td>`).join('')}</tr>`).join('')
+                ? projectExpenses.map((expense, index) => `<tr>${expensesColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(expense, index)}</div></td>`).join('')}</tr>`).join('')
                 : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد متطلبات مسجلة.'))}</td></tr>`}
               </tbody>
             </table>

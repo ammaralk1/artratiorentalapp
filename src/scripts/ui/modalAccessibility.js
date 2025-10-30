@@ -21,5 +21,16 @@ export function initModalA11yFocusGuards() {
   // Use capture to run early in the hide cycle
   document.addEventListener('hide.bs.modal', handler, true);
   document.addEventListener('hidden.bs.modal', handler, true);
-}
 
+  // Also blur immediately when clicking close/dismiss buttons
+  const clickHandler = (event) => {
+    try {
+      const target = event.target instanceof Element ? event.target : null;
+      const dismiss = target?.closest('[data-bs-dismiss="modal"], .btn-close');
+      if (!dismiss) return;
+      try { (dismiss).blur(); } catch (_) {}
+      try { document.body?.focus({ preventScroll: true }); } catch (_) {}
+    } catch (_) {}
+  };
+  document.addEventListener('click', clickHandler, true);
+}

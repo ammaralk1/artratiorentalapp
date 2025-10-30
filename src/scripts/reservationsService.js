@@ -492,10 +492,13 @@ export function setReservationsState(reservations) {
       persistReservationCrewToCache(reservationId, candidateCrew);
     }
   });
-  if (reservationsState.length) {
-    console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
-  } else {
-    console.debug('[reservationsService] setReservationsState empty state');
+  // Reduce noisy logs in production; keep in dev for diagnostics
+  if (import.meta.env?.DEV) {
+    if (reservationsState.length) {
+      console.debug('[reservationsService] setReservationsState first paymentHistory', reservationsState[0]?.paymentHistory);
+    } else {
+      console.debug('[reservationsService] setReservationsState empty state');
+    }
   }
   saveData({ reservations: reservationsState });
   try {
