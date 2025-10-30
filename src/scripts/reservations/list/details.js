@@ -1094,8 +1094,21 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     `;
   }).join('');
 
+  const useSlider = Array.isArray(crewAssignments) && crewAssignments.length > 4;
   const techniciansSectionContent = crewAssignments.length
-    ? `<div class="reservation-technicians-grid">${techniciansCardsHtml}</div>`
+    ? (
+      useSlider
+        ? `
+          <div class="reservation-technicians-slider" data-tech-slider>
+            <button type="button" class="slider-btn slider-btn--prev" data-slider-prev aria-label="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}" title="${escapeHtml(t('reservations.details.slider.prev', 'السابق'))}">‹</button>
+            <div class="reservation-technicians-track" data-slider-track>
+              ${techniciansCardsHtml}
+            </div>
+            <button type="button" class="slider-btn slider-btn--next" data-slider-next aria-label="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}" title="${escapeHtml(t('reservations.details.slider.next', 'التالي'))}">›</button>
+          </div>
+        `
+        : `<div class="reservation-technicians-grid">${techniciansCardsHtml}</div>`
+      )
     : `<ul class="reservation-modal-technicians"><li>${noCrewText}</li></ul>`;
 
   return `

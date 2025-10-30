@@ -206,7 +206,10 @@ const QUOTE_FIELD_DEFS = {
     { id: 'iban', labelKey: 'reservations.quote.labels.iban', fallback: 'رقم الآيبان' }
   ],
   items: QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-  crew: QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback }))
+  crew: [
+    ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false }
+  ]
 };
 
 const PROJECT_CREW_COLUMN_DEFS = [
@@ -329,7 +332,10 @@ const PROJECT_QUOTE_FIELD_DEFS = {
   ],
   payment: QUOTE_FIELD_DEFS.payment,
   projectExpenses: PROJECT_EXPENSES_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-  projectCrew: PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  projectCrew: [
+    ...PROJECT_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false }
+  ],
   projectEquipment: PROJECT_EQUIPMENT_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
   projectNotes: []
 };
@@ -398,6 +404,66 @@ const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
+
+// Live preview updates when reservation data changes while the modal is open
+let quoteLiveListenersAttached = false;
+let reservationsChangedHandlerRef = null;
+
+function attachQuoteLiveListeners() {
+  if (quoteLiveListenersAttached) return;
+  reservationsChangedHandlerRef = async function onReservationsChanged() {
+    try {
+      if (!activeQuoteState || !quoteModalRefs?.modal?.classList.contains('show')) return;
+      const context = activeQuoteState.context || 'reservation';
+      if (context !== 'reservation') return;
+      const current = activeQuoteState.reservation;
+      if (!current) return;
+      const candidates = [
+        current.id,
+        current.reservationId,
+        current.reservation_id,
+        current.reservationCode,
+        current.reservation_code
+      ].map((v) => (v == null ? '' : String(v))).filter((v) => v.length > 0);
+      if (!candidates.length) return;
+      const list = getReservationsState();
+      const updated = (Array.isArray(list) ? list : []).find((entry) => {
+        const ids = [
+          entry?.id,
+          entry?.reservationId,
+          entry?.reservation_id,
+          entry?.reservationCode,
+          entry?.reservation_code
+        ].map((v) => (v == null ? '' : String(v))).filter((v) => v.length > 0);
+        return ids.some((id) => candidates.includes(id));
+      });
+      if (!updated) return;
+
+      // Recompute crew assignments and totals
+      const crewAssignments = collectReservationCrewAssignments(updated);
+      const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(updated, crewAssignments, activeQuoteState.project);
+      activeQuoteState.reservation = updated;
+      activeQuoteState.crewAssignments = crewAssignments;
+      activeQuoteState.totals = totals;
+      activeQuoteState.totalsDisplay = totalsDisplay;
+      activeQuoteState.rentalDays = rentalDays;
+      updateQuoteMeta();
+      renderQuotePreview();
+    } catch (err) {
+      // non-fatal
+      console.warn('[reservationPdf] live update failed', err);
+    }
+  };
+  document.addEventListener('reservations:changed', reservationsChangedHandlerRef);
+  quoteLiveListenersAttached = true;
+}
+
+function detachQuoteLiveListeners() {
+  if (!quoteLiveListenersAttached) return;
+  try { document.removeEventListener('reservations:changed', reservationsChangedHandlerRef); } catch (_) {}
+  reservationsChangedHandlerRef = null;
+  quoteLiveListenersAttached = false;
+}
 const PAGE_OVERFLOW_TOLERANCE_PX = 2;
 const SAFARI_USER_AGENT_REGEX = /safari/i;
 const IOS_PLATFORM_REGEX = /(iphone|ipad|ipod)/i;
@@ -543,12 +609,19 @@ function hideModalFallback(modalEl) {
     document.removeEventListener('keydown', manualQuoteEscapeHandler);
     manualQuoteEscapeHandler = null;
   }
+  try { detachQuoteLiveListeners(); } catch (_) {}
 }
 
 function showQuoteModalElement(modalEl) {
   if (!modalEl) return;
   if (hasBootstrapModalSupport()) {
-    window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    try {
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        try { detachQuoteLiveListeners(); } catch (_) {}
+      }, { once: true });
+    } catch (_) {}
+    instance.show();
     return;
   }
   showModalFallback(modalEl);
@@ -2675,8 +2748,65 @@ function buildProjectQuotationHtml({
     : '';
 
   // Use reservation-style crew columns (positions + client price) for projects
-  const projectCrewColumns = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
+  const projectCrewColumnsBase = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
   const crewAssignments = Array.isArray(activeQuoteState?.crewAssignments) ? activeQuoteState.crewAssignments : [];
+  const groupProjectCrew = isFieldEnabled('projectCrew', 'groupByPosition');
+  const projectCrewKeyOf = (a) => {
+    const baseKey = (a && a.positionId != null)
+      ? `id:${String(a.positionId)}`
+      : (() => {
+          const raw = (a?.positionLabel || a?.position_name || a?.position || '').trim().toLowerCase();
+          return raw ? `label:${raw}` : '';
+        })();
+    const price = Number.isFinite(Number(a?.positionClientPrice)) ? Number(a.positionClientPrice) : 0;
+    const priceKey = price > 0 ? `|p:${price.toFixed(2)}` : '';
+    return `${baseKey}${priceKey}`;
+  };
+  const projectCrewCounts = (() => {
+    const map = new Map();
+    crewAssignments.forEach((a) => {
+      const key = projectCrewKeyOf(a);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return map;
+  })();
+  const projectCrewColumns = (() => {
+    const cols = [];
+    projectCrewColumnsBase.forEach((col) => {
+      if (col.id === 'position') {
+        cols.push({
+          ...col,
+          render: (assignment) => {
+            const baseLabel = (
+              assignment?.positionLabel
+                ?? assignment?.position_name
+                ?? assignment?.role
+                ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
+            );
+            if (groupProjectCrew) {
+              return escapeHtml(normalizeNumbers(String(baseLabel)));
+            }
+            const key = projectCrewKeyOf(assignment);
+            const count = key ? (projectCrewCounts.get(key) || 0) : 0;
+            const suffix = count > 1 ? ` × ${normalizeNumbers(String(count))}` : '';
+            return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
+          }
+        });
+        if (groupProjectCrew) {
+          cols.push({
+            id: 'quantity',
+            labelKey: 'reservations.details.table.headers.quantity',
+            fallback: 'الكمية',
+            render: (assignment) => escapeHtml(normalizeNumbers(String(assignment?.__count || 0)))
+          });
+        }
+      } else {
+        cols.push(col);
+      }
+    });
+    return cols;
+  })();
   const crewSectionMarkup = includeSection('projectCrew')
     ? (projectCrewColumns.length
         ? `<section class="quote-section quote-section--table">
@@ -2685,9 +2815,27 @@ function buildProjectQuotationHtml({
               <thead>
                 <tr>${projectCrewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
-              <tbody>${crewAssignments.length
-                ? crewAssignments.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
-                : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
+              <tbody>${(() => {
+                const source = groupProjectCrew
+                  ? (() => {
+                      const map = new Map();
+                      crewAssignments.forEach((a) => {
+                        const key = projectCrewKeyOf(a);
+                        if (!key) return;
+                        const existing = map.get(key);
+                        if (existing) {
+                          existing.__count += 1;
+                        } else {
+                          map.set(key, { ...a, __count: 1 });
+                        }
+                      });
+                      return Array.from(map.values());
+                    })()
+                  : crewAssignments;
+                return source.length
+                  ? source.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
+                  : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`;
+              })()}
               </tbody>
             </table>
           </section>`
@@ -3207,12 +3355,85 @@ function buildQuotationHtml(options) {
           </section>`)
     : '';
 
-  const crewColumns = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
-  const hasCrewColumns = crewColumns.length > 0;
+  const crewColumnsBase = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
+  const groupCrew = isFieldEnabled('crew', 'groupByPosition');
+  const hasCrewColumns = crewColumnsBase.length > 0;
+  const crewSourceRaw = Array.isArray(crewAssignments) ? crewAssignments : [];
+  const crewKeyOf = (a) => {
+    const baseKey = (a && a.positionId != null)
+      ? `id:${String(a.positionId)}`
+      : (() => {
+          const raw = (a?.positionLabel || a?.position_name || a?.position || '').trim().toLowerCase();
+          return raw ? `label:${raw}` : '';
+        })();
+    const price = Number.isFinite(Number(a?.positionClientPrice)) ? Number(a.positionClientPrice) : 0;
+    const priceKey = price > 0 ? `|p:${price.toFixed(2)}` : '';
+    return `${baseKey}${priceKey}`;
+  };
+  const crewCounts = (() => {
+    const map = new Map();
+    crewSourceRaw.forEach((a) => {
+      const key = crewKeyOf(a);
+      if (!key) return;
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return map;
+  })();
+  const crewColumns = (() => {
+    const cols = [];
+    crewColumnsBase.forEach((col) => {
+      if (col.id === 'position') {
+        cols.push({
+          ...col,
+          render: (assignment) => {
+            const baseLabel = (
+              assignment?.positionLabel
+                ?? assignment?.position_name
+                ?? assignment?.role
+                ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
+            );
+            if (groupCrew) {
+              return escapeHtml(normalizeNumbers(String(baseLabel)));
+            }
+            const key = crewKeyOf(assignment);
+            const count = key ? (crewCounts.get(key) || 0) : 0;
+            const suffix = count > 1 ? ` × ${normalizeNumbers(String(count))}` : '';
+            return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
+          }
+        });
+        if (groupCrew) {
+          cols.push({
+            id: 'quantity',
+            labelKey: 'reservations.details.table.headers.quantity',
+            fallback: 'الكمية',
+            render: (assignment) => escapeHtml(normalizeNumbers(String(assignment?.__count || 0)))
+          });
+        }
+      } else {
+        cols.push(col);
+      }
+    });
+    return cols;
+  })();
   const crewHeader = hasCrewColumns
     ? crewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
     : '';
-  const crewSource = Array.isArray(crewAssignments) ? crewAssignments : [];
+  const crewSource = groupCrew
+    ? (() => {
+        const map = new Map();
+        crewSourceRaw.forEach((a) => {
+          const key = crewKeyOf(a);
+          if (!key) return;
+          const existing = map.get(key);
+          if (existing) {
+            existing.__count += 1;
+          } else {
+            map.set(key, { ...a, __count: 1 });
+          }
+        });
+        return Array.from(map.values());
+      })()
+    : crewSourceRaw;
   const crewBodyRows = crewSource.length
     ? crewSource.map((assignment, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
@@ -4556,6 +4777,8 @@ export async function exportReservationPdf({ reservation, customer, project }) {
 
   applyQuoteTogglePreferences(activeQuoteState);
   openQuoteModal();
+  // Attach live update listeners once per session
+  try { attachQuoteLiveListeners(); } catch (_) {}
 }
 
 export async function exportProjectPdf({ project }) {
@@ -4625,4 +4848,5 @@ export async function exportProjectPdf({ project }) {
 
   applyQuoteTogglePreferences(activeQuoteState);
   openQuoteModal();
+  try { attachQuoteLiveListeners(); } catch (_) {}
 }

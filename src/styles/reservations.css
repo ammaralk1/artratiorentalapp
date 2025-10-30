@@ -2668,6 +2668,63 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   gap: 12px;
 }
 
+/* Horizontal slider for large crews */
+.reservation-technicians-slider {
+  position: relative;
+}
+
+.reservation-technicians-track {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding-inline: 2px; /* small breathing space for focus ring */
+}
+
+/* Cards inside slider should not shrink and snap nicely */
+.reservation-technicians-slider .reservation-technician-card {
+  flex: 0 0 auto;
+  width: 220px;
+  scroll-snap-align: start;
+}
+
+.slider-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 110, 245, 0.25);
+  background: rgba(255,255,255,0.9);
+  color: #1d2b56;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15,23,42,0.15);
+  z-index: 2;
+}
+
+:is(html.dark-mode, body.dark-mode) .slider-btn {
+  background: rgba(30, 42, 68, 0.92);
+  color: #bfdbfe;
+  border-color: rgba(93, 133, 255, 0.35);
+  box-shadow: 0 8px 20px rgba(3,10,26,0.55);
+}
+
+.slider-btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Place buttons respecting document direction */
+body[dir="rtl"] .slider-btn--prev { inset-inline-start: 8px; }
+body[dir="rtl"] .slider-btn--next { inset-inline-end: 8px; }
+body[dir="ltr"] .slider-btn--prev { inset-inline-start: 8px; }
+body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
+
 .reservation-technicians-list {
   list-style: none;
   margin: 0;

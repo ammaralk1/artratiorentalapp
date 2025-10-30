@@ -173,6 +173,46 @@ export function renderReservationDetails(index, {
         }
       };
     }
+
+    // Initialize crew slider controls if present
+    try {
+      const slider = body?.querySelector('[data-tech-slider]');
+      if (slider) {
+        const track = slider.querySelector('[data-slider-track]');
+        const prev = slider.querySelector('[data-slider-prev]');
+        const next = slider.querySelector('[data-slider-next]');
+        if (track && (prev || next)) {
+          const isRtl = document.documentElement.getAttribute('dir') === 'rtl' || document.body.getAttribute('dir') === 'rtl';
+          const getStep = () => {
+            const firstCard = track.querySelector('.reservation-technician-card');
+            const cardWidth = firstCard ? (firstCard.getBoundingClientRect().width || 220) : 220;
+            const gap = 12;
+            const visible = Math.max(1, Math.floor(track.clientWidth / (cardWidth + gap)));
+            return Math.max(cardWidth + gap, Math.floor(visible * (cardWidth + gap) * 0.9));
+          };
+          const updateButtons = () => {
+            const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth - 2);
+            const atStart = track.scrollLeft <= 1;
+            const atEnd = track.scrollLeft >= maxScroll;
+            if (prev) prev.disabled = atStart;
+            if (next) next.disabled = atEnd;
+          };
+          const scrollByStep = (dir) => {
+            const delta = getStep() * dir;
+            const left = isRtl ? -delta : delta;
+            track.scrollBy({ left, behavior: 'smooth' });
+          };
+          prev?.addEventListener('click', () => scrollByStep(-1));
+          next?.addEventListener('click', () => scrollByStep(1));
+          track.addEventListener('scroll', updateButtons, { passive: true });
+          window.addEventListener('resize', updateButtons, { passive: true });
+          // Initial state after layout
+          setTimeout(updateButtons, 0);
+        }
+      }
+    } catch (_e) {
+      // Non-fatal: slider is optional
+    }
   };
 
   if (body) {
