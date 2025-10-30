@@ -235,10 +235,7 @@ export function buildProjectPayload({
     payload.project_code = String(projectCode).trim();
   }
 
-  // Backward compatibility: some backends may expect `notes` for project description
-  if (payload.description != null && payload.description !== '') {
-    payload.notes = payload.description;
-  }
+  // Do not alias project description to other fields to avoid confusion
 
   const paymentsSource = payments !== undefined ? payments : paymentHistory;
   if (paymentsSource !== undefined) {
@@ -347,8 +344,8 @@ function toInternalProject(raw = {}) {
     type: raw.type ?? raw.projectType ?? '',
     clientId: raw.client_id != null ? String(raw.client_id) : raw.clientId ?? null,
     clientCompany: raw.client_company ?? raw.clientCompany ?? '',
-    // Accept description or legacy notes
-    description: raw.description ?? raw.notes ?? '',
+    // Use only the explicit description field for project notes
+    description: raw.description ?? '',
     start: raw.start_datetime ?? raw.start ?? null,
     end: raw.end_datetime ?? raw.end ?? null,
     applyTax: Boolean(raw.apply_tax ?? raw.applyTax ?? false),

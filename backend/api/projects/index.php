@@ -399,9 +399,9 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         $errors['client_company'] = 'Client company must be 255 characters or fewer';
     }
 
-    // Accept `description` or legacy `notes` as project description
-    $descriptionExists = array_key_exists('description', $payload) || array_key_exists('notes', $payload);
-    $description = $descriptionExists ? trim((string) ($payload['description'] ?? ($payload['notes'] ?? ''))) : null;
+    // Only accept explicit `description` for project description
+    $descriptionExists = array_key_exists('description', $payload);
+    $description = $descriptionExists ? trim((string) ($payload['description'] ?? '')) : null;
 
     $startExists = array_key_exists('start_datetime', $payload) || !$isUpdate;
     $start = $startExists ? trim((string) ($payload['start_datetime'] ?? '')) : null;

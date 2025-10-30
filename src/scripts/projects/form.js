@@ -5,7 +5,8 @@ import {
   createProjectApi,
   getProjectsState,
   isApiError as isProjectApiError,
-  updateProjectApi
+  updateProjectApi,
+  refreshProjectsFromApi,
 } from '../projectsService.js';
 import { getReservationsState, refreshReservationsFromApi, updateReservationApi } from '../reservationsService.js';
 import { DEFAULT_COMPANY_SHARE_PERCENT, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
@@ -994,6 +995,10 @@ async function handleSubmitProject(event) {
       dom.type.value = '';
     }
 
+    // Ensure we reload full project data (including expenses) from API after create/update
+    try {
+      await refreshProjectsFromApi();
+    } catch (_) { /* ignore network errors here */ }
     state.projects = getProjectsState();
     state.reservations = getReservationsState();
     renderProjects();
