@@ -461,6 +461,12 @@ export function calculateReservationTotal(
     ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
     : (Array.isArray(crewOrTechnicians) ? crewOrTechnicians : []);
 
+  // For this aggregate helper, when companySharePercent is not provided,
+  // apply the default share to match business expectation and tests.
+  const effectiveShare = (companySharePercent == null)
+    ? DEFAULT_COMPANY_SHARE_PERCENT
+    : companySharePercent;
+
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds,
@@ -470,7 +476,7 @@ export function calculateReservationTotal(
     applyTax,
     start,
     end,
-    companySharePercent
+    companySharePercent: effectiveShare
   });
   return breakdown.finalTotal;
 }
