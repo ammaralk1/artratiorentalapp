@@ -472,11 +472,11 @@ function renderFocusCard(project, category) {
           : 'timeline-status-badge timeline-status-badge--conflict';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
   const cardStateClasses = [cardPaymentClass];
-  if (isConfirmed) {
-    cardStateClasses.push('project-focus-card--confirmed');
-  }
   if (statusKey === 'cancelled') {
     cardStateClasses.push('project-focus-card--cancelled');
+  } else if (isConfirmed) {
+    // لا نظهر حالة مؤكد إذا كان المشروع ملغياً
+    cardStateClasses.push('project-focus-card--confirmed');
   }
 
   // Aggregate reservation totals in a tax-neutral way to avoid double counting tax
@@ -595,9 +595,11 @@ function renderFocusCard(project, category) {
     { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrency(reservationsTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
-  const confirmationControl = isConfirmed
-    ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
-    : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
+  const confirmationControl = statusKey === 'cancelled'
+    ? `<span class="reservation-chip status-cancelled project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.cancelled', 'مشروع ملغي', 'Cancelled project'))}</span>`
+    : (isConfirmed
+      ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
+      : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`);
 
   return `
     <div class="project-card-grid__item">
