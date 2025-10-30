@@ -14,6 +14,7 @@ import { applyStoredTheme, initThemeToggle } from './scripts/theme.js';
 import { initDashboardShell } from './scripts/dashboardShell.js';
 import { initEnhancedSelects } from './scripts/ui/enhancedSelect.js';
 import { initBackToTopForEquipment } from './scripts/ui/backToTop.js';
+import { initModalA11yFocusGuards } from './scripts/ui/modalAccessibility.js';
 import {
   getReservationUIHandler,
   waitForReservationUIHandler
@@ -98,6 +99,8 @@ async function initApp() {
   renderEquipment();
   initEquipmentPackages();
   initEnhancedSelects();
+  // Ensure closing any modal won't leave focus on a hidden (aria-hidden) ancestor
+  try { initModalA11yFocusGuards(); } catch (_) {}
   // Calendar, Maintenance, and Reservations UI initialise lazily upon tab activation
 
   scheduleDashboardMetricsInit();
