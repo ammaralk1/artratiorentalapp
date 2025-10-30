@@ -553,7 +553,7 @@ function buildProjectViewExpensesMarkup(expenses = []) {
     const label = escapeHtml(expense?.label || '');
     const amount = formatCurrency(Number(expense?.amount) || 0);
     const sale = formatCurrency(Number(expense?.sale_price ?? expense?.salePrice ?? 0));
-    const note = expense?.note ? String(expense.note) : '';
+    const note = expense?.note != null ? String(expense.note) : (expense?.notes != null ? String(expense.notes) : '');
     return `
       <tr>
         <td>${label}</td>
@@ -768,7 +768,10 @@ export function startProjectEdit(project) {
         salePrice: Number.isFinite(Number(expense?.sale_price ?? expense?.salePrice))
           ? Number(expense?.sale_price ?? expense?.salePrice)
           : 0,
-        note: expense?.note ? String(expense.note) : ''
+        // support `note` and legacy `notes`
+        note: expense?.note != null
+          ? String(expense.note)
+          : (expense?.notes != null ? String(expense.notes) : '')
       }))
     : [];
 
@@ -1942,7 +1945,7 @@ function buildProjectEditExpensesMarkup(expenses = []) {
     const label = escapeHtml(String(expense?.label || ''));
     const amountVal = Number(expense?.amount) || 0;
     const saleVal = Number(expense?.salePrice ?? expense?.sale_price ?? 0) || 0;
-    const note = escapeHtml(String(expense?.note || ''));
+    const note = escapeHtml(String((expense?.note ?? expense?.notes) || ''));
     return `
       <tr>
         <td>

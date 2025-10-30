@@ -166,11 +166,17 @@ export function buildProjectPayload({
           const label = (expense?.label ?? expense?.name ?? '').trim();
           if (!label) return null;
           const sale = Number.parseFloat(expense?.salePrice ?? expense?.sale_price ?? 0) || 0;
+          // Support both note and notes (for compatibility with older/newer backends)
+          const rawNote = (expense?.note ?? expense?.notes ?? '')
+            .toString()
+            .trim();
           return {
             label,
             amount: Math.round(amount * 100) / 100,
             sale_price: Math.max(0, Math.round(sale * 100) / 100),
-            note: (expense?.note ?? '').toString().trim() || undefined,
+            note: rawNote || undefined,
+            // Duplicate to notes for backward compatibility with APIs expecting `notes`
+            ...(rawNote ? { notes: rawNote } : {}),
           };
         })
         .filter(Boolean)
@@ -227,6 +233,11 @@ export function buildProjectPayload({
 
   if (projectCode) {
     payload.project_code = String(projectCode).trim();
+  }
+
+  // Backward compatibility: some backends may expect `notes` for project description
+  if (payload.description != null && payload.description !== '') {
+    payload.notes = payload.description;
   }
 
   const paymentsSource = payments !== undefined ? payments : paymentHistory;
@@ -293,7 +304,8 @@ function toInternalProject(raw = {}) {
     label: expense?.label ?? '',
     amount: Number.parseFloat(expense?.amount ?? 0) || 0,
     salePrice: Number.parseFloat(expense?.sale_price ?? expense?.salePrice ?? 0) || 0,
-    note: expense?.note ?? '',
+    // Accept both `note` and `notes` from API payloads
+    note: expense?.note ?? expense?.notes ?? '',
   }));
 
   const rawSharePercent = Number.parseFloat(raw.company_share_percent ?? raw.companySharePercent ?? 0) || 0;
@@ -335,7 +347,8 @@ function toInternalProject(raw = {}) {
     type: raw.type ?? raw.projectType ?? '',
     clientId: raw.client_id != null ? String(raw.client_id) : raw.clientId ?? null,
     clientCompany: raw.client_company ?? raw.clientCompany ?? '',
-    description: raw.description ?? '',
+    // Accept description or legacy notes
+    description: raw.description ?? raw.notes ?? '',
     start: raw.start_datetime ?? raw.start ?? null,
     end: raw.end_datetime ?? raw.end ?? null,
     applyTax: Boolean(raw.apply_tax ?? raw.applyTax ?? false),

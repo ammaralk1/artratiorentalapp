@@ -431,7 +431,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
           <li>
             <span class="project-expense-label">${escapeHtml(expense.label ?? '')}</span>
             <span class="project-expense-amount">${formatCurrencyLocalized(expense.amount)}</span>
-            ${expense?.note ? `<div class=\"text-muted small\">${escapeHtml(String(expense.note))}</div>` : ''}
+            ${((expense?.note ?? expense?.notes) ? `<div class=\"text-muted small\">${escapeHtml(String(expense.note ?? expense.notes))}</div>` : '')}
           </li>
         `).join('')}</ul>`
     : `<div class="text-muted">${escapeHtml(t('projects.details.noItems', 'لا يوجد'))}</div>`;
@@ -1020,7 +1020,7 @@ export function buildProjectEditExpensesMarkup(expenses = []) {
     .map((expense) => {
       const label = escapeHtml(expense?.label || '');
       const amount = escapeHtml(formatCurrencyLocalized(expense?.amount || 0));
-      const note = escapeHtml(String(expense?.note || ''));
+      const note = escapeHtml(String((expense?.note ?? expense?.notes) || ''));
       const id = escapeHtml(String(expense?.id || ''));
       return `
         <div class="project-edit-expense-item d-flex align-items-center justify-content-between gap-3 border rounded px-3 py-2 mb-2">

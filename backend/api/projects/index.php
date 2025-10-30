@@ -399,8 +399,9 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
         $errors['client_company'] = 'Client company must be 255 characters or fewer';
     }
 
-    $descriptionExists = array_key_exists('description', $payload);
-    $description = $descriptionExists ? trim((string) ($payload['description'] ?? '')) : null;
+    // Accept `description` or legacy `notes` as project description
+    $descriptionExists = array_key_exists('description', $payload) || array_key_exists('notes', $payload);
+    $description = $descriptionExists ? trim((string) ($payload['description'] ?? ($payload['notes'] ?? ''))) : null;
 
     $startExists = array_key_exists('start_datetime', $payload) || !$isUpdate;
     $start = $startExists ? trim((string) ($payload['start_datetime'] ?? '')) : null;
@@ -908,10 +909,14 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
         return;
     }
 
+    // Prefer `note` column; gracefully fall back to legacy `notes` column if present
     $hasNote = projectExpensesHasColumn($pdo, 'note');
+    $hasNotes = !$hasNote && projectExpensesHasColumn($pdo, 'notes');
     $sql = $hasNote
         ? 'INSERT INTO project_expenses (project_id, label, amount, sale_price, note) VALUES (:project_id, :label, :amount, :sale_price, :note)'
-        : 'INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)';
+        : ($hasNotes
+          ? 'INSERT INTO project_expenses (project_id, label, amount, sale_price, notes) VALUES (:project_id, :label, :amount, :sale_price, :note)'
+          : 'INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
     $insert = $pdo->prepare($sql);
     foreach ($expenses as $expense) {
         $params = [
@@ -920,8 +925,8 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
             'amount' => $expense['amount'],
             'sale_price' => $expense['sale_price'] ?? 0,
         ];
-        if ($hasNote) {
-            $params['note'] = $expense['note'] ?? null;
+        if ($hasNote || $hasNotes) {
+            $params['note'] = $expense['note'] ?? ($expense['notes'] ?? null);
         }
         $insert->execute($params);
     }
@@ -1232,10 +1237,15 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
         $message = strtolower($e->getMessage());
         $hasSale = !(strpos($message, "unknown column 'sale_price'") !== false || strpos($message, 'unknown column \"sale_price\"') !== false);
         $hasNote = !(strpos($message, "unknown column 'note'") !== false || strpos($message, 'unknown column \"note\"') !== false);
+        $hasNotes = projectExpensesHasColumn($pdo, 'notes');
         if (!$hasSale || !$hasNote) {
             $columns = ['id', 'label', 'amount'];
             if ($hasSale) $columns[] = 'sale_price';
-            if ($hasNote) $columns[] = 'note';
+            if ($hasNote) {
+                $columns[] = 'note';
+            } elseif ($hasNotes) {
+                $columns[] = 'notes';
+            }
             $sql = sprintf('SELECT %s FROM project_expenses WHERE project_id = :project_id', implode(', ', $columns));
             $statement = $pdo->prepare($sql);
             $statement->execute(['project_id' => $projectId]);
@@ -1251,7 +1261,8 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
             'label' => $row['label'],
             'amount' => (float) $row['amount'],
             'sale_price' => isset($row['sale_price']) ? (float) $row['sale_price'] : 0.0,
-            'note' => $row['note'] ?? null,
+            // Unify possible legacy `notes` column
+            'note' => $row['note'] ?? ($row['notes'] ?? null),
         ];
     }
 
