@@ -81,6 +81,7 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
   if (!targets.length) return false;
 
   let changed = false;
+  let updatedCount = 0;
   for (const reservation of targets) {
     const reservationId = reservation.id ?? reservation.reservationId;
     if (!reservationId) continue;
@@ -97,6 +98,7 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
     try {
       await updateReservationApi(reservationId, updates);
       changed = true;
+      updatedCount += 1;
     } catch (e) {
       console.warn('[projects] failed to update linked reservation schedule', reservationId, e);
     }
@@ -105,6 +107,10 @@ export async function updateLinkedReservationsSchedule(projectId, { start = null
   if (changed) {
     state.reservations = getReservationsState();
     try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
+    try {
+      const msg = t('projects.toast.linkedReservationsScheduleUpdated', 'تم تحديث توقيت الحجوزات المرتبطة ({count})', 'Updated linked reservations timing ({count})').replace('{count}', String(updatedCount));
+      showToast(msg);
+    } catch (_) { /* no-op */ }
   }
   return changed;
 }
