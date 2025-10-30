@@ -24,7 +24,7 @@ registerTranslations({
     'projects.form.labels.technician': 'إضافة عضو طاقم',
     'projects.form.labels.equipment': 'إضافة معدة',
     'projects.form.labels.quantity': 'الكمية',
-    'projects.form.labels.expenses': 'متطلبات المشروع',
+    'projects.form.labels.expenses': 'الخدمات الإنتاجية',
     'projects.form.labels.expenseLabel': 'خدمات إنتاجية',
     'projects.form.labels.expenseAmount': 'التكلفة (SR)',
     'projects.form.labels.servicesClientTotal': 'إجمالي سعر البيع',
@@ -354,7 +354,15 @@ registerTranslations({
     'projects.details.edit.heading': 'تعديل المشروع',
     'projects.details.edit.subheading': 'قم بتحديث بيانات المشروع ثم احفظ التغييرات.',
     'projects.details.edit.save': '💾 حفظ التعديلات',
-    'projects.details.edit.cancel': 'إلغاء'
+    'projects.details.edit.cancel': 'إلغاء',
+    // PDF/Quote section labels for projects (AR)
+    'projects.quote.sections.customer': 'بيانات العميل',
+    'projects.quote.sections.project': 'بيانات المشروع',
+    'projects.quote.sections.expenses': 'الخدمات الإنتاجية',
+    'projects.quote.sections.crew': 'طاقم العمل',
+    'projects.quote.sections.financial': 'الملخص المالي',
+    'projects.quote.sections.equipment': 'المعدات',
+    'projects.quote.sections.notes': 'ملاحظات المشروع'
   },
   en: {
     'projects.nav.brand': 'Rental System',
@@ -379,7 +387,7 @@ registerTranslations({
     'projects.form.labels.technician': 'Add Crew Member',
     'projects.form.labels.equipment': 'Add Equipment',
     'projects.form.labels.quantity': 'Quantity',
-    'projects.form.labels.expenses': 'Project requirements',
+    'projects.form.labels.expenses': 'Production services',
     'projects.form.labels.expenseLabel': 'Expense Name',
     'projects.form.labels.expenseAmount': 'Amount (SR)',
     'projects.form.labels.servicesClientTotal': 'Sales total',
@@ -708,6 +716,14 @@ registerTranslations({
     'projects.details.edit.heading': 'Edit Project',
     'projects.details.edit.subheading': 'Update the project details, then save your changes.',
     'projects.details.edit.save': '💾 Save Changes',
-    'projects.details.edit.cancel': 'Cancel'
+    'projects.details.edit.cancel': 'Cancel',
+    // PDF/Quote section labels for projects (EN)
+    'projects.quote.sections.customer': 'Customer info',
+    'projects.quote.sections.project': 'Project info',
+    'projects.quote.sections.expenses': 'Production services',
+    'projects.quote.sections.crew': 'Crew',
+    'projects.quote.sections.financial': 'Financial summary',
+    'projects.quote.sections.equipment': 'Equipment',
+    'projects.quote.sections.notes': 'Project notes'
   }
 });
