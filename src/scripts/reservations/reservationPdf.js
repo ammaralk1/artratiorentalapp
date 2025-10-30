@@ -2880,16 +2880,16 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
+    // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
     const out = [];
     const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
     pushIf('rowNumber');
     pushIf('position');
+    pushIf('unitPrice');
     pushIf('quantity');
     pushIf('days');
-    pushIf('unitPrice');
     pushIf('price');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     return out;
@@ -2935,8 +2935,10 @@ function buildProjectQuotationHtml({
               </tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
-              <span class="quote-table-subtotal__value">${escapeHtml(`${projectCrewSubtotalDisplay} ${currencyLabel}`)}</span>
+              <span class="quote-table-subtotal__pill">
+                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(`${projectCrewSubtotalDisplay} ${currencyLabel}`)}</span>
+              </span>
             </div>
           </section>`
         : `<section class="quote-section quote-section--table">
@@ -3003,8 +3005,10 @@ function buildProjectQuotationHtml({
               </tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
-              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.expensesTotal || '0.00'} ${currencyLabel}`)}</span>
+              <span class="quote-table-subtotal__pill">
+                <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.expensesTotal || '0.00'} ${currencyLabel}`)}</span>
+              </span>
             </div>
           </section>`
         : `<section class="quote-section quote-section--table">
@@ -3050,10 +3054,10 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder tail: quantity -> days -> unitPrice -> price
+    // Reorder tail: unitPrice -> quantity -> days -> price
     const map = new Map(cols.map((c) => [c.id, c]));
-    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
-    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
+    const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
+    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
@@ -3083,8 +3087,10 @@ function buildProjectQuotationHtml({
               </tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
-              <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
+              <span class="quote-table-subtotal__pill">
+                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
+              </span>
             </div>
           </section>`
         : `<section class="quote-section quote-section--table">
@@ -3551,8 +3557,10 @@ function buildQuotationHtml(options) {
               <tbody>${itemsBodyRows}</tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
-              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
+              <span class="quote-table-subtotal__pill">
+                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
+              </span>
             </div>
           </section>`
         : `<section class="quote-section quote-section--table">
@@ -3676,16 +3684,16 @@ function buildQuotationHtml(options) {
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
+    // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
     const out = [];
     const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
     pushIf('rowNumber');
     pushIf('position');
+    pushIf('unitPrice');
     pushIf('quantity');
     pushIf('days');
-    pushIf('unitPrice');
     pushIf('price');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     cols = out;
@@ -3725,8 +3733,10 @@ function buildQuotationHtml(options) {
               <tbody>${crewBodyRows}</tbody>
             </table>
             <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
-              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
+              <span class="quote-table-subtotal__pill">
+                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
+              </span>
             </div>
           </section>`
         : `<section class="quote-section quote-section--table">

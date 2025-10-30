@@ -764,7 +764,7 @@ body,
   justify-content: flex-end;
   margin-top: 8px;
 }
-.quote-table-subtotal > span {
+.quote-table-subtotal__pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
