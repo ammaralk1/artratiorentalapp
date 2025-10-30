@@ -126,7 +126,10 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
     id: 'description',
     labelKey: 'reservations.details.table.headers.description',
     fallback: 'الوصف',
-    render: (item) => escapeHtml(item?.desc || item?.description || '-')
+    render: (item) => {
+      const text = String(item?.desc || item?.description || '-');
+      return `<div class="quote-cell quote-cell--desc">${escapeHtml(text)}</div>`;
+    }
   },
   {
     id: 'quantity',
