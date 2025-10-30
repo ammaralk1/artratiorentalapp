@@ -338,14 +338,14 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'projectStatus', labelKey: 'projects.details.status', fallback: 'حالة المشروع' }
   ],
   financialSummary: [
-    { id: 'projectSubtotal', labelKey: 'projects.details.summary.projectSubtotal', fallback: 'إجمالي المشروع' },
-    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي المصاريف' },
+    { id: 'projectSubtotal', labelKey: 'projects.details.summary.projectSubtotal', fallback: 'إجمالي المشروع', default: false },
+    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي المصاريف', default: false },
     { id: 'reservationsTotal', labelKey: 'projects.details.reservationsTotal', fallback: 'إجمالي الحجوزات' },
     { id: 'discountAmount', labelKey: 'projects.details.summary.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'projects.details.summary.combinedTax', fallback: 'الضريبة' },
     { id: 'overallTotal', labelKey: 'projects.details.summary.overallTotal', fallback: 'الإجمالي الكلي' },
-    { id: 'paidAmount', labelKey: 'projects.details.summary.paidAmount', fallback: 'المدفوع' },
-    { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع' }
+    { id: 'paidAmount', labelKey: 'projects.details.summary.paidAmount', fallback: 'المدفوع', default: false },
+    { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع', default: false }
   ],
   payment: QUOTE_FIELD_DEFS.payment,
   projectExpenses: [
