@@ -427,8 +427,13 @@ function formatMoney(value) {
   const num = Number(value);
   const safe = Number.isFinite(num) ? num : 0;
   try {
-    return normalizeNumbers(safe.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const hasFraction = Math.abs(safe % 1) > 1e-9;
+    return normalizeNumbers(safe.toLocaleString('en-US', {
+      minimumFractionDigits: hasFraction ? 2 : 0,
+      maximumFractionDigits: 2
+    }));
   } catch (_) {
+    if (Number.isInteger(safe)) return normalizeNumbers(String(safe));
     return normalizeNumbers(safe.toFixed(2));
   }
 }
@@ -3007,7 +3012,7 @@ function buildProjectQuotationHtml({
             <div class="quote-table-subtotal">
               <span class="quote-table-subtotal__pill">
                 <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.expensesTotal || '0.00'} ${currencyLabel}`)}</span>
+                <span class="quote-table-subtotal__value">${escapeHtml(totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel))}</span>
               </span>
             </div>
           </section>`
