@@ -758,6 +758,21 @@ body,
   padding: 9px 8px;
 }
 
+/* Subtotal row/box under each table */
+.quote-table-subtotal {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.quote-table-subtotal__label {
+  font-weight: 700;
+}
+.quote-table-subtotal__value {
+  font-weight: 700;
+}
+
 .quote-table .quote-item-code {
   display: inline-block;
   padding: 2px 4px;

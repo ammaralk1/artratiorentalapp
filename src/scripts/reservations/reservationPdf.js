@@ -2823,6 +2823,32 @@ function buildProjectQuotationHtml({
     });
     return cols;
   })();
+  const projectCrewSource = groupProjectCrew
+    ? (() => {
+        const map = new Map();
+        crewAssignments.forEach((a) => {
+          const key = projectCrewKeyOf(a);
+          if (!key) return;
+          const existing = map.get(key);
+          if (existing) {
+            existing.__count += 1;
+          } else {
+            map.set(key, { ...a, __count: 1 });
+          }
+        });
+        return Array.from(map.values());
+      })()
+    : crewAssignments;
+  const projectCrewSubtotalDisplay = (() => {
+    try {
+      const sum = (projectCrewSource || []).reduce((acc, a) => {
+        const unit = Number.isFinite(Number(a?.positionClientPrice)) ? Number(a.positionClientPrice) : 0;
+        const qty = Math.max(1, Number(a?.__count || 1));
+        return acc + (unit * qty);
+      }, 0);
+      return normalizeNumbers(sum.toFixed(2));
+    } catch (_) { return '0.00'; }
+  })();
   const crewSectionMarkup = includeSection('projectCrew')
     ? (projectCrewColumns.length
         ? `<section class="quote-section quote-section--table">
@@ -2831,29 +2857,15 @@ function buildProjectQuotationHtml({
               <thead>
                 <tr>${projectCrewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
-              <tbody>${(() => {
-                const source = groupProjectCrew
-                  ? (() => {
-                      const map = new Map();
-                      crewAssignments.forEach((a) => {
-                        const key = projectCrewKeyOf(a);
-                        if (!key) return;
-                        const existing = map.get(key);
-                        if (existing) {
-                          existing.__count += 1;
-                        } else {
-                          map.set(key, { ...a, __count: 1 });
-                        }
-                      });
-                      return Array.from(map.values());
-                    })()
-                  : crewAssignments;
-                return source.length
-                  ? source.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
-                  : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`;
-              })()}
+              <tbody>${projectCrewSource.length
+                ? projectCrewSource.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
+                : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
               </tbody>
             </table>
+            <div class="quote-table-subtotal">
+              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+              <span class="quote-table-subtotal__value">${escapeHtml(`${projectCrewSubtotalDisplay} ${currencyLabel}`)}</span>
+            </div>
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.crew', 'طاقم العمل'))}</h3>
@@ -2918,6 +2930,10 @@ function buildProjectQuotationHtml({
                 : `<tr><td colspan="${Math.max(expensesColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.expenses.empty', 'لا توجد متطلبات مسجلة.'))}</td></tr>`}
               </tbody>
             </table>
+            <div class="quote-table-subtotal">
+              <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي متطلبات المشروع'))}</span>
+              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.expensesTotal || '0.00'} ${currencyLabel}`)}</span>
+            </div>
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.expenses', 'الخدمات الإنتاجية'))}</h3>
@@ -2926,8 +2942,29 @@ function buildProjectQuotationHtml({
     : '';
 
   // Use reservation-style items table for project equipment (code/desc/qty/price with package codes)
-  const itemColumns = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const itemColumnsBaseProject = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const itemColumns = itemColumnsBaseProject.map((col) => (col.id === 'price'
+    ? {
+        ...col,
+        render: (item) => {
+          const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
+          const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
+          const total = unit * qty;
+          return escapeHtml(normalizeNumbers(total.toFixed(2)));
+        }
+      }
+    : col));
   const equipmentItems = Array.isArray(activeQuoteState?.equipmentItems) ? activeQuoteState.equipmentItems : [];
+  const equipmentSubtotalDisplay = (() => {
+    try {
+      const sum = (equipmentItems || []).reduce((acc, it) => {
+        const unit = Number.isFinite(Number(it?.unitPriceValue)) ? Number(it.unitPriceValue) : 0;
+        const qty = Number.isFinite(Number(it?.qty)) ? Math.max(1, Number(it.qty)) : 1;
+        return acc + (unit * qty);
+      }, 0);
+      return normalizeNumbers(sum.toFixed(2));
+    } catch (_) { return '0.00'; }
+  })();
   const equipmentSectionMarkup = includeSection('projectEquipment')
     ? (itemColumns.length
         ? `<section class="quote-section quote-section--table">
@@ -2941,6 +2978,10 @@ function buildProjectQuotationHtml({
                 : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
               </tbody>
             </table>
+            <div class="quote-table-subtotal">
+              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+              <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
+            </div>
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('projects.quote.sections.equipment', 'المعدات'))}</h3>
@@ -3203,11 +3244,9 @@ function buildQuotationHtml(options) {
     : '';
 
   const financialInlineItems = [];
-  if (isFieldEnabled('financialSummary', 'equipmentTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'), `${totalsDisplay.equipmentTotal} ${currencyLabel}`));
-  }
-  if (isFieldEnabled('financialSummary', 'crewTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'), `${totalsDisplay.crewTotal} ${currencyLabel}`));
+  // إجمالي قبل الضريبة (يشمل نسبة الشركة) + الخصم + الضريبة
+  if (isFieldEnabled('financialSummary', 'equipmentTotal') || isFieldEnabled('financialSummary', 'crewTotal')) {
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'), `${totalsDisplay.taxableAmount} ${currencyLabel}`));
   }
   if (isFieldEnabled('financialSummary', 'discountAmount')) {
     financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
@@ -3344,7 +3383,38 @@ function buildQuotationHtml(options) {
     };
   });
 
-  const itemColumns = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const itemColumnsBase = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
+  const itemColumns = (() => {
+    const cols = [];
+    itemColumnsBase.forEach((col) => {
+      if (col.id === 'price') {
+        cols.push({
+          ...col,
+          render: (item) => {
+            const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
+            const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
+            const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+            const total = unit * qty * days;
+            return escapeHtml(normalizeNumbers(Number(total).toFixed(2)));
+          }
+        });
+      } else {
+        cols.push(col);
+      }
+    });
+    const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+    if (days > 1) {
+      const priceIndex = cols.findIndex((c) => c.id === 'price');
+      const insertionIndex = Math.max(0, priceIndex);
+      cols.splice(insertionIndex, 0, {
+        id: 'days',
+        labelKey: null,
+        fallback: 'الأيام',
+        render: () => escapeHtml(normalizeNumbers(String(days)))
+      });
+    }
+    return cols;
+  })();
   const hasItemColumns = itemColumns.length > 0;
   const itemTableHeader = hasItemColumns
     ? itemColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')
@@ -3364,6 +3434,10 @@ function buildQuotationHtml(options) {
               </thead>
               <tbody>${itemsBodyRows}</tbody>
             </table>
+            <div class="quote-table-subtotal">
+              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
+            </div>
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
@@ -3435,12 +3509,23 @@ function buildQuotationHtml(options) {
                 ? Number(assignment.positionClientPrice)
                 : 0;
               const qty = Math.max(1, Number(assignment?.__count || 1));
-              const total = unit * qty;
+              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+              const total = unit * qty * days;
               return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
             }
           });
         } else {
-          cols.push(col);
+          cols.push({
+            ...col,
+            render: (assignment) => {
+              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+                ? Number(assignment.positionClientPrice)
+                : 0;
+              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+              const total = unit * days;
+              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
         }
       } else {
         cols.push(col);
@@ -3481,6 +3566,10 @@ function buildQuotationHtml(options) {
               </thead>
               <tbody>${crewBodyRows}</tbody>
             </table>
+            <div class="quote-table-subtotal">
+              <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+              <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
+            </div>
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
