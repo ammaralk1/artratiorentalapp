@@ -1086,6 +1086,18 @@ body,
   padding: 9px 8px;
 }
 
+/* Ensure cell content is vertically centered in both preview and exported PDF */
+.quote-table th,
+.quote-table td {
+  vertical-align: middle !important;
+  line-height: 1.6;
+}
+
+.quote-table th > *,
+.quote-table td > * {
+  vertical-align: middle !important;
+}
+
 /* Subtotal row/box under each table */
 .quote-table-subtotal {
   display: flex;
