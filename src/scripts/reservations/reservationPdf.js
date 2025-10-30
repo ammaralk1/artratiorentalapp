@@ -2981,7 +2981,7 @@ function buildProjectQuotationHtml({
   // Use reservation-style items table for project equipment (code/desc/qty/price with package codes)
   const itemColumnsBaseProject = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
   const itemColumns = (() => {
-    const cols = [];
+    let cols = [];
     itemColumnsBaseProject.forEach((col) => {
       if (col.id === 'price') {
         cols.push({
@@ -3453,7 +3453,7 @@ function buildQuotationHtml(options) {
 
   const itemColumnsBase = QUOTE_ITEMS_COLUMN_DEFS.filter((column) => isFieldEnabled('items', column.id));
   const itemColumns = (() => {
-    const cols = [];
+    let cols = [];
     itemColumnsBase.forEach((col) => {
       if (col.id === 'price') {
         cols.push({
@@ -3550,7 +3550,7 @@ function buildQuotationHtml(options) {
     return map;
   })();
   const crewColumns = (() => {
-    const cols = [];
+    let cols = [];
     crewColumnsBase.forEach((col) => {
       if (col.id === 'position') {
         cols.push({
