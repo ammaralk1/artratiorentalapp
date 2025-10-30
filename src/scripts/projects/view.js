@@ -471,7 +471,7 @@ function renderFocusCard(project, category) {
           ? 'timeline-status-badge timeline-status-badge--cancelled'
           : 'timeline-status-badge timeline-status-badge--conflict';
   const title = (project.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
-  const cardStateClasses = [cardPaymentClass];
+  const cardStateClasses = statusKey === 'cancelled' ? [] : [cardPaymentClass];
   if (statusKey === 'cancelled') {
     cardStateClasses.push('project-focus-card--cancelled');
   } else if (isConfirmed) {
