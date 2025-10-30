@@ -33,6 +33,7 @@ export function cacheDom() {
   dom.equipmentList = document.getElementById('project-equipment-list');
   dom.expenseLabel = document.getElementById('project-expense-label');
   dom.expenseAmount = document.getElementById('project-expense-amount');
+  dom.expenseNote = document.getElementById('project-expense-note');
   dom.addExpenseBtn = document.getElementById('add-expense-btn');
   dom.expenseList = document.getElementById('project-expense-list');
   dom.servicesClientTotalIndicator = document.getElementById('project-services-client-total-indicator');

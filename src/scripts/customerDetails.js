@@ -689,6 +689,7 @@ function bindCustomerProjectEditForm(project, { clientName = '', clientCompany =
 
   const expenseLabelInput = form.querySelector('#project-edit-expense-label');
   const expenseAmountInput = form.querySelector('#project-edit-expense-amount');
+  const expenseNoteInput = form.querySelector('#project-edit-expense-note');
   const addExpenseBtn = form.querySelector('[data-action="add-expense"]');
   const expensesContainer = form.querySelector('#project-edit-expense-list');
   const startDateInput = form.querySelector('[name="project-start-date"]');
@@ -765,11 +766,13 @@ function bindCustomerProjectEditForm(project, { clientName = '', clientCompany =
       editState.expenses.push({
         id: `expense-${project.id}-${Date.now()}`,
         label,
-        amount
+        amount,
+        note: (expenseNoteInput?.value || '').trim()
       });
 
       if (expenseLabelInput) expenseLabelInput.value = '';
       if (expenseAmountInput) expenseAmountInput.value = '';
+      if (expenseNoteInput) expenseNoteInput.value = '';
       renderExpenses();
     });
     addExpenseBtn.dataset.listenerAttached = 'true';
@@ -1071,6 +1074,7 @@ function buildCustomerProjectDetailsMarkup(project, { customer, reservations }) 
           <li>
             <span class="project-expense-label">${escapeHtml(expense.label ?? '')}</span>
             <span class="project-expense-amount">${formatCurrencyLocalized(expense.amount)}</span>
+            ${expense?.note ? `<div class=\"text-muted small\">${escapeHtml(String(expense.note))}</div>` : ''}
           </li>
         `).join('')}</ul>`
     : `<div class="text-muted">${escapeHtml(t('projects.details.noItems', 'لا يوجد'))}</div>`;

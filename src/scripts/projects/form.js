@@ -561,6 +561,7 @@ function handleAddExpense() {
   const amount = Number(normalizedAmount);
   const saleRaw = normalizeNumbers(dom.servicesClientPrice?.value || '0');
   const salePrice = Number.parseFloat(saleRaw) || 0;
+  const note = (dom.expenseNote?.value || '').trim();
 
   if (!label) {
     showToast(t('projects.toast.missingExpenseLabel', '⚠️ يرجى إدخال وصف المصروف'));
@@ -576,7 +577,8 @@ function handleAddExpense() {
     id: Date.now(),
     label,
     amount,
-    salePrice
+    salePrice,
+    note
   });
   // Recalculate cumulative services client price from items (keeps totals correct on remove)
   recalcServicesClientPriceTotal();
@@ -584,6 +586,7 @@ function handleAddExpense() {
   if (dom.expenseLabel) dom.expenseLabel.value = '';
   if (dom.expenseAmount) dom.expenseAmount.value = normalizeNumbers(String(normalizedAmount));
   if (dom.servicesClientPrice) dom.servicesClientPrice.value = '';
+  if (dom.expenseNote) dom.expenseNote.value = '';
 
   renderSelections();
   updateSummary();
@@ -640,11 +643,12 @@ function renderExpenseList() {
               <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
               <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="4" class="text-center text-muted">${emptyText}</td></tr>
+            <tr><td colspan="5" class="text-center text-muted">${emptyText}</td></tr>
           </tbody>
         </table>
       </div>`;
@@ -655,6 +659,7 @@ function renderExpenseList() {
     const label = escapeHtml(expense.label || '');
     const amount = formatCurrency(Number(expense.amount) || 0);
     const sale = formatCurrency(Number(expense.salePrice) || 0);
+    const note = escapeHtml(expense.note || '');
     const id = escapeHtml(String(expense.id));
     const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
     return `
@@ -662,6 +667,7 @@ function renderExpenseList() {
         <td>${label}</td>
         <td>${escapeHtml(amount)}</td>
         <td>${escapeHtml(sale)}</td>
+        <td>${note || '—'}</td>
         <td>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
         </td>
@@ -672,12 +678,13 @@ function renderExpenseList() {
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle project-services-table">
         <thead class="table-light">
-          <tr>
-            <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
-          </tr>
+            <tr>
+              <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
+              <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+            </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -919,6 +926,7 @@ async function handleSubmitProject(event) {
       amount: expense.amount,
       // Persist per-item sale price so backend stores sale_price in project_expenses
       salePrice: expense.salePrice,
+      note: expense.note || undefined,
     })),
     servicesClientPrice,
     discount: discountValue,

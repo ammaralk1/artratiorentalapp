@@ -431,6 +431,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
           <li>
             <span class="project-expense-label">${escapeHtml(expense.label ?? '')}</span>
             <span class="project-expense-amount">${formatCurrencyLocalized(expense.amount)}</span>
+            ${expense?.note ? `<div class=\"text-muted small\">${escapeHtml(String(expense.note))}</div>` : ''}
           </li>
         `).join('')}</ul>`
     : `<div class="text-muted">${escapeHtml(t('projects.details.noItems', 'لا يوجد'))}</div>`;
@@ -925,6 +926,8 @@ export function buildProjectEditMarkup(project, { clientName = '', clientCompany
           <div class="col-md-6">
             <label class="form-label" for="project-edit-expense-amount">${escapeHtml(t('projects.form.labels.expenseAmount', 'المبلغ (SR)'))}</label>
             <input type="text" class="form-control" id="project-edit-expense-amount" inputmode="decimal" placeholder="0">
+            <label class="form-label mt-2" for="project-edit-expense-note">${escapeHtml(t('projects.form.labels.expenseNote', 'ملاحظات'))}</label>
+            <input type="text" class="form-control" id="project-edit-expense-note" placeholder="${escapeHtml(t('projects.form.placeholders.expenseNote', 'تفاصيل إضافية'))}">
           </div>
           <div class="col-12 d-flex justify-content-end">
             <button type="button" class="btn btn-sm btn-primary" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>
@@ -1017,12 +1020,13 @@ export function buildProjectEditExpensesMarkup(expenses = []) {
     .map((expense) => {
       const label = escapeHtml(expense?.label || '');
       const amount = escapeHtml(formatCurrencyLocalized(expense?.amount || 0));
+      const note = escapeHtml(String(expense?.note || ''));
       const id = escapeHtml(String(expense?.id || ''));
       return `
         <div class="project-edit-expense-item d-flex align-items-center justify-content-between gap-3 border rounded px-3 py-2 mb-2">
           <div>
             <div class="fw-semibold">${label}</div>
-            <div class="text-muted small">${amount}</div>
+            <div class="text-muted small">${amount}${note ? ' • ' + note : ''}</div>
           </div>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
         </div>

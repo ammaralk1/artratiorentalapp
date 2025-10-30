@@ -155,6 +155,8 @@ function handleProjectsCreate(PDO $pdo): void
 {
     // Ensure schema supports project status/cancelled flags
     ensureProjectCancellationColumns($pdo);
+    // Ensure expenses 'note' column exists when possible
+    ensureProjectExpensesNotesColumn($pdo);
     [$result, $errors] = validateProjectPayload(readJsonPayload(), false, $pdo);
 
     if ($errors) {
@@ -225,6 +227,8 @@ function handleProjectsUpdate(PDO $pdo): void
 
     // Ensure schema supports project status/cancelled flags
     ensureProjectCancellationColumns($pdo);
+    // Ensure expenses 'note' column exists when possible
+    ensureProjectExpensesNotesColumn($pdo);
 
     [$result, $errors] = validateProjectPayload(readJsonPayload(), true, $pdo, $id);
 
@@ -565,6 +569,7 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
                 $label = trim((string) ($expense['label'] ?? ''));
                 $amount = isset($expense['amount']) ? (float) $expense['amount'] : 0.0;
                 $salePrice = isset($expense['sale_price']) ? (float) $expense['sale_price'] : 0.0;
+                $note = isset($expense['note']) ? trim((string) $expense['note']) : '';
 
                 if ($label === '') {
                     $errors["expenses.$index.label"] = 'Expense label is required';
@@ -578,12 +583,16 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
                 if ($salePrice < 0) {
                     $errors["expenses.$index.sale_price"] = 'Expense sale price must be zero or greater';
                 }
+                if ($note !== '' && mb_strlen($note) > 1000) {
+                    $errors["expenses.$index.note"] = 'Expense note must be 1000 characters or fewer';
+                }
 
                 if (!isset($errors["expenses.$index.label"]) && !isset($errors["expenses.$index.amount"]) && !isset($errors["expenses.$index.sale_price"])) {
                     $normalizedExpenses[] = [
                         'label' => $label,
                         'amount' => round($amount, 2),
                         'sale_price' => round($salePrice, 2),
+                        'note' => $note !== '' ? $note : null,
                     ];
                     $expensesTotal += round($amount, 2);
                 }
@@ -894,14 +903,22 @@ function syncProjectExpenses(PDO $pdo, int $projectId, array $expenses): void
         return;
     }
 
-    $insert = $pdo->prepare('INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)');
+    $hasNote = projectExpensesHasColumn($pdo, 'note');
+    $sql = $hasNote
+        ? 'INSERT INTO project_expenses (project_id, label, amount, sale_price, note) VALUES (:project_id, :label, :amount, :sale_price, :note)'
+        : 'INSERT INTO project_expenses (project_id, label, amount, sale_price) VALUES (:project_id, :label, :amount, :sale_price)';
+    $insert = $pdo->prepare($sql);
     foreach ($expenses as $expense) {
-        $insert->execute([
+        $params = [
             'project_id' => $projectId,
             'label' => $expense['label'],
             'amount' => $expense['amount'],
             'sale_price' => $expense['sale_price'] ?? 0,
-        ]);
+        ];
+        if ($hasNote) {
+            $params['note'] = $expense['note'] ?? null;
+        }
+        $insert->execute($params);
     }
 }
 
@@ -1198,23 +1215,24 @@ function fetchProjectEquipment(PDO $pdo, int $projectId): array
 
 function fetchProjectExpenses(PDO $pdo, int $projectId): array
 {
-    // Prefer selecting sale_price; gracefully fall back if the column doesn't exist
+    // Prefer selecting sale_price and note; gracefully fall back if the columns don't exist
     try {
         $statement = $pdo->prepare(
-            'SELECT id, label, amount, sale_price
+            'SELECT id, label, amount, sale_price, note
              FROM project_expenses
              WHERE project_id = :project_id'
         );
         $statement->execute(['project_id' => $projectId]);
     } catch (\PDOException $e) {
         $message = strtolower($e->getMessage());
-        // Unknown column 'sale_price' in 'field list' → fallback to selecting without it
-        if (strpos($message, "unknown column 'sale_price'") !== false || strpos($message, 'unknown column \"sale_price\"') !== false) {
-            $statement = $pdo->prepare(
-                'SELECT id, label, amount
-                 FROM project_expenses
-                 WHERE project_id = :project_id'
-            );
+        $hasSale = !(strpos($message, "unknown column 'sale_price'") !== false || strpos($message, 'unknown column \"sale_price\"') !== false);
+        $hasNote = !(strpos($message, "unknown column 'note'") !== false || strpos($message, 'unknown column \"note\"') !== false);
+        if (!$hasSale || !$hasNote) {
+            $columns = ['id', 'label', 'amount'];
+            if ($hasSale) $columns[] = 'sale_price';
+            if ($hasNote) $columns[] = 'note';
+            $sql = sprintf('SELECT %s FROM project_expenses WHERE project_id = :project_id', implode(', ', $columns));
+            $statement = $pdo->prepare($sql);
             $statement->execute(['project_id' => $projectId]);
         } else {
             throw $e;
@@ -1228,6 +1246,7 @@ function fetchProjectExpenses(PDO $pdo, int $projectId): array
             'label' => $row['label'],
             'amount' => (float) $row['amount'],
             'sale_price' => isset($row['sale_price']) ? (float) $row['sale_price'] : 0.0,
+            'note' => $row['note'] ?? null,
         ];
     }
 
@@ -1307,6 +1326,34 @@ function ensureProjectCancellationColumns(PDO $pdo): void
     } catch (Throwable $e) {
         // Log and continue; cancellation linkage will still be handled at reservation level
         error_log('ensureProjectCancellationColumns failed: ' . $e->getMessage());
+    } finally {
+        $checked = true;
+    }
+}
+
+// Check if a column exists on project_expenses table
+function projectExpensesHasColumn(PDO $pdo, string $column): bool
+{
+    try {
+        $stmt = $pdo->prepare('SHOW COLUMNS FROM project_expenses LIKE :col');
+        $stmt->execute(['col' => $column]);
+        return (bool) $stmt->fetchColumn();
+    } catch (Throwable $_) {
+        return false;
+    }
+}
+
+// Ensure project_expenses has an optional notes column
+function ensureProjectExpensesNotesColumn(PDO $pdo): void
+{
+    static $checked = false;
+    if ($checked) return;
+    try {
+        if (!projectExpensesHasColumn($pdo, 'note')) {
+            $pdo->exec("ALTER TABLE project_expenses ADD COLUMN note TEXT NULL DEFAULT NULL AFTER sale_price");
+        }
+    } catch (Throwable $_) {
+        // best-effort only
     } finally {
         $checked = true;
     }

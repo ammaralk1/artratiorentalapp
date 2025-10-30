@@ -170,6 +170,7 @@ export function buildProjectPayload({
             label,
             amount: Math.round(amount * 100) / 100,
             sale_price: Math.max(0, Math.round(sale * 100) / 100),
+            note: (expense?.note ?? '').toString().trim() || undefined,
           };
         })
         .filter(Boolean)
@@ -292,6 +293,7 @@ function toInternalProject(raw = {}) {
     label: expense?.label ?? '',
     amount: Number.parseFloat(expense?.amount ?? 0) || 0,
     salePrice: Number.parseFloat(expense?.sale_price ?? expense?.salePrice ?? 0) || 0,
+    note: expense?.note ?? '',
   }));
 
   const rawSharePercent = Number.parseFloat(raw.company_share_percent ?? raw.companySharePercent ?? 0) || 0;
