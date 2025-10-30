@@ -3015,10 +3015,10 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder tail: quantity -> days -> unitPrice -> price
+    // Reorder tail: unitPrice -> quantity -> days -> price
     const map = new Map(cols.map((c) => [c.id, c]));
-    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
-    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
+    const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
+    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
@@ -3488,10 +3488,10 @@ function buildQuotationHtml(options) {
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder tail: quantity -> days -> unitPrice -> price
+    // Reorder tail: unitPrice -> quantity -> days -> price
     const map = new Map(cols.map((c) => [c.id, c]));
-    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
-    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
+    const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
+    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
@@ -3551,6 +3551,7 @@ function buildQuotationHtml(options) {
   })();
   const crewColumns = (() => {
     let cols = [];
+    let quantityColumn = null;
     crewColumnsBase.forEach((col) => {
       if (col.id === 'position') {
         cols.push({
@@ -3623,16 +3624,16 @@ function buildQuotationHtml(options) {
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
+    // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
     const out = [];
     const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
     pushIf('rowNumber');
     pushIf('position');
+    pushIf('unitPrice');
     pushIf('quantity');
     pushIf('days');
-    pushIf('unitPrice');
     pushIf('price');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     cols = out;
@@ -4052,6 +4053,14 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
     });
 
     fragment = null;
+
+    // Append trailing subtotal (or other post-table summary) if present
+    try {
+      const subtotal = node.querySelector(':scope > .quote-table-subtotal');
+      if (subtotal) {
+        placeBlock(subtotal);
+      }
+    } catch (_) {}
   };
 
   if (!blockNodes.length) {
