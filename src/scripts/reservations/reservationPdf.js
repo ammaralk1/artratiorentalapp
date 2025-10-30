@@ -18,9 +18,9 @@ import { findPackageById, getPackagesSnapshot } from '../reservationsPackages.js
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
 // Font URLs (served from public/fonts) resolved by Vite for reliable loading in preview/export windows
-import taj400Url from '/fonts/Tajawal-400.ttf?url';
-import taj500Url from '/fonts/Tajawal-500.ttf?url';
-import taj700Url from '/fonts/Tajawal-700.ttf?url';
+import taj400Url from '/assets/Tajawal-400.ttf?url';
+import taj500Url from '/assets/Tajawal-500.ttf?url';
+import taj700Url from '/assets/Tajawal-700.ttf?url';
 import {
   normalizeColorValue,
   patchHtml2CanvasColorParsing,
