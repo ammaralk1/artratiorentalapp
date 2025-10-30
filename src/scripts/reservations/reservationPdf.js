@@ -2801,6 +2801,22 @@ function buildProjectQuotationHtml({
             render: (assignment) => escapeHtml(normalizeNumbers(String(assignment?.__count || 0)))
           });
         }
+      } else if (col.id === 'price') {
+        if (groupProjectCrew) {
+          cols.push({
+            ...col,
+            render: (assignment) => {
+              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+                ? Number(assignment.positionClientPrice)
+                : 0;
+              const qty = Math.max(1, Number(assignment?.__count || 1));
+              const total = unit * qty;
+              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        } else {
+          cols.push(col);
+        }
       } else {
         cols.push(col);
       }
@@ -3408,6 +3424,23 @@ function buildQuotationHtml(options) {
             fallback: 'الكمية',
             render: (assignment) => escapeHtml(normalizeNumbers(String(assignment?.__count || 0)))
           });
+        }
+      } else if (col.id === 'price') {
+        // When grouping by position, show client price multiplied by quantity
+        if (groupCrew) {
+          cols.push({
+            ...col,
+            render: (assignment) => {
+              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+                ? Number(assignment.positionClientPrice)
+                : 0;
+              const qty = Math.max(1, Number(assignment?.__count || 1));
+              const total = unit * qty;
+              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        } else {
+          cols.push(col);
         }
       } else {
         cols.push(col);
