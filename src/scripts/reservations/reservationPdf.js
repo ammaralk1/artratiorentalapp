@@ -2954,7 +2954,7 @@ function buildProjectQuotationHtml({
                 <tr>${projectCrewColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
               <tbody>${projectCrewSource.length
-                ? projectCrewSource.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
+                ? projectCrewSource.map((assignment, index) => `<tr>${projectCrewColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(assignment, index)}</div></td>`).join('')}</tr>`).join('')
                 : `<tr><td colspan="${Math.max(projectCrewColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.crew.empty', 'لا يوجد طاقم فني مرتبط.'))}</td></tr>`}
               </tbody>
             </table>
@@ -3101,7 +3101,7 @@ function buildProjectQuotationHtml({
                 <tr>${itemColumns.map((column) => `<th>${escapeHtml(column.labelKey ? t(column.labelKey, column.fallback) : column.fallback)}</th>`).join('')}</tr>
               </thead>
               <tbody>${equipmentItems.length
-                ? equipmentItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+                ? equipmentItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(item, index)}</div></td>`).join('')}</tr>`).join('')
                 : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('projects.details.equipment.empty', 'لا توجد معدات مرتبطة حالياً.'))}</td></tr>`}
               </tbody>
             </table>
@@ -3562,7 +3562,7 @@ function buildQuotationHtml(options) {
     : '';
   const hasItems = quoteItems.length > 0;
   const itemsBodyRows = hasItems
-    ? quoteItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td>${column.render(item, index)}</td>`).join('')}</tr>`).join('')
+    ? quoteItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(item, index)}</div></td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td></tr>`;
 
   const itemsSectionMarkup = includeSection('items')
@@ -3740,7 +3740,7 @@ function buildQuotationHtml(options) {
       })()
     : crewSourceRaw;
   const crewBodyRows = crewSource.length
-    ? crewSource.map((assignment, index) => `<tr>${crewColumns.map((column) => `<td>${column.render(assignment, index)}</td>`).join('')}</tr>`).join('')
+    ? crewSource.map((assignment, index) => `<tr>${crewColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(assignment, index)}</div></td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
 
   const crewSectionMarkup = includeSection('crew')
