@@ -762,16 +762,21 @@ body,
 .quote-table-subtotal {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
+}
+.quote-table-subtotal > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 999px;
+  padding: 6px 12px;
   font-size: 12px;
 }
-.quote-table-subtotal__label {
-  font-weight: 700;
-}
-.quote-table-subtotal__value {
-  font-weight: 700;
-}
+.quote-table-subtotal__label { font-weight: 700; }
+.quote-table-subtotal__value { font-weight: 700; }
 
 .quote-table .quote-item-code {
   display: inline-block;

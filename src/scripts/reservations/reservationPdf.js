@@ -422,6 +422,17 @@ const A4_HEIGHT_MM = 297;
 const A4_WIDTH_PX = Math.round((A4_WIDTH_MM / MM_PER_INCH) * CSS_DPI);
 const A4_HEIGHT_PX = Math.round((A4_HEIGHT_MM / MM_PER_INCH) * CSS_DPI);
 
+// Format numbers with thousands separators and 2 decimals, localized to our digits via normalizeNumbers
+function formatMoney(value) {
+  const num = Number(value);
+  const safe = Number.isFinite(num) ? num : 0;
+  try {
+    return normalizeNumbers(safe.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  } catch (_) {
+    return normalizeNumbers(safe.toFixed(2));
+  }
+}
+
 // Live preview updates when reservation data changes while the modal is open
 let quoteLiveListenersAttached = false;
 let reservationsChangedHandlerRef = null;
@@ -2828,21 +2839,21 @@ function buildProjectQuotationHtml({
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
               const total = unit * qty * days;
-              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
-            }
-          });
-        } else {
-          cols.push({
-            ...col,
-            render: (assignment) => {
-              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
-                ? Number(assignment.positionClientPrice)
-                : 0;
-              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * days;
-              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
-            }
-          });
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
+      } else {
+        cols.push({
+          ...col,
+          render: (assignment) => {
+            const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+              ? Number(assignment.positionClientPrice)
+              : 0;
+            const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+            const total = unit * days;
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
         }
       } else {
         cols.push(col);
@@ -3463,7 +3474,7 @@ function buildQuotationHtml(options) {
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
             const total = unit * qty * days;
-            return escapeHtml(`${normalizeNumbers(Number(total).toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else if (col.id === 'unitPrice') {
@@ -3471,7 +3482,7 @@ function buildQuotationHtml(options) {
           ...col,
           render: (item) => {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-            return escapeHtml(`${normalizeNumbers(unit.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -3594,21 +3605,21 @@ function buildQuotationHtml(options) {
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
               const total = unit * qty * days;
-              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
-            }
-          });
-        } else {
-          cols.push({
-            ...col,
-            render: (assignment) => {
-              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
-                ? Number(assignment.positionClientPrice)
-                : 0;
-              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * days;
-              return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
-            }
-          });
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
+      } else {
+        cols.push({
+          ...col,
+          render: (assignment) => {
+            const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+              ? Number(assignment.positionClientPrice)
+              : 0;
+            const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+            const total = unit * days;
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+          }
+        });
         }
       } else {
         cols.push(col);
