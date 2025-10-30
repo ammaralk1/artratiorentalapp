@@ -1380,6 +1380,30 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       renderPaymentSummary();
       syncPaymentStatusValue('auto');
     });
+    // Inline edit: label/amount/salePrice/note
+    expensesContainer.addEventListener('input', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      const expenseId = target.dataset.expenseId;
+      const field = target.dataset.expenseField;
+      if (!expenseId || !field) return;
+      const index = editState.expenses.findIndex((e) => String(e.id) === String(expenseId));
+      if (index === -1) return;
+      let value = target.value;
+      if (field === 'amount' || field === 'salePrice') {
+        const normalized = normalizeNumbers(value || '');
+        const num = Number.parseFloat(normalized);
+        if (Number.isFinite(num) && num >= 0) {
+          editState.expenses[index][field] = num;
+        } else if (value === '' || normalized === '') {
+          editState.expenses[index][field] = 0;
+        }
+        renderPaymentSummary();
+        syncPaymentStatusValue('auto');
+      } else if (field === 'label' || field === 'note') {
+        editState.expenses[index][field] = value;
+      }
+    });
   }
 
   if (paymentAddButton && !paymentAddButton.dataset.listenerAttached) {
@@ -1884,6 +1908,13 @@ function buildProjectTypeOptionsMarkup(selectedType) {
 }
 
 function buildProjectEditExpensesMarkup(expenses = []) {
+  const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
+  const thService = escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'));
+  const thCost = escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'));
+  const thSale = escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'));
+  const thNote = escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'));
+  const thActions = escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'));
+
   if (!Array.isArray(expenses) || expenses.length === 0) {
     const emptyText = escapeHtml(t('projects.selected.emptyExpenses', 'لم يتم تسجيل أي مصروف'));
     return `
@@ -1891,11 +1922,11 @@ function buildProjectEditExpensesMarkup(expenses = []) {
         <table class="table table-sm table-hover align-middle project-services-table">
           <thead class="table-light">
             <tr>
-              <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
-              <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
-              <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
-              <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
-              <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+              <th>${thService}</th>
+              <th>${thCost}</th>
+              <th>${thSale}</th>
+              <th>${thNote}</th>
+              <th>${thActions}</th>
             </tr>
           </thead>
           <tbody>
@@ -1905,36 +1936,47 @@ function buildProjectEditExpensesMarkup(expenses = []) {
       </div>`;
   }
 
-  const removeLabel = escapeHtml(t('actions.remove', 'إزالة'));
   const rows = expenses.map((expense) => {
-    const label = escapeHtml(expense?.label || '');
-    const amount = escapeHtml(formatCurrency(expense?.amount || 0));
-    const sale = escapeHtml(formatCurrency(expense?.salePrice || expense?.sale_price || 0));
     const id = escapeHtml(String(expense?.id || ''));
+    const label = escapeHtml(String(expense?.label || ''));
+    const amountVal = Number(expense?.amount) || 0;
+    const saleVal = Number(expense?.salePrice ?? expense?.sale_price ?? 0) || 0;
     const note = escapeHtml(String(expense?.note || ''));
     return `
       <tr>
-        <td>${label}</td>
-        <td>${amount}</td>
-        <td>${sale}</td>
-        <td>${note || '—'}</td>
-        <td><button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button></td>
-      </tr>`;
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${label}" data-expense-id="${id}" data-expense-field="label" placeholder="${escapeHtml(t('projects.form.placeholders.expenseLabel', 'الوصف'))}">
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${escapeHtml(String(amountVal))}" data-expense-id="${id}" data-expense-field="amount" inputmode="decimal" placeholder="0">
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${escapeHtml(String(saleVal))}" data-expense-id="${id}" data-expense-field="salePrice" inputmode="decimal" placeholder="0">
+        </td>
+        <td>
+          <input type="text" class="form-control form-control-sm" value="${note}" data-expense-id="${id}" data-expense-field="note" placeholder="${escapeHtml(t('projects.form.labels.expenseNote', 'ملاحظات'))}">
+        </td>
+        <td>
+          <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
+        </td>
+      </tr>
+    `;
   }).join('');
 
   const saleTotal = expenses.reduce((sum, e) => sum + (Number(e?.salePrice ?? e?.sale_price) || 0), 0);
   const saleTotalDisplay = escapeHtml(formatCurrency(saleTotal));
   const totalLabel = escapeHtml(t('projects.expenses.table.totalSale', 'مجموع سعر البيع'));
+
   return `
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle project-services-table">
         <thead class="table-light">
           <tr>
-            <th>${escapeHtml(t('projects.expenses.table.headers.service', 'الخدمة'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.cost', 'التكلفة (SR)'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.sale', 'سعر البيع (SR)'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.note', 'ملاحظات'))}</th>
-            <th>${escapeHtml(t('projects.expenses.table.headers.actions', 'الإجراءات'))}</th>
+            <th>${thService}</th>
+            <th>${thCost}</th>
+            <th>${thSale}</th>
+            <th>${thNote}</th>
+            <th>${thActions}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1947,7 +1989,8 @@ function buildProjectEditExpensesMarkup(expenses = []) {
           </tr>
         </tfoot>
       </table>
-    </div>`;
+    </div>
+  `;
 }
 
 function buildProjectPaymentHistoryMarkup(paymentHistory = []) {
