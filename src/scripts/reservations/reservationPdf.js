@@ -210,8 +210,7 @@ const QUOTE_FIELD_DEFS = {
     { id: 'projectCode', labelKey: 'reservations.details.labels.code', fallback: 'الرمز' }
   ],
   financialSummary: [
-    { id: 'equipmentTotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' },
-    { id: 'crewTotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' },
+    // Removed: equipmentTotal and crewTotal from summary toggles per request
     { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
     { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
@@ -222,10 +221,15 @@ const QUOTE_FIELD_DEFS = {
     { id: 'account', labelKey: 'reservations.quote.labels.account', fallback: 'رقم الحساب' },
     { id: 'iban', labelKey: 'reservations.quote.labels.iban', fallback: 'رقم الآيبان' }
   ],
-  items: QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+  // Items (equipment) section: add subtotal toggle
+  items: [
+    ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
+  ],
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false }
+    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false },
+    { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ]
 };
 
@@ -3368,10 +3372,8 @@ function buildQuotationHtml(options) {
     : '';
 
   const financialInlineItems = [];
-  // إجمالي قبل الضريبة (يشمل نسبة الشركة) + الخصم + الضريبة
-  if (isFieldEnabled('financialSummary', 'equipmentTotal') || isFieldEnabled('financialSummary', 'crewTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'), `${totalsDisplay.taxableAmount} ${currencyLabel}`));
-  }
+  // إجمالي قبل الضريبة (يشمل نسبة الشركة)
+  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'), `${totalsDisplay.taxableAmount} ${currencyLabel}`));
   if (isFieldEnabled('financialSummary', 'discountAmount')) {
     financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
   }
@@ -3570,12 +3572,14 @@ function buildQuotationHtml(options) {
               </thead>
               <tbody>${itemsBodyRows}</tbody>
             </table>
-            <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__pill">
-                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
-              </span>
-            </div>
+            ${isFieldEnabled('items','equipmentSubtotal') ? `
+              <div class="quote-table-subtotal">
+                <span class="quote-table-subtotal__pill">
+                  <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
+                </span>
+              </div>
+            ` : ''}
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('reservations.details.items.title', 'المعدات'))}</h3>
@@ -3746,12 +3750,14 @@ function buildQuotationHtml(options) {
               </thead>
               <tbody>${crewBodyRows}</tbody>
             </table>
-            <div class="quote-table-subtotal">
-              <span class="quote-table-subtotal__pill">
-                <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
-                <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
-              </span>
-            </div>
+            ${isFieldEnabled('crew','crewSubtotal') ? `
+              <div class="quote-table-subtotal">
+                <span class="quote-table-subtotal__pill">
+                  <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
+                </span>
+              </div>
+            ` : ''}
           </section>`
         : `<section class="quote-section quote-section--table">
             <h3>${escapeHtml(t('reservations.details.technicians.title', 'طاقم العمل'))}</h3>
