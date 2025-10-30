@@ -568,8 +568,13 @@ function validateProjectPayload(array $payload, bool $isUpdate, PDO $pdo, ?int $
 
                 $label = trim((string) ($expense['label'] ?? ''));
                 $amount = isset($expense['amount']) ? (float) $expense['amount'] : 0.0;
-                $salePrice = isset($expense['sale_price']) ? (float) $expense['sale_price'] : 0.0;
-                $note = isset($expense['note']) ? trim((string) $expense['note']) : '';
+                // Accept both sale_price and salePrice keys
+                $salePrice = isset($expense['sale_price'])
+                    ? (float) $expense['sale_price']
+                    : (isset($expense['salePrice']) ? (float) $expense['salePrice'] : 0.0);
+                // Accept note synonyms (note, notes, description)
+                $noteRaw = $expense['note'] ?? ($expense['notes'] ?? ($expense['description'] ?? ''));
+                $note = trim((string) $noteRaw);
 
                 if ($label === '') {
                     $errors["expenses.$index.label"] = 'Expense label is required';
