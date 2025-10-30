@@ -68,6 +68,47 @@ export async function removeProject(projectId) {
   }
 }
 
+/**
+ * Update start/end date-time for all reservations linked to a project.
+ * - Skips reservations with status 'completed' or 'cancelled'.
+ * - Only sends fields that are present to avoid backend validation issues.
+ */
+export async function updateLinkedReservationsSchedule(projectId, { start = null, end = null } = {}) {
+  if (!projectId) return false;
+
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  if (!targets.length) return false;
+
+  let changed = false;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    const statusRaw = String(reservation.status || '').toLowerCase();
+    if (statusRaw === 'completed' || statusRaw === 'cancelled' || statusRaw === 'canceled') {
+      continue;
+    }
+
+    const updates = {};
+    if (start) updates.start_datetime = start;
+    if (end) updates.end_datetime = end;
+    if (Object.keys(updates).length === 0) continue;
+
+    try {
+      await updateReservationApi(reservationId, updates);
+      changed = true;
+    } catch (e) {
+      console.warn('[projects] failed to update linked reservation schedule', reservationId, e);
+    }
+  }
+
+  if (changed) {
+    state.reservations = getReservationsState();
+    try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
+  }
+  return changed;
+}
+
 export async function updateLinkedReservationsPaymentStatus(projectId, paymentStatus) {
   if (!projectId) return false;
 

@@ -57,7 +57,8 @@ import {
   handleProjectReservationSync,
   updateLinkedReservationsConfirmation,
   removeProject,
-  updateLinkedReservationsCancelled
+  updateLinkedReservationsCancelled,
+  updateLinkedReservationsSchedule
 } from './actions.js';
 
 export function openProjectDetails(projectId) {
@@ -1521,7 +1522,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       progressValue = null;
     }
 
-    const paymentProgress = calculatePaymentProgress({
+  const paymentProgress = calculatePaymentProgress({
       totalAmount: finance.totalWithTax,
       paidAmount: editState.basePaidAmount || 0,
       paidPercent: editState.basePaidPercent || 0,
@@ -1589,6 +1590,15 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     try {
       const updated = await updateProjectApi(project.projectId ?? project.id, payload);
       const identifier = updated?.projectId ?? updated?.id ?? project.id;
+      // Sync linked reservations schedule with project timing when not cancelling
+      if (!wantCancel) {
+        try {
+          const schedule = { start: startIso };
+          if (endIso) schedule.end = endIso;
+          // Defer to actions to update all linked reservations' start/end
+          await updateLinkedReservationsSchedule(identifier, schedule);
+        } catch (e) { console.warn('⚠️ failed to sync linked reservations schedule', e); }
+      }
       await handleProjectReservationSync(identifier, paymentStatusValue);
       if (wantCancel) {
         try { await updateLinkedReservationsCancelled(identifier); } catch (e) { console.warn('⚠️ failed to cancel linked reservations', e); }
