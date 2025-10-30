@@ -652,6 +652,13 @@ function showModalFallback(modalEl) {
 
 function hideModalFallback(modalEl) {
   if (!modalEl || !modalEl.classList.contains('show')) return;
+  try {
+    const active = modalEl.ownerDocument?.activeElement;
+    if (active && modalEl.contains(active)) {
+      try { active.blur(); } catch (_) {}
+      try { modalEl.ownerDocument?.body?.focus({ preventScroll: true }); } catch (_) {}
+    }
+  } catch (_) {}
   modalEl.classList.remove('show');
   modalEl.style.display = 'none';
   modalEl.setAttribute('aria-hidden', 'true');
@@ -675,9 +682,27 @@ function showQuoteModalElement(modalEl) {
   if (hasBootstrapModalSupport()) {
     const instance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
     try {
-      modalEl.addEventListener('hidden.bs.modal', () => {
+      const onHidden = () => {
+        try {
+          const active = document.activeElement;
+          if (active && modalEl.contains(active)) {
+            try { active.blur(); } catch (_) {}
+            try { document.body?.focus({ preventScroll: true }); } catch (_) {}
+          }
+        } catch (_) {}
         try { detachQuoteLiveListeners(); } catch (_) {}
-      }, { once: true });
+        try { modalEl.removeEventListener('hidden.bs.modal', onHidden); } catch (_) {}
+      };
+      modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
+      // In some cases focus is still inside during the hide transition; blur earlier as well
+      modalEl.addEventListener('hide.bs.modal', () => {
+        try {
+          const active = document.activeElement;
+          if (active && modalEl.contains(active)) {
+            try { active.blur(); } catch (_) {}
+          }
+        } catch (_) {}
+      });
     } catch (_) {}
     instance.show();
     return;
