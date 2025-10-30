@@ -338,14 +338,11 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     { id: 'projectStatus', labelKey: 'projects.details.status', fallback: 'حالة المشروع' }
   ],
   financialSummary: [
-    { id: 'projectSubtotal', labelKey: 'projects.details.summary.projectSubtotal', fallback: 'إجمالي المشروع', default: false },
-    { id: 'expensesTotal', labelKey: 'projects.details.expensesTotal', fallback: 'إجمالي المصاريف', default: false },
     { id: 'reservationsTotal', labelKey: 'projects.details.reservationsTotal', fallback: 'إجمالي الحجوزات' },
     { id: 'discountAmount', labelKey: 'projects.details.summary.discount', fallback: 'الخصم' },
     { id: 'taxAmount', labelKey: 'projects.details.summary.combinedTax', fallback: 'الضريبة' },
     { id: 'overallTotal', labelKey: 'projects.details.summary.overallTotal', fallback: 'الإجمالي الكلي' },
-    { id: 'paidAmount', labelKey: 'projects.details.summary.paidAmount', fallback: 'المدفوع', default: false },
-    { id: 'remainingAmount', labelKey: 'projects.details.summary.remainingAmount', fallback: 'المتبقي للدفع', default: false }
+    // removed: projectSubtotal, expensesTotal, paidAmount, remainingAmount from toggles per request
   ],
   payment: QUOTE_FIELD_DEFS.payment,
   projectExpenses: [
@@ -2970,12 +2967,6 @@ function buildProjectQuotationHtml({
     : '';
 
   const financialInlineItems = [];
-  if (isFieldEnabled('financialSummary', 'projectSubtotal')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.summary.projectSubtotal', 'إجمالي المشروع'), totalsDisplay.projectSubtotal || `${formatCurrencyValue(0, currencyLabel)}`));
-  }
-  if (isFieldEnabled('financialSummary', 'expensesTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.expensesTotal', 'إجمالي متطلبات المشروع'), totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel)));
-  }
   if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
     financialInlineItems.push(renderTotalsItem(t('projects.details.reservationsTotal', 'إجمالي الحجوزات'), totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
   }
@@ -2990,12 +2981,7 @@ function buildProjectQuotationHtml({
   if (isFieldEnabled('financialSummary', 'overallTotal')) {
     financialFinalItems.push(renderTotalsItem(t('projects.details.summary.overallTotal', 'الإجمالي الكلي'), totalsDisplay.overallTotal || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
   }
-  if (isFieldEnabled('financialSummary', 'paidAmount')) {
-    financialFinalItems.push(renderTotalsItem(t('projects.details.summary.paidAmount', 'إجمالي المدفوع'), totalsDisplay.paidAmount || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
-  }
-  if (isFieldEnabled('financialSummary', 'remainingAmount')) {
-    financialFinalItems.push(renderTotalsItem(t('projects.details.summary.remainingAmount', 'المتبقي للدفع'), totalsDisplay.remainingAmount || formatCurrencyValue(0, currencyLabel), { variant: 'final' }));
-  }
+  // removed: paidAmount and remainingAmount from rendering per request
 
   const financialSectionMarkup = includeSection('financialSummary')
     ? (() => {
