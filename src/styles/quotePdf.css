@@ -675,17 +675,7 @@ body,
 
 /* Make exported PDF table fonts match preview sizing more closely */
 #quotation-pdf-root[data-quote-render-context="export"] .quote-table {
-  font-size: 11px !important;
-  line-height: 1.4;
-}
-
-/* Strong centering in exported PDF: make cells flex containers */
-#quotation-pdf-root[data-quote-render-context="export"] .quote-table th,
-#quotation-pdf-root[data-quote-render-context="export"] .quote-table td {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center !important;
+  font-size: 11px;
 }
 
 .quote-table thead,
