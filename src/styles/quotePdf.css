@@ -673,6 +673,11 @@ body,
   word-break: break-word;
 }
 
+/* Make exported PDF table fonts match preview sizing more closely */
+#quotation-pdf-root[data-quote-render-context="export"] .quote-table {
+  font-size: 11px;
+}
+
 .quote-table thead,
 .quote-table tbody,
 .quote-table tr,
@@ -773,14 +778,18 @@ body,
 /* Wrapper used inside each cell to force consistent vertical centering in captured PDF */
 .quote-cell {
   display: flex;
-  align-items: center;
-  min-height: 18px;
+  align-items: center;      /* vertical center */
+  justify-content: center;  /* horizontal center */
+  width: 100%;
   height: 100%;
+  min-height: 18px;
+  text-align: center;
 }
 
 /* Multi-line descriptions preserve manual breaks while keeping vertical centering */
 .quote-cell--desc {
   white-space: pre-wrap;
+  text-align: center;
 }
 
 /* Subtotal row/box under each table */
