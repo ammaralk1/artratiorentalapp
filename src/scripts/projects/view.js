@@ -892,10 +892,14 @@ export function buildProjectReservationCard(reservation, index, project = null) 
 
 export function buildProjectReservationsSection(project) {
   const reservations = getReservationsForProject(project.id)
-    .map((reservation) => ({
-      reservation,
-      index: state.reservations.findIndex((entry) => entry === reservation)
-    }))
+    .map((reservation) => {
+      const rid = reservation?.id ?? reservation?.reservationId ?? reservation?.reservation_code ?? reservation?.reservation_id;
+      const index = state.reservations.findIndex((entry) => {
+        const cand = entry?.id ?? entry?.reservationId ?? entry?.reservation_code ?? entry?.reservation_id;
+        return rid != null && cand != null && String(cand) === String(rid);
+      });
+      return { reservation, index };
+    })
     .filter(({ index }) => Number.isInteger(index) && index >= 0)
     .sort((a, b) => {
       const aStart = a.reservation.start ? new Date(a.reservation.start).getTime() : 0;
