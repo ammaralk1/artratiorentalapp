@@ -17,6 +17,10 @@ import { resolveReservationProjectState, buildReservationDisplayGroups, sanitize
 import { findPackageById, getPackagesSnapshot } from '../reservationsPackages.js';
 import { PROJECT_TAX_RATE } from '../projects/constants.js';
 import quotePdfStyles from '../../styles/quotePdf.css?raw';
+// Font URLs (served from public/fonts) resolved by Vite for reliable loading in preview/export windows
+import taj400Url from '/fonts/Tajawal-400.ttf?url';
+import taj500Url from '/fonts/Tajawal-500.ttf?url';
+import taj700Url from '/fonts/Tajawal-700.ttf?url';
 import {
   normalizeColorValue,
   patchHtml2CanvasColorParsing,
@@ -423,6 +427,12 @@ const HTML2CANVAS_SRC = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/htm
 const JSPDF_SRC = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
 
 const QUOTE_PDF_STYLES = quotePdfStyles.trim();
+const PDF_FONT_FACE = `
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 400; font-display: swap; src: url(${JSON.stringify(taj400Url)}) format('truetype'); }
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 500; font-display: swap; src: url(${JSON.stringify(taj500Url)}) format('truetype'); }
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 600; font-display: swap; src: url(${JSON.stringify(taj700Url)}) format('truetype'); }
+@font-face { font-family: 'Tajawal'; font-style: normal; font-weight: 700; font-display: swap; src: url(${JSON.stringify(taj700Url)}) format('truetype'); }
+`;
 
 const SVG_DATA_URI_REGEX = /^data:image\/svg\+xml/i;
 const SVG_EXTENSION_REGEX = /\.svg($|[?#])/i;
@@ -3238,7 +3248,7 @@ function buildProjectQuotationHtml({
 
   return `
     <div id="quotation-pdf-root" dir="rtl">
-      <style>${QUOTE_PDF_STYLES}</style>
+        <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>
         <div class="quote-content-source" data-quote-source>
@@ -3877,7 +3887,7 @@ function buildQuotationHtml(options) {
 
   return `
     <div id="quotation-pdf-root" dir="rtl">
-      <style>${QUOTE_PDF_STYLES}</style>
+      <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>
         <div class="quote-content-source" data-quote-source>
