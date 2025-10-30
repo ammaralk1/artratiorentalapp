@@ -1908,15 +1908,15 @@ function collectReservationFinancials(reservation, crewAssignments, project) {
   };
 
   const totalsDisplay = {
-    equipmentTotal: normalizeNumbers(breakdown.equipmentTotal.toFixed(2)),
-    crewTotal: normalizeNumbers(breakdown.crewTotal.toFixed(2)),
-    discountAmount: normalizeNumbers(breakdown.discountAmount.toFixed(2)),
-    subtotalAfterDiscount: normalizeNumbers(breakdown.subtotalAfterDiscount.toFixed(2)),
-    taxableAmount: normalizeNumbers(breakdown.taxableAmount.toFixed(2)),
-    taxAmount: normalizeNumbers(breakdown.taxAmount.toFixed(2)),
-    finalTotal: normalizeNumbers(finalTotalOverride.toFixed(2)),
+    equipmentTotal: formatMoney(breakdown.equipmentTotal),
+    crewTotal: formatMoney(breakdown.crewTotal),
+    discountAmount: formatMoney(breakdown.discountAmount),
+    subtotalAfterDiscount: formatMoney(breakdown.subtotalAfterDiscount),
+    taxableAmount: formatMoney(breakdown.taxableAmount),
+    taxAmount: formatMoney(breakdown.taxAmount),
+    finalTotal: formatMoney(finalTotalOverride),
     companySharePercent: normalizeNumbers((Number.isFinite(breakdown.companySharePercent) ? breakdown.companySharePercent : 0).toFixed(2)),
-    companyShareAmount: normalizeNumbers(breakdown.companyShareAmount.toFixed(2)),
+    companyShareAmount: formatMoney(breakdown.companyShareAmount),
     netProfit: normalizeNumbers(breakdown.netProfit.toFixed(2)),
   };
 
@@ -2170,9 +2170,8 @@ function combineProjectDateRange(start, end) {
 }
 
 function formatCurrencyValue(value, currencyLabel = 'SR', fractionDigits = 2) {
-  const number = Number(value) || 0;
-  const digits = Number.isInteger(fractionDigits) ? fractionDigits : 2;
-  return `${normalizeNumbers(number.toFixed(digits))} ${currencyLabel}`;
+  const number = Number(value);
+  return `${formatMoney(number)} ${currencyLabel}`;
 }
 
 function formatPercentageValue(value, fractionDigits = 2) {
@@ -2839,22 +2838,34 @@ function buildProjectQuotationHtml({
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
               const total = unit * qty * days;
-            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
-          }
-        });
-      } else {
+              return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        } else {
+          // Non-grouped price per assignment for all days
+          cols.push({
+            ...col,
+            render: (assignment) => {
+              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+                ? Number(assignment.positionClientPrice)
+                : 0;
+              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+              const total = unit * days;
+              return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        }
+      } else if (col.id === 'unitPrice') {
+        // Per-day unit price
         cols.push({
           ...col,
           render: (assignment) => {
             const unit = Number.isFinite(Number(assignment?.positionClientPrice))
               ? Number(assignment.positionClientPrice)
               : 0;
-            const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-            const total = unit * days;
-            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
-        }
       } else {
         cols.push(col);
       }
@@ -2869,7 +2880,19 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    return cols;
+    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
+    const map = new Map(cols.map((c) => [c.id, c]));
+    const seen = new Set();
+    const out = [];
+    const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
+    pushIf('rowNumber');
+    pushIf('position');
+    pushIf('quantity');
+    pushIf('days');
+    pushIf('unitPrice');
+    pushIf('price');
+    cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
+    return out;
   })();
   const projectCrewSource = groupProjectCrew
     ? (() => {
@@ -2889,12 +2912,13 @@ function buildProjectQuotationHtml({
     : crewAssignments;
   const projectCrewSubtotalDisplay = (() => {
     try {
+      const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
       const sum = (projectCrewSource || []).reduce((acc, a) => {
         const unit = Number.isFinite(Number(a?.positionClientPrice)) ? Number(a.positionClientPrice) : 0;
         const qty = Math.max(1, Number(a?.__count || 1));
-        return acc + (unit * qty);
+        return acc + (unit * qty * days);
       }, 0);
-      return normalizeNumbers(sum.toFixed(2));
+      return formatMoney(sum);
     } catch (_) { return '0.00'; }
   })();
   const crewSectionMarkup = includeSection('projectCrew')
@@ -3002,7 +3026,7 @@ function buildProjectQuotationHtml({
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
             const total = unit * qty * days;
-            return escapeHtml(`${normalizeNumbers(total.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else if (col.id === 'unitPrice') {
@@ -3010,7 +3034,7 @@ function buildProjectQuotationHtml({
           ...col,
           render: (item) => {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-            return escapeHtml(`${normalizeNumbers(unit.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -3026,22 +3050,23 @@ function buildProjectQuotationHtml({
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder tail: unitPrice -> quantity -> days -> price
+    // Reorder tail: quantity -> days -> unitPrice -> price
     const map = new Map(cols.map((c) => [c.id, c]));
-    const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
-    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
+    const keep = cols.filter((c) => !['quantity','days','unitPrice','price'].includes(c.id));
+    const tail = ['quantity','days','unitPrice','price'].map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
   const equipmentItems = Array.isArray(activeQuoteState?.equipmentItems) ? activeQuoteState.equipmentItems : [];
   const equipmentSubtotalDisplay = (() => {
     try {
+      const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
       const sum = (equipmentItems || []).reduce((acc, it) => {
         const unit = Number.isFinite(Number(it?.unitPriceValue)) ? Number(it.unitPriceValue) : 0;
         const qty = Number.isFinite(Number(it?.qty)) ? Math.max(1, Number(it.qty)) : 1;
-        return acc + (unit * qty);
+        return acc + (unit * qty * days);
       }, 0);
-      return normalizeNumbers(sum.toFixed(2));
+      return formatMoney(sum);
     } catch (_) { return '0.00'; }
   })();
   const equipmentSectionMarkup = includeSection('projectEquipment')
@@ -3583,7 +3608,7 @@ function buildQuotationHtml(options) {
             return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
           }
         });
-        // Prepare quantity column to insert after unitPrice
+        // Prepare quantity column
         quantityColumn = {
           id: 'quantity',
           labelKey: 'reservations.details.table.headers.quantity',
@@ -3605,26 +3630,42 @@ function buildQuotationHtml(options) {
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
               const total = unit * qty * days;
-            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
-          }
-        });
-      } else {
+              return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        } else {
+          // Non-grouped price per assignment for all days
+          cols.push({
+            ...col,
+            render: (assignment) => {
+              const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+                ? Number(assignment.positionClientPrice)
+                : 0;
+              const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+              const total = unit * days;
+              return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            }
+          });
+        }
+      } else if (col.id === 'unitPrice') {
+        // Show per-day unit price
         cols.push({
           ...col,
           render: (assignment) => {
             const unit = Number.isFinite(Number(assignment?.positionClientPrice))
               ? Number(assignment.positionClientPrice)
               : 0;
-            const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-            const total = unit * days;
-            return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
+            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
-        }
       } else {
         cols.push(col);
       }
     });
+    // Ensure quantity column is present
+    if (quantityColumn) {
+      cols.push(quantityColumn);
+    }
     // Always show days column
     const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
     const priceIndex = cols.findIndex((c) => c.id === 'price');
@@ -3635,16 +3676,16 @@ function buildQuotationHtml(options) {
       fallback: 'الأيام',
       render: () => escapeHtml(normalizeNumbers(String(days)))
     });
-    // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
+    // Reorder to: rowNumber, position, quantity, days, unitPrice, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
     const out = [];
     const pushIf = (id) => { const c = map.get(id); if (c && !seen.has(id)) { out.push(c); seen.add(id);} };
     pushIf('rowNumber');
     pushIf('position');
-    pushIf('unitPrice');
     pushIf('quantity');
     pushIf('days');
+    pushIf('unitPrice');
     pushIf('price');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     cols = out;
