@@ -15,8 +15,6 @@ body,
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap');
 
 #quotation-pdf-root {
-  /* Vertical nudge for text inside table cells (negative raises text) */
-  --cell-text-nudge: -3px;
   width: 210mm;
   min-width: 210mm;
   max-width: 210mm;
@@ -786,7 +784,6 @@ body,
   height: 100%;
   min-height: 18px;
   text-align: center;
-  transform: translateY(var(--cell-text-nudge, 0));
 }
 
 /* Multi-line descriptions preserve manual breaks while keeping vertical centering */

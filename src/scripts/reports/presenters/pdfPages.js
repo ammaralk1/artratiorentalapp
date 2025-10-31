@@ -56,10 +56,10 @@ function createRoot(context = 'preview') {
     .rpt-table { width:100%; border-collapse:collapse; font-size:12px; color:#000 !important; table-layout:fixed; }
     .rpt-table th { background:#f3f4f6 !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
     .rpt-table td { background:#ffffff !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
-    .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 1.6; }
+    .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 3.6; }
     .rpt-table th > *, .rpt-table td > * { vertical-align: middle !important; }
     /* Use the same robust centering wrapper used by quotes, but right-justify for RTL numbers/text */
-    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:18px; text-align:right; }
+    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; }
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
@@ -75,15 +75,13 @@ function loadAlignmentPrefs() {
     const right = Number(localStorage.getItem('reportsPdf.shiftRightMm'));
     const top = Number(localStorage.getItem('reportsPdf.shiftTopMm'));
     const scalePct = Number(localStorage.getItem('reportsPdf.scalePct'));
-    const textNudgePx = Number(localStorage.getItem('reportsPdf.textNudgePx'));
     return {
       rightMm: Number.isFinite(right) ? right : 6,
       topMm: Number.isFinite(top) ? top : -10,
       scale: Number.isFinite(scalePct) ? Math.max(90, Math.min(100, scalePct)) / 100 : 0.985,
-      textNudgePx: Number.isFinite(textNudgePx) ? Math.max(-4, Math.min(4, textNudgePx)) : -3,
     };
   } catch (_) {
-    return { rightMm: 6, topMm: -10, scale: 0.985, textNudgePx: -3 };
+    return { rightMm: 6, topMm: -10, scale: 0.985 };
   }
 }
 
@@ -128,10 +126,6 @@ function buildPreviewControls(root) {
         <span style="opacity:.85">تقليص(%)</span>
         <input type="number" step="0.1" min="90" max="100" value="${Math.round(prefs.scale*1000)/10}" data-rpt-scale style="${style}">
       </label>
-      <label style="display:inline-flex;gap:4px;align-items:center;">
-        <span style="opacity:.85">رفع النص(px)</span>
-        <input type="number" step="0.5" min="-4" max="4" value="${prefs.textNudgePx}" data-rpt-text-nudge style="${style}">
-      </label>
       <button type="button" data-rpt-apply style="height:28px;border-radius:8px;background:#22c55e;color:#0b1e15;border:0;padding:0 10px;font-weight:700;">تطبيق</button>
       <button type="button" data-rpt-reset style="height:28px;border-radius:8px;background:#cbd5e1;color:#0b1e15;border:0;padding:0 10px;">إعادة ضبط</button>
     `;
@@ -145,35 +139,27 @@ function buildPreviewControls(root) {
       const topMm = Number(panel.querySelector('[data-rpt-top]').value);
       const scalePct = Number(panel.querySelector('[data-rpt-scale]').value);
       const scale = Math.max(0.9, Math.min(1, scalePct / 100));
-      const textNudgePx = Math.max(-4, Math.min(4, Number(panel.querySelector('[data-rpt-text-nudge]').value)));
       // save
       saveAlignmentPrefs({ rightMm, topMm, scale });
-      try { localStorage.setItem('reportsPdf.textNudgePx', String(textNudgePx)); } catch (_) {}
       // visually apply to preview pages
       const shiftX = rightMm * PX_PER_MM;
       const shiftY = topMm * PX_PER_MM;
       Object.assign(pagesHost.style, { transformOrigin: 'top left', transform: `translate(${shiftX}px, ${shiftY}px) scale(${scale})` });
-      // apply CSS var to root
-      try { root.style.setProperty('--cell-text-nudge', `${textNudgePx}px`); } catch (_) {}
     };
     panel.querySelector('[data-rpt-apply]').addEventListener('click', applyTransform);
     panel.querySelector('[data-rpt-reset]').addEventListener('click', () => {
       panel.querySelector('[data-rpt-right]').value = 0;
       panel.querySelector('[data-rpt-top]').value = 0;
       panel.querySelector('[data-rpt-scale]').value = 100;
-      panel.querySelector('[data-rpt-text-nudge]').value = -3;
       saveAlignmentPrefs({ rightMm: 0, topMm: 0, scale: 1 });
-      try { localStorage.setItem('reportsPdf.textNudgePx', String(-3)); } catch (_) {}
       const pagesHost = root.querySelector('[data-quote-pages]');
       Object.assign(pagesHost.style, { transform: 'none' });
-      try { root.style.setProperty('--cell-text-nudge', `-3px`); } catch (_) {}
     });
 
     // apply current prefs initially
     const shiftX = prefs.rightMm * PX_PER_MM;
     const shiftY = prefs.topMm * PX_PER_MM;
     Object.assign(pagesHost.style, { transformOrigin: 'top left', transform: `translate(${shiftX}px, ${shiftY}px) scale(${prefs.scale})` });
-    try { root.style.setProperty('--cell-text-nudge', `${prefs.textNudgePx}px`); } catch (_) {}
   } catch (_) {}
 }
 
@@ -457,12 +443,11 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
 
     await ensureHtml2Pdf();
     try { if (document?.fonts?.ready) { await document.fonts.ready; } } catch (_) {}
-    const prefs = loadAlignmentPrefs();
-    try { root.style.setProperty('--cell-text-nudge', `${prefs.textNudgePx}px`); } catch (_) {}
     const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
     const h2c = window.html2canvas;
 
     if (typeof JsPdfCtor === 'function' && typeof h2c === 'function') {
+      const prefs = loadAlignmentPrefs();
       const pdf = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
       const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
       const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false }; 
@@ -567,7 +552,6 @@ export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
         const scope = doc.createElement('div');
         scope.id = 'quotation-pdf-root';
         scope.setAttribute('data-quote-render-context', 'export');
-        try { scope.style.setProperty('--cell-text-nudge', `${prefs.textNudgePx}px`); } catch (_) {}
         // نجعل العرض ثابتاً لمضاهاة A4 بالبيكسل (مثل المعاينة)
         scope.style.width = `${A4_W_PX}px`;
         scope.style.maxWidth = `${A4_W_PX}px`;
