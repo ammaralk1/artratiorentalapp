@@ -236,6 +236,67 @@ function normalizePackageItemsForGroup(packageEntry = {}) {
   }));
 }
 
+// --------------------
+// Package Pricing Utils
+// --------------------
+
+function normalizePerPackageQtyLocal(raw) {
+  const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '1')));
+  if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+  if (parsed > 50) return 1;
+  return Math.max(1, Math.round(parsed));
+}
+
+// بناء أسطر تسعير لكل معدة داخل الحزمة بشكل مستقل
+export function buildPackageEquipmentLines(packageRef = {}, { packageQuantity = 1 } = {}) {
+  const pkgId = normalizePackageId(
+    packageRef?.package_code
+    ?? packageRef?.packageCode
+    ?? packageRef?.code
+    ?? packageRef?.id
+    ?? packageRef?.packageId
+    ?? packageRef?.package_id
+  );
+  const source = pkgId ? (findPackageById(pkgId) || packageRef) : packageRef;
+  const items = resolvePackageItems(source) || [];
+  const q = Number.isFinite(Number(packageQuantity)) && Number(packageQuantity) > 0
+    ? Number(packageQuantity)
+    : 1;
+
+  return items.map((item) => {
+    const qtyPerPackage = normalizePerPackageQtyLocal(item?.qty ?? item?.quantity ?? 1);
+    const unitPriceCandidate = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
+    const unitPrice = Number.isFinite(unitPriceCandidate) ? sanitizePriceValue(unitPriceCandidate) : 0;
+    const totalUnitsPerDay = qtyPerPackage * q;
+    const linePerDayTotal = sanitizePriceValue(unitPrice * totalUnitsPerDay);
+    return {
+      equipmentId: item?.equipmentId ?? item?.equipment_id ?? null,
+      barcode: item?.barcode ?? item?.normalizedBarcode ?? '',
+      desc: item?.desc ?? item?.description ?? '',
+      qtyPerPackage,
+      packageQuantity: q,
+      totalUnits: totalUnitsPerDay,
+      unitPrice,
+      perDayTotal: linePerDayTotal,
+    };
+  });
+}
+
+// يحسب إجمالي الحزمة انطلاقًا من أسطر التسعير الفردية
+export function computePackageTotalFromLines(lines = [], { days = 1 } = {}) {
+  const d = Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 1;
+  const perDay = (Array.isArray(lines) ? lines : []).reduce((sum, line) => sum + (Number(line?.perDayTotal) || 0), 0);
+  return sanitizePriceValue(perDay * d);
+}
+
+// مساعد شامل: يبني الأسطر ثم يعيد الإجمالي اليومي وإجمالي الأيام
+export function computePackagePricing(packageRef = {}, { packageQuantity = 1, days = 1 } = {}) {
+  const lines = buildPackageEquipmentLines(packageRef, { packageQuantity });
+  const perDayTotal = sanitizePriceValue(lines.reduce((sum, l) => sum + (Number(l.perDayTotal) || 0), 0));
+  const total = sanitizePriceValue(perDayTotal * (Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 1));
+  return { lines, perDayTotal, total };
+}
+
 function resolvePackageQuantity(packageEntry = {}) {
   const raw = packageEntry.quantity
     ?? packageEntry.qty

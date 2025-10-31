@@ -7,7 +7,7 @@ import {
   getEditingTechnicians,
 } from './reservationsTechnicians.js';
 import { loadData } from './storage.js';
-import { sanitizePriceValue, parsePriceValue, buildReservationDisplayGroups } from './reservationsShared.js';
+import { sanitizePriceValue, parsePriceValue, buildReservationDisplayGroups, computePackagePricing } from './reservationsShared.js';
 
 export const DEFAULT_COMPANY_SHARE_PERCENT = 10;
 
@@ -386,8 +386,13 @@ export function calculateDraftFinancialBreakdown({
     if (overrideNoDays) {
       equipmentFixedTotal += (qty * unit);
     } else if (isPackage) {
-      // Treat packages like single equipment with daily pricing
-      equipmentDailyTotal += (qty * unit);
+      // Compute packages from their individual equipment lines
+      const pkgRef = {
+        package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
+        packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
+      };
+      const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: 1 });
+      equipmentDailyTotal += Number.isFinite(Number(pricing.perDayTotal)) ? pricing.perDayTotal : (qty * unit);
     } else if (inferredFixed) {
       // DB-loaded reservation items remain fixed (not multiplied by days)
       equipmentFixedTotal += (qty * unit);
