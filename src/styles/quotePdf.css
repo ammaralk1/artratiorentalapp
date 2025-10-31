@@ -830,7 +830,7 @@ body,
 #reports-a4-root { --bubble-text-nudge: -3px; }
 #reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
 
-/* طَبِّق الرفع داخل الجذر وأيضاً عندما تكون العناصر داخل .quote-page (نسخة الالتقاط) */
+/* لا ترفع الحاوية نفسها كي لا تقترب من الجدول؛ نكتفي برفع النص الداخلي فقط */
 #quotation-pdf-root .totals-inline__item,
 #quotation-pdf-root .totals-item--final,
 #quotation-pdf-root .quote-table-subtotal__pill,
@@ -841,7 +841,7 @@ body,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill {
   position: relative;
-  transform: translateY(var(--bubble-text-nudge)); /* رفع بسيط ومتسق في المطبوع */
+  transform: none;
 }
 
 /* الحشوات تبقى متساوية، نعتمد الرفع بالتحويل فقط */

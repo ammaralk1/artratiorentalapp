@@ -29,7 +29,7 @@
 .a4-page .totals-item--final,
 .a4-page .quote-table-subtotal__pill {
   position: relative;
-  transform: translateY(var(--bubble-text-nudge));
+  transform: none;
 }
 
 /* نحافظ على الحشوات الافتراضية ونزيد الرفع فقط في التصدير */
