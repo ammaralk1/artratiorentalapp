@@ -1176,6 +1176,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               <h6 class="history-heading">${paymentHistoryTitle}</h6>
               ${paymentHistoryHtml}
             </div>
+            ${debugPanelHtml}
           </div>
         </div>
       </div>
