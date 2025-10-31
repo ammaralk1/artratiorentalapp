@@ -237,7 +237,10 @@ export function setupTabs() {
             sk.style.padding = '1rem';
             sk.style.display = 'grid';
             sk.style.gap = '12px';
-            sk.innerHTML = '<div style="height:12px;background:rgba(148,163,184,0.25);border-radius:8px"></div>'.repeat(6);
+            // DaisyUI spinner + أشكال سكلتون خفيفة
+            const spinner = '<div class="loading loading-spinner loading-md text-primary" role="status" aria-label="Loading" style="justify-self:center;margin:6px 0;"></div>';
+            const bars = '<div style="height:12px;background:rgba(148,163,184,0.25);border-radius:8px"></div>'.repeat(6);
+            sk.innerHTML = spinner + bars;
             panel.prepend(sk);
           }
         } catch (_) { /* ignore */ }
