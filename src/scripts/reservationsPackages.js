@@ -5,6 +5,19 @@ function normalizeBarcodeValueLocal(value) {
   return normalizeNumbers(String(value || '')).trim().toLowerCase();
 }
 
+// Normalize per-package item quantity. Some data sources may mistakenly
+// carry stock quantities (very large numbers) into package item qty.
+// Clamp to a reasonable per-package range and default to 1 when invalid.
+function normalizePerPackageQty(raw) {
+  const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '1')));
+  if (!Number.isFinite(parsed) || parsed <= 0) return 1;
+  // Treat abnormally large values as data noise (e.g. inventory stock)
+  // Typical per-package counts are small; cap at 50 and default to 1 when exceeded.
+  if (parsed > 50) return 1;
+  // Round to nearest integer since per-package qty should be whole units
+  return Math.max(1, Math.round(parsed));
+}
+
 export function normalizePackageId(value) {
   const raw = String(value ?? '').trim().toLowerCase();
   return raw ? raw : '';
@@ -97,13 +110,13 @@ export function resolvePackageItems(packageEntry) {
       item.quantity,
       item.qty,
       item.count,
-    ].find((value) => Number.isFinite(Number(value)) && Number(value) > 0);
+    ].find((value) => value != null && String(value).trim() !== '');
 
     collected.push({
       equipmentId: equipmentIdCandidate != null ? String(equipmentIdCandidate) : null,
       barcode: item.barcode ?? item.equipmentBarcode ?? item.code ?? item.serial ?? item.serialNumber ?? '',
       normalizedBarcode,
-      qty: quantityCandidate != null ? Number(quantityCandidate) : 1,
+      qty: normalizePerPackageQty(quantityCandidate),
       price: priceCandidate != null ? Number(priceCandidate) : 0,
       desc: item.description ?? item.desc ?? item.name ?? '',
       image: item.image ?? item.imageUrl ?? item.img ?? null,
