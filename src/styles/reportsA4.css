@@ -27,6 +27,11 @@
   transform: translateY(var(--bubble-text-nudge));
 }
 
+/* ضبط الحشوات رأسياً في نسخة A4 (تصدير/طباعة) لوُجِدت نفس العناصر داخل القالب */
+#reports-a4-root[data-render-context="export"] .totals-inline__item { padding: 8px 12px 5px !important; }
+#reports-a4-root[data-render-context="export"] .totals-item--final { padding: 12px 16px 8px !important; }
+#reports-a4-root[data-render-context="export"] .quote-table-subtotal__pill { padding: 10px 14px 7px !important; }
+
 /* إن وُجدت نفس الفئات داخل تقارير A4، اضبط نصها داخلياً بوحدة em */
 #reports-a4-root .totals-inline__label,
 #reports-a4-root .totals-inline__slash,
