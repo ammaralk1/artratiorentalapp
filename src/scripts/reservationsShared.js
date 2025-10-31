@@ -264,7 +264,20 @@ export function buildPackageEquipmentLines(packageRef = {}, { packageQuantity = 
     : 1;
 
   return items.map((item) => {
-    const qtyPerPackage = normalizePerPackageQtyLocal(item?.qty ?? item?.quantity ?? 1);
+    const rawQty = item?.qty
+      ?? item?.qty_per_package
+      ?? item?.qtyPerPackage
+      ?? item?.perPackageQty
+      ?? item?.quantityPerPackage
+      ?? item?.count
+      ?? item?.quantity
+      ?? 1;
+    let qtyPerPackage = normalizePerPackageQtyLocal(rawQty);
+    // Heuristic: if per-item qty equals packageQuantity across many items, it's likely
+    // that package qty leaked into items; treat it as 1 in that case.
+    if (qtyPerPackage === q && q > 1) {
+      qtyPerPackage = 1;
+    }
     const unitPriceCandidate = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
     const unitPrice = Number.isFinite(unitPriceCandidate) ? sanitizePriceValue(unitPriceCandidate) : 0;
     const totalUnitsPerDay = qtyPerPackage * q;
