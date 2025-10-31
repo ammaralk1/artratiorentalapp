@@ -1153,14 +1153,14 @@ body,
 #quotation-pdf-root .totals-item--final,
 #quotation-pdf-root .quote-table-subtotal__pill {
   position: relative;
-  top: -1.5px;
+  top: -2px; /* رفع أوضح في نسخة الطباعة/الحفظ */
 }
 
 #reports-a4-root .totals-inline__item,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill {
   position: relative;
-  top: -1.5px;
+  top: -2px;
 }
 .quote-table-subtotal__label { font-weight: 700; }
 .quote-table-subtotal__value { font-weight: 700; }
