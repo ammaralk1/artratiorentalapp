@@ -18,13 +18,26 @@
 }
 
 /* ضبط توسيط نص الفقاعات (الإجماليات) في المطبوع */
-#reports-a4-root { --bubble-text-nudge: -3px; }
-#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
+#reports-a4-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
+#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; --bubble-text-nudge-inner: -0.1em; }
 #reports-a4-root .totals-inline__item,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill {
   position: relative;
   transform: translateY(var(--bubble-text-nudge));
+}
+
+/* إن وُجدت نفس الفئات داخل تقارير A4، اضبط نصها داخلياً بوحدة em */
+#reports-a4-root .totals-inline__label,
+#reports-a4-root .totals-inline__slash,
+#reports-a4-root .totals-inline__value,
+#reports-a4-root .totals-item__label,
+#reports-a4-root .totals-item__slash,
+#reports-a4-root .totals-item__value,
+#reports-a4-root .quote-table-subtotal__label,
+#reports-a4-root .quote-table-subtotal__value {
+  display: inline-block;
+  transform: translateY(var(--bubble-text-nudge-inner));
 }
 
 /* حاوية الصفحات */
