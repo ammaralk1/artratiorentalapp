@@ -438,7 +438,8 @@ export function buildReservationDisplayGroups(reservation = {}) {
       }
     }
     if (!Number.isFinite(totalPrice)) {
-      totalPrice = unitPrice * packageQty;
+      // عرض الحزم بدون تأثير الكمية: إجمالي العرض = سعر الحزمة
+      totalPrice = unitPrice;
     }
     totalPrice = sanitizePriceValue(totalPrice);
 
@@ -497,14 +498,17 @@ export function buildReservationDisplayGroups(reservation = {}) {
       ?? secondarySource?.image
       ?? null;
 
+    // كمية العرض للحزم يجب أن تكون دائمًا 1 (بدون عدّ مضاعف)
+    const displayQty = 1;
+
     packageGroups.push({
       key: `package::${mapKey}`,
       description,
       normalizedDescription: normalizeNumbers(String(description)),
       unitPrice,
       totalPrice,
-      quantity: packageQty,
-      count: packageQty,
+      quantity: displayQty,
+      count: displayQty,
       image: imageSource,
       barcodes: barcodesList,
       barcode: packageDisplayCode,
@@ -516,7 +520,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
         packageId: normalizedId,
         desc: description,
         price: unitPrice,
-        qty: packageQty,
+        qty: displayQty,
         barcode: packageDisplayCode,
       }],
       type: 'package',
