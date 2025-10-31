@@ -18,10 +18,10 @@
 }
 
 /* قيم افتراضية على مستوى الصفحة لضمان سريانها على نسخ الالتقاط خارج الجذر */
-.a4-page { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
+.a4-page { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 /* داخل الجذر: معاينة أخف وتصدير أقوى */
 #reports-a4-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
-#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
+#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 #reports-a4-root .totals-inline__item,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill,
