@@ -59,7 +59,7 @@ function createRoot(context = 'preview') {
     .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 1.6; }
     .rpt-table th > *, .rpt-table td > * { vertical-align: middle !important; }
     /* Use the same robust centering wrapper used by quotes, but right-justify for RTL numbers/text */
-    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: var(--cell-text-nudge, -3px); transform: none; }
+    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: var(--cell-text-nudge, -5px); transform: none; }
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
@@ -287,39 +287,19 @@ function buildTable(headers) {
 
 function paginateRowsIntoPages(root, rows, headers, metrics) {
   const pagesHost = root.querySelector('[data-quote-pages]');
-  const primary = createPage({ primary: true });
-  pagesHost.appendChild(primary);
-  const header = buildHeader(metrics);
-  primary.appendChild(header);
 
-  // Table on first page
-  let { table, tbody } = buildTable(headers);
-  primary.appendChild(table);
-
-  // Heuristic pagination to avoid measurement edge-cases on some browsers
-  // - الصفحة الأولى تحوي هيدر + KPI، لذا نضع عدد صفوف أقل.
-  // - الصفحات التالية تحمل صفوف أكثر.
-  const rowsPerFirstPage = 18;
-  const rowsPerNextPage = 28;
-
-  const chunks = [];
-  for (let i = 0; i < rows.length; i += rowsPerNextPage) {
-    chunks.push(rows.slice(i, i + rowsPerNextPage));
-  }
-  // Ensure first chunk smaller to account for header block
-  if (chunks.length) {
-    const first = chunks[0];
-    if (first.length > rowsPerFirstPage) {
-      const overflow = first.splice(rowsPerFirstPage);
-      if (chunks.length > 1) {
-        chunks[1] = overflow.concat(chunks[1]);
-      } else {
-        chunks.push(overflow);
-      }
+  const startPage = (isPrimary) => {
+    const page = createPage({ primary: !!isPrimary });
+    pagesHost.appendChild(page);
+    if (isPrimary) {
+      const header = buildHeader(metrics);
+      page.appendChild(header);
     }
-  }
+    const built = buildTable(headers);
+    page.appendChild(built.table);
+    return { page, table: built.table, tbody: built.tbody };
+  };
 
-  // Fill first page body
   const addRow = (hostTbody, row) => {
     const tr = document.createElement('tr');
     headers.forEach((h) => {
@@ -331,19 +311,31 @@ function paginateRowsIntoPages(root, rows, headers, metrics) {
       tr.appendChild(td);
     });
     hostTbody.appendChild(tr);
+    return tr;
   };
 
-  const firstRows = chunks.shift() || rows;
-  firstRows.forEach((r) => addRow(tbody, r));
+  const fitsOnPage = (page, tbodyEl) => {
+    try {
+      const pageRect = page.getBoundingClientRect();
+      const last = tbodyEl.lastElementChild;
+      if (!last) return true;
+      const lastRect = last.getBoundingClientRect();
+      const padBottom = parseFloat(getComputedStyle(page).paddingBottom || '0') || 0;
+      const limit = pageRect.bottom - padBottom - 1; // small safety margin
+      return lastRect.bottom <= limit;
+    } catch (_) { return true; }
+  };
 
-  // Other pages
-  chunks.forEach((group) => {
-    const page = createPage({ primary: false });
-    pagesHost.appendChild(page);
-    const built = buildTable(headers);
-    page.appendChild(built.table);
-    group.forEach((r) => addRow(built.tbody, r));
-  });
+  let { page, tbody } = startPage(true);
+  for (let i = 0; i < rows.length; i += 1) {
+    const tr = addRow(tbody, rows[i]);
+    if (!fitsOnPage(page, tbody)) {
+      // move row to next page
+      tr.remove();
+      ({ page, tbody } = startPage(false));
+      addRow(tbody, rows[i]);
+    }
+  }
 }
 
 export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
