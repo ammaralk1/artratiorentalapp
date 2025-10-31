@@ -1151,10 +1151,10 @@ body,
 /* نَقلة طفيفة داخل جذور PDF لفقاعات الإجماليات لضبط توسيط النص رأسياً في المطبوع */
 /* نستخدم متغيّر CSS لضبط الدرجة بحسب سياق العرض (معاينة/تصدير) ونعتمد transform لدقة نصف-بيكسل */
 /* قيم افتراضية على مستوى الصفحة لضمان تطبيقها أيضاً على نسخ html2canvas (pageClone) خارج الجذر */
-.quote-page { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
+.quote-page { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 /* معاينة داخل الجذر أخف، وتصدير أقوى */
 #quotation-pdf-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
-#quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
+#quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 #reports-a4-root { --bubble-text-nudge: -3px; }
 #reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
 
