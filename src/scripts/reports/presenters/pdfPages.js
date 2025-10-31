@@ -56,12 +56,10 @@ function createRoot(context = 'preview') {
     .rpt-table { width:100%; border-collapse:collapse; font-size:12px; color:#000 !important; table-layout:fixed; }
     .rpt-table th { background:#f3f4f6 !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
     .rpt-table td { background:#ffffff !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
-    .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 1.6; }
-    /* Generic lift for all table cells in export root even without wrapper */
-    #quotation-pdf-root[data-quote-render-context="export"] table td > *:first-child { position: relative; top: var(--cell-text-nudge, -5px); }
-    .rpt-table th > *, .rpt-table td > * { vertical-align: middle !important; }
-    /* Use the same robust centering wrapper used by quotes, but right-justify for RTL numbers/text */
-    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: var(--cell-text-nudge, -5px); transform: none; }
+    .rpt-table th, .rpt-table td { vertical-align: top !important; line-height: 1.35; }
+    .rpt-table th > *, .rpt-table td > * { vertical-align: top !important; }
+    /* Right-justify for RTL, align content to top without manual nudge */
+    .rpt-table .quote-cell { display:flex; align-items:flex-start; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: 0; transform: none; padding-top: 2px; }
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }
@@ -341,7 +339,7 @@ function paginateRowsIntoPages(root, rows, headers, metrics) {
   }
 }
 
-export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
+export async function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
   const snapshot = reportsState.lastSnapshot || {};
   const metrics = snapshot.metrics || {};
   let headers;
@@ -367,6 +365,9 @@ export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
   document.body.appendChild(phantom);
   phantom.appendChild(root);
 
+  // Ensure fonts are loaded before measuring/splitting rows across pages
+  try { if (document?.fonts?.ready) { await document.fonts.ready; } } catch (_) {}
+
   // Sanitize colors to avoid html2canvas oddities
   try {
     scrubUnsupportedColorFunctions(root);
@@ -387,7 +388,7 @@ export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
 }
 
 export async function exportReportsPdf(rows = [], { action = 'save' } = {}) {
-  const root = buildReportsPdfPages(rows, { context: 'export' });
+  const root = await buildReportsPdfPages(rows, { context: 'export' });
   const container = document.createElement('div');
   Object.assign(container.style, { position: 'fixed', top: '0', left: '0', pointerEvents: 'none', zIndex: '-1' });
   container.appendChild(root);
