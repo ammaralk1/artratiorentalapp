@@ -1571,11 +1571,12 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
       ?? fallback.id
       ?? ''
   );
+  // كمية الحزمة يجب أن تعتمد على القيم الخاصة بالحزمة فقط
   const quantity = toPositiveInt(
     pkg.quantity
       ?? pkg.qty
-      ?? fallback.qty
-      ?? fallback.quantity
+      ?? pkg.package_quantity
+      ?? pkg.packageQty
       ?? 1,
     { fallback: 1, max: 9_999 }
   );
@@ -1711,7 +1712,7 @@ function derivePackagesFromItemsList(items = []) {
           ?? base.barcode
           ?? normalizeNumbers(String(normalizedId)),
         name: base.package_name ?? base.packageName ?? base.desc ?? base.name ?? `Package ${normalizedId}`,
-        quantity: toPositiveInt(base.package_quantity ?? base.packageQty ?? base.qty ?? 1, { fallback: 1, max: 9_999 }),
+        quantity: toPositiveInt(base.package_quantity ?? base.packageQty ?? 1, { fallback: 1, max: 9_999 }),
         unit_price: toNumber(base.package_price ?? base.packagePrice ?? base.price ?? 0),
         packageItems,
         image: base.image ?? null,
