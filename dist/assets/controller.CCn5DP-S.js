@@ -1150,14 +1150,21 @@ body,
 
 /* نَقلة طفيفة داخل جذور PDF لفقاعات الإجماليات لضبط توسيط النص رأسياً في المطبوع */
 /* نستخدم متغيّر CSS لضبط الدرجة بحسب سياق العرض (معاينة/تصدير) ونعتمد transform لدقة نصف-بيكسل */
+/* قيم افتراضية على مستوى الصفحة لضمان تطبيقها أيضاً على نسخ html2canvas (pageClone) خارج الجذر */
+.quote-page { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
+/* معاينة داخل الجذر أخف، وتصدير أقوى */
 #quotation-pdf-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
 #quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
 #reports-a4-root { --bubble-text-nudge: -3px; }
 #reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
 
+/* طَبِّق الرفع داخل الجذر وأيضاً عندما تكون العناصر داخل .quote-page (نسخة الالتقاط) */
 #quotation-pdf-root .totals-inline__item,
 #quotation-pdf-root .totals-item--final,
 #quotation-pdf-root .quote-table-subtotal__pill,
+.quote-page .totals-inline__item,
+.quote-page .totals-item--final,
+.quote-page .quote-table-subtotal__pill,
 #reports-a4-root .totals-inline__item,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill {
@@ -1178,7 +1185,15 @@ body,
 #quotation-pdf-root .totals-item__slash,
 #quotation-pdf-root .totals-item__value,
 #quotation-pdf-root .quote-table-subtotal__label,
-#quotation-pdf-root .quote-table-subtotal__value {
+#quotation-pdf-root .quote-table-subtotal__value,
+.quote-page .totals-inline__label,
+.quote-page .totals-inline__slash,
+.quote-page .totals-inline__value,
+.quote-page .totals-item__label,
+.quote-page .totals-item__slash,
+.quote-page .totals-item__value,
+.quote-page .quote-table-subtotal__label,
+.quote-page .quote-table-subtotal__value {
   display: inline-block;
   transform: translateY(var(--bubble-text-nudge-inner));
 }
