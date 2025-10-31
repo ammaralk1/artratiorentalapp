@@ -344,7 +344,7 @@ body,
 
 #quotation-pdf-root {
   /* Vertical nudge for text inside table cells (negative raises text) */
-  --cell-text-nudge: -1px;
+  --cell-text-nudge: -3px;
   width: 210mm;
   min-width: 210mm;
   max-width: 210mm;

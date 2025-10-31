@@ -80,10 +80,10 @@ function loadAlignmentPrefs() {
       rightMm: Number.isFinite(right) ? right : 6,
       topMm: Number.isFinite(top) ? top : -10,
       scale: Number.isFinite(scalePct) ? Math.max(90, Math.min(100, scalePct)) / 100 : 0.985,
-      textNudgePx: Number.isFinite(textNudgePx) ? Math.max(-4, Math.min(4, textNudgePx)) : -1,
+      textNudgePx: Number.isFinite(textNudgePx) ? Math.max(-4, Math.min(4, textNudgePx)) : -3,
     };
   } catch (_) {
-    return { rightMm: 6, topMm: -10, scale: 0.985, textNudgePx: -1 };
+    return { rightMm: 6, topMm: -10, scale: 0.985, textNudgePx: -3 };
   }
 }
 
@@ -161,12 +161,12 @@ function buildPreviewControls(root) {
       panel.querySelector('[data-rpt-right]').value = 0;
       panel.querySelector('[data-rpt-top]').value = 0;
       panel.querySelector('[data-rpt-scale]').value = 100;
-      panel.querySelector('[data-rpt-text-nudge]').value = -1;
+      panel.querySelector('[data-rpt-text-nudge]').value = -3;
       saveAlignmentPrefs({ rightMm: 0, topMm: 0, scale: 1 });
-      try { localStorage.setItem('reportsPdf.textNudgePx', String(-1)); } catch (_) {}
+      try { localStorage.setItem('reportsPdf.textNudgePx', String(-3)); } catch (_) {}
       const pagesHost = root.querySelector('[data-quote-pages]');
       Object.assign(pagesHost.style, { transform: 'none' });
-      try { root.style.setProperty('--cell-text-nudge', `-1px`); } catch (_) {}
+      try { root.style.setProperty('--cell-text-nudge', `-3px`); } catch (_) {}
     });
 
     // apply current prefs initially
