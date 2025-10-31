@@ -48,9 +48,6 @@ export function resolvePackageItems(packageEntry) {
   if (Array.isArray(packageEntry.items)) {
     candidates.push(...packageEntry.items);
   }
-  if (Array.isArray(packageEntry.equipment)) {
-    candidates.push(...packageEntry.equipment);
-  }
   if (Array.isArray(packageEntry.packageItems)) {
     candidates.push(...packageEntry.packageItems);
   }
