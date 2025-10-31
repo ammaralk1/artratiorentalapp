@@ -297,17 +297,73 @@ function buildTable(headers) {
   return { table, tbody };
 }
 
-function paginateRows(rows, headers) {
-  // نفس المنطق التقريبي، لكن ثابت ويضمن عدم تجاوز مساحة الصفحة
-  const rowsPerFirst = 18;
-  const rowsPerNext = 28;
-  const chunks = [];
-  for (let i = 0; i < rows.length; i += rowsPerNext) { chunks.push(rows.slice(i, i + rowsPerNext)); }
-  if (chunks.length) {
-    const first = chunks[0];
-    if (first.length > rowsPerFirst) { const overflow = first.splice(rowsPerFirst); if (chunks.length > 1) chunks[1] = overflow.concat(chunks[1]); else chunks.push(overflow); }
+// تقسيم ديناميكي للصفوف بحسب الارتفاع الفعلي داخل إطار الصفحة
+function paginateRowsDynamic(root, rows, headers) {
+  const pagesHost = root.querySelector('[data-a4-pages]');
+
+  const startPage = (index) => {
+    const page = document.createElement('section');
+    page.className = `a4-page ${index === 0 ? 'a4-page--primary' : 'a4-page--continuation'}`;
+    page.style.width = `${A4_W_PX}px`;
+    page.style.height = `${A4_H_PX}px`;
+    const inner = document.createElement('div');
+    inner.className = 'a4-inner';
+
+    if (index === 0) {
+      inner.appendChild(buildHeader());
+      inner.appendChild(buildKpis());
+      inner.appendChild(buildRevenueDetails());
+      inner.appendChild(buildOutstandingSection());
+      inner.appendChild(buildForecastSection());
+      inner.appendChild(buildCrewSection());
+      const tableTitle = document.createElement('h4');
+      tableTitle.className = 'rpt-table-title';
+      tableTitle.textContent = translate('reservations.reports.results.title', 'تفاصيل الحجوزات', 'Reservations details');
+      inner.appendChild(tableTitle);
+    }
+
+    const { table, tbody } = buildTable(headers);
+    inner.appendChild(table);
+    page.appendChild(inner);
+    pagesHost.appendChild(page);
+    return { page, tbody };
+  };
+
+  const addRow = (tbody, row) => {
+    const tr = document.createElement('tr');
+    headers.forEach((h) => {
+      const td = document.createElement('td');
+      const inner = document.createElement('div');
+      inner.className = 'rpt-cell';
+      inner.textContent = row[h] != null ? String(row[h]) : '';
+      td.appendChild(inner);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+    return tr;
+  };
+
+  const fitsOnPage = (page, tbodyEl) => {
+    try {
+      const pageRect = page.getBoundingClientRect();
+      const last = tbodyEl.lastElementChild;
+      if (!last) return true;
+      const lastRect = last.getBoundingClientRect();
+      const limit = pageRect.bottom - 1; // هوامش أمان صغيرة
+      return lastRect.bottom <= limit;
+    } catch (_) { return true; }
+  };
+
+  let pageIndex = 0;
+  let { page, tbody } = startPage(pageIndex);
+  for (let i = 0; i < rows.length; i += 1) {
+    const tr = addRow(tbody, rows[i]);
+    if (!fitsOnPage(page, tbody)) {
+      tr.remove();
+      ({ page, tbody } = startPage(++pageIndex));
+      addRow(tbody, rows[i]);
+    }
   }
-  return chunks;
 }
 
 function isCoreHeaderLabel(label = '') {
@@ -402,7 +458,6 @@ function filterRowsByPrefs(rows, headers, prefs) {
 
 export function buildA4ReportPages(rows = [], { context = 'preview', columns, rowFilters } = {}) {
   const root = createRoot(context);
-  const pagesHost = root.querySelector('[data-a4-pages]');
   const model = Array.isArray(rows) && rows.length ? rows : (reportsState.lastSnapshot?.tableRows || []);
   let headers = Object.keys(model[0] || {});
 
@@ -411,49 +466,19 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
   headers = headers.filter((h) => prefVisible.has(h));
 
   const filteredModel = filterRowsByPrefs(model, headers, rowFilters);
-  const chunks = paginateRows(filteredModel, headers);
-  if (!chunks.length) chunks.push([]);
 
-  chunks.forEach((chunk, index) => {
-    const page = document.createElement('section');
-    page.className = `a4-page ${index === 0 ? 'a4-page--primary' : 'a4-page--continuation'}`;
-    page.style.width = `${A4_W_PX}px`;
-    page.style.height = `${A4_H_PX}px`;
-    const inner = document.createElement('div');
-    inner.className = 'a4-inner';
+  // أرفق الجذر مؤقتًا لقياس الأحجام بدقة ثم نفصلُه
+  const phantom = document.createElement('div');
+  Object.assign(phantom.style, { position: 'fixed', left: 0, top: 0, width: `${A4_W_PX}px`, height: '0', pointerEvents: 'none', zIndex: -1, visibility: 'hidden' });
+  document.body.appendChild(phantom);
+  phantom.appendChild(root);
 
-    if (index === 0) {
-      inner.appendChild(buildHeader());
-      inner.appendChild(buildKpis());
-      inner.appendChild(buildRevenueDetails());
-      inner.appendChild(buildOutstandingSection());
-      inner.appendChild(buildForecastSection());
-      inner.appendChild(buildCrewSection());
-      // عنوان جدول تفاصيل الحجوزات
-      const tableTitle = document.createElement('h4');
-      tableTitle.className = 'rpt-table-title';
-      tableTitle.textContent = translate('reservations.reports.results.title', 'تفاصيل الحجوزات', 'Reservations details');
-      inner.appendChild(tableTitle);
-    }
-
-    const { table, tbody } = buildTable(headers);
-    chunk.forEach((row) => {
-      const tr = document.createElement('tr');
-      headers.forEach((h) => {
-        const td = document.createElement('td');
-        const inner = document.createElement('div');
-        inner.className = 'rpt-cell';
-        inner.textContent = row[h] != null ? String(row[h]) : '';
-        td.appendChild(inner);
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-    inner.appendChild(table);
-
-    page.appendChild(inner);
-    pagesHost.appendChild(page);
-  });
+  try {
+    paginateRowsDynamic(root, filteredModel, headers);
+  } finally {
+    try { root.parentElement?.removeChild(root); } catch (_) {}
+    try { phantom.parentElement?.removeChild(phantom); } catch (_) {}
+  }
 
   return root;
 }
