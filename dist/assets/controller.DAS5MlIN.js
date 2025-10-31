@@ -1005,7 +1005,7 @@ body,
 
 /* Make exported PDF table fonts match preview sizing more closely */
 #quotation-pdf-root[data-quote-render-context="export"] .quote-table {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .quote-table thead,
