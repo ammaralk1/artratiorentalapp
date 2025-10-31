@@ -19,7 +19,7 @@
 
 /* ضبط توسيط نص الفقاعات (الإجماليات) في المطبوع */
 #reports-a4-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
-#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; --bubble-text-nudge-inner: -0.1em; }
+#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -6px; --bubble-text-nudge-inner: -0.2em; }
 #reports-a4-root .totals-inline__item,
 #reports-a4-root .totals-item--final,
 #reports-a4-root .quote-table-subtotal__pill {
@@ -27,10 +27,10 @@
   transform: translateY(var(--bubble-text-nudge));
 }
 
-/* ضبط الحشوات رأسياً في نسخة A4 (تصدير/طباعة) لوُجِدت نفس العناصر داخل القالب */
-#reports-a4-root[data-render-context="export"] .totals-inline__item { padding: 8px 12px 5px !important; }
-#reports-a4-root[data-render-context="export"] .totals-item--final { padding: 12px 16px 8px !important; }
-#reports-a4-root[data-render-context="export"] .quote-table-subtotal__pill { padding: 10px 14px 7px !important; }
+/* نحافظ على الحشوات الافتراضية ونزيد الرفع فقط في التصدير */
+#reports-a4-root[data-render-context="export"] .totals-inline__item { padding: 6px 12px !important; }
+#reports-a4-root[data-render-context="export"] .totals-item--final { padding: 10px 16px !important; }
+#reports-a4-root[data-render-context="export"] .quote-table-subtotal__pill { padding: 8px 14px !important; }
 
 /* إن وُجدت نفس الفئات داخل تقارير A4، اضبط نصها داخلياً بوحدة em */
 #reports-a4-root .totals-inline__label,
