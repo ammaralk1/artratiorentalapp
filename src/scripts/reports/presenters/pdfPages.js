@@ -57,6 +57,8 @@ function createRoot(context = 'preview') {
     .rpt-table th { background:#f3f4f6 !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
     .rpt-table td { background:#ffffff !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
     .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 1.6; }
+    /* Generic lift for all table cells in export root even without wrapper */
+    #quotation-pdf-root[data-quote-render-context="export"] table td > *:first-child { position: relative; top: var(--cell-text-nudge, -5px); }
     .rpt-table th > *, .rpt-table td > * { vertical-align: middle !important; }
     /* Use the same robust centering wrapper used by quotes, but right-justify for RTL numbers/text */
     .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: var(--cell-text-nudge, -5px); transform: none; }
@@ -290,6 +292,7 @@ function paginateRowsIntoPages(root, rows, headers, metrics) {
 
   const startPage = (isPrimary) => {
     const page = createPage({ primary: !!isPrimary });
+    if (!isPrimary) { try { page.classList.add('quote-page--continuation'); } catch (_) {} }
     pagesHost.appendChild(page);
     if (isPrimary) {
       const header = buildHeader(metrics);
@@ -354,11 +357,13 @@ export function buildReportsPdfPages(rows = [], { context = 'preview' } = {}) {
   const root = createRoot(context);
   // Attach temporarily for measurement
   const phantom = document.createElement('div');
+  // Measure in-flow to get reliable client rects, but keep invisible
   phantom.style.position = 'fixed';
-  phantom.style.left = '-10000px';
+  phantom.style.left = '0';
   phantom.style.top = '0';
   phantom.style.width = `${A4_W_PX}px`;
   phantom.style.zIndex = '-1';
+  phantom.style.visibility = 'hidden';
   document.body.appendChild(phantom);
   phantom.appendChild(root);
 
