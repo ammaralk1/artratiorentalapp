@@ -24,7 +24,7 @@
 
 /* فصل بصري بين الصفحات في المعاينة */
 #reports-a4-root[data-render-context="preview"] [data-a4-pages] { gap: 18px; }
-#reports-a4-root[data-render-context="preview"] .a4-page { margin: 0; }
+#reports-a4-root[data-render-context="preview"] .a4-page { margin: 0; overflow: visible; border: 1px solid #e5e7eb; }
 #reports-a4-root[data-render-context="preview"] .a4-page + .a4-page::before {
   content: '';
   position: absolute;

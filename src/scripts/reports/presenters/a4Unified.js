@@ -365,7 +365,19 @@ function paginateRowsDynamic(root, rows, headers) {
       tr.remove();
       // إذا لم يتم رسم أي صف بعد على هذه الصفحة، لا تترك جدولاً برأس فقط في أسفل الصفحة
       if (rowsOnCurrentPage === 0) {
-        try { table.remove(); } catch (_) {}
+        try {
+          // أزل الجدول الحالي من الصفحة، وانقل عنوان القسم (إن وُجد) للصفحة التالية مع الجدول
+          table.remove();
+          const titleEl = page.querySelector('.rpt-table-title');
+          ({ page, table, tbody } = startPage(++pageIndex));
+          if (titleEl) {
+            const innerNext = page.querySelector('.a4-inner') || page;
+            innerNext.insertBefore(titleEl, table);
+          }
+          addRow(tbody, rows[i]);
+          rowsOnCurrentPage = 1;
+          continue;
+        } catch (_) { /* fallthrough */ }
       }
       ({ page, table, tbody } = startPage(++pageIndex));
       addRow(tbody, rows[i]);
