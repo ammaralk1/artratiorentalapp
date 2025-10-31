@@ -567,6 +567,48 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     </div>
   `).join('');
 
+  // Optional finance debug panel (enable with ?debugFinance=1)
+  let debugPanelHtml = '';
+  try {
+    const url = new URL(window.location.href);
+    const debugFinance = url.searchParams.get('debugFinance');
+    if (debugFinance === '1' || debugFinance === 'true') {
+      const classify = (g) => ((g?.type || '').toLowerCase() === 'package' ? 'fixed' : 'daily');
+      const rows = (Array.isArray(displayGroups) ? displayGroups : []).map((g, idx) => {
+        const qty = Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 0;
+        const unit = Number.isFinite(Number(g?.unitPrice)) ? Number(g.unitPrice) : 0;
+        const kind = classify(g);
+        const contrib = kind === 'fixed' ? (qty * unit) : (qty * unit * rentalDays);
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${escapeHtml(String(g?.description || '-'))}</td>
+            <td>${kind}</td>
+            <td>${normalizeNumbers(String(qty))}</td>
+            <td>${normalizeNumbers(String(unit.toFixed ? unit.toFixed(2) : unit))}</td>
+            <td>${normalizeNumbers(String(contrib.toFixed ? contrib.toFixed(2) : contrib))}</td>
+          </tr>`;
+      }).join('');
+      debugPanelHtml = `
+        <details class="reservation-finance-debug" style="margin-top:12px">
+          <summary>Debug: تفصيل التسعير</summary>
+          <div style="padding:8px 0; font-size: 12px">
+            <div>الأيام: ${normalizeNumbers(String(rentalDays))}</div>
+            <div>Equipment Total (breakdown): ${normalizeNumbers(String(equipmentTotal.toFixed(2)))} ${currencyLabel}</div>
+            <table class="table table-xs" style="width:100%; margin-top:8px">
+              <thead>
+                <tr>
+                  <th>#</th><th>الوصف</th><th>النوع</th><th>الكمية</th><th>سعر الوحدة</th><th>المساهمة</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </details>`;
+      console.debug('[finance-debug] groups', displayGroups, { rentalDays, equipmentTotal, crewTotal, discountAmount, taxAmount });
+    }
+  } catch (_) { /* ignore */ }
+
   console.debug('[reservations/details] payment history raw', reservation.paymentHistory, reservation.payment_history);
   let originalHistory = [];
   // Prefer project-level history when linked
