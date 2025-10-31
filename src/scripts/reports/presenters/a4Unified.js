@@ -11,6 +11,13 @@ const A4_H_MM = 297;
 const A4_W_PX = Math.round((A4_W_MM / MM_PER_INCH) * CSS_DPI); // 794
 const A4_H_PX = Math.round((A4_H_MM / MM_PER_INCH) * CSS_DPI); // 1123
 
+function stripZeroDecimals(text) {
+  try {
+    if (!text) return text;
+    return String(text).replace(/(\d{1,3}(?:,\d{3})*)\.00(?=\s*SR\b)/g, '$1');
+  } catch (_) { return text; }
+}
+
 function loadHidePrefs() {
   try {
     return {
@@ -86,7 +93,7 @@ function buildHeader() {
 
 function round2(n) { return Number.isFinite(Number(n)) ? Math.round(Number(n) * 100) / 100 : 0; }
 
-function buildKpis() {
+function buildKpis({ context = 'preview' } = {}) {
   const metrics = reportsState.lastSnapshot?.metrics || {};
   const k = document.createElement('div');
   k.className = 'rpt-kpis';
@@ -104,16 +111,17 @@ function buildKpis() {
   const taxLabel = formatCurrency(round2(metrics.taxTotal));
   const maintLabel = formatCurrency(round2(metrics.maintenanceExpense));
 
+  const maybe = (v) => (context === 'export' ? stripZeroDecimals(v) : v);
   k.appendChild(card(translate('reservations.reports.kpi.total.label', 'الحجوزات', 'Reservations'), totalLabel));
-  k.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), revenueLabel));
-  k.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), netLabel));
-  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), shareLabel));
-  k.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), taxLabel));
-  k.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), maintLabel));
+  k.appendChild(card(translate('reservations.reports.kpi.revenue.label', 'الإيرادات', 'Revenue'), maybe(revenueLabel)));
+  k.appendChild(card(translate('reservations.reports.kpi.net.label', 'صافي الربح', 'Net profit'), maybe(netLabel)));
+  k.appendChild(card(translate('reservations.reports.kpi.share.label', 'نسبة الشركة', 'Company share'), maybe(shareLabel)));
+  k.appendChild(card(translate('reservations.reports.kpi.tax.label', 'الضريبة', 'Tax'), maybe(taxLabel)));
+  k.appendChild(card(translate('reservations.reports.kpi.maintenance.label', 'مصاريف الصيانة', 'Maintenance'), maybe(maintLabel)));
   return k;
 }
 
-function buildRevenueDetails() {
+function buildRevenueDetails({ context = 'preview' } = {}) {
   const m = reportsState.lastSnapshot?.metrics || {};
   const wrap = document.createElement('section');
   wrap.className = 'rpt-revenue-section';
@@ -127,7 +135,7 @@ function buildRevenueDetails() {
     const item = document.createElement('div');
     item.className = 'rpt-revenue__item';
     const l = document.createElement('span'); l.className = 'rpt-revenue__label'; l.textContent = label;
-    const v = document.createElement('strong'); v.className = 'rpt-revenue__value'; v.textContent = value;
+    const v = document.createElement('strong'); v.className = 'rpt-revenue__value'; v.textContent = context === 'export' ? stripZeroDecimals(value) : value;
     item.appendChild(l); item.appendChild(v); grid.appendChild(item);
   };
 
@@ -149,7 +157,7 @@ function buildRevenueDetails() {
   return wrap;
 }
 
-function buildOutstandingSection() {
+function buildOutstandingSection({ context = 'preview' } = {}) {
   const list = (reportsState.lastSnapshot?.outstanding || []).slice(0, 6);
   const wrap = document.createElement('section');
   wrap.className = 'rpt-outstanding-section';
@@ -185,7 +193,7 @@ function buildOutstandingSection() {
     const tr = document.createElement('tr');
     const c1 = document.createElement('td'); c1.textContent = `#${row.code} — ${row.customer || ''}`; tr.appendChild(c1);
     const c2 = document.createElement('td'); c2.textContent = paymentLabelText(row.paidStatus); tr.appendChild(c2);
-    const c3 = document.createElement('td'); c3.textContent = formatCurrency(row.outstanding); tr.appendChild(c3);
+    const c3 = document.createElement('td'); c3.textContent = context === 'export' ? stripZeroDecimals(formatCurrency(row.outstanding)) : formatCurrency(row.outstanding); tr.appendChild(c3);
     tbody.appendChild(tr);
   });
   table.appendChild(thead); table.appendChild(tbody);
@@ -193,7 +201,7 @@ function buildOutstandingSection() {
   return wrap;
 }
 
-function buildCrewSection() {
+function buildCrewSection({ context = 'preview' } = {}) {
   const list = (reportsState.lastSnapshot?.crewWork || []).slice(0, 12);
   const wrap = document.createElement('section');
   wrap.className = 'rpt-crew-section';
@@ -230,9 +238,9 @@ function buildCrewSection() {
     const cells = [
       row.name || String(row.id || ''),
       formatNumber(row.days || 0),
-      formatCurrency(row.billable || 0),
-      formatCurrency(row.cost || 0),
-      formatCurrency((row.billable || 0) - (row.cost || 0)),
+      context === 'export' ? stripZeroDecimals(formatCurrency(row.billable || 0)) : formatCurrency(row.billable || 0),
+      context === 'export' ? stripZeroDecimals(formatCurrency(row.cost || 0)) : formatCurrency(row.cost || 0),
+      context === 'export' ? stripZeroDecimals(formatCurrency((row.billable || 0) - (row.cost || 0))) : formatCurrency((row.billable || 0) - (row.cost || 0)),
     ];
     cells.forEach((v) => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
     tbody.appendChild(tr);
@@ -298,7 +306,7 @@ function buildTable(headers) {
 }
 
 // تقسيم ديناميكي للصفوف بحسب الارتفاع الفعلي داخل إطار الصفحة
-function paginateRowsDynamic(root, rows, headers) {
+function paginateRowsDynamic(root, rows, headers, { context = 'preview' } = {}) {
   const pagesHost = root.querySelector('[data-a4-pages]');
 
   const startPage = (index) => {
@@ -311,11 +319,11 @@ function paginateRowsDynamic(root, rows, headers) {
 
     if (index === 0) {
       inner.appendChild(buildHeader());
-      inner.appendChild(buildKpis());
-      inner.appendChild(buildRevenueDetails());
-      inner.appendChild(buildOutstandingSection());
+      inner.appendChild(buildKpis({ context }));
+      inner.appendChild(buildRevenueDetails({ context }));
+      inner.appendChild(buildOutstandingSection({ context }));
       inner.appendChild(buildForecastSection());
-      inner.appendChild(buildCrewSection());
+      inner.appendChild(buildCrewSection({ context }));
       const tableTitle = document.createElement('h4');
       tableTitle.className = 'rpt-table-title';
       tableTitle.textContent = translate('reservations.reports.results.title', 'تفاصيل الحجوزات', 'Reservations details');
@@ -335,7 +343,11 @@ function paginateRowsDynamic(root, rows, headers) {
       const td = document.createElement('td');
       const inner = document.createElement('div');
       inner.className = 'rpt-cell';
-      inner.textContent = row[h] != null ? String(row[h]) : '';
+      let value = row[h] != null ? String(row[h]) : '';
+      if (context === 'export') {
+        value = value.replace(/(\d{1,3}(?:,\d{3})*)\.00(?=\s*SR\b)/g, '$1');
+      }
+      inner.textContent = value;
       td.appendChild(inner);
       tr.appendChild(td);
     });
@@ -496,7 +508,7 @@ export function buildA4ReportPages(rows = [], { context = 'preview', columns, ro
   phantom.appendChild(root);
 
   try {
-    paginateRowsDynamic(root, filteredModel, headers);
+    paginateRowsDynamic(root, filteredModel, headers, { context });
   } finally {
     try { root.parentElement?.removeChild(root); } catch (_) {}
     try { phantom.parentElement?.removeChild(phantom); } catch (_) {}
