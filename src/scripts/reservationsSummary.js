@@ -356,12 +356,33 @@ export function calculateDraftFinancialBreakdown({
   } catch (_) { /* ignore */ }
   // Use the same grouping logic used in UI/PDF to avoid double counting
   const { groups } = buildReservationDisplayGroups({ items: Array.isArray(items) ? items : [] });
+  // Heuristic: detect DB-loaded reservation items (stored unit_price per booking)
+  // and avoid multiplying them by rental days.
+  const inferGroupIsFixed = (group) => {
+    // Packages are handled as fixed elsewhere
+    if ((group?.type || '').toLowerCase() === 'package') return true;
+    const sourceItems = Array.isArray(group?.items) ? group.items : [];
+    if (!sourceItems.length) return false;
+    // If items look like DB reservation_equipment rows (unit_price present, reservation_id present)
+    const hasReservationRef = sourceItems.some((it) => (
+      it?.reservation_id != null || it?.reservationId != null
+    ));
+    if (hasReservationRef) return true;
+    // If all items provide unit_price and none provide explicit daily fields, treat as fixed
+    const allHaveUnitPrice = sourceItems.every((it) => it?.unit_price != null || it?.unitPrice != null);
+    const anyDailySignals = sourceItems.some((it) => (
+      it?.daily_rate != null || it?.dailyRate != null || it?.unit_rate != null || it?.unitRate != null || it?.price != null
+    ));
+    if (allHaveUnitPrice && !anyDailySignals) return true;
+    return false;
+  };
   let equipmentDailyTotal = 0; // مجموع يومي يُضرب بعدد الأيام
   let equipmentFixedTotal = 0; // مجموع ثابت لا يتأثر بعدد الأيام (للحِزم)
   (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
-    if (overrideNoDays || (group?.type || '').toLowerCase() === 'package') {
+    const inferredFixed = inferGroupIsFixed(group);
+    if (overrideNoDays || inferredFixed) {
       equipmentFixedTotal += (qty * unit);
     } else {
       equipmentDailyTotal += (qty * unit);
