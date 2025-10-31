@@ -22,6 +22,19 @@
   display: flex; flex-direction: column; gap: 0; padding: 0; margin: 0; align-items: center; justify-content: flex-start;
 }
 
+/* فصل بصري بين الصفحات في المعاينة */
+#reports-a4-root[data-render-context="preview"] [data-a4-pages] { gap: 18px; }
+#reports-a4-root[data-render-context="preview"] .a4-page { margin: 0; }
+#reports-a4-root[data-render-context="preview"] .a4-page + .a4-page::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 14mm;
+  right: 14mm;
+  height: 1px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
 /* صفحة A4 ثابتة بالبكسل، بدون أي هوامش خارجية */
 .a4-page {
   position: relative;

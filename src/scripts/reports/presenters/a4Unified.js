@@ -326,7 +326,7 @@ function paginateRowsDynamic(root, rows, headers) {
     inner.appendChild(table);
     page.appendChild(inner);
     pagesHost.appendChild(page);
-    return { page, tbody };
+    return { page, table, tbody };
   };
 
   const addRow = (tbody, row) => {
@@ -345,23 +345,33 @@ function paginateRowsDynamic(root, rows, headers) {
 
   const fitsOnPage = (page, tbodyEl) => {
     try {
-      const pageRect = page.getBoundingClientRect();
+      const inner = page.querySelector('.a4-inner') || page;
+      const pageRect = inner.getBoundingClientRect();
       const last = tbodyEl.lastElementChild;
       if (!last) return true;
       const lastRect = last.getBoundingClientRect();
-      const limit = pageRect.bottom - 1; // هوامش أمان صغيرة
+      const limit = pageRect.bottom - 1; // هامش أمان صغير داخل الحشوات
       return lastRect.bottom <= limit;
     } catch (_) { return true; }
   };
 
   let pageIndex = 0;
-  let { page, tbody } = startPage(pageIndex);
+  let { page, table, tbody } = startPage(pageIndex);
+  let rowsOnCurrentPage = 0;
   for (let i = 0; i < rows.length; i += 1) {
     const tr = addRow(tbody, rows[i]);
     if (!fitsOnPage(page, tbody)) {
+      // تراجع عن الصف
       tr.remove();
-      ({ page, tbody } = startPage(++pageIndex));
+      // إذا لم يتم رسم أي صف بعد على هذه الصفحة، لا تترك جدولاً برأس فقط في أسفل الصفحة
+      if (rowsOnCurrentPage === 0) {
+        try { table.remove(); } catch (_) {}
+      }
+      ({ page, table, tbody } = startPage(++pageIndex));
       addRow(tbody, rows[i]);
+      rowsOnCurrentPage = 1;
+    } else {
+      rowsOnCurrentPage += 1;
     }
   }
 }
