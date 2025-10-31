@@ -345,6 +345,15 @@ export function calculateDraftFinancialBreakdown({
   companySharePercent = null
 } = {}) {
   const rentalDays = calculateReservationDays(start, end);
+  // Optional override to treat all equipment as fixed (no day multiplier)
+  let overrideNoDays = false;
+  try {
+    if (typeof window !== 'undefined' && window.location) {
+      const url = new URL(window.location.href);
+      const v = (url.searchParams.get('noDays') || url.searchParams.get('pricing') || '').toLowerCase();
+      overrideNoDays = v === '1' || v === 'true' || v === 'fixed' || v === 'nodays';
+    }
+  } catch (_) { /* ignore */ }
   // Use the same grouping logic used in UI/PDF to avoid double counting
   const { groups } = buildReservationDisplayGroups({ items: Array.isArray(items) ? items : [] });
   let equipmentDailyTotal = 0; // مجموع يومي يُضرب بعدد الأيام
@@ -352,7 +361,7 @@ export function calculateDraftFinancialBreakdown({
   (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
-    if ((group?.type || '').toLowerCase() === 'package') {
+    if (overrideNoDays || (group?.type || '').toLowerCase() === 'package') {
       equipmentFixedTotal += (qty * unit);
     } else {
       equipmentDailyTotal += (qty * unit);
