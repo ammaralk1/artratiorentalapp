@@ -580,16 +580,35 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         }
         return 'daily';
       };
+      const inferGroupFixed = (g) => {
+        if ((g?.type || '').toLowerCase() === 'package') return false;
+        const items = Array.isArray(g?.items) ? g.items : [];
+        if (!items.length) return false;
+        const hasResRef = items.some((it) => (it?.reservation_id != null || it?.reservationId != null));
+        if (hasResRef) return true;
+        const allHaveUnitPrice = items.every((it) => (it?.unit_price != null || it?.unitPrice != null));
+        const anyDailySignals = items.some((it) => (it?.daily_rate != null || it?.dailyRate != null || it?.unit_rate != null || it?.unitRate != null || it?.price != null));
+        return allHaveUnitPrice && !anyDailySignals;
+      };
+
+      let pkgPerDaySum = 0;
+      let pkgFullSum = 0;
+      let stdPerDaySum = 0;
+      let stdFullSum = 0;
       const rows = (Array.isArray(displayGroups) ? displayGroups : []).map((g, idx) => {
         const qty = Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 0;
         const unit = Number.isFinite(Number(g?.unitPrice)) ? Number(g.unitPrice) : 0;
         const kind = classify(g);
-        const contrib = kind === 'fixed' ? (qty * unit) : (qty * unit * rentalDays);
+        let contrib = kind === 'fixed' ? (qty * unit) : (qty * unit * rentalDays);
         let pkgLines = '';
         if ((g?.type || '').toLowerCase() === 'package') {
           try {
             const pkgRef = { package_code: g?.package_code || g?.packageDisplayCode || g?.barcode || g?.packageId || g?.key, packageItems: Array.isArray(g?.packageItems) ? g.packageItems : undefined };
             const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: rentalDays });
+            const perDay = Number.isFinite(Number(pricing.perDayTotal)) ? Number(pricing.perDayTotal) : (qty * unit);
+            contrib = perDay * rentalDays;
+            pkgPerDaySum += perDay;
+            pkgFullSum += contrib;
             const linesMarkup = (pricing.lines || []).map((line, li) => `
               <tr>
                 <td colspan="2"></td>
@@ -600,6 +619,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
               </tr>`).join('');
             pkgLines = linesMarkup ? linesMarkup : '';
           } catch (_) { /* ignore debug failures */ }
+        } else {
+          const fixed = inferGroupFixed(g);
+          const perDay = fixed ? 0 : (qty * unit);
+          const full = fixed ? (qty * unit) : (perDay * rentalDays);
+          stdPerDaySum += perDay;
+          stdFullSum += full;
         }
         return `
           <tr>
@@ -616,7 +641,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           <summary>Debug: تفصيل التسعير</summary>
           <div style="padding:8px 0; font-size: 12px">
             <div>الأيام: ${normalizeNumbers(String(rentalDays))}</div>
-            <div>Equipment Total (breakdown): ${normalizeNumbers(String(equipmentTotal.toFixed(2)))} ${currencyLabel}</div>
+            <div style="margin-top:6px"><strong>مجاميع سريعة:</strong></div>
+            <div>من الحِزم (يومي): ${normalizeNumbers(String(pkgPerDaySum.toFixed(2)))} ${currencyLabel}</div>
+            <div>من الحِزم (كامل المدة): ${normalizeNumbers(String(pkgFullSum.toFixed(2)))} ${currencyLabel}</div>
+            <div>مفردة خارج الحِزم (يومي): ${normalizeNumbers(String(stdPerDaySum.toFixed(2)))} ${currencyLabel}</div>
+            <div>مفردة خارج الحِزم (كامل المدة): ${normalizeNumbers(String(stdFullSum.toFixed(2)))} ${currencyLabel}</div>
+            <div style="margin-top:4px">Equipment Total (breakdown): ${normalizeNumbers(String(equipmentTotal.toFixed(2)))} ${currencyLabel}</div>
             <table class="table table-xs" style="width:100%; margin-top:8px">
               <thead>
                 <tr>
