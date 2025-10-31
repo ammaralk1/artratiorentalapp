@@ -590,10 +590,42 @@ function decreaseEditReservationGroup(groupKey) {
 
 function removeEditReservationGroup(groupKey) {
   const { index: editingIndex, items } = getEditingState();
-  const filtered = items.filter((item) => resolveReservationItemGroupKey(item) !== groupKey);
-  if (filtered.length === items.length) return;
-  setEditingState(editingIndex, filtered);
-  renderEditReservationItems(filtered);
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+
+  let nextItems = items.filter((item) => resolveReservationItemGroupKey(item) !== groupKey);
+
+  // If the removed group is a package, also purge any stray equipment
+  // items that belong to this package (by barcode or equipment id)
+  const isPackageGroup = target.items.some((it) => it && it.type === 'package');
+  if (isPackageGroup) {
+    const pkgBarcodes = new Set();
+    const pkgEquipmentIds = new Set();
+    target.items.forEach((it) => {
+      const list = Array.isArray(it?.packageItems) ? it.packageItems : [];
+      list.forEach((pkgItem) => {
+        const bc = normalizeBarcodeValue(pkgItem?.barcode || pkgItem?.normalizedBarcode || '');
+        if (bc) pkgBarcodes.add(bc);
+        const eqId = pkgItem?.equipmentId ?? pkgItem?.equipment_id ?? null;
+        if (eqId != null) pkgEquipmentIds.add(String(eqId));
+      });
+    });
+
+    if (pkgBarcodes.size || pkgEquipmentIds.size) {
+      nextItems = nextItems.filter((it) => {
+        const bc = normalizeBarcodeValue(it?.barcode || '');
+        const eqId = it?.equipmentId ?? it?.id ?? null;
+        if (bc && pkgBarcodes.has(bc)) return false;
+        if (eqId != null && pkgEquipmentIds.has(String(eqId))) return false;
+        return true;
+      });
+    }
+  }
+
+  if (nextItems.length === items.length) return;
+  setEditingState(editingIndex, nextItems);
+  renderEditReservationItems(nextItems);
   updateEditReservationSummary();
 }
 
