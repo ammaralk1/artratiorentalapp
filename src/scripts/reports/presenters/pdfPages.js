@@ -56,10 +56,10 @@ function createRoot(context = 'preview') {
     .rpt-table { width:100%; border-collapse:collapse; font-size:12px; color:#000 !important; table-layout:fixed; }
     .rpt-table th { background:#f3f4f6 !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; font-weight:800; }
     .rpt-table td { background:#ffffff !important; color:#000 !important; border:1px solid #e5e7eb; padding:6px 8px; text-align:right; }
-    .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 3.6; }
+    .rpt-table th, .rpt-table td { vertical-align: middle !important; line-height: 1.6; }
     .rpt-table th > *, .rpt-table td > * { vertical-align: middle !important; }
     /* Use the same robust centering wrapper used by quotes, but right-justify for RTL numbers/text */
-    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; }
+    .rpt-table .quote-cell { display:flex; align-items:center; justify-content:flex-end; width:100%; min-height:30px; text-align:right; line-height:1.3; position:relative; top: var(--cell-text-nudge, -3px); transform: none; }
     /* force light mode inside PDF root regardless of app theme */
     #quotation-pdf-root, #quotation-pdf-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; filter:none !important; }
     #quotation-pdf-root { color-scheme: light; }

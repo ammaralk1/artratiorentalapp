@@ -786,6 +786,13 @@ body,
   text-align: center;
 }
 
+/* Raise text slightly within table cells for better visual alignment in PDF */
+.quote-table .quote-cell {
+  position: relative;
+  top: var(--cell-text-nudge, -3px);
+  line-height: 1.3;
+}
+
 /* Multi-line descriptions preserve manual breaks while keeping vertical centering */
 .quote-cell--desc {
   white-space: pre-wrap;
