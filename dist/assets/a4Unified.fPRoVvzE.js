@@ -1,4 +1,4 @@
-import{r as C,t as r,e as I,d as T,b as _,p as M}from"./calculations.BlsvwTLx.js";import{e as q,l as F,a as H,b as X}from"./reports.TmMNdp93.js";import"./reservationsService.DwVbVNH4.js";import"./auth.D09_E0J1.js";import"./dashboard.DJkj8G7U.js";import"./controller.CCn5DP-S.js";/* empty css              */import"./dashboardShell.BTjbDc9Z.js";import"./customers.Cpz8J_vg.js";import"./maintenanceService.DLPgwUA9.js";const B=`@page { size: A4; margin: 0; }
+import{r as C,t as r,e as I,d as T,b as _,p as M}from"./calculations.BlsvwTLx.js";import{e as q,l as F,a as H,b as X}from"./reports.CVzGpIVo.js";import"./reservationsService.DwVbVNH4.js";import"./auth.D09_E0J1.js";import"./dashboard.DJPWz-xp.js";import"./controller.rEbAQYht.js";/* empty css              */import"./dashboardShell.BTjbDc9Z.js";import"./customers.Cpz8J_vg.js";import"./maintenanceService.DLPgwUA9.js";const B=`@page { size: A4; margin: 0; }
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap');
 
 /* جذر وثيقة A4 للمعاينة/التصدير */
@@ -29,7 +29,7 @@ import{r as C,t as r,e as I,d as T,b as _,p as M}from"./calculations.BlsvwTLx.js
 .a4-page .totals-item--final,
 .a4-page .quote-table-subtotal__pill {
   position: relative;
-  transform: translateY(var(--bubble-text-nudge));
+  transform: none;
 }
 
 /* نحافظ على الحشوات الافتراضية ونزيد الرفع فقط في التصدير */
