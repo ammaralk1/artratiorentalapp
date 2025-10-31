@@ -1150,8 +1150,8 @@ body,
 
 /* نَقلة طفيفة داخل جذور PDF لفقاعات الإجماليات لضبط توسيط النص رأسياً في المطبوع */
 /* نستخدم متغيّر CSS لضبط الدرجة بحسب سياق العرض (معاينة/تصدير) ونعتمد transform لدقة نصف-بيكسل */
-#quotation-pdf-root { --bubble-text-nudge: -3px; }
-#quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -3.5px; }
+#quotation-pdf-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
+#quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -3.5px; --bubble-text-nudge-inner: -0.1em; }
 #reports-a4-root { --bubble-text-nudge: -3px; }
 #reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
 
@@ -1163,6 +1163,19 @@ body,
 #reports-a4-root .quote-table-subtotal__pill {
   position: relative;
   transform: translateY(var(--bubble-text-nudge)); /* رفع بسيط ومتسق في المطبوع */
+}
+
+/* رَفعة طفيفة للنص داخل الفقاعة بوحدة em لضبط أدق مع اختلاف كثافات البيكسل */
+#quotation-pdf-root .totals-inline__label,
+#quotation-pdf-root .totals-inline__slash,
+#quotation-pdf-root .totals-inline__value,
+#quotation-pdf-root .totals-item__label,
+#quotation-pdf-root .totals-item__slash,
+#quotation-pdf-root .totals-item__value,
+#quotation-pdf-root .quote-table-subtotal__label,
+#quotation-pdf-root .quote-table-subtotal__value {
+  display: inline-block;
+  transform: translateY(var(--bubble-text-nudge-inner));
 }
 .quote-table-subtotal__label { font-weight: 700; }
 .quote-table-subtotal__value { font-weight: 700; }
