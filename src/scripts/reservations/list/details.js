@@ -573,7 +573,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     const url = new URL(window.location.href);
     const debugFinance = url.searchParams.get('debugFinance');
     if (debugFinance === '1' || debugFinance === 'true') {
-      const classify = (g) => ((g?.type || '').toLowerCase() === 'package' ? 'fixed' : 'daily');
+      const classify = (g) => {
+        if ((g?.type || '').toLowerCase() === 'package') {
+          const pm = String(g?.pricingMode || '').toLowerCase();
+          return pm === 'fixed' ? 'fixed' : 'daily';
+        }
+        return 'daily';
+      };
       const rows = (Array.isArray(displayGroups) ? displayGroups : []).map((g, idx) => {
         const qty = Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 0;
         const unit = Number.isFinite(Number(g?.unitPrice)) ? Number(g.unitPrice) : 0;

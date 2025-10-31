@@ -381,8 +381,18 @@ export function calculateDraftFinancialBreakdown({
   (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
+    const isPackage = String(group?.type || '').toLowerCase() === 'package';
+    const pricingMode = String(group?.pricingMode || '').toLowerCase();
     const inferredFixed = inferGroupIsFixed(group);
-    if (overrideNoDays || inferredFixed) {
+    if (overrideNoDays) {
+      equipmentFixedTotal += (qty * unit);
+    } else if (isPackage) {
+      if (pricingMode === 'fixed') {
+        equipmentFixedTotal += (qty * unit);
+      } else {
+        equipmentDailyTotal += (qty * unit);
+      }
+    } else if (inferredFixed) {
       equipmentFixedTotal += (qty * unit);
     } else {
       equipmentDailyTotal += (qty * unit);

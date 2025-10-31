@@ -224,6 +224,11 @@ function normalizePackageItemsForGroup(packageEntry = {}) {
       const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item?.qty ?? item?.quantity ?? 1)));
       return Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
     })(),
+    // Preserve explicit per-package quantity for consumers (UI/debug)
+    qtyPerPackage: (() => {
+      const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item?.qty ?? item?.quantity ?? 1)));
+      return Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
+    })(),
     price: (() => {
       const parsed = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
       return Number.isFinite(parsed) ? parsed : 0;
@@ -421,6 +426,26 @@ export function buildReservationDisplayGroups(reservation = {}) {
     }
     unitPrice = sanitizePriceValue(unitPrice);
 
+    // Resolve pricing mode: daily or fixed (default to daily unless explicitly fixed)
+    const resolvePricingMode = () => {
+      const candidates = [
+        primarySource?.pricing_mode,
+        primarySource?.pricingMode,
+        primarySource?.pricing,
+        secondarySource?.pricing_mode,
+        secondarySource?.pricingMode,
+        secondarySource?.pricing,
+      ];
+      for (const c of candidates) {
+        if (c == null) continue;
+        const v = String(c).trim().toLowerCase();
+        if (v === 'daily' || v === 'per_day' || v === 'day') return 'daily';
+        if (v === 'fixed' || v === 'per_booking' || v === 'booking') return 'fixed';
+      }
+      return 'daily';
+    };
+    const pricingMode = resolvePricingMode();
+
     const totalPriceCandidates = [
       secondarySource?.total,
       secondarySource?.total_price,
@@ -438,8 +463,8 @@ export function buildReservationDisplayGroups(reservation = {}) {
       }
     }
     if (!Number.isFinite(totalPrice)) {
-      // عرض الحزم بدون تأثير الكمية: إجمالي العرض = سعر الحزمة
-      totalPrice = unitPrice;
+      // إجمالي الحزمة الافتراضي = سعر الوحدة × كمية الحزمة (بدون ضرب بالأيام هنا)
+      totalPrice = unitPrice * packageQty;
     }
     totalPrice = sanitizePriceValue(totalPrice);
 
@@ -507,7 +532,8 @@ export function buildReservationDisplayGroups(reservation = {}) {
       normalizedDescription: normalizeNumbers(String(description)),
       unitPrice,
       totalPrice,
-      quantity: displayQty,
+      pricingMode,
+      quantity: packageQty,
       count: displayQty,
       image: imageSource,
       barcodes: barcodesList,
