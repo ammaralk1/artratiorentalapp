@@ -1,5 +1,5 @@
 import { normalizeNumbers } from './utils.js';
-import { resolvePackageItems, normalizePackageId, getPackagesSnapshot } from './reservationsPackages.js';
+import { resolvePackageItems, normalizePackageId, getPackagesSnapshot, findPackageById } from './reservationsPackages.js';
 
 function stripExtraDots(candidate) {
   const parts = candidate.split('.');
@@ -381,7 +381,9 @@ export function buildReservationDisplayGroups(reservation = {}) {
   const packageEquipmentIds = new Set();
 
   packagesMap.forEach(({ source: pkg, itemSource = null, normalizedId }, mapKey) => {
-    const primarySource = pkg || {};
+    // Prefer canonical package definition as the primary source when available
+    const canonicalDef = normalizedId ? findPackageById(normalizedId) : null;
+    const primarySource = canonicalDef || pkg || {};
     const secondarySource = itemSource && typeof itemSource === 'object' ? itemSource : null;
 
     let resolvedItems = normalizePackageItemsForGroup(primarySource);

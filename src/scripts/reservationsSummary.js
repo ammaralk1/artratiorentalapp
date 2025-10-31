@@ -382,17 +382,14 @@ export function calculateDraftFinancialBreakdown({
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
     const isPackage = String(group?.type || '').toLowerCase() === 'package';
-    const pricingMode = String(group?.pricingMode || '').toLowerCase();
     const inferredFixed = inferGroupIsFixed(group);
     if (overrideNoDays) {
       equipmentFixedTotal += (qty * unit);
     } else if (isPackage) {
-      if (pricingMode === 'fixed') {
-        equipmentFixedTotal += (qty * unit);
-      } else {
-        equipmentDailyTotal += (qty * unit);
-      }
+      // Treat packages like single equipment with daily pricing
+      equipmentDailyTotal += (qty * unit);
     } else if (inferredFixed) {
+      // DB-loaded reservation items remain fixed (not multiplied by days)
       equipmentFixedTotal += (qty * unit);
     } else {
       equipmentDailyTotal += (qty * unit);
