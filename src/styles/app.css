@@ -3,6 +3,9 @@
 @import './reservations.css';
 @import './tabs.css';
 @import './reports.css';
+/* اجعل أنماط التقويم والنماذج ضمن الحزمة الرئيسية لتجنّب تحميل مضاعف عبر index.css */
+@import './calendar.css';
+@import './forms.css';
 
 @tailwind base;
 @tailwind components;

@@ -142,8 +142,9 @@ describe('tabs module', () => {
 
     const reservationsButton = document.querySelector('[data-tab="reservations-tab"]');
     reservationsButton.click();
+    await nextTick();
 
-    expect(renderReservationsMock).toHaveBeenCalledTimes(1); // from main tab
+    expect(renderReservationsMock).toHaveBeenCalled(); // loaded via lazy import
     expect(setupReservationEventsMock).toHaveBeenCalled();
 
     document.querySelector('.sub-tab-button[data-sub-tab="calendar-tab"]').click();

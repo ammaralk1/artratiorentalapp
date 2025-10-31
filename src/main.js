@@ -73,6 +73,8 @@ function scheduleDashboardDataPrefetch() {
       tasks.push(import('./scripts/equipment.js').then((m) => m.refreshEquipmentFromApi({ showToastOnError: false }).catch(() => {})).catch(() => {}));
       // Ensure packages snapshot is available early for PDF and UI grouping
       tasks.push(import('./scripts/equipmentPackagesManager.js').then((m) => m.refreshPackagesFromApi().catch(() => {})).catch(() => {}));
+      // Prefetch reservations UI module in idle time to reduce first-click latency
+      tasks.push(import('./scripts/reservationsUI.js').catch(() => {}));
       await Promise.allSettled(tasks);
     } catch (_) {
       // ignore background prefetch errors

@@ -1,4 +1,3 @@
-import { renderReservations } from "./reservationsUI.js";
 import { resolveQuickDateRange } from "./reservationsFilters.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
@@ -170,7 +169,7 @@ export async function renderTechnicianReservations(technicianId) {
 
   const applyFilters = () => {
     lastTechnicianFilters = collectFilters();
-    renderReservations("technician-reservations", lastTechnicianFilters);
+    void lazyRenderReservations("technician-reservations", lastTechnicianFilters);
   };
 
   if (searchInput && !searchInput.dataset.listenerAttached) {
@@ -229,7 +228,7 @@ export async function renderTechnicianReservations(technicianId) {
   }
 
   window.refreshTechnicianReservationsViews = () => {
-    renderReservations("technician-reservations", lastTechnicianFilters);
+    void lazyRenderReservations("technician-reservations", lastTechnicianFilters);
   };
 
   applyFilters();
@@ -1122,4 +1121,12 @@ function determineProjectStatus(project) {
   }
 
   return 'ongoing';
+}
+async function lazyRenderReservations(containerId, filters) {
+  try {
+    const m = await import('./reservationsUI.js');
+    try { m.renderReservations?.(containerId, filters); } catch (e) { console.error('❌ [technician-details] renderReservations failed', e); }
+  } catch (e) {
+    console.error('❌ [technician-details] Failed to load reservations UI module', e);
+  }
 }

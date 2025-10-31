@@ -3,7 +3,6 @@ import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
 import { loadData, saveData, migrateOldData } from './storage.js';
 import { renderCustomerReservations, renderCustomerProjects } from './customerDetails.js';
-import { showReservationDetails } from './reservationsUI.js';
 import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
@@ -28,7 +27,16 @@ if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
   logoutBtn.dataset.listenerAttached = 'true';
 }
 
-setReservationsUIHandlers({ showReservationDetails });
+// تعيين معالج كسول لتفاصيل الحجز لتجنّب سحب وحدة الحجوزات في التحميل الأولي
+setReservationsUIHandlers({
+  showReservationDetails(index) {
+    import('./reservationsUI.js')
+      .then((m) => {
+        try { m.showReservationDetails?.(index); } catch (e) { console.error('❌ showReservationDetails failed', e); }
+      })
+      .catch((e) => console.error('❌ Failed to load reservations UI module', e));
+  }
+});
 
 const params = new URLSearchParams(window.location.search);
 const customerId = params.get('id');

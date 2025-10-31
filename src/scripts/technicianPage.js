@@ -2,7 +2,6 @@ import '../styles/app.css';
 import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { renderTechnicianReservations, renderTechnicianProjects, normalizeTechnicianAssignments } from './technicianDetails.js';
-import { showReservationDetails } from './reservationsUI.js';
 import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
@@ -970,7 +969,16 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-setReservationsUIHandlers({ showReservationDetails });
+// تعيين معالج كسول لتفاصيل الحجز لتجنّب سحب وحدة الحجوزات في التحميل الأولي
+setReservationsUIHandlers({
+  showReservationDetails(index) {
+    import('./reservationsUI.js')
+      .then((m) => {
+        try { m.showReservationDetails?.(index); } catch (e) { console.error('❌ showReservationDetails failed', e); }
+      })
+      .catch((e) => console.error('❌ Failed to load reservations UI module', e));
+  }
+});
 
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn && !logoutBtn.dataset.listenerAttached) {

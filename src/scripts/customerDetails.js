@@ -1,4 +1,3 @@
-import { renderReservations } from "./reservationsUI.js";
 import { resolveQuickDateRange } from "./reservationsFilters.js";
 import { showToast, normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
@@ -165,7 +164,7 @@ export function renderCustomerReservations(customerId) {
 
   const applyFilters = () => {
     lastCustomerFilters = collectFilters();
-    renderReservations("customer-reservations", lastCustomerFilters);
+    void lazyRenderReservations("customer-reservations", lastCustomerFilters);
   };
 
   if (searchInput && !searchInput.dataset.listenerAttached) {
@@ -224,7 +223,7 @@ export function renderCustomerReservations(customerId) {
   }
 
   window.refreshCustomerReservationsViews = () => {
-    renderReservations("customer-reservations", lastCustomerFilters);
+    void lazyRenderReservations("customer-reservations", lastCustomerFilters);
   };
 
   applyFilters();
@@ -1355,4 +1354,12 @@ function getProjectTypeLabel(type) {
   };
   const key = keyMap[type] || 'projects.form.types.unknown';
   return t(key, type);
+}
+async function lazyRenderReservations(containerId, filters) {
+  try {
+    const m = await import('./reservationsUI.js');
+    try { m.renderReservations?.(containerId, filters); } catch (e) { console.error('❌ [customer-details] renderReservations failed', e); }
+  } catch (e) {
+    console.error('❌ [customer-details] Failed to load reservations UI module', e);
+  }
 }

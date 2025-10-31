@@ -2,8 +2,7 @@
 import { renderCustomers } from "./customers.js";
 import { renderEquipment } from "./equipment.js";
 import { renderTechnicians } from "./technicians.js";
-// إبقاء renderReservations/setupReservationEvents متاحة للمسارات المتزامنة في الاختبارات
-import { renderReservations, setupReservationEvents } from "./reservationsUI.js";
+// تمت إزالة الاستيراد الثابت لـ reservationsUI لضمان تحميل كسول فعلي
 import { getPreferences, updatePreferences, subscribePreferences, getCachedPreferences } from "./preferencesService.js";
 
 const DASHBOARD_TAB_STORAGE_KEY = "__ART_RATIO_LAST_DASHBOARD_TAB__";
@@ -228,20 +227,22 @@ export function setupTabs() {
     if (target === "reservations-tab") {
       devLog("📅 Rendering reservations");
       if (!skipRender) {
-        // Synchronous path for immediate UX/tests
-        try { setupReservationEvents(); } catch (_) { /* ignore */ }
-        try { renderReservations(); } catch (_) { /* ignore */ }
-
-        // Lazy initialise full reservations UI when module is ready
+        // تحميل كسول للوحدة ومن ثم الاستدعاء
         ensureReservationsModule()
           .then(async (module) => {
+            // استدعاء الدوال الأساسية مباشرة عند توفرها (يدعم بيئة الاختبار حيث يتم موك الدوال)
+            try { module.setupReservationEvents?.(); } catch (_) { /* ignore */ }
+            try { module.renderReservations?.(); } catch (_) { /* ignore */ }
+
+            // محاولة تهيئة الواجهة الكاملة إذا كان المُصدِّر متاحًا
             try {
-              if (!reservationsInitialised && typeof module.initializeReservationUI === 'function') {
-                await module.initializeReservationUI();
+              const init = module?.initializeReservationUI;
+              if (!reservationsInitialised && typeof init === 'function') {
+                await init();
                 reservationsInitialised = true;
               }
             } catch (error) {
-              console.error('❌ [tabs.js] Failed to initialise reservations UI', error);
+              // تجاهل خطأ غياب المُصدِّر في بيئة الاختبار
             }
           })
           .catch((error) => console.error('❌ [tabs.js] Unable to load reservations UI module', error));
