@@ -2,7 +2,7 @@ import { t } from '../../language.js';
 import { getTechnicianPositionsCache, findPositionByName } from '../../technicianPositions.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { loadData } from '../../storage.js';
-import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue } from '../../reservationsShared.js';
+import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue, computePackagePricing } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
 import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
@@ -585,6 +585,22 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         const unit = Number.isFinite(Number(g?.unitPrice)) ? Number(g.unitPrice) : 0;
         const kind = classify(g);
         const contrib = kind === 'fixed' ? (qty * unit) : (qty * unit * rentalDays);
+        let pkgLines = '';
+        if ((g?.type || '').toLowerCase() === 'package') {
+          try {
+            const pkgRef = { package_code: g?.package_code || g?.packageDisplayCode || g?.barcode || g?.packageId || g?.key, packageItems: Array.isArray(g?.packageItems) ? g.packageItems : undefined };
+            const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: rentalDays });
+            const linesMarkup = (pricing.lines || []).map((line, li) => `
+              <tr>
+                <td colspan="2"></td>
+                <td>• ${escapeHtml(String(line.desc || line.barcode || 'item'))}</td>
+                <td>${normalizeNumbers(String(line.qtyPerPackage))} × ${normalizeNumbers(String(qty))} × ${normalizeNumbers(String(rentalDays))}</td>
+                <td>${normalizeNumbers(String((line.unitPrice || 0).toFixed ? line.unitPrice.toFixed(2) : line.unitPrice))}</td>
+                <td>${normalizeNumbers(String((line.perDayTotal * rentalDays).toFixed ? (line.perDayTotal * rentalDays).toFixed(2) : (line.perDayTotal * rentalDays)))}</td>
+              </tr>`).join('');
+            pkgLines = linesMarkup ? linesMarkup : '';
+          } catch (_) { /* ignore debug failures */ }
+        }
         return `
           <tr>
             <td>${idx + 1}</td>
@@ -593,7 +609,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             <td>${normalizeNumbers(String(qty))}</td>
             <td>${normalizeNumbers(String(unit.toFixed ? unit.toFixed(2) : unit))}</td>
             <td>${normalizeNumbers(String(contrib.toFixed ? contrib.toFixed(2) : contrib))}</td>
-          </tr>`;
+          </tr>${pkgLines}`;
       }).join('');
       debugPanelHtml = `
         <details class="reservation-finance-debug" style="margin-top:12px">
