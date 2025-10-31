@@ -1,0 +1,34 @@
+@import './core.css';
+@import './forms.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* تعديلات بسيطة لصفحة تسجيل الدخول فقط */
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-base-300/60 bg-base-100/70 shadow-lg backdrop-blur;
+  }
+
+  .form-field {
+    @apply flex flex-col gap-2;
+  }
+
+  .form-label {
+    @apply text-sm font-medium text-base-content/80;
+  }
+
+  .form-control {
+    @apply input input-bordered w-full;
+  }
+
+  .password-field {
+    @apply relative flex items-center gap-2;
+  }
+
+  .password-toggle-btn {
+    @apply btn btn-ghost btn-sm absolute end-2 top-1/2 -translate-y-1/2;
+  }
+}
+

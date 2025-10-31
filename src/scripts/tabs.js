@@ -227,6 +227,21 @@ export function setupTabs() {
     if (target === "reservations-tab") {
       devLog("📅 Rendering reservations");
       if (!skipRender) {
+        // عرض سكلتون خفيف أثناء التحميل الأول
+        try {
+          const panel = document.getElementById('reservations-tab');
+          if (panel && !panel.querySelector('[data-reservations-skeleton]')) {
+            const sk = document.createElement('div');
+            sk.setAttribute('data-reservations-skeleton', '');
+            sk.setAttribute('aria-busy', 'true');
+            sk.style.padding = '1rem';
+            sk.style.display = 'grid';
+            sk.style.gap = '12px';
+            sk.innerHTML = '<div style="height:12px;background:rgba(148,163,184,0.25);border-radius:8px"></div>'.repeat(6);
+            panel.prepend(sk);
+          }
+        } catch (_) { /* ignore */ }
+
         // تحميل كسول للوحدة ومن ثم الاستدعاء
         ensureReservationsModule()
           .then(async (module) => {
@@ -244,6 +259,13 @@ export function setupTabs() {
             } catch (error) {
               // تجاهل خطأ غياب المُصدِّر في بيئة الاختبار
             }
+
+            // إزالة السكلتون عند أول رسم
+            try {
+              const panel = document.getElementById('reservations-tab');
+              const sk = panel?.querySelector('[data-reservations-skeleton]');
+              if (sk) sk.remove();
+            } catch (_) { /* ignore */ }
           })
           .catch((error) => console.error('❌ [tabs.js] Unable to load reservations UI module', error));
       }

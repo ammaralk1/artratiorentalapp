@@ -5,3 +5,4 @@ backend/config.php
 *.zip
 
 .env.local
+cookies.txt
