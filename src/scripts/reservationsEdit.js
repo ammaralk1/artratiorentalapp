@@ -183,14 +183,8 @@ function normalizePackageEntryForEditing(pkg, index = 0) {
       ?? `pkg-${index}`
   ) || `pkg-${index}`;
 
-  const quantity = toPositiveIntSafe(
-    pkg.quantity
-      ?? pkg.qty
-      ?? pkg.count
-      ?? pkg.package_quantity
-      ?? pkg.packageQty
-      ?? 1
-  );
+  // Always treat package as single kit in editing context
+  const quantity = 1;
 
   const packageItemsSource = Array.isArray(pkg.packageItems) && pkg.packageItems.length
     ? pkg.packageItems

@@ -476,16 +476,10 @@ export function buildReservationDisplayGroups(reservation = {}) {
       }
     });
 
-    let packageQty = resolvePackageQuantity(primarySource);
-    if (secondarySource) {
-      const overrideQty = resolvePackageQuantity(secondarySource);
-      if (Number.isFinite(overrideQty) && overrideQty > 0) {
-        packageQty = overrideQty;
-      }
-    }
-    if (!Number.isFinite(packageQty) || packageQty <= 0) {
-      packageQty = 1;
-    }
+    // Always treat a package as a unique kit: 1 unit per booking.
+    // Even if the source carries a quantity, we clamp it to 1 to avoid
+    // leaking stock counts or accidental multipliers into pricing.
+    let packageQty = 1;
 
     let unitPrice = resolvePackageUnitPrice(primarySource, resolvedItems, packageQty);
     const itemPriceCandidates = [
