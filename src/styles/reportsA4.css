@@ -17,6 +17,16 @@
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 
+/* ضبط توسيط نص الفقاعات (الإجماليات) في المطبوع */
+#reports-a4-root { --bubble-text-nudge: -3px; }
+#reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
+#reports-a4-root .totals-inline__item,
+#reports-a4-root .totals-item--final,
+#reports-a4-root .quote-table-subtotal__pill {
+  position: relative;
+  transform: translateY(var(--bubble-text-nudge));
+}
+
 /* حاوية الصفحات */
 #reports-a4-root [data-a4-pages] {
   display: flex; flex-direction: column; gap: 0; padding: 0; margin: 0; align-items: center; justify-content: flex-start;
