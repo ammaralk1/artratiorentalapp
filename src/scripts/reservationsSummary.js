@@ -347,12 +347,18 @@ export function calculateDraftFinancialBreakdown({
   const rentalDays = calculateReservationDays(start, end);
   // Use the same grouping logic used in UI/PDF to avoid double counting
   const { groups } = buildReservationDisplayGroups({ items: Array.isArray(items) ? items : [] });
-  const equipmentDailyTotal = (Array.isArray(groups) ? groups : []).reduce((sum, group) => {
+  let equipmentDailyTotal = 0; // مجموع يومي يُضرب بعدد الأيام
+  let equipmentFixedTotal = 0; // مجموع ثابت لا يتأثر بعدد الأيام (للحِزم)
+  (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
-    return sum + (qty * unit);
-  }, 0);
-  const equipmentTotal = sanitizePriceValue(equipmentDailyTotal * rentalDays);
+    if ((group?.type || '').toLowerCase() === 'package') {
+      equipmentFixedTotal += (qty * unit);
+    } else {
+      equipmentDailyTotal += (qty * unit);
+    }
+  });
+  const equipmentTotal = sanitizePriceValue((equipmentDailyTotal * rentalDays) + equipmentFixedTotal);
   const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
   const normalizedTechnicianIds = assignments.length
     ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
