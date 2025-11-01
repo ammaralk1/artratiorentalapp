@@ -79,9 +79,15 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
     try {
       payload = await response.json();
     } catch (error) {
-      throw new ApiError('Failed to parse server response as JSON', {
-        status: response.status,
-      });
+      // Fallback: try reading as text to avoid hard failure on mislabelled or empty bodies
+      try {
+        const text = await response.text();
+        payload = text ? { raw: text } : null;
+      } catch {
+        throw new ApiError('Failed to parse server response as JSON', {
+          status: response.status,
+        });
+      }
     }
   } else {
     const text = await response.text();
