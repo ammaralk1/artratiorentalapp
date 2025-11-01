@@ -107,6 +107,8 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
     }
 
     if (empty($cfg['enabled'])) {
+        // Make the failure reason visible to callers
+        emailSetLastError('Email disabled by configuration');
         return false;
     }
 
