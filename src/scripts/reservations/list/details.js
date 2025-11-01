@@ -530,6 +530,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
 
   const crewTotalDisplay = normalizeNumbers(crewTotal.toFixed(2));
+  const crewCostDisplay = normalizeNumbers(crewCostTotal.toFixed(2));
   const companySharePercentDisplay = normalizeNumbers(String(companySharePercent));
   const companyShareAmountDisplay = normalizeNumbers(companyShareAmount.toFixed(2));
   const companyShareValue = `${companySharePercentDisplay}% (${companyShareAmountDisplay} ${currencyLabel})`;
@@ -542,6 +543,9 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   ];
 
   summaryDetails.push({ icon: '😎', label: crewTotalLabel, value: `${crewTotalDisplay} ${currencyLabel}` });
+  // Show internal crew cost directly under crew total
+  const crewCostLabel = t('reservations.details.labels.crewCost', 'تكلفة الفريق');
+  summaryDetails.push({ icon: '💵', label: crewCostLabel, value: `${crewCostDisplay} ${currencyLabel}` });
 
   if (discountAmount > 0) {
     summaryDetails.push({ icon: '💸', label: discountLabel, value: `${discountAmountDisplay} ${currencyLabel}` });
