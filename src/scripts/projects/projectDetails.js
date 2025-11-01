@@ -177,10 +177,12 @@ export function openProjectDetails(projectId) {
       const techniciansOrAssignments = crewAssignments.length
         ? crewAssignments
         : (Array.isArray(res.technicians) ? res.technicians : []);
+      const useAssignments = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object';
+      const useTechnicianIds = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] !== 'object';
       const breakdown = calculateDraftFinancialBreakdown({
         items,
-        technicianIds: Array.isArray(techniciansOrAssignments) && !techniciansOrAssignments.length ? techniciansOrAssignments : [],
-        crewAssignments: Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object' ? techniciansOrAssignments : [],
+        technicianIds: useTechnicianIds ? techniciansOrAssignments : [],
+        crewAssignments: useAssignments ? techniciansOrAssignments : [],
         discount: res.discount ?? 0,
         discountType: res.discountType || 'percent',
         applyTax: false,
@@ -238,8 +240,9 @@ export function openProjectDetails(projectId) {
     if (agg.equipment > 0) summaryDetails.push({ icon: '🎛️', label: t('projects.details.summary.equipmentTotal', 'إجمالي المعدات'), value: formatCurrency(agg.equipment) });
     if (agg.crew > 0) summaryDetails.push({ icon: '😎', label: t('projects.details.summary.crewTotal', 'إجمالي الفريق'), value: formatCurrency(agg.crew) });
     if (agg.crewCost > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.crewCostTotal', 'تكلفة الفريق'), value: formatCurrency(agg.crewCost) });
-    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
+    // Show services price then its cost directly under it, as requested
     if (servicesClientPriceVal > 0) summaryDetails.push({ icon: '💼', label: t('projects.details.summary.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrency(servicesClientPriceVal) });
+    if (expensesTotalNumber > 0) summaryDetails.push({ icon: '🧾', label: t('projects.details.summary.expensesTotal', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotalNumber) });
     // الخصم يظهر قبل الإجمالي
     if (discountAmount > 0) summaryDetails.push({ icon: '🏷️', label: t('projects.details.summary.discount', 'الخصم'), value: `−${formatCurrency(discountAmount)}` });
     // الإجمالي بعد الخصم
