@@ -3478,14 +3478,10 @@ function buildQuotationHtml(options) {
     : '';
 
   const financialInlineItems = [];
-  // إجمالي قبل الضريبة (يشمل نسبة الشركة)
+  // الترتيب المطلوب: الخصم → الإجمالي قبل الضريبة → الضريبة
+  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'قيمة الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
   financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'), `${totalsDisplay.taxableAmount} ${currencyLabel}`));
-  if (isFieldEnabled('financialSummary', 'discountAmount')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
-  }
-  if (isFieldEnabled('financialSummary', 'taxAmount')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
-  }
+  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'قيمة الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
   const showFinalTotal = isFieldEnabled('financialSummary', 'finalTotal');
   const financialFinalItems = [];
   if (showFinalTotal) {

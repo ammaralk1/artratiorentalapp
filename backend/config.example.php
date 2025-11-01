@@ -56,6 +56,8 @@ return [
         // Optional top-level toggles (fallbacks to email.enabled/whatsapp.enabled)
         // 'email_enabled' => true,
         // 'whatsapp_enabled' => true,
+        // Admin receives all technician-like messages too
+        'admin_receive_all' => true,
         // If true, notifications go only to admins (below), not to managers
         'admin_only' => true,
         // Admin recipients
