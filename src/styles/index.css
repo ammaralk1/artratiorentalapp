@@ -105,6 +105,18 @@ body.dark-mode .users-table>:not(caption)>* {
   box-shadow: none !important;
 }
 
+/* Apply the cell-level adjustment like Bootstrap's rule
+   .table > :not(caption) > * > * specifically for users table.
+   We keep padding/border behavior from Bootstrap but remove any
+   background fill (via background-color or box-shadow) so it
+   doesn't conflict with dark mode. */
+.users-table > :not(caption) > * > * {
+  padding: .5rem .5rem;
+  border-bottom-width: var(--bs-border-width);
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
 /* Users table header: keep transparent to match dark-mode table */
 .users-table-head {
   background-color: transparent !important;
