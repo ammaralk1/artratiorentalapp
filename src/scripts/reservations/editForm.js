@@ -1,7 +1,7 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers, formatDateTime } from '../utils.js';
-import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier, sanitizePriceValue, parsePriceValue } from '../reservationsShared.js';
+import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier, sanitizePriceValue, parsePriceValue, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
   resolveItemImage,
   findEquipmentByBarcode,
@@ -217,16 +217,20 @@ export function renderEditReservationItems(items = []) {
     return;
   }
 
-  const groups = groupReservationItems(items);
+  // Use the same display grouping used in details/quotes so that
+  // packages render as single rows and their child items are not
+  // duplicated with inflated quantities (e.g. days multipliers).
+  const { groups: displayGroups } = buildReservationDisplayGroups({ items });
 
-  container.innerHTML = groups
+  container.innerHTML = displayGroups
     .map((group) => {
       const representative = group.items[0] || {};
       const imageSource = resolveItemImage(representative) || group.image;
       const imageCell = imageSource
         ? `<img src="${imageSource}" alt="${imageAlt}" class="reservation-item-thumb">`
         : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
-      const isPackageGroup = group.items.some((item) => item?.type === 'package');
+      const isPackageGroup = String(group?.type || '').toLowerCase() === 'package'
+        || group.items.some((item) => item?.type === 'package');
       const quantityDisplay = normalizeNumbers(String(group.count));
       const parsedUnitPrice = parsePriceValue(group.unitPrice);
       const unitPriceNumber = Number.isFinite(parsedUnitPrice) ? sanitizePriceValue(parsedUnitPrice) : 0;
@@ -572,15 +576,23 @@ function setupPaymentHistoryEvents() {
 
 function decreaseEditReservationGroup(groupKey) {
   const { index: editingIndex, items } = getEditingState();
-  const groups = groupReservationItems(items);
+  const { groups } = buildReservationDisplayGroups({ items });
   const target = groups.find((entry) => entry.key === groupKey);
   if (!target) return;
   if (target.items.some((item) => item?.type === 'package')) {
     return;
   }
 
-  const removeIndex = target.itemIndices[target.itemIndices.length - 1];
-  if (removeIndex == null) return;
+  // Locate last matching raw item index for this group
+  let removeIndex = -1;
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const it = items[i];
+    if (resolveReservationItemGroupKey(it) === groupKey && it?.type !== 'package') {
+      removeIndex = i;
+      break;
+    }
+  }
+  if (removeIndex < 0) return;
 
   const nextItems = items.filter((_, idx) => idx !== removeIndex);
   setEditingState(editingIndex, nextItems);
@@ -590,7 +602,7 @@ function decreaseEditReservationGroup(groupKey) {
 
 function removeEditReservationGroup(groupKey) {
   const { index: editingIndex, items } = getEditingState();
-  const groups = groupReservationItems(items);
+  const { groups } = buildReservationDisplayGroups({ items });
   const target = groups.find((entry) => entry.key === groupKey);
   if (!target) return;
 
@@ -631,7 +643,7 @@ function removeEditReservationGroup(groupKey) {
 
 function increaseEditReservationGroup(groupKey) {
   const { index: editingIndex, items } = getEditingState();
-  const groups = groupReservationItems(items);
+  const { groups } = buildReservationDisplayGroups({ items });
   const target = groups.find((entry) => entry.key === groupKey);
   if (!target) return;
   if (target.items.some((item) => item?.type === 'package')) {
