@@ -4042,6 +4042,27 @@
     box-shadow: none !important;
   }
 
+  /* Users table header: make header transparent and avoid any box-shadow fill */
+  .users-table-head {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Ensure header cells themselves are fully transparent in all modes */
+  .users-table thead th,
+  .users-table-head th {
+    background: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  :where(html.dark-mode, body.dark-mode, html.dark, body.dark) .users-table thead,
+  :where(html.dark-mode, body.dark-mode, html.dark, body.dark) .users-table thead tr,
+  :where(html.dark-mode, body.dark-mode, html.dark, body.dark) .users-table thead tr > * {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
   .table-wrapper {
     @apply glass-card overflow-hidden p-0;
   }
