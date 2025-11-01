@@ -22,7 +22,16 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Generate backend/config.php from GitHub Secrets
+      - name: Generate backend/config.php from BACKEND_CONFIG_PHP (if provided)
+        if: ${{ secrets.BACKEND_CONFIG_PHP != '' }}
+        shell: bash
+        run: |
+          mkdir -p backend
+          printf "%s" "${{ secrets.BACKEND_CONFIG_PHP }}" > backend/config.php
+          echo "Wrote backend/config.php from BACKEND_CONFIG_PHP secret"
+
+      - name: Generate backend/config.php from individual secrets (fallback)
+        if: ${{ secrets.BACKEND_CONFIG_PHP == '' }}
         shell: bash
         run: |
           mkdir -p backend
@@ -79,13 +88,14 @@ jobs:
               ],
           ];
           PHP
+          echo "Wrote backend/config.php from individual secrets"
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           local-dir: .
           exclude: |
@@ -102,4 +112,3 @@ jobs:
             **/untitled folder/**
             .env*
           dangerous-clean-slate: false
-
