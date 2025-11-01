@@ -974,13 +974,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         let packageItemsMeta = '';
         if (packageItemsSource.length) {
           const aggregated = new Map();
-          const resolvePackageItemQty = (pkgItem) => {
-            const direct = parseQuantityValue(pkgItem?.qtyPerPackage ?? pkgItem?.perPackageQty ?? pkgItem?.quantityPerPackage);
-            if (Number.isFinite(direct) && direct > 0 && direct <= 99) {
-              return Math.round(direct);
-            }
-            return 1;
-          };
+          const resolvePackageItemQty = (_pkgItem) => 1;
           packageItemsSource.forEach((pkgItem) => {
             if (!pkgItem) return;
             const key = normalizeBarcodeValue(pkgItem.barcode || pkgItem.normalizedBarcode || pkgItem.desc || Math.random());

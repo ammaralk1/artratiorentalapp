@@ -220,15 +220,14 @@ function normalizePackageItemsForGroup(packageEntry = {}) {
   return resolvedItems.map((item) => ({
     ...item,
     normalizedBarcode: item?.normalizedBarcode ?? normalizeBarcodeValueLocal(item?.barcode),
+    // Keep "qty" as-is for backward compatibility (not used in pricing/display)
     qty: (() => {
       const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item?.qty ?? item?.quantity ?? 1)));
       return Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
     })(),
     // Preserve explicit per-package quantity for consumers (UI/debug)
-    qtyPerPackage: (() => {
-      const qtyCandidate = Number.parseFloat(normalizeNumbers(String(item?.qty ?? item?.quantity ?? 1)));
-      return Number.isFinite(qtyCandidate) && qtyCandidate > 0 ? qtyCandidate : 1;
-    })(),
+    // Business rule: each item in a package is a unique barcode (count = 1)
+    qtyPerPackage: 1,
     price: (() => {
       const parsed = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
       return Number.isFinite(parsed) ? parsed : 0;
@@ -264,20 +263,8 @@ export function buildPackageEquipmentLines(packageRef = {}, { packageQuantity = 
     : 1;
 
   return items.map((item) => {
-    const rawQty = item?.qty
-      ?? item?.qty_per_package
-      ?? item?.qtyPerPackage
-      ?? item?.perPackageQty
-      ?? item?.quantityPerPackage
-      ?? item?.count
-      ?? item?.quantity
-      ?? 1;
-    let qtyPerPackage = normalizePerPackageQtyLocal(rawQty);
-    // Heuristic: if per-item qty equals packageQuantity across many items, it's likely
-    // that package qty leaked into items; treat it as 1 in that case.
-    if (qtyPerPackage === q && q > 1) {
-      qtyPerPackage = 1;
-    }
+    // Enforce 1 per unique barcode inside packages
+    const qtyPerPackage = 1;
     const unitPriceCandidate = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
     const unitPrice = Number.isFinite(unitPriceCandidate) ? sanitizePriceValue(unitPriceCandidate) : 0;
     const totalUnitsPerDay = qtyPerPackage * q;
