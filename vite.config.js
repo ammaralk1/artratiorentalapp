@@ -44,7 +44,8 @@ export default defineConfig(async () => {
           customer: resolve(__dirname, 'src/pages/customer.html'),
           technician: resolve(__dirname, 'src/pages/technician.html'),
           projects: resolve(__dirname, 'src/pages/projects.html'),
-          users: resolve(__dirname, 'src/pages/users.html')
+          users: resolve(__dirname, 'src/pages/users.html'),
+          notifications: resolve(__dirname, 'src/pages/notifications.html')
         },
         output: {
           // Use content hashes to avoid stale cache issues in production
