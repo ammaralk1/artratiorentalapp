@@ -22,6 +22,7 @@ registerTranslations({
     'dashboard.quickLinks.projects': 'إدارة المشاريع',
     'dashboard.quickLinks.reports': 'تقارير المشاريع',
     'dashboard.quickLinks.users': 'إدارة المستخدمين',
+    'home.notifications.title': '🔔 إدارة التنبيهات',
     'tabs.customers': '👤 العملاء',
     'tabs.equipment': '🎥 المعدات',
     'tabs.maintenance': '🛠️ الصيانة',

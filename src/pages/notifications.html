@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <title data-i18n data-i18n-key="notifications.title">إدارة التنبيهات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+</head>
+<body class="page-shell" data-theme="light">
+  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+  <div class="dashboard-shell">
+    <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي"></aside>
+    <div class="flex flex-1 flex-col">
+      <main class="dashboard-main w-full">
+        <div class="dashboard-main-inner space-y-8">
+          <section class="glass-card space-y-2">
+            <div class="flex items-center justify-between">
+              <h2 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="notifications.header">🔔 إدارة التنبيهات</h2>
+            </div>
+            <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.subtitle">أرسل تنبيهات للفريق بخصوص الحجوزات/المشاريع، وحدد القنوات والمستلمين.</p>
+          </section>
+
+          <section class="glass-card space-y-6">
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="notif-entity-type" data-i18n data-i18n-key="notifications.form.entityType">النوع</label>
+                <select id="notif-entity-type" class="select select-bordered w-full">
+                  <option value="reservation" selected data-i18n data-i18n-key="notifications.form.entity.reservation">حجز</option>
+                  <option value="project" data-i18n data-i18n-key="notifications.form.entity.project">مشروع</option>
+                </select>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="notif-search" data-i18n data-i18n-key="notifications.form.search">بحث</label>
+                <input id="notif-search" type="search" class="input input-bordered" placeholder="ابحث بالكود أو العنوان" data-i18n data-i18n-placeholder-key="notifications.form.search.placeholder">
+              </div>
+            </div>
+
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="notif-results-table">
+                <thead class="table-light users-table-head">
+                  <tr>
+                    <th data-i18n data-i18n-key="notifications.table.headers.code">الكود</th>
+                    <th data-i18n data-i18n-key="notifications.table.headers.title">العنوان</th>
+                    <th data-i18n data-i18n-key="notifications.table.headers.when">الوقت</th>
+                    <th data-i18n data-i18n-key="notifications.table.headers.customer">العميل</th>
+                    <th data-i18n data-i18n-key="notifications.table.headers.actions">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="notif-results-body">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted" data-i18n data-i18n-key="notifications.table.loading">⏳ اكتب للبحث…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="glass-card space-y-4" id="notif-compose-section" hidden>
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.compose.title">✉️ إنشاء رسالة</h3>
+                <p class="text-sm text-base-content/70" id="notif-selected-summary">—</p>
+              </div>
+              <div class="flex gap-3">
+                <label class="cursor-pointer flex items-center gap-2">
+                  <input type="checkbox" id="notif-channel-email" class="checkbox checkbox-primary" checked>
+                  <span data-i18n data-i18n-key="notifications.channels.email">إيميل</span>
+                </label>
+                <label class="cursor-pointer flex items-center gap-2">
+                  <input type="checkbox" id="notif-channel-whatsapp" class="checkbox checkbox-success">
+                  <span data-i18n data-i18n-key="notifications.channels.whatsapp">واتساب</span>
+                </label>
+              </div>
+            </header>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="notif-recipients" data-i18n data-i18n-key="notifications.compose.recipients">المستلمون</label>
+                <div class="flex flex-col gap-2">
+                  <label class="cursor-pointer flex items-center gap-2">
+                    <input type="checkbox" id="notif-to-techs" class="checkbox checkbox-info" checked>
+                    <span data-i18n data-i18n-key="notifications.compose.toTechnicians">الفنيون المعيّنون</span>
+                  </label>
+                  <label class="cursor-pointer flex items-center gap-2">
+                    <input type="checkbox" id="notif-to-admins" class="checkbox checkbox-error" checked>
+                    <span data-i18n data-i18n-key="notifications.compose.toAdmins">الإدمن</span>
+                  </label>
+                  <input id="notif-extra-emails" class="input input-bordered" placeholder="إيميلات إضافية (مفصولة بفواصل)">
+                  <input id="notif-extra-phones" class="input input-bordered" placeholder="أرقام واتساب إضافية (مفصولة بفواصل)">
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="notif-subject" data-i18n data-i18n-key="notifications.compose.subject">الموضوع</label>
+                <input id="notif-subject" class="input input-bordered" placeholder="تنبيه إداري">
+                <label class="font-medium text-base-content" for="notif-body" data-i18n data-i18n-key="notifications.compose.body">نص الرسالة</label>
+                <textarea id="notif-body" class="textarea textarea-bordered min-h-[140px]" placeholder="اكتب رسالتك هنا"></textarea>
+                <div class="flex gap-2">
+                  <button type="button" class="btn btn-outline btn-sm" id="notif-template-reminder" data-i18n data-i18n-key="notifications.compose.templates.reminder">📌 تذكير</button>
+                  <button type="button" class="btn btn-outline btn-sm" id="notif-template-note" data-i18n data-i18n-key="notifications.compose.templates.note">📝 ملاحظة إدارية</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="/src/scripts/language.js"></script>
+  <script type="module" src="/src/scripts/translations/common.js"></script>
+  <script type="module" src="/src/scripts/translations/notifications.js"></script>
+  <script type="module" src="/src/scripts/notifications.js"></script>
+</body>
+</html>
+

@@ -4022,6 +4022,16 @@
     border-color: var(--bs-table-border-color);
   }
 
+  /* Override Bootstrap table cell fill method to use background-color
+     instead of the huge inset box-shadow. This keeps striped/hover
+     states via the same CSS variables, improves performance, and
+     makes dark mode overrides predictable. */
+  .table>:not(caption)>* {
+    /* Equivalent to the color used in Bootstrap's box-shadow fill */
+    background-color: var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-bg)));
+    box-shadow: none;
+  }
+
   .table-wrapper {
     @apply glass-card overflow-hidden p-0;
   }
