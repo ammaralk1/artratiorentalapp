@@ -3,7 +3,7 @@ import { t } from '../language.js';
 import { normalizeNumbers, showToast } from '../utils.js';
 import { calculateReservationTotal, calculateDraftFinancialBreakdown } from '../reservationsSummary.js';
 import { state, dom } from './state.js';
-import { resolveReservationProjectState } from '../reservationsShared.js';
+import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
   MAX_FOCUS_CARDS,
   ONE_HOUR_IN_MS,
@@ -498,7 +498,25 @@ function renderFocusCard(project, category) {
       companySharePercent: null,
     });
     const net = resolveReservationNetTotal(res);
-    const equipmentCount = (res.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+    const equipmentCount = (() => {
+      try {
+        const { groups } = buildReservationDisplayGroups(res);
+        return (groups || []).reduce((sum, g) => {
+          const type = String(g?.type || '').toLowerCase();
+          if (type === 'package') {
+            const items = Array.isArray(g?.packageItems) ? g.packageItems : [];
+            const uniq = new Set(items.map((it) => (it?.normalizedBarcode || it?.barcode || it?.equipmentId || '').toString()));
+            return sum + uniq.size;
+          }
+          const c = Number.isFinite(Number(g?.count)) ? Number(g.count)
+            : (Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 1);
+          return sum + (c > 0 ? c : 1);
+        }, 0);
+      } catch (_) {
+        const items = Array.isArray(res?.items) ? res.items : [];
+        return items.length || 0;
+      }
+    })();
     const crewCountLocal = (res.technicians || []).length;
     return {
       netTotal: acc.netTotal + net,
@@ -815,6 +833,26 @@ export function resolveReservationNetTotal(reservation) {
   return Number.isFinite(storedCost) ? Math.round(storedCost) : 0;
 }
 
+function computeReservationEquipmentCount(reservation) {
+  try {
+    const { groups } = buildReservationDisplayGroups(reservation);
+    return (groups || []).reduce((sum, g) => {
+      const type = String(g?.type || '').toLowerCase();
+      if (type === 'package') {
+        const items = Array.isArray(g?.packageItems) ? g.packageItems : [];
+        const uniq = new Set(items.map((it) => (it?.normalizedBarcode || it?.barcode || it?.equipmentId || '').toString()));
+        return sum + uniq.size;
+      }
+      const c = Number.isFinite(Number(g?.count)) ? Number(g.count)
+        : (Number.isFinite(Number(g?.quantity)) ? Number(g.quantity) : 1);
+      return sum + (c > 0 ? c : 1);
+    }, 0);
+  } catch (_) {
+    const items = Array.isArray(reservation?.items) ? reservation.items : [];
+    return items.length || 0;
+  }
+}
+
 export function buildProjectReservationCard(reservation, index, project = null) {
   if (!reservation) return '';
   const reservationId = reservation.reservationId || reservation.id || `RES-${index + 1}`;
@@ -863,7 +901,7 @@ export function buildProjectReservationCard(reservation, index, project = null) 
   // Vertical meta: crew count, equipment count, and total only
   const netTotal = resolveReservationNetTotal(reservation);
   const costLabel = formatCurrency(netTotal);
-  const equipmentCount = (reservation.items || []).reduce((sum, item) => sum + (Number(item?.qty) || 1), 0);
+  const equipmentCount = computeReservationEquipmentCount(reservation);
   const crewCount = (reservation.technicians || []).length;
   const crewTitle = t('projectCards.stats.crewCount', 'عدد الطاقم');
   const equipmentTitle = t('projectCards.stats.equipmentCount', 'عدد المعدات');
