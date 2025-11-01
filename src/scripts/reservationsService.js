@@ -636,9 +636,16 @@ export async function updateReservationApi(id, payload) {
     }
   }
   // Crew cache disabled — rely on backend data only
-  if (Array.isArray(payload?.packages) && payload.packages.length) {
-    const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
-    updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
+  // Align packages with what the caller submitted. If the caller provided
+  // an empty packages array, treat it as an explicit intent to clear any
+  // cached/inferred packages for this reservation.
+  if (Array.isArray(payload?.packages)) {
+    if (payload.packages.length) {
+      const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
+      updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
+    } else {
+      updated.packages = [];
+    }
   }
   {
     const normalized = normalizeItemsWithPackages(updated.items || [], updated.packages || []);
