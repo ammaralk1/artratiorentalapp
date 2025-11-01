@@ -1940,6 +1940,8 @@ function collectReservationFinancials(reservation, crewAssignments, project) {
     start: reservation.start,
     end: reservation.end,
     companySharePercent: companySharePercentInput,
+    // Use full reservation object for grouping (packages, per-day pricing)
+    groupingSource: reservation,
   });
 
   const storedCostCandidate = parsePriceValue(reservation.cost ?? reservation.total ?? reservation.finalTotal);
