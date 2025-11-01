@@ -37,4 +37,27 @@ return [
         //     ],
         // ],
     ],
+    'email' => [
+        // Enable and configure your email provider
+        'enabled' => false,
+        'provider' => 'sendgrid',
+        'from_email' => 'no-reply@your-domain.com',
+        'from_name' => 'Art Ratio',
+        'sendgrid_api_key' => 'YOUR_SENDGRID_API_KEY',
+    ],
+    'whatsapp' => [
+        // WhatsApp Cloud API configuration
+        'enabled' => false,
+        'access_token' => 'YOUR_WHATSAPP_CLOUD_ACCESS_TOKEN',
+        'phone_number_id' => 'YOUR_PHONE_NUMBER_ID',
+        // 'api_base' => 'https://graph.facebook.com/v20.0',
+    ],
+    'notifications' => [
+        // Optional top-level toggles (fallbacks to email.enabled/whatsapp.enabled)
+        // 'email_enabled' => true,
+        // 'whatsapp_enabled' => true,
+        // Default recipients for manager notifications
+        'manager_emails' => [/* 'ops@your-domain.com' */],
+        'manager_whatsapp_numbers' => [/* '+9665XXXXXXX' */],
+    ],
 ];

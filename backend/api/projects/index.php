@@ -204,6 +204,14 @@ function handleProjectsCreate(PDO $pdo): void
             'technicians' => $result['technicians'] ?? [],
         ]);
 
+        // Fire-and-forget notifications; log but do not block response
+        try {
+            require_once __DIR__ . '/../../services/notifications.php';
+            notifyProjectCreated($pdo, $project);
+        } catch (Throwable $notifyError) {
+            error_log('Project create notification failed: ' . $notifyError->getMessage());
+        }
+
         respond($project, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();

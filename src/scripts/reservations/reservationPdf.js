@@ -2206,7 +2206,7 @@ function resolveReservationNetTotalForProject(reservation) {
     discountType,
     false,
     techniciansOrAssignments,
-    { start: reservation.start, end: reservation.end }
+    { start: reservation.start, end: reservation.end, companySharePercent: 0 }
   );
 
   if (Number.isFinite(calculated)) {

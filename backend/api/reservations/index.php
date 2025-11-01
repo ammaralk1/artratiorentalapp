@@ -185,6 +185,16 @@ function handleReservationsCreate(PDO $pdo): void
             'items' => isset($data['items']) ? count((array) $data['items']) : 0,
         ]);
 
+        // Fire-and-forget notifications; log but do not block response
+        try {
+            require_once __DIR__ . '/../../services/notifications.php';
+            if (is_array($reservation)) {
+                notifyReservationCreated($pdo, $reservation);
+            }
+        } catch (Throwable $notifyError) {
+            error_log('Reservation create notification failed: ' . $notifyError->getMessage());
+        }
+
         respond($reservation, 201);
     } catch (Throwable $exception) {
         $pdo->rollBack();
