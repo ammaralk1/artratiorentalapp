@@ -157,10 +157,18 @@ async function sendManual() {
         message,
       },
     });
-    showToast(t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح'));
+    const sent = res?.data?.sent || { email: 0, whatsapp: 0 };
+    const total = Number(sent.email || 0) + Number(sent.whatsapp || 0);
+    if (total > 0) {
+      showToast(t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح'));
+    } else {
+      showToast('لم يتم إرسال أي رسالة. تحقق من المستلمين والقنوات.');
+    }
+    fetchLogs();
   } catch (e) {
     console.error(e);
-    showToast('فشل الإرسال');
+    const msg = (e && e.message) ? String(e.message) : 'فشل الإرسال';
+    showToast(msg);
   }
 }
 

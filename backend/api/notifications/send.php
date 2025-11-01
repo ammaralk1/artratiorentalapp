@@ -174,6 +174,20 @@ try {
         }
     }
 
+    // Abort if no recipients were resolved
+    if (empty($targets['email']) && empty($targets['whatsapp'])) {
+        respondError('No recipients found for selected channels', 422, [
+            'meta' => [
+                'channels_requested' => [ 'email' => $sendEmail, 'whatsapp' => $sendWhatsApp ],
+                'technicians_requested' => $toTechnicians,
+                'admins_requested' => $toAdmins,
+                'additional_emails' => count($extraEmails),
+                'additional_phones' => count($extraPhones),
+            ],
+        ]);
+        exit;
+    }
+
     // Send
     foreach ($targets['email'] as $target) {
         $ok = sendEmail($target['recipient'], $target['name'], $subject, $htmlBody, $textBody);
