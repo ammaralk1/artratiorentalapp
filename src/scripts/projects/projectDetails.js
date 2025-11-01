@@ -17,6 +17,7 @@ import {
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
   determinePaymentStatus,
+  calculateReservationDays,
 } from '../reservationsSummary.js';
 import { exportProjectPdf } from '../reservations/reservationPdf.js';
 import { normalizeNumbers, showToast } from '../utils.js';
