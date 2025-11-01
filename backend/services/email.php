@@ -35,6 +35,22 @@ function getEmailConfig(): array
         ];
     }
 
+    if ($provider === 'phpmail') {
+        $fromEmail = trim((string)($config['from_email'] ?? ''));
+        $fromName = trim((string)($config['from_name'] ?? ''));
+
+        if ($fromEmail === '') {
+            throw new RuntimeException('Email is enabled but from_email is not configured.');
+        }
+
+        return [
+            'enabled' => true,
+            'provider' => 'phpmail',
+            'from_email' => $fromEmail,
+            'from_name' => $fromName !== '' ? $fromName : $fromEmail,
+        ];
+    }
+
     throw new RuntimeException('Email provider is not supported or not configured.');
 }
 
@@ -74,6 +90,18 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
             $subject,
             $htmlBody,
             $textBody
+        );
+    }
+
+    if ($cfg['provider'] === 'phpmail') {
+        return sendEmailViaPhpMail(
+            $cfg['from_email'],
+            $cfg['from_name'],
+            $toEmail,
+            $toName,
+            $subject,
+            $htmlBody,
+            $textBody ?? strip_tags($htmlBody)
         );
     }
 
@@ -152,4 +180,66 @@ function sendEmailViaSendGrid(
 
     error_log(sprintf('SendGrid responded with status %d: %s', $status, (string)$response));
     return false;
+}
+
+function sendEmailViaPhpMail(
+    string $fromEmail,
+    string $fromName,
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody
+): bool {
+    // Basic validation
+    if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    $boundary = 'b_' . bin2hex(random_bytes(12));
+
+    // Encode subject for UTF-8
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+
+    $headers = [];
+    $headers[] = 'From: ' . ($fromName !== '' ? ('=?UTF-8?B?' . base64_encode($fromName) . '?= <' . $fromEmail . '>') : $fromEmail);
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-Type: multipart/alternative; boundary="' . $boundary . '"; charset=UTF-8';
+    $headers[] = 'Content-Transfer-Encoding: 8bit';
+
+    $bodyParts = [];
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/plain; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
+    $bodyParts[] = '';
+    $bodyParts[] = $textBody;
+    $bodyParts[] = '--' . $boundary;
+    $bodyParts[] = 'Content-Type: text/html; charset=UTF-8';
+    $bodyParts[] = 'Content-Transfer-Encoding: 8bit';
+    $bodyParts[] = '';
+    $bodyParts[] = $htmlBody;
+    $bodyParts[] = '--' . $boundary . '--';
+    $bodyParts[] = '';
+
+    $message = implode("\r\n", $bodyParts);
+
+    $params = '-f' . $fromEmail; // Set envelope sender for better deliverability
+
+    try {
+        // Try with envelope sender first
+        $ok = @mail($toEmail, $encodedSubject, $message, implode("\r\n", $headers), $params);
+        if ($ok) {
+            return true;
+        }
+        // Fallback: try without additional params (some hosts disallow -f)
+        error_log('phpmail() with -f failed for ' . $toEmail . '; falling back without -f');
+        $ok2 = @mail($toEmail, $encodedSubject, $message, implode("\r\n", $headers));
+        if (!$ok2) {
+            error_log('phpmail() fallback returned false for recipient ' . $toEmail);
+        }
+        return $ok2;
+    } catch (Throwable $e) {
+        error_log('phpmail() failed: ' . $e->getMessage());
+        return false;
+    }
 }
