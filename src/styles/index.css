@@ -121,6 +121,18 @@ body.dark-mode .users-table-head {
   box-shadow: none !important;
 }
 
+/* Ensure header cells themselves are transparent (override Bootstrap
+   .table > :not(caption) > * > * box-shadow fill) */
+html.dark-mode .users-table thead,
+body.dark-mode .users-table thead,
+html.dark-mode .users-table thead tr,
+body.dark-mode .users-table thead tr,
+html.dark-mode .users-table thead tr > *,
+body.dark-mode .users-table thead tr > * {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
 html.dark-mode .users-table thead tr:nth-child(1) th,
 body.dark-mode .users-table thead tr:nth-child(1) th {
   background: transparent;
