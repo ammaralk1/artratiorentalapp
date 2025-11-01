@@ -106,6 +106,54 @@
               <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
             </div>
           </section>
+
+          <section class="glass-card space-y-4" id="notif-logs-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.logs.title">📜 سجل التنبيهات</h3>
+                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.logs.subtitle">تابع آخر عمليات الإرسال وحالة كل رسالة.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 items-center">
+                <select id="log-filter-entity" class="select select-bordered select-sm">
+                  <option value="" data-i18n data-i18n-key="notifications.logs.filters.allEntities">كل الأنواع</option>
+                  <option value="reservation" data-i18n data-i18n-key="notifications.form.entity.reservation">حجز</option>
+                  <option value="project" data-i18n data-i18n-key="notifications.form.entity.project">مشروع</option>
+                </select>
+                <select id="log-filter-channel" class="select select-bordered select-sm">
+                  <option value="" data-i18n data-i18n-key="notifications.logs.filters.allChannels">كل القنوات</option>
+                  <option value="email" data-i18n data-i18n-key="notifications.channels.email">إيميل</option>
+                  <option value="whatsapp" data-i18n data-i18n-key="notifications.channels.whatsapp">واتساب</option>
+                </select>
+                <select id="log-filter-status" class="select select-bordered select-sm">
+                  <option value="" data-i18n data-i18n-key="notifications.logs.filters.allStatuses">كل الحالات</option>
+                  <option value="sent" data-i18n data-i18n-key="notifications.logs.filters.sent">مرسلة</option>
+                  <option value="failed" data-i18n data-i18n-key="notifications.logs.filters.failed">فاشلة</option>
+                </select>
+                <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
+                <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
+              </div>
+            </header>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="notif-logs-table">
+                <thead class="table-light users-table-head">
+                  <tr>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.event">الحدث</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.entity">النوع/المعرف</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.recipient">المستلم</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.channel">القناة</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.status">الحالة</th>
+                    <th data-i18n data-i18n-key="notifications.logs.headers.error">الخطأ</th>
+                  </tr>
+                </thead>
+                <tbody id="notif-logs-body">
+                  <tr>
+                    <td colspan="7" class="text-center text-muted" data-i18n data-i18n-key="notifications.logs.loading">⏳ جارٍ التحميل…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </main>
     </div>
@@ -117,4 +165,3 @@
   <script type="module" src="/src/scripts/notifications.js"></script>
 </body>
 </html>
-

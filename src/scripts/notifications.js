@@ -32,6 +32,12 @@ function cacheElements() {
   els.sendBtn = q('#notif-send-btn');
   els.tReminder = q('#notif-template-reminder');
   els.tNote = q('#notif-template-note');
+  els.logEntity = q('#log-filter-entity');
+  els.logChannel = q('#log-filter-channel');
+  els.logStatus = q('#log-filter-status');
+  els.logQ = q('#log-filter-q');
+  els.logRefresh = q('#log-refresh-btn');
+  els.logBody = q('#notif-logs-body');
 }
 
 function formatWhen(item, type) {
@@ -180,6 +186,82 @@ function attachEvents() {
     els.body.value = base;
   });
   els.sendBtn.addEventListener('click', sendManual);
+
+  const triggerLogsFetch = () => {
+    fetchLogs();
+  };
+  ['change', 'input'].forEach((ev) => {
+    els.logEntity.addEventListener(ev, triggerLogsFetch);
+    els.logChannel.addEventListener(ev, triggerLogsFetch);
+    els.logStatus.addEventListener(ev, triggerLogsFetch);
+    els.logQ.addEventListener(ev, () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(fetchLogs, 350);
+    });
+  });
+  els.logRefresh.addEventListener('click', fetchLogs);
+}
+
+function formatEventLabel(ev) {
+  const map = {
+    reservation_created: 'إنشاء حجز',
+    reservation_reminder_24h: 'تذكير 24 ساعة',
+    reservation_reminder_1h: 'تذكير ساعة',
+    reservation_technician_assigned: 'تعيين فني (حجز)',
+    reservation_status_changed: 'تغيير حالة حجز',
+    project_created: 'إنشاء مشروع',
+    project_technician_assigned: 'تعيين فني (مشروع)',
+    manual_notification: 'إرسال يدوي',
+  };
+  return map[ev] || ev;
+}
+
+function renderLogs(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.empty','لا توجد سجلات حالياً.')}</td></tr>`;
+    return;
+  }
+
+  els.logBody.innerHTML = items.map((row) => {
+    const time = row.created_at || '—';
+    const event = formatEventLabel(row.event_type || '');
+    const entity = `${row.entity_type || ''} #${row.entity_id || ''}`;
+    const recipient = `${row.recipient_type || ''}: ${row.recipient_identifier || ''}`;
+    const channel = row.channel || '';
+    const status = row.status || '';
+    const error = (row.error || '').toString().slice(0, 140);
+    const statusBadge = status === 'sent'
+      ? '<span class="badge bg-primary-subtle">مرسلة</span>'
+      : '<span class="badge bg-danger-subtle">فاشلة</span>';
+    return `
+      <tr>
+        <td>${time}</td>
+        <td>${event}</td>
+        <td>${entity}</td>
+        <td>${recipient}</td>
+        <td>${channel}</td>
+        <td>${statusBadge}</td>
+        <td title="${error}">${error}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function fetchLogs() {
+  try {
+    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
+    const params = new URLSearchParams();
+    if (els.logEntity.value) params.set('entity_type', els.logEntity.value);
+    if (els.logChannel.value) params.set('channel', els.logChannel.value);
+    if (els.logStatus.value) params.set('status', els.logStatus.value);
+    if ((els.logQ.value || '').trim()) params.set('q', els.logQ.value.trim());
+    params.set('limit', '50');
+    const res = await apiRequest(`/notifications/logs.php?${params.toString()}`);
+    renderLogs(res?.data ?? []);
+  } catch (e) {
+    console.error(e);
+    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-error">فشل تحميل السجل</td></tr>`;
+  }
 }
 
 (async function init() {
@@ -192,4 +274,5 @@ function attachEvents() {
   }
   cacheElements();
   attachEvents();
+  fetchLogs();
 })();
