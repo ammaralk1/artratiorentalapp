@@ -184,7 +184,7 @@ function attachEvents() {
 
 (async function init() {
   await checkAuth();
-  const me = getCurrentUser();
+  const me = await getCurrentUser();
   if (!me || me.role !== 'admin') {
     showToast('هذه الصفحة للمسؤولين فقط');
     window.location.href = 'home.html';
@@ -193,4 +193,3 @@ function attachEvents() {
   cacheElements();
   attachEvents();
 })();
-
