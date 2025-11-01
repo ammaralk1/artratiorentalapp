@@ -2,7 +2,7 @@ import { registerTranslations } from '../language.js';
 
 registerTranslations({
   ar: {
-  notifications: {
+    notifications: {
     title: 'إدارة التنبيهات',
     header: '🔔 إدارة التنبيهات',
     subtitle: 'أرسل تنبيهات للفريق بخصوص الحجوزات/المشاريع، وحدد القنوات والمستلمين.',
@@ -35,7 +35,6 @@ registerTranslations({
       send: '🚀 إرسال',
       sentOk: 'تم إرسال الرسالة بنجاح',
     },
+    },
   },
-  },
-}
 });
