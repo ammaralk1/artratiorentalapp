@@ -84,7 +84,8 @@ body.dark-mode .users-table-wrapper {
 html.dark-mode .users-table,
 body.dark-mode .users-table {
   --bs-table-color: var(--clr-text);
-  --bs-table-bg: rgba(17, 24, 39, 0.72);
+  /* Remove base background for users table in dark mode */
+  --bs-table-bg: transparent;
   --bs-table-striped-color: var(--clr-text);
   --bs-table-striped-bg: rgba(31, 41, 55, 0.85);
   --bs-table-hover-color: var(--clr-text);
@@ -94,6 +95,14 @@ body.dark-mode .users-table {
   --bs-table-border-color: rgba(148, 163, 184, 0.32);
   background-color: transparent;
   color: var(--clr-text);
+}
+
+/* Ensure our global table cell background override stays transparent
+   for users table in dark mode */
+html.dark-mode .users-table>:not(caption)>*,
+body.dark-mode .users-table>:not(caption)>* {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .users-table-head {
@@ -150,19 +159,19 @@ html.dark-mode .users-table tbody th,
 body.dark-mode .users-table tbody tr,
 body.dark-mode .users-table tbody td,
 body.dark-mode .users-table tbody th {
-  background-color: transparent;
+  background-color: transparent !important;
   border-color: rgba(148, 163, 184, 0.26) !important;
 }
 
-/* Improve dark rows contrast in users list */
+/* Remove any per-cell backgrounds for users list in dark mode */
 html.dark-mode .users-table tbody td,
 body.dark-mode .users-table tbody td {
-  background-color: rgba(17, 24, 39, 0.74);
+  background-color: transparent !important;
 }
 
 html.dark-mode .users-table tbody tr:nth-child(even) td,
 body.dark-mode .users-table tbody tr:nth-child(even) td {
-  background-color: rgba(24, 33, 59, 0.82);
+  background-color: transparent !important;
 }
 
 html.dark-mode .users-table thead th,

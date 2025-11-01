@@ -4032,6 +4032,16 @@
     box-shadow: none;
   }
 
+  /* Users table (Users page): make base fully transparent in dark mode */
+  :where(html.dark-mode, body.dark-mode, html.dark, body.dark) .users-table {
+    --bs-table-bg: transparent;
+  }
+
+  :where(html.dark-mode, body.dark-mode, html.dark, body.dark) .users-table>:not(caption)>* {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
   .table-wrapper {
     @apply glass-card overflow-hidden p-0;
   }
