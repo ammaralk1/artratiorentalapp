@@ -85,8 +85,11 @@ function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType
 {
     ensureNotificationEventsTable($pdo);
     try {
-        $stmt = $pdo->prepare('INSERT INTO notification_events (event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error)
-            VALUES (:event_type, :entity_type, :entity_id, :recipient_type, :recipient_identifier, :channel, :status, :error)');
+        // Upsert to avoid duplicate-key errors and keep latest status visible
+        $sql = 'INSERT INTO notification_events (event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error)
+                VALUES (:event_type, :entity_type, :entity_id, :recipient_type, :recipient_identifier, :channel, :status, :error)
+                ON DUPLICATE KEY UPDATE status = VALUES(status), error = VALUES(error), created_at = CURRENT_TIMESTAMP';
+        $stmt = $pdo->prepare($sql);
         $stmt->execute([
             'event_type' => $eventType,
             'entity_type' => $entityType,
