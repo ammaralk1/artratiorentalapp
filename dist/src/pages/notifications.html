@@ -6,7 +6,7 @@
   <title data-i18n data-i18n-key="notifications.title">إدارة التنبيهات</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <script type="module" crossorigin src="../../assets/notifications.DCfgb8qD.js"></script>
+  <script type="module" crossorigin src="../../assets/notifications.Bfr1p9IF.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.CoLto2Rb.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.DgBfdwT5.css">
@@ -135,6 +135,7 @@
                 </select>
                 <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
                 <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
+                <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn">🗑️ مسح السجل</button>
               </div>
             </header>
             <div class="users-table-wrapper overflow-x-auto">
@@ -157,6 +158,7 @@
                 </tbody>
               </table>
             </div>
+            <div id="log-pagination" class="flex flex-wrap gap-1 items-center justify-center mt-3"></div>
           </section>
         </div>
       </main>
