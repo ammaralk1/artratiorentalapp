@@ -25,6 +25,7 @@ import {
   parseEditPaymentProgressValue,
 } from '../reservationsEdit.js';
 import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict, hasPackageConflict } from './state.js';
+import { normalizePackageId } from '../reservationsPackages.js';
 import {
   findEquipmentByDescription,
   hasExactEquipmentDescription,
@@ -612,6 +613,29 @@ function removeEditReservationGroup(groupKey) {
   // items that belong to this package (by barcode or equipment id)
   const isPackageGroup = target.items.some((it) => it && it.type === 'package');
   if (isPackageGroup) {
+    // Remove the package line itself by matching package id/code
+    const normalizedTargetId = normalizePackageId(
+      target.packageId
+        ?? (target.items.find((it) => it?.type === 'package')?.packageId)
+        ?? ''
+    );
+    const normalizedTargetBarcode = normalizeBarcodeValue(
+      target.package_code
+        ?? target.packageDisplayCode
+        ?? target.barcode
+        ?? ''
+    );
+
+    nextItems = nextItems.filter((it) => {
+      if (!it || typeof it !== 'object') return true;
+      if (it.type !== 'package') return true;
+      const itPkgId = normalizePackageId(it.packageId ?? it.package_id ?? it.id ?? '');
+      const itBarcode = normalizeBarcodeValue(it.barcode ?? it.package_code ?? '');
+      if (normalizedTargetId && itPkgId === normalizedTargetId) return false;
+      if (normalizedTargetBarcode && itBarcode && itBarcode === normalizedTargetBarcode) return false;
+      return true;
+    });
+
     const pkgBarcodes = new Set();
     const pkgEquipmentIds = new Set();
     target.items.forEach((it) => {
