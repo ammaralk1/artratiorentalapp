@@ -174,7 +174,30 @@ try {
         }
     }
 
-    // Abort if no recipients were resolved
+    // Fallback: if no recipients resolved, force-include admins once
+    if (empty($targets['email']) && empty($targets['whatsapp'])) {
+        $settings = getNotificationSettings();
+        if ($sendEmail) {
+            foreach ((array)$settings['admin_emails'] as $email) {
+                $targets['email'][] = [
+                    'recipient' => (string)$email,
+                    'name' => 'Admin',
+                    'type' => 'admin',
+                ];
+            }
+        }
+        if ($sendWhatsApp) {
+            foreach ((array)$settings['admin_whatsapp_numbers'] as $phone) {
+                $targets['whatsapp'][] = [
+                    'recipient' => (string)$phone,
+                    'name' => 'Admin',
+                    'type' => 'admin',
+                ];
+            }
+        }
+    }
+
+    // Abort if still empty after fallback
     if (empty($targets['email']) && empty($targets['whatsapp'])) {
         respondError('No recipients found for selected channels', 422, [
             'meta' => [
