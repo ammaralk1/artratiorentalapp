@@ -353,6 +353,13 @@ export function openProjectDetails(projectId) {
     </div>
   `;
 
+  const daysCount = calculateReservationDays(project.start, project.end);
+  const startScheduleItem = resolveProjectScheduleItem('start', project.start);
+  const endScheduleRaw = resolveProjectScheduleItem('end', project.end);
+  const endScheduleItem = endScheduleRaw
+    ? { ...endScheduleRaw, meta: (endScheduleRaw.meta ? `${endScheduleRaw.meta} — ` : '') + `${t('projects.details.labels.days', 'عدد الأيام')}: ${normalizeNumbers(String(daysCount))}` }
+    : null;
+
   const projectInfoItems = [
     {
       icon: '👤',
@@ -381,8 +388,8 @@ export function openProjectDetails(projectId) {
       label: t('projects.details.type', 'نوع المشروع'),
       value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>`
     },
-    resolveProjectScheduleItem('start', project.start),
-    resolveProjectScheduleItem('end', project.end)
+    startScheduleItem,
+    endScheduleItem
   ].filter(Boolean);
 
   const projectInfoTitle = t('projects.details.overview.heading', 'معلومات المشروع');
