@@ -189,6 +189,7 @@ export function openProjectDetails(projectId) {
         start: res.start,
         end: res.end,
         companySharePercent: null,
+        groupingSource: res,
       });
       acc.equipment += Number(breakdown.equipmentTotal || 0);
       acc.crew += Number(breakdown.crewTotal || 0);
