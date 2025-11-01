@@ -1,6 +1,18 @@
 <?php
 declare(strict_types=1);
 
+// Lightweight last-error storage for email providers
+function emailSetLastError(string $message): void
+{
+    $GLOBALS['email_last_error'] = $message;
+}
+
+function emailGetLastError(): ?string
+{
+    $err = $GLOBALS['email_last_error'] ?? null;
+    return is_string($err) && $err !== '' ? $err : null;
+}
+
 /**
  * Returns validated email config from app config.
  */
@@ -64,6 +76,7 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
         $cfg = getEmailConfig();
     } catch (Throwable $e) {
         error_log('Email config error: ' . $e->getMessage());
+        emailSetLastError('Email config error: ' . $e->getMessage());
         return false;
     }
 
@@ -120,6 +133,7 @@ function sendEmailViaSendGrid(
 ): bool {
     if (!extension_loaded('curl')) {
         error_log('curl extension is required for SendGrid.');
+        emailSetLastError('curl extension is required for SendGrid');
         return false;
     }
 
@@ -150,6 +164,7 @@ function sendEmailViaSendGrid(
     $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) {
         error_log('Failed to encode SendGrid payload.');
+        emailSetLastError('Failed to encode SendGrid payload');
         return false;
     }
 
@@ -167,8 +182,10 @@ function sendEmailViaSendGrid(
 
     $response = curl_exec($ch);
     if ($response === false) {
-        error_log('SendGrid request error: ' . curl_error($ch));
+        $curlErr = curl_error($ch);
+        error_log('SendGrid request error: ' . $curlErr);
         curl_close($ch);
+        emailSetLastError('SendGrid request error: ' . $curlErr);
         return false;
     }
     $status = (int) (curl_getinfo($ch, CURLINFO_RESPONSE_CODE) ?: 0);
@@ -178,7 +195,9 @@ function sendEmailViaSendGrid(
         return true;
     }
 
-    error_log(sprintf('SendGrid responded with status %d: %s', $status, (string)$response));
+    $msg = sprintf('SendGrid responded with status %d: %s', $status, (string)$response);
+    error_log($msg);
+    emailSetLastError($msg);
     return false;
 }
 
@@ -193,6 +212,7 @@ function sendEmailViaPhpMail(
 ): bool {
     // Basic validation
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        emailSetLastError('Invalid recipient email');
         return false;
     }
 
@@ -232,14 +252,18 @@ function sendEmailViaPhpMail(
             return true;
         }
         // Fallback: try without additional params (some hosts disallow -f)
-        error_log('phpmail() with -f failed for ' . $toEmail . '; falling back without -f');
+        $fallbackMsg = 'phpmail() with -f failed for ' . $toEmail . '; falling back without -f';
+        error_log($fallbackMsg);
         $ok2 = @mail($toEmail, $encodedSubject, $message, implode("\r\n", $headers));
         if (!$ok2) {
-            error_log('phpmail() fallback returned false for recipient ' . $toEmail);
+            $failMsg = 'phpmail() fallback returned false for recipient ' . $toEmail;
+            error_log($failMsg);
+            emailSetLastError($failMsg);
         }
         return $ok2;
     } catch (Throwable $e) {
         error_log('phpmail() failed: ' . $e->getMessage());
+        emailSetLastError('phpmail exception: ' . $e->getMessage());
         return false;
     }
 }

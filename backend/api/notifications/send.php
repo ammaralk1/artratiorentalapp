@@ -191,12 +191,13 @@ try {
     // Send
     foreach ($targets['email'] as $target) {
         $ok = sendEmail($target['recipient'], $target['name'], $subject, $htmlBody, $textBody);
-        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed');
+        $err = function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null;
+        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err);
         if ($ok) { $channelsSent['email']++; }
     }
     foreach ($targets['whatsapp'] as $target) {
         $ok = sendWhatsAppText($target['recipient'], $textBody);
-        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'whatsapp', $ok ? 'sent' : 'failed');
+        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'whatsapp', $ok ? 'sent' : 'failed', $ok ? null : 'WhatsApp send failed');
         if ($ok) { $channelsSent['whatsapp']++; }
     }
 
@@ -212,6 +213,10 @@ try {
         'targets' => [
             'email' => count($targets['email']),
             'whatsapp' => count($targets['whatsapp']),
+        ],
+        'errors' => [
+            // For quick debugging on the client side — detailed per-event stored in notification_events
+            'last_email_error' => function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null,
         ],
     ]);
 } catch (InvalidArgumentException $exception) {
