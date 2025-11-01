@@ -29,6 +29,32 @@ function getEmailConfig(): array
         ];
     }
 
+    if ($provider === 'smtp') {
+        $fromEmail = trim((string)($config['from_email'] ?? ''));
+        $fromName = trim((string)($config['from_name'] ?? ''));
+        $smtpHost = trim((string)($config['smtp_host'] ?? ''));
+        $smtpPort = (int)($config['smtp_port'] ?? 0);
+        $smtpSecure = trim((string)($config['smtp_secure'] ?? ''));
+        $smtpUser = trim((string)($config['smtp_user'] ?? ''));
+        $smtpPass = (string)($config['smtp_pass'] ?? '');
+
+        if ($fromEmail === '' || $smtpHost === '' || $smtpPort <= 0 || $smtpUser === '' || $smtpPass === '') {
+            throw new RuntimeException('Email is enabled but SMTP config is incomplete.');
+        }
+
+        return [
+            'enabled' => true,
+            'provider' => 'smtp',
+            'smtp_host' => $smtpHost,
+            'smtp_port' => $smtpPort,
+            'smtp_secure' => $smtpSecure,
+            'smtp_user' => $smtpUser,
+            'smtp_pass' => $smtpPass,
+            'from_email' => $fromEmail,
+            'from_name' => $fromName !== '' ? $fromName : $fromEmail,
+        ];
+    }
+
     if ($provider === 'sendgrid') {
         $apiKey = trim((string)($config['sendgrid_api_key'] ?? ''));
         $fromEmail = trim((string)($config['from_email'] ?? ''));

@@ -8,10 +8,24 @@ require_once __DIR__ . '/whatsapp.php';
 function getNotificationSettings(): array
 {
     $cfg = getAppConfig('notifications') ?? [];
+    $adminEmails = array_values(array_filter(array_map('trim', (array)($cfg['admin_emails'] ?? []))));
+    // Safe fallback: if admin_emails is empty, try to use the configured from_email or smtp_user
+    if (empty($adminEmails)) {
+        $fallbackFrom = (string)(getAppConfig('email', 'from_email', '') ?? '');
+        $fallbackUser = (string)(getAppConfig('email', 'smtp_user', '') ?? '');
+        foreach ([$fallbackFrom, $fallbackUser] as $maybe) {
+            $maybe = trim($maybe);
+            if ($maybe !== '' && filter_var($maybe, FILTER_VALIDATE_EMAIL)) {
+                $adminEmails[] = $maybe;
+            }
+        }
+        $adminEmails = array_values(array_unique($adminEmails));
+    }
+
     return [
         'admin_receive_all' => (bool)($cfg['admin_receive_all'] ?? false),
         'admin_only' => (bool)($cfg['admin_only'] ?? false),
-        'admin_emails' => array_values(array_filter(array_map('trim', (array)($cfg['admin_emails'] ?? [])))),
+        'admin_emails' => $adminEmails,
         'admin_whatsapp_numbers' => array_values(array_filter(array_map('trim', (array)($cfg['admin_whatsapp_numbers'] ?? [])))),
         'manager_emails' => array_values(array_filter(array_map('trim', (array)($cfg['manager_emails'] ?? [])))),
         'manager_whatsapp_numbers' => array_values(array_filter(array_map('trim', (array)($cfg['manager_whatsapp_numbers'] ?? [])))),
