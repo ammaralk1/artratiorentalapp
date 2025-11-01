@@ -185,28 +185,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         }
     }
 
-    // Admin copies with same technician content (if enabled)
-    $settings = getNotificationSettings();
-    if (!empty($settings['admin_receive_all'])) {
-        if ($channels['email']) {
-            foreach ($settings['admin_emails'] as $email) {
-                $recipient = (string) $email;
-                if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'email')) {
-                    $ok = sendEmail($recipient, 'Admin', $subject, $html, $text);
-                    recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', $recipient, 'email', $ok ? 'sent' : 'failed');
-                }
-            }
-        }
-        if ($channels['whatsapp']) {
-            foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $recipient = (string) $phone;
-                if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'whatsapp')) {
-                    $ok = sendWhatsAppText($recipient, $text);
-                    recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', $recipient, 'whatsapp', $ok ? 'sent' : 'failed');
-                }
-            }
-        }
-    }
+    // Admin will receive assignment info via dedicated admin templates in assignment/status handlers.
 }
 
 function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, string $eventType): void
@@ -349,27 +328,7 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         }
     }
 
-    // Admin copies with technician-like content first (if enabled)
-    if (!empty($settings['admin_receive_all'])) {
-        if ($channels['email']) {
-            foreach ($settings['admin_emails'] as $email) {
-                $rcpt = (string) $email;
-                if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'email')) {
-                    $ok = sendEmail($rcpt, 'Admin', $subjectTech, $htmlTech, $text);
-                    recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', $rcpt, 'email', $ok ? 'sent' : 'failed');
-                }
-            }
-        }
-        if ($channels['whatsapp']) {
-            foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $rcpt = (string) $phone;
-                if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'whatsapp')) {
-                    $ok = sendWhatsAppText($rcpt, $text);
-                    recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', $rcpt, 'whatsapp', $ok ? 'sent' : 'failed');
-                }
-            }
-        }
-    }
+    // Admin will receive project assignment info via dedicated admin template when technicians are assigned.
 
     // notify managers
     $subjectMgr = 'تم إنشاء مشروع جديد: ' . ($title !== '' ? $title : $code);
@@ -441,17 +400,39 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
         }
     }
 
-    // Admin copies
+    // Admin-specific notification: list assigned technicians and include full reservation details
     if (!empty($settings['admin_receive_all'])) {
+        $names = [];
+        foreach ($technicianIds as $techId) {
+            $c = fetchTechnicianContacts($pdo, (int)$techId);
+            if ($c && !empty($c['name'])) { $names[] = (string)$c['name']; }
+        }
+        $namesStr = $names ? implode('، ', $names) : 'فني(ون)';
+        $adminSubject = 'تم تعيين ' . $namesStr . ' على الحجز: ' . ($summary['code'] !== '' ? $summary['code'] : $summary['title']);
+        $adminHtml = '<p>تم تعيين ' . htmlspecialchars($namesStr) . ' على الحجز التالي:</p><ul>' .
+            ($summary['code'] !== '' ? '<li>كود الحجز: ' . htmlspecialchars($summary['code']) . '</li>' : '') .
+            '<li>العنوان: ' . htmlspecialchars($summary['title']) . '</li>' .
+            '<li>الوقت: ' . htmlspecialchars($summary['when']) . '</li>' .
+            ($summary['location'] !== '' ? '<li>الموقع: ' . htmlspecialchars($summary['location']) . '</li>' : '') .
+            ($summary['customer'] !== '' ? '<li>العميل: ' . htmlspecialchars($summary['customer']) . '</li>' : '') .
+            ($summary['project_code'] !== '' ? '<li>المشروع: ' . htmlspecialchars($summary['project_code']) . '</li>' : '') .
+            '</ul>';
+        $adminText = 'تعيين فنيين: ' . $namesStr . "\n" .
+            ($summary['code'] !== '' ? "كود الحجز: {$summary['code']}\n" : '') .
+            "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
+            ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
+            ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
+            ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
+
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
-                $ok = sendEmail((string)$email, 'Admin', $subject, $html, $text);
+                $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
             }
         }
         if ($channels['whatsapp']) {
             foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $ok = sendWhatsAppText((string)$phone, $text);
+                $ok = sendWhatsAppText((string)$phone, $adminText);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
             }
         }
@@ -494,17 +475,34 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
         }
     }
 
-    // Admin copies
+    // Admin-specific notification: list assigned technicians and include key project details
     if (!empty($settings['admin_receive_all'])) {
+        $names = [];
+        foreach ($technicianIds as $techId) {
+            $c = fetchTechnicianContacts($pdo, (int)$techId);
+            if ($c && !empty($c['name'])) { $names[] = (string)$c['name']; }
+        }
+        $namesStr = $names ? implode('، ', $names) : 'فني(ون)';
+        $adminSubject = 'تم تعيين ' . $namesStr . ' على المشروع: ' . ($code !== '' ? $code : $title);
+        $adminHtml = '<p>تم تعيين ' . htmlspecialchars($namesStr) . ' على المشروع التالي:</p><ul>' .
+            ($code !== '' ? '<li>كود المشروع: ' . htmlspecialchars($code) . '</li>' : '') .
+            ($title !== '' ? '<li>العنوان: ' . htmlspecialchars($title) . '</li>' : '') .
+            ($when !== '' ? '<li>الوقت: ' . htmlspecialchars($when) . '</li>' : '') .
+            '</ul>';
+        $adminText = 'تعيين فنيين: ' . $namesStr . "\n" .
+            ($code !== '' ? "كود المشروع: {$code}\n" : '') .
+            ($title !== '' ? "العنوان: {$title}\n" : '') .
+            ($when !== '' ? "الوقت: {$when}\n" : '');
+
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
-                $ok = sendEmail((string)$email, 'Admin', $subject, $html, $text);
+                $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
             }
         }
         if ($channels['whatsapp']) {
             foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $ok = sendWhatsAppText((string)$phone, $text);
+                $ok = sendWhatsAppText((string)$phone, $adminText);
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
             }
         }
@@ -545,12 +543,30 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         }
     }
 
-    // Admin copies with technician-like content first (if enabled)
+    // Admin notification with details (distinct from technician message)
     if (!empty($settings['admin_receive_all'])) {
+        $adminSubject = 'تغيير حالة الحجز: ' . ($summary['code'] !== '' ? $summary['code'] : $summary['title']);
+        $adminHtml = '<p>تغيير حالة الحجز.</p><ul>' .
+            ($summary['code'] !== '' ? '<li>الكود: ' . htmlspecialchars($summary['code']) . '</li>' : '') .
+            '<li>من: ' . htmlspecialchars($oldStatus) . ' إلى: ' . htmlspecialchars($newStatus) . '</li>' .
+            '<li>العنوان: ' . htmlspecialchars($summary['title']) . '</li>' .
+            '<li>الوقت: ' . htmlspecialchars($summary['when']) . '</li>' .
+            ($summary['location'] !== '' ? '<li>الموقع: ' . htmlspecialchars($summary['location']) . '</li>' : '') .
+            ($summary['customer'] !== '' ? '<li>العميل: ' . htmlspecialchars($summary['customer']) . '</li>' : '') .
+            ($summary['project_code'] !== '' ? '<li>المشروع: ' . htmlspecialchars($summary['project_code']) . '</li>' : '') .
+            '</ul>';
+        $adminText = 'تغيير حالة الحجز\n' .
+            ($summary['code'] !== '' ? "الكود: {$summary['code']}\n" : '') .
+            "من {$oldStatus} إلى {$newStatus}\n" .
+            "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
+            ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
+            ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
+            ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
+
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
                 if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, (string)$email, 'email')) {
-                    $ok = sendEmail((string)$email, 'Admin', $subject, $html, $text);
+                    $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText);
                     recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
                 }
             }
@@ -558,7 +574,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         if ($channels['whatsapp']) {
             foreach ($settings['admin_whatsapp_numbers'] as $phone) {
                 if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, (string)$phone, 'whatsapp')) {
-                    $ok = sendWhatsAppText((string)$phone, $text);
+                    $ok = sendWhatsAppText((string)$phone, $adminText);
                     recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
                 }
             }

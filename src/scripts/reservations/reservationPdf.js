@@ -715,7 +715,7 @@ function notifyQuoteAssetFailure() {
   quoteAssetWarningShown = true;
   const guideLabel = t('reservations.quote.toast.viewGuide', '📘 عرض دليل الحل السريع');
   const retryLabel = t('reservations.quote.toast.retry', 'إعادة المحاولة');
-  const message = t('reservations.quote.toast.assetsFailed', '⚠️ تعذر تحميل بعض الصور ضمن عرض السعر.');
+  const message = t('reservations.quote.toast.assetsFailed', '⚠️ تعذر تحميل بعض الصور ضمن عرض سعر.');
 
   const canRetry = Boolean(quoteModalRefs?.modal?.classList.contains('show'));
   const retryHandler = () => {
@@ -3958,7 +3958,7 @@ function buildQuotationHtml(options) {
         <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
       <div class="quote-header__title">
-        <h1>${escapeHtml(t('reservations.quote.title', 'عرض السعر'))}</h1>
+        <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
         <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
         <p class="quote-company-license">ترخيص إعلامي: 159460</p>
@@ -4754,7 +4754,7 @@ function ensureQuoteModal() {
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="reservationQuoteModalLabel">${escapeHtml(t('reservations.quote.previewTitle', 'معاينة عرض السعر'))}</h5>
+          <h5 class="modal-title" id="reservationQuoteModalLabel">${escapeHtml(t('reservations.quote.previewTitle', 'معاينة عرض سعر'))}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -4804,7 +4804,7 @@ function ensureQuoteModal() {
 
   const previewFrame = document.createElement('iframe');
   previewFrame.className = 'quote-preview-frame';
-  previewFrame.setAttribute('title', t('reservations.quote.previewTitle', 'معاينة عرض السعر'));
+  previewFrame.setAttribute('title', t('reservations.quote.previewTitle', 'معاينة عرض سعر'));
   previewFrame.setAttribute('loading', 'lazy');
   previewFrame.setAttribute('frameborder', '0');
   const zoomControls = document.createElement('div');
@@ -4951,7 +4951,7 @@ function updateQuoteMeta() {
   const { meta } = quoteModalRefs;
   meta.innerHTML = `
     <div class="quote-meta-card">
-      <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض السعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
+      <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض سعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
       <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
     </div>
   `;

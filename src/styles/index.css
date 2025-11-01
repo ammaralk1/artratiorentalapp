@@ -84,14 +84,14 @@ body.dark-mode .users-table-wrapper {
 html.dark-mode .users-table,
 body.dark-mode .users-table {
   --bs-table-color: var(--clr-text);
-  --bs-table-bg: rgba(15, 23, 42, 0.35);
+  --bs-table-bg: rgba(17, 24, 39, 0.72);
   --bs-table-striped-color: var(--clr-text);
-  --bs-table-striped-bg: rgba(30, 41, 59, 0.55);
+  --bs-table-striped-bg: rgba(31, 41, 55, 0.85);
   --bs-table-hover-color: var(--clr-text);
-  --bs-table-hover-bg: rgba(59, 130, 246, 0.22);
+  --bs-table-hover-bg: rgba(59, 130, 246, 0.20);
   --bs-table-active-color: var(--clr-text);
-  --bs-table-active-bg: rgba(59, 130, 246, 0.24);
-  --bs-table-border-color: rgba(148, 163, 184, 0.24);
+  --bs-table-active-bg: rgba(59, 130, 246, 0.22);
+  --bs-table-border-color: rgba(148, 163, 184, 0.32);
   background-color: transparent;
   color: var(--clr-text);
 }
@@ -137,11 +137,11 @@ body.dark-mode .users-table thead th:last-child {
 
 html.dark-mode .users-table tbody tr {
   color: var(--clr-text);
-  border-color: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.22);
 }
 
 html.dark-mode .users-table tbody tr:hover {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(59, 130, 246, 0.16);
 }
 
 html.dark-mode .users-table tbody tr,
@@ -151,7 +151,23 @@ body.dark-mode .users-table tbody tr,
 body.dark-mode .users-table tbody td,
 body.dark-mode .users-table tbody th {
   background-color: transparent;
-  border-color: rgba(148, 163, 184, 0.18) !important;
+  border-color: rgba(148, 163, 184, 0.26) !important;
+}
+
+/* Improve dark rows contrast in users list */
+html.dark-mode .users-table tbody td,
+body.dark-mode .users-table tbody td {
+  background-color: rgba(17, 24, 39, 0.74);
+}
+
+html.dark-mode .users-table tbody tr:nth-child(even) td,
+body.dark-mode .users-table tbody tr:nth-child(even) td {
+  background-color: rgba(24, 33, 59, 0.82);
+}
+
+html.dark-mode .users-table thead th,
+body.dark-mode .users-table thead th {
+  border-bottom-color: rgba(59, 130, 246, 0.38) !important;
 }
 
 .users-table tbody td,
