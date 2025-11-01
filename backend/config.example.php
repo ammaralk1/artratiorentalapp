@@ -56,8 +56,13 @@ return [
         // Optional top-level toggles (fallbacks to email.enabled/whatsapp.enabled)
         // 'email_enabled' => true,
         // 'whatsapp_enabled' => true,
-        // Default recipients for manager notifications
+        // If true, notifications go only to admins (below), not to managers
+        'admin_only' => true,
+        // Admin recipients
+        'admin_emails' => [/* 'admin@your-domain.com' */],
+        'admin_whatsapp_numbers' => [/* '+9665XXXXXXX' */],
+        // Manager recipients (used only if admin_only = false)
         'manager_emails' => [/* 'ops@your-domain.com' */],
-        'manager_whatsapp_numbers' => [/* '+9665XXXXXXX' */],
+        'manager_whatsapp_numbers' => [/* '+9665YYYYYYY' */],
     ],
 ];

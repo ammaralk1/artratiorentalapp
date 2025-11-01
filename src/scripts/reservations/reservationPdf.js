@@ -2426,7 +2426,33 @@ function collectProjectQuoteData(project) {
     .sort((a, b) => b.startTimestamp - a.startTimestamp)
     .map(({ startTimestamp, ...rest }) => rest);
 
-  const reservationsTotal = reservationsWithMeta.reduce((sum, entry) => sum + (Number(entry.total) || 0), 0);
+  // Aggregate equipment + crew totals across reservations using the same
+  // financial breakdown used in details, then combine with project
+  // production services (expenses). Discount and company share are applied
+  // at the project level as requested.
+  let reservationsEquipmentSum = 0;
+  let reservationsCrewSum = 0;
+  try {
+    reservationsForProject.forEach((reservation) => {
+      const bd = calculateDraftFinancialBreakdown({
+        items: Array.isArray(reservation.items) ? reservation.items : [],
+        technicianIds: Array.isArray(reservation.technicians) ? reservation.technicians : [],
+        crewAssignments: Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [],
+        discount: Number(reservation.discount ?? 0) || 0,
+        discountType: reservation.discountType || 'percent',
+        applyTax: false, // tax handled at project level
+        start: reservation.start,
+        end: reservation.end,
+        groupingSource: reservation,
+        companySharePercent: 0, // company share handled at project level
+      });
+      reservationsEquipmentSum += Number(bd.equipmentTotal || 0);
+      reservationsCrewSum += Number(bd.crewTotal || 0);
+    });
+  } catch (_) { /* fallback handled below */ }
+
+  const expensesTotalForProject = getProjectExpensesTotal(resolvedProject);
+  const baseSumAll = Number(reservationsEquipmentSum + reservationsCrewSum + expensesTotalForProject);
 
   // Build equipment items using the same reservation grouping logic (packages, codes, etc.)
   const equipmentItems = [];
@@ -2618,11 +2644,39 @@ function collectProjectQuoteData(project) {
       })
     : [];
 
-  const projectTotals = resolveProjectTotalsForPdf(resolvedProject);
-  const combinedTaxAmount = projectTotals.applyTax
-    ? Number(((projectTotals.subtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+  // Project-level discount/share/tax applied to (equipment + crew + services)
+  const applyTaxFlag = resolvedProject?.applyTax === true || resolvedProject?.applyTax === 'true';
+  const discountVal = Number.parseFloat(resolvedProject?.discount ?? resolvedProject?.discountValue ?? 0) || 0;
+  const discountKind = (resolvedProject?.discountType === 'amount') ? 'amount' : 'percent';
+  let discountAmountAll = discountKind === 'amount'
+    ? discountVal
+    : baseSumAll * (discountVal / 100);
+  if (!Number.isFinite(discountAmountAll) || discountAmountAll < 0) discountAmountAll = 0;
+  if (discountAmountAll > baseSumAll) discountAmountAll = baseSumAll;
+
+  const subtotalAfterDiscountAll = Math.max(0, baseSumAll - discountAmountAll);
+
+  const shareEnabled = resolvedProject?.companyShareEnabled === true
+    || resolvedProject?.company_share_enabled === true
+    || resolvedProject?.companyShareApplied === true
+    || resolvedProject?.company_share_applied === true;
+  const sharePercentRaw = Number.parseFloat(
+    resolvedProject?.companySharePercent
+      ?? resolvedProject?.company_share_percent
+      ?? resolvedProject?.companyShare
+      ?? resolvedProject?.company_share
+      ?? 0
+  ) || 0;
+  const sharePercent = shareEnabled && sharePercentRaw > 0 ? sharePercentRaw : 0;
+  const companyShareAmountAll = sharePercent > 0
+    ? Number((subtotalAfterDiscountAll * (sharePercent / 100)).toFixed(2))
     : 0;
-  const overallTotal = Number((projectTotals.subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+  const preTaxTotalAll = Number((subtotalAfterDiscountAll + companyShareAmountAll).toFixed(2));
+
+  const combinedTaxAmount = applyTaxFlag
+    ? Number((preTaxTotalAll * PROJECT_TAX_RATE).toFixed(2))
+    : 0;
+  const overallTotal = Number((preTaxTotalAll + combinedTaxAmount).toFixed(2));
 
   const paymentHistory = normalizeProjectPaymentHistoryForView(resolvedProject);
   const basePaidAmount = parsePaymentNumber(resolvedProject.paidAmount ?? resolvedProject.paid_amount) || 0;
@@ -2654,10 +2708,11 @@ function collectProjectQuoteData(project) {
   const remainingAmount = Math.max(0, Number((overallTotal - paidAmount).toFixed(2)));
 
   const totalsDisplay = {
-    projectSubtotal: formatCurrencyValue(projectTotals.subtotal, currencyLabel),
-    expensesTotal: formatCurrencyValue(projectTotals.expensesTotal, currencyLabel),
-    reservationsTotal: formatCurrencyValue(reservationsTotal, currencyLabel),
-    discountAmount: formatCurrencyValue(projectTotals.discountAmount, currencyLabel),
+    // Keep legacy fields but repurpose according to requested presentation
+    projectSubtotal: formatCurrencyValue(preTaxTotalAll, currencyLabel),
+    expensesTotal: formatCurrencyValue(expensesTotalForProject, currencyLabel),
+    reservationsTotal: formatCurrencyValue(preTaxTotalAll, currencyLabel), // used as "pre-tax total"
+    discountAmount: formatCurrencyValue(discountAmountAll, currencyLabel),
     taxAmount: formatCurrencyValue(combinedTaxAmount, currencyLabel),
     overallTotal: formatCurrencyValue(overallTotal, currencyLabel),
     paidAmount: formatCurrencyValue(paidAmount, currencyLabel),
@@ -2702,12 +2757,23 @@ function collectProjectQuoteData(project) {
     crew: projectCrew,
     equipmentItems,
     crewAssignments: reservationsForProject.flatMap((reservation) => collectReservationCrewAssignments(reservation)),
-    totals: projectTotals,
+    totals: {
+      equipmentEstimate: reservationsEquipmentSum, // informative
+      expensesTotal: expensesTotalForProject,
+      baseSubtotal: baseSumAll,
+      discountAmount: discountAmountAll,
+      subtotalAfterDiscount: subtotalAfterDiscountAll,
+      companyShareAmount: companyShareAmountAll,
+      subtotal: preTaxTotalAll,
+      applyTax: applyTaxFlag,
+      taxAmount: combinedTaxAmount,
+      totalWithTax: overallTotal
+    },
     totalsDisplay,
     projectTotals: {
       combinedTaxAmount,
       overallTotal,
-      reservationsTotal,
+      reservationsTotal: preTaxTotalAll,
       paidAmount,
       paidPercent,
       remainingAmount,
@@ -3009,14 +3075,16 @@ function buildProjectQuotationHtml({
     : '';
 
   const financialInlineItems = [];
-  if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.reservationsTotal', 'إجمالي الحجوزات'), totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
-  }
+  // ترتيب جديد: الخصم → الإجمالي قبل الضريبة → الضريبة
   if (isFieldEnabled('financialSummary', 'discountAmount')) {
-    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'الخصم'), totalsDisplay.discountAmount || formatCurrencyValue(0, currencyLabel)));
+    financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'قيمة الخصم'), totalsDisplay.discountAmount || formatCurrencyValue(0, currencyLabel)));
+  }
+  const preTaxLabel = t('projects.details.summary.preTaxTotal', 'الإجمالي قبل الضريبة');
+  if (isFieldEnabled('financialSummary', 'reservationsTotal')) {
+    financialInlineItems.push(renderTotalsItem(preTaxLabel, totalsDisplay.reservationsTotal || formatCurrencyValue(0, currencyLabel)));
   }
   if (isFieldEnabled('financialSummary', 'taxAmount')) {
-    financialInlineItems.push(renderTotalsItem(t('projects.details.summary.combinedTax', 'إجمالي الضريبة'), totalsDisplay.taxAmount || formatCurrencyValue(0, currencyLabel)));
+    financialInlineItems.push(renderTotalsItem(t('projects.details.summary.combinedTax', 'قيمة الضريبة'), totalsDisplay.taxAmount || formatCurrencyValue(0, currencyLabel)));
   }
 
   const financialFinalItems = [];

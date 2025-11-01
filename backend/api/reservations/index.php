@@ -224,6 +224,9 @@ function handleReservationsUpdate(PDO $pdo): void
         return;
     }
 
+    // Load existing reservation for change detection (status/technicians)
+    $existing = fetchReservationById($pdo, $id);
+
     $pdo->beginTransaction();
 
     try {
@@ -249,6 +252,42 @@ function handleReservationsUpdate(PDO $pdo): void
             'reservation_id' => $id,
             'changes' => array_keys($data),
         ]);
+
+        // Notifications for status change and newly assigned technicians
+        try {
+            require_once __DIR__ . '/../../services/notifications.php';
+            if (is_array($reservation)) {
+                // Status change
+                if ($existing && array_key_exists('status', $data)) {
+                    $old = normaliseStatus($existing['status'] ?? 'pending');
+                    $new = normaliseStatus($reservation['status'] ?? 'pending');
+                    if ($old !== $new) {
+                        notifyReservationStatusChanged($pdo, $reservation, $old, $new);
+                    }
+                }
+                // Technician assignment changes
+                if (array_key_exists('technicians', $data)) {
+                    $oldIds = [];
+                    if ($existing && is_array($existing['technicians'] ?? null)) {
+                        foreach ($existing['technicians'] as $t) {
+                            $oldIds[] = (int)($t['technician_id'] ?? ($t['id'] ?? 0));
+                        }
+                    }
+                    $newIds = [];
+                    if (is_array($reservation['technicians'] ?? null)) {
+                        foreach ($reservation['technicians'] as $t) {
+                            $newIds[] = (int)($t['technician_id'] ?? ($t['id'] ?? 0));
+                        }
+                    }
+                    $added = array_values(array_diff(array_unique($newIds), array_unique($oldIds)));
+                    if ($added) {
+                        notifyReservationTechnicianAssigned($pdo, $reservation, $added);
+                    }
+                }
+            }
+        } catch (Throwable $notifyError) {
+            error_log('Reservation update notifications failed: ' . $notifyError->getMessage());
+        }
 
         respond($reservation);
     } catch (Throwable $exception) {

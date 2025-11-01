@@ -246,6 +246,8 @@ function handleProjectsUpdate(PDO $pdo): void
     }
 
     $payload = $result['fields'];
+    // Capture existing technicians before update to detect assignments
+    $existingTechs = fetchProjectTechnicians($pdo, $id);
 
     if (array_key_exists('project_code', $payload) && empty($payload['project_code'])) {
         $payload['project_code'] = generateProjectCode($pdo);
@@ -296,6 +298,23 @@ function handleProjectsUpdate(PDO $pdo): void
             'project_id' => $id,
             'changes' => array_values(array_unique($changedFields)),
         ]);
+
+        // Notify newly assigned technicians (if technicians were included in payload)
+        try {
+            if ($result['technicians'] !== null) {
+                require_once __DIR__ . '/../../services/notifications.php';
+                $oldIds = [];
+                foreach ((array)$existingTechs as $t) { $oldIds[] = (int)($t['id'] ?? 0); }
+                $newIds = [];
+                foreach ((array)$project['technicians'] as $t) { $newIds[] = (int)($t['id'] ?? 0); }
+                $added = array_values(array_diff(array_unique($newIds), array_unique($oldIds)));
+                if ($added) {
+                    notifyProjectTechnicianAssigned($pdo, $project, $added);
+                }
+            }
+        } catch (Throwable $notifyError) {
+            error_log('Project update notification (assignment) failed: ' . $notifyError->getMessage());
+        }
 
         respond($project);
     } catch (Throwable $exception) {
