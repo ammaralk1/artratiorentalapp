@@ -161,8 +161,10 @@ async function sendManual() {
     const data = res?.data || {};
     const sent = data?.sent || { email: 0, whatsapp: 0 };
     const total = Number(sent.email || 0) + Number(sent.whatsapp || 0);
+    const targets = data?.targets || { email: 0, whatsapp: 0 };
+    const targetsTotal = Number(targets.email || 0) + Number(targets.whatsapp || 0);
 
-    if (total > 0) {
+    if (total > 0 || targetsTotal > 0) {
       showToast(t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح'));
     } else {
       const lastErr = data?.errors?.last_email_error;
