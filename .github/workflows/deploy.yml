@@ -1,101 +1,105 @@
-name: Build & Deploy (rclone)
+name: Deploy to cPanel via FTP (with generated config.php)
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
 
-      - run: npm ci
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Install rclone
-        run: curl https://rclone.org/install.sh | sudo bash
+      - name: Build frontend
+        run: npm run build
 
-      - name: Sync project to FTP server
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      - name: Generate backend/config.php from GitHub Secrets
+        shell: bash
         run: |
-          set -euo pipefail
-
-          rclone config create site ftp \
-            host "${FTP_SERVER}" \
-            user "${FTP_USERNAME}" \
-            pass "${FTP_PASSWORD}" \
-            port 21 \
-            tls false
-
-          rclone sync ./ site:/ \
-            --transfers 2 \
-            --checkers 2 \
-            --ftp-concurrency 2 \
-            --exclude "/.git/**" \
-            --exclude "/.github/**" \
-            --exclude "/node_modules/**" \
-            --exclude "/art-ratio.com/node_modules/**" \
-            --exclude "/tests/**" \
-            --exclude "/README.md" \
-            --exclude "/package-lock.json" \
-            --exclude "/package.json" \
-            --exclude "/art-ratio.com/package-lock.json" \
-            --exclude "/art-ratio.com/package.json" \
-            --exclude "/deploy-test*.txt" \
-            --exclude "/vite.config.js" \
-            --exclude "/vitest.config.js" \
-            --exclude "/.gitignore" \
-            --exclude "/src/**" \
-            --exclude "/ART RATIO APP.code-workspace" \
-            --exclude "/eqouipment list for app.xlsx" \
-            --exclude "/main" \
-            --exclude "/public/**" \
-            --exclude "/deploy-test-latest.txt"
-
-      - name: Create backend config from secret
-        env:
-          BACKEND_CONFIG_PHP: ${{ secrets.BACKEND_CONFIG_PHP }}
-        run: |
-          set -euo pipefail
-          if [ -z "${BACKEND_CONFIG_PHP:-}" ]; then
-            echo "BACKEND_CONFIG_PHP secret is empty."
-            exit 1
-          fi
           mkdir -p backend
-          printf '%s' "${BACKEND_CONFIG_PHP}" | base64 --decode > backend/config.php
+          cat > backend/config.php <<'PHP'
+          <?php
+          return [
+              'app' => [
+                  'timezone' => 'Asia/Riyadh',
+              ],
+              'db' => [
+                  'host' => getenv('DB_HOST') ?: '${{ secrets.DB_HOST }}',
+                  'name' => getenv('DB_NAME') ?: '${{ secrets.DB_NAME }}',
+                  'user' => getenv('DB_USER') ?: '${{ secrets.DB_USER }}',
+                  'pass' => getenv('DB_PASS') ?: '${{ secrets.DB_PASS }}',
+                  'charset' => 'utf8mb4',
+              ],
+              'security' => [
+                  'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', getenv('ALLOWED_ORIGINS') ?: '${{ secrets.ALLOWED_ORIGINS }}')))),
+                  'session_name' => 'art_ratio_session',
+                  'enforce_https' => false,
+              ],
+              'sirv' => [
+                  'client_id' => getenv('SIRV_CLIENT_ID') ?: '',
+                  'client_secret' => getenv('SIRV_CLIENT_SECRET') ?: '',
+                  'api_base' => 'https://api.sirv.com',
+                  'cdn_base' => 'https://art-ratio.sirv.com',
+                  'upload_folder' => '/art-ratio/uploads',
+              ],
+              'email' => [
+                  'enabled' => (bool) (getenv('SMTP_ENABLED') ?: '${{ secrets.SMTP_ENABLED }}'),
+                  'provider' => 'smtp',
+                  'from_email' => getenv('SMTP_FROM_EMAIL') ?: '${{ secrets.SMTP_FROM_EMAIL }}',
+                  'from_name' => getenv('SMTP_FROM_NAME') ?: '${{ secrets.SMTP_FROM_NAME }}',
+                  'smtp_host' => getenv('SMTP_HOST') ?: '${{ secrets.SMTP_HOST }}',
+                  'smtp_port' => (int) (getenv('SMTP_PORT') ?: '${{ secrets.SMTP_PORT }}'),
+                  'smtp_secure' => getenv('SMTP_SECURE') ?: '${{ secrets.SMTP_SECURE }}',
+                  'smtp_user' => getenv('SMTP_USER') ?: '${{ secrets.SMTP_USER }}',
+                  'smtp_pass' => getenv('SMTP_PASS') ?: '${{ secrets.SMTP_PASS }}',
+                  'sendgrid_api_key' => getenv('SENDGRID_API_KEY') ?: '',
+              ],
+              'whatsapp' => [
+                  'enabled' => (bool) (getenv('WHATSAPP_ENABLED') ?: '${{ secrets.WHATSAPP_ENABLED }}'),
+                  'access_token' => getenv('WHATSAPP_ACCESS_TOKEN') ?: '${{ secrets.WHATSAPP_ACCESS_TOKEN }}',
+                  'phone_number_id' => getenv('WHATSAPP_PHONE_NUMBER_ID') ?: '${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}',
+                  'api_base' => getenv('WHATSAPP_API_BASE') ?: 'https://graph.facebook.com/v20.0',
+              ],
+              'notifications' => [
+                  'admin_receive_all' => true,
+                  'admin_only' => true,
+                  'admin_emails' => array_values(array_filter(array_map('trim', explode(',', getenv('ADMIN_EMAILS') ?: '${{ secrets.ADMIN_EMAILS }}')))),
+                  'admin_whatsapp_numbers' => array_values(array_filter(array_map('trim', explode(',', getenv('ADMIN_WA_NUMBERS') ?: '${{ secrets.ADMIN_WA_NUMBERS }}')))),
+                  'manager_emails' => [],
+                  'manager_whatsapp_numbers' => [],
+              ],
+          ];
+          PHP
 
-      - name: Upload backend config via FTPS
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_PORT: ${{ secrets.FTP_PORT }}
-          FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
-        run: |
-          set -euo pipefail
-          FTP_PORT=${FTP_PORT:-21}
-          curl_args=(
-            --fail --show-error --silent
-            --ftp-create-dirs --ftp-method nocwd --ftp-pasv
-            --ftp-ssl --ssl-reqd
-            --user "${FTP_USERNAME}:${FTP_PASSWORD}"
-            -T backend/config.php
-            "ftp://${FTP_SERVER}:${FTP_PORT}/backend/config.php"
-          )
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          local-dir: .
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/tests/**
+            **/.vscode/**
+            **/.DS_Store
+            **/*.map
+            **/vitest*.*
+            **/CODE_CITATIONS.md
+            **/README.md
+            **/untitled folder/**
+            .env*
+          dangerous-clean-slate: false
 
-          if [[ "${FTP_SKIP_TLS_VERIFY:-false}" == "true" ]]; then
-            curl_args+=(--insecure)
-          fi
-
-          curl "${curl_args[@]}"
