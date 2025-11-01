@@ -75,23 +75,34 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
   const contentType = response.headers.get('content-type') || '';
   let payload = null;
 
+  // Read body once as text, then try to parse JSON if applicable
+  let bodyText = '';
+  try {
+    bodyText = await response.text();
+  } catch {
+    bodyText = '';
+  }
+
   if (contentType.includes('application/json')) {
     try {
-      payload = await response.json();
-    } catch (error) {
-      // Fallback: try reading as text to avoid hard failure on mislabelled or empty bodies
+      payload = bodyText ? JSON.parse(bodyText) : null;
+    } catch {
+      // If JSON parsing fails, preserve raw text instead of failing
+      payload = bodyText ? { raw: bodyText } : null;
+    }
+  } else if (bodyText) {
+    const trimmed = bodyText.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
       try {
-        const text = await response.text();
-        payload = text ? { raw: text } : null;
+        payload = JSON.parse(trimmed);
       } catch {
-        throw new ApiError('Failed to parse server response as JSON', {
-          status: response.status,
-        });
+        payload = { raw: bodyText };
       }
+    } else {
+      payload = { raw: bodyText };
     }
   } else {
-    const text = await response.text();
-    payload = text ? { raw: text } : null;
+    payload = null;
   }
 
   if (!response.ok) {
