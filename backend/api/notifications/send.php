@@ -49,6 +49,10 @@ try {
 
     $sendEmail = (bool)($channels['email'] ?? true);
     $sendWhatsApp = (bool)($channels['whatsapp'] ?? false);
+    // Default to email if no channel explicitly selected to reduce friction
+    if (!$sendEmail && !$sendWhatsApp) {
+        $sendEmail = true;
+    }
     if (!$sendEmail && !$sendWhatsApp) {
         throw new InvalidArgumentException('At least one channel must be enabled');
     }
