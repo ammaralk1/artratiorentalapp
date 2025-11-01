@@ -328,6 +328,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     start: reservation.start,
     end: reservation.end,
     companySharePercent: companySharePercentInput,
+    groupingSource: reservation,
   });
 
   const equipmentTotal = sanitizePriceValue(breakdown.equipmentTotal);

@@ -342,7 +342,8 @@ export function calculateDraftFinancialBreakdown({
   applyTax = false,
   start = null,
   end = null,
-  companySharePercent = null
+  companySharePercent = null,
+  groupingSource = null,
 } = {}) {
   const rentalDays = calculateReservationDays(start, end);
   // Optional override to treat all equipment as fixed (no day multiplier)
@@ -354,8 +355,14 @@ export function calculateDraftFinancialBreakdown({
       overrideNoDays = v === '1' || v === 'true' || v === 'fixed' || v === 'nodays';
     }
   } catch (_) { /* ignore */ }
-  // Use the same grouping logic used in UI/PDF to avoid double counting
-  const { groups } = buildReservationDisplayGroups({ items: Array.isArray(items) ? items : [] });
+  // Use the same grouping logic used in UI/PDF to avoid double counting.
+  // Prefer a full reservation object when provided (so packages can be
+  // resolved from reservation.packages), otherwise fall back to a simple
+  // items wrapper.
+  const sourceForGrouping = groupingSource && typeof groupingSource === 'object'
+    ? groupingSource
+    : { items: Array.isArray(items) ? items : [] };
+  const { groups } = buildReservationDisplayGroups(sourceForGrouping);
   // Heuristic: detect DB-loaded reservation items (stored unit_price per booking)
   // and avoid multiplying them by rental days.
   const inferGroupIsFixed = (group) => {
