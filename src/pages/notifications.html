@@ -6,11 +6,168 @@
   <title data-i18n data-i18n-key="notifications.title">إدارة التنبيهات</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+  <script src="/js/godaddy-monitor.js" defer></script>
+  <script src="/js/page-boot.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body class="page-shell" data-theme="light">
+<body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
-  <div class="dashboard-shell">
-    <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي"></aside>
+
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
+      <div class="flex items-center gap-3">
+        <div class="sidebar-brand-logo">
+          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+        </div>
+        <div class="text-start sidebar-brand-text">
+          <p class="text-xs text-base-content/60">Art Ratio</p>
+          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
+        </div>
+      </div>
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M18 6l-12 12"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sidebar-panel sidebar-panel--stats mt-6">
+      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام رئيسية</h3>
+      <div class="tab-buttons tab-buttons-vertical" role="tablist">
+        <a class="tab-button" href="home.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.home">
+          <span class="tab-button__content">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M5 12l-2 0"></path>
+              <path d="M5 12l2 0"></path>
+              <path d="M5 12v-7a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v7"></path>
+              <path d="M5 12l7 -7l7 7"></path>
+              <path d="M12 12v7"></path>
+            </svg>
+            <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
+          </span>
+        </a>
+        <a class="tab-button" href="dashboard.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.dashboard">
+          <span class="tab-button__content">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M3 3h18v18h-18z"></path>
+              <path d="M7 9h2v2h-2z"></path>
+              <path d="M7 13h2v2h-2z"></path>
+              <path d="M11 9h2v2h-2z"></path>
+              <path d="M11 13h2v2h-2z"></path>
+              <path d="M15 9h2v6h-2z"></path>
+            </svg>
+            <span data-i18n data-i18n-key="dashboard.quickLinks.dashboard">لوحة التحكم</span>
+          </span>
+        </a>
+        <a class="tab-button" href="projects.html" data-close-sidebar data-i18n data-i18n-key="dashboard.quickLinks.projects">
+          <span class="tab-button__content">🏗️ <span data-i18n data-i18n-key="dashboard.quickLinks.projects">المشاريع</span></span>
+        </a>
+        <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
+          <span class="tab-button__content">📅 <span data-i18n data-i18n-key="tabs.reservations">الحجوزات</span></span>
+        </a>
+        <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar>
+          <span class="tab-button__content">🎛️ <span>المعدات</span></span>
+        </a>
+        <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar>
+          <span class="tab-button__content">😎 <span>طاقم العمل</span></span>
+        </a>
+        <a class="tab-button hidden" href="notifications.html" data-admin-card>
+          <span class="tab-button__content">🔔 <span data-i18n data-i18n-key="home.notifications.title">إدارة التنبيهات</span></span>
+        </a>
+        <a class="tab-button hidden" href="users.html" data-admin-card>
+          <span class="tab-button__content">🛡️ <span data-i18n data-i18n-key="home.users.title">إدارة المستخدمين</span></span>
+        </a>
+      </div>
+    </div>
+
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="روابط مساعدة">
+      <div class="sidebar-panel sidebar-panel--help">
+        <p class="sidebar-heading mb-2">روابط مساعدة</p>
+        <div class="tab-buttons tab-buttons-vertical" role="tablist">
+          <a class="tab-button" href="notifications.html" data-close-sidebar>
+            <span class="tab-button__content">🔔 <span data-i18n data-i18n-key="notifications.title">إدارة التنبيهات</span></span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="page-grid">
+    <header class="dashboard-header">
+      <div class="dashboard-header-nav">
+        <div class="dashboard-header-start">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+            </span>
+          </button>
+          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
+            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
+              <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
+            </div>
+            <div class="dashboard-hero-brand-text">
+              <h1 class="dashboard-hero-title text-xl font-bold text-base-content">Art Ratio</h1>
+            </div>
+          </a>
+        </div>
+        <div class="dashboard-header-center">
+          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
+            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
+              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="notifications.title">إدارة التنبيهات</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M6 9l6 6l6 -6"></path>
+              </svg>
+            </button>
+            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
+              <div class="flex flex-col gap-6">
+                <div class="space-y-2 text-start">
+                  <p class="text-sm text-base-content/60" data-i18n data-i18n-key="notifications.subtitle">أرسل تنبيهات للفريق بخصوص الحجوزات/المشاريع، وحدد القنوات والمستلمين.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <a href="#notif-compose-section" class="btn btn-primary btn-sm">✉️ إنشاء رسالة</a>
+                  <a href="#notif-logs-section" class="btn btn-outline btn-sm">📜 سجل التنبيهات</a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="dashboard-header-end">
+          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 4v-1"></path>
+              <path d="M12 21v-1"></path>
+              <path d="M4 12h-1"></path>
+              <path d="M21 12h-1"></path>
+              <path d="M5.6 5.6l-.7 -.7"></path>
+              <path d="M18.4 18.4l-.7 -.7"></path>
+              <path d="M5.6 18.4l-.7 .7"></path>
+              <path d="M18.4 5.6l-.7 .7"></path>
+              <path d="M16 12a4 4 0 1 0 -4 4"></path>
+            </svg>
+            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+            </svg>
+            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+          </label>
+          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+    </header>
+
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
