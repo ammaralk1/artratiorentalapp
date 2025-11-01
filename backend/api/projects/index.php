@@ -74,14 +74,27 @@ function handleProjectsGet(PDO $pdo): void
     $params = [];
 
     if ($search !== '') {
-        $where[] = '(
-            p.title LIKE :search OR
-            p.project_code LIKE :search OR
-            p.description LIKE :search OR
-            p.client_company LIKE :search OR
-            c.full_name LIKE :search
-        )';
-        $params['search'] = '%' . $search . '%';
+        $searchable = [];
+        if (tableColumnExists($pdo, 'projects', 'title')) {
+            $searchable[] = 'p.title LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'projects', 'project_code')) {
+            $searchable[] = 'p.project_code LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'projects', 'description')) {
+            $searchable[] = 'p.description LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'projects', 'client_company')) {
+            $searchable[] = 'p.client_company LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'customers', 'full_name')) {
+            $searchable[] = 'c.full_name LIKE :search';
+        }
+
+        if ($searchable) {
+            $where[] = '(' . implode(' OR ', $searchable) . ')';
+            $params['search'] = '%' . $search . '%';
+        }
     }
 
     if ($clientId) {
@@ -1258,6 +1271,18 @@ function normaliseProjectPaymentsPayload(mixed $payload, array &$errors): array
     }
 
     return $normalized;
+}
+
+// Utility used for safe dynamic query building across environments with slightly different schemas
+function tableColumnExists(PDO $pdo, string $table, string $column): bool
+{
+    try {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
+        $stmt->execute(['col' => $column]);
+        return (bool) $stmt->fetch();
+    } catch (Throwable $_) {
+        return false;
+    }
 }
 
 function parseProjectDecimalValue(mixed $value): ?float
