@@ -37,7 +37,9 @@ function cacheElements() {
   els.logStatus = q('#log-filter-status');
   els.logQ = q('#log-filter-q');
   els.logRefresh = q('#log-refresh-btn');
+  els.logClear = q('#log-clear-btn');
   els.logBody = q('#notif-logs-body');
+  els.logPagination = q('#log-pagination');
 }
 
 function formatWhen(item, type) {
@@ -203,6 +205,7 @@ function attachEvents() {
   els.sendBtn.addEventListener('click', sendManual);
 
   const triggerLogsFetch = () => {
+    LOG_PAGE = 1;
     fetchLogs();
   };
   ['change', 'input'].forEach((ev) => {
@@ -211,10 +214,90 @@ function attachEvents() {
     els.logStatus.addEventListener(ev, triggerLogsFetch);
     els.logQ.addEventListener(ev, () => {
       if (searchTimer) clearTimeout(searchTimer);
-      searchTimer = setTimeout(fetchLogs, 350);
+      searchTimer = setTimeout(() => { LOG_PAGE = 1; fetchLogs(); }, 350);
     });
   });
   els.logRefresh.addEventListener('click', fetchLogs);
+
+  if (els.logClear) {
+    els.logClear.addEventListener('click', async () => {
+      const ok = window.confirm('هل تريد مسح السجل الحالي؟ سيتم حذف العناصر المطابقة للفلاتر.');
+      if (!ok) return;
+      try {
+        const params = buildLogParams();
+        await apiRequest(`/notifications/logs.php?${params.toString()}`, { method: 'DELETE' });
+        showToast('تم مسح السجل');
+        LOG_PAGE = 1;
+        fetchLogs();
+      } catch (e) {
+        console.error(e);
+        showToast('فشل مسح السجل');
+      }
+    });
+  }
+
+  if (els.logPagination) {
+    els.logPagination.addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-page]');
+      if (!btn) return;
+      const p = Number(btn.getAttribute('data-page')) || 1;
+      if (p === LOG_PAGE) return;
+      LOG_PAGE = p;
+      fetchLogs();
+    });
+  }
+}
+
+let LOG_PAGE = 1;
+const LOG_LIMIT = 20;
+
+function buildLogParams() {
+  const params = new URLSearchParams();
+  if (els.logEntity.value) params.set('entity_type', els.logEntity.value);
+  if (els.logChannel.value) params.set('channel', els.logChannel.value);
+  if (els.logStatus.value) params.set('status', els.logStatus.value);
+  if ((els.logQ.value || '').trim()) params.set('q', els.logQ.value.trim());
+  params.set('limit', String(LOG_LIMIT));
+  params.set('page', String(LOG_PAGE));
+  return params;
+}
+
+function renderPagination(meta) {
+  const total = Number(meta?.total || 0);
+  const pages = Number(meta?.pages || 1);
+  const page = Number(meta?.page || 1);
+  if (!els.logPagination) return;
+  if (total <= LOG_LIMIT) { els.logPagination.innerHTML = ''; return; }
+
+  const btn = (label, p, disabled = false, active = false) => {
+    const cls = ['btn','btn-sm'];
+    if (active) cls.push('btn-primary');
+    else cls.push('btn-outline');
+    if (disabled) cls.push('btn-disabled');
+    return `<button type="button" class="${cls.join(' ')}" data-page="${p}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+  };
+
+  let html = '';
+  html += btn(t('notifications.logs.prev','السابق'), Math.max(1, page - 1), page <= 1);
+
+  const maxButtons = 7;
+  const makeRange = (start,end) => Array.from({length: end-start+1}, (_,i)=>start+i);
+  let pagesList = [];
+  if (pages <= maxButtons) {
+    pagesList = makeRange(1,pages);
+  } else {
+    const left = Math.max(2, page - 1);
+    const right = Math.min(pages - 1, page + 1);
+    pagesList = [1, ...makeRange(left, right), pages];
+  }
+  for (const pNum of pagesList) {
+    if (pNum < 1 || pNum > pages) continue;
+    const active = pNum === page;
+    html += btn(String(pNum), pNum, false, active);
+  }
+
+  html += btn(t('notifications.logs.next','التالي'), Math.min(pages, page + 1), page >= pages);
+  els.logPagination.innerHTML = html;
 }
 
 function formatEventLabel(ev) {
@@ -265,14 +348,10 @@ function renderLogs(items) {
 async function fetchLogs() {
   try {
     els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
-    const params = new URLSearchParams();
-    if (els.logEntity.value) params.set('entity_type', els.logEntity.value);
-    if (els.logChannel.value) params.set('channel', els.logChannel.value);
-    if (els.logStatus.value) params.set('status', els.logStatus.value);
-    if ((els.logQ.value || '').trim()) params.set('q', els.logQ.value.trim());
-    params.set('limit', '50');
+    const params = buildLogParams();
     const res = await apiRequest(`/notifications/logs.php?${params.toString()}`);
     renderLogs(res?.data ?? []);
+    renderPagination(res?.meta || {});
   } catch (e) {
     console.error(e);
     els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-error">فشل تحميل السجل</td></tr>`;

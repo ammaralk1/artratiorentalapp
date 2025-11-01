@@ -131,6 +131,7 @@
                 </select>
                 <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
                 <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
+                <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn">🗑️ مسح السجل</button>
               </div>
             </header>
             <div class="users-table-wrapper overflow-x-auto">
@@ -153,6 +154,7 @@
                 </tbody>
               </table>
             </div>
+            <div id="log-pagination" class="flex flex-wrap gap-1 items-center justify-center mt-3"></div>
           </section>
         </div>
       </main>
