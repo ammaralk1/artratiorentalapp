@@ -75,17 +75,16 @@ function renderResults(items, type) {
 async function doSearch() {
   const type = els.entityType.value;
   const query = (els.search.value || '').trim();
-  if (query === '') {
-    els.resultsBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('notifications.table.loading','اكتب للبحث…')}</td></tr>`;
-    return;
-  }
   try {
     const path = type === 'reservation' ? '/reservations/' : '/projects/';
-    const res = await apiRequest(`${path}?search=${encodeURIComponent(query)}&limit=10`);
+    const params = new URLSearchParams();
+    if (query !== '') params.set('search', query);
+    params.set('limit', '20');
+    const res = await apiRequest(`${path}?${params.toString()}`);
     renderResults(res?.data ?? [], type);
   } catch (e) {
     console.error(e);
-    els.resultsBody.innerHTML = `<tr><td colspan="5" class="text-center text-error">فشل البحث</td></tr>`;
+    els.resultsBody.innerHTML = `<tr><td colspan=\"5\" class=\"text-center text-error\">فشل تحميل القائمة</td></tr>`;
   }
 }
 
@@ -185,7 +184,7 @@ function attachEvents() {
   els.search.addEventListener('input', debounceSearch);
   els.entityType.addEventListener('change', () => {
     els.resultsBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${t('notifications.table.loading','اكتب للبحث…')}</td></tr>`;
-    if (els.search.value) doSearch();
+    doSearch();
   });
 
   els.resultsBody.addEventListener('click', (e) => {
@@ -368,5 +367,7 @@ async function fetchLogs() {
   }
   cacheElements();
   attachEvents();
+  // Load initial list so the table is not empty
+  doSearch();
   fetchLogs();
 })();
