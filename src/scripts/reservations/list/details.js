@@ -604,8 +604,14 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         if ((g?.type || '').toLowerCase() === 'package') {
           try {
             const pkgRef = { package_code: g?.package_code || g?.packageDisplayCode || g?.barcode || g?.packageId || g?.key, packageItems: Array.isArray(g?.packageItems) ? g.packageItems : undefined };
-            const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: rentalDays });
-            const perDay = Number.isFinite(Number(pricing.perDayTotal)) ? Number(pricing.perDayTotal) : (qty * unit);
+            const unitCandidate = Number(g?.unitPrice);
+            let perDay;
+            if (Number.isFinite(unitCandidate) && unitCandidate > 0) {
+              perDay = qty * unitCandidate;
+            } else {
+              const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: rentalDays });
+              perDay = Number.isFinite(Number(pricing.perDayTotal)) ? Number(pricing.perDayTotal) : (qty * unit);
+            }
             contrib = perDay * rentalDays;
             pkgPerDaySum += perDay;
             pkgFullSum += contrib;

@@ -386,13 +386,20 @@ export function calculateDraftFinancialBreakdown({
     if (overrideNoDays) {
       equipmentFixedTotal += (qty * unit);
     } else if (isPackage) {
-      // Compute packages from their individual equipment lines
-      const pkgRef = {
-        package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
-        packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
-      };
-      const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: 1 });
-      equipmentDailyTotal += Number.isFinite(Number(pricing.perDayTotal)) ? pricing.perDayTotal : (qty * unit);
+      // Prefer the package's stored price per day when available to avoid
+      // overcounting from child item quantities. Fall back to deriving from
+      // child lines only when unit price is missing.
+      const unitCandidate = Number(group?.unitPrice);
+      if (Number.isFinite(unitCandidate) && unitCandidate > 0) {
+        equipmentDailyTotal += (qty * unitCandidate);
+      } else {
+        const pkgRef = {
+          package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
+          packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
+        };
+        const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: 1 });
+        equipmentDailyTotal += Number.isFinite(Number(pricing.perDayTotal)) ? pricing.perDayTotal : (qty * unit);
+      }
     } else if (inferredFixed) {
       // DB-loaded reservation items remain fixed (not multiplied by days)
       equipmentFixedTotal += (qty * unit);
