@@ -48,10 +48,26 @@ function sendWhatsAppText(string $toPhone, string $message): bool
         return false;
     }
 
-    $toPhone = preg_replace('/\s+/', '', $toPhone);
-    if ($toPhone === '') {
+    // Normalize phone number to E.164 digits expected by WhatsApp Cloud API
+    // Accept inputs like "+9665xxxx", "009665xxxx", "9665xxxx", or with spaces/dashes
+    $normalized = trim($toPhone);
+    // Remove all spaces and dashes/parentheses
+    $normalized = preg_replace('/[\s\-()]+/', '', $normalized) ?? '';
+    // Remove leading '+' if present
+    if (str_starts_with($normalized, '+')) {
+        $normalized = substr($normalized, 1);
+    }
+    // Convert leading international 00 to nothing (e.g., 00966 -> 966)
+    if (str_starts_with($normalized, '00')) {
+        $normalized = substr($normalized, 2);
+    }
+    // Keep only digits
+    $normalized = preg_replace('/[^0-9]/', '', $normalized) ?? '';
+
+    if ($normalized === '') {
         return false;
     }
+    $toPhone = $normalized;
 
     $endpoint = sprintf('%s/%s/messages', $cfg['api_base'], $cfg['phone_number_id']);
     $payload = [
