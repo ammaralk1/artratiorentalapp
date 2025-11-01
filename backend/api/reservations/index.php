@@ -73,13 +73,24 @@ function handleReservationsGet(PDO $pdo): void
     $params = [];
 
     if ($search !== '') {
-        $where[] = '(
-            r.reservation_code LIKE :search OR
-            r.notes LIKE :search OR
-            c.full_name LIKE :search OR
-            c.company LIKE :search
-        )';
-        $params['search'] = '%' . $search . '%';
+        $searchable = [];
+        if (tableColumnExists($pdo, 'reservations', 'reservation_code')) {
+            $searchable[] = 'r.reservation_code LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'reservations', 'notes')) {
+            $searchable[] = 'r.notes LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'customers', 'full_name')) {
+            $searchable[] = 'c.full_name LIKE :search';
+        }
+        if (tableColumnExists($pdo, 'customers', 'company')) {
+            $searchable[] = 'c.company LIKE :search';
+        }
+
+        if ($searchable) {
+            $where[] = '(' . implode(' OR ', $searchable) . ')';
+            $params['search'] = '%' . $search . '%';
+        }
     }
 
     if ($status !== '') {
@@ -1393,6 +1404,20 @@ function ensureReservationProjectColumn(PDO $pdo): void
     } catch (Throwable $error) {
         $checked = true;
         error_log('Failed to ensure project_id column on reservations table: ' . $error->getMessage());
+    }
+}
+
+/**
+ * Checks if a given column exists on a table (best-effort, safe to use at runtime).
+ */
+function tableColumnExists(PDO $pdo, string $table, string $column): bool
+{
+    try {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
+        $stmt->execute(['col' => $column]);
+        return (bool) $stmt->fetch();
+    } catch (Throwable $_) {
+        return false;
     }
 }
 
