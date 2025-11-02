@@ -41,11 +41,21 @@ try {
 
     $token = randomToken(18);
     $normalizedPhone = $phone !== '' ? telegramNormalizePhone($phone) : '';
-    $stmt = $pdo->prepare('INSERT INTO telegram_links (token, context, technician_id, phone) VALUES (:t, :c, :tid, :p)');
+    $techName = null;
+    if ($technicianId > 0) {
+      try {
+        $s = $pdo->prepare('SELECT full_name FROM technicians WHERE id = :id LIMIT 1');
+        $s->execute(['id' => $technicianId]);
+        $n = $s->fetchColumn();
+        if ($n) $techName = (string)$n;
+      } catch (Throwable $_) { /* ignore */ }
+    }
+    $stmt = $pdo->prepare('INSERT INTO telegram_links (token, context, technician_id, technician_name, phone) VALUES (:t, :c, :tid, :name, :p)');
     $stmt->execute([
         't' => $token,
         'c' => $context,
         'tid' => $technicianId > 0 ? $technicianId : null,
+        'name' => $techName,
         'p' => $normalizedPhone !== '' ? $normalizedPhone : null,
     ]);
 
