@@ -191,12 +191,27 @@ function getTelegramChatIdForTechnician(PDO $pdo, array $contacts): ?string
     $cid = isset($contacts['telegram_chat_id']) ? (string)$contacts['telegram_chat_id'] : '';
     if ($cid !== '') return $cid;
     $phone = isset($contacts['phone']) ? trim((string)$contacts['phone']) : '';
-    if ($phone === '') return null;
+    $techId = isset($contacts['id']) ? (int)$contacts['id'] : 0;
     try {
-        $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
-        $stmt->execute(['p' => $phone]);
-        $found = $stmt->fetchColumn();
-        return $found ? (string)$found : null;
+        // Ensure table exists
+        $chk = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+        if (!$chk || !$chk->fetch()) {
+            return null;
+        }
+        // Prefer lookup by technician_id if available; fallback to phone match
+        if ($techId > 0) {
+            $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE technician_id = :tid AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
+            $stmt->execute(['tid' => $techId]);
+            $found = $stmt->fetchColumn();
+            if ($found) return (string)$found;
+        }
+        if ($phone !== '') {
+            $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
+            $stmt->execute(['p' => $phone]);
+            $found = $stmt->fetchColumn();
+            if ($found) return (string)$found;
+        }
+        return null;
     } catch (Throwable $_) {
         return null;
     }
