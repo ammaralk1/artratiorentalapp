@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
+require_once __DIR__ . '/../../services/telegram.php';
 
 use PDO;
 use Throwable;
@@ -65,6 +66,7 @@ try {
 
         $items = [];
         while ($row = $stmt->fetch()) {
+            $recipientDisplay = buildRecipientDisplay($pdo, (string)($row['recipient_type'] ?? ''), (string)($row['recipient_identifier'] ?? ''), (string)($row['channel'] ?? ''));
             $items[] = [
                 'id' => (int) $row['id'],
                 'event_type' => $row['event_type'],
@@ -72,6 +74,7 @@ try {
                 'entity_id' => (int) $row['entity_id'],
                 'recipient_type' => $row['recipient_type'],
                 'recipient_identifier' => $row['recipient_identifier'],
+                'recipient_display' => $recipientDisplay,
                 'channel' => $row['channel'],
                 'status' => $row['status'],
                 'error' => $row['error'] ?? null,
@@ -125,4 +128,62 @@ try {
     respondError('Unexpected server error', 500, [
         'details' => $exception->getMessage(),
     ]);
+}
+
+function buildRecipientDisplay(PDO $pdo, string $type, string $identifier, string $channel): string
+{
+    $id = trim($identifier);
+    if ($type === 'technician') {
+        // Try by telegram_chat_id
+        try {
+            if ($id !== '') {
+                $stmt = $pdo->prepare('SELECT full_name FROM technicians WHERE telegram_chat_id = :id LIMIT 1');
+                $stmt->execute(['id' => $id]);
+                $name = $stmt->fetchColumn();
+                if ($name) return (string)$name;
+            }
+            // Try by email match
+            if ($id !== '') {
+                $stmt = $pdo->prepare('SELECT full_name FROM technicians WHERE email = :em LIMIT 1');
+                $stmt->execute(['em' => $id]);
+                $name = $stmt->fetchColumn();
+                if ($name) return (string)$name;
+            }
+            // Try by phone normalized
+            if ($id !== '') {
+                $digits = telegramNormalizePhone($id);
+                if ($digits !== '') {
+                    $q = $pdo->prepare('SELECT id, full_name, phone FROM technicians');
+                    $q->execute();
+                    while ($row = $q->fetch()) {
+                        $p = telegramNormalizePhone((string)($row['phone'] ?? ''));
+                        if ($p !== '' && $p === $digits) {
+                            return (string)($row['full_name'] ?? '');
+                        }
+                    }
+                }
+            }
+            // Try via telegram_links back-reference
+            if ($id !== '') {
+                $stmt = $pdo->prepare('SELECT technician_id FROM telegram_links WHERE chat_id = :cid AND technician_id IS NOT NULL ORDER BY used_at DESC LIMIT 1');
+                $stmt->execute(['cid' => $id]);
+                $tid = (int)($stmt->fetchColumn() ?: 0);
+                if ($tid > 0) {
+                    $s2 = $pdo->prepare('SELECT full_name FROM technicians WHERE id = :tid LIMIT 1');
+                    $s2->execute(['tid' => $tid]);
+                    $name = $s2->fetchColumn();
+                    if ($name) return (string)$name;
+                }
+            }
+        } catch (Throwable $_) {}
+        // Fallback label
+        return 'Technician: ' . $id;
+    }
+    if ($type === 'admin') {
+        return 'Admin: ' . $id;
+    }
+    if ($type) {
+        return ucfirst($type) . ': ' . $id;
+    }
+    return $id;
 }

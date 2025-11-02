@@ -440,7 +440,7 @@ function renderLogs(items) {
     const time = row.created_at || '—';
     const event = formatEventLabel(row.event_type || '');
     const entity = `${row.entity_type || ''} #${row.entity_id || ''}`;
-    const recipient = `${row.recipient_type || ''}: ${row.recipient_identifier || ''}`;
+    const recipient = row.recipient_display || `${row.recipient_type || ''}: ${row.recipient_identifier || ''}`;
     const channel = row.channel || '';
     const status = row.status || '';
     const error = (row.error || '').toString().slice(0, 140);
