@@ -78,6 +78,10 @@ function cacheElements() {
   els.tgAdminCopyBtn = q('#tg-admin-copy-btn');
   els.tgAdminBody = q('#tg-admin-body');
   els.tgAdminLinkBox = q('#tg-admin-link-box');
+  // Webhook elements
+  els.tgWebhookRefresh = q('#tg-webhook-refresh');
+  els.tgWebhookSet = q('#tg-webhook-set');
+  els.tgWebhookInfo = q('#tg-webhook-info');
   // Chat elements
   els.tgChatSearch = q('#tg-chat-tech-search');
   els.tgChatPick = q('#tg-chat-pick-btn');
@@ -453,6 +457,9 @@ function attachEvents() {
       await unlinkAdmin(cid);
     });
   }
+  // Webhook handlers
+  if (els.tgWebhookRefresh) els.tgWebhookRefresh.addEventListener('click', fetchWebhookInfo);
+  if (els.tgWebhookSet) els.tgWebhookSet.addEventListener('click', setWebhook);
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
   }
