@@ -17,6 +17,7 @@ try {
     ensureNotificationEventsTable($pdo);
 
     if ($method === 'GET') {
+        try {
         // If the table still does not exist (e.g., DB user lacks CREATE/ALTER privileges),
         // degrade gracefully by returning an empty list instead of a 500.
         try {
@@ -131,6 +132,19 @@ try {
             'pages' => $pages,
         ]);
         exit;
+        } catch (Throwable $e) {
+            // Graceful fallback: do not block the UI on logs errors in production
+            respond([], 200, [
+                'limit' => 0,
+                'offset' => 0,
+                'count' => 0,
+                'total' => 0,
+                'page' => 1,
+                'pages' => 1,
+                'error' => $e->getMessage(),
+            ]);
+            exit;
+        }
     }
 
     if ($method === 'DELETE') {
