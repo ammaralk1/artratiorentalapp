@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS telegram_links (
   token VARCHAR(64) NOT NULL UNIQUE,
   context VARCHAR(16) NOT NULL DEFAULT 'technician', -- 'technician' | 'admin'
   technician_id BIGINT UNSIGNED NULL,
+  technician_name VARCHAR(191) NULL,
   phone VARCHAR(32) NULL,
   chat_id VARCHAR(64) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -12,4 +13,3 @@ CREATE TABLE IF NOT EXISTS telegram_links (
   INDEX idx_tech (technician_id),
   INDEX idx_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

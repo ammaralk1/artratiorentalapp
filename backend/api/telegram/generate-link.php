@@ -30,6 +30,7 @@ try {
       token VARCHAR(64) NOT NULL UNIQUE,
       context VARCHAR(16) NOT NULL DEFAULT "technician",
       technician_id BIGINT UNSIGNED NULL,
+      technician_name VARCHAR(191) NULL,
       phone VARCHAR(32) NULL,
       chat_id VARCHAR(64) NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
