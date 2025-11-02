@@ -150,26 +150,44 @@ async function handleSelect(id, type) {
 
 function updatePreviewBoxFromResult(data, { prefix } = {}) {
   if (!els.previewBox) return;
+  const html = buildPreviewHtml(data, { prefix });
+  els.previewBox.innerHTML = html;
+}
+
+function buildPreviewHtml(data, { prefix } = {}) {
   const sent = data?.sent || null;
-  const targets = data?.targets || null;
-  const details = data?.targets_detail || null;
-  let emailCount = Number(targets?.email || 0);
-  let tgCount = Number(targets?.telegram || 0);
-  if ((!emailCount || !tgCount) && details) {
-    if (!emailCount && Array.isArray(details.email)) emailCount = details.email.length;
-    if (!tgCount && Array.isArray(details.telegram)) tgCount = details.telegram.length;
-  }
-  const parts = [];
+  const targets = data?.targets || {};
+  const details = data?.targets_detail || {};
+  let emailCount = Number(targets.email || 0);
+  let tgCount = Number(targets.telegram || 0);
+  const emailList = Array.isArray(details.email) ? details.email : [];
+  const tgList = Array.isArray(details.telegram) ? details.telegram : [];
+  if (!emailCount && emailList.length) emailCount = emailList.length;
+  if (!tgCount && tgList.length) tgCount = tgList.length;
+
+  const joinNames = (arr, limit = 10) => {
+    const names = arr.map((r) => String(r.name || r.recipient || '')).filter(Boolean);
+    const uniq = Array.from(new Set(names));
+    if (!uniq.length) return '';
+    if (uniq.length <= limit) return uniq.join('، ');
+    return uniq.slice(0, limit).join('، ') + `، و+${uniq.length - limit} آخرين`;
+  };
+
+  const lines = [];
   if (emailCount) {
-    if (sent && typeof sent.email === 'number') parts.push(`إيميل: ${sent.email}/${emailCount}`);
-    else parts.push(`إيميل: ${emailCount}`);
+    const countLabel = sent && typeof sent.email === 'number' ? `${sent.email}/${emailCount}` : String(emailCount);
+    const who = joinNames(emailList);
+    lines.push(`إيميل: <strong>${countLabel}</strong>${who ? ` — ${who}` : ''}`);
   }
   if (tgCount) {
-    if (sent && typeof sent.telegram === 'number') parts.push(`تليغرام: ${sent.telegram}/${tgCount}`);
-    else parts.push(`تليغرام: ${tgCount}`);
+    const countLabel = sent && typeof sent.telegram === 'number' ? `${sent.telegram}/${tgCount}` : String(tgCount);
+    const who = joinNames(tgList);
+    lines.push(`تليغرام: <strong>${countLabel}</strong>${who ? ` — ${who}` : ''}`);
   }
-  const text = (prefix ? `${prefix} — ` : '') + (parts.join(' | ') || 'لا مستلمين مطابقين.');
-  els.previewBox.textContent = text;
+
+  const header = prefix ? `<span class="text-base-content/80">${prefix}</span> — ` : '';
+  const body = lines.length ? lines.join(' | ') : 'لا مستلمين مطابقين.';
+  return header + body;
 }
 
 async function sendManual() {
@@ -269,17 +287,9 @@ async function previewTargets() {
       },
     });
     const data = res?.data || {};
-    const emailCount = Number(data?.targets?.email || 0);
-    const tgCount = Number(data?.targets?.telegram || 0);
-    const lines = [];
-    if (emailCount) lines.push(`إيميل: ${emailCount}`);
-    if (tgCount) lines.push(`تليغرام: ${tgCount}`);
-    const details = data?.targets_detail || {};
-    const sample = [];
-    if (Array.isArray(details.email) && details.email.length) sample.push(`مثال بريد: ${details.email[0].recipient}`);
-    if (Array.isArray(details.telegram) && details.telegram.length) sample.push(`مثال تيليجرام: ${details.telegram[0].recipient}`);
-    const txt = lines.join(' | ') + (sample.length ? ` — ${sample.join(' • ')}` : '');
-    if (els.previewBox) els.previewBox.textContent = txt || 'لا مستلمين مطابقين.';
+    if (els.previewBox) {
+      els.previewBox.innerHTML = buildPreviewHtml(data);
+    }
     showToast('تم تحديث المعاينة');
   } catch (e) {
     console.error(e);
