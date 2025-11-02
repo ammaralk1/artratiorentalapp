@@ -617,7 +617,8 @@ async function unlinkTechnician(technicianId) {
     fetchTechs();
   } catch (e) {
     console.error(e);
-    showToast('فشل إلغاء الربط');
+    const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل إلغاء الربط';
+    showToast(msg);
   }
 }
 
@@ -634,6 +635,7 @@ async function unlinkAdmin(chatId) {
     fetchAdminLinks();
   } catch (e) {
     console.error(e);
-    showToast('فشل إلغاء ربط الإدمن');
+    const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل إلغاء ربط الإدمن';
+    showToast(msg);
   }
 }
