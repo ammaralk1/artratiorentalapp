@@ -47,6 +47,24 @@ function cacheElements() {
   els.logBody = q('#notif-logs-body');
   els.logPagination = q('#log-pagination');
   els.logFailedSummary = q('#notif-logs-failed-summary');
+  // Templates manager elements
+  els.tplRefresh = q('#tpl-refresh');
+  els.tplNew = q('#tpl-new');
+  els.tplVars = q('#tpl-vars');
+  els.tplVarsBox = q('#tpl-vars-box');
+  els.tplTable = q('#tpl-table');
+  els.tplBody = q('#tpl-body');
+  els.tplForm = q('#tpl-form');
+  els.tplId = q('#tpl-id');
+  els.tplName = q('#tpl-name');
+  els.tplChannel = q('#tpl-channel');
+  els.tplAttachment = q('#tpl-attachment');
+  els.tplAttachments = q('#tpl-attachments');
+  els.tplSubject = q('#tpl-subject');
+  els.tplText = q('#tpl-text');
+  els.tplHtml = q('#tpl-html');
+  els.tplSave = q('#tpl-save');
+  els.tplCancel = q('#tpl-cancel');
   // Telegram linking helpers
   els.tgSearch = q('#tg-tech-search');
   els.tgSearchBtn = q('#tg-tech-search-btn');
@@ -483,6 +501,38 @@ function attachEvents() {
   if (els.tplVars) els.tplVars.addEventListener('click', () => { if (els.tplVarsBox) els.tplVarsBox.classList.toggle('hidden'); });
   if (els.tplSave) els.tplSave.addEventListener('click', saveTemplate);
   if (els.tplCancel) els.tplCancel.addEventListener('click', () => closeTemplateForm());
+  if (els.tplBody) {
+    // Persistent delegation for edit/delete buttons inside the table
+    els.tplBody.addEventListener('click', async (ev) => {
+      const editBtn = ev.target.closest('[data-edit-id]');
+      const delBtn = ev.target.closest('[data-delete-id]');
+      try {
+        if (editBtn) {
+          const id = Number(editBtn.getAttribute('data-edit-id')) || 0;
+          if (!id) return;
+          const res = await apiRequest(`/notifications/templates.php?id=${encodeURIComponent(id)}`);
+          const tpl = res?.data || res || null;
+          if (!tpl) return;
+          openTemplateForm(tpl);
+          return;
+        }
+        if (delBtn) {
+          const id = Number(delBtn.getAttribute('data-delete-id')) || 0;
+          if (!id) return;
+          const ok = window.confirm('تأكيد حذف القالب؟');
+          if (!ok) return;
+          await apiRequest(`/notifications/templates.php?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          showToast('تم حذف القالب');
+          await loadTemplatesManager();
+          await fetchTemplates();
+          return;
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('فشل تنفيذ العملية على القالب');
+      }
+    });
+  }
 
   if (els.logClear) {
     els.logClear.addEventListener('click', async () => {
@@ -759,7 +809,100 @@ async function fetchDiagnostics() {
   fetchWebhookInfo();
   fetchDiagnostics();
   fetchTemplates();
+  loadTemplatesManager();
 })();
+
+async function loadTemplatesManager() {
+  if (!els.tplBody) return;
+  try {
+    els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">جارٍ التحميل…</td></tr>';
+    const res = await apiRequest('/notifications/templates.php?limit=100');
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) {
+      els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">لا توجد قوالب</td></tr>';
+      return;
+    }
+    els.tplBody.innerHTML = items.map((t) => {
+      const id = Number(t.id || 0);
+      const name = (t.name || '').toString();
+      const chan = (t.channel || '').toString();
+      const updated = (t.updated_at || '').toString() || '—';
+      return `<tr>
+        <td>${name}</td>
+        <td>${chan}</td>
+        <td>${updated}</td>
+        <td>
+          <button type="button" class="btn btn-sm" data-edit-id="${id}">تعديل</button>
+          <button type="button" class="btn btn-sm btn-outline btn-error" data-delete-id="${id}">حذف</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    els.tplBody.innerHTML = '<tr><td colspan="4" class="text-center text-error">فشل تحميل القوالب</td></tr>';
+  }
+}
+
+function openTemplateForm(tpl = null) {
+  if (!els.tplForm) return;
+  els.tplForm.hidden = false;
+  // Fill or clear fields
+  const set = (el, val) => { if (el) el.value = val != null ? String(val) : ''; };
+  set(els.tplId, tpl?.id || '');
+  set(els.tplName, tpl?.name || '');
+  if (els.tplChannel) els.tplChannel.value = tpl?.channel || 'both';
+  set(els.tplAttachment, tpl?.attachment_url || '');
+  const atts = Array.isArray(tpl?.attachment_urls) ? tpl.attachment_urls : [];
+  set(els.tplAttachments, atts.length ? atts.join('\n') : '');
+  set(els.tplSubject, tpl?.subject || '');
+  set(els.tplText, tpl?.body_text || '');
+  set(els.tplHtml, tpl?.body_html || '');
+  try { els.tplName?.focus(); } catch (_) {}
+}
+
+function closeTemplateForm() {
+  if (!els.tplForm) return;
+  els.tplForm.hidden = true;
+  ['tplId','tplName','tplAttachment','tplAttachments','tplSubject','tplText','tplHtml'].forEach((k) => {
+    if (els[k]) els[k].value = '';
+  });
+  if (els.tplChannel) els.tplChannel.value = 'both';
+}
+
+async function saveTemplate() {
+  if (!els.tplName || !els.tplChannel) return;
+  const id = Number(els.tplId?.value || '') || 0;
+  const name = (els.tplName.value || '').trim();
+  const channel = (els.tplChannel.value || 'both');
+  const subject = (els.tplSubject?.value || '').trim();
+  const body_text = (els.tplText?.value || '').trim();
+  const body_html = (els.tplHtml?.value || '').trim();
+  const attachment_url = (els.tplAttachment?.value || '').trim() || null;
+  const attachment_urls = (els.tplAttachments?.value || '').split('\n').map(s => s.trim()).filter(Boolean);
+  if (!name) { showToast('اكتب اسم القالب'); return; }
+  try {
+    if (id > 0) {
+      await apiRequest(`/notifications/templates.php?id=${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: { name, channel, subject, body_text, body_html, attachment_url, attachment_urls },
+      });
+      showToast('تم تحديث القالب');
+    } else {
+      await apiRequest('/notifications/templates.php', {
+        method: 'POST',
+        body: { name, channel, subject, body_text, body_html, attachment_url, attachment_urls },
+      });
+      showToast('تم إنشاء القالب');
+    }
+    closeTemplateForm();
+    await loadTemplatesManager();
+    await fetchTemplates();
+  } catch (e) {
+    console.error(e);
+    const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل حفظ القالب';
+    showToast(msg);
+  }
+}
 
 let CHAT_SELECTED_TECH = null; // { id, name, chat_id? }
 
