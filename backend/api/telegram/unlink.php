@@ -56,6 +56,12 @@ try {
             $hasUsedAtCol = $c3 && $c3->fetch() ? true : false;
         }
     } catch (Throwable $_) { $hasLinksTable = false; }
+    // Check technicians table has telegram_chat_id column (migration may be pending)
+    $hasTechChatCol = false;
+    try {
+        $cT = $pdo->query("SHOW COLUMNS FROM technicians LIKE 'telegram_chat_id'");
+        $hasTechChatCol = $cT && $cT->fetch() ? true : false;
+    } catch (Throwable $_) { $hasTechChatCol = false; }
 
     if ($target === 'technician') {
         $technicianId = isset($payload['technician_id']) ? (int)$payload['technician_id'] : 0;
@@ -83,10 +89,14 @@ try {
             $digits = $ph !== '' ? telegramNormalizePhone($ph) : '';
         } catch (Throwable $_) {}
 
-        // Clear technician chat id
-        $stmt = $pdo->prepare('UPDATE technicians SET telegram_chat_id = NULL WHERE id = :id');
-        $stmt->execute(['id' => $technicianId]);
-        $result['updated'] = (int)$stmt->rowCount();
+        // Clear technician chat id if column exists
+        if ($hasTechChatCol) {
+            $stmt = $pdo->prepare('UPDATE technicians SET telegram_chat_id = NULL WHERE id = :id');
+            $stmt->execute(['id' => $technicianId]);
+            $result['updated'] = (int)$stmt->rowCount();
+        } else {
+            $result['updated'] = 0;
+        }
 
         // Clear related link rows so UI does not consider them linked anymore
         if ($hasLinksTable) {
