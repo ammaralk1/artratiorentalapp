@@ -42,6 +42,7 @@ function ensureNotificationEventsTable(PDO $pdo): void
     if ($checked) { return; }
 
     try {
+        // Create table without unique constraints so repeated sends are logged as separate rows.
         $pdo->exec('CREATE TABLE IF NOT EXISTS notification_events (
             id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
             event_type VARCHAR(64) NOT NULL,
@@ -52,9 +53,19 @@ function ensureNotificationEventsTable(PDO $pdo): void
             channel VARCHAR(16) NOT NULL,
             status VARCHAR(16) NOT NULL,
             error TEXT NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_event (event_type, entity_type, entity_id, recipient_identifier, channel)
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+        // If an older schema exists with a unique index, drop it to allow duplicates in the log.
+        try {
+            $stmt = $pdo->query("SHOW INDEX FROM notification_events WHERE Key_name = 'uq_event'");
+            if ($stmt && $stmt->fetch()) {
+                $pdo->exec('DROP INDEX uq_event ON notification_events');
+            }
+        } catch (Throwable $_dropErr) {
+            // ignore index drop errors to avoid breaking runtime
+        }
+
         $checked = true;
     } catch (Throwable $e) {
         error_log('Failed ensuring notification_events table: ' . $e->getMessage());
@@ -85,10 +96,9 @@ function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType
 {
     ensureNotificationEventsTable($pdo);
     try {
-        // Upsert to avoid duplicate-key errors and keep latest status visible
+        // Always insert a new row to keep a full history of sends.
         $sql = 'INSERT INTO notification_events (event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error)
-                VALUES (:event_type, :entity_type, :entity_id, :recipient_type, :recipient_identifier, :channel, :status, :error)
-                ON DUPLICATE KEY UPDATE status = VALUES(status), error = VALUES(error), created_at = CURRENT_TIMESTAMP';
+                VALUES (:event_type, :entity_type, :entity_id, :recipient_type, :recipient_identifier, :channel, :status, :error)';
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             'event_type' => $eventType,

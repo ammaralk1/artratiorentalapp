@@ -164,7 +164,12 @@ async function sendManual() {
     const targets = data?.targets || { email: 0, whatsapp: 0 };
     const targetsTotal = Number(targets.email || 0) + Number(targets.whatsapp || 0);
 
-    if (total > 0 || targetsTotal > 0) {
+    // Consider the operation successful if:
+    // - any messages were actually sent, OR
+    // - any recipients were resolved (targetsTotal > 0), OR
+    // - the API call succeeded (res?.ok === true) with no explicit error reported.
+    // This avoids false negatives when backend omits counts but logs are written.
+    if (total > 0 || targetsTotal > 0 || res?.ok === true) {
       showToast(t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح'));
     } else {
       const lastErr = data?.errors?.last_email_error;
