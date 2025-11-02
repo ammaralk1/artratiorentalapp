@@ -10,33 +10,36 @@ use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-try {
-    $pdo = getDatabaseConnection();
-    requireAuthenticated();
+// Guard: only dispatch when this file is the direct entrypoint
+if (!defined('API_INCLUDE_MODE')) {
+    try {
+        $pdo = getDatabaseConnection();
+        requireAuthenticated();
 
-    switch ($method) {
-        case 'GET':
-            handleProjectsGet($pdo);
-            break;
-        case 'POST':
-            handleProjectsCreate($pdo);
-            break;
-        case 'PUT':
-        case 'PATCH':
-            handleProjectsUpdate($pdo);
-            break;
-        case 'DELETE':
-            handleProjectsDelete($pdo);
-            break;
-        default:
-            respondError('Method not allowed', 405);
+        switch ($method) {
+            case 'GET':
+                handleProjectsGet($pdo);
+                break;
+            case 'POST':
+                handleProjectsCreate($pdo);
+                break;
+            case 'PUT':
+            case 'PATCH':
+                handleProjectsUpdate($pdo);
+                break;
+            case 'DELETE':
+                handleProjectsDelete($pdo);
+                break;
+            default:
+                respondError('Method not allowed', 405);
+        }
+    } catch (InvalidArgumentException $exception) {
+        respondError($exception->getMessage(), 400);
+    } catch (Throwable $exception) {
+        respondError('Unexpected server error', 500, [
+            'details' => $exception->getMessage(),
+        ]);
     }
-} catch (InvalidArgumentException $exception) {
-    respondError($exception->getMessage(), 400);
-} catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
 }
 
 function handleProjectsGet(PDO $pdo): void

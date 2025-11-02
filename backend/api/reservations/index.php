@@ -8,33 +8,37 @@ use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-try {
-    $pdo = getDatabaseConnection();
-    requireAuthenticated();
+// Only run the HTTP dispatcher when this file is the direct entrypoint.
+// When included from another endpoint (e.g. to use helper functions), skip dispatch.
+if (!defined('API_INCLUDE_MODE')) {
+    try {
+        $pdo = getDatabaseConnection();
+        requireAuthenticated();
 
-    switch ($method) {
-        case 'GET':
-            handleReservationsGet($pdo);
-            break;
-        case 'POST':
-            handleReservationsCreate($pdo);
-            break;
-        case 'PUT':
-        case 'PATCH':
-            handleReservationsUpdate($pdo);
-            break;
-        case 'DELETE':
-            handleReservationsDelete($pdo);
-            break;
-        default:
-            respondError('Method not allowed', 405);
+        switch ($method) {
+            case 'GET':
+                handleReservationsGet($pdo);
+                break;
+            case 'POST':
+                handleReservationsCreate($pdo);
+                break;
+            case 'PUT':
+            case 'PATCH':
+                handleReservationsUpdate($pdo);
+                break;
+            case 'DELETE':
+                handleReservationsDelete($pdo);
+                break;
+            default:
+                respondError('Method not allowed', 405);
+        }
+    } catch (InvalidArgumentException $exception) {
+        respondError($exception->getMessage(), 400);
+    } catch (Throwable $exception) {
+        respondError('Unexpected server error', 500, [
+            'details' => $exception->getMessage(),
+        ]);
     }
-} catch (InvalidArgumentException $exception) {
-    respondError($exception->getMessage(), 400);
-} catch (Throwable $exception) {
-    respondError('Unexpected server error', 500, [
-        'details' => $exception->getMessage(),
-    ]);
 }
 
 function handleReservationsGet(PDO $pdo): void

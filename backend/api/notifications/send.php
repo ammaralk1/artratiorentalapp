@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
+// Ensure included API controllers don't auto-dispatch when required here
+if (!defined('API_INCLUDE_MODE')) { define('API_INCLUDE_MODE', true); }
 
 use InvalidArgumentException;
 use Throwable;
