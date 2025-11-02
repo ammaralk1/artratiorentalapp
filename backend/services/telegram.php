@@ -145,6 +145,36 @@ function sendTelegramPhoto(string $chatId, string $photoUrl, ?string $caption = 
 }
 
 /**
+ * Send media group (multiple photos). $media should be an array of ['type'=>'photo','media'=>url,'caption'=>optional]
+ */
+function sendTelegramMediaGroup(string $chatId, array $media): bool
+{
+    try { $cfg = getTelegramConfig(); } catch (Throwable $e) { telegramSetLastError('Telegram config error: ' . $e->getMessage()); return false; }
+    if (empty($cfg['enabled'])) { telegramSetLastError('Telegram disabled by configuration'); return false; }
+    if (!extension_loaded('curl')) { telegramSetLastError('curl extension is required for Telegram Bot API'); return false; }
+    if (empty($media)) { telegramSetLastError('No media to send'); return false; }
+    $endpoint = sprintf('%s/bot%s/sendMediaGroup', $cfg['api_base'], $cfg['bot_token']);
+    $payload = [ 'chat_id' => trim($chatId), 'media' => $media ];
+    $ch = curl_init($endpoint);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [ 'Content-Type: application/json' ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_TIMEOUT => 30,
+    ]);
+    $response = curl_exec($ch);
+    if ($response === false) { $err = curl_error($ch); curl_close($ch); telegramSetLastError('Telegram request error: ' . $err); return false; }
+    $status = (int)(curl_getinfo($ch, CURLINFO_RESPONSE_CODE) ?: 0);
+    curl_close($ch);
+    $data = json_decode((string)$response, true);
+    if ($status >= 200 && $status < 300) { return (bool)($data['ok'] ?? true); }
+    $desc = is_array($data) ? (string)($data['description'] ?? '') : '';
+    telegramSetLastError(sprintf('Telegram responded with status %d%s', $status, $desc !== '' ? (': ' . $desc) : ''));
+    return false;
+}
+
+/**
  * Returns Bot info (getMe) including username. Cached per request.
  */
 function telegramGetMe(): ?array

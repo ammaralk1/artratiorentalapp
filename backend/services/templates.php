@@ -12,6 +12,7 @@ function ensureTemplatesTable(PDO $pdo): void
           body_html MEDIUMTEXT NULL,
           body_text MEDIUMTEXT NULL,
           attachment_url VARCHAR(512) NULL,
+          attachment_urls JSON NULL,
           variables JSON NULL,
           active TINYINT(1) NOT NULL DEFAULT 1,
           created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

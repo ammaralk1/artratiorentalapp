@@ -40,6 +40,7 @@ function cacheElements() {
   els.logEntity = q('#log-filter-entity');
   els.logChannel = q('#log-filter-channel');
   els.logStatus = q('#log-filter-status');
+  els.logBatch = q('#log-filter-batch');
   els.logQ = q('#log-filter-q');
   els.logRefresh = q('#log-refresh-btn');
   els.logClear = q('#log-clear-btn');
@@ -465,6 +466,10 @@ function attachEvents() {
     els.logEntity.addEventListener(ev, triggerLogsFetch);
     els.logChannel.addEventListener(ev, triggerLogsFetch);
     els.logStatus.addEventListener(ev, triggerLogsFetch);
+    els.logBatch.addEventListener(ev, () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { LOG_PAGE = 1; fetchLogs(); }, 350);
+    });
     els.logQ.addEventListener(ev, () => {
       if (searchTimer) clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { LOG_PAGE = 1; fetchLogs(); }, 350);
@@ -521,7 +526,9 @@ function buildLogParams() {
   try {
     const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
     const b = h.get('batch');
-    if (b) params.set('batch_id', b);
+    const bInput = (els.logBatch?.value || '').trim();
+    if (bInput) params.set('batch_id', bInput);
+    else if (b) params.set('batch_id', b);
   } catch (_) {}
   params.set('limit', String(LOG_LIMIT));
   params.set('page', String(LOG_PAGE));

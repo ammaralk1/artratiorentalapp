@@ -336,7 +336,7 @@ try {
         if ($ok) { $channelsSent['email']++; }
     }
     foreach ($targets['telegram'] as $target) {
-        $renderedText = $textBody; $renderedAttach = null;
+        $renderedText = $textBody; $renderedAttach = null; $renderedGroup = [];
         if ($templateId > 0) {
             $tplStmt = $pdo->prepare('SELECT * FROM notification_templates WHERE id = :id AND active = 1 LIMIT 1');
             $tplStmt->execute(['id' => $templateId]);
@@ -345,9 +345,25 @@ try {
                 $rendered = renderTemplate($tpl, $baseCtx, [ 'name' => (string)($target['name'] ?? ''), 'type' => (string)($target['type'] ?? '') ]);
                 $renderedText = (string)($rendered['text'] ?? $textBody);
                 $renderedAttach = $tpl['attachment_url'] ?? null;
+                try {
+                    if (!empty($tpl['attachment_urls'])) {
+                        $list = json_decode((string)$tpl['attachment_urls'], true);
+                        if (is_array($list)) {
+                            $renderedGroup = array_values(array_filter(array_map('strval', $list)));
+                        }
+                    }
+                } catch (Throwable $_) {}
             }
         }
-        if ($renderedAttach) {
+        if ($renderedGroup && count($renderedGroup) > 1) {
+            $media = [];
+            foreach ($renderedGroup as $idx => $url) {
+                $item = [ 'type' => 'photo', 'media' => $url ];
+                if ($idx === 0 && $renderedText) { $item['caption'] = $renderedText; }
+                $media[] = $item;
+            }
+            $ok = sendTelegramMediaGroup($target['recipient'], $media);
+        } elseif ($renderedAttach) {
             $ok = sendTelegramPhoto($target['recipient'], (string)$renderedAttach, (string)$renderedText);
         } else {
             $ok = sendTelegramText($target['recipient'], (string)$renderedText);

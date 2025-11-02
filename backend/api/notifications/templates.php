@@ -56,7 +56,7 @@ try {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') { respondError('name is required', 422); exit; }
         $channel = in_array(($body['channel'] ?? 'both'), ['email','telegram','both'], true) ? (string)$body['channel'] : 'both';
-        $stmt = $pdo->prepare('INSERT INTO notification_templates (name, channel, subject, body_html, body_text, attachment_url, variables, active) VALUES (:n, :c, :sub, :html, :text, :att, :vars, 1)');
+        $stmt = $pdo->prepare('INSERT INTO notification_templates (name, channel, subject, body_html, body_text, attachment_url, attachment_urls, variables, active) VALUES (:n, :c, :sub, :html, :text, :att, :atts, :vars, 1)');
         $stmt->execute([
             'n' => $name,
             'c' => $channel,
@@ -64,6 +64,7 @@ try {
             'html' => $body['body_html'] ?? null,
             'text' => $body['body_text'] ?? null,
             'att' => $body['attachment_url'] ?? null,
+            'atts' => isset($body['attachment_urls']) ? json_encode($body['attachment_urls'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
             'vars' => isset($body['variables']) ? json_encode($body['variables'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
         ]);
         $id = (int)$pdo->lastInsertId();
@@ -79,6 +80,7 @@ try {
         foreach (['name','subject','body_html','body_text','attachment_url'] as $f) {
             if (array_key_exists($f, $body)) { $fields[] = "$f = :$f"; $params[$f] = $body[$f]; }
         }
+        if (array_key_exists('attachment_urls', $body)) { $fields[] = 'attachment_urls = :attachment_urls'; $params['attachment_urls'] = json_encode($body['attachment_urls'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); }
         if (array_key_exists('channel', $body)) {
             $params['channel'] = in_array(($body['channel'] ?? 'both'), ['email','telegram','both'], true) ? (string)$body['channel'] : 'both';
             $fields[] = 'channel = :channel';
