@@ -289,6 +289,7 @@ function attachEvents() {
     els.tgBody.addEventListener('click', async (ev) => {
       const genBtn = ev.target.closest('[data-gen-id]');
       const copyBtn = ev.target.closest('[data-copy-link]');
+      const unlinkBtn = ev.target.closest('[data-unlink-id]');
       if (genBtn) {
         const id = genBtn.getAttribute('data-gen-id');
         await generateTgLink(id);
@@ -300,6 +301,12 @@ function attachEvents() {
           try { await navigator.clipboard.writeText(link); showToast('✅ تم نسخ الرابط'); }
           catch { showToast('⚠️ تعذر النسخ، انسخ يدوياً'); }
         }
+        return;
+      }
+      if (unlinkBtn) {
+        const id = unlinkBtn.getAttribute('data-unlink-id');
+        await unlinkTechnician(id);
+        return;
       }
     });
   }
@@ -314,6 +321,14 @@ function attachEvents() {
       if (!link) return;
       try { await navigator.clipboard.writeText(link); showToast('✅ تم نسخ رابط الإدمن'); }
       catch { showToast('⚠️ تعذر النسخ'); }
+    });
+  }
+  if (els.tgAdminBody) {
+    els.tgAdminBody.addEventListener('click', async (ev) => {
+      const btn = ev.target.closest('[data-admin-unlink]');
+      if (!btn) return;
+      const cid = btn.getAttribute('data-admin-unlink');
+      await unlinkAdmin(cid);
     });
   }
   if (els.previewBtn) {
@@ -511,7 +526,7 @@ async function fetchTechs() {
       const linked = !!(t.telegram_chat_id || t.telegramChatId || t.has_tg_link);
       const status = linked ? '<span class="badge bg-primary-subtle">مرتبط</span>' : '<span class="badge bg-warning-subtle">غير مرتبط</span>';
       const actions = linked
-        ? '<span class="text-xs text-muted">لا حاجة لرابط</span>'
+        ? `<button type="button" class="btn btn-sm btn-outline btn-error" data-unlink-id="${t.id}">❌ إلغاء الربط</button>`
         : `<button type="button" class="btn btn-sm" data-gen-id="${t.id}">🔗 توليد رابط</button>`;
       return `<tr>
         <td>${name}</td>
@@ -547,21 +562,25 @@ async function generateTgLink(technicianId) {
 async function fetchAdminLinks() {
   if (!els.tgAdminBody) return;
   try {
-    els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
+    els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
     const res = await apiRequest('/telegram/admins.php');
     const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     if (!items.length) {
-      els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">لا توجد روابط إدمن مرتبطة حالياً</td></tr>`;
+      els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">لا توجد روابط إدمن مرتبطة حالياً</td></tr>`;
       return;
     }
     els.tgAdminBody.innerHTML = items.map((row) => {
       const id = String(row.chat_id || '');
       const used = row.last_used_at || '—';
-      return `<tr><td>${id}</td><td>${used}</td></tr>`;
+      return `<tr>
+        <td>${id}</td>
+        <td>${used}</td>
+        <td><button type="button" class="btn btn-sm btn-outline btn-error" data-admin-unlink="${id}">❌ إلغاء الربط</button></td>
+      </tr>`;
     }).join('');
   } catch (e) {
     console.error(e);
-    els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-error">فشل تحميل روابط الإدمن</td></tr>`;
+    els.tgAdminBody.innerHTML = `<tr><td colspan="3" class="text-center text-error">فشل تحميل روابط الإدمن</td></tr>`;
   }
 }
 
@@ -582,5 +601,39 @@ async function generateAdminLink() {
   } catch (e) {
     console.error(e);
     showToast('فشل توليد رابط الإدمن');
+  }
+}
+
+async function unlinkTechnician(technicianId) {
+  if (!technicianId) return;
+  const ok = window.confirm('تأكيد إلغاء الربط لهذا الفني؟');
+  if (!ok) return;
+  try {
+    await apiRequest('/telegram/unlink.php', {
+      method: 'POST',
+      body: { target: 'technician', technician_id: Number(technicianId) },
+    });
+    showToast('تم إلغاء الربط للفني');
+    fetchTechs();
+  } catch (e) {
+    console.error(e);
+    showToast('فشل إلغاء الربط');
+  }
+}
+
+async function unlinkAdmin(chatId) {
+  if (!chatId) return;
+  const ok = window.confirm(`تأكيد إلغاء ربط الإدمن (${chatId})؟`);
+  if (!ok) return;
+  try {
+    await apiRequest('/telegram/unlink.php', {
+      method: 'POST',
+      body: { target: 'admin', chat_id: String(chatId) },
+    });
+    showToast('تم إلغاء ربط الإدمن');
+    fetchAdminLinks();
+  } catch (e) {
+    console.error(e);
+    showToast('فشل إلغاء ربط الإدمن');
   }
 }
