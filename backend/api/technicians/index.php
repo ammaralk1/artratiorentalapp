@@ -144,8 +144,7 @@ function handleTechniciansCreate(PDO $pdo): void
         daily_total,
         status,
         notes,
-        active,
-        telegram_chat_id
+        active
     ) VALUES (
         :full_name,
         :phone,
@@ -156,8 +155,7 @@ function handleTechniciansCreate(PDO $pdo): void
         :daily_total,
         :status,
         :notes,
-        :active,
-        :telegram_chat_id
+        :active
     )';
 
     $statement = $pdo->prepare($sql);
@@ -172,7 +170,6 @@ function handleTechniciansCreate(PDO $pdo): void
         'status' => $data['status'],
         'notes' => $data['notes'],
         'active' => $data['active'],
-        'telegram_chat_id' => $data['telegram_chat_id'] ?? null,
     ]);
 
     $id = (int) $pdo->lastInsertId();
@@ -268,7 +265,6 @@ function validateTechnicianPayload(array $payload, bool $isUpdate): array
     $name = isset($payload['full_name']) ? trim((string) $payload['full_name']) : null;
     $phone = isset($payload['phone']) ? trim((string) $payload['phone']) : null;
     $email = isset($payload['email']) ? trim((string) $payload['email']) : null;
-    $telegramChatId = isset($payload['telegram_chat_id']) ? trim((string) $payload['telegram_chat_id']) : null;
     $specialization = isset($payload['specialization']) ? trim((string) $payload['specialization']) : null;
     $department = isset($payload['department']) ? trim((string) $payload['department']) : null;
     $dailyWage = isset($payload['daily_wage']) ? $payload['daily_wage'] : null;
@@ -366,10 +362,6 @@ function validateTechnicianPayload(array $payload, bool $isUpdate): array
         $data['department'] = $department ?: null;
     }
 
-    if (!$isUpdate || array_key_exists('telegram_chat_id', $payload)) {
-        $data['telegram_chat_id'] = $telegramChatId ?: null;
-    }
-
     if (!$isUpdate || array_key_exists('daily_wage', $payload)) {
         $data['daily_wage'] = $dailyWage !== null ? (float) $dailyWage : 0;
     }
@@ -442,7 +434,6 @@ function mapTechnicianRow(array $row): array
         'email' => $row['email'] ?? null,
         'specialization' => $row['specialization'] ?? '',
         'department' => $row['department'] ?? null,
-        'telegram_chat_id' => $row['telegram_chat_id'] ?? null,
         'daily_wage' => isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0,
         'daily_total' => isset($row['daily_total']) ? (float) $row['daily_total'] : (isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0),
         'status' => normalizeTechnicianStatus($row['status'] ?? 'available'),
@@ -465,8 +456,3 @@ function normalizeTechnicianStatus(string $value): ?string
         default => null,
     };
 }
-    if ($telegramChatId !== null && $telegramChatId !== '') {
-        if (mb_strlen($telegramChatId) > 64) {
-            $errors['telegram_chat_id'] = 'Telegram chat id is too long (max 64 characters)';
-        }
-    }

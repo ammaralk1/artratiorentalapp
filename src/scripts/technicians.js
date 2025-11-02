@@ -357,7 +357,6 @@ function populateTechnicianForm(technician) {
   const nameInput = document.getElementById("technician-name");
   const phoneInput = document.getElementById("technician-phone");
   const emailInput = document.getElementById("technician-email");
-  const telegramInput = document.getElementById("technician-telegram");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const notesInput = document.getElementById("technician-notes");
@@ -367,7 +366,6 @@ function populateTechnicianForm(technician) {
   nameInput.value = technician.name || "";
   phoneInput.value = normalizePhoneValue(technician.phone || "");
   if (emailInput) emailInput.value = technician.email || "";
-  if (telegramInput) telegramInput.value = technician.telegramChatId || "";
   roleInput.value = technician.role || "";
   if (departmentInput) departmentInput.value = technician.department || "";
   if (notesInput) notesInput.value = technician.notes || "";
@@ -382,7 +380,6 @@ function collectTechnicianForm() {
   const nameInput = document.getElementById("technician-name");
   const phoneInput = document.getElementById("technician-phone");
   const emailInput = document.getElementById("technician-email");
-  const telegramInput = document.getElementById("technician-telegram");
   const roleInput = document.getElementById("technician-role");
   const departmentInput = document.getElementById("technician-department");
   const notesInput = document.getElementById("technician-notes");
@@ -393,7 +390,6 @@ function collectTechnicianForm() {
   const phone = normalizePhoneValue(phoneInput.value.trim());
   phoneInput.value = phone;
   const email = (emailInput?.value || "").trim();
-  const telegramChatId = (telegramInput?.value || "").trim() || null;
   const role = roleInput.value.trim();
   const department = departmentInput?.value.trim() || "";
   const status = 'available';
@@ -436,7 +432,6 @@ function collectTechnicianForm() {
     name,
     phone,
     email,
-    telegramChatId,
     role,
     department,
     dailyWage: Number.isFinite(dailyWage) ? dailyWage : 0,
@@ -465,7 +460,6 @@ async function handleTechnicianSubmit(event) {
     name: payload.name,
     phone: payload.phone,
     email: payload.email || null,
-    telegramChatId: payload.telegramChatId || null,
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
@@ -505,7 +499,6 @@ function populateTechnicianEditModal(technician) {
     name: document.getElementById("edit-technician-name"),
     phone: document.getElementById("edit-technician-phone"),
     email: document.getElementById("edit-technician-email"),
-    telegram: document.getElementById("edit-technician-telegram"),
     role: document.getElementById("edit-technician-role"),
     department: document.getElementById("edit-technician-department"),
     wage: document.getElementById("edit-technician-wage"),
@@ -521,7 +514,6 @@ function populateTechnicianEditModal(technician) {
   const normalizedPhone = normalizePhoneValue(technician.phone || "");
   if (fields.phone.value !== normalizedPhone) fields.phone.value = normalizedPhone;
   if (fields.email && fields.email.value !== (technician.email || "")) fields.email.value = technician.email || "";
-  if (fields.telegram && fields.telegram.value !== (technician.telegramChatId || "")) fields.telegram.value = technician.telegramChatId || "";
   if (fields.role.value !== (technician.role || "")) fields.role.value = technician.role || "";
   if (fields.department && fields.department.value !== (technician.department || "")) {
     fields.department.value = technician.department || "";
@@ -544,7 +536,6 @@ function collectTechnicianEditModal() {
   const nameInput = document.getElementById("edit-technician-name");
   const phoneInput = document.getElementById("edit-technician-phone");
   const emailInput = document.getElementById("edit-technician-email");
-  const telegramInput = document.getElementById("edit-technician-telegram");
   const roleInput = document.getElementById("edit-technician-role");
   const departmentInput = document.getElementById("edit-technician-department");
   const wageInput = document.getElementById("edit-technician-wage");
@@ -559,7 +550,6 @@ function collectTechnicianEditModal() {
   const phone = normalizePhoneValue(phoneInput.value.trim());
   phoneInput.value = phone;
   const email = (emailInput?.value || "").trim();
-  const telegramChatId = (telegramInput?.value || "").trim() || null;
   const role = roleInput.value.trim();
   const department = departmentInput?.value.trim() || "";
   const wageValue = normalizeMoneyValue(wageInput.value.trim());
@@ -611,7 +601,6 @@ function collectTechnicianEditModal() {
     name,
     phone,
     email,
-    telegramChatId,
     role,
     department,
     dailyWage: Number.isFinite(wage) ? wage : 0,
@@ -630,7 +619,6 @@ async function handleTechnicianModalSave() {
     name: payload.name,
     phone: payload.phone,
     email: payload.email || null,
-    telegramChatId: payload.telegramChatId || null,
     role: payload.role,
     department: payload.department,
     dailyWage: payload.dailyWage,
