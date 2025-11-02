@@ -23,7 +23,7 @@ registerTranslations({
       loading: '⏳ اكتب للبحث…',
       select: 'اختيار',
     },
-    channels: { email: 'إيميل', whatsapp: 'واتساب' },
+    channels: { email: 'إيميل', telegram: 'تليغرام' },
     compose: {
       title: '✉️ إنشاء رسالة',
       recipients: 'المستلمون',
@@ -48,7 +48,7 @@ registerTranslations({
         allStatuses: 'كل الحالات',
         sent: 'مرسلة',
         failed: 'فاشلة',
-        'q.placeholder': 'بحث بالبريد/الرقم',
+        'q.placeholder': 'بحث بالبريد/المعرّف',
       },
       headers: {
         time: 'الوقت',

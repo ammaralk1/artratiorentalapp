@@ -1,101 +1,74 @@
-name: Build & Deploy (rclone)
+name: Deploy
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ main, master ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 18
 
-      - run: npm ci
-      - run: npm run build
-
-      - name: Install rclone
-        run: curl https://rclone.org/install.sh | sudo bash
-
-      - name: Sync project to FTP server
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      - name: Install and build frontend
         run: |
-          set -euo pipefail
+          npm ci
+          npm run build
 
-          rclone config create site ftp \
-            host "${FTP_SERVER}" \
-            user "${FTP_USERNAME}" \
-            pass "${FTP_PASSWORD}" \
-            port 21 \
-            tls false
+      - name: Upload files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: |
+            dist/**
+            backend/**
+            .htaccess
+          target: ${{ secrets.SSH_TARGET_DIR }}
+          overwrite: true
 
-          rclone sync ./ site:/ \
-            --transfers 2 \
-            --checkers 2 \
-            --ftp-concurrency 2 \
-            --exclude "/.git/**" \
-            --exclude "/.github/**" \
-            --exclude "/node_modules/**" \
-            --exclude "/art-ratio.com/node_modules/**" \
-            --exclude "/tests/**" \
-            --exclude "/README.md" \
-            --exclude "/package-lock.json" \
-            --exclude "/package.json" \
-            --exclude "/art-ratio.com/package-lock.json" \
-            --exclude "/art-ratio.com/package.json" \
-            --exclude "/deploy-test*.txt" \
-            --exclude "/vite.config.js" \
-            --exclude "/vitest.config.js" \
-            --exclude "/.gitignore" \
-            --exclude "/src/**" \
-            --exclude "/ART RATIO APP.code-workspace" \
-            --exclude "/eqouipment list for app.xlsx" \
-            --exclude "/main" \
-            --exclude "/public/**" \
-            --exclude "/deploy-test-latest.txt"
-
-      - name: Create backend config from secret
+      - name: Run remote post-deploy tasks
+        uses: appleboy/ssh-action@v1.0.3
         env:
-          BACKEND_CONFIG_PHP: ${{ secrets.BACKEND_CONFIG_PHP }}
-        run: |
-          set -euo pipefail
-          if [ -z "${BACKEND_CONFIG_PHP:-}" ]; then
-            echo "BACKEND_CONFIG_PHP secret is empty." >&2
-            exit 1
-          fi
-          mkdir -p backend
-          printf '%s' "${BACKEND_CONFIG_PHP}" | base64 --decode > backend/config.php
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          SSH_TARGET_DIR: ${{ secrets.SSH_TARGET_DIR }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: false
+          script: |
+            set -e
+            cd "$SSH_TARGET_DIR"
 
-      - name: Upload backend config via FTPS
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_PORT: ${{ secrets.FTP_PORT }}
-          FTP_SKIP_TLS_VERIFY: ${{ secrets.FTP_SKIP_TLS_VERIFY }}
-        run: |
-          set -euo pipefail
-          FTP_PORT=${FTP_PORT:-21}
-          curl_args=(
-            --fail --show-error --silent
-            --ftp-create-dirs --ftp-method nocwd --ftp-pasv
-            --ftp-ssl --ssl-reqd
-            --user "${FTP_USERNAME}:${FTP_PASSWORD}"
-            -T backend/config.php
-            "ftp://${FTP_SERVER}:${FTP_PORT}/backend/config.php"
-          )
+            # Ensure TELEGRAM_BOT_TOKEN is available to Apache-mod_php via directory env
+            if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+              echo "SetEnv TELEGRAM_BOT_TOKEN \"$TELEGRAM_BOT_TOKEN\"" > backend/.htaccess
+            fi
 
-          if [[ "${FTP_SKIP_TLS_VERIFY:-false}" == "true" ]]; then
-            curl_args+=(--insecure)
-          fi
+            # Optional: run SQL migrations if DB secrets are provided
+            if [ -n "$DB_HOST" ] && [ -n "$DB_NAME" ] && [ -n "$DB_USER" ] && [ -n "$DB_PASS" ]; then
+              echo "Running DB migrations..."
+              mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < backend/sql/alter_notification_events_phase1.sql || true
+              mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" < backend/sql/add_technician_telegram.sql || true
+            else
+              echo "DB secrets not set; skipping SQL migrations"
+            fi
 
-          curl "${curl_args[@]}"
+            # Try to reload php-fpm or apache gracefully (ignore failures)
+            sudo systemctl reload php-fpm || sudo systemctl reload php8.2-fpm || sudo systemctl reload apache2 || true

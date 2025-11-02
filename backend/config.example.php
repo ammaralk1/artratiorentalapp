@@ -49,26 +49,25 @@ return [
         'smtp_user' => 'no-reply@your-domain.com',
         'smtp_pass' => 'YOUR_SMTP_PASSWORD',
     ],
-    'whatsapp' => [
-        // WhatsApp Cloud API configuration
+    'telegram' => [
+        // Telegram Bot API configuration
         'enabled' => false,
-        'access_token' => 'YOUR_WHATSAPP_CLOUD_ACCESS_TOKEN',
-        'phone_number_id' => 'YOUR_PHONE_NUMBER_ID',
-        // 'api_base' => 'https://graph.facebook.com/v20.0',
+        'bot_token' => 'YOUR_TELEGRAM_BOT_TOKEN',
+        // 'api_base' => 'https://api.telegram.org',
     ],
     'notifications' => [
-        // Optional top-level toggles (fallbacks to email.enabled/whatsapp.enabled)
+        // Optional top-level toggles (fallbacks to email.enabled/telegram.enabled)
         // 'email_enabled' => true,
-        // 'whatsapp_enabled' => true,
+        // 'telegram_enabled' => true,
         // Admin receives all technician-like messages too
         'admin_receive_all' => true,
         // If true, notifications go only to admins (below), not to managers
         'admin_only' => true,
         // Admin recipients
         'admin_emails' => [/* 'admin@your-domain.com' */],
-        'admin_whatsapp_numbers' => [/* '+9665XXXXXXX' */],
+        'admin_telegram_chat_ids' => [/* '12345678' */],
         // Manager recipients (used only if admin_only = false)
         'manager_emails' => [/* 'ops@your-domain.com' */],
-        'manager_whatsapp_numbers' => [/* '+9665YYYYYYY' */],
+        'manager_telegram_chat_ids' => [/* '23456789' */],
     ],
 ];

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/email.php';
-require_once __DIR__ . '/whatsapp.php';
+require_once __DIR__ . '/telegram.php';
 
 function getNotificationSettings(): array
 {
@@ -26,12 +26,12 @@ function getNotificationSettings(): array
         'admin_receive_all' => (bool)($cfg['admin_receive_all'] ?? false),
         'admin_only' => (bool)($cfg['admin_only'] ?? false),
         'admin_emails' => $adminEmails,
-        'admin_whatsapp_numbers' => array_values(array_filter(array_map('trim', (array)($cfg['admin_whatsapp_numbers'] ?? [])))),
+        'admin_telegram_chat_ids' => array_values(array_filter(array_map('trim', (array)($cfg['admin_telegram_chat_ids'] ?? [])))),
         'manager_emails' => array_values(array_filter(array_map('trim', (array)($cfg['manager_emails'] ?? [])))),
-        'manager_whatsapp_numbers' => array_values(array_filter(array_map('trim', (array)($cfg['manager_whatsapp_numbers'] ?? [])))),
+        'manager_telegram_chat_ids' => array_values(array_filter(array_map('trim', (array)($cfg['manager_telegram_chat_ids'] ?? [])))),
         'channels' => [
             'email' => (bool)($cfg['email_enabled'] ?? getAppConfig('email', 'enabled', false)),
-            'whatsapp' => (bool)($cfg['whatsapp_enabled'] ?? getAppConfig('whatsapp', 'enabled', false)),
+            'telegram' => (bool)($cfg['telegram_enabled'] ?? getAppConfig('telegram', 'enabled', false)),
         ],
     ];
 }
@@ -65,6 +65,42 @@ function ensureNotificationEventsTable(PDO $pdo): void
         } catch (Throwable $_dropErr) {
             // ignore index drop errors to avoid breaking runtime
         }
+
+        // Ensure extended columns exist
+        $ensureColumn = function(string $name, string $ddl) use ($pdo) {
+            try {
+                $stmt = $pdo->prepare('SHOW COLUMNS FROM notification_events LIKE :col');
+                $stmt->execute(['col' => $name]);
+                if (!$stmt->fetch()) {
+                    $pdo->exec('ALTER TABLE notification_events ADD COLUMN ' . $ddl);
+                }
+            } catch (Throwable $_) { /* ignore to avoid breaking runtime */ }
+        };
+        $ensureColumn('batch_id', 'batch_id VARCHAR(64) NULL');
+        $ensureColumn('attempt', 'attempt INT UNSIGNED NOT NULL DEFAULT 1');
+        $ensureColumn('sent_at', 'sent_at DATETIME NULL');
+        $ensureColumn('provider_status_code', 'provider_status_code VARCHAR(32) NULL');
+        $ensureColumn('provider_message_id', 'provider_message_id VARCHAR(64) NULL');
+        $ensureColumn('provider_error', 'provider_error TEXT NULL');
+        $ensureColumn('meta_json', 'meta_json JSON NULL');
+        $ensureColumn('scheduled_at', 'scheduled_at DATETIME NULL');
+
+        // Ensure helpful indexes
+        $ensureIndex = function(string $name, string $ddl) use ($pdo) {
+            try {
+                $stmt = $pdo->prepare('SHOW INDEX FROM notification_events WHERE Key_name = :k');
+                $stmt->execute(['k' => $name]);
+                if (!$stmt->fetch()) {
+                    $pdo->exec('CREATE INDEX ' . $ddl);
+                }
+            } catch (Throwable $_) { /* ignore */ }
+        };
+        $ensureIndex('idx_notification_created_at', 'idx_notification_created_at ON notification_events (created_at)');
+        $ensureIndex('idx_notification_event', 'idx_notification_event ON notification_events (event_type)');
+        $ensureIndex('idx_notification_entity', 'idx_notification_entity ON notification_events (entity_type, entity_id)');
+        $ensureIndex('idx_notification_status', 'idx_notification_status ON notification_events (status)');
+        $ensureIndex('idx_notification_channel', 'idx_notification_channel ON notification_events (channel)');
+        $ensureIndex('idx_notification_recipient', 'idx_notification_recipient ON notification_events (recipient_identifier(64))');
 
         $checked = true;
     } catch (Throwable $e) {
@@ -119,7 +155,18 @@ function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType
 function fetchTechnicianContacts(PDO $pdo, int $technicianId): ?array
 {
     try {
-        $stmt = $pdo->prepare('SELECT id, full_name, email, phone FROM technicians WHERE id = :id LIMIT 1');
+        // Detect optional telegram_chat_id column once
+        static $hasTelegramColumn = null;
+        if ($hasTelegramColumn === null) {
+            try {
+                $chk = $pdo->query("SHOW COLUMNS FROM technicians LIKE 'telegram_chat_id'");
+                $hasTelegramColumn = $chk && $chk->fetch() ? true : false;
+            } catch (Throwable $_) { $hasTelegramColumn = false; }
+        }
+        $select = $hasTelegramColumn
+            ? 'id, full_name, email, phone, telegram_chat_id'
+            : 'id, full_name, email, phone';
+        $stmt = $pdo->prepare("SELECT $select FROM technicians WHERE id = :id LIMIT 1");
         $stmt->execute(['id' => $technicianId]);
         $row = $stmt->fetch();
         if (!$row) { return null; }
@@ -128,6 +175,7 @@ function fetchTechnicianContacts(PDO $pdo, int $technicianId): ?array
             'name' => (string) ($row['full_name'] ?? ''),
             'email' => $row['email'] ?? null,
             'phone' => $row['phone'] ?? null,
+            'telegram_chat_id' => $row['telegram_chat_id'] ?? null,
         ];
     } catch (Throwable $e) {
         error_log('Failed fetching technician contacts: ' . $e->getMessage());
@@ -203,11 +251,11 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
             }
         }
 
-        if ($channels['whatsapp'] && !empty($contacts['phone'])) {
-            $recipient = (string) $contacts['phone'];
-            if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'whatsapp')) {
-                $ok = sendWhatsAppText($recipient, $text);
-                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
+            $recipient = (string) $contacts['telegram_chat_id'];
+            if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
+                $ok = sendTelegramText($recipient, $text);
+                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -250,15 +298,15 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
         }
     }
 
-    $waRecipients = $settings['admin_only']
-        ? $settings['admin_whatsapp_numbers']
-        : array_values(array_unique(array_merge($settings['admin_whatsapp_numbers'], $settings['manager_whatsapp_numbers'])));
-    foreach ($waRecipients as $phone) {
-        if ($channels['whatsapp']) {
-            $recipient = (string) $phone;
-            if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'whatsapp')) {
-                $ok = sendWhatsAppText($recipient, $text);
-                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'manager', $recipient, 'whatsapp', $ok ? 'sent' : 'failed');
+    $tgRecipients = $settings['admin_only']
+        ? $settings['admin_telegram_chat_ids']
+        : array_values(array_unique(array_merge($settings['admin_telegram_chat_ids'], $settings['manager_telegram_chat_ids'])));
+    foreach ($tgRecipients as $chat) {
+        if ($channels['telegram']) {
+            $recipient = (string) $chat;
+            if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
+                $ok = sendTelegramText($recipient, $text);
+                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'manager', $recipient, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -346,11 +394,11 @@ function notifyProjectCreated(PDO $pdo, array $project): void
             }
         }
 
-        if ($channels['whatsapp'] && !empty($contacts['phone'])) {
-            $rcpt = (string) $contacts['phone'];
-            if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'whatsapp')) {
-                $ok = sendWhatsAppText($rcpt, $text);
-                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $rcpt, 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
+            $rcpt = (string) $contacts['telegram_chat_id'];
+            if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'telegram')) {
+                $ok = sendTelegramText($rcpt, $text);
+                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $rcpt, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -379,15 +427,15 @@ function notifyProjectCreated(PDO $pdo, array $project): void
         }
     }
 
-    $waRecipients = $settings['admin_only']
-        ? $settings['admin_whatsapp_numbers']
-        : array_values(array_unique(array_merge($settings['admin_whatsapp_numbers'], $settings['manager_whatsapp_numbers'])));
-    foreach ($waRecipients as $phone) {
-        if ($channels['whatsapp']) {
-            $rcpt = (string) $phone;
-            if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'whatsapp')) {
-                $ok = sendWhatsAppText($rcpt, $text);
-                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'manager', $rcpt, 'whatsapp', $ok ? 'sent' : 'failed');
+    $tgRecipients2 = $settings['admin_only']
+        ? $settings['admin_telegram_chat_ids']
+        : array_values(array_unique(array_merge($settings['admin_telegram_chat_ids'], $settings['manager_telegram_chat_ids'])));
+    foreach ($tgRecipients2 as $chat) {
+        if ($channels['telegram']) {
+            $rcpt = (string) $chat;
+            if (!hasNotificationBeenSent($pdo, $eventType, 'project', $entityId, $rcpt, 'telegram')) {
+                $ok = sendTelegramText($rcpt, $text);
+                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'manager', $rcpt, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -421,9 +469,9 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['whatsapp'] && !empty($contacts['phone'])) {
-            $ok = sendWhatsAppText((string)$contacts['phone'], $text);
-            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['phone'], 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
+            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
+            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
         }
     }
 
@@ -457,10 +505,10 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
             }
         }
-        if ($channels['whatsapp']) {
-            foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $ok = sendWhatsAppText((string)$phone, $adminText);
-                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            foreach ($settings['admin_telegram_chat_ids'] as $chat) {
+                $ok = sendTelegramText((string)$chat, $adminText);
+                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$chat, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -496,9 +544,9 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['whatsapp'] && !empty($contacts['phone'])) {
-            $ok = sendWhatsAppText((string)$contacts['phone'], $text);
-            recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['phone'], 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
+            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
+            recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
         }
     }
 
@@ -527,10 +575,10 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
                 recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
             }
         }
-        if ($channels['whatsapp']) {
-            foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                $ok = sendWhatsAppText((string)$phone, $adminText);
-                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            foreach ($settings['admin_telegram_chat_ids'] as $chat) {
+                $ok = sendTelegramText((string)$chat, $adminText);
+                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'admin', (string)$chat, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
     }
@@ -564,9 +612,9 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['whatsapp'] && !empty($contacts['phone'])) {
-            $ok = sendWhatsAppText((string)$contacts['phone'], $text);
-            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['phone'], 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
+            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
+            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
         }
     }
 
@@ -598,11 +646,11 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
                 }
             }
         }
-        if ($channels['whatsapp']) {
-            foreach ($settings['admin_whatsapp_numbers'] as $phone) {
-                if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, (string)$phone, 'whatsapp')) {
-                    $ok = sendWhatsAppText((string)$phone, $adminText);
-                    recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$phone, 'whatsapp', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            foreach ($settings['admin_telegram_chat_ids'] as $chat) {
+                if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, (string)$chat, 'telegram')) {
+                    $ok = sendTelegramText((string)$chat, $adminText);
+                    recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$chat, 'telegram', $ok ? 'sent' : 'failed');
                 }
             }
         }

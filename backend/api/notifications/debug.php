@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
 require_once __DIR__ . '/../../services/email.php';
+require_once __DIR__ . '/../../services/telegram.php';
 
 // Admin-only diagnostics to verify notification configuration on production
 try {
@@ -39,7 +40,7 @@ try {
 
     // Raw notifications
     $adminEmailsRaw = array_values(array_filter(array_map('trim', (array)($notiRaw['admin_emails'] ?? []))));
-    $adminWhatsappRaw = array_values(array_filter(array_map('trim', (array)($notiRaw['admin_whatsapp_numbers'] ?? []))));
+    $adminTelegramRaw = array_values(array_filter(array_map('trim', (array)($notiRaw['admin_telegram_chat_ids'] ?? []))));
 
     // Resolved notifications via getNotificationSettings (includes fallback)
     $resolved = getNotificationSettings();
@@ -51,14 +52,14 @@ try {
             'admin_only' => (bool)($notiRaw['admin_only'] ?? false),
             'admin_receive_all' => (bool)($notiRaw['admin_receive_all'] ?? false),
             'admin_emails' => $adminEmailsRaw,
-            'admin_whatsapp_numbers' => $adminWhatsappRaw,
+            'admin_telegram_chat_ids' => $adminTelegramRaw,
         ],
         'notifications_resolved' => $resolved,
         'computed' => [
             'admin_email_count_raw' => count($adminEmailsRaw),
-            'admin_whatsapp_count_raw' => count($adminWhatsappRaw),
+            'admin_telegram_count_raw' => count($adminTelegramRaw),
             'admin_email_count_resolved' => count($resolved['admin_emails'] ?? []),
-            'admin_whatsapp_count_resolved' => count($resolved['admin_whatsapp_numbers'] ?? []),
+            'admin_telegram_count_resolved' => count($resolved['admin_telegram_chat_ids'] ?? []),
             'channels_resolved' => $resolved['channels'] ?? [],
         ],
     ];

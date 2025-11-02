@@ -48,19 +48,19 @@ try {
     }
 
     $sendEmail = (bool)($channels['email'] ?? true);
-    $sendWhatsApp = (bool)($channels['whatsapp'] ?? false);
+    $sendTelegram = (bool)($channels['telegram'] ?? false);
     // Default to email if no channel explicitly selected to reduce friction
-    if (!$sendEmail && !$sendWhatsApp) {
+    if (!$sendEmail && !$sendTelegram) {
         $sendEmail = true;
     }
-    if (!$sendEmail && !$sendWhatsApp) {
+    if (!$sendEmail && !$sendTelegram) {
         throw new InvalidArgumentException('At least one channel must be enabled');
     }
 
     $toTechnicians = (bool)($recipients['technicians'] ?? true);
     $toAdmins = (bool)($recipients['admins'] ?? true);
     $extraEmails = array_values(array_filter(array_map('trim', (array)($recipients['additional_emails'] ?? []))));
-    $extraPhones = array_values(array_filter(array_map('trim', (array)($recipients['additional_phones'] ?? []))));
+    $extraTgChatIds = array_values(array_filter(array_map('trim', (array)($recipients['additional_telegram_chat_ids'] ?? []))));
 
     $subject = trim((string)($message['subject'] ?? 'تنبيه إداري'));
     $htmlBody = (string)($message['html'] ?? '');
@@ -107,13 +107,13 @@ try {
 
     $channelsSent = [
         'email' => 0,
-        'whatsapp' => 0,
+        'telegram' => 0,
     ];
 
     // Recipients resolution
     $targets = [
         'email' => [],
-        'whatsapp' => [],
+        'telegram' => [],
     ];
 
     if ($toTechnicians && $techIds) {
@@ -127,9 +127,9 @@ try {
                     'type' => 'technician',
                 ];
             }
-            if ($sendWhatsApp && !empty($contact['phone'])) {
-                $targets['whatsapp'][] = [
-                    'recipient' => (string)$contact['phone'],
+            if ($sendTelegram && !empty($contact['telegram_chat_id'])) {
+                $targets['telegram'][] = [
+                    'recipient' => (string)$contact['telegram_chat_id'],
                     'name' => (string)($contact['name'] ?? ''),
                     'type' => 'technician',
                 ];
@@ -148,10 +148,10 @@ try {
                 ];
             }
         }
-        if ($sendWhatsApp) {
-            foreach ((array)$settings['admin_whatsapp_numbers'] as $phone) {
-                $targets['whatsapp'][] = [
-                    'recipient' => (string)$phone,
+        if ($sendTelegram) {
+            foreach ((array)$settings['admin_telegram_chat_ids'] as $chat) {
+                $targets['telegram'][] = [
+                    'recipient' => (string)$chat,
                     'name' => 'Admin',
                     'type' => 'admin',
                 ];
@@ -168,10 +168,10 @@ try {
             ];
         }
     }
-    foreach ($extraPhones as $phone) {
-        if ($sendWhatsApp) {
-            $targets['whatsapp'][] = [
-                'recipient' => (string)$phone,
+    foreach ($extraTgChatIds as $chat) {
+        if ($sendTelegram) {
+            $targets['telegram'][] = [
+                'recipient' => (string)$chat,
                 'name' => 'Custom',
                 'type' => 'custom',
             ];
@@ -179,7 +179,7 @@ try {
     }
 
     // Fallback: if no recipients resolved, force-include admins once
-    if (empty($targets['email']) && empty($targets['whatsapp'])) {
+    if (empty($targets['email']) && empty($targets['telegram'])) {
         $settings = getNotificationSettings();
         if ($sendEmail) {
             foreach ((array)$settings['admin_emails'] as $email) {
@@ -190,10 +190,10 @@ try {
                 ];
             }
         }
-        if ($sendWhatsApp) {
-            foreach ((array)$settings['admin_whatsapp_numbers'] as $phone) {
-                $targets['whatsapp'][] = [
-                    'recipient' => (string)$phone,
+        if ($sendTelegram) {
+            foreach ((array)$settings['admin_telegram_chat_ids'] as $chat) {
+                $targets['telegram'][] = [
+                    'recipient' => (string)$chat,
                     'name' => 'Admin',
                     'type' => 'admin',
                 ];
@@ -202,14 +202,14 @@ try {
     }
 
     // Abort if still empty after fallback
-    if (empty($targets['email']) && empty($targets['whatsapp'])) {
+    if (empty($targets['email']) && empty($targets['telegram'])) {
         respondError('No recipients found for selected channels', 422, [
             'meta' => [
-                'channels_requested' => [ 'email' => $sendEmail, 'whatsapp' => $sendWhatsApp ],
+                'channels_requested' => [ 'email' => $sendEmail, 'telegram' => $sendTelegram ],
                 'technicians_requested' => $toTechnicians,
                 'admins_requested' => $toAdmins,
                 'additional_emails' => count($extraEmails),
-                'additional_phones' => count($extraPhones),
+                'additional_telegram_chat_ids' => count($extraTgChatIds),
             ],
         ]);
         exit;
@@ -222,24 +222,25 @@ try {
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err);
         if ($ok) { $channelsSent['email']++; }
     }
-    foreach ($targets['whatsapp'] as $target) {
-        $ok = sendWhatsAppText($target['recipient'], $textBody);
-        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'whatsapp', $ok ? 'sent' : 'failed', $ok ? null : 'WhatsApp send failed');
-        if ($ok) { $channelsSent['whatsapp']++; }
+    foreach ($targets['telegram'] as $target) {
+        $ok = sendTelegramText($target['recipient'], $textBody);
+        $tgErr = function_exists('telegramGetLastError') ? (telegramGetLastError() ?? null) : null;
+        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr);
+        if ($ok) { $channelsSent['telegram']++; }
     }
 
     logActivity($pdo, 'NOTIFICATION_MANUAL_SEND', [
         'entity_type' => $entityType,
         'entity_id' => $entityId,
         'email_count' => $channelsSent['email'],
-        'whatsapp_count' => $channelsSent['whatsapp'],
+        'telegram_count' => $channelsSent['telegram'],
     ]);
 
     respond([
         'sent' => $channelsSent,
         'targets' => [
             'email' => count($targets['email']),
-            'whatsapp' => count($targets['whatsapp']),
+            'telegram' => count($targets['telegram']),
         ],
         // Provide resolved targets detail so clients can derive accurate counts when needed
         'targets_detail' => [
@@ -248,15 +249,16 @@ try {
                 'type' => (string)($t['type'] ?? ''),
                 'name' => (string)($t['name'] ?? ''),
             ]; }, $targets['email']),
-            'whatsapp' => array_map(static function($t) { return [
+            'telegram' => array_map(static function($t) { return [
                 'recipient' => (string)($t['recipient'] ?? ''),
                 'type' => (string)($t['type'] ?? ''),
                 'name' => (string)($t['name'] ?? ''),
-            ]; }, $targets['whatsapp']),
+            ]; }, $targets['telegram']),
         ],
         'errors' => [
             // For quick debugging on the client side — detailed per-event stored in notification_events
             'last_email_error' => function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null,
+            'last_telegram_error' => function_exists('telegramGetLastError') ? (telegramGetLastError() ?? null) : null,
         ],
     ]);
 } catch (InvalidArgumentException $exception) {

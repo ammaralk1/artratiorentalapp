@@ -22,14 +22,16 @@ function cacheElements() {
   els.composeSection = q('#notif-compose-section');
   els.selectedSummary = q('#notif-selected-summary');
   els.chEmail = q('#notif-channel-email');
-  els.chWhatsapp = q('#notif-channel-whatsapp');
+  els.chTelegram = q('#notif-channel-telegram');
   els.toTechs = q('#notif-to-techs');
   els.toAdmins = q('#notif-to-admins');
   els.extraEmails = q('#notif-extra-emails');
-  els.extraPhones = q('#notif-extra-phones');
+  els.extraChatIds = q('#notif-extra-chatids');
   els.subject = q('#notif-subject');
   els.body = q('#notif-body');
   els.sendBtn = q('#notif-send-btn');
+  els.previewBtn = q('#notif-preview-btn');
+  els.previewBox = q('#notif-preview');
   els.tReminder = q('#notif-template-reminder');
   els.tNote = q('#notif-template-note');
   els.logEntity = q('#log-filter-entity');
@@ -138,8 +140,8 @@ async function sendManual() {
     showToast('اختر عنصراً أولاً');
     return;
     }
-  const channels = { email: !!els.chEmail.checked, whatsapp: !!els.chWhatsapp.checked };
-  if (!channels.email && !channels.whatsapp) {
+  const channels = { email: !!els.chEmail.checked, telegram: !!els.chTelegram.checked };
+  if (!channels.email && !channels.telegram) {
     showToast('اختر قناة إرسال واحدة على الأقل');
     return;
   }
@@ -147,7 +149,7 @@ async function sendManual() {
     technicians: !!els.toTechs.checked,
     admins: !!els.toAdmins.checked,
     additional_emails: (els.extraEmails.value || '').split(',').map(s => s.trim()).filter(Boolean),
-    additional_phones: (els.extraPhones.value || '').split(',').map(s => s.trim()).filter(Boolean),
+    additional_telegram_chat_ids: (els.extraChatIds.value || '').split(',').map(s => s.trim()).filter(Boolean),
   };
   const message = {
     subject: (els.subject.value || 'تنبيه إداري').trim(),
@@ -171,27 +173,27 @@ async function sendManual() {
     // If the request didn’t throw, consider the operation successful.
     // Show a success toast including sent counts per channel.
     const data = res?.data || {};
-    const sent = data?.sent || { email: 0, whatsapp: 0 };
-    const targets = data?.targets || { email: 0, whatsapp: 0 };
-    const details = data?.targets_detail || { email: [], whatsapp: [] };
+    const sent = data?.sent || { email: 0, telegram: 0 };
+    const targets = data?.targets || { email: 0, telegram: 0 };
+    const details = data?.targets_detail || { email: [], telegram: [] };
     const se = Number(sent.email || 0);
-    const sw = Number(sent.whatsapp || 0);
+    const stg = Number(sent.telegram || 0);
     let te = Number(targets.email || 0);
-    let tw = Number(targets.whatsapp || 0);
+    let ttg = Number(targets.telegram || 0);
     // Fallback to detailed targets length if counts are missing/zero
     if (!te && Array.isArray(details.email)) te = details.email.length;
-    if (!tw && Array.isArray(details.whatsapp)) tw = details.whatsapp.length;
+    if (!ttg && Array.isArray(details.telegram)) ttg = details.telegram.length;
     const parts = [];
     const showEmail = (te > 0 || se > 0);
-    const showWhatsapp = (tw > 0 || sw > 0);
+    const showTelegram = (ttg > 0 || stg > 0);
     if (showEmail) {
       // If deliveries reported as zero but we have targets, show targets only to avoid confusing 0/Te
       const emailPart = se > 0 ? `إيميل: ${se}/${te}` : (te > 0 ? `إيميل: ${te}` : '');
       if (emailPart) parts.push(emailPart);
     }
-    if (showWhatsapp) {
-      const waPart = sw > 0 ? `واتساب: ${sw}/${tw}` : (tw > 0 ? `واتساب: ${tw}` : '');
-      if (waPart) parts.push(waPart);
+    if (showTelegram) {
+      const tgPart = stg > 0 ? `تليغرام: ${stg}/${ttg}` : (ttg > 0 ? `تليغرام: ${ttg}` : '');
+      if (tgPart) parts.push(tgPart);
     }
     // Append a brief hint if email had targets but zero deliveries and backend exposed an error
     if (showEmail && se === 0 && te > 0 && data?.errors?.last_email_error) {
@@ -204,6 +206,45 @@ async function sendManual() {
     console.error(e);
     const msg = (e && e.message) ? String(e.message) : 'فشل الإرسال';
     showToast(msg);
+  }
+}
+
+async function previewTargets() {
+  if (!selected) { showToast('اختر عنصراً أولاً'); return; }
+  const channels = { email: !!els.chEmail.checked, telegram: !!els.chTelegram.checked };
+  if (!channels.email && !channels.telegram) { showToast('اختر قناة إرسال واحدة على الأقل'); return; }
+  const recipients = {
+    technicians: !!els.toTechs.checked,
+    admins: !!els.toAdmins.checked,
+    additional_emails: (els.extraEmails.value || '').split(',').map(s => s.trim()).filter(Boolean),
+    additional_telegram_chat_ids: (els.extraChatIds.value || '').split(',').map(s => s.trim()).filter(Boolean),
+  };
+  try {
+    const res = await apiRequest('/notifications/resolve.php', {
+      method: 'POST',
+      body: {
+        entity_type: selected.type,
+        entity_id: selected.id,
+        channels,
+        recipients,
+      },
+    });
+    const data = res?.data || {};
+    const emailCount = Number(data?.targets?.email || 0);
+    const tgCount = Number(data?.targets?.telegram || 0);
+    const lines = [];
+    if (emailCount) lines.push(`إيميل: ${emailCount}`);
+    if (tgCount) lines.push(`تليغرام: ${tgCount}`);
+    const details = data?.targets_detail || {};
+    const sample = [];
+    if (Array.isArray(details.email) && details.email.length) sample.push(`مثال بريد: ${details.email[0].recipient}`);
+    if (Array.isArray(details.telegram) && details.telegram.length) sample.push(`مثال تيليجرام: ${details.telegram[0].recipient}`);
+    const txt = lines.join(' | ') + (sample.length ? ` — ${sample.join(' • ')}` : '');
+    if (els.previewBox) els.previewBox.textContent = txt || 'لا مستلمين مطابقين.';
+    showToast('تم تحديث المعاينة');
+  } catch (e) {
+    console.error(e);
+    showToast('فشل المعاينة');
   }
 }
 
@@ -229,6 +270,9 @@ function attachEvents() {
     els.body.value = base;
   });
   els.sendBtn.addEventListener('click', sendManual);
+  if (els.previewBtn) {
+    els.previewBtn.addEventListener('click', previewTargets);
+  }
 
   const triggerLogsFetch = () => {
     LOG_PAGE = 1;
