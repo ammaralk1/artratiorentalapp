@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.Cr9cQZRy.js"></script>
+  <script type="module" crossorigin src="../../assets/notifications.qp19flFG.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.CYxRUoWL.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.BeZ1LAAP.css">
@@ -352,6 +352,34 @@
                 </thead>
                 <tbody id="tg-tech-body">
                   <tr><td colspan="4" class="text-center text-muted">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ✅ Admin Telegram linking helper -->
+          <section class="glass-card space-y-4" id="telegram-admin-linking-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">👑 ربط تيليغرام للإدمن</h3>
+                <p class="text-sm text-base-content/70">يُستخدم كقناة احتياطية أو أساسية لإرسال التنبيهات إلى الإدمن. الرابط يُستخدم مرة واحدة فقط.</p>
+              </div>
+              <div class="flex gap-2 items-center">
+                <button type="button" class="btn" id="tg-admin-gen-btn">🔗 توليد رابط إدمن</button>
+                <button type="button" class="btn btn-outline" id="tg-admin-copy-btn" disabled>📋 نسخ الرابط</button>
+              </div>
+            </header>
+            <div id="tg-admin-link-box" class="text-sm text-base-content/70 hidden"></div>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="tg-admin-table">
+                <thead class="table-light users-table-head">
+                  <tr>
+                    <th>Chat ID</th>
+                    <th>آخر استخدام</th>
+                  </tr>
+                </thead>
+                <tbody id="tg-admin-body">
+                  <tr><td colspan="2" class="text-center text-muted">—</td></tr>
                 </tbody>
               </table>
             </div>
