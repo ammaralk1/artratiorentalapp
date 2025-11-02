@@ -39,11 +39,22 @@ try {
         'deleted' => 0,
     ];
 
-    // Check if telegram_links table exists once
+    // Check if telegram_links table/columns exist
     $hasLinksTable = false;
+    $hasContextCol = false;
+    $hasPhoneCol = false;
+    $hasUsedAtCol = false;
     try {
         $chk = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
         $hasLinksTable = $chk && $chk->fetch() ? true : false;
+        if ($hasLinksTable) {
+            $c1 = $pdo->query("SHOW COLUMNS FROM telegram_links LIKE 'context'");
+            $hasContextCol = $c1 && $c1->fetch() ? true : false;
+            $c2 = $pdo->query("SHOW COLUMNS FROM telegram_links LIKE 'phone'");
+            $hasPhoneCol = $c2 && $c2->fetch() ? true : false;
+            $c3 = $pdo->query("SHOW COLUMNS FROM telegram_links LIKE 'used_at'");
+            $hasUsedAtCol = $c3 && $c3->fetch() ? true : false;
+        }
     } catch (Throwable $_) { $hasLinksTable = false; }
 
     if ($target === 'technician') {
@@ -79,11 +90,22 @@ try {
 
         // Clear related link rows so UI does not consider them linked anymore
         if ($hasLinksTable) {
-            // Use OR technician_id match OR phone match; only for technician context
+            // Build dynamic UPDATE based on available columns (context/phone/used_at)
             $params = ['tid' => $technicianId];
-            $extra = '';
-            if ($digits !== '') { $extra = ' OR phone = :p'; $params['p'] = $digits; }
-            $q = $pdo->prepare("UPDATE telegram_links SET chat_id = NULL, used_at = NULL WHERE context = 'technician' AND (technician_id = :tid$extra)");
+            $where = [];
+            // Only scope to technician context if the column exists
+            if ($hasContextCol) {
+                $where[] = "context = 'technician'";
+            }
+            $where[] = 'technician_id = :tid';
+            if ($digits !== '' && $hasPhoneCol) {
+                $where[] = 'phone = :p';
+                $params['p'] = $digits;
+            }
+            $set = ['chat_id = NULL'];
+            if ($hasUsedAtCol) { $set[] = 'used_at = NULL'; }
+            $sql = 'UPDATE telegram_links SET ' . implode(', ', $set) . ' WHERE ' . implode(' OR ', $where);
+            $q = $pdo->prepare($sql);
             $q->execute($params);
             $result['links_cleared'] = (int)$q->rowCount();
         }
@@ -99,7 +121,12 @@ try {
             throw new InvalidArgumentException('chat_id is required for admin unlink');
         }
         if ($hasLinksTable) {
-            // Remove admin chat_id entries
+            if (!$hasContextCol) {
+                // On legacy tables we cannot safely distinguish admin vs technician
+                respondError('Legacy telegram_links schema missing context column. Please run migrations.', 422);
+                exit;
+            }
+            // Remove admin chat_id entries only
             $d = $pdo->prepare("DELETE FROM telegram_links WHERE context = 'admin' AND chat_id = :cid");
             $d->execute(['cid' => $chatId]);
             $result['deleted'] = (int)$d->rowCount();
@@ -115,4 +142,3 @@ try {
 } catch (Throwable $e) {
     respondError('Unexpected server error', 500, [ 'details' => $e->getMessage() ]);
 }
-
