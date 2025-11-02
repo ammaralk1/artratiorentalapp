@@ -127,12 +127,15 @@ try {
                     'type' => 'technician',
                 ];
             }
-            if ($sendTelegram && !empty($contact['telegram_chat_id'])) {
-                $targets['telegram'][] = [
-                    'recipient' => (string)$contact['telegram_chat_id'],
-                    'name' => (string)($contact['name'] ?? ''),
-                    'type' => 'technician',
-                ];
+            if ($sendTelegram) {
+                $cid = getTelegramChatIdForTechnician($pdo, $contact);
+                if (!empty($cid)) {
+                    $targets['telegram'][] = [
+                        'recipient' => (string)$cid,
+                        'name' => (string)($contact['name'] ?? ''),
+                        'type' => 'technician',
+                    ];
+                }
             }
         }
     }

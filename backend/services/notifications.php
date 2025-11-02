@@ -183,6 +183,25 @@ function fetchTechnicianContacts(PDO $pdo, int $technicianId): ?array
     }
 }
 
+/**
+ * Attempt to resolve a Telegram chat id using stored mappings.
+ */
+function getTelegramChatIdForTechnician(PDO $pdo, array $contacts): ?string
+{
+    $cid = isset($contacts['telegram_chat_id']) ? (string)$contacts['telegram_chat_id'] : '';
+    if ($cid !== '') return $cid;
+    $phone = isset($contacts['phone']) ? trim((string)$contacts['phone']) : '';
+    if ($phone === '') return null;
+    try {
+        $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
+        $stmt->execute(['p' => $phone]);
+        $found = $stmt->fetchColumn();
+        return $found ? (string)$found : null;
+    } catch (Throwable $_) {
+        return null;
+    }
+}
+
 function buildReservationSummary(array $reservation): array
 {
     $title = (string) ($reservation['title'] ?? '');

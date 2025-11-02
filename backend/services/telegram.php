@@ -114,3 +114,31 @@ function sendTelegramText(string $chatId, string $message): bool
     return true;
 }
 
+/**
+ * Returns Bot info (getMe) including username. Cached per request.
+ */
+function telegramGetMe(): ?array
+{
+    static $cached = null;
+    if ($cached !== null) { return $cached; }
+    try {
+        $cfg = getTelegramConfig();
+    } catch (Throwable $e) { return null; }
+
+    if (empty($cfg['enabled'])) { return null; }
+    if (!extension_loaded('curl')) { return null; }
+
+    $url = sprintf('%s/bot%s/getMe', $cfg['api_base'], $cfg['bot_token']);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    if ($response === false) { return null; }
+    $data = json_decode((string)$response, true);
+    if (!is_array($data) || empty($data['ok'])) { return null; }
+    $cached = (array)($data['result'] ?? []);
+    return $cached;
+}
