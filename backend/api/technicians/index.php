@@ -96,28 +96,13 @@ function handleTechniciansGet(PDO $pdo): void
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    // Add computed has_tg_link if telegram_links table exists
-    $hasLinksTable = false;
-    try {
-        $chk = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
-        $hasLinksTable = $chk && $chk->fetch() ? true : false;
-    } catch (Throwable $_) { $hasLinksTable = false; }
-
-    if ($hasLinksTable) {
-        $query = sprintf(
-            'SELECT t.*, EXISTS(SELECT 1 FROM telegram_links tl WHERE ((tl.technician_id = t.id) OR (tl.phone = t.phone)) AND tl.chat_id IS NOT NULL AND tl.used_at IS NOT NULL LIMIT 1) AS has_tg_link FROM technicians t %s ORDER BY t.created_at DESC LIMIT %d OFFSET %d',
-            $whereClause,
-            $limit,
-            $offset
-        );
-    } else {
-        $query = sprintf(
-            'SELECT *, 0 AS has_tg_link FROM technicians %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
-            $whereClause,
-            $limit,
-            $offset
-        );
-    }
+    // Simple query; we'll compute has_tg_link per-row to avoid SQL portability issues
+    $query = sprintf(
+        'SELECT * FROM technicians %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
+        $whereClause,
+        $limit,
+        $offset
+    );
 
     $statement = $pdo->prepare($query);
     foreach ($params as $key => $value) {
@@ -126,8 +111,31 @@ function handleTechniciansGet(PDO $pdo): void
     $statement->execute();
 
     $items = [];
+    // Check if telegram_links table exists once
+    $hasLinksTable = false;
+    try {
+        $chk = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+        $hasLinksTable = $chk && $chk->fetch() ? true : false;
+    } catch (Throwable $_) { $hasLinksTable = false; }
+
+    $hasLinkStmt = null;
+    if ($hasLinksTable) {
+        $hasLinkStmt = $pdo->prepare('SELECT 1 FROM telegram_links WHERE (technician_id = :tid OR phone = :phone) AND chat_id IS NOT NULL AND used_at IS NOT NULL LIMIT 1');
+    }
+
     while ($row = $statement->fetch()) {
-        $items[] = mapTechnicianRow($row);
+        $mapped = mapTechnicianRow($row);
+        if ($hasLinksTable && $hasLinkStmt) {
+            try {
+                $hasLinkStmt->execute(['tid' => (int)$mapped['id'], 'phone' => (string)($mapped['phone'] ?? '')]);
+                $mapped['has_tg_link'] = (bool) $hasLinkStmt->fetchColumn();
+            } catch (Throwable $_) {
+                $mapped['has_tg_link'] = false;
+            }
+        } else {
+            $mapped['has_tg_link'] = false;
+        }
+        $items[] = $mapped;
     }
 
     respond(
