@@ -24,6 +24,15 @@ jobs:
           npm ci --no-audit --fund=false
           npm run build
 
+      - name: List build output
+        run: |
+          pwd
+          ls -la
+          echo "--- dist ---"
+          ls -la dist || true
+          echo "--- backend ---"
+          ls -la backend || true
+
       - name: Upload files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -31,10 +40,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: |
-            dist
-            backend
-            .htaccess
+          source: "dist/*,backend/*,.htaccess"
           target: ${{ secrets.SSH_TARGET_DIR }}
           overwrite: true
 
