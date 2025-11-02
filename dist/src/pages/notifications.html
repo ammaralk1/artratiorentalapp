@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.CYmro1Me.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.CYxRUoWL.js">
+  <script type="module" crossorigin src="../../assets/notifications.BXzN0HHg.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.B4em9lkc.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.BeZ1LAAP.css">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.CM2I-AZ_.css">
 </head>
 <body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -384,6 +384,34 @@
                   <tr><td colspan="3" class="text-center text-muted">—</td></tr>
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          <!-- ✅ Simple Telegram Chat (beta) -->
+          <section class="glass-card space-y-4" id="telegram-chat-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">💬 محادثة تيليغرام (تجريبي)</h3>
+                <p class="text-sm text-base-content/70">اختر فني لعرض آخر الرسائل والرد عليه.</p>
+              </div>
+            </header>
+            <div class="grid gap-3 md:grid-cols-3 items-end">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="tg-chat-tech-search">اختيار فني</label>
+                <input id="tg-chat-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال">
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn" id="tg-chat-pick-btn">🔎 بحث</button>
+                <button type="button" class="btn btn-outline" id="tg-chat-refresh-btn">🔄 تحديث</button>
+              </div>
+              <div class="text-sm text-base-content/70" id="tg-chat-selected"></div>
+            </div>
+            <div class="border rounded-lg p-3 max-h-80 overflow-y-auto bg-base-200/40" id="tg-chat-messages">
+              <div class="text-center text-muted">—</div>
+            </div>
+            <div class="flex gap-2">
+              <input id="tg-chat-input" class="input input-bordered flex-1" placeholder="اكتب رسالة…">
+              <button type="button" class="btn btn-primary" id="tg-chat-send">إرسال</button>
             </div>
           </section>
         </div>
