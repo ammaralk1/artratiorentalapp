@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.Cn1kgIbR.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.Bn47WHv2.js">
+  <script type="module" crossorigin src="../../assets/notifications.Dbk2aEJZ.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.CdkYe04c.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.BJoLxHgx.css">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.DreCkCq8.css">
 </head>
 <body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -300,6 +300,7 @@
                   <option value="sent" data-i18n data-i18n-key="notifications.logs.filters.sent">مرسلة</option>
                   <option value="failed" data-i18n data-i18n-key="notifications.logs.filters.failed">فاشلة</option>
                 </select>
+                <input id="log-filter-batch" type="search" class="input input-bordered input-sm" placeholder="batch_id">
                 <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
                 <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
                 <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn">🗑️ مسح السجل</button>
@@ -354,27 +355,31 @@
                 <tbody id="tpl-body"><tr><td colspan="4" class="text-center text-muted">—</td></tr></tbody>
               </table>
             </div>
-            <div class="grid gap-3 md:grid-cols-2" id="tpl-form" hidden>
-              <input id="tpl-id" type="hidden">
-              <div class="flex flex-col gap-2">
-                <label class="font-medium">الاسم</label>
-                <input id="tpl-name" class="input input-bordered" placeholder="اسم القالب">
-                <label class="font-medium">القناة</label>
-                <select id="tpl-channel" class="select select-bordered"><option value="both">both</option><option value="email">email</option><option value="telegram">telegram</option></select>
-                <label class="font-medium">رابط صورة (اختياري لتيليغرام)</label>
-                <input id="tpl-attachment" class="input input-bordered" placeholder="https://...jpg">
-              </div>
-              <div class="flex flex-col gap-2">
-                <label class="font-medium">الموضوع</label>
-                <input id="tpl-subject" class="input input-bordered" placeholder="مثال: إشعار...">
-                <label class="font-medium">النص</label>
-                <textarea id="tpl-text" class="textarea textarea-bordered min-h-[120px]" placeholder="نص الرسالة (سيُستخدم أيضاً كتسمية للصورة)"></textarea>
-                <div class="flex gap-2">
-                  <button type="button" class="btn btn-primary" id="tpl-save">💾 حفظ</button>
-                  <button type="button" class="btn btn-outline" id="tpl-cancel">إلغاء</button>
+              <div class="grid gap-3 md:grid-cols-2" id="tpl-form" hidden>
+                <input id="tpl-id" type="hidden">
+                <div class="flex flex-col gap-2">
+                  <label class="font-medium">الاسم</label>
+                  <input id="tpl-name" class="input input-bordered" placeholder="اسم القالب">
+                  <label class="font-medium">القناة</label>
+                  <select id="tpl-channel" class="select select-bordered"><option value="both">both</option><option value="email">email</option><option value="telegram">telegram</option></select>
+                  <label class="font-medium">رابط صورة (اختياري لتيليغرام)</label>
+                  <input id="tpl-attachment" class="input input-bordered" placeholder="https://...jpg">
+                  <label class="font-medium">روابط صور متعددة (كل سطر رابط)</label>
+                  <textarea id="tpl-attachments" class="textarea textarea-bordered min-h-[100px]" placeholder="https://..1.jpg\nhttps://..2.jpg\n..."></textarea>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label class="font-medium">الموضوع</label>
+                  <input id="tpl-subject" class="input input-bordered" placeholder="مثال: إشعار...">
+                  <label class="font-medium">النص (Text)</label>
+                  <textarea id="tpl-text" class="textarea textarea-bordered min-h-[120px]" placeholder="نص الرسالة (سيُستخدم أيضاً كتسمية للصورة)"></textarea>
+                  <label class="font-medium">HTML (اختياري للبريد)</label>
+                  <textarea id="tpl-html" class="textarea textarea-bordered min-h-[120px]" placeholder="HTML للرسالة"></textarea>
+                  <div class="flex gap-2">
+                    <button type="button" class="btn btn-primary" id="tpl-save">💾 حفظ</button>
+                    <button type="button" class="btn btn-outline" id="tpl-cancel">إلغاء</button>
+                  </div>
                 </div>
               </div>
-            </div>
           </section>
 
           <!-- ✅ Telegram linking helper for technicians -->
