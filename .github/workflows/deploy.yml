@@ -13,14 +13,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js (Node 22 for Vite 7)
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '22.12.0'
+          cache: 'npm'
 
       - name: Install and build frontend
         run: |
-          npm ci
+          npm ci --no-audit --fund=false
           npm run build
 
       - name: Upload files to server
