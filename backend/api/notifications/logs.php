@@ -17,6 +17,23 @@ try {
     ensureNotificationEventsTable($pdo);
 
     if ($method === 'GET') {
+        // If the table still does not exist (e.g., DB user lacks CREATE/ALTER privileges),
+        // degrade gracefully by returning an empty list instead of a 500.
+        try {
+            $chk = $pdo->query("SHOW TABLES LIKE 'notification_events'");
+            $hasTable = $chk && $chk->fetch() ? true : false;
+        } catch (Throwable $_) { $hasTable = false; }
+        if (!$hasTable) {
+            respond([], 200, [
+                'limit' => 0,
+                'offset' => 0,
+                'count' => 0,
+                'total' => 0,
+                'page' => 1,
+                'pages' => 1,
+            ]);
+            exit;
+        }
         $eventType = trim((string)($_GET['event_type'] ?? ''));
         $entityType = trim((string)($_GET['entity_type'] ?? ''));
         $status = trim((string)($_GET['status'] ?? ''));
