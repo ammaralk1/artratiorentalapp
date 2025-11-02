@@ -298,17 +298,31 @@ try {
         exit;
     }
 
+    // Prepare batch + meta for retries
+    $batchId = rtrim(strtr(base64_encode(random_bytes(9)), '+/', '-_'), '=');
+    $commonMeta = [
+        'message' => [ 'subject' => $subject, 'html' => $htmlBody, 'text' => $textBody ],
+        'channels' => [ 'email' => $sendEmail, 'telegram' => $sendTelegram ],
+        'entity' => [ 'type' => $entityType, 'id' => $entityId ],
+        'requested_recipients' => [
+            'technicians' => $toTechnicians,
+            'admins' => $toAdmins,
+            'additional_emails' => $extraEmails,
+            'additional_telegram_chat_ids' => $extraTgChatIds,
+        ],
+    ];
+
     // Send
     foreach ($targets['email'] as $target) {
         $ok = sendEmail($target['recipient'], $target['name'], $subject, $htmlBody, $textBody);
         $err = function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null;
-        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err);
+        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err, $batchId, $commonMeta);
         if ($ok) { $channelsSent['email']++; }
     }
     foreach ($targets['telegram'] as $target) {
         $ok = sendTelegramText($target['recipient'], $textBody);
         $tgErr = function_exists('telegramGetLastError') ? (telegramGetLastError() ?? null) : null;
-        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr);
+        recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr, $batchId, $commonMeta);
         if ($ok) { $channelsSent['telegram']++; }
     }
 
@@ -325,6 +339,7 @@ try {
             'email' => count($targets['email']),
             'telegram' => count($targets['telegram']),
         ],
+        'batch_id' => $batchId,
         // Provide resolved targets detail so clients can derive accurate counts when needed
         'targets_detail' => [
             'email' => array_map(static function($t) { return [

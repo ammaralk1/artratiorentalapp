@@ -32,6 +32,7 @@ function cacheElements() {
   els.body = q('#notif-body');
   els.sendBtn = q('#notif-send-btn');
   els.previewBtn = q('#notif-preview-btn');
+  els.retryLastBtn = q('#notif-retry-last');
   els.previewBox = q('#notif-preview');
   els.tReminder = q('#notif-template-reminder');
   els.tNote = q('#notif-template-note');
@@ -161,6 +162,7 @@ function updatePreviewBoxFromResult(data, { prefix } = {}) {
   if (!els.previewBox) return;
   const html = buildPreviewHtml(data, { prefix });
   els.previewBox.innerHTML = html;
+  try { updateChannelCountsFromPreview(data); } catch (_) {}
 }
 
 function buildPreviewHtml(data, { prefix } = {}) {
@@ -197,6 +199,22 @@ function buildPreviewHtml(data, { prefix } = {}) {
   const header = prefix ? `<span class="text-base-content/80">${prefix}</span> — ` : '';
   const body = lines.length ? lines.join(' | ') : 'لا مستلمين مطابقين.';
   return header + body;
+}
+
+function updateChannelCountsFromPreview(data) {
+  const targets = data?.targets || {};
+  const details = data?.targets_detail || {};
+  let emailCount = Number(targets.email || 0);
+  let tgCount = Number(targets.telegram || 0);
+  if (!emailCount && Array.isArray(details.email)) emailCount = details.email.length;
+  if (!tgCount && Array.isArray(details.telegram)) tgCount = details.telegram.length;
+  const setLabelCount = (checkboxEl, baseLabel, count) => {
+    if (!checkboxEl) return;
+    const span = checkboxEl.parentElement?.querySelector('span');
+    if (span) span.textContent = count ? `${baseLabel} (${count})` : baseLabel;
+  };
+  setLabelCount(els.chEmail, 'إيميل', emailCount);
+  setLabelCount(els.chTelegram, 'تليغرام', tgCount);
 }
 
 async function sendManual() {
@@ -267,10 +285,41 @@ async function sendManual() {
     showToast(`${t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح')}${suffix}`);
     // Reflect final counts in preview box
     updatePreviewBoxFromResult(data, { prefix: 'آخر إرسال' });
+    // Enable retry button if any failed
+    try {
+      const totalTargets = (Number(targets.email || 0) + Number(targets.telegram || 0));
+      const totalSent = (Number(sent.email || 0) + Number(sent.telegram || 0));
+      const hasFailures = totalTargets > totalSent;
+      if (els.retryLastBtn) {
+        const bid = res?.data?.batch_id || data?.batch_id;
+        if (hasFailures && bid) {
+          els.retryLastBtn.hidden = false;
+          els.retryLastBtn.setAttribute('data-batch', String(bid));
+        } else {
+          els.retryLastBtn.hidden = true;
+          els.retryLastBtn.removeAttribute('data-batch');
+        }
+      }
+    } catch (_) {}
     fetchLogs();
   } catch (e) {
     console.error(e);
     const msg = (e && e.message) ? String(e.message) : 'فشل الإرسال';
+    showToast(msg);
+  }
+}
+
+async function retryLastBatch() {
+  const bid = els.retryLastBtn?.getAttribute('data-batch') || '';
+  if (!bid) { showToast('لا توجد دفعة لإعادة المحاولة'); return; }
+  try {
+    const res = await apiRequest('/notifications/retry.php', { method: 'POST', body: { batch_id: bid } });
+    const sent = Number(res?.data?.sent || 0);
+    showToast(`تمت إعادة المحاولة — أُرسلت: ${sent}`);
+    fetchLogs();
+  } catch (e) {
+    console.error(e);
+    const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل إعادة المحاولة';
     showToast(msg);
   }
 }
@@ -381,6 +430,9 @@ function attachEvents() {
   }
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
+  }
+  if (els.retryLastBtn) {
+    els.retryLastBtn.addEventListener('click', retryLastBatch);
   }
   // Chat handlers
   if (els.tgChatPick) els.tgChatPick.addEventListener('click', chatPickTechnician);
@@ -511,7 +563,7 @@ function formatEventLabel(ev) {
 
 function renderLogs(items) {
   if (!Array.isArray(items) || items.length === 0) {
-    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.empty','لا توجد سجلات حالياً.')}</td></tr>`;
+    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">${t('notifications.logs.empty','لا توجد سجلات حالياً.')}</td></tr>`;
     return;
   }
 
@@ -520,6 +572,7 @@ function renderLogs(items) {
     const event = formatEventLabel(row.event_type || '');
     const entity = `${row.entity_type || ''} #${row.entity_id || ''}`;
     const recipient = row.recipient_display || `${row.recipient_type || ''}: ${row.recipient_identifier || ''}`;
+    const rname = row.recipient_name || '';
     const channel = row.channel || '';
     const status = row.status || '';
     const error = (row.error || '').toString().slice(0, 140);
@@ -531,6 +584,7 @@ function renderLogs(items) {
         <td>${time}</td>
         <td>${event}</td>
         <td>${entity}</td>
+        <td>${rname || '—'}</td>
         <td>${recipient}</td>
         <td>${channel}</td>
         <td>${statusBadge}</td>
@@ -542,7 +596,7 @@ function renderLogs(items) {
 
 async function fetchLogs() {
   try {
-    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
+    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
     const params = buildLogParams();
     const res = await apiRequest(`/notifications/logs.php?${params.toString()}`);
     const items = Array.isArray(res?.data) ? res.data : [];
@@ -575,6 +629,61 @@ function updateFailedSummary(items) {
   }
 }
 
+async function fetchWebhookInfo() {
+  try {
+    if (els.tgWebhookInfo) els.tgWebhookInfo.textContent = 'جارٍ التحميل…';
+    const res = await apiRequest('/telegram/webhook-manage.php');
+    const info = res?.data || res || {};
+    const url = info.url || '—';
+    const has = info.has_custom_certificate ? 'yes' : 'no';
+    const pending = info.pending_update_count != null ? String(info.pending_update_count) : '—';
+    const lastErr = info.last_error_message ? `خطأ: ${info.last_error_message}` : '';
+    const lastDate = info.last_error_date ? new Date(info.last_error_date * 1000).toLocaleString() : '';
+    const arr = [`URL: ${url}`, `Pending: ${pending}`, `Cert: ${has}`];
+    if (lastErr) arr.push(lastErr);
+    if (lastDate) arr.push(`وقت الخطأ: ${lastDate}`);
+    if (els.tgWebhookInfo) els.tgWebhookInfo.textContent = arr.join(' | ');
+  } catch (e) {
+    console.error(e);
+    if (els.tgWebhookInfo) els.tgWebhookInfo.textContent = 'فشل قراءة الحالة';
+  }
+}
+
+async function setWebhook() {
+  try {
+    const res = await apiRequest('/telegram/webhook-manage.php', { method: 'POST', body: {} });
+    if ((res?.ok === true) || (res?.data?.ok === true)) {
+      showToast('تم ضبط Webhook');
+    } else {
+      showToast('تعذر ضبط Webhook');
+    }
+  } catch (e) {
+    console.error(e);
+    showToast('فشل ضبط Webhook');
+  } finally {
+    fetchWebhookInfo();
+  }
+}
+
+async function fetchDiagnostics() {
+  if (!els.diagBody) return;
+  try {
+    els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">جارٍ الفحص…</td></tr>';
+    const res = await apiRequest('/notifications/diagnostics.php');
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) { els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">—</td></tr>'; return; }
+    els.diagBody.innerHTML = items.map((c) => {
+      const ok = !!c.ok;
+      const badge = ok ? '<span class="badge bg-primary-subtle">OK</span>' : '<span class="badge bg-danger-subtle">مفقود</span>';
+      const hint = c.hint || '';
+      return `<tr><td>${c.name}</td><td>${badge}</td><td>${hint}</td></tr>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    els.diagBody.innerHTML = '<tr><td colspan="3" class="text-center text-error">فشل الفحص</td></tr>';
+  }
+}
+
 (async function init() {
   await checkAuth();
   const me = await getCurrentUser();
@@ -590,6 +699,8 @@ function updateFailedSummary(items) {
   fetchLogs();
   fetchTechs();
   fetchAdminLinks();
+  fetchWebhookInfo();
+  fetchDiagnostics();
 })();
 
 let CHAT_SELECTED_TECH = null; // { id, name, chat_id? }

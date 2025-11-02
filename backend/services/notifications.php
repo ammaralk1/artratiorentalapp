@@ -128,13 +128,22 @@ function hasNotificationBeenSent(PDO $pdo, string $eventType, string $entityType
     }
 }
 
-function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType, int $entityId, string $recipientType, string $recipient, string $channel, string $status, ?string $error = null): void
+function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType, int $entityId, string $recipientType, string $recipient, string $channel, string $status, ?string $error = null, ?string $batchId = null, ?array $meta = null): void
 {
     ensureNotificationEventsTable($pdo);
     try {
         // Always insert a new row to keep a full history of sends.
-        $sql = 'INSERT INTO notification_events (event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error)
-                VALUES (:event_type, :entity_type, :entity_id, :recipient_type, :recipient_identifier, :channel, :status, :error)';
+        $sql = 'INSERT INTO notification_events (
+                    event_type, entity_type, entity_id,
+                    recipient_type, recipient_identifier,
+                    channel, status, error,
+                    batch_id, sent_at, provider_status_code, provider_message_id, provider_error, meta_json
+                ) VALUES (
+                    :event_type, :entity_type, :entity_id,
+                    :recipient_type, :recipient_identifier,
+                    :channel, :status, :error,
+                    :batch_id, :sent_at, :p_status, :p_msg_id, :p_error, :meta_json
+                )';
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             'event_type' => $eventType,
@@ -145,6 +154,12 @@ function recordNotificationEvent(PDO $pdo, string $eventType, string $entityType
             'channel' => $channel,
             'status' => $status,
             'error' => $error,
+            'batch_id' => $batchId,
+            'sent_at' => $status === 'sent' ? (new DateTimeImmutable())->format('Y-m-d H:i:s') : null,
+            'p_status' => null,
+            'p_msg_id' => null,
+            'p_error' => null,
+            'meta_json' => $meta ? json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
         ]);
     } catch (Throwable $e) {
         // swallow to avoid breaking flows

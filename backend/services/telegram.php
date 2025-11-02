@@ -144,6 +144,48 @@ function telegramGetMe(): ?array
 }
 
 /**
+ * Get Bot API webhook info.
+ */
+function telegramGetWebhookInfo(): ?array
+{
+    try { $cfg = getTelegramConfig(); } catch (Throwable $e) { return null; }
+    if (empty($cfg['enabled']) || !extension_loaded('curl')) { return null; }
+    $url = sprintf('%s/bot%s/getWebhookInfo', $cfg['api_base'], $cfg['bot_token']);
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [ CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15 ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    if ($response === false) { return null; }
+    $data = json_decode((string)$response, true);
+    if (!is_array($data) || empty($data['ok'])) { return null; }
+    return (array)($data['result'] ?? []);
+}
+
+/**
+ * Set Bot API webhook to given URL.
+ */
+function telegramSetWebhook(string $webhookUrl): ?array
+{
+    try { $cfg = getTelegramConfig(); } catch (Throwable $e) { return null; }
+    if (empty($cfg['enabled']) || !extension_loaded('curl')) { return null; }
+    $endpoint = sprintf('%s/bot%s/setWebhook', $cfg['api_base'], $cfg['bot_token']);
+    $payload = [ 'url' => $webhookUrl ];
+    $ch = curl_init($endpoint);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [ 'Content-Type: application/json' ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_TIMEOUT => 30,
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    if ($response === false) { return null; }
+    $data = json_decode((string)$response, true);
+    return is_array($data) ? $data : null;
+}
+
+/**
  * Normalize phone to digits-only E.164-like (without leading '+').
  * Removes spaces, dashes, parentheses; strips leading '+' or '00'.
  */
