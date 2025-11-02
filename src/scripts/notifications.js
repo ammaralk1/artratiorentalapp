@@ -182,17 +182,19 @@ async function sendManual() {
     if (!te && Array.isArray(details.email)) te = details.email.length;
     if (!tw && Array.isArray(details.whatsapp)) tw = details.whatsapp.length;
     const parts = [];
-    if (els.chEmail?.checked) {
+    const showEmail = (te > 0 || se > 0);
+    const showWhatsapp = (tw > 0 || sw > 0);
+    if (showEmail) {
       // If deliveries reported as zero but we have targets, show targets only to avoid confusing 0/Te
       const emailPart = se > 0 ? `إيميل: ${se}/${te}` : (te > 0 ? `إيميل: ${te}` : '');
       if (emailPart) parts.push(emailPart);
     }
-    if (els.chWhatsapp?.checked) {
+    if (showWhatsapp) {
       const waPart = sw > 0 ? `واتساب: ${sw}/${tw}` : (tw > 0 ? `واتساب: ${tw}` : '');
       if (waPart) parts.push(waPart);
     }
     // Append a brief hint if email had targets but zero deliveries and backend exposed an error
-    if (els.chEmail?.checked && se === 0 && te > 0 && data?.errors?.last_email_error) {
+    if (showEmail && se === 0 && te > 0 && data?.errors?.last_email_error) {
       parts.push('تحقق من إعدادات البريد');
     }
     const suffix = parts.length ? ` — ${parts.join(' | ')}` : '';
