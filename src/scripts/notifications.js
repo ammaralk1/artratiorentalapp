@@ -47,6 +47,9 @@ function cacheElements() {
   els.logBody = q('#notif-logs-body');
   els.logPagination = q('#log-pagination');
   els.logFailedSummary = q('#notif-logs-failed-summary');
+  // Diagnostics
+  els.diagRefresh = q('#notif-diag-refresh');
+  els.diagBody = q('#notif-diag-body');
   // Templates manager elements
   els.tplRefresh = q('#tpl-refresh');
   els.tplNew = q('#tpl-new');
@@ -501,6 +504,8 @@ function attachEvents() {
   if (els.tplVars) els.tplVars.addEventListener('click', () => { if (els.tplVarsBox) els.tplVarsBox.classList.toggle('hidden'); });
   if (els.tplSave) els.tplSave.addEventListener('click', saveTemplate);
   if (els.tplCancel) els.tplCancel.addEventListener('click', () => closeTemplateForm());
+  // Diagnostics refresh
+  if (els.diagRefresh) els.diagRefresh.addEventListener('click', fetchDiagnostics);
   if (els.tplBody) {
     // Persistent delegation for edit/delete buttons inside the table
     els.tplBody.addEventListener('click', async (ev) => {
