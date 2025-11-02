@@ -117,6 +117,16 @@ async function handleSelect(id, type) {
     selected = { type, id: Number(item.id), summary: summarizeSelection(type, item) };
     els.selectedSummary.textContent = selected.summary;
     els.composeSection.hidden = false;
+    // Smoothly scroll to compose section and focus body for faster workflow
+    try {
+      // Ensure element is visible before scrolling
+      setTimeout(() => {
+        els.composeSection?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (els.body && typeof els.body.focus === 'function') {
+          els.body.focus();
+        }
+      }, 10);
+    } catch (_) { /* ignore scroll errors */ }
   } catch (e) {
     console.error(e);
     showToast('⚠️ تعذر تحميل العنصر المحدد');
