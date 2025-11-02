@@ -12,6 +12,7 @@ initDashboardShell();
 const els = {};
 let selected = null; // {type, id, summary}
 let searchTimer = null;
+let previewTimer = null;
 
 function q(sel) { return document.querySelector(sel); }
 
@@ -139,10 +140,36 @@ async function handleSelect(id, type) {
         }
       }, 10);
     } catch (_) { /* ignore scroll errors */ }
+    // Auto preview recipients on selection
+    try { await previewTargets(); } catch (_) {}
   } catch (e) {
     console.error(e);
     showToast('⚠️ تعذر تحميل العنصر المحدد');
   }
+}
+
+function updatePreviewBoxFromResult(data, { prefix } = {}) {
+  if (!els.previewBox) return;
+  const sent = data?.sent || null;
+  const targets = data?.targets || null;
+  const details = data?.targets_detail || null;
+  let emailCount = Number(targets?.email || 0);
+  let tgCount = Number(targets?.telegram || 0);
+  if ((!emailCount || !tgCount) && details) {
+    if (!emailCount && Array.isArray(details.email)) emailCount = details.email.length;
+    if (!tgCount && Array.isArray(details.telegram)) tgCount = details.telegram.length;
+  }
+  const parts = [];
+  if (emailCount) {
+    if (sent && typeof sent.email === 'number') parts.push(`إيميل: ${sent.email}/${emailCount}`);
+    else parts.push(`إيميل: ${emailCount}`);
+  }
+  if (tgCount) {
+    if (sent && typeof sent.telegram === 'number') parts.push(`تليغرام: ${sent.telegram}/${tgCount}`);
+    else parts.push(`تليغرام: ${tgCount}`);
+  }
+  const text = (prefix ? `${prefix} — ` : '') + (parts.join(' | ') || 'لا مستلمين مطابقين.');
+  els.previewBox.textContent = text;
 }
 
 async function sendManual() {
@@ -211,6 +238,8 @@ async function sendManual() {
     }
     const suffix = parts.length ? ` — ${parts.join(' | ')}` : '';
     showToast(`${t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح')}${suffix}`);
+    // Reflect final counts in preview box
+    updatePreviewBoxFromResult(data, { prefix: 'آخر إرسال' });
     fetchLogs();
   } catch (e) {
     console.error(e);
@@ -334,6 +363,17 @@ function attachEvents() {
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
   }
+  // Auto-preview on channel/recipient changes
+  const triggerPreview = () => {
+    if (previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(() => { if (selected) previewTargets().catch(()=>{}); }, 250);
+  };
+  if (els.chEmail) els.chEmail.addEventListener('change', triggerPreview);
+  if (els.chTelegram) els.chTelegram.addEventListener('change', triggerPreview);
+  if (els.toTechs) els.toTechs.addEventListener('change', triggerPreview);
+  if (els.toAdmins) els.toAdmins.addEventListener('change', triggerPreview);
+  if (els.extraEmails) els.extraEmails.addEventListener('input', triggerPreview);
+  if (els.extraChatIds) els.extraChatIds.addEventListener('input', triggerPreview);
 
   const triggerLogsFetch = () => {
     LOG_PAGE = 1;
