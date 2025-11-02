@@ -35,20 +35,21 @@ try {
         $technicianId = isset($_GET['technician_id']) ? (int)$_GET['technician_id'] : 0;
         $limit = isset($_GET['limit']) ? max(1, min(200, (int)$_GET['limit'])) : 50;
         $beforeId = isset($_GET['before_id']) ? (int)$_GET['before_id'] : 0;
+        $sinceId = isset($_GET['since_id']) ? (int)$_GET['since_id'] : 0;
 
         $where = [];
         $params = [];
         if ($chatId !== '') { $where[] = 'm.chat_id = :cid'; $params['cid'] = $chatId; }
         if ($technicianId > 0) { $where[] = 'm.technician_id = :tid'; $params['tid'] = $technicianId; }
+        if ($beforeId > 0) { $where[] = 'm.id < :before'; $params['before'] = $beforeId; }
+        if ($sinceId > 0) { $where[] = 'm.id > :since'; $params['since'] = $sinceId; }
         $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-        $beforeClause = $beforeId > 0 ? ' AND m.id < :before' : '';
-        if ($beforeId > 0) { $params['before'] = $beforeId; }
 
         $sql = 'SELECT m.id, m.message_id, m.chat_id, m.technician_id, m.direction, m.text, m.from_id, m.from_username, m.created_at,
                        t.full_name AS technician_name
                 FROM telegram_messages m
                 LEFT JOIN technicians t ON t.id = m.technician_id
-                ' . $whereClause . $beforeClause . '
+                ' . $whereClause . '
                 ORDER BY m.id DESC
                 LIMIT ' . (int)$limit;
         $stmt = $pdo->prepare($sql);
@@ -127,4 +128,3 @@ try {
 } catch (Throwable $e) {
     respondError('Unexpected server error', 500, [ 'details' => $e->getMessage() ]);
 }
-

@@ -13,6 +13,10 @@ const els = {};
 let selected = null; // {type, id, summary}
 let searchTimer = null;
 let previewTimer = null;
+let CHAT_LIVE = false;
+let CHAT_POLL_TIMER = null;
+let CHAT_LAST_ID = 0;
+let CHAT_POLLING = false;
 
 function q(sel) { return document.querySelector(sel); }
 
@@ -90,6 +94,7 @@ function cacheElements() {
   els.tgChatMessages = q('#tg-chat-messages');
   els.tgChatInput = q('#tg-chat-input');
   els.tgChatSend = q('#tg-chat-send');
+  els.tgChatLive = q('#tg-chat-live');
 }
 
 function formatWhen(item, type) {
@@ -474,6 +479,10 @@ function attachEvents() {
   if (els.tgChatRefresh) els.tgChatRefresh.addEventListener('click', chatRefresh);
   if (els.tgChatSend) els.tgChatSend.addEventListener('click', chatSend);
   if (els.tgChatSearch) els.tgChatSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') chatPickTechnician(); });
+  if (els.tgChatLive) els.tgChatLive.addEventListener('change', () => {
+    CHAT_LIVE = !!els.tgChatLive.checked;
+    if (CHAT_LIVE) { chatStartLive(); } else { chatStopLive(); }
+  });
   // Auto-preview on channel/recipient changes
   const triggerPreview = () => {
     if (previewTimer) clearTimeout(previewTimer);
@@ -974,20 +983,68 @@ async function chatRefresh() {
       els.tgChatMessages.innerHTML = '<div class="text-center text-muted">لا توجد رسائل</div>';
       return;
     }
-    const html = items.map((m) => {
-      const isOut = (m.direction === 'outbound');
-      const who = isOut ? 'أنا' : (m.technician_name || 'فني');
-      const side = isOut ? 'justify-end' : 'justify-start';
-      const bubble = isOut ? 'bg-primary text-primary-content' : 'bg-base-200';
-      const time = m.created_at || '';
-      const txt = (m.text || '').replace(/</g,'&lt;');
-      return `<div class="flex ${side}"><div class="rounded-xl px-3 py-2 m-1 max-w-[80%] ${bubble}"><div class="text-xs opacity-70">${who} • ${time}</div><div>${txt}</div></div></div>`;
-    }).join('');
+    const html = items.map(buildChatBubble).join('');
     els.tgChatMessages.innerHTML = html;
     els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
+    CHAT_LAST_ID = Number(items[items.length - 1]?.id || 0);
+    if (CHAT_LIVE && !CHAT_POLL_TIMER) chatStartLive();
   } catch (e) {
     console.error(e);
     els.tgChatMessages.innerHTML = '<div class="text-center text-error">فشل تحميل المحادثة</div>';
+  }
+}
+
+function buildChatBubble(m) {
+  const isOut = (m.direction === 'outbound');
+  const who = isOut ? 'أنا' : (m.technician_name || 'فني');
+  const side = isOut ? 'justify-end' : 'justify-start';
+  const bubble = isOut ? 'bg-primary text-primary-content' : 'bg-base-200';
+  const time = m.created_at || '';
+  const txt = (m.text || '').replace(/</g,'&lt;');
+  return `<div class="flex ${side}"><div class="rounded-xl px-3 py-2 m-1 max-w-[80%] ${bubble}"><div class="text-xs opacity-70">${who} • ${time}</div><div>${txt}</div></div></div>`;
+}
+
+function chatStartLive() {
+  chatStopLive();
+  if (!CHAT_SELECTED_TECH) return;
+  CHAT_LIVE = true;
+  if (els.tgChatLive) els.tgChatLive.checked = true;
+  CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
+}
+
+function chatStopLive() {
+  CHAT_LIVE = false;
+  if (els.tgChatLive) els.tgChatLive.checked = false;
+  if (CHAT_POLL_TIMER) { clearInterval(CHAT_POLL_TIMER); CHAT_POLL_TIMER = null; }
+  CHAT_POLLING = false;
+}
+
+async function chatFetchNew() {
+  if (!CHAT_SELECTED_TECH) return;
+  if (CHAT_POLLING) return;
+  CHAT_POLLING = true;
+  try {
+    const params = new URLSearchParams();
+    params.set('technician_id', String(CHAT_SELECTED_TECH.id));
+    if (CHAT_LAST_ID > 0) params.set('since_id', String(CHAT_LAST_ID));
+    params.set('limit', '100');
+    const res = await apiRequest(`/telegram/messages.php?${params.toString()}`);
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (items.length) {
+      const frag = document.createDocumentFragment();
+      items.forEach((m) => {
+        CHAT_LAST_ID = Math.max(CHAT_LAST_ID, Number(m.id || 0));
+        const div = document.createElement('div');
+        div.innerHTML = buildChatBubble(m);
+        frag.appendChild(div.firstChild);
+      });
+      els.tgChatMessages.appendChild(frag);
+      els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
+    }
+  } catch (e) {
+    // Silent on polling errors to avoid spamming UI
+  } finally {
+    CHAT_POLLING = false;
   }
 }
 
