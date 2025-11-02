@@ -162,9 +162,14 @@ async function sendManual() {
     // Show a success toast including sent counts per channel.
     const data = res?.data || {};
     const sent = data?.sent || { email: 0, whatsapp: 0 };
+    const targets = data?.targets || { email: 0, whatsapp: 0 };
+    const se = Number(sent.email || 0);
+    const sw = Number(sent.whatsapp || 0);
+    const te = Number(targets.email || 0);
+    const tw = Number(targets.whatsapp || 0);
     const parts = [];
-    if (els.chEmail?.checked) parts.push(`إيميل: ${Number(sent.email || 0)}`);
-    if (els.chWhatsapp?.checked) parts.push(`واتساب: ${Number(sent.whatsapp || 0)}`);
+    if (els.chEmail?.checked) parts.push(`إيميل: ${se}/${te}`);
+    if (els.chWhatsapp?.checked) parts.push(`واتساب: ${sw}/${tw}`);
     const suffix = parts.length ? ` — ${parts.join(' | ')}` : '';
     showToast(`${t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح')}${suffix}`);
     fetchLogs();
