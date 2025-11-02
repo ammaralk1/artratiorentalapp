@@ -23,6 +23,7 @@ try {
         $channel = trim((string)($_GET['channel'] ?? ''));
         $recipientType = trim((string)($_GET['recipient_type'] ?? ''));
         $entityId = isset($_GET['entity_id']) ? (int) $_GET['entity_id'] : null;
+        $batchId = trim((string)($_GET['batch_id'] ?? ''));
         $q = trim((string)($_GET['q'] ?? ''));
         $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
         $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : null;
@@ -41,6 +42,7 @@ try {
         if ($channel !== '') { $where[] = 'channel = :channel'; $params['channel'] = $channel; }
         if ($recipientType !== '') { $where[] = 'recipient_type = :recipient_type'; $params['recipient_type'] = $recipientType; }
         if ($entityId) { $where[] = 'entity_id = :entity_id'; $params['entity_id'] = $entityId; }
+        if ($batchId !== '') { $where[] = 'batch_id = :batch_id'; $params['batch_id'] = $batchId; }
         if ($q !== '') { $where[] = 'recipient_identifier LIKE :q'; $params['q'] = '%' . $q . '%'; }
 
         $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
@@ -54,7 +56,7 @@ try {
         $pages = (int) max(1, (int) ceil($total / $limit));
         if ($page > $pages) { $page = $pages; $offset = ($page - 1) * $limit; }
 
-        $sql = 'SELECT id, event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error, created_at
+        $sql = 'SELECT id, event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error, batch_id, created_at
                 FROM notification_events ' . $whereClause . ' ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset';
         $stmt = $pdo->prepare($sql);
         foreach ($params as $key => $value) {
@@ -83,6 +85,7 @@ try {
                 'channel' => $row['channel'],
                 'status' => $row['status'],
                 'error' => $row['error'] ?? null,
+                'batch_id' => $row['batch_id'] ?? null,
                 'created_at' => $row['created_at'],
             ];
         }

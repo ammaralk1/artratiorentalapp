@@ -27,6 +27,7 @@ try {
     $window = max(1, min(60, $window));
 
     $runs = [
+        [ 'key' => '48h', 'offset' => '+48 hours' ],
         [ 'key' => '24h', 'offset' => '+24 hours' ],
         [ 'key' => '1h', 'offset' => '+1 hour' ],
     ];
@@ -56,6 +57,32 @@ try {
             }
         }
     }
+
+    // Same-day morning reminder (e.g., 08:00 local time): notify all reservations starting today
+    try {
+        $hour = (int) (getAppConfig('cron', 'morning_hour', 8));
+        $min = (int) (getAppConfig('cron', 'morning_minute', 0));
+        $morning = (new DateTimeImmutable((new DateTimeImmutable('now', new DateTimeZone($tz)))->format('Y-m-d') . sprintf(' %02d:%02d:00', $hour, $min), new DateTimeZone($tz)));
+        $from = $morning->modify('-' . $window . ' minutes')->format('Y-m-d H:i:s');
+        $to = $morning->modify('+' . $window . ' minutes')->format('Y-m-d H:i:s');
+        $stmt = $pdo->prepare('SELECT id FROM reservations WHERE start_datetime >= :startDay AND start_datetime < :endDay');
+        $startDay = (new DateTimeImmutable('today', new DateTimeZone($tz)))->format('Y-m-d 00:00:00');
+        $endDay = (new DateTimeImmutable('tomorrow', new DateTimeZone($tz)))->format('Y-m-d 00:00:00');
+
+        // Only run at morning window
+        $nowStr = $now->format('Y-m-d H:i:s');
+        if ($nowStr >= $from && $nowStr <= $to) {
+            $stmt->execute(['startDay' => $startDay, 'endDay' => $endDay]);
+            while ($row = $stmt->fetch()) {
+                $rid = (int)$row['id'];
+                $reservation = fetchReservationForNotification($pdo, $rid);
+                if ($reservation) {
+                    notifyReservationReminder($pdo, $reservation, 'morning');
+                    $processed[] = [ 'reservation_id' => $rid, 'window' => 'morning' ];
+                }
+            }
+        }
+    } catch (Throwable $_) { /* ignore */ }
 
     respond([ 'processed' => $processed, 'timezone' => $tz, 'window_minutes' => $window ]);
 } catch (Throwable $e) {

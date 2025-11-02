@@ -472,6 +472,13 @@ function attachEvents() {
   });
   els.logRefresh.addEventListener('click', fetchLogs);
 
+  // Templates manager
+  if (els.tplRefresh) els.tplRefresh.addEventListener('click', loadTemplatesManager);
+  if (els.tplNew) els.tplNew.addEventListener('click', () => openTemplateForm());
+  if (els.tplVars) els.tplVars.addEventListener('click', () => { if (els.tplVarsBox) els.tplVarsBox.classList.toggle('hidden'); });
+  if (els.tplSave) els.tplSave.addEventListener('click', saveTemplate);
+  if (els.tplCancel) els.tplCancel.addEventListener('click', () => closeTemplateForm());
+
   if (els.logClear) {
     els.logClear.addEventListener('click', async () => {
       const ok = window.confirm('هل تريد مسح السجل الحالي؟ سيتم حذف العناصر المطابقة للفلاتر.');
@@ -510,6 +517,12 @@ function buildLogParams() {
   if (els.logChannel.value) params.set('channel', els.logChannel.value);
   if (els.logStatus.value) params.set('status', els.logStatus.value);
   if ((els.logQ.value || '').trim()) params.set('q', els.logQ.value.trim());
+  // Support optional batch_id from URL hash e.g., #batch=abc
+  try {
+    const h = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    const b = h.get('batch');
+    if (b) params.set('batch_id', b);
+  } catch (_) {}
   params.set('limit', String(LOG_LIMIT));
   params.set('page', String(LOG_PAGE));
   return params;

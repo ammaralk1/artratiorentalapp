@@ -56,13 +56,14 @@ try {
         $name = trim((string)($body['name'] ?? ''));
         if ($name === '') { respondError('name is required', 422); exit; }
         $channel = in_array(($body['channel'] ?? 'both'), ['email','telegram','both'], true) ? (string)$body['channel'] : 'both';
-        $stmt = $pdo->prepare('INSERT INTO notification_templates (name, channel, subject, body_html, body_text, variables, active) VALUES (:n, :c, :sub, :html, :text, :vars, 1)');
+        $stmt = $pdo->prepare('INSERT INTO notification_templates (name, channel, subject, body_html, body_text, attachment_url, variables, active) VALUES (:n, :c, :sub, :html, :text, :att, :vars, 1)');
         $stmt->execute([
             'n' => $name,
             'c' => $channel,
             'sub' => $body['subject'] ?? null,
             'html' => $body['body_html'] ?? null,
             'text' => $body['body_text'] ?? null,
+            'att' => $body['attachment_url'] ?? null,
             'vars' => isset($body['variables']) ? json_encode($body['variables'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
         ]);
         $id = (int)$pdo->lastInsertId();
@@ -75,7 +76,7 @@ try {
         if ($id <= 0) { respondError('id is required', 422); exit; }
         $fields = [];
         $params = [ 'id' => $id ];
-        foreach (['name','subject','body_html','body_text'] as $f) {
+        foreach (['name','subject','body_html','body_text','attachment_url'] as $f) {
             if (array_key_exists($f, $body)) { $fields[] = "$f = :$f"; $params[$f] = $body[$f]; }
         }
         if (array_key_exists('channel', $body)) {

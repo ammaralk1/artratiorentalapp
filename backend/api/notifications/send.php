@@ -336,7 +336,7 @@ try {
         if ($ok) { $channelsSent['email']++; }
     }
     foreach ($targets['telegram'] as $target) {
-        $renderedText = $textBody;
+        $renderedText = $textBody; $renderedAttach = null;
         if ($templateId > 0) {
             $tplStmt = $pdo->prepare('SELECT * FROM notification_templates WHERE id = :id AND active = 1 LIMIT 1');
             $tplStmt->execute(['id' => $templateId]);
@@ -344,9 +344,14 @@ try {
             if ($tpl) {
                 $rendered = renderTemplate($tpl, $baseCtx, [ 'name' => (string)($target['name'] ?? ''), 'type' => (string)($target['type'] ?? '') ]);
                 $renderedText = (string)($rendered['text'] ?? $textBody);
+                $renderedAttach = $tpl['attachment_url'] ?? null;
             }
         }
-        $ok = sendTelegramText($target['recipient'], (string)$renderedText);
+        if ($renderedAttach) {
+            $ok = sendTelegramPhoto($target['recipient'], (string)$renderedAttach, (string)$renderedText);
+        } else {
+            $ok = sendTelegramText($target['recipient'], (string)$renderedText);
+        }
         $tgErr = function_exists('telegramGetLastError') ? (telegramGetLastError() ?? null) : null;
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr, $batchId, $commonMeta);
         if ($ok) { $channelsSent['telegram']++; }

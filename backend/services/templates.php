@@ -11,6 +11,7 @@ function ensureTemplatesTable(PDO $pdo): void
           subject VARCHAR(191) NULL,
           body_html MEDIUMTEXT NULL,
           body_text MEDIUMTEXT NULL,
+          attachment_url VARCHAR(512) NULL,
           variables JSON NULL,
           active TINYINT(1) NOT NULL DEFAULT 1,
           created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -86,4 +87,3 @@ function renderTemplate(array $template, array $baseContext, array $recipientCon
     if ($html === null && $text !== null) { $html = nl2br(htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')); }
     return [ 'subject' => $subject, 'html' => $html, 'text' => $text ];
 }
-
