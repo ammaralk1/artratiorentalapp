@@ -241,6 +241,19 @@ try {
             'email' => count($targets['email']),
             'whatsapp' => count($targets['whatsapp']),
         ],
+        // Provide resolved targets detail so clients can derive accurate counts when needed
+        'targets_detail' => [
+            'email' => array_map(static function($t) { return [
+                'recipient' => (string)($t['recipient'] ?? ''),
+                'type' => (string)($t['type'] ?? ''),
+                'name' => (string)($t['name'] ?? ''),
+            ]; }, $targets['email']),
+            'whatsapp' => array_map(static function($t) { return [
+                'recipient' => (string)($t['recipient'] ?? ''),
+                'type' => (string)($t['type'] ?? ''),
+                'name' => (string)($t['name'] ?? ''),
+            ]; }, $targets['whatsapp']),
+        ],
         'errors' => [
             // For quick debugging on the client side — detailed per-event stored in notification_events
             'last_email_error' => function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null,

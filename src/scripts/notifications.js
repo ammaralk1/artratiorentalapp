@@ -163,10 +163,14 @@ async function sendManual() {
     const data = res?.data || {};
     const sent = data?.sent || { email: 0, whatsapp: 0 };
     const targets = data?.targets || { email: 0, whatsapp: 0 };
+    const details = data?.targets_detail || { email: [], whatsapp: [] };
     const se = Number(sent.email || 0);
     const sw = Number(sent.whatsapp || 0);
-    const te = Number(targets.email || 0);
-    const tw = Number(targets.whatsapp || 0);
+    let te = Number(targets.email || 0);
+    let tw = Number(targets.whatsapp || 0);
+    // Fallback to detailed targets length if counts are missing/zero
+    if (!te && Array.isArray(details.email)) te = details.email.length;
+    if (!tw && Array.isArray(details.whatsapp)) tw = details.whatsapp.length;
     const parts = [];
     if (els.chEmail?.checked) parts.push(`إيميل: ${se}/${te}`);
     if (els.chWhatsapp?.checked) parts.push(`واتساب: ${sw}/${tw}`);
