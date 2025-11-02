@@ -118,22 +118,38 @@ function handleTechniciansGet(PDO $pdo): void
         $hasLinksTable = $chk && $chk->fetch() ? true : false;
     } catch (Throwable $_) { $hasLinksTable = false; }
 
-    $hasLinkStmt = null;
+    $hasLinkStmtById = null;
+    $hasLinkStmtByPhone = null;
     if ($hasLinksTable) {
-        $hasLinkStmt = $pdo->prepare('SELECT 1 FROM telegram_links WHERE (technician_id = :tid OR phone = :phone) AND chat_id IS NOT NULL AND used_at IS NOT NULL LIMIT 1');
+        $hasLinkStmtById = $pdo->prepare('SELECT 1 FROM telegram_links WHERE technician_id = :tid AND chat_id IS NOT NULL AND used_at IS NOT NULL LIMIT 1');
+        $hasLinkStmtByPhone = $pdo->prepare('SELECT 1 FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL LIMIT 1');
     }
 
     while ($row = $statement->fetch()) {
         $mapped = mapTechnicianRow($row);
-        if ($hasLinksTable && $hasLinkStmt) {
+        $mapped['has_tg_link'] = false;
+        if ($hasLinksTable) {
             try {
-                $hasLinkStmt->execute(['tid' => (int)$mapped['id'], 'phone' => (string)($mapped['phone'] ?? '')]);
-                $mapped['has_tg_link'] = (bool) $hasLinkStmt->fetchColumn();
+                // by id
+                if ($hasLinkStmtById) {
+                    $hasLinkStmtById->execute(['tid' => (int)$mapped['id']]);
+                    if ($hasLinkStmtById->fetchColumn()) {
+                        $mapped['has_tg_link'] = true;
+                    }
+                }
+                // by normalized phone if not found yet
+                if (!$mapped['has_tg_link'] && $hasLinkStmtByPhone) {
+                    $digits = telegramNormalizePhone((string)($mapped['phone'] ?? ''));
+                    if ($digits !== '') {
+                        $hasLinkStmtByPhone->execute(['p' => $digits]);
+                        if ($hasLinkStmtByPhone->fetchColumn()) {
+                            $mapped['has_tg_link'] = true;
+                        }
+                    }
+                }
             } catch (Throwable $_) {
-                $mapped['has_tg_link'] = false;
+                // ignore
             }
-        } else {
-            $mapped['has_tg_link'] = false;
         }
         $items[] = $mapped;
     }

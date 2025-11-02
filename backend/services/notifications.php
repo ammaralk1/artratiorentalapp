@@ -206,6 +206,14 @@ function getTelegramChatIdForTechnician(PDO $pdo, array $contacts): ?string
             if ($found) return (string)$found;
         }
         if ($phone !== '') {
+            $digits = telegramNormalizePhone($phone);
+            if ($digits !== '') {
+                $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
+                $stmt->execute(['p' => $digits]);
+                $found = $stmt->fetchColumn();
+                if ($found) return (string)$found;
+            }
+            // fallback legacy exact match
             $stmt = $pdo->prepare('SELECT chat_id FROM telegram_links WHERE phone = :p AND chat_id IS NOT NULL AND used_at IS NOT NULL ORDER BY used_at DESC LIMIT 1');
             $stmt->execute(['p' => $phone]);
             $found = $stmt->fetchColumn();

@@ -142,3 +142,23 @@ function telegramGetMe(): ?array
     $cached = (array)($data['result'] ?? []);
     return $cached;
 }
+
+/**
+ * Normalize phone to digits-only E.164-like (without leading '+').
+ * Removes spaces, dashes, parentheses; strips leading '+' or '00'.
+ */
+function telegramNormalizePhone(string $phone): string
+{
+    $normalized = trim($phone);
+    // remove common separators
+    $normalized = preg_replace('/[\s\-()]+/', '', $normalized) ?? '';
+    if (str_starts_with($normalized, '+')) {
+        $normalized = substr($normalized, 1);
+    }
+    if (str_starts_with($normalized, '00')) {
+        $normalized = substr($normalized, 2);
+    }
+    // keep digits only
+    $normalized = preg_replace('/[^0-9]/', '', $normalized) ?? '';
+    return $normalized;
+}

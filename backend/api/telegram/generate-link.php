@@ -40,12 +40,13 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 
     $token = randomToken(18);
+    $normalizedPhone = $phone !== '' ? telegramNormalizePhone($phone) : '';
     $stmt = $pdo->prepare('INSERT INTO telegram_links (token, context, technician_id, phone) VALUES (:t, :c, :tid, :p)');
     $stmt->execute([
         't' => $token,
         'c' => $context,
         'tid' => $technicianId > 0 ? $technicianId : null,
-        'p' => $phone !== '' ? $phone : null,
+        'p' => $normalizedPhone !== '' ? $normalizedPhone : null,
     ]);
 
     // Compute bot username
@@ -61,4 +62,3 @@ try {
 } catch (Throwable $e) {
     respondError('Failed to generate link', 500, [ 'details' => $e->getMessage() ]);
 }
-

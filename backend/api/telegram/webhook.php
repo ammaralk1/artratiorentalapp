@@ -46,6 +46,24 @@ try {
                         $pdo->prepare('UPDATE technicians SET telegram_chat_id = :cid WHERE id = :tid LIMIT 1')
                             ->execute(['cid' => $chatId, 'tid' => (int)$link['technician_id']]);
                     } catch (Throwable $_) {}
+                } elseif (!empty($link['phone'])) {
+                    // try to map by normalized phone if technician_id is absent
+                    try {
+                        $digits = telegramNormalizePhone((string)$link['phone']);
+                        if ($digits !== '') {
+                            // match technicians by digits-only comparison
+                            $q = $pdo->prepare('SELECT id, phone FROM technicians');
+                            $q->execute();
+                            while ($rowT = $q->fetch()) {
+                                $tPhone = telegramNormalizePhone((string)($rowT['phone'] ?? ''));
+                                if ($tPhone !== '' && $tPhone === $digits) {
+                                    $pdo->prepare('UPDATE technicians SET telegram_chat_id = :cid WHERE id = :tid LIMIT 1')
+                                        ->execute(['cid' => $chatId, 'tid' => (int)$rowT['id']]);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Throwable $_) {}
                 }
                 tg_reply_text($chatId, "✅ Your Telegram has been linked. You'll now receive notifications here.");
                 echo 'ok';
@@ -62,4 +80,3 @@ try {
     // Never leak errors to Telegram
     echo 'ok';
 }
-
