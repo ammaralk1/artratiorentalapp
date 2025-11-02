@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
+require_once __DIR__ . '/../../services/templates.php';
 // Ensure included API controllers don't auto-dispatch when required here
 if (!defined('API_INCLUDE_MODE')) { define('API_INCLUDE_MODE', true); }
 
@@ -41,6 +42,7 @@ try {
     $channels = (array)($payload['channels'] ?? []);
     $recipients = (array)($payload['recipients'] ?? []);
     $message = (array)($payload['message'] ?? []);
+    $templateId = (int)($payload['template_id'] ?? 0);
 
     if (!in_array($entityType, ['reservation', 'project'], true)) {
         throw new InvalidArgumentException('Invalid entity_type');
@@ -72,7 +74,9 @@ try {
         throw new InvalidArgumentException('Message body is required');
     }
 
-    if ($htmlBody === '' && $textBody !== '') {
+    if ($templateId > 0 && ($htmlBody === '' && $textBody === '')) {
+        // Will be rendered below per recipient
+    } elseif ($htmlBody === '' && $textBody !== '') {
         $htmlBody = nl2br(htmlspecialchars($textBody, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
     }
     if ($textBody === '' && $htmlBody !== '') {
@@ -313,14 +317,36 @@ try {
     ];
 
     // Send
+    // Build template base context if needed
+    $baseCtx = $templateId > 0 ? buildTemplateContextForEntity($pdo, $entityType, $entityId) : [];
+
     foreach ($targets['email'] as $target) {
-        $ok = sendEmail($target['recipient'], $target['name'], $subject, $htmlBody, $textBody);
+        $rendered = ['subject' => $subject, 'html' => $htmlBody, 'text' => $textBody];
+        if ($templateId > 0) {
+            $tplStmt = $pdo->prepare('SELECT * FROM notification_templates WHERE id = :id AND active = 1 LIMIT 1');
+            $tplStmt->execute(['id' => $templateId]);
+            $tpl = $tplStmt->fetch();
+            if ($tpl) {
+                $rendered = renderTemplate($tpl, $baseCtx, [ 'name' => (string)($target['name'] ?? ''), 'type' => (string)($target['type'] ?? '') ]);
+            }
+        }
+        $ok = sendEmail($target['recipient'], $target['name'], (string)($rendered['subject'] ?? $subject), (string)($rendered['html'] ?? $htmlBody), (string)($rendered['text'] ?? $textBody));
         $err = function_exists('emailGetLastError') ? (emailGetLastError() ?? null) : null;
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'email', $ok ? 'sent' : 'failed', $ok ? null : $err, $batchId, $commonMeta);
         if ($ok) { $channelsSent['email']++; }
     }
     foreach ($targets['telegram'] as $target) {
-        $ok = sendTelegramText($target['recipient'], $textBody);
+        $renderedText = $textBody;
+        if ($templateId > 0) {
+            $tplStmt = $pdo->prepare('SELECT * FROM notification_templates WHERE id = :id AND active = 1 LIMIT 1');
+            $tplStmt->execute(['id' => $templateId]);
+            $tpl = $tplStmt->fetch();
+            if ($tpl) {
+                $rendered = renderTemplate($tpl, $baseCtx, [ 'name' => (string)($target['name'] ?? ''), 'type' => (string)($target['type'] ?? '') ]);
+                $renderedText = (string)($rendered['text'] ?? $textBody);
+            }
+        }
+        $ok = sendTelegramText($target['recipient'], (string)$renderedText);
         $tgErr = function_exists('telegramGetLastError') ? (telegramGetLastError() ?? null) : null;
         recordNotificationEvent($pdo, 'manual_notification', $entityType, $entityId, $target['type'], $target['recipient'], 'telegram', $ok ? 'sent' : 'failed', $ok ? null : $tgErr, $batchId, $commonMeta);
         if ($ok) { $channelsSent['telegram']++; }

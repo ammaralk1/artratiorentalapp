@@ -28,6 +28,7 @@ function cacheElements() {
   els.toAdmins = q('#notif-to-admins');
   els.extraEmails = q('#notif-extra-emails');
   els.extraChatIds = q('#notif-extra-chatids');
+  els.templateSelect = q('#notif-template');
   els.subject = q('#notif-subject');
   els.body = q('#notif-body');
   els.sendBtn = q('#notif-send-btn');
@@ -247,6 +248,7 @@ async function sendManual() {
       body: {
         entity_type: selected.type,
         entity_id: selected.id,
+        template_id: (els.templateSelect && els.templateSelect.value) ? Number(els.templateSelect.value) : undefined,
         channels,
         recipients,
         message,
@@ -342,6 +344,7 @@ async function previewTargets() {
         entity_id: selected.id,
         channels,
         recipients,
+        template_id: (els.templateSelect && els.templateSelect.value) ? Number(els.templateSelect.value) : undefined,
       },
     });
     const data = res?.data || {};
@@ -430,6 +433,9 @@ function attachEvents() {
   }
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
+  }
+  if (els.templateSelect) {
+    els.templateSelect.addEventListener('change', onTemplateChange);
   }
   if (els.retryLastBtn) {
     els.retryLastBtn.addEventListener('click', retryLastBatch);
@@ -629,6 +635,36 @@ function updateFailedSummary(items) {
   }
 }
 
+async function fetchTemplates() {
+  if (!els.templateSelect) return;
+  try {
+    const res = await apiRequest('/notifications/templates.php?limit=100');
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    const opts = ['<option value="">— بدون قالب —</option>'].concat(
+      items.map((t)=> `<option value="${t.id}">${(t.name || '').toString()} (${t.channel})</option>`)
+    );
+    els.templateSelect.innerHTML = opts.join('');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function onTemplateChange() {
+  const tid = els.templateSelect?.value || '';
+  if (!tid) return;
+  try {
+    const res = await apiRequest(`/notifications/templates.php?id=${encodeURIComponent(tid)}`);
+    const tpl = res?.data || res || null;
+    if (!tpl) return;
+    if (tpl.subject && els.subject) els.subject.value = String(tpl.subject);
+    const txt = tpl.body_text || (tpl.body_html ? String(tpl.body_html).replace(/<[^>]+>/g,'') : '');
+    if (txt && els.body) els.body.value = txt;
+    showToast('تم تطبيق القالب');
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 async function fetchWebhookInfo() {
   try {
     if (els.tgWebhookInfo) els.tgWebhookInfo.textContent = 'جارٍ التحميل…';
@@ -701,6 +737,7 @@ async function fetchDiagnostics() {
   fetchAdminLinks();
   fetchWebhookInfo();
   fetchDiagnostics();
+  fetchTemplates();
 })();
 
 let CHAT_SELECTED_TECH = null; // { id, name, chat_id? }
