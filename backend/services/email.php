@@ -21,75 +21,34 @@ function getEmailConfig(): array
     $config = getAppConfig('email') ?? [];
 
     $enabled = (bool)($config['enabled'] ?? false);
-    $provider = strtolower(trim((string)($config['provider'] ?? '')));
-
     if (!$enabled) {
-        return [
-            'enabled' => false,
-        ];
+        return [ 'enabled' => false ];
     }
 
-    if ($provider === 'smtp') {
-        $fromEmail = trim((string)($config['from_email'] ?? ''));
-        $fromName = trim((string)($config['from_name'] ?? ''));
-        $smtpHost = trim((string)($config['smtp_host'] ?? ''));
-        $smtpPort = (int)($config['smtp_port'] ?? 0);
-        $smtpSecure = trim((string)($config['smtp_secure'] ?? ''));
-        $smtpUser = trim((string)($config['smtp_user'] ?? ''));
-        $smtpPass = (string)($config['smtp_pass'] ?? '');
+    // SMTP-only configuration
+    $fromEmail = trim((string)($config['from_email'] ?? ''));
+    $fromName = trim((string)($config['from_name'] ?? ''));
+    $smtpHost = trim((string)($config['smtp_host'] ?? ''));
+    $smtpPort = (int)($config['smtp_port'] ?? 0);
+    $smtpSecure = trim((string)($config['smtp_secure'] ?? ''));
+    $smtpUser = trim((string)($config['smtp_user'] ?? ''));
+    $smtpPass = (string)($config['smtp_pass'] ?? '');
 
-        if ($fromEmail === '' || $smtpHost === '' || $smtpPort <= 0 || $smtpUser === '' || $smtpPass === '') {
-            throw new RuntimeException('Email is enabled but SMTP config is incomplete.');
-        }
-
-        return [
-            'enabled' => true,
-            'provider' => 'smtp',
-            'smtp_host' => $smtpHost,
-            'smtp_port' => $smtpPort,
-            'smtp_secure' => $smtpSecure,
-            'smtp_user' => $smtpUser,
-            'smtp_pass' => $smtpPass,
-            'from_email' => $fromEmail,
-            'from_name' => $fromName !== '' ? $fromName : $fromEmail,
-        ];
+    if ($fromEmail === '' || $smtpHost === '' || $smtpPort <= 0 || $smtpUser === '' || $smtpPass === '') {
+        throw new RuntimeException('Email is enabled but SMTP config is incomplete.');
     }
 
-    if ($provider === 'sendgrid') {
-        $apiKey = trim((string)($config['sendgrid_api_key'] ?? ''));
-        $fromEmail = trim((string)($config['from_email'] ?? ''));
-        $fromName = trim((string)($config['from_name'] ?? ''));
-
-        if ($apiKey === '' || $fromEmail === '') {
-            throw new RuntimeException('Email is enabled but SendGrid config is incomplete.');
-        }
-
-        return [
-            'enabled' => true,
-            'provider' => 'sendgrid',
-            'api_key' => $apiKey,
-            'from_email' => $fromEmail,
-            'from_name' => $fromName !== '' ? $fromName : $fromEmail,
-        ];
-    }
-
-    if ($provider === 'phpmail') {
-        $fromEmail = trim((string)($config['from_email'] ?? ''));
-        $fromName = trim((string)($config['from_name'] ?? ''));
-
-        if ($fromEmail === '') {
-            throw new RuntimeException('Email is enabled but from_email is not configured.');
-        }
-
-        return [
-            'enabled' => true,
-            'provider' => 'phpmail',
-            'from_email' => $fromEmail,
-            'from_name' => $fromName !== '' ? $fromName : $fromEmail,
-        ];
-    }
-
-    throw new RuntimeException('Email provider is not supported or not configured.');
+    return [
+        'enabled' => true,
+        'provider' => 'smtp',
+        'smtp_host' => $smtpHost,
+        'smtp_port' => $smtpPort,
+        'smtp_secure' => $smtpSecure,
+        'smtp_user' => $smtpUser,
+        'smtp_pass' => $smtpPass,
+        'from_email' => $fromEmail,
+        'from_name' => $fromName !== '' ? $fromName : $fromEmail,
+    ];
 }
 
 /**
@@ -120,31 +79,6 @@ function sendEmail(string $toEmail, string $toName, string $subject, string $htm
     $subject = trim($subject);
     $toName = trim($toName);
     $textBody = $textBody ?? strip_tags($htmlBody);
-
-    if ($cfg['provider'] === 'sendgrid') {
-        return sendEmailViaSendGrid(
-            $cfg['api_key'],
-            $cfg['from_email'],
-            $cfg['from_name'],
-            $toEmail,
-            $toName,
-            $subject,
-            $htmlBody,
-            $textBody
-        );
-    }
-
-    if ($cfg['provider'] === 'phpmail') {
-        return sendEmailViaPhpMail(
-            $cfg['from_email'],
-            $cfg['from_name'],
-            $toEmail,
-            $toName,
-            $subject,
-            $htmlBody,
-            $textBody ?? strip_tags($htmlBody)
-        );
-    }
 
     if ($cfg['provider'] === 'smtp') {
         return sendEmailViaSmtp(

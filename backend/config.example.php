@@ -38,12 +38,16 @@ return [
         // ],
     ],
     'email' => [
-        // Enable and configure your email provider
+        // SMTP-only configuration
         'enabled' => false,
-        'provider' => 'sendgrid',
+        'provider' => 'smtp',
         'from_email' => 'no-reply@your-domain.com',
         'from_name' => 'Art Ratio',
-        'sendgrid_api_key' => 'YOUR_SENDGRID_API_KEY',
+        'smtp_host' => 'mail.your-domain.com',
+        'smtp_port' => 465,
+        'smtp_secure' => 'ssl', // 'ssl' or 'tls'
+        'smtp_user' => 'no-reply@your-domain.com',
+        'smtp_pass' => 'YOUR_SMTP_PASSWORD',
     ],
     'whatsapp' => [
         // WhatsApp Cloud API configuration
