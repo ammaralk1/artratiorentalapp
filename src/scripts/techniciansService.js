@@ -81,6 +81,7 @@ export function buildTechnicianPayload({
   name,
   phone,
   email,
+  telegramChatId,
   role,
   department,
   dailyWage,
@@ -93,6 +94,7 @@ export function buildTechnicianPayload({
     full_name: name ?? '',
     phone: phone ?? '',
     email: email ?? null,
+    telegram_chat_id: telegramChatId ?? null,
     specialization: role ?? '',
     department: department ?? null,
     daily_wage: dailyWage ?? 0,
@@ -109,6 +111,7 @@ export function mapTechnicianFromApi(raw = {}) {
     full_name: raw.full_name,
     phone: raw.phone,
     email: raw.email,
+    telegram_chat_id: raw.telegram_chat_id,
     specialization: raw.specialization,
     department: raw.department,
     daily_wage: raw.daily_wage,
@@ -128,6 +131,7 @@ function toInternalTechnician(raw = {}) {
   const name = raw.full_name ?? raw.name ?? raw.fullName ?? '';
   const phone = raw.phone ?? '';
   const email = raw.email ?? null;
+  const telegramChatId = raw.telegram_chat_id ?? raw.telegramChatId ?? null;
   const role = raw.specialization ?? raw.role ?? raw.position ?? '';
   const department = raw.department ?? raw.team ?? '';
   const dailyWage = toNumber(raw.daily_wage ?? raw.dailyWage ?? raw.wage ?? raw.rate ?? 0);
@@ -142,6 +146,7 @@ function toInternalTechnician(raw = {}) {
     name,
     phone,
     email,
+    telegramChatId,
     role,
     department,
     dailyWage,
