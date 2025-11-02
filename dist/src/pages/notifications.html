@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.BnwE-Nts.js"></script>
+  <script type="module" crossorigin src="../../assets/notifications.CONuTX3O.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.B4em9lkc.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.CM2I-AZ_.css">
@@ -263,10 +263,11 @@
               </div>
             </div>
 
-            <div class="flex justify-between items-center gap-2 flex-wrap">
+              <div class="flex justify-between items-center gap-2 flex-wrap">
               <div id="notif-preview" class="text-sm text-base-content/70"></div>
               <div class="flex gap-2">
                 <button type="button" class="btn btn-outline" id="notif-preview-btn">👁️ معاينة المستلمين</button>
+                <button type="button" class="btn btn-outline" id="notif-retry-last" hidden>🔁 إعادة إرسال الفاشلة (آخر دفعة)</button>
                 <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
               </div>
             </div>
@@ -307,6 +308,7 @@
                     <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
                     <th data-i18n data-i18n-key="notifications.logs.headers.event">الحدث</th>
                     <th data-i18n data-i18n-key="notifications.logs.headers.entity">النوع/المعرف</th>
+                    <th>الاسم</th>
                     <th data-i18n data-i18n-key="notifications.logs.headers.recipient">المستلم</th>
                     <th data-i18n data-i18n-key="notifications.logs.headers.channel">القناة</th>
                     <th data-i18n data-i18n-key="notifications.logs.headers.status">الحالة</th>
@@ -314,9 +316,7 @@
                   </tr>
                 </thead>
                 <tbody id="notif-logs-body">
-                  <tr>
-                    <td colspan="7" class="text-center text-muted" data-i18n data-i18n-key="notifications.logs.loading">⏳ جارٍ التحميل…</td>
-                  </tr>
+                  <tr><td colspan="8" class="text-center text-muted" data-i18n data-i18n-key="notifications.logs.loading">⏳ جارٍ التحميل…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -383,6 +383,40 @@
                 <tbody id="tg-admin-body">
                   <tr><td colspan="3" class="text-center text-muted">—</td></tr>
                 </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ✅ Telegram Webhook status -->
+          <section class="glass-card space-y-4" id="telegram-webhook-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">🔗 حالة Webhook لتليغرام</h3>
+                <p class="text-sm text-base-content/70">تعرض حالة الربط وتسمح بضبطه تلقائياً.</p>
+              </div>
+              <div class="flex gap-2 items-center">
+                <button type="button" class="btn btn-outline" id="tg-webhook-refresh">🔄 تحديث</button>
+                <button type="button" class="btn" id="tg-webhook-set">⚙️ ضبط/إصلاح Webhook</button>
+              </div>
+            </header>
+            <div id="tg-webhook-info" class="text-sm text-base-content/70">—</div>
+          </section>
+
+          <!-- ✅ Diagnostics -->
+          <section class="glass-card space-y-4" id="notifications-diagnostics-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">🧪 Diagnostics</h3>
+                <p class="text-sm text-base-content/70">فحص الجداول والأعمدة المطلوبة للتنبيهات والتليغرام.</p>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-outline" id="notif-diag-refresh">🔄 فحص</button>
+              </div>
+            </header>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="notif-diag-table">
+                <thead class="table-light users-table-head"><tr><th>العنصر</th><th>الحالة</th><th>ملاحظة</th></tr></thead>
+                <tbody id="notif-diag-body"><tr><td colspan="3" class="text-center text-muted">—</td></tr></tbody>
               </table>
             </div>
           </section>
