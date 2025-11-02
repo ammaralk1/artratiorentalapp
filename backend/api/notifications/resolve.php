@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
+require_once __DIR__ . '/../../services/telegram.php';
 
 use InvalidArgumentException;
 use Throwable;
@@ -83,8 +84,11 @@ try {
             if ($sendEmail && !empty($contact['email'])) {
                 $targets['email'][] = [ 'recipient' => (string)$contact['email'], 'name' => (string)($contact['name'] ?? ''), 'type' => 'technician' ];
             }
-            if ($sendTelegram && !empty($contact['telegram_chat_id'])) {
-                $targets['telegram'][] = [ 'recipient' => (string)$contact['telegram_chat_id'], 'name' => (string)($contact['name'] ?? ''), 'type' => 'technician' ];
+            if ($sendTelegram) {
+                $cid = getTelegramChatIdForTechnician($pdo, $contact);
+                if (!empty($cid)) {
+                    $targets['telegram'][] = [ 'recipient' => (string)$cid, 'name' => (string)($contact['name'] ?? ''), 'type' => 'technician' ];
+                }
             }
         }
     }
@@ -97,8 +101,31 @@ try {
             }
         }
         if ($sendTelegram) {
+            // From config
             foreach ((array)$settings['admin_telegram_chat_ids'] as $chat) {
                 $targets['telegram'][] = [ 'recipient' => (string)$chat, 'name' => 'Admin', 'type' => 'admin' ];
+            }
+            // From telegram_links (context=admin)
+            try {
+                $stmt = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+                if ($stmt && $stmt->fetch()) {
+                    $q = $pdo->query("SELECT DISTINCT chat_id FROM telegram_links WHERE context = 'admin' AND chat_id IS NOT NULL AND used_at IS NOT NULL");
+                    while ($row = $q->fetch()) {
+                        $cid = trim((string)($row['chat_id'] ?? ''));
+                        if ($cid !== '') {
+                            $targets['telegram'][] = [ 'recipient' => $cid, 'name' => 'Admin', 'type' => 'admin' ];
+                        }
+                    }
+                }
+            } catch (Throwable $_) {}
+            // Dedupe
+            if (!empty($targets['telegram'])) {
+                $seen = [];
+                $targets['telegram'] = array_values(array_filter($targets['telegram'], function($t) use (&$seen) {
+                    $key = strtolower(trim((string)($t['recipient'] ?? '')));
+                    if ($key === '' || isset($seen[$key])) return false;
+                    $seen[$key] = true; return true;
+                }));
             }
         }
     }
@@ -122,4 +149,3 @@ try {
 } catch (Throwable $exception) {
     respondError('Unexpected server error', 500, [ 'details' => $exception->getMessage() ]);
 }
-
