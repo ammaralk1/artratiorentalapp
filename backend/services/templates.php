@@ -19,6 +19,27 @@ function ensureTemplatesTable(PDO $pdo): void
           updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           UNIQUE KEY uq_template_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+        // Add missing columns in case the table pre-existed with an older schema
+        $ensureCol = function(string $col, string $ddl) use ($pdo) {
+            try {
+                $s = $pdo->prepare('SHOW COLUMNS FROM notification_templates LIKE :c');
+                $s->execute(['c' => $col]);
+                if (!$s->fetch()) {
+                    $pdo->exec('ALTER TABLE notification_templates ADD COLUMN ' . $ddl);
+                }
+            } catch (Throwable $_) { /* ignore to avoid breaking runtime */ }
+        };
+        $ensureCol('attachment_urls', 'attachment_urls JSON NULL');
+        $ensureCol('variables', 'variables JSON NULL');
+        $ensureCol('active', 'active TINYINT(1) NOT NULL DEFAULT 1');
+        $ensureCol('channel', 'channel ENUM("email","telegram","both") NOT NULL DEFAULT "both"');
+        $ensureCol('attachment_url', 'attachment_url VARCHAR(512) NULL');
+        $ensureCol('body_html', 'body_html MEDIUMTEXT NULL');
+        $ensureCol('body_text', 'body_text MEDIUMTEXT NULL');
+        $ensureCol('subject', 'subject VARCHAR(191) NULL');
+        $ensureCol('created_at', 'created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+        $ensureCol('updated_at', 'updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
     } catch (Throwable $e) {
         error_log('ensureTemplatesTable failed: ' . $e->getMessage());
     }
