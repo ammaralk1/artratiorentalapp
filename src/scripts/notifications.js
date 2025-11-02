@@ -54,6 +54,14 @@ function cacheElements() {
   els.tgAdminCopyBtn = q('#tg-admin-copy-btn');
   els.tgAdminBody = q('#tg-admin-body');
   els.tgAdminLinkBox = q('#tg-admin-link-box');
+  // Chat elements
+  els.tgChatSearch = q('#tg-chat-tech-search');
+  els.tgChatPick = q('#tg-chat-pick-btn');
+  els.tgChatRefresh = q('#tg-chat-refresh-btn');
+  els.tgChatSelected = q('#tg-chat-selected');
+  els.tgChatMessages = q('#tg-chat-messages');
+  els.tgChatInput = q('#tg-chat-input');
+  els.tgChatSend = q('#tg-chat-send');
 }
 
 function formatWhen(item, type) {
@@ -374,6 +382,10 @@ function attachEvents() {
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
   }
+  // Chat handlers
+  if (els.tgChatPick) els.tgChatPick.addEventListener('click', chatPickTechnician);
+  if (els.tgChatRefresh) els.tgChatRefresh.addEventListener('click', chatRefresh);
+  if (els.tgChatSend) els.tgChatSend.addEventListener('click', chatSend);
   // Auto-preview on channel/recipient changes
   const triggerPreview = () => {
     if (previewTimer) clearTimeout(previewTimer);
@@ -578,6 +590,73 @@ function updateFailedSummary(items) {
   fetchTechs();
   fetchAdminLinks();
 })();
+
+let CHAT_SELECTED_TECH = null; // { id, name, chat_id? }
+
+async function chatPickTechnician() {
+  const qstr = (els.tgChatSearch?.value || '').trim();
+  if (!qstr) { showToast('اكتب اسم/جوال الفني للبحث'); return; }
+  try {
+    const params = new URLSearchParams();
+    params.set('search', qstr);
+    params.set('limit', '5');
+    const res = await apiRequest(`/technicians/?${params.toString()}`);
+    const items = Array.isArray(res?.data) ? res.data : [];
+    if (!items.length) { showToast('لا نتائج'); return; }
+    const t = items[0];
+    CHAT_SELECTED_TECH = { id: t.id, name: t.full_name || t.name || String(t.id) };
+    if (els.tgChatSelected) els.tgChatSelected.textContent = `المحدد: ${CHAT_SELECTED_TECH.name}`;
+    await chatRefresh();
+  } catch (e) {
+    console.error(e);
+    showToast('فشل اختيار الفني');
+  }
+}
+
+async function chatRefresh() {
+  if (!CHAT_SELECTED_TECH) { showToast('اختر فنياً أولاً'); return; }
+  try {
+    if (els.tgChatMessages) els.tgChatMessages.innerHTML = '<div class="text-center text-muted">جارٍ التحميل…</div>';
+    const params = new URLSearchParams();
+    params.set('technician_id', String(CHAT_SELECTED_TECH.id));
+    params.set('limit', '100');
+    const res = await apiRequest(`/telegram/messages.php?${params.toString()}`);
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) {
+      els.tgChatMessages.innerHTML = '<div class="text-center text-muted">لا توجد رسائل</div>';
+      return;
+    }
+    const html = items.map((m) => {
+      const isOut = (m.direction === 'outbound');
+      const who = isOut ? 'أنا' : (m.technician_name || 'فني');
+      const side = isOut ? 'justify-end' : 'justify-start';
+      const bubble = isOut ? 'bg-primary text-primary-content' : 'bg-base-200';
+      const time = m.created_at || '';
+      const txt = (m.text || '').replace(/</g,'&lt;');
+      return `<div class="flex ${side}"><div class="rounded-xl px-3 py-2 m-1 max-w-[80%] ${bubble}"><div class="text-xs opacity-70">${who} • ${time}</div><div>${txt}</div></div></div>`;
+    }).join('');
+    els.tgChatMessages.innerHTML = html;
+    els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
+  } catch (e) {
+    console.error(e);
+    els.tgChatMessages.innerHTML = '<div class="text-center text-error">فشل تحميل المحادثة</div>';
+  }
+}
+
+async function chatSend() {
+  if (!CHAT_SELECTED_TECH) { showToast('اختر فنياً أولاً'); return; }
+  const text = (els.tgChatInput?.value || '').trim();
+  if (!text) { showToast('اكتب رسالة'); return; }
+  try {
+    await apiRequest('/telegram/messages.php', { method: 'POST', body: { technician_id: CHAT_SELECTED_TECH.id, text } });
+    if (els.tgChatInput) els.tgChatInput.value = '';
+    await chatRefresh();
+  } catch (e) {
+    console.error(e);
+    const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل الإرسال';
+    showToast(msg);
+  }
+}
 
 async function fetchTechs() {
   if (!els.tgBody) return;
