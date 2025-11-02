@@ -158,27 +158,12 @@ async function sendManual() {
         message,
       },
     });
+    // If the request didn’t throw, consider the operation successful.
+    // The backend returns 4xx for "no recipients" and other validation errors, so failures will be caught below.
     const data = res?.data || {};
     const sent = data?.sent || { email: 0, whatsapp: 0 };
-    const total = Number(sent.email || 0) + Number(sent.whatsapp || 0);
-    const targets = data?.targets || { email: 0, whatsapp: 0 };
-    const targetsTotal = Number(targets.email || 0) + Number(targets.whatsapp || 0);
-
-    // Consider the operation successful if:
-    // - any messages were actually sent, OR
-    // - any recipients were resolved (targetsTotal > 0), OR
-    // - the API call succeeded (res?.ok === true) with no explicit error reported.
-    // This avoids false negatives when backend omits counts but logs are written.
-    if (total > 0 || targetsTotal > 0 || res?.ok === true) {
-      showToast(t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح'));
-    } else {
-      const lastErr = data?.errors?.last_email_error;
-      if (lastErr) {
-        showToast(`فشل الإرسال: ${lastErr}`);
-      } else {
-        showToast('لم يتم إرسال أي رسالة. تحقق من المستلمين والقنوات.');
-      }
-    }
+    const msg = t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح');
+    showToast(msg);
     fetchLogs();
   } catch (e) {
     console.error(e);
