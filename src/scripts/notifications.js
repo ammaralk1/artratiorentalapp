@@ -43,6 +43,7 @@ function cacheElements() {
   els.logClear = q('#log-clear-btn');
   els.logBody = q('#notif-logs-body');
   els.logPagination = q('#log-pagination');
+  els.logFailedSummary = q('#notif-logs-failed-summary');
   // Telegram linking helpers
   els.tgSearch = q('#tg-tech-search');
   els.tgSearchBtn = q('#tg-tech-search-btn');
@@ -531,11 +532,33 @@ async function fetchLogs() {
     els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">${t('notifications.logs.loading','⏳ جارٍ التحميل…')}</td></tr>`;
     const params = buildLogParams();
     const res = await apiRequest(`/notifications/logs.php?${params.toString()}`);
-    renderLogs(res?.data ?? []);
+    const items = Array.isArray(res?.data) ? res.data : [];
+    renderLogs(items);
+    updateFailedSummary(items);
     renderPagination(res?.meta || {});
   } catch (e) {
     console.error(e);
     els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-error">فشل تحميل السجل</td></tr>`;
+  }
+}
+
+function updateFailedSummary(items) {
+  if (!els.logFailedSummary) return;
+  try {
+    const failed = (Array.isArray(items) ? items : []).filter((r) => (r?.status || '') === 'failed');
+    if (!failed.length) {
+      els.logFailedSummary.classList.add('hidden');
+      els.logFailedSummary.textContent = '';
+      return;
+    }
+    const names = failed.map((r) => String(r.recipient_display || `${r.recipient_type || ''}: ${r.recipient_identifier || ''}`)).filter(Boolean);
+    const uniq = Array.from(new Set(names));
+    const show = uniq.length <= 10 ? uniq.join('، ') : uniq.slice(0, 10).join('، ') + `، و+${uniq.length - 10} آخرين`;
+    els.logFailedSummary.textContent = `فاشلة: ${failed.length} — ${show}`;
+    els.logFailedSummary.classList.remove('hidden');
+  } catch (err) {
+    // best-effort; do not break logs
+    els.logFailedSummary.classList.add('hidden');
   }
 }
 
