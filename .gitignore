@@ -6,3 +6,6 @@ backend/config.php
 
 .env.local
 cookies.txt
+
+# Deployment SSH key
+.github/deploy/gh_actions_deploy*
