@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $bootstrapFiles = [
+    __DIR__ . '/polyfills.php',
     __DIR__ . '/config.php',
     __DIR__ . '/database.php',
     __DIR__ . '/preferences.php',
