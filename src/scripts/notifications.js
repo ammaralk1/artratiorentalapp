@@ -631,7 +631,8 @@ async function fetchLogs() {
     renderPagination(res?.meta || {});
   } catch (e) {
     console.error(e);
-    els.logBody.innerHTML = `<tr><td colspan="7" class="text-center text-error">فشل تحميل السجل</td></tr>`;
+    // Keep colspan in sync with the logs table (8 columns)
+    els.logBody.innerHTML = `<tr><td colspan="8" class="text-center text-error">فشل تحميل السجل</td></tr>`;
   }
 }
 
