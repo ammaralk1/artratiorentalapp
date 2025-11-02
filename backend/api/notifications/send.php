@@ -152,12 +152,42 @@ try {
             }
         }
         if ($sendTelegram) {
-            foreach ((array)$settings['admin_telegram_chat_ids'] as $chat) {
+            // From config
+            $adminChats = array_values(array_filter(array_map('trim', (array)$settings['admin_telegram_chat_ids'])));
+            foreach ($adminChats as $chat) {
                 $targets['telegram'][] = [
                     'recipient' => (string)$chat,
                     'name' => 'Admin',
                     'type' => 'admin',
                 ];
+            }
+            // From telegram_links (context=admin) if available
+            try {
+                $stmt = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+                if ($stmt && $stmt->fetch()) {
+                    $q = $pdo->query("SELECT DISTINCT chat_id FROM telegram_links WHERE context = 'admin' AND chat_id IS NOT NULL AND used_at IS NOT NULL");
+                    while ($row = $q->fetch()) {
+                        $cid = trim((string)($row['chat_id'] ?? ''));
+                        if ($cid !== '') {
+                            $targets['telegram'][] = [
+                                'recipient' => $cid,
+                                'name' => 'Admin',
+                                'type' => 'admin',
+                            ];
+                        }
+                    }
+                }
+            } catch (Throwable $_) { /* ignore */ }
+            // Deduplicate admin telegram recipients
+            if (!empty($targets['telegram'])) {
+                $seen = [];
+                $targets['telegram'] = array_values(array_filter($targets['telegram'], function($t) use (&$seen) {
+                    if (($t['type'] ?? '') !== 'admin') return true; // do not dedupe non-admins here
+                    $key = strtolower(trim((string)($t['recipient'] ?? '')));
+                    if ($key === '' || isset($seen[$key])) return false;
+                    $seen[$key] = true;
+                    return true;
+                }));
             }
         }
     }
