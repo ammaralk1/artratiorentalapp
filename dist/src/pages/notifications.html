@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.D2aqFav2.js"></script>
+  <script type="module" crossorigin src="../../assets/notifications.DSF2_Av7.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.CoLto2Rb.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.DgBfdwT5.css">
@@ -229,8 +229,8 @@
                   <span data-i18n data-i18n-key="notifications.channels.email">إيميل</span>
                 </label>
                 <label class="cursor-pointer flex items-center gap-2">
-                  <input type="checkbox" id="notif-channel-whatsapp" class="checkbox checkbox-success">
-                  <span data-i18n data-i18n-key="notifications.channels.whatsapp">واتساب</span>
+                  <input type="checkbox" id="notif-channel-telegram" class="checkbox checkbox-success">
+                  <span data-i18n data-i18n-key="notifications.channels.telegram">تليغرام</span>
                 </label>
               </div>
             </header>
@@ -248,7 +248,7 @@
                     <span data-i18n data-i18n-key="notifications.compose.toAdmins">الإدمن</span>
                   </label>
                   <input id="notif-extra-emails" class="input input-bordered" placeholder="إيميلات إضافية (مفصولة بفواصل)">
-                  <input id="notif-extra-phones" class="input input-bordered" placeholder="أرقام واتساب إضافية (مفصولة بفواصل)">
+                  <input id="notif-extra-chatids" class="input input-bordered" placeholder="معرّفات تليغرام إضافية (مفصولة بفواصل)">
                 </div>
               </div>
               <div class="flex flex-col gap-2">
@@ -263,8 +263,12 @@
               </div>
             </div>
 
-            <div class="flex justify-end gap-2">
-              <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
+            <div class="flex justify-between items-center gap-2 flex-wrap">
+              <div id="notif-preview" class="text-sm text-base-content/70"></div>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-outline" id="notif-preview-btn">👁️ معاينة المستلمين</button>
+                <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
+              </div>
             </div>
           </section>
 
@@ -283,7 +287,7 @@
                 <select id="log-filter-channel" class="select select-bordered select-sm">
                   <option value="" data-i18n data-i18n-key="notifications.logs.filters.allChannels">كل القنوات</option>
                   <option value="email" data-i18n data-i18n-key="notifications.channels.email">إيميل</option>
-                  <option value="whatsapp" data-i18n data-i18n-key="notifications.channels.whatsapp">واتساب</option>
+                  <option value="telegram" data-i18n data-i18n-key="notifications.channels.telegram">تليغرام</option>
                 </select>
                 <select id="log-filter-status" class="select select-bordered select-sm">
                   <option value="" data-i18n data-i18n-key="notifications.logs.filters.allStatuses">كل الحالات</option>
