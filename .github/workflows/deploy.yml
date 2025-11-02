@@ -32,8 +32,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           source: |
-            dist/**
-            backend/**
+            dist
+            backend
             .htaccess
           target: ${{ secrets.SSH_TARGET_DIR }}
           overwrite: true
