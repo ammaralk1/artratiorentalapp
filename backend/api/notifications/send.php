@@ -224,6 +224,7 @@ try {
             }
         }
         if ($sendTelegram) {
+            // From config
             foreach ((array)$settings['admin_telegram_chat_ids'] as $chat) {
                 $targets['telegram'][] = [
                     'recipient' => (string)$chat,
@@ -231,11 +232,57 @@ try {
                     'type' => 'admin',
                 ];
             }
+            // From telegram_links (context=admin) as safety net
+            try {
+                $stmt = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+                if ($stmt && $stmt->fetch()) {
+                    $q = $pdo->query("SELECT DISTINCT chat_id FROM telegram_links WHERE chat_id IS NOT NULL AND used_at IS NOT NULL" .
+                        " AND context = 'admin'");
+                    while ($row = $q->fetch()) {
+                        $cid = trim((string)($row['chat_id'] ?? ''));
+                        if ($cid !== '') {
+                            $targets['telegram'][] = [
+                                'recipient' => $cid,
+                                'name' => 'Admin',
+                                'type' => 'admin',
+                            ];
+                        }
+                    }
+                }
+            } catch (Throwable $_) { /* ignore */ }
+            // Deduplicate admin tg fallback
+            if (!empty($targets['telegram'])) {
+                $seen = [];
+                $targets['telegram'] = array_values(array_filter($targets['telegram'], function($t) use (&$seen) {
+                    if (($t['type'] ?? '') !== 'admin') return true;
+                    $key = strtolower(trim((string)($t['recipient'] ?? '')));
+                    if ($key === '' || isset($seen[$key])) return false;
+                    $seen[$key] = true; return true;
+                }));
+            }
         }
     }
 
-    // Abort if still empty after fallback
+    // Abort if still empty after fallback; include debug hints
     if (empty($targets['email']) && empty($targets['telegram'])) {
+        // Build a quick diagnostic for assigned technicians and link status
+        $debug = [];
+        try {
+            $assigned = [];
+            foreach (array_unique($techIds) as $tid) {
+                $c = fetchTechnicianContacts($pdo, (int)$tid);
+                if (!$c) continue;
+                $cid = $sendTelegram ? (getTelegramChatIdForTechnician($pdo, $c) ?: null) : null;
+                $assigned[] = [
+                    'id' => (int)$c['id'],
+                    'name' => (string)($c['name'] ?? ''),
+                    'email' => (string)($c['email'] ?? ''),
+                    'has_tg' => $cid ? true : false,
+                ];
+            }
+            $debug['assigned_technicians'] = $assigned;
+        } catch (Throwable $_) {}
+
         respondError('No recipients found for selected channels', 422, [
             'meta' => [
                 'channels_requested' => [ 'email' => $sendEmail, 'telegram' => $sendTelegram ],
@@ -243,6 +290,7 @@ try {
                 'admins_requested' => $toAdmins,
                 'additional_emails' => count($extraEmails),
                 'additional_telegram_chat_ids' => count($extraTgChatIds),
+                'debug' => $debug,
             ],
         ]);
         exit;
