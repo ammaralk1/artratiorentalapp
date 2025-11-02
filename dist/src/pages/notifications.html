@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.DSF2_Av7.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.CoLto2Rb.js">
+  <script type="module" crossorigin src="../../assets/notifications.F92YaDxk.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.CYxRUoWL.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.DgBfdwT5.css">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.BeZ1LAAP.css">
 </head>
 <body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -320,6 +320,41 @@
               </table>
             </div>
             <div id="log-pagination" class="flex flex-wrap gap-1 items-center justify-center mt-3"></div>
+          </section>
+
+          <!-- ✅ Telegram linking helper for technicians -->
+          <section class="glass-card space-y-4" id="telegram-linking-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">✈️ ربط تيليغرام للفنيين</h3>
+                <p class="text-sm text-base-content/70">الربط يتم مرة واحدة لكل فني. أنشئ الرابط وانسخه وأرسله للفني خارج النظام. بعد أن يفتح الرابط ويضغط Start ستصل التنبيهات تلقائياً.</p>
+              </div>
+            </header>
+            <div class="grid gap-3 md:grid-cols-2 items-end">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium text-base-content" for="tg-tech-search">بحث الفنيين</label>
+                <input id="tg-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال">
+              </div>
+              <div class="flex gap-2">
+                <button type="button" class="btn btn-outline" id="tg-tech-search-btn">🔎 بحث</button>
+                <button type="button" class="btn" id="tg-tech-refresh-btn">🔄 تحديث</button>
+              </div>
+            </div>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="tg-tech-table">
+                <thead class="table-light users-table-head">
+                  <tr>
+                    <th>الفني</th>
+                    <th>الجوال</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="tg-tech-body">
+                  <tr><td colspan="4" class="text-center text-muted">—</td></tr>
+                </tbody>
+              </table>
+            </div>
           </section>
         </div>
       </main>
