@@ -92,19 +92,19 @@ try {
         if ($hasLinksTable) {
             // Build dynamic UPDATE based on available columns (context/phone/used_at)
             $params = ['tid' => $technicianId];
-            $where = [];
-            // Only scope to technician context if the column exists
-            if ($hasContextCol) {
-                $where[] = "context = 'technician'";
-            }
-            $where[] = 'technician_id = :tid';
+            $idConds = ['technician_id = :tid'];
             if ($digits !== '' && $hasPhoneCol) {
-                $where[] = 'phone = :p';
+                $idConds[] = 'phone = :p';
                 $params['p'] = $digits;
             }
             $set = ['chat_id = NULL'];
             if ($hasUsedAtCol) { $set[] = 'used_at = NULL'; }
-            $sql = 'UPDATE telegram_links SET ' . implode(', ', $set) . ' WHERE ' . implode(' OR ', $where);
+            $idWhere = count($idConds) > 1 ? ('(' . implode(' OR ', $idConds) . ')') : $idConds[0];
+            if ($hasContextCol) {
+                $sql = 'UPDATE telegram_links SET ' . implode(', ', $set) . ' WHERE context = \'technician\' AND ' . $idWhere;
+            } else {
+                $sql = 'UPDATE telegram_links SET ' . implode(', ', $set) . ' WHERE ' . $idWhere;
+            }
             $q = $pdo->prepare($sql);
             $q->execute($params);
             $result['links_cleared'] = (int)$q->rowCount();
