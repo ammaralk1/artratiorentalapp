@@ -96,12 +96,28 @@ function handleTechniciansGet(PDO $pdo): void
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-    $query = sprintf(
-        'SELECT * FROM technicians %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
-        $whereClause,
-        $limit,
-        $offset
-    );
+    // Add computed has_tg_link if telegram_links table exists
+    $hasLinksTable = false;
+    try {
+        $chk = $pdo->query("SHOW TABLES LIKE 'telegram_links'");
+        $hasLinksTable = $chk && $chk->fetch() ? true : false;
+    } catch (Throwable $_) { $hasLinksTable = false; }
+
+    if ($hasLinksTable) {
+        $query = sprintf(
+            'SELECT t.*, EXISTS(SELECT 1 FROM telegram_links tl WHERE ((tl.technician_id = t.id) OR (tl.phone = t.phone)) AND tl.chat_id IS NOT NULL AND tl.used_at IS NOT NULL LIMIT 1) AS has_tg_link FROM technicians t %s ORDER BY t.created_at DESC LIMIT %d OFFSET %d',
+            $whereClause,
+            $limit,
+            $offset
+        );
+    } else {
+        $query = sprintf(
+            'SELECT *, 0 AS has_tg_link FROM technicians %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
+            $whereClause,
+            $limit,
+            $offset
+        );
+    }
 
     $statement = $pdo->prepare($query);
     foreach ($params as $key => $value) {
@@ -434,6 +450,8 @@ function mapTechnicianRow(array $row): array
         'email' => $row['email'] ?? null,
         'specialization' => $row['specialization'] ?? '',
         'department' => $row['department'] ?? null,
+        'telegram_chat_id' => $row['telegram_chat_id'] ?? null,
+        'has_tg_link' => isset($row['has_tg_link']) ? (bool)$row['has_tg_link'] : false,
         'daily_wage' => isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0,
         'daily_total' => isset($row['daily_total']) ? (float) $row['daily_total'] : (isset($row['daily_wage']) ? (float) $row['daily_wage'] : 0),
         'status' => normalizeTechnicianStatus($row['status'] ?? 'available'),

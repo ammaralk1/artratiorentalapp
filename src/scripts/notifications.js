@@ -489,7 +489,7 @@ async function fetchTechs() {
     els.tgBody.innerHTML = items.map((t) => {
       const name = t.full_name || t.name || '';
       const phone = t.phone || '';
-      const linked = !!(t.telegram_chat_id || t.telegramChatId);
+      const linked = !!(t.telegram_chat_id || t.telegramChatId || t.has_tg_link);
       const status = linked ? '<span class="badge bg-primary-subtle">مرتبط</span>' : '<span class="badge bg-warning-subtle">غير مرتبط</span>';
       const actions = linked
         ? '<span class="text-xs text-muted">لا حاجة لرابط</span>'
