@@ -12,10 +12,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="../../assets/notifications.CGqiMvRo.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.B4em9lkc.js">
+  <script type="module" crossorigin src="../../assets/notifications.Cn1kgIbR.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Bn47WHv2.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.CM2I-AZ_.css">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.BJoLxHgx.css">
 </head>
 <body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -305,26 +305,76 @@
                 <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn">🗑️ مسح السجل</button>
               </div>
             </header>
-            <div class="users-table-wrapper overflow-x-auto">
-              <table class="table table-hover align-middle text-nowrap users-table" id="notif-logs-table">
-                <thead class="table-light users-table-head">
-                  <tr>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.event">الحدث</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.entity">النوع/المعرف</th>
-                    <th>الاسم</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.recipient">المستلم</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.channel">القناة</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.status">الحالة</th>
-                    <th data-i18n data-i18n-key="notifications.logs.headers.error">الخطأ</th>
-                  </tr>
-                </thead>
+              <div class="users-table-wrapper overflow-x-auto">
+                <table class="table table-hover align-middle text-nowrap users-table" id="notif-logs-table">
+                  <thead class="table-light users-table-head">
+                    <tr>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.event">الحدث</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.entity">النوع/المعرف</th>
+                      <th>الاسم</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.recipient">المستلم</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.channel">القناة</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.status">الحالة</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.error">الخطأ</th>
+                    </tr>
+                  </thead>
                 <tbody id="notif-logs-body">
                   <tr><td colspan="8" class="text-center text-muted" data-i18n data-i18n-key="notifications.logs.loading">⏳ جارٍ التحميل…</td></tr>
                 </tbody>
               </table>
             </div>
             <div id="log-pagination" class="flex flex-wrap gap-1 items-center justify-center mt-3"></div>
+          </section>
+
+          <!-- ✅ Templates Manager -->
+          <section class="glass-card space-y-4" id="templates-manager-section">
+            <header class="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-xl font-semibold text-base-content">🧩 إدارة القوالب</h3>
+                <p class="text-sm text-base-content/70">إنشاء/تعديل قوالب الرسائل بمتغيرات.</p>
+              </div>
+              <div class="flex gap-2 items-center">
+                <button type="button" class="btn btn-outline" id="tpl-refresh">🔄 تحديث</button>
+                <button type="button" class="btn" id="tpl-new">➕ قالب جديد</button>
+                <button type="button" class="btn btn-outline" id="tpl-vars">🧠 دليل المتغيرات</button>
+              </div>
+            </header>
+            <div id="tpl-vars-box" class="hidden text-sm bg-base-200/60 rounded p-3">
+              <div>استخدم صيغة {{variable}}. أمثلة متاحة:</div>
+              <ul class="list-disc ms-6">
+                <li>{{reservation.code}}, {{reservation.title}}, {{reservation.start_datetime}}, {{reservation.customer_name}}</li>
+                <li>{{project.code}}, {{project.title}}, {{project.start_datetime}}</li>
+                <li>{{recipient.name}}, {{recipient.type}}</li>
+              </ul>
+            </div>
+            <div class="users-table-wrapper overflow-x-auto">
+              <table class="table table-hover align-middle text-nowrap users-table" id="tpl-table">
+                <thead class="table-light users-table-head"><tr><th>الاسم</th><th>القناة</th><th>آخر تعديل</th><th>الإجراءات</th></tr></thead>
+                <tbody id="tpl-body"><tr><td colspan="4" class="text-center text-muted">—</td></tr></tbody>
+              </table>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2" id="tpl-form" hidden>
+              <input id="tpl-id" type="hidden">
+              <div class="flex flex-col gap-2">
+                <label class="font-medium">الاسم</label>
+                <input id="tpl-name" class="input input-bordered" placeholder="اسم القالب">
+                <label class="font-medium">القناة</label>
+                <select id="tpl-channel" class="select select-bordered"><option value="both">both</option><option value="email">email</option><option value="telegram">telegram</option></select>
+                <label class="font-medium">رابط صورة (اختياري لتيليغرام)</label>
+                <input id="tpl-attachment" class="input input-bordered" placeholder="https://...jpg">
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="font-medium">الموضوع</label>
+                <input id="tpl-subject" class="input input-bordered" placeholder="مثال: إشعار...">
+                <label class="font-medium">النص</label>
+                <textarea id="tpl-text" class="textarea textarea-bordered min-h-[120px]" placeholder="نص الرسالة (سيُستخدم أيضاً كتسمية للصورة)"></textarea>
+                <div class="flex gap-2">
+                  <button type="button" class="btn btn-primary" id="tpl-save">💾 حفظ</button>
+                  <button type="button" class="btn btn-outline" id="tpl-cancel">إلغاء</button>
+                </div>
+              </div>
+            </div>
           </section>
 
           <!-- ✅ Telegram linking helper for technicians -->
