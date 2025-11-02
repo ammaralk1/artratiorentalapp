@@ -159,11 +159,14 @@ async function sendManual() {
       },
     });
     // If the request didn’t throw, consider the operation successful.
-    // The backend returns 4xx for "no recipients" and other validation errors, so failures will be caught below.
+    // Show a success toast including sent counts per channel.
     const data = res?.data || {};
     const sent = data?.sent || { email: 0, whatsapp: 0 };
-    const msg = t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح');
-    showToast(msg);
+    const parts = [];
+    if (els.chEmail?.checked) parts.push(`إيميل: ${Number(sent.email || 0)}`);
+    if (els.chWhatsapp?.checked) parts.push(`واتساب: ${Number(sent.whatsapp || 0)}`);
+    const suffix = parts.length ? ` — ${parts.join(' | ')}` : '';
+    showToast(`${t('notifications.compose.sentOk','تم إرسال الرسالة بنجاح')}${suffix}`);
     fetchLogs();
   } catch (e) {
     console.error(e);
