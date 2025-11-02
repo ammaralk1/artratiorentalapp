@@ -47,6 +47,11 @@ function cacheElements() {
   els.tgSearchBtn = q('#tg-tech-search-btn');
   els.tgRefreshBtn = q('#tg-tech-refresh-btn');
   els.tgBody = q('#tg-tech-body');
+  // Admin Telegram helpers
+  els.tgAdminGenBtn = q('#tg-admin-gen-btn');
+  els.tgAdminCopyBtn = q('#tg-admin-copy-btn');
+  els.tgAdminBody = q('#tg-admin-body');
+  els.tgAdminLinkBox = q('#tg-admin-link-box');
 }
 
 function formatWhen(item, type) {
@@ -298,6 +303,19 @@ function attachEvents() {
       }
     });
   }
+
+  // Admin linking handlers
+  if (els.tgAdminGenBtn) {
+    els.tgAdminGenBtn.addEventListener('click', generateAdminLink);
+  }
+  if (els.tgAdminCopyBtn) {
+    els.tgAdminCopyBtn.addEventListener('click', async () => {
+      const link = els.tgAdminCopyBtn.getAttribute('data-link');
+      if (!link) return;
+      try { await navigator.clipboard.writeText(link); showToast('✅ تم نسخ رابط الإدمن'); }
+      catch { showToast('⚠️ تعذر النسخ'); }
+    });
+  }
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
   }
@@ -470,6 +488,7 @@ async function fetchLogs() {
   doSearch();
   fetchLogs();
   fetchTechs();
+  fetchAdminLinks();
 })();
 
 async function fetchTechs() {
@@ -522,5 +541,46 @@ async function generateTgLink(technicianId) {
   } catch (e) {
     console.error(e);
     showToast('فشل توليد الرابط');
+  }
+}
+
+async function fetchAdminLinks() {
+  if (!els.tgAdminBody) return;
+  try {
+    els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
+    const res = await apiRequest('/telegram/admins.php');
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) {
+      els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">لا توجد روابط إدمن مرتبطة حالياً</td></tr>`;
+      return;
+    }
+    els.tgAdminBody.innerHTML = items.map((row) => {
+      const id = String(row.chat_id || '');
+      const used = row.last_used_at || '—';
+      return `<tr><td>${id}</td><td>${used}</td></tr>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    els.tgAdminBody.innerHTML = `<tr><td colspan="2" class="text-center text-error">فشل تحميل روابط الإدمن</td></tr>`;
+  }
+}
+
+async function generateAdminLink() {
+  try {
+    const res = await apiRequest('/telegram/generate-link.php?context=admin');
+    const link = res?.data?.link || res?.link || null;
+    if (!link) { showToast('⚠️ تعذر توليد رابط الإدمن'); return; }
+    if (els.tgAdminCopyBtn) {
+      els.tgAdminCopyBtn.removeAttribute('disabled');
+      els.tgAdminCopyBtn.setAttribute('data-link', link);
+    }
+    if (els.tgAdminLinkBox) {
+      els.tgAdminLinkBox.classList.remove('hidden');
+      els.tgAdminLinkBox.textContent = link;
+    }
+    showToast('✅ تم توليد رابط الإدمن');
+  } catch (e) {
+    console.error(e);
+    showToast('فشل توليد رابط الإدمن');
   }
 }
