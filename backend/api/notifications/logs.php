@@ -54,24 +54,20 @@ try {
         $where = [];
         $params = [];
 
+        // Detect optional columns once (e.g., when ALTER privileges are missing).
+        $hasBatchCol = false;
+        try {
+            $c = $pdo->query("SHOW COLUMNS FROM notification_events LIKE 'batch_id'");
+            $hasBatchCol = $c && $c->fetch() ? true : false;
+        } catch (Throwable $_) { $hasBatchCol = false; }
+
         if ($eventType !== '') { $where[] = 'event_type = :event_type'; $params['event_type'] = $eventType; }
         if ($entityType !== '') { $where[] = 'entity_type = :entity_type'; $params['entity_type'] = $entityType; }
         if ($status !== '') { $where[] = 'status = :status'; $params['status'] = $status; }
         if ($channel !== '') { $where[] = 'channel = :channel'; $params['channel'] = $channel; }
         if ($recipientType !== '') { $where[] = 'recipient_type = :recipient_type'; $params['recipient_type'] = $recipientType; }
         if ($entityId) { $where[] = 'entity_id = :entity_id'; $params['entity_id'] = $entityId; }
-        if ($batchId !== '') {
-            // Be defensive: if DB user lacks ALTER privileges, batch_id column may be missing
-            $hasBatch = false;
-            try {
-                $chk = $pdo->query("SHOW COLUMNS FROM notification_events LIKE 'batch_id'");
-                $hasBatch = $chk && $chk->fetch() ? true : false;
-            } catch (Throwable $_) { $hasBatch = false; }
-            if ($hasBatch) {
-                $where[] = 'batch_id = :batch_id';
-                $params['batch_id'] = $batchId;
-            }
-        }
+        if ($batchId !== '' && $hasBatchCol) { $where[] = 'batch_id = :batch_id'; $params['batch_id'] = $batchId; }
         if ($q !== '') { $where[] = 'recipient_identifier LIKE :q'; $params['q'] = '%' . $q . '%'; }
 
         $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
@@ -89,7 +85,9 @@ try {
         // To avoid 500s from SQLSTATE[42000], inline the sanitized integers.
         $safeLimit = (int) $limit;
         $safeOffset = (int) $offset;
-        $sql = 'SELECT id, event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error, batch_id, created_at
+        $selectCols = 'id, event_type, entity_type, entity_id, recipient_type, recipient_identifier, channel, status, error, ' .
+            ($hasBatchCol ? 'batch_id' : 'NULL AS batch_id') . ', created_at';
+        $sql = 'SELECT ' . $selectCols . '
                 FROM notification_events ' . $whereClause . ' ORDER BY created_at DESC, id DESC'
             . ' LIMIT ' . $safeLimit . ' OFFSET ' . $safeOffset;
 
