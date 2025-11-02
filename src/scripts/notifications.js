@@ -42,6 +42,11 @@ function cacheElements() {
   els.logClear = q('#log-clear-btn');
   els.logBody = q('#notif-logs-body');
   els.logPagination = q('#log-pagination');
+  // Telegram linking helpers
+  els.tgSearch = q('#tg-tech-search');
+  els.tgSearchBtn = q('#tg-tech-search-btn');
+  els.tgRefreshBtn = q('#tg-tech-refresh-btn');
+  els.tgBody = q('#tg-tech-body');
 }
 
 function formatWhen(item, type) {
@@ -270,6 +275,29 @@ function attachEvents() {
     els.body.value = base;
   });
   els.sendBtn.addEventListener('click', sendManual);
+
+  // Telegram linking handlers
+  if (els.tgSearchBtn) els.tgSearchBtn.addEventListener('click', fetchTechs);
+  if (els.tgRefreshBtn) els.tgRefreshBtn.addEventListener('click', fetchTechs);
+  if (els.tgSearch) els.tgSearch.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') fetchTechs(); });
+  if (els.tgBody) {
+    els.tgBody.addEventListener('click', async (ev) => {
+      const genBtn = ev.target.closest('[data-gen-id]');
+      const copyBtn = ev.target.closest('[data-copy-link]');
+      if (genBtn) {
+        const id = genBtn.getAttribute('data-gen-id');
+        await generateTgLink(id);
+        return;
+      }
+      if (copyBtn) {
+        const link = copyBtn.getAttribute('data-copy-link');
+        if (link) {
+          try { await navigator.clipboard.writeText(link); showToast('✅ تم نسخ الرابط'); }
+          catch { showToast('⚠️ تعذر النسخ، انسخ يدوياً'); }
+        }
+      }
+    });
+  }
   if (els.previewBtn) {
     els.previewBtn.addEventListener('click', previewTargets);
   }
@@ -441,4 +469,58 @@ async function fetchLogs() {
   // Load initial list so the table is not empty
   doSearch();
   fetchLogs();
+  fetchTechs();
 })();
+
+async function fetchTechs() {
+  if (!els.tgBody) return;
+  try {
+    els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">جارٍ التحميل…</td></tr>`;
+    const qstr = (els.tgSearch?.value || '').trim();
+    const params = new URLSearchParams();
+    if (qstr) params.set('search', qstr);
+    params.set('limit', '20');
+    const res = await apiRequest(`/technicians/?${params.toString()}`);
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) {
+      els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">لا توجد نتائج</td></tr>`;
+      return;
+    }
+    els.tgBody.innerHTML = items.map((t) => {
+      const name = t.full_name || t.name || '';
+      const phone = t.phone || '';
+      const linked = !!(t.telegram_chat_id || t.telegramChatId);
+      const status = linked ? '<span class="badge bg-primary-subtle">مرتبط</span>' : '<span class="badge bg-warning-subtle">غير مرتبط</span>';
+      const actions = linked
+        ? '<span class="text-xs text-muted">لا حاجة لرابط</span>'
+        : `<button type="button" class="btn btn-sm" data-gen-id="${t.id}">🔗 توليد رابط</button>`;
+      return `<tr>
+        <td>${name}</td>
+        <td>${phone}</td>
+        <td>${status}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    els.tgBody.innerHTML = `<tr><td colspan="4" class="text-center text-error">فشل التحميل</td></tr>`;
+  }
+}
+
+async function generateTgLink(technicianId) {
+  try {
+    const res = await apiRequest(`/telegram/generate-link.php?technician_id=${encodeURIComponent(technicianId)}`);
+    const link = res?.data?.link || res?.link || null;
+    if (!link) { showToast('⚠️ تعذر توليد الرابط'); return; }
+    // Replace the action cell for this row with copy button
+    const row = els.tgBody?.querySelector(`button[data-gen-id="${technicianId}"]`)?.closest('tr');
+    if (row) {
+      const cell = row.querySelector('td:last-child');
+      if (cell) cell.innerHTML = `<button type="button" class="btn btn-sm" data-copy-link="${link}">📋 نسخ الرابط</button>`;
+    }
+    showToast('✅ تم توليد الرابط');
+  } catch (e) {
+    console.error(e);
+    showToast('فشل توليد الرابط');
+  }
+}
