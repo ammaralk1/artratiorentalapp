@@ -386,6 +386,7 @@ function attachEvents() {
   if (els.tgChatPick) els.tgChatPick.addEventListener('click', chatPickTechnician);
   if (els.tgChatRefresh) els.tgChatRefresh.addEventListener('click', chatRefresh);
   if (els.tgChatSend) els.tgChatSend.addEventListener('click', chatSend);
+  if (els.tgChatSearch) els.tgChatSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') chatPickTechnician(); });
   // Auto-preview on channel/recipient changes
   const triggerPreview = () => {
     if (previewTimer) clearTimeout(previewTimer);
@@ -608,8 +609,31 @@ async function chatPickTechnician() {
     if (els.tgChatSelected) els.tgChatSelected.textContent = `المحدد: ${CHAT_SELECTED_TECH.name}`;
     await chatRefresh();
   } catch (e) {
-    console.error(e);
-    showToast('فشل اختيار الفني');
+    console.error('[chatPickTechnician] primary lookup failed', e);
+    // Fallback: try without search then filter locally (handles transient 500 or collation quirks)
+    try {
+      const res2 = await apiRequest('/technicians/?limit=20');
+      const all = Array.isArray(res2?.data) ? res2.data : [];
+      const norm = (s) => String(s || '').toLowerCase();
+      const digits = (s) => String(s || '').replace(/[^0-9]/g, '');
+      const qn = norm(qstr);
+      const qd = digits(qstr);
+      const match = all.find(t =>
+        norm(t.full_name || t.name).includes(qn) || (qd && digits(t.phone || '').includes(qd))
+      );
+      if (match) {
+        CHAT_SELECTED_TECH = { id: match.id, name: match.full_name || match.name || String(match.id) };
+        if (els.tgChatSelected) els.tgChatSelected.textContent = `المحدد: ${CHAT_SELECTED_TECH.name}`;
+        await chatRefresh();
+        return;
+      }
+      const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'لا نتائج';
+      showToast(`فشل اختيار الفني — ${msg}`);
+    } catch (e2) {
+      console.error('[chatPickTechnician] fallback lookup failed', e2);
+      const msg = (e2 && (e2.payload?.error || e2.message)) ? String(e2.payload?.error || e2.message) : 'فشل اختيار الفني';
+      showToast(msg);
+    }
   }
 }
 
