@@ -5,8 +5,6 @@ require_once __DIR__ . '/../../bootstrap.php';
 require_once __DIR__ . '/../../services/notifications.php';
 require_once __DIR__ . '/../../services/telegram.php';
 
-use PDO;
-use Throwable;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
