@@ -51,40 +51,22 @@ function getSelectedReservations(projectId) {
   return match ? [match] : [];
 }
 
-function getPersistedHeaderFields() {
-  try {
-    return {
-      companyName: localStorage.getItem('templates.companyName') || '',
-      companyCR: localStorage.getItem('templates.companyCR') || '',
-      companyLicense: localStorage.getItem('templates.companyLicense') || ''
-    };
-  } catch (_) { return { companyName: '', companyCR: '', companyLicense: '' }; }
-}
-
-function persistHeaderFields({ companyName, companyCR, companyLicense }) {
-  try {
-    if (companyName != null) localStorage.setItem('templates.companyName', String(companyName));
-    if (companyCR != null) localStorage.setItem('templates.companyCR', String(companyCR));
-    if (companyLicense != null) localStorage.setItem('templates.companyLicense', String(companyLicense));
-  } catch (_) {}
-}
+const COMPANY_INFO = {
+  logoUrl: 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png',
+  companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
+  companyCR: '4030485240',
+  companyLicense: '159460'
+};
 
 function readHeaderFooterOptions() {
-  const hf = document.getElementById('templates-header-footer');
-  const logo = document.getElementById('templates-logo-url');
-  const companyNameInput = document.getElementById('templates-company-name');
-  const companyCrInput = document.getElementById('templates-company-cr');
-  const companyLicenseInput = document.getElementById('templates-company-license');
-  const enabled = hf ? hf.checked : false;
-  let logoUrl = (logo?.value || '').trim();
-  if (!logoUrl) logoUrl = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
-  // populate defaults from persisted values, with fallback to project/client when available
-  const persisted = getPersistedHeaderFields();
-  const project = getSelectedProject();
-  const defaultCompanyName = (companyNameInput?.value || persisted.companyName || project?.clientCompany || project?.title || '').trim();
-  const defaultCR = (companyCrInput?.value || persisted.companyCR || '').trim();
-  const defaultLicense = (companyLicenseInput?.value || persisted.companyLicense || '').trim();
-  return { headerFooter: enabled, logoUrl, companyName: defaultCompanyName, companyCR: defaultCR, companyLicense: defaultLicense };
+  // Simplified: always use fixed company info and no external header/footer overlay
+  return {
+    headerFooter: false,
+    logoUrl: COMPANY_INFO.logoUrl,
+    companyName: COMPANY_INFO.companyName,
+    companyCR: COMPANY_INFO.companyCR,
+    companyLicense: COMPANY_INFO.companyLicense
+  };
 }
 
 function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
@@ -638,8 +620,8 @@ function autoPaginateTemplates() {
   const firstInner = firstPage?.querySelector('.a4-inner');
   if (!firstInner) return;
 
-  const headerFooter = document.getElementById('templates-header-footer')?.checked === true;
-  const logoUrl = (document.getElementById('templates-logo-url')?.value || '').trim() || 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
+  const headerFooter = false;
+  const logoUrl = COMPANY_INFO.logoUrl;
 
   // Gather original blocks
   const masthead = firstInner.querySelector('.exp-masthead');
@@ -999,20 +981,6 @@ export function initTemplatesTab() {
   typeSel?.addEventListener('change', renderTemplatesPreview);
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   printBtn?.addEventListener('click', printTemplatesPdf);
-  document.getElementById('templates-header-footer')?.addEventListener('change', renderTemplatesPreview);
-  document.getElementById('templates-logo-url')?.addEventListener('change', renderTemplatesPreview);
-  document.getElementById('templates-company-name')?.addEventListener('input', (e) => {
-    persistHeaderFields({ companyName: e.target.value });
-    renderTemplatesPreview();
-  });
-  document.getElementById('templates-company-cr')?.addEventListener('input', (e) => {
-    persistHeaderFields({ companyCR: e.target.value });
-    renderTemplatesPreview();
-  });
-  document.getElementById('templates-company-license')?.addEventListener('input', (e) => {
-    persistHeaderFields({ companyLicense: e.target.value });
-    renderTemplatesPreview();
-  });
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
