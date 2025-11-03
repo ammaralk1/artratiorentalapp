@@ -58,11 +58,13 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .tpl-print-footer .page-num { font-weight:700; }
 
 /* Expenses A4 specific layout */
-.exp-masthead { background:#374151; color:#fff !important; border-radius:10px; padding:10px 12px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; }
-.exp-masthead .title { font-size:16px; font-weight:800; }
-.exp-masthead .brand { display:flex; align-items:center; gap:10px; }
-.exp-masthead .brand img { height:20px; width:auto; object-fit:contain; }
-.exp-masthead .brand .text { font-weight:800; font-size:14px; }
+.exp-masthead { direction:ltr; background:#374151; color:#fff !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.exp-masthead .title { font-size:18px; font-weight:800; color:#fff !important; }
+.exp-masthead .brand { display:flex; align-items:center; gap:12px; }
+.exp-masthead .brand img { height:28px; width:auto; object-fit:contain; }
+.exp-masthead .brand .text { font-weight:800; font-size:14px; color:#fff !important; }
+.exp-masthead .brand .meta { display:flex; flex-direction:column; gap:2px; font-size:11px; color:#e5e7eb !important; }
+.exp-masthead .brand .meta .line { margin:0; padding:0; }
 
 table.exp-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
 table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }

@@ -51,13 +51,40 @@ function getSelectedReservations(projectId) {
   return match ? [match] : [];
 }
 
+function getPersistedHeaderFields() {
+  try {
+    return {
+      companyName: localStorage.getItem('templates.companyName') || '',
+      companyCR: localStorage.getItem('templates.companyCR') || '',
+      companyLicense: localStorage.getItem('templates.companyLicense') || ''
+    };
+  } catch (_) { return { companyName: '', companyCR: '', companyLicense: '' }; }
+}
+
+function persistHeaderFields({ companyName, companyCR, companyLicense }) {
+  try {
+    if (companyName != null) localStorage.setItem('templates.companyName', String(companyName));
+    if (companyCR != null) localStorage.setItem('templates.companyCR', String(companyCR));
+    if (companyLicense != null) localStorage.setItem('templates.companyLicense', String(companyLicense));
+  } catch (_) {}
+}
+
 function readHeaderFooterOptions() {
   const hf = document.getElementById('templates-header-footer');
   const logo = document.getElementById('templates-logo-url');
+  const companyNameInput = document.getElementById('templates-company-name');
+  const companyCrInput = document.getElementById('templates-company-cr');
+  const companyLicenseInput = document.getElementById('templates-company-license');
   const enabled = hf ? hf.checked : false;
   let logoUrl = (logo?.value || '').trim();
   if (!logoUrl) logoUrl = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
-  return { headerFooter: enabled, logoUrl };
+  // populate defaults from persisted values, with fallback to project/client when available
+  const persisted = getPersistedHeaderFields();
+  const project = getSelectedProject();
+  const defaultCompanyName = (companyNameInput?.value || persisted.companyName || project?.clientCompany || project?.title || '').trim();
+  const defaultCR = (companyCrInput?.value || persisted.companyCR || '').trim();
+  const defaultLicense = (companyLicenseInput?.value || persisted.companyLicense || '').trim();
+  return { headerFooter: enabled, logoUrl, companyName: defaultCompanyName, companyCR: defaultCR, companyLicense: defaultLicense };
 }
 
 function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
@@ -95,11 +122,19 @@ function buildExpensesPage(project, reservations, opts = {}) {
 
   // Masthead (title + brand)
   const masthead = el('div', { class: 'exp-masthead' }, [
-    el('div', { class: 'title', text: 'Expenses Sheet' }),
     el('div', { class: 'brand' }, [
       el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
-      el('div', { class: 'text', text: (project?.clientCompany || project?.title || 'Company') })
-    ])
+      el('div', {}, [
+        el('div', { class: 'text', text: (opts.companyName || project?.clientCompany || project?.title || 'Company') }),
+        (opts.companyCR ? el('div', { class: 'meta' }, [
+          el('span', { class: 'line', text: `CR: ${opts.companyCR}` }),
+          (opts.companyLicense ? el('span', { class: 'line', text: `Media License: ${opts.companyLicense}` }) : null)
+        ]) : el('div', { class: 'meta' }, [
+          (opts.companyLicense ? el('span', { class: 'line', text: `Media License: ${opts.companyLicense}` }) : null)
+        ]))
+      ])
+    ]),
+    el('div', { class: 'title', text: 'Expenses Sheet' })
   ]);
   inner.appendChild(masthead);
 
@@ -516,7 +551,8 @@ function recomputeExpensesSubtotals() {
           const amount = number(tds[2]?.textContent, 1);
           const x = number(tds[4]?.textContent, 1);
           const rate = number(tds[5]?.textContent, 0);
-          const total = amount * x * rate;
+          const tab = number(tds[6]?.textContent, 1);
+          const total = amount * x * rate * tab;
           if (tds[7]) tds[7].textContent = String(total.toFixed(2));
           subtotal += total;
         }
@@ -883,6 +919,18 @@ export function initTemplatesTab() {
   printBtn?.addEventListener('click', printTemplatesPdf);
   document.getElementById('templates-header-footer')?.addEventListener('change', renderTemplatesPreview);
   document.getElementById('templates-logo-url')?.addEventListener('change', renderTemplatesPreview);
+  document.getElementById('templates-company-name')?.addEventListener('input', (e) => {
+    persistHeaderFields({ companyName: e.target.value });
+    renderTemplatesPreview();
+  });
+  document.getElementById('templates-company-cr')?.addEventListener('input', (e) => {
+    persistHeaderFields({ companyCR: e.target.value });
+    renderTemplatesPreview();
+  });
+  document.getElementById('templates-company-license')?.addEventListener('input', (e) => {
+    persistHeaderFields({ companyLicense: e.target.value });
+    renderTemplatesPreview();
+  });
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
