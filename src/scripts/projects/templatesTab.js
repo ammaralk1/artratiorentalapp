@@ -524,6 +524,23 @@ export function initTemplatesTab() {
     });
 
     document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+
+    // Re-populate when data loads later
+    const repopulate = () => {
+      const before = (projectSel?.value || '');
+      populateProjectSelect();
+      // Keep selection if exists; otherwise choose first project
+      if (!projectSel.value && projectSel.options.length > 1) {
+        projectSel.selectedIndex = 1;
+      } else if (before) {
+        projectSel.value = before;
+      }
+      populateReservationSelect(projectSel.value || '');
+      renderTemplatesPreview();
+      (async () => { try { await populateSavedTemplates(); } catch {} })();
+    };
+    document.addEventListener('projects:changed', repopulate);
+    document.addEventListener('reservations:changed', repopulate);
   });
 }
 
