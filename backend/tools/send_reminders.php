@@ -33,7 +33,7 @@ function loadUpcomingReservations(PDO $pdo, string $window): array {
     }
 
     // Exclude cancelled
-    $stmt = $pdo->prepare('SELECT r.*, c.full_name AS customer_name FROM reservations r INNER JOIN customers c ON c.id = r.customer_id WHERE r.status <> \"cancelled\" AND r.start_datetime BETWEEN :from AND :to ORDER BY r.start_datetime ASC');
+    $stmt = $pdo->prepare("SELECT r.*, c.full_name AS customer_name FROM reservations r INNER JOIN customers c ON c.id = r.customer_id WHERE r.status <> 'cancelled' AND r.start_datetime BETWEEN :from AND :to ORDER BY r.start_datetime ASC");
     $stmt->execute(['from' => $from, 'to' => $to]);
 
     $items = [];
