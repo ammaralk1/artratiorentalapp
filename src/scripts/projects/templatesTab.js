@@ -561,7 +561,9 @@ export function initTemplatesTab() {
       try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
     };
     document.addEventListener('projects:changed', repopulate);
+    // Some modules fire 'reservations:updated' instead of 'reservations:changed'
     document.addEventListener('reservations:changed', repopulate);
+    document.addEventListener('reservations:updated', repopulate);
 
     // Re-populate when user opens the Templates tab explicitly
     const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
