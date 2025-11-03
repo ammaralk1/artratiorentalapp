@@ -180,12 +180,12 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
     el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
     el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
     el('td', { 'data-editable': 'true', contenteditable: 'true' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
-    el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+    el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '' }),
   ]);
 
   const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
@@ -622,7 +622,7 @@ function autoPaginateTemplates() {
   const root = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!root) return;
   const type = document.getElementById('templates-type')?.value || 'expenses';
-  if (type !== 'expenses') return; // حاليا نطبّق التقسيم التلقائي على ورقة المصاريف فقط
+  if (type !== 'expenses') return; // حالياً نطبّق التقسيم التلقائي على ورقة المصاريف فقط
 
   const pagesWrap = root.querySelector('[data-a4-pages]');
   const firstPage = pagesWrap?.querySelector('.a4-page');
@@ -663,22 +663,113 @@ function autoPaginateTemplates() {
 
   let workingTable = makeTable();
   currentInner.appendChild(workingTable);
+
   const rows = Array.from(table.querySelectorAll('tbody > tr'));
-  const appendRow = (row) => {
-    workingTable.tBodies[0].appendChild(row);
-    // If overflow, undo and start a new page
+
+  const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
+  const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
+  const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
+  const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
+  const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+
+  const appendOrNewPage = (node) => {
+    const tbody = workingTable.tBodies[0];
+    tbody.appendChild(node);
     const fits = currentInner.scrollHeight <= currentInner.clientHeight;
     if (!fits) {
-      // remove row and move to next page
-      workingTable.tBodies[0].removeChild(row);
+      // rollback this node and move to a fresh page
+      tbody.removeChild(node);
       ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
       pagesWrap.appendChild(currentPage);
       workingTable = makeTable();
       currentInner.appendChild(workingTable);
-      workingTable.tBodies[0].appendChild(row);
+      workingTable.tBodies[0].appendChild(node);
     }
   };
-  rows.forEach((row) => appendRow(row));
+
+  let i = 0;
+  while (i < rows.length) {
+    const row = rows[i];
+
+    // Keep subgroup header with first 2 rows (and subtotal when immediately follows)
+    if (isSubHeader(row)) {
+      const pack = [row];
+      const headerCode = row.getAttribute('data-subgroup');
+      let j = i + 1;
+      let itemsAdded = 0;
+      // include up to first 2 item rows after header
+      while (j < rows.length && itemsAdded < 2) {
+        if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
+        else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
+        else if (isSubTotal(rows[j])) { break; } // stop before subtotal; we'll add it below
+        else { break; }
+      }
+      // if the next row is the matching subtotal, include it too
+      if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === headerCode) {
+        pack.push(rows[j]);
+        j += 1;
+      }
+      // Try to place the pack; if it doesn't fit, start a new page first
+      const tbody = workingTable.tBodies[0];
+      // Append to measure
+      pack.forEach((n) => tbody.appendChild(n));
+      const fits = currentInner.scrollHeight <= currentInner.clientHeight;
+      if (!fits) {
+        // rollback
+        pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
+        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+        pagesWrap.appendChild(currentPage);
+        workingTable = makeTable();
+        currentInner.appendChild(workingTable);
+        const tb2 = workingTable.tBodies[0];
+        pack.forEach((n) => tb2.appendChild(n));
+      }
+      i = j;
+      continue;
+    }
+
+    // Keep group total row from being split awkwardly
+    if (isGroupTotal(row)) {
+      const tbody = workingTable.tBodies[0];
+      tbody.appendChild(row);
+      let fits = currentInner.scrollHeight <= currentInner.clientHeight;
+      if (!fits) {
+        // remove and start a new page; also try to carry the previous item/subtotal row with it
+        tbody.removeChild(row);
+        const prev = tbody.lastElementChild;
+        let carry = null;
+        if (prev && (isItem(prev) || isSubTotal(prev))) {
+          carry = prev;
+          tbody.removeChild(prev);
+        }
+        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+        pagesWrap.appendChild(currentPage);
+        workingTable = makeTable();
+        currentInner.appendChild(workingTable);
+        const tb2 = workingTable.tBodies[0];
+        if (carry) tb2.appendChild(carry);
+        tb2.appendChild(row);
+        // Final guard: if even this overflows (unlikely), push row alone to a fresh page
+        fits = currentInner.scrollHeight <= currentInner.clientHeight;
+        if (!fits) {
+          // move group total alone to a new page
+          tb2.removeChild(row);
+          if (carry) { /* keep carry on this page */ }
+          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+          pagesWrap.appendChild(currentPage);
+          workingTable = makeTable();
+          currentInner.appendChild(workingTable);
+          workingTable.tBodies[0].appendChild(row);
+        }
+      }
+      i += 1;
+      continue;
+    }
+
+    // Default: append row normally
+    appendOrNewPage(row);
+    i += 1;
+  }
 
   // Place summary at the end (last page)
   if (summary) currentInner.appendChild(summary);
@@ -686,10 +777,10 @@ function autoPaginateTemplates() {
   // Update page numbers if header/footer enabled
   if (headerFooter) {
     const count = pagesWrap.querySelectorAll('.a4-page').length;
-    Array.from(pagesWrap.querySelectorAll('.a4-page')).forEach((p, i) => {
+    Array.from(pagesWrap.querySelectorAll('.a4-page')).forEach((p, i2) => {
       const numEl = p.querySelector('[data-page-num]');
       const countEl = p.querySelector('[data-page-count]');
-      if (numEl) numEl.textContent = String(i + 1);
+      if (numEl) numEl.textContent = String(i2 + 1);
       if (countEl) countEl.textContent = String(count);
     });
   }
@@ -1008,6 +1099,16 @@ export function initTemplatesTab() {
       renderTemplatesPreview();
     });
   }
+
+  // Keyboard shortcut: Alt+L toggles EN/AR for templates preview
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey && (e.code === 'KeyL' || e.key.toLowerCase() === 'l')) {
+      e.preventDefault();
+      setTemplateLang(TEMPLATE_LANG === 'ar' ? 'en' : 'ar');
+      if (langBtn) { langBtn.textContent = TEMPLATE_LANG === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${TEMPLATE_LANG.toUpperCase()}`; }
+      renderTemplatesPreview();
+    }
+  }, true);
 
   // Preview adjust controls removed
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });

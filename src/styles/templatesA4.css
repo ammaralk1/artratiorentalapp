@@ -116,7 +116,7 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 
 /* Column widths for expenses table */
 .exp-col-code { width:10%; }
-.exp-col-item { width:28%; }
+.exp-col-item { width:30%; }
 .exp-col-amount { width:8%; }
 .exp-col-paid { width:10%; }
 .exp-col-x { width:6%; }
