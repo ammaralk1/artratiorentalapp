@@ -91,6 +91,7 @@ let reportsModulePromise = null;
 let reservationsModulePromise = null;
 let calendarModulePromise = null;
 let maintenanceModulePromise = null;
+let maintenanceInitialised = false;
 let reservationsInitialised = false;
 
 function ensureReportsModule() {
@@ -214,8 +215,16 @@ export function setupTabs() {
       devLog("🛠️ Rendering maintenance");
       ensureMaintenanceModule()
         .then((module) => {
-          try { module.renderMaintenance?.(); } catch (error) {
-            console.error('❌ [tabs.js] Failed to render maintenance', error);
+          try {
+            // Initialise once to bind events (form submit, filters, table actions)
+            if (!maintenanceInitialised && typeof module.initMaintenance === 'function') {
+              module.initMaintenance();
+              maintenanceInitialised = true;
+            } else {
+              module.renderMaintenance?.();
+            }
+          } catch (error) {
+            console.error('❌ [tabs.js] Failed to initialise/render maintenance', error);
           }
         })
         .catch((error) => console.error('❌ [tabs.js] Unable to load maintenance module', error));
