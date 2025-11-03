@@ -65,6 +65,37 @@ function setTemplateLang(lang) {
 }
 function L(en, ar) { return TEMPLATE_LANG === 'ar' ? (ar || en) : en; }
 
+// Preview padding adjustments (mm) — preview only, not for export
+const DEFAULT_PAD = { top: 12, right: 18, bottom: 12, left: 18 };
+function loadPreviewPad() {
+  try {
+    const raw = localStorage.getItem('templates.previewPad');
+    if (raw) {
+      const obj = JSON.parse(raw);
+      return { ...DEFAULT_PAD, ...obj };
+    }
+  } catch (_) {}
+  return { ...DEFAULT_PAD };
+}
+function savePreviewPad(pad) {
+  try { localStorage.setItem('templates.previewPad', JSON.stringify(pad)); } catch (_) {}
+}
+function applyPreviewPad() {
+  const root = document.querySelector('#templates-a4-root');
+  if (!root) return;
+  const pad = loadPreviewPad();
+  const inners = root.querySelectorAll('.a4-inner');
+  // Apply only for preview context
+  const ctx = root.getAttribute('data-render-context');
+  inners.forEach((el) => {
+    if (ctx === 'preview') {
+      el.style.padding = `${pad.top}mm ${pad.right}mm ${pad.bottom}mm ${pad.left}mm`;
+    } else {
+      el.style.padding = '';
+    }
+  });
+}
+
 function readHeaderFooterOptions() {
   // Simplified: always use fixed company info and no external header/footer overlay
   return {
@@ -477,6 +508,7 @@ function renderTemplatesPreview() {
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
+  try { applyPreviewPad(); } catch (_) {}
 }
 
 async function printTemplatesPdf() {
@@ -612,6 +644,7 @@ function recomputeExpensesSubtotals() {
   if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
   if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
   try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
+  try { requestAnimationFrame(() => { try { applyPreviewPad(); } catch (_) {} }); } catch (_) {}
 }
 
 function autoPaginateTemplates() {
@@ -689,6 +722,31 @@ function autoPaginateTemplates() {
       if (countEl) countEl.textContent = String(count);
     });
   }
+}
+
+function bindPreviewAdjustControls() {
+  const leftBtn = document.getElementById('templates-adjust-left');
+  const rightBtn = document.getElementById('templates-adjust-right');
+  const upBtn = document.getElementById('templates-adjust-up');
+  const downBtn = document.getElementById('templates-adjust-down');
+  const resetBtn = document.getElementById('templates-adjust-reset');
+
+  const step = 1; // mm per click
+  const nudge = (dir) => {
+    const pad = loadPreviewPad();
+    if (dir === 'left') pad.left += step; // push content right
+    if (dir === 'right') pad.right += step; // push content left
+    if (dir === 'up') pad.top += step; // push content down
+    if (dir === 'down') pad.bottom += step; // push content up
+    savePreviewPad(pad);
+    applyPreviewPad();
+  };
+
+  leftBtn?.addEventListener('click', () => nudge('left'));
+  rightBtn?.addEventListener('click', () => nudge('right'));
+  upBtn?.addEventListener('click', () => nudge('up'));
+  downBtn?.addEventListener('click', () => nudge('down'));
+  resetBtn?.addEventListener('click', () => { savePreviewPad({ ...DEFAULT_PAD }); applyPreviewPad(); });
 }
 
 function handleTableActionClick(e) {
@@ -996,6 +1054,9 @@ export function initTemplatesTab() {
       renderTemplatesPreview();
     });
   }
+
+  // Bind preview adjust controls
+  bindPreviewAdjustControls();
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
