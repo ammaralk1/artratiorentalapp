@@ -21,7 +21,7 @@
 }
 .a4-page { position:relative; width:794px; height:1123px; background:#fff; border:1px solid #e5e7eb; }
 .a4-page--landscape { width:1123px; height:794px; }
-.a4-inner { position:absolute; inset:0; padding:12mm 18mm 12mm 22mm; }
+.a4-inner { position:absolute; inset:0; padding:12mm 22mm; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Simple Notion-like blocks */
