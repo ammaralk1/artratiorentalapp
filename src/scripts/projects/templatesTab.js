@@ -985,6 +985,12 @@ export function initTemplatesTab() {
   });
 
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+  // Recompute totals on live edits in contenteditable cells
+  document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
+    if ((e.target instanceof HTMLElement) && e.target.isContentEditable) {
+      recomputeExpensesSubtotals();
+    }
+  });
   // Paste from Excel/Sheets into tables
   document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
   document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
