@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../../bootstrap.php';
+// For phone normalization when checking Telegram links
+require_once __DIR__ . '/../../services/telegram.php';
 
 use InvalidArgumentException;
 use PDO;
@@ -69,16 +71,25 @@ function handleTechniciansGet(PDO $pdo): void
     $where = [];
     $params = [];
 
+    // Detect available columns to avoid 500s on older schemas
+    $cols = [];
+    try {
+        $s = $pdo->query('SHOW COLUMNS FROM technicians');
+        while ($c = $s->fetch(PDO::FETCH_ASSOC)) {
+            $name = (string)($c['Field'] ?? '');
+            if ($name !== '') $cols[$name] = true;
+        }
+    } catch (Throwable $_) { $cols = []; }
+
     if ($search !== '') {
-        $where[] = '(
-            full_name LIKE :search OR
-            phone LIKE :search OR
-            email LIKE :search OR
-            specialization LIKE :search OR
-            department LIKE :search OR
-            notes LIKE :search
-        )';
-        $params['search'] = '%' . $search . '%';
+        $searchable = [];
+        foreach (['full_name','phone','email','specialization','department','notes'] as $cName) {
+            if (isset($cols[$cName])) { $searchable[] = "$cName LIKE :search"; }
+        }
+        if ($searchable) {
+            $where[] = '(' . implode(' OR ', $searchable) . ')';
+            $params['search'] = '%' . $search . '%';
+        }
     }
 
     if ($status !== '') {
@@ -96,10 +107,13 @@ function handleTechniciansGet(PDO $pdo): void
 
     $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+    // Choose a safe order column
+    $orderCol = isset($cols['created_at']) ? 'created_at' : 'id';
     // Simple query; we'll compute has_tg_link per-row to avoid SQL portability issues
     $query = sprintf(
-        'SELECT * FROM technicians %s ORDER BY created_at DESC LIMIT %d OFFSET %d',
+        'SELECT * FROM technicians %s ORDER BY %s DESC LIMIT %d OFFSET %d',
         $whereClause,
+        $orderCol,
         $limit,
         $offset
     );
