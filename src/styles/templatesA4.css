@@ -21,7 +21,7 @@
 }
 .a4-page { position:relative; width:794px; height:1123px; background:#fff; border:1px solid #e5e7eb; }
 .a4-page--landscape { width:1123px; height:794px; }
-.a4-inner { position:absolute; inset:0; padding:12mm 22mm; }
+.a4-inner { position:absolute; inset:0; padding:12mm 24mm 12mm 20mm; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Simple Notion-like blocks */
@@ -84,7 +84,12 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .exp-masthead .brand .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#e5e7eb !important; }
 .exp-masthead .brand .meta .line { margin:0; padding:0; }
 
-table.exp-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
+table.exp-table { position:relative; width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
+/* Ensure outer vertical borders are always visible, even with sub-pixel rounding */
+table.exp-table::before,
+table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1.5px; background:#94a3b8; pointer-events:none; }
+table.exp-table::before { left:0; }
+table.exp-table::after { right:0; }
 table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }

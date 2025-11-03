@@ -805,7 +805,13 @@ function handleTablePaste(e) {
     while (tr && isSpecialRow(tr)) tr = nextEditableRow(tr);
     if (!tr) return;
     const start = i === 0 ? startCol : 0;
-    fillRowFromArray(tr, start, arr);
+    const normalized = arr.map((v) => {
+      const s = String(v || '');
+      const mapA = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+      const mapB = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+      return s.replace(/[\u0660-\u0669]/g,(d)=>mapA[d]).replace(/[\u06F0-\u06F9]/g,(d)=>mapB[d]);
+    });
+    fillRowFromArray(tr, start, normalized);
     tr = nextEditableRow(tr) || tr?.nextElementSibling;
   });
 
@@ -1105,9 +1111,18 @@ export function initTemplatesTab() {
   });
 
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
-  // Recompute totals on live edits in contenteditable cells
+  // Normalize digits to English and recompute on edits
   document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
-    if ((e.target instanceof HTMLElement) && e.target.isContentEditable) {
+    const el = e.target;
+    if ((el instanceof HTMLElement) && el.isContentEditable) {
+      const before = el.textContent || '';
+      const after = (function normalizeDigits(str){
+        const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+        return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
+      })(before);
+      if (after !== before) {
+        el.textContent = after;
+      }
       recomputeExpensesSubtotals();
     }
   });
