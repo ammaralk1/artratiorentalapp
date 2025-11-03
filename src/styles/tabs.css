@@ -246,6 +246,16 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
   margin-inline: auto;
 }
 
+/* Force center for crew sub-tabs at all sizes */
+.tech-subtabs-container .tabs {
+  justify-content: center !important;
+}
+
+.tech-subtabs-container .tab-scroll-track {
+  display: flex;
+  justify-content: center !important;
+}
+
 .crew-picker-modal__dialog {
   max-width: min(96vw, 1080px);
 }
