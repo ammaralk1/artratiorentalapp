@@ -114,17 +114,17 @@ function buildExpensesPage(project, reservations, opts = {}) {
 
   // Masthead (title + brand)
   const masthead = el('div', { class: 'exp-masthead' }, [
-    el('div', { class: 'brand' }, [
-      el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
-      el('div', {}, [
-        el('div', { class: 'text', text: (opts.companyName || project?.clientCompany || project?.title || 'Company') }),
-        el('div', { class: 'meta' }, [
-          el('span', { class: 'line', text: `${L('CR','السجل التجاري')}: ${opts.companyCR || ''}` }),
-          el('span', { class: 'line', text: `${L('Media License','ترخيص إعلامي')}: ${opts.companyLicense || ''}` })
-        ])
+    el('div', { class: 'title', text: L('Expenses Sheet', 'ورقة المصاريف') }),
+    el('div', { class: 'brand-info' }, [
+      el('div', { class: 'text', text: (opts.companyName || project?.clientCompany || project?.title || 'Company') }),
+      el('div', { class: 'meta' }, [
+        el('span', { class: 'line', text: `${L('CR','السجل التجاري')}: ${opts.companyCR || ''}` }),
+        el('span', { class: 'line', text: `${L('Media License','ترخيص إعلامي')}: ${opts.companyLicense || ''}` })
       ])
     ]),
-    el('div', { class: 'title', text: L('Expenses Sheet', 'ورقة المصاريف') })
+    el('div', { class: 'brand-logo' }, [
+      el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' })
+    ])
   ]);
   inner.appendChild(masthead);
 
