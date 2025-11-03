@@ -541,6 +541,17 @@ export function initTemplatesTab() {
     };
     document.addEventListener('projects:changed', repopulate);
     document.addEventListener('reservations:changed', repopulate);
+
+    // Re-populate when user opens the Templates tab explicitly
+    const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
+    templatesTabBtn?.addEventListener('click', () => {
+      // slight delay to allow DOM to toggle
+      setTimeout(repopulate, 0);
+    });
+
+    // Defensive: timed retries in case data arrives after initial listeners
+    setTimeout(repopulate, 800);
+    setTimeout(repopulate, 2000);
   });
 }
 
