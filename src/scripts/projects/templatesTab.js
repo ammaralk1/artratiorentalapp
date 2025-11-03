@@ -90,6 +90,13 @@ function readHeaderFooterOptions() {
 function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
   const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview' });
   const pagesWrap = el('div', { 'data-a4-pages': '' });
+  const { page, inner } = createPageSection({ landscape, headerFooter, logoUrl });
+  pagesWrap.appendChild(page);
+  root.appendChild(pagesWrap);
+  return { root, inner };
+}
+
+function createPageSection({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
   const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });
   const inner = el('div', { class: 'a4-inner' });
   if (headerFooter) {
@@ -99,9 +106,7 @@ function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {
         el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
         el('div', { class: 'brand-text', text: brandTitle })
       ]),
-      el('div', { class: 'meta' }, [
-        el('div', { text: new Date().toLocaleDateString() }),
-      ])
+      el('div', { class: 'meta' }, [ el('div', { text: new Date().toLocaleDateString() }) ])
     ]);
     const footer = el('div', { class: 'tpl-print-footer' }, [
       el('div', { class: 'footer-left', text: 'art-ratio.com' }),
@@ -111,9 +116,7 @@ function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {
     page.appendChild(footer);
   }
   page.appendChild(inner);
-  pagesWrap.appendChild(page);
-  root.appendChild(pagesWrap);
-  return { root, inner };
+  return { page, inner };
 }
 
 function buildExpensesPage(project, reservations, opts = {}) {
@@ -486,6 +489,7 @@ function renderTemplatesPreview() {
   host.appendChild(pageRoot);
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
+  try { autoPaginateTemplates(); } catch (_) {}
 }
 
 async function printTemplatesPdf() {
@@ -620,6 +624,84 @@ function recomputeExpensesSubtotals() {
   if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
   if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
   if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
+  try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
+}
+
+function autoPaginateTemplates() {
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const type = document.getElementById('templates-type')?.value || 'expenses';
+  if (type !== 'expenses') return; // حاليا نطبّق التقسيم التلقائي على ورقة المصاريف فقط
+
+  const pagesWrap = root.querySelector('[data-a4-pages]');
+  const firstPage = pagesWrap?.querySelector('.a4-page');
+  const firstInner = firstPage?.querySelector('.a4-inner');
+  if (!firstInner) return;
+
+  const headerFooter = document.getElementById('templates-header-footer')?.checked === true;
+  const logoUrl = (document.getElementById('templates-logo-url')?.value || '').trim() || 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
+
+  // Gather original blocks
+  const masthead = firstInner.querySelector('.exp-masthead');
+  const meta = firstInner.querySelector('.tpl-meta');
+  const table = firstInner.querySelector('#expenses-table');
+  const summary = firstInner.querySelector('#expenses-summary');
+  if (!table) return;
+
+  // Reset pages to rebuild
+  while (pagesWrap.firstChild) pagesWrap.removeChild(pagesWrap.firstChild);
+
+  // Start first page and keep masthead + meta in first page
+  let { page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false });
+  pagesWrap.appendChild(currentPage);
+  if (masthead) currentInner.appendChild(masthead);
+  if (meta) currentInner.appendChild(meta);
+
+  // Create a working table with thead copy
+  const thead = table.querySelector('thead');
+  const makeTable = () => {
+    const t = document.createElement('table');
+    t.className = table.className;
+    t.id = 'expenses-table';
+    t.setAttribute('data-editable-table', 'expenses');
+    const head = thead ? thead.cloneNode(true) : document.createElement('thead');
+    t.appendChild(head);
+    t.appendChild(document.createElement('tbody'));
+    return t;
+  };
+
+  let workingTable = makeTable();
+  currentInner.appendChild(workingTable);
+  const rows = Array.from(table.querySelectorAll('tbody > tr'));
+  const appendRow = (row) => {
+    workingTable.tBodies[0].appendChild(row);
+    // If overflow, undo and start a new page
+    const fits = currentInner.scrollHeight <= currentInner.clientHeight;
+    if (!fits) {
+      // remove row and move to next page
+      workingTable.tBodies[0].removeChild(row);
+      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+      pagesWrap.appendChild(currentPage);
+      workingTable = makeTable();
+      currentInner.appendChild(workingTable);
+      workingTable.tBodies[0].appendChild(row);
+    }
+  };
+  rows.forEach((row) => appendRow(row));
+
+  // Place summary at the end (last page)
+  if (summary) currentInner.appendChild(summary);
+
+  // Update page numbers if header/footer enabled
+  if (headerFooter) {
+    const count = pagesWrap.querySelectorAll('.a4-page').length;
+    Array.from(pagesWrap.querySelectorAll('.a4-page')).forEach((p, i) => {
+      const numEl = p.querySelector('[data-page-num]');
+      const countEl = p.querySelector('[data-page-count]');
+      if (numEl) numEl.textContent = String(i + 1);
+      if (countEl) countEl.textContent = String(count);
+    });
+  }
 }
 
 function handleTableActionClick(e) {
