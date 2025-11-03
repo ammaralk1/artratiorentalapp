@@ -495,87 +495,79 @@ async function loadSnapshotById(id) {
 }
 
 export function initTemplatesTab() {
-  document.addEventListener('DOMContentLoaded', () => {
-    const projectSel = document.getElementById('templates-project');
-    const reservationSel = document.getElementById('templates-reservation');
-    const typeSel = document.getElementById('templates-type');
-    const refreshBtn = document.getElementById('templates-refresh');
-    const printBtn = document.getElementById('templates-print');
-    const saveBtn = document.getElementById('templates-save');
-    const saveCopyBtn = document.getElementById('templates-save-copy');
-    const savedSel = document.getElementById('templates-saved');
-    const fromResBtn = document.getElementById('templates-from-res');
-    // Debug indicator if needed
-    try { console.debug('[templatesTab] init DOM ready'); } catch(_) {}
+  // Run immediately; caller ensures DOM is ready
+  const projectSel = document.getElementById('templates-project');
+  const reservationSel = document.getElementById('templates-reservation');
+  const typeSel = document.getElementById('templates-type');
+  const refreshBtn = document.getElementById('templates-refresh');
+  const printBtn = document.getElementById('templates-print');
+  const saveBtn = document.getElementById('templates-save');
+  const saveCopyBtn = document.getElementById('templates-save-copy');
+  const savedSel = document.getElementById('templates-saved');
+  const fromResBtn = document.getElementById('templates-from-res');
+  try { console.debug('[templatesTab] init start'); } catch(_) {}
 
-    if (!projectSel) return;
-    populateProjectSelect();
+  if (!projectSel) return;
+  populateProjectSelect();
+  populateReservationSelect(projectSel.value || '');
+  renderTemplatesPreview();
+  (async () => { try { await populateSavedTemplates(); } catch {} })();
+
+  projectSel.addEventListener('change', () => {
     populateReservationSelect(projectSel.value || '');
     renderTemplatesPreview();
     (async () => { try { await populateSavedTemplates(); } catch {} })();
-
-    projectSel.addEventListener('change', () => {
-      populateReservationSelect(projectSel.value || '');
-      renderTemplatesPreview();
-      (async () => { try { await populateSavedTemplates(); } catch {} })();
-    });
-    reservationSel?.addEventListener('change', renderTemplatesPreview);
-    typeSel?.addEventListener('change', renderTemplatesPreview);
-    refreshBtn?.addEventListener('click', renderTemplatesPreview);
-    printBtn?.addEventListener('click', printTemplatesPdf);
-    saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
-    saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
-    savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
-    fromResBtn?.addEventListener('click', () => {
-      if (typeSel) typeSel.value = 'callsheet';
-      if (reservationSel && reservationSel.options.length > 1) reservationSel.selectedIndex = 1;
-      renderTemplatesPreview();
-    });
-
-    document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
-
-    // Re-populate when data loads later
-    const repopulate = async () => {
-      try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
-      const before = (projectSel?.value || '');
-      // If state is empty، اجلب من الواجهة الخلفية
-      try {
-        if (!getProjectsState()?.length) {
-          await refreshProjectsFromApi();
-        }
-        if (!getReservationsState()?.length) {
-          await refreshReservationsFromApi();
-        }
-      } catch (e) { try { console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
-
-      populateProjectSelect();
-      // Keep selection if exists; otherwise choose first project
-      if (!projectSel.value && projectSel.options.length > 1) {
-        projectSel.selectedIndex = 1;
-      } else if (before) {
-        projectSel.value = before;
-      }
-      populateReservationSelect(projectSel.value || '');
-      renderTemplatesPreview();
-      try { await populateSavedTemplates(); } catch {}
-      try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
-    };
-    document.addEventListener('projects:changed', repopulate);
-    // Some modules fire 'reservations:updated' instead of 'reservations:changed'
-    document.addEventListener('reservations:changed', repopulate);
-    document.addEventListener('reservations:updated', repopulate);
-
-    // Re-populate when user opens the Templates tab explicitly
-    const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
-    templatesTabBtn?.addEventListener('click', () => {
-      // slight delay to allow DOM to toggle
-      setTimeout(repopulate, 0);
-    });
-
-    // Defensive: timed retries in case data arrives after initial listeners
-    setTimeout(repopulate, 800);
-    setTimeout(repopulate, 2000);
   });
+  reservationSel?.addEventListener('change', renderTemplatesPreview);
+  typeSel?.addEventListener('change', renderTemplatesPreview);
+  refreshBtn?.addEventListener('click', renderTemplatesPreview);
+  printBtn?.addEventListener('click', printTemplatesPdf);
+  saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
+  saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
+  savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
+  fromResBtn?.addEventListener('click', () => {
+    if (typeSel) typeSel.value = 'callsheet';
+    if (reservationSel && reservationSel.options.length > 1) reservationSel.selectedIndex = 1;
+    renderTemplatesPreview();
+  });
+
+  document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+
+  // Re-populate when data loads later
+  const repopulate = async () => {
+    try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
+    const before = (projectSel?.value || '');
+    try {
+      if (!getProjectsState()?.length) {
+        await refreshProjectsFromApi();
+      }
+      if (!getReservationsState()?.length) {
+        await refreshReservationsFromApi();
+      }
+    } catch (e) { try { console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
+
+    populateProjectSelect();
+    if (!projectSel.value && projectSel.options.length > 1) {
+      projectSel.selectedIndex = 1;
+    } else if (before) {
+      projectSel.value = before;
+    }
+    populateReservationSelect(projectSel.value || '');
+    renderTemplatesPreview();
+    try { await populateSavedTemplates(); } catch {}
+    try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
+  };
+  document.addEventListener('projects:changed', repopulate);
+  document.addEventListener('reservations:changed', repopulate);
+  document.addEventListener('reservations:updated', repopulate);
+
+  const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
+  templatesTabBtn?.addEventListener('click', () => {
+    setTimeout(repopulate, 0);
+  });
+
+  setTimeout(repopulate, 800);
+  setTimeout(repopulate, 2000);
 }
 
 export default { initTemplatesTab };
