@@ -4,6 +4,7 @@ import { getProjectsState } from '../projectsService.js';
 import { getReservationsState } from '../reservationsService.js';
 import { getReservationsForProject } from './view.js';
 import { ensureHtml2Pdf } from '../reports/external.js';
+import { apiRequest } from '../apiClient.js';
 
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
@@ -73,13 +74,17 @@ function buildExpensesPage(project, reservations) {
   meta.appendChild(metaCell('Locations / المواقع', locs));
   inner.appendChild(meta);
 
-  const table = el('table', { class: 'tpl-table', id: 'expenses-table' });
+  const table = el('table', { class: 'tpl-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
   const headRow = el('tr');
-  const headers = ['Code / الكود', 'Section / القسم', 'Item / البند', 'Qty', 'Rate', 'Total', 'Notes'];
+  const headers = ['Code / الكود', 'Section / القسم', 'Item / البند', 'Qty', 'Rate', 'Total', 'Notes', ''];
   headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
   table.appendChild(el('thead', {}, [headRow]));
   const tb = el('tbody');
-  const rows = Array.isArray(project?.expenses) && project.expenses.length ? project.expenses : new Array(12).fill(null);
+  // Section banner: ABOVE THE LINE
+  tb.appendChild(el('tr', { 'data-section-bar': 'atl' }, [
+    el('td', { html: '<span class="tpl-section-bar tpl-section--atl">ABOVE THE LINE</span>', colspan: '8' })
+  ]));
+  const rows = Array.isArray(project?.expenses) && project.expenses.length ? project.expenses : new Array(10).fill(null);
   rows.forEach((exp, idx) => {
     const tr = el('tr');
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
@@ -89,8 +94,24 @@ function buildExpensesPage(project, reservations) {
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp ? String(exp.amount || 0) : '' }));
     tr.appendChild(el('td', { text: exp ? String((exp.amount || 0)) : '' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp?.note || '' }));
+    tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+    ])]));
     tb.appendChild(tr);
   });
+  // Subtotal row
+  const sub = el('tr', { class: 'tpl-subtotal-row' });
+  sub.appendChild(el('td', { colspan: '5', html: '<span class="tpl-subtotal-label">Subtotal</span>' }));
+  sub.appendChild(el('td', { 'data-subtotal': 'true', text: '' }));
+  sub.appendChild(el('td', { colspan: '2' }));
+  tb.appendChild(sub);
+  // Next banner: PRODUCTION EXPENSES
+  tb.appendChild(el('tr', { 'data-section-bar': 'prod' }, [
+    el('td', { html: '<span class="tpl-section-bar tpl-section--prod">PRODUCTION EXPENSES</span>', colspan: '8' })
+  ]));
   table.appendChild(tb);
   inner.appendChild(table);
   return root;
@@ -111,7 +132,9 @@ function buildCallSheetPage(project, reservations) {
   meta.appendChild(metaCell('Date / التاريخ', res?.start ? new Date(res.start).toISOString().slice(0,10) : ''));
   meta.appendChild(metaCell('Location / الموقع', res?.location || ''));
   meta.appendChild(metaCell('Call Time / وقت التجمع', res?.start ? new Date(res.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''));
-  meta.appendChild(metaCell('Weather / الطقس', ''));
+  meta.appendChild(metaCell('Weather / الطقس', 'Clear - 28°C'));
+  meta.appendChild(metaCell('Nearest Hospital / أقرب مستشفى', ''));
+  meta.appendChild(metaCell('Map Link / رابط الموقع', ''));
   meta.appendChild(metaCell('Notes / ملاحظات', ''));
   inner.appendChild(meta);
 
@@ -137,9 +160,9 @@ function buildCallSheetPage(project, reservations) {
   // Day schedule
   const scheduleCard = el('div', { class: 'tpl-card' });
   scheduleCard.appendChild(el('h4', { text: t('projects.templates.callsheet.schedule', 'جدول اليوم') }));
-  const schedTable = el('table', { class: 'tpl-table' });
+  const schedTable = el('table', { class: 'tpl-table', 'data-editable-table': 'callsheet' });
   schedTable.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)' }), el('th', { text: 'Shot #' }), el('th', { text: 'Description' }), el('th', { text: 'Location' }), el('th', { text: 'Notes' })
+    el('th', { text: 'Time (Duration)' }), el('th', { text: 'Shot #' }), el('th', { text: 'Description' }), el('th', { text: 'Location' }), el('th', { text: 'Notes' }), el('th', { text: '' })
   ])]));
   const stb = el('tbody');
   (reservations || []).forEach((r, i) => {
@@ -149,12 +172,24 @@ function buildCallSheetPage(project, reservations) {
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.title || '' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.location || '' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+    ])]));
     stb.appendChild(tr);
   });
   if (stb.children.length < 8) {
     for (let i = stb.children.length; i < 8; i += 1) {
       const tr = el('tr');
       for (let c = 0; c < 5; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+      tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+      ])]));
       stb.appendChild(tr);
     }
   }
@@ -175,9 +210,9 @@ function buildShotListPage(project, reservations) {
     ])
   ]));
 
-  const table = el('table', { class: 'tpl-table' });
+  const table = el('table', { class: 'tpl-table', 'data-editable-table': 'shotlist' });
   table.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: '#' }), el('th', { text: 'Scene / المشهد' }), el('th', { text: 'Description / الوصف' }), el('th', { text: 'Lens' }), el('th', { text: 'Move' }), el('th', { text: 'Rig' }), el('th', { text: 'Audio' }), el('th', { text: 'Location' }), el('th', { text: 'Est. Time' }), el('th', { text: 'Notes' })
+    el('th', { text: '#' }), el('th', { text: 'Scene / المشهد' }), el('th', { text: 'Description / الوصف' }), el('th', { text: 'Lens' }), el('th', { text: 'Move' }), el('th', { text: 'Rig' }), el('th', { text: 'Audio' }), el('th', { text: 'Location' }), el('th', { text: 'Est. Time' }), el('th', { text: 'Notes' }), el('th', { text: '' })
   ])]));
   const tb = el('tbody');
   const seed = (reservations || []).length ? reservations : new Array(10).fill(null);
@@ -193,6 +228,12 @@ function buildShotListPage(project, reservations) {
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.location || '' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+      el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+    ])]));
     tb.appendChild(tr);
   });
   table.appendChild(tb);
@@ -217,6 +258,8 @@ function renderTemplatesPreview() {
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations);
   else pageRoot = buildExpensesPage(project, reservations);
   host.appendChild(pageRoot);
+  // Update computed totals where applicable
+  recomputeExpensesSubtotals();
 }
 
 async function printTemplatesPdf() {
@@ -256,6 +299,106 @@ function populateReservationSelect(projectId) {
   sel.innerHTML = options.join('');
 }
 
+function recomputeExpensesSubtotals() {
+  const table = document.querySelector('#templates-preview-host #expenses-table');
+  if (!table) return;
+  let running = 0;
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+  rows.forEach((tr) => {
+    if (tr.matches('[data-section-bar]')) { running = 0; return; }
+    if (tr.classList.contains('tpl-subtotal-row')) {
+      const cell = tr.querySelector('[data-subtotal]') || tr.children[5];
+      if (cell) cell.textContent = String((running || 0).toFixed(2));
+      return;
+    }
+    const qty = Number(String(tr.children[3]?.textContent || '1').replace(/[^\d.\-]/g, '')) || 1;
+    const rate = Number(String(tr.children[4]?.textContent || '0').replace(/[^\d.\-]/g, '')) || 0;
+    const total = qty * rate;
+    if (tr.children[5]) tr.children[5].textContent = String(total.toFixed(2));
+    running += total;
+  });
+}
+
+function handleTableActionClick(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.getAttribute('data-action');
+  const tr = btn.closest('tr');
+  const tbody = tr?.parentElement;
+  if (!tr || !tbody) return;
+  if (action === 'row-up' && tr.previousElementSibling && !tr.previousElementSibling.matches('[data-section-bar]')) {
+    tbody.insertBefore(tr, tr.previousElementSibling);
+  } else if (action === 'row-down' && tr.nextElementSibling) {
+    tbody.insertBefore(tr.nextElementSibling, tr);
+  } else if (action === 'row-add') {
+    const clone = tr.cloneNode(true);
+    clone.querySelectorAll('[contenteditable]')?.forEach((el) => { el.textContent = ''; });
+    tbody.insertBefore(clone, tr.nextElementSibling);
+  } else if (action === 'row-delete') {
+    tbody.removeChild(tr);
+  }
+  recomputeExpensesSubtotals();
+}
+
+async function saveTemplateSnapshot() {
+  const project = getSelectedProject();
+  if (!project) return;
+  const typeSel = document.getElementById('templates-type');
+  const type = typeSel ? typeSel.value : 'expenses';
+  const reservationSel = document.getElementById('templates-reservation');
+  const reservationId = reservationSel && reservationSel.value ? Number(reservationSel.value) : null;
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const payload = { html: root.outerHTML };
+  await apiRequest('/project-templates/', {
+    method: 'POST',
+    body: {
+      project_id: Number(project.id),
+      reservation_id: reservationId,
+      type,
+      title: `${project.title || 'Template'} - ${type}`,
+      data: payload,
+    },
+  });
+  alert('تم حفظ القالب');
+}
+
+async function fetchSavedTemplatesForCurrent() {
+  const project = getSelectedProject();
+  if (!project) return [];
+  const typeSel = document.getElementById('templates-type');
+  const type = typeSel ? typeSel.value : 'expenses';
+  const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`);
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.items)) return res.items;
+  return [];
+}
+
+async function populateSavedTemplates() {
+  const select = document.getElementById('templates-saved');
+  if (!select) return;
+  const items = await fetchSavedTemplatesForCurrent();
+  select.innerHTML = '<option value="">— محفوظات —</option>' + items.map((it) => `<option value="${String(it.id)}">${(it.title || `#${it.id}`)}</option>`).join('');
+}
+
+async function loadSnapshotById(id) {
+  if (!id) return;
+  const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
+  const item = Array.isArray(res) ? res[0] : res;
+  const host = document.getElementById('templates-preview-host');
+  if (!host || !item) return;
+  host.innerHTML = '';
+  try {
+    const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+    if (data?.html) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = data.html;
+      const root = wrap.firstElementChild;
+      if (root) host.appendChild(root);
+    }
+  } catch (_) {}
+}
+
 export function initTemplatesTab() {
   document.addEventListener('DOMContentLoaded', () => {
     const projectSel = document.getElementById('templates-project');
@@ -263,20 +406,34 @@ export function initTemplatesTab() {
     const typeSel = document.getElementById('templates-type');
     const refreshBtn = document.getElementById('templates-refresh');
     const printBtn = document.getElementById('templates-print');
+    const saveBtn = document.getElementById('templates-save');
+    const savedSel = document.getElementById('templates-saved');
+    const fromResBtn = document.getElementById('templates-from-res');
 
     if (!projectSel) return;
     populateProjectSelect();
     populateReservationSelect(projectSel.value || '');
     renderTemplatesPreview();
+    (async () => { try { await populateSavedTemplates(); } catch {} })();
 
     projectSel.addEventListener('change', () => {
       populateReservationSelect(projectSel.value || '');
       renderTemplatesPreview();
+      (async () => { try { await populateSavedTemplates(); } catch {} })();
     });
     reservationSel?.addEventListener('change', renderTemplatesPreview);
     typeSel?.addEventListener('change', renderTemplatesPreview);
     refreshBtn?.addEventListener('click', renderTemplatesPreview);
     printBtn?.addEventListener('click', printTemplatesPdf);
+    saveBtn?.addEventListener('click', () => { saveTemplateSnapshot().catch(() => alert('تعذر الحفظ')); });
+    savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
+    fromResBtn?.addEventListener('click', () => {
+      if (typeSel) typeSel.value = 'callsheet';
+      if (reservationSel && reservationSel.options.length > 1) reservationSel.selectedIndex = 1;
+      renderTemplatesPreview();
+    });
+
+    document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
   });
 }
 

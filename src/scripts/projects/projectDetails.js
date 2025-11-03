@@ -504,9 +504,6 @@ export function openProjectDetails(projectId) {
       <button type="button" class="modal-action-btn modal-action-btn--danger" data-action="delete-project">
         ${escapeHtml(t('projects.details.actions.delete', '🗑️ حذف المشروع'))}
       </button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-export-expenses-xlsx" title="${escapeHtml(t('projects.details.actions.exportExpenses', '📊 تصدير المصاريف Excel'))}">📊 Excel</button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-export-shotlist-xlsx" title="${escapeHtml(t('projects.details.actions.exportShotList', '🎬 تصدير الشوت ليست'))}">🎬 Shot List</button>
-      <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-export-callsheet-xlsx" title="${escapeHtml(t('projects.details.actions.exportCallSheet', '📞 تصدير الكول شيت'))}">📞 Call Sheet</button>
       <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-details-export-btn">
         ${escapeHtml(t('projects.details.actions.exportPdf', '👁️ معاينة PDF'))}
       </button>
@@ -536,39 +533,7 @@ export function openProjectDetails(projectId) {
     });
   }
 
-  // XLSX exports (templates)
-  const expBtn = dom.detailsBody.querySelector('#project-export-expenses-xlsx');
-  if (expBtn) {
-    expBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      expBtn.disabled = true;
-      try {
-        await exportProjectExpensesXlsx({ project, reservations: getReservationsForProject(project.id) });
-      } finally { expBtn.disabled = false; }
-    });
-  }
-
-  const shotBtn = dom.detailsBody.querySelector('#project-export-shotlist-xlsx');
-  if (shotBtn) {
-    shotBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      shotBtn.disabled = true;
-      try {
-        await exportProjectShotListXlsx({ project, reservations: getReservationsForProject(project.id) });
-      } finally { shotBtn.disabled = false; }
-    });
-  }
-
-  const callBtn = dom.detailsBody.querySelector('#project-export-callsheet-xlsx');
-  if (callBtn) {
-    callBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      callBtn.disabled = true;
-      try {
-        await exportProjectCallSheetXlsx({ project, reservations: getReservationsForProject(project.id) });
-      } finally { callBtn.disabled = false; }
-    });
-  }
+  // XLSX export buttons removed per request.
 
   if (dom.detailsModalEl && window.bootstrap?.Modal) {
     const modal = window.bootstrap.Modal.getOrCreateInstance(dom.detailsModalEl);
