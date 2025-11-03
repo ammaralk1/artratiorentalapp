@@ -17,6 +17,8 @@ let CHAT_LIVE = false;
 let CHAT_POLL_TIMER = null;
 let CHAT_LAST_ID = 0;
 let CHAT_POLLING = false;
+let CHAT_SSE = null;
+let CHAT_SSE_DISABLED = false; // set true to force polling fallback
 
 function q(sel) { return document.querySelector(sel); }
 
@@ -1037,6 +1039,10 @@ function chatStartLive() {
   if (!CHAT_SELECTED_TECH) return;
   CHAT_LIVE = true;
   if (els.tgChatLive) els.tgChatLive.checked = true;
+  // Try SSE first if supported and not disabled
+  if (typeof EventSource !== 'undefined' && !CHAT_SSE_DISABLED) {
+    try { chatOpenSSE(); return; } catch (_) { /* fallback to polling */ }
+  }
   CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
 }
 
@@ -1045,6 +1051,10 @@ function chatStopLive() {
   if (els.tgChatLive) els.tgChatLive.checked = false;
   if (CHAT_POLL_TIMER) { clearInterval(CHAT_POLL_TIMER); CHAT_POLL_TIMER = null; }
   CHAT_POLLING = false;
+  if (CHAT_SSE) {
+    try { CHAT_SSE.close(); } catch (_) {}
+    CHAT_SSE = null;
+  }
 }
 
 async function chatFetchNew() {
@@ -1074,6 +1084,59 @@ async function chatFetchNew() {
   } finally {
     CHAT_POLLING = false;
   }
+}
+
+function chatOpenSSE() {
+  if (!CHAT_SELECTED_TECH) return;
+  const tid = String(CHAT_SELECTED_TECH.id);
+  const since = CHAT_LAST_ID > 0 ? `&since_id=${encodeURIComponent(String(CHAT_LAST_ID))}` : '';
+  const url = `/backend/api/telegram/stream.php?technician_id=${encodeURIComponent(tid)}${since}&timeout=25`;
+  try { if (CHAT_SSE) { CHAT_SSE.close(); CHAT_SSE = null; } } catch (_) {}
+  CHAT_SSE = new EventSource(url, { withCredentials: true });
+  CHAT_SSE.addEventListener('message', async (ev) => {
+    try {
+      const data = ev.data ? JSON.parse(ev.data) : [];
+      if (Array.isArray(data) && data.length) {
+        const frag = document.createDocumentFragment();
+        data.forEach((m) => {
+          CHAT_LAST_ID = Math.max(CHAT_LAST_ID, Number(m.id || 0));
+          const div = document.createElement('div');
+          div.innerHTML = buildChatBubble(m);
+          frag.appendChild(div.firstChild);
+        });
+        if (els.tgChatMessages) {
+          els.tgChatMessages.appendChild(frag);
+          els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
+        }
+        try { await markChatRead(CHAT_SELECTED_TECH.id, CHAT_LAST_ID); fetchChatList(); } catch (_) {}
+      }
+    } catch (_) {}
+  });
+  CHAT_SSE.addEventListener('done', () => {
+    // server closed window; reopen with updated since_id
+    try { CHAT_SSE.close(); } catch (_) {}
+    CHAT_SSE = null;
+    if (CHAT_LIVE) {
+      setTimeout(() => {
+        if (CHAT_LIVE && !CHAT_SSE_DISABLED) {
+          try { chatOpenSSE(); return; } catch (_) {}
+        }
+        // fallback to polling
+        if (CHAT_LIVE && !CHAT_POLL_TIMER) {
+          CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
+        }
+      }, 200);
+    }
+  });
+  CHAT_SSE.onerror = () => {
+    // disable SSE for this session and fallback to polling
+    try { CHAT_SSE.close(); } catch (_) {}
+    CHAT_SSE = null;
+    CHAT_SSE_DISABLED = true;
+    if (CHAT_LIVE && !CHAT_POLL_TIMER) {
+      CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
+    }
+  };
 }
 
 async function fetchChatList() {
