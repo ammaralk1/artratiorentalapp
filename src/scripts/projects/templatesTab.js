@@ -76,8 +76,17 @@ function buildExpensesPage(project, reservations) {
 
   const table = el('table', { class: 'tpl-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
   const headRow = el('tr');
-  const headers = ['Code / الكود', 'Section / القسم', 'Item / البند', 'Qty', 'Rate', 'Total', 'Notes', ''];
-  headers.forEach((h) => headRow.appendChild(el('th', { text: h })));
+  const headers = [
+    { label: 'Code / الكود', w: '8%' },
+    { label: 'Section / القسم', w: '16%' },
+    { label: 'Item / البند', w: '32%' },
+    { label: 'Qty', w: '6%' },
+    { label: 'Rate', w: '10%' },
+    { label: 'Total', w: '10%' },
+    { label: 'Notes', w: '14%' },
+    { label: '', w: '4%' },
+  ];
+  headers.forEach((h) => headRow.appendChild(el('th', { text: h.label, style: `width:${h.w}` })));
   table.appendChild(el('thead', {}, [headRow]));
   const tb = el('tbody');
   // Section banner: ABOVE THE LINE
@@ -162,7 +171,12 @@ function buildCallSheetPage(project, reservations) {
   scheduleCard.appendChild(el('h4', { text: t('projects.templates.callsheet.schedule', 'جدول اليوم') }));
   const schedTable = el('table', { class: 'tpl-table', 'data-editable-table': 'callsheet' });
   schedTable.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)' }), el('th', { text: 'Shot #' }), el('th', { text: 'Description' }), el('th', { text: 'Location' }), el('th', { text: 'Notes' }), el('th', { text: '' })
+    el('th', { text: 'Time (Duration)', style: 'width:16%' }),
+    el('th', { text: 'Shot #', style: 'width:8%' }),
+    el('th', { text: 'Description', style: 'width:36%' }),
+    el('th', { text: 'Location', style: 'width:20%' }),
+    el('th', { text: 'Notes', style: 'width:16%' }),
+    el('th', { text: '', style: 'width:4%' })
   ])]));
   const stb = el('tbody');
   (reservations || []).forEach((r, i) => {
@@ -198,6 +212,66 @@ function buildCallSheetPage(project, reservations) {
   columns.appendChild(scheduleCard);
 
   inner.appendChild(columns);
+
+  // Crew by department
+  const crewGrid = el('div', { class: 'tpl-columns' });
+  const departments = [
+    { key: 'Camera', labels: ['Role', 'Name'] },
+    { key: 'Grip', labels: ['Role', 'Name'] },
+    { key: 'Sound', labels: ['Role', 'Name'] },
+    { key: 'Lighting', labels: ['Role', 'Name'] },
+    { key: 'Art', labels: ['Role', 'Name'] },
+    { key: 'Production', labels: ['Role', 'Name'] },
+  ];
+  departments.forEach((dept) => {
+    const card = el('div', { class: 'tpl-card' });
+    card.appendChild(el('h4', { text: `${dept.key} / ${dept.key}` }));
+    const tbl = el('table', { class: 'tpl-table' });
+    tbl.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: dept.labels[0] }), el('th', { text: dept.labels[1] })])]))
+    const body = el('tbody');
+    for (let i = 0; i < 4; i += 1) {
+      const tr = el('tr');
+      tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+      tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+      body.appendChild(tr);
+    }
+    tbl.appendChild(body);
+    card.appendChild(tbl);
+    crewGrid.appendChild(card);
+  });
+  inner.appendChild(crewGrid);
+
+  // Locations card
+  const locationsCard = el('div', { class: 'tpl-card' });
+  locationsCard.appendChild(el('h4', { text: 'Locations / المواقع' }));
+  const locTbl = el('table', { class: 'tpl-table' });
+  locTbl.appendChild(el('thead', {}, [el('tr', {}, [
+    el('th', { text: 'Location' }), el('th', { text: 'Address' }), el('th', { text: 'Notes' })
+  ])]));
+  const locBody = el('tbody');
+  const locs = Array.from(new Set((reservations || []).map((r) => r?.location).filter(Boolean)));
+  (locs.length ? locs : ['']).forEach((name) => {
+    const tr = el('tr');
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: name || '' }));
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    locBody.appendChild(tr);
+  });
+  locTbl.appendChild(locBody);
+  locationsCard.appendChild(locTbl);
+  inner.appendChild(locationsCard);
+
+  // Logistics & Safety card
+  const safetyCard = el('div', { class: 'tpl-card' });
+  safetyCard.appendChild(el('h4', { text: 'Logistics / Safety' }));
+  const ul = el('ul');
+  for (let i = 0; i < 4; i += 1) {
+    const li = el('li', { 'data-editable': 'true', contenteditable: 'true' });
+    li.textContent = '';
+    ul.appendChild(li);
+  }
+  safetyCard.appendChild(ul);
+  inner.appendChild(safetyCard);
   return root;
 }
 
@@ -212,7 +286,18 @@ function buildShotListPage(project, reservations) {
 
   const table = el('table', { class: 'tpl-table', 'data-editable-table': 'shotlist' });
   table.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: '#' }), el('th', { text: 'Scene / المشهد' }), el('th', { text: 'Description / الوصف' }), el('th', { text: 'Lens' }), el('th', { text: 'Move' }), el('th', { text: 'Rig' }), el('th', { text: 'Audio' }), el('th', { text: 'Location' }), el('th', { text: 'Est. Time' }), el('th', { text: 'Notes' }), el('th', { text: '' })
+    el('th', { text: '#', style: 'width:4%' }),
+    el('th', { text: 'Scene / المشهد', style: 'width:12%' }),
+    el('th', { text: 'Description / الوصف', style: 'width:22%' }),
+    el('th', { text: 'Lens', style: 'width:8%' }),
+    el('th', { text: 'Move', style: 'width:10%' }),
+    el('th', { text: 'Rig', style: 'width:10%' }),
+    el('th', { text: 'Audio', style: 'width:10%' }),
+    el('th', { text: 'VO/FX', style: 'width:8%' }),
+    el('th', { text: 'Location', style: 'width:12%' }),
+    el('th', { text: 'Est. Time', style: 'width:8%' }),
+    el('th', { text: 'Notes', style: 'width:10%' }),
+    el('th', { text: '', style: 'width:4%' })
   ])]));
   const tb = el('tbody');
   const seed = (reservations || []).length ? reservations : new Array(10).fill(null);
@@ -225,6 +310,7 @@ function buildShotListPage(project, reservations) {
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // VO/FX
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.location || '' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
@@ -340,7 +426,7 @@ function handleTableActionClick(e) {
   recomputeExpensesSubtotals();
 }
 
-async function saveTemplateSnapshot() {
+async function saveTemplateSnapshot({ copy = false } = {}) {
   const project = getSelectedProject();
   if (!project) return;
   const typeSel = document.getElementById('templates-type');
@@ -350,13 +436,15 @@ async function saveTemplateSnapshot() {
   const root = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!root) return;
   const payload = { html: root.outerHTML };
+  const nameInput = document.getElementById('templates-save-title');
+  const customTitle = nameInput && nameInput.value ? String(nameInput.value).trim() : '';
   await apiRequest('/project-templates/', {
     method: 'POST',
     body: {
       project_id: Number(project.id),
       reservation_id: reservationId,
       type,
-      title: `${project.title || 'Template'} - ${type}`,
+      title: customTitle || `${project.title || 'Template'} - ${type}`,
       data: payload,
     },
   });
@@ -407,6 +495,7 @@ export function initTemplatesTab() {
     const refreshBtn = document.getElementById('templates-refresh');
     const printBtn = document.getElementById('templates-print');
     const saveBtn = document.getElementById('templates-save');
+    const saveCopyBtn = document.getElementById('templates-save-copy');
     const savedSel = document.getElementById('templates-saved');
     const fromResBtn = document.getElementById('templates-from-res');
 
@@ -425,7 +514,8 @@ export function initTemplatesTab() {
     typeSel?.addEventListener('change', renderTemplatesPreview);
     refreshBtn?.addEventListener('click', renderTemplatesPreview);
     printBtn?.addEventListener('click', printTemplatesPdf);
-    saveBtn?.addEventListener('click', () => { saveTemplateSnapshot().catch(() => alert('تعذر الحفظ')); });
+    saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
+    saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
     savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
     fromResBtn?.addEventListener('click', () => {
       if (typeSel) typeSel.value = 'callsheet';
