@@ -1,8 +1,15 @@
 import '../../styles/templatesA4.css';
 import { t } from '../language.js';
-import { getProjectsState } from '../projectsService.js';
-import { getReservationsState } from '../reservationsService.js';
-import { getReservationsForProject } from './view.js';
+import { getProjectsState, refreshProjectsFromApi } from '../projectsService.js';
+import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
+// Avoid heavy cross-imports from view.js; compute locally
+function getReservationsForProjectLocal(projectId) {
+  if (!projectId) return [];
+  const list = getReservationsState();
+  return Array.isArray(list)
+    ? list.filter((r) => String(r?.projectId ?? r?.project_id ?? '') === String(projectId))
+    : [];
+}
 import { ensureHtml2Pdf } from '../reports/external.js';
 import { apiRequest } from '../apiClient.js';
 
@@ -37,7 +44,7 @@ function getSelectedReservations(projectId) {
   const sel = document.getElementById('templates-reservation');
   if (!sel) return [];
   const value = sel.value || '';
-  const all = getReservationsForProject(projectId);
+  const all = getReservationsForProjectLocal(projectId);
   if (!value) return all;
   const match = all.find((r) => String(r.id || r.reservationId) === String(value));
   return match ? [match] : [];
@@ -526,8 +533,18 @@ export function initTemplatesTab() {
     document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
 
     // Re-populate when data loads later
-    const repopulate = () => {
+    const repopulate = async () => {
       const before = (projectSel?.value || '');
+      // If state is empty، اجلب من الواجهة الخلفية
+      try {
+        if (!getProjectsState()?.length) {
+          await refreshProjectsFromApi();
+        }
+        if (!getReservationsState()?.length) {
+          await refreshReservationsFromApi();
+        }
+      } catch (_) {}
+
       populateProjectSelect();
       // Keep selection if exists; otherwise choose first project
       if (!projectSel.value && projectSel.options.length > 1) {
@@ -537,7 +554,7 @@ export function initTemplatesTab() {
       }
       populateReservationSelect(projectSel.value || '');
       renderTemplatesPreview();
-      (async () => { try { await populateSavedTemplates(); } catch {} })();
+      try { await populateSavedTemplates(); } catch {}
     };
     document.addEventListener('projects:changed', repopulate);
     document.addEventListener('reservations:changed', repopulate);
