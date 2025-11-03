@@ -92,74 +92,131 @@ function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {
 function buildExpensesPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: false, headerFooter, logoUrl });
-  const title = el('div', { class: 'tpl-header' }, [
-    el('div', {}, [
-      el('h1', { class: 'tpl-title', text: t('projects.templates.expenses.title', 'Expenses Sheet / جدول المصاريف') }),
-      el('p', { class: 'tpl-subtitle', text: (project?.title || '').trim() })
+
+  // Masthead (title + brand)
+  const masthead = el('div', { class: 'exp-masthead' }, [
+    el('div', { class: 'title', text: 'Expenses Sheet' }),
+    el('div', { class: 'brand' }, [
+      el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
+      el('div', { class: 'text', text: (project?.clientCompany || project?.title || 'Company') })
     ])
   ]);
-  inner.appendChild(title);
+  inner.appendChild(masthead);
 
+  // Meta grid
   const meta = el('div', { class: 'tpl-meta' });
-  meta.appendChild(metaCell('Production Co.', ''));
+  meta.appendChild(metaCell('Production Co.', project?.clientCompany || ''));
   meta.appendChild(metaCell('Project Title / اسم المشروع', project?.title || ''));
-  meta.appendChild(metaCell('Client / العميل', project?.clientCompany || ''));
   meta.appendChild(metaCell('Budget Date / تاريخ الميزانية', new Date().toISOString().slice(0, 10)));
   meta.appendChild(metaCell('Prepared by / إعداد', ''));
   const locs = Array.from(new Set((reservations || []).map((r) => (r?.location || '').trim()).filter(Boolean))).join(', ');
   meta.appendChild(metaCell('Locations / المواقع', locs));
+  meta.appendChild(metaCell('Shoot Days / أيام التصوير', ''));
   inner.appendChild(meta);
 
-  const table = el('table', { class: 'tpl-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
-  const headRow = el('tr');
-  const headers = [
-    { label: 'Code / الكود', w: '8%' },
-    { label: 'Section / القسم', w: '16%' },
-    { label: 'Item / البند', w: '32%' },
-    { label: 'Qty', w: '6%' },
-    { label: 'Rate', w: '10%' },
-    { label: 'Total', w: '10%' },
-    { label: 'Notes', w: '14%' },
-    { label: '', w: '4%' },
+  // Expenses table
+  const table = el('table', { class: 'exp-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
+  const thead = el('thead');
+  const head = el('tr');
+  const headCols = [
+    { text: 'CODE', cls: 'exp-col-code' },
+    { text: 'DESCRIPTION', cls: 'exp-col-item' },
+    { text: 'AMOUNT', cls: 'exp-col-amount' },
+    { text: 'PAID', cls: 'exp-col-paid' },
+    { text: 'X', cls: 'exp-col-x' },
+    { text: 'RATE', cls: 'exp-col-rate' },
+    { text: 'TAB', cls: 'exp-col-tab' },
+    { text: 'TOTAL', cls: 'exp-col-total' },
   ];
-  headers.forEach((h) => headRow.appendChild(el('th', { text: h.label, style: `width:${h.w}` })));
-  table.appendChild(el('thead', {}, [headRow]));
+  headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
+  thead.appendChild(head);
+  table.appendChild(thead);
   const tb = el('tbody');
-  // Section banner: ABOVE THE LINE
-  tb.appendChild(el('tr', { 'data-section-bar': 'atl' }, [
-    el('td', { html: '<span class="tpl-section-bar tpl-section--atl">ABOVE THE LINE</span>', colspan: '8' })
-  ]));
-  const rows = Array.isArray(project?.expenses) && project.expenses.length ? project.expenses : new Array(10).fill(null);
-  rows.forEach((exp, idx) => {
-    const tr = el('tr');
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: 'Production' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp?.label || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp ? String(1) : '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp ? String(exp.amount || 0) : '' }));
-    tr.appendChild(el('td', { text: exp ? String((exp.amount || 0)) : '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: exp?.note || '' }));
-    tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
-    ])]));
-    tb.appendChild(tr);
-  });
-  // Subtotal row
-  const sub = el('tr', { class: 'tpl-subtotal-row' });
-  sub.appendChild(el('td', { colspan: '5', html: '<span class="tpl-subtotal-label">Subtotal</span>' }));
-  sub.appendChild(el('td', { 'data-subtotal': 'true', text: '' }));
-  sub.appendChild(el('td', { colspan: '2' }));
-  tb.appendChild(sub);
-  // Next banner: PRODUCTION EXPENSES
-  tb.appendChild(el('tr', { 'data-section-bar': 'prod' }, [
-    el('td', { html: '<span class="tpl-section-bar tpl-section--prod">PRODUCTION EXPENSES</span>', colspan: '8' })
-  ]));
+
+  const mkGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
+    el('td', { colspan: '8' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
+  ]);
+
+  const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
+    el('th', { class: 'exp-col-code', text: code }),
+    el('th', { class: 'exp-col-item', text: label }),
+    el('th', { class: 'exp-col-amount', text: 'AMOUNT' }),
+    el('th', { class: 'exp-col-paid', text: 'PAID' }),
+    el('th', { class: 'exp-col-x', text: 'X' }),
+    el('th', { class: 'exp-col-rate', text: 'RATE' }),
+    el('th', { class: 'exp-col-tab', text: 'TAB' }),
+    el('th', { class: 'exp-col-total', text: 'TOTAL' }),
+  ]);
+
+  const mkItemRow = (code = '', desc = '') => el('tr', { 'data-row': 'item' }, [
+    el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
+    el('td', { class: 'total', text: '' }),
+  ]);
+
+  const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
+    el('td', { class: 'code', text: code }),
+    el('td', { text: 'Subtotal' }),
+    el('td', { colspan: '5' }),
+    el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
+  ]);
+
+  const mkGroupTotalRow = (label, key) => el('tr', { class: 'exp-summary-row', 'data-group-total': key }, [
+    el('td', { colspan: '7', text: label }),
+    el('td', { class: 'total', 'data-total-group': key, text: '' }),
+  ]);
+
+  const addSubGroup = (groupKey, code, label, n = 2) => {
+    tb.appendChild(mkSubHeader(code, label));
+    for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow());
+    tb.appendChild(mkSubtotalRow(code));
+    // hidden marker to map subgroup to parent group
+    const marker = el('tr', { 'data-subgroup-marker': code, 'data-parent-group': groupKey, style: 'display:none' });
+    tb.appendChild(marker);
+  };
+
+  // ABOVE THE LINE
+  tb.appendChild(mkGroupBar('ABOVE THE LINE', 'exp-group-bar--atl'));
+  addSubGroup('atl', '12-00', 'PRODUCERS UNIT', 2);
+  addSubGroup('atl', '13-00', 'DIRECTOR & STAFF', 2);
+  addSubGroup('atl', '14-00', 'CAST', 3);
+  tb.appendChild(mkGroupTotalRow('Total Above the Line', 'atl'));
+
+  // PRODUCTION EXPENSES
+  tb.appendChild(mkGroupBar('PRODUCTION EXPENSES', 'exp-group-bar--prod'));
+  addSubGroup('prod', '20-00', 'PRODUCTION STAFF', 3);
+  addSubGroup('prod', '22-00', 'SET DESIGN', 3);
+  addSubGroup('prod', '23-00', 'SET CONSTRUCTION', 2);
+  addSubGroup('prod', '24-00', 'CASTING SERVICES', 1);
+  addSubGroup('prod', '28-00', 'WARDROBE', 3);
+  addSubGroup('prod', '29-00', 'ELECTRIC', 3);
+  addSubGroup('prod', '30-00', 'CAMERA', 3);
+  addSubGroup('prod', '33-00', 'TRANSPORTATION', 1);
+  addSubGroup('prod', '34-00', 'LOCATIONS', 2);
+  tb.appendChild(mkGroupTotalRow('Total Production', 'prod'));
+
+  // POST-PRODUCTION
+  tb.appendChild(mkGroupBar('POST-PRODUCTION EXPENSES', 'exp-group-bar--post'));
+  addSubGroup('post', '45-00', 'FILM EDITING', 2);
+  addSubGroup('post', '49-00', 'VOICE OVER', 1);
+  tb.appendChild(mkGroupTotalRow('Total Post Production', 'post'));
+
+  // GRAND TOTAL
+  const grand = el('tr', { class: 'exp-grand-total' }, [
+    el('td', { colspan: '7', text: 'GRAND TOTAL' }),
+    el('td', { 'data-grand-total': 'true', text: '' })
+  ]);
+  tb.appendChild(grand);
+
   table.appendChild(tb);
   inner.appendChild(table);
-  // Summary footer (subtotal, tax, total)
+
+  // Summary footer for A4 page
   const summary = el('div', { id: 'expenses-summary', class: 'tpl-summary' });
   const taxLabel = t('projects.templates.expenses.tax', `الضريبة ${Math.round(PROJECT_TAX_RATE * 100)}%`);
   summary.innerHTML = `
@@ -436,6 +493,69 @@ function populateReservationSelect(projectId) {
 function recomputeExpensesSubtotals() {
   const table = document.querySelector('#templates-preview-host #expenses-table');
   if (!table) return;
+  const isNew = table.classList.contains('exp-table');
+
+  // New exp-table calculation
+  if (isNew) {
+    const number = (txt, def = 0) => {
+      const n = Number(String(txt || '').replace(/[^\d.\.-]/g, ''));
+      return Number.isFinite(n) ? n : def;
+    };
+    const groupTotals = { atl: 0, prod: 0, post: 0 };
+    let grand = 0;
+
+    // For each subgroup header
+    const headers = Array.from(table.querySelectorAll('tbody tr[data-subgroup-header]'));
+    headers.forEach((hdr) => {
+      const code = hdr.getAttribute('data-subgroup');
+      let subtotal = 0;
+      let tr = hdr.nextElementSibling;
+      while (tr && !tr.hasAttribute('data-subgroup-header') && !tr.hasAttribute('data-subgroup-subtotal')) {
+        if (tr.getAttribute('data-row') === 'item') {
+          const tds = tr.children;
+          const amount = number(tds[2]?.textContent, 1);
+          const x = number(tds[4]?.textContent, 1);
+          const rate = number(tds[5]?.textContent, 0);
+          const total = amount * x * rate;
+          if (tds[7]) tds[7].textContent = String(total.toFixed(2));
+          subtotal += total;
+        }
+        tr = tr.nextElementSibling;
+      }
+      // write subgroup subtotal
+      const subCell = table.querySelector(`[data-subtotal="${CSS.escape(code)}"]`);
+      if (subCell) subCell.textContent = String(subtotal.toFixed(2));
+      grand += subtotal;
+      // map to parent group
+      const marker = table.querySelector(`tr[data-subgroup-marker="${CSS.escape(code)}"]`);
+      const parent = marker?.getAttribute('data-parent-group') || null;
+      if (parent && groupTotals[parent] != null) groupTotals[parent] += subtotal;
+    });
+
+    // group totals
+    Object.entries(groupTotals).forEach(([key, val]) => {
+      const cell = table.querySelector(`[data-total-group="${CSS.escape(key)}"]`);
+      if (cell) cell.textContent = String(val.toFixed(2));
+    });
+    const gcell = table.querySelector('[data-grand-total]');
+    if (gcell) gcell.textContent = String(grand.toFixed(2));
+
+    // Summary footer
+    const project = getSelectedProject();
+    const currencyLabel = t('reservations.create.summary.currency', 'SR');
+    const applyTax = Boolean(project?.applyTax);
+    const taxAmount = applyTax ? Number((grand * PROJECT_TAX_RATE).toFixed(2)) : 0;
+    const totalWithTax = Number((grand + taxAmount).toFixed(2));
+    const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
+    const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
+    const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
+    if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
+    if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
+    if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
+    return;
+  }
+
+  // Legacy table fallback
   let running = 0;
   let grand = 0;
   const rows = Array.from(table.querySelectorAll('tbody tr'));
@@ -453,7 +573,6 @@ function recomputeExpensesSubtotals() {
     running += total;
     grand += total;
   });
-  // Update summary footer
   const project = getSelectedProject();
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const applyTax = Boolean(project?.applyTax);

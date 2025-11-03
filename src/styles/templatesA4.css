@@ -57,6 +57,37 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .tpl-print-footer { position:absolute; inset:auto 0 0 0; height:14mm; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:3mm 14mm; border-top:1px solid #e5e7eb; background:#fff; font-size:11px; }
 .tpl-print-footer .page-num { font-weight:700; }
 
+/* Expenses A4 specific layout */
+.exp-masthead { background:#374151; color:#fff !important; border-radius:10px; padding:10px 12px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; }
+.exp-masthead .title { font-size:16px; font-weight:800; }
+.exp-masthead .brand { display:flex; align-items:center; gap:10px; }
+.exp-masthead .brand img { height:20px; width:auto; object-fit:contain; }
+.exp-masthead .brand .text { font-weight:800; font-size:14px; }
+
+table.exp-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
+table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
+table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
+table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
+table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
+table.exp-table tr.exp-subheader th { background:#374151; color:#fff; font-weight:800; text-align:center; }
+.exp-group-bar { background:#111827; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
+.exp-group-bar--atl { background:#BE185D; }
+.exp-group-bar--prod { background:#2563EB; }
+.exp-group-bar--post { background:#6D28D9; }
+
+.exp-summary-row { background:#f3f4f6; font-weight:800; }
+.exp-grand-total { background:#1f2937; color:#fff !important; font-weight:900; font-size:12px; }
+
+/* Column widths for expenses table */
+.exp-col-code { width:10%; }
+.exp-col-item { width:28%; }
+.exp-col-amount { width:8%; }
+.exp-col-paid { width:10%; }
+.exp-col-x { width:6%; }
+.exp-col-rate { width:12%; }
+.exp-col-tab { width:6%; }
+.exp-col-total { width:12%; }
+
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; }
 .tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }
