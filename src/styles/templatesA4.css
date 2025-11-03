@@ -129,6 +129,17 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 .tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }
 .tpl-action-btn:hover { background:#f8fafc; }
 
+/* === Highlights (Preview) === */
+/* Zebra striping for better readability */
+table.exp-table tbody tr.exp-row-alt td { background:#f8fafc; }
+/* Hover row highlight */
+table.exp-table tbody tr[data-row="item"]:hover td { background:#eef2ff; }
+/* Focus cell highlight */
+table.exp-table td[contenteditable="true"], table.exp-table td [contenteditable="true"] { outline: 0; }
+table.exp-table td:focus-within { box-shadow: inset 0 0 0 2px #bfdbfe; background:#eef2ff; }
+/* Subtotal rows slightly tinted */
+table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6; }
+
 /* Print rules */
 @media print {
   [data-a4-pages] { display:block !important; }

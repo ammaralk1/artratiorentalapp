@@ -177,7 +177,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
     el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
   ]);
 
-  const mkItemRow = (code = '', desc = '') => el('tr', { 'data-row': 'item' }, [
+  const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
     el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
     el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
     el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
@@ -202,7 +202,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
 
   const addSubGroup = (groupKey, code, label, n = 2) => {
     tb.appendChild(mkSubHeader(code, label));
-    for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow());
+    for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow('', '', i % 2 === 1));
     tb.appendChild(mkSubtotalRow(code));
     // hidden marker to map subgroup to parent group
     const marker = el('tr', { 'data-subgroup-marker': code, 'data-parent-group': groupKey, style: 'display:none' });
