@@ -8,6 +8,7 @@
 .a4-page { position:relative; width:794px; height:1123px; background:#fff; border:1px solid #e5e7eb; }
 .a4-page--landscape { width:1123px; height:794px; }
 .a4-inner { position:absolute; inset:0; padding:12mm 14mm; }
+.a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Simple Notion-like blocks */
 .tpl-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8mm; }
@@ -45,6 +46,16 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .tpl-summary { width:100%; max-width:320px; margin:6mm 0 0 auto; border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; }
 .tpl-summary-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
+
+/* Print header/footer (inside each A4 page) */
+.tpl-print-header { position:absolute; inset:0 0 auto 0; height:24mm; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6mm 14mm; border-bottom:1px solid #e5e7eb; background:#fff; }
+.tpl-print-header .brand { display:flex; align-items:center; gap:10px; }
+.tpl-print-header .brand img { height:18mm; width:auto; object-fit:contain; }
+.tpl-print-header .brand .brand-text { font-weight:800; font-size:14px; }
+.tpl-print-header .meta { text-align:left; font-size:11px; opacity:.9; }
+
+.tpl-print-footer { position:absolute; inset:auto 0 0 0; height:14mm; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:3mm 14mm; border-top:1px solid #e5e7eb; background:#fff; font-size:11px; }
+.tpl-print-footer .page-num { font-weight:700; }
 
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; }

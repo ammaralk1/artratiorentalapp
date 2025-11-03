@@ -51,19 +51,47 @@ function getSelectedReservations(projectId) {
   return match ? [match] : [];
 }
 
-function buildRoot({ landscape = false } = {}) {
+function readHeaderFooterOptions() {
+  const hf = document.getElementById('templates-header-footer');
+  const logo = document.getElementById('templates-logo-url');
+  const enabled = hf ? hf.checked : false;
+  let logoUrl = (logo?.value || '').trim();
+  if (!logoUrl) logoUrl = 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png';
+  return { headerFooter: enabled, logoUrl };
+}
+
+function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
   const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview' });
   const pagesWrap = el('div', { 'data-a4-pages': '' });
-  const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}` });
+  const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });
   const inner = el('div', { class: 'a4-inner' });
+  if (headerFooter) {
+    const brandTitle = 'Art Ratio';
+    const header = el('div', { class: 'tpl-print-header' }, [
+      el('div', { class: 'brand' }, [
+        el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
+        el('div', { class: 'brand-text', text: brandTitle })
+      ]),
+      el('div', { class: 'meta' }, [
+        el('div', { text: new Date().toLocaleDateString() }),
+      ])
+    ]);
+    const footer = el('div', { class: 'tpl-print-footer' }, [
+      el('div', { class: 'footer-left', text: 'art-ratio.com' }),
+      el('div', { class: 'page-num', html: `<span data-page-num>1</span> / <span data-page-count>1</span>` })
+    ]);
+    page.appendChild(header);
+    page.appendChild(footer);
+  }
   page.appendChild(inner);
   pagesWrap.appendChild(page);
   root.appendChild(pagesWrap);
   return { root, inner };
 }
 
-function buildExpensesPage(project, reservations) {
-  const { root, inner } = buildRoot({ landscape: false });
+function buildExpensesPage(project, reservations, opts = {}) {
+  const { headerFooter = false, logoUrl = '' } = opts || {};
+  const { root, inner } = buildRoot({ landscape: false, headerFooter, logoUrl });
   const title = el('div', { class: 'tpl-header' }, [
     el('div', {}, [
       el('h1', { class: 'tpl-title', text: t('projects.templates.expenses.title', 'Expenses Sheet / جدول المصاريف') }),
@@ -143,8 +171,9 @@ function buildExpensesPage(project, reservations) {
   return root;
 }
 
-function buildCallSheetPage(project, reservations) {
-  const { root, inner } = buildRoot({ landscape: true });
+function buildCallSheetPage(project, reservations, opts = {}) {
+  const { headerFooter = false, logoUrl = '' } = opts || {};
+  const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
   const res = reservations?.[0] || null;
   inner.appendChild(el('div', { class: 'tpl-header' }, [
     el('div', {}, [
@@ -292,8 +321,9 @@ function buildCallSheetPage(project, reservations) {
   return root;
 }
 
-function buildShotListPage(project, reservations) {
-  const { root, inner } = buildRoot({ landscape: true });
+function buildShotListPage(project, reservations, opts = {}) {
+  const { headerFooter = false, logoUrl = '' } = opts || {};
+  const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
   inner.appendChild(el('div', { class: 'tpl-header' }, [
     el('div', {}, [
       el('h1', { class: 'tpl-title', text: t('projects.templates.shotlist.title', 'Shot List / قائمة اللقطات') }),
@@ -356,10 +386,11 @@ function renderTemplatesPreview() {
   }
   const reservations = getSelectedReservations(project.id);
   const type = document.getElementById('templates-type')?.value || 'expenses';
+  const hf = readHeaderFooterOptions();
   let pageRoot = null;
-  if (type === 'callsheet') pageRoot = buildCallSheetPage(project, reservations);
-  else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations);
-  else pageRoot = buildExpensesPage(project, reservations);
+  if (type === 'callsheet') pageRoot = buildCallSheetPage(project, reservations, hf);
+  else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
+  else pageRoot = buildExpensesPage(project, reservations, hf);
   host.appendChild(pageRoot);
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
@@ -731,6 +762,8 @@ export function initTemplatesTab() {
   typeSel?.addEventListener('change', renderTemplatesPreview);
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   printBtn?.addEventListener('click', printTemplatesPdf);
+  document.getElementById('templates-header-footer')?.addEventListener('change', renderTemplatesPreview);
+  document.getElementById('templates-logo-url')?.addEventListener('change', renderTemplatesPreview);
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
