@@ -555,6 +555,88 @@ function handleTablePaste(e) {
   }
 }
 
+function focusFirstEditableCell(tr, preferCol = 0) {
+  if (!tr) return;
+  const cells = Array.from(tr.children);
+  // Try preferred column first
+  const preferred = cells[preferCol];
+  if (preferred && preferred.hasAttribute('contenteditable')) { preferred.focus(); return; }
+  const candidate = cells.find((td) => td.hasAttribute('contenteditable'));
+  candidate?.focus();
+}
+
+function addRowBelow(tr) {
+  if (!tr) return null;
+  const tbody = tr.parentElement;
+  const clone = tr.cloneNode(true);
+  clone.querySelectorAll('[contenteditable]')?.forEach((el) => { el.textContent = ''; });
+  tbody.insertBefore(clone, tr.nextElementSibling);
+  return clone;
+}
+
+function moveRow(tr, dir = -1) {
+  if (!tr) return;
+  const tbody = tr.parentElement;
+  if (dir < 0) {
+    const prev = tr.previousElementSibling;
+    if (prev && !isSpecialRow(prev)) tbody.insertBefore(tr, prev);
+  } else {
+    const next = tr.nextElementSibling;
+    if (next) {
+      const afterNext = next.nextElementSibling;
+      if (!isSpecialRow(next)) tbody.insertBefore(next, tr); // swap
+      else if (afterNext && !isSpecialRow(afterNext)) tbody.insertBefore(tr, afterNext.nextElementSibling);
+    }
+  }
+}
+
+function deleteRow(tr) {
+  const tbody = tr?.parentElement;
+  if (!tbody) return;
+  if (isSpecialRow(tr)) return;
+  tbody.removeChild(tr);
+}
+
+function handleTableKeydown(e) {
+  const target = e.target;
+  if (!target || !target.closest('table.tpl-table')) return;
+  const table = target.closest('table.tpl-table');
+  const tr = target.closest('tr');
+  if (!tr) return;
+
+  // Enter -> add row below
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const newRow = addRowBelow(tr);
+    if (newRow) {
+      focusFirstEditableCell(newRow);
+      if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
+        recomputeExpensesSubtotals();
+      }
+    }
+    return;
+  }
+
+  // Alt+ArrowUp / Alt+ArrowDown to move row
+  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    e.preventDefault();
+    moveRow(tr, e.key === 'ArrowDown' ? 1 : -1);
+    if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
+      recomputeExpensesSubtotals();
+    }
+    return;
+  }
+
+  // Delete to remove row (avoid when selection spans text)
+  if ((e.key === 'Delete' || e.key === 'Backspace') && e.ctrlKey) {
+    e.preventDefault();
+    deleteRow(tr);
+    if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
+      recomputeExpensesSubtotals();
+    }
+  }
+}
+
 async function saveTemplateSnapshot({ copy = false } = {}) {
   const project = getSelectedProject();
   if (!project) return;
@@ -753,6 +835,7 @@ export function initTemplatesTab() {
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
   // Paste from Excel/Sheets into tables
   document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
+  document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
 
   // Re-populate when data loads later
   let repopulating = false;
