@@ -79,7 +79,8 @@ function readHeaderFooterOptions() {
 }
 
 function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
-  const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview' });
+  const dir = (TEMPLATE_LANG === 'ar') ? 'rtl' : 'ltr';
+  const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview', dir });
   const pagesWrap = el('div', { 'data-a4-pages': '' });
   const { page, inner } = createPageSection({ landscape, headerFooter, logoUrl });
   pagesWrap.appendChild(page);
