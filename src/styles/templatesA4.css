@@ -76,7 +76,6 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 
 /* Expenses A4 specific layout */
 .exp-masthead { direction:rtl; background:#374151; color:#fff !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:16px; }
-#templates-a4-root[dir="ltr"] .exp-masthead { direction:ltr; }
 .exp-masthead .title { font-size:18px; font-weight:800; color:#fff !important; }
 .exp-masthead .brand-info { flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
 .exp-masthead .brand-info .text { font-weight:800; font-size:14px; color:#fff !important; }
@@ -95,13 +94,13 @@ table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
 table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
-table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
-#templates-a4-root[dir="ltr"] table.exp-table td { text-align:left; }
+table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
+#templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 #templates-a4-root[dir="ltr"] table.exp-table td.code { text-align:left; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
-table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:right; }
+table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
 table.exp-table tr.exp-subheader th { background:#374151; color:#fff; font-weight:800; text-align:center; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
