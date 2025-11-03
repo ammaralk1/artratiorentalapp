@@ -505,6 +505,11 @@ export function initTemplatesTab() {
   const saveCopyBtn = document.getElementById('templates-save-copy');
   const savedSel = document.getElementById('templates-saved');
   const fromResBtn = document.getElementById('templates-from-res');
+  const renameBtn = document.getElementById('templates-rename');
+  const deleteBtn = document.getElementById('templates-delete');
+  const exportBtn = document.getElementById('templates-export');
+  const importBtn = document.getElementById('templates-import');
+  const importFile = document.getElementById('templates-import-file');
   try { console.debug('[templatesTab] init start'); } catch(_) {}
 
   if (!projectSel) return;
@@ -529,6 +534,98 @@ export function initTemplatesTab() {
     if (typeSel) typeSel.value = 'callsheet';
     if (reservationSel && reservationSel.options.length > 1) reservationSel.selectedIndex = 1;
     renderTemplatesPreview();
+  });
+
+  // Saved templates management
+  renameBtn?.addEventListener('click', async () => {
+    const id = savedSel?.value || '';
+    if (!id) { alert('اختر محفوظاً أولاً'); return; }
+    const currentText = savedSel.options[savedSel.selectedIndex]?.textContent || '';
+    const title = prompt('اسم جديد للمحفوظ:', currentText);
+    if (!title || title.trim() === currentText) return;
+    try {
+      await apiRequest('/project-templates/', { method: 'PATCH', body: { id: Number(id), title: String(title).trim() } });
+      await populateSavedTemplates();
+      // re-select same id if still present
+      const opt = Array.from(savedSel.options).find(o => o.value === String(id));
+      if (opt) { savedSel.value = String(id); }
+    } catch (e) {
+      alert('تعذر إعادة التسمية');
+    }
+  });
+
+  deleteBtn?.addEventListener('click', async () => {
+    const id = savedSel?.value || '';
+    if (!id) { alert('اختر محفوظاً أولاً'); return; }
+    const ok = confirm('هل تريد حذف هذا المحفوظ نهائياً؟');
+    if (!ok) return;
+    try {
+      await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      await populateSavedTemplates();
+      // Reload preview to reflect removal
+      renderTemplatesPreview();
+    } catch (e) {
+      alert('تعذر الحذف');
+    }
+  });
+
+  exportBtn?.addEventListener('click', async () => {
+    const id = savedSel?.value || '';
+    if (!id) { alert('اختر محفوظاً أولاً'); return; }
+    try {
+      const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
+      const item = Array.isArray(res) ? res[0] : res;
+      if (!item) { alert('تعذر جلب المحفوظ'); return; }
+      const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+      const blob = new Blob([JSON.stringify({
+        meta: { id: item.id, title: item.title, type: item.type, project_id: item.project_id },
+        data
+      }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeTitle = (item.title || `template-${id}`).replace(/[^\w\-\s]/g, '').trim() || `template-${id}`;
+      a.download = `${safeTitle}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (_) {
+      alert('تعذر التصدير');
+    }
+  });
+
+  importBtn?.addEventListener('click', () => { importFile?.click(); });
+  importFile?.addEventListener('change', async (e) => {
+    const file = e.target?.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const project = getSelectedProject();
+      if (!project) { alert('اختر مشروعاً أولاً'); return; }
+      const typeSelEl = document.getElementById('templates-type');
+      const type = typeSelEl ? typeSelEl.value : (json?.meta?.type || 'expenses');
+      const reservationSelEl = document.getElementById('templates-reservation');
+      const reservationId = reservationSelEl?.value ? Number(reservationSelEl.value) : null;
+      const payload = json?.data?.html ? json.data : { html: document.querySelector('#templates-preview-host')?.innerHTML || '' };
+      await apiRequest('/project-templates/', {
+        method: 'POST',
+        body: {
+          project_id: Number(project.id),
+          reservation_id: reservationId,
+          type,
+          title: json?.meta?.title || `Imported - ${type}`,
+          data: payload,
+        },
+      });
+      await populateSavedTemplates();
+      alert('تم الاستيراد بنجاح');
+    } catch (err) {
+      alert('تعذر الاستيراد، تأكد من صحة ملف JSON');
+    } finally {
+      e.target.value = '';
+    }
   });
 
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
