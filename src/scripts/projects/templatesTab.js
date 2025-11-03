@@ -534,7 +534,10 @@ export function initTemplatesTab() {
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
 
   // Re-populate when data loads later
+  let repopulating = false;
   const repopulate = async () => {
+    if (repopulating) { try { console.debug('[templatesTab] repopulate skipped (busy)'); } catch(_) {} return; }
+    repopulating = true;
     try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
     const before = (projectSel?.value || '');
     try {
@@ -556,6 +559,7 @@ export function initTemplatesTab() {
     renderTemplatesPreview();
     try { await populateSavedTemplates(); } catch {}
     try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
+    repopulating = false;
   };
   document.addEventListener('projects:changed', repopulate);
   document.addEventListener('reservations:changed', repopulate);
