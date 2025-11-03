@@ -583,6 +583,7 @@ function recomputeExpensesSubtotals() {
     if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
     if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
     if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
+    try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
     return;
   }
 
@@ -784,6 +785,9 @@ function autoPaginateTemplates() {
       if (countEl) countEl.textContent = String(count);
     });
   }
+
+  try { applyZebraStripes(); } catch (_) {}
+  try { shrinkSubHeaderLabels(); } catch (_) {}
 }
 
 // bindPreviewAdjustControls removed
@@ -953,6 +957,39 @@ function deleteRow(tr) {
   if (!tbody) return;
   if (isSpecialRow(tr)) return;
   tbody.removeChild(tr);
+}
+
+function applyZebraStripes() {
+  const tables = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.exp-table'));
+  tables.forEach((t) => {
+    const tbody = t.tBodies?.[0];
+    if (!tbody) return;
+    let alt = false;
+    Array.from(tbody.children).forEach((tr) => {
+      if (tr.getAttribute('data-row') === 'item') {
+        tr.classList.toggle('exp-row-alt', alt);
+        alt = !alt;
+      }
+    });
+  });
+}
+
+function shrinkSubHeaderLabels() {
+  const headers = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.exp-table tr.exp-subheader th'));
+  headers.forEach((th) => {
+    // Reset then shrink-to-fit within cell
+    th.style.fontSize = '';
+    th.style.whiteSpace = 'nowrap';
+    th.style.overflow = 'hidden';
+    th.style.textOverflow = 'ellipsis';
+    const max = 12; const min = 9;
+    let size = max;
+    const fit = () => (th.scrollWidth <= th.clientWidth);
+    while (size > min && !fit()) {
+      size -= 0.5;
+      th.style.fontSize = size + 'px';
+    }
+  });
 }
 
 function handleTableKeydown(e) {
@@ -1245,32 +1282,7 @@ export function initTemplatesTab() {
   document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
   document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
 
-  // Row highlight on focus (spreadsheet-like)
-  (function bindRowFocusHighlight(){
-    const host = document.getElementById('templates-preview-host');
-    if (!host) return;
-    let focusedRow = null;
-    host.addEventListener('focusin', (e) => {
-      const el = e.target;
-      if (!(el instanceof HTMLElement)) return;
-      if (!el.isContentEditable) return;
-      const tr = el.closest('tr');
-      if (focusedRow && focusedRow !== tr) focusedRow.classList.remove('focus-row');
-      if (tr) tr.classList.add('focus-row');
-      focusedRow = tr;
-    });
-    host.addEventListener('focusout', (e) => {
-      const el = e.target;
-      if (!(el instanceof HTMLElement)) return;
-      if (!el.isContentEditable) return;
-      const tr = el.closest('tr');
-      // Remove highlight if row no longer contains focus
-      setTimeout(() => {
-        if (tr && !tr.contains(document.activeElement)) tr.classList.remove('focus-row');
-        if (focusedRow === tr && (!tr || !tr.contains(document.activeElement))) focusedRow = null;
-      }, 0);
-    });
-  })();
+  // (Row focus highlight removed per latest request)
 
   // Re-populate when data loads later
   let repopulating = false;

@@ -94,22 +94,24 @@ table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
 table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
-table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; position:relative; }
+table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 #templates-a4-root[dir="ltr"] table.exp-table td.code { text-align:left; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
-table.exp-table tr.exp-subheader th { background:#374151; color:#fff; font-weight:800; text-align:center; }
+/* Subgroup header in brand blue; keep text within cell */
+table.exp-table tr.exp-subheader th { background: var(--clr-primary, #2563EB); color:#fff; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
-.exp-group-bar { background:#111827; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
-.exp-group-bar--atl { background:#BE185D; }
-.exp-group-bar--prod { background:#2563EB; }
-.exp-group-bar--post { background:#6D28D9; }
+/* Main section bars unified in brand blue */
+.exp-group-bar { background: var(--clr-primary, #2563EB); color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
+.exp-group-bar--atl { background: inherit; }
+.exp-group-bar--prod { background: inherit; }
+.exp-group-bar--post { background: inherit; }
 
 .exp-summary-row { background:#f3f4f6; font-weight:800; }
 .exp-grand-total { background:#1f2937; color:#fff !important; font-weight:900; font-size:12px; }
@@ -129,20 +131,13 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 .tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }
 .tpl-action-btn:hover { background:#f8fafc; }
 
-/* === Highlights (Preview) === */
-/* Zebra striping for better readability */
+/* === Static Highlights (print-safe) === */
+/* Zebra striping for better readability (applied via class exp-row-alt) */
 table.exp-table tbody tr.exp-row-alt td { background:#f8fafc; }
-/* Hover row highlight (use app primary light) */
-table.exp-table tbody tr[data-row="item"]:hover td { background: var(--clr-primary-light, #eef3ff); }
-/* Focus cell highlight (use app primary) */
-table.exp-table td[contenteditable="true"], table.exp-table td [contenteditable="true"] { outline: 0; }
-table.exp-table td:focus-within { box-shadow: inset 0 0 0 2px var(--clr-primary-soft, #5a8dff); background: var(--clr-primary-light, #eef3ff); }
-/* Small focus anchor like spreadsheets */
-table.exp-table td:focus-within::after { content:""; position:absolute; top:2px; left:2px; width:6px; height:6px; border-radius:2px; background: var(--clr-primary, #4c6ef5); }
-/* Highlight whole row when a cell is focused */
-table.exp-table tbody tr.focus-row td { background: var(--clr-primary-light, #eef3ff); }
-/* Subtotal rows slightly tinted */
+/* Subtotal rows slightly tinted (print-safe) */
 table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6; }
+/* Ensure backgrounds render in print */
+table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
 /* Print rules */
 @media print {
