@@ -94,7 +94,11 @@ function cacheElements() {
   els.tgChatMessages = q('#tg-chat-messages');
   els.tgChatInput = q('#tg-chat-input');
   els.tgChatSend = q('#tg-chat-send');
+  els.tgChatSendPhoto = q('#tg-chat-send-photo');
+  els.tgChatSendPhotos = q('#tg-chat-send-photos');
   els.tgChatLive = q('#tg-chat-live');
+  els.tgChatList = q('#tg-chat-list');
+  els.tgChatListRefresh = q('#tg-chat-list-refresh');
 }
 
 function formatWhen(item, type) {
@@ -478,7 +482,28 @@ function attachEvents() {
   if (els.tgChatPick) els.tgChatPick.addEventListener('click', chatPickTechnician);
   if (els.tgChatRefresh) els.tgChatRefresh.addEventListener('click', chatRefresh);
   if (els.tgChatSend) els.tgChatSend.addEventListener('click', chatSend);
+  if (els.tgChatSendPhoto) els.tgChatSendPhoto.addEventListener('click', chatSendPhoto);
+  if (els.tgChatSendPhotos) els.tgChatSendPhotos.addEventListener('click', chatSendPhotos);
   if (els.tgChatSearch) els.tgChatSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') chatPickTechnician(); });
+  if (els.tgChatListRefresh) els.tgChatListRefresh.addEventListener('click', fetchChatList);
+  if (els.tgChatList) {
+    els.tgChatList.addEventListener('click', (ev) => {
+      const li = ev.target.closest('li[data-tech-id]');
+      if (!li) return;
+      const tid = Number(li.getAttribute('data-tech-id')) || 0;
+      const name = li.getAttribute('data-tech-name') || '';
+      if (tid) { CHAT_SELECTED_TECH = { id: tid, name }; if (els.tgChatSelected) els.tgChatSelected.textContent = `المحدد: ${name}`; chatRefresh(); }
+    });
+  }
+  if (els.tgChatInput) {
+    let typingTimer = null;
+    els.tgChatInput.addEventListener('input', () => {
+      if (!CHAT_SELECTED_TECH) return;
+      if (typingTimer) return; // throttle ~4s
+      typingTimer = setTimeout(() => { typingTimer = null; }, 4000);
+      apiRequest('/telegram/messages.php', { method: 'POST', body: { action: 'typing', technician_id: CHAT_SELECTED_TECH.id } }).catch(()=>{});
+    });
+  }
   if (els.tgChatLive) els.tgChatLive.addEventListener('change', () => {
     CHAT_LIVE = !!els.tgChatLive.checked;
     if (CHAT_LIVE) { chatStartLive(); } else { chatStopLive(); }
@@ -831,6 +856,7 @@ async function fetchDiagnostics() {
   fetchDiagnostics();
   fetchTemplates();
   loadTemplatesManager();
+  fetchChatList();
 })();
 
 async function loadTemplatesManager() {
@@ -988,6 +1014,8 @@ async function chatRefresh() {
     els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
     CHAT_LAST_ID = Number(items[items.length - 1]?.id || 0);
     if (CHAT_LIVE && !CHAT_POLL_TIMER) chatStartLive();
+    // Mark as read up to latest and refresh chat list badges
+    try { await markChatRead(CHAT_SELECTED_TECH.id, CHAT_LAST_ID); fetchChatList(); } catch (_) {}
   } catch (e) {
     console.error(e);
     els.tgChatMessages.innerHTML = '<div class="text-center text-error">فشل تحميل المحادثة</div>';
@@ -1048,6 +1076,31 @@ async function chatFetchNew() {
   }
 }
 
+async function fetchChatList() {
+  if (!els.tgChatList) return;
+  try {
+    els.tgChatList.innerHTML = '<li class="px-3 py-1 text-center text-muted">جارٍ التحميل…</li>';
+    const res = await apiRequest('/telegram/messages.php?list=recent');
+    const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+    if (!items.length) { els.tgChatList.innerHTML = '<li class="px-3 py-1 text-center text-muted">لا محادثات</li>'; return; }
+    els.tgChatList.innerHTML = items.map((c) => {
+      const name = c.technician_name || c.chat_id || 'دردشة';
+      const unread = Number(c.unread || 0);
+      const badge = unread ? `<span class="badge badge-primary badge-sm ms-2">${unread}</span>` : '';
+      return `<li class="px-3 py-2 cursor-pointer hover:bg-base-300" data-tech-id="${c.technician_id || ''}" data-tech-name="${name}">${name}${badge}<div class="text-xs opacity-70 truncate">${(c.last_text || '').toString()}</div></li>`;
+    }).join('');
+  } catch (e) {
+    console.error(e);
+    els.tgChatList.innerHTML = '<li class="px-3 py-1 text-center text-error">فشل تحميل القائمة</li>';
+  }
+}
+
+async function markChatRead(technicianId, lastId) {
+  try {
+    await apiRequest('/telegram/messages.php', { method: 'POST', body: { action: 'mark_read', technician_id: Number(technicianId), last_seen_id: Number(lastId) } });
+  } catch (_) {}
+}
+
 async function chatSend() {
   if (!CHAT_SELECTED_TECH) { showToast('اختر فنياً أولاً'); return; }
   const text = (els.tgChatInput?.value || '').trim();
@@ -1060,6 +1113,36 @@ async function chatSend() {
     console.error(e);
     const msg = (e && (e.payload?.error || e.message)) ? String(e.payload?.error || e.message) : 'فشل الإرسال';
     showToast(msg);
+  }
+}
+
+async function chatSendPhoto() {
+  if (!CHAT_SELECTED_TECH) { showToast('اختر فنياً أولاً'); return; }
+  const url = window.prompt('ضع رابط الصورة (https://...)');
+  if (!url) return;
+  const caption = (els.tgChatInput?.value || '').trim();
+  try {
+    await apiRequest('/telegram/messages.php', { method: 'POST', body: { technician_id: CHAT_SELECTED_TECH.id, photo_url: url, text: caption || undefined } });
+    if (els.tgChatInput) els.tgChatInput.value = '';
+    await chatFetchNew();
+  } catch (e) {
+    console.error(e);
+    showToast('فشل إرسال الصورة');
+  }
+}
+
+async function chatSendPhotos() {
+  if (!CHAT_SELECTED_TECH) { showToast('اختر فنياً أولاً'); return; }
+  const input = window.prompt('ضع روابط الصور كل رابط بسطر (أو مفصولة بفواصل)');
+  if (!input) return;
+  const arr = input.split(/\n|,/).map(s => s.trim()).filter(Boolean);
+  if (!arr.length) return;
+  try {
+    await apiRequest('/telegram/messages.php', { method: 'POST', body: { technician_id: CHAT_SELECTED_TECH.id, photo_urls: arr } });
+    await chatFetchNew();
+  } catch (e) {
+    console.error(e);
+    showToast('فشل إرسال الصور');
   }
 }
 

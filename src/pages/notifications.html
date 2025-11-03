@@ -484,7 +484,16 @@
                 <p class="text-sm text-base-content/70">اختر فني لعرض آخر الرسائل والرد عليه.</p>
               </div>
             </header>
-            <div class="grid gap-3 md:grid-cols-3 items-end">
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="col-span-1">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-sm font-medium">المحادثات الأخيرة</div>
+                  <button type="button" class="btn btn-outline btn-xs" id="tg-chat-list-refresh">تحديث</button>
+                </div>
+                <ul id="tg-chat-list" class="menu bg-base-200 rounded-box max-h-80 overflow-y-auto"></ul>
+              </div>
+              <div class="col-span-2">
+              <div class="grid gap-3 md:grid-cols-3 items-end">
               <div class="flex flex-col gap-2">
                 <label class="font-medium text-base-content" for="tg-chat-tech-search">اختيار فني</label>
                 <input id="tg-chat-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال">
@@ -500,13 +509,17 @@
                   <span class="label-text">تحديث حي (لايف)</span>
                 </label>
               </div>
-            </div>
-            <div class="border rounded-lg p-3 max-h-80 overflow-y-auto bg-base-200/40" id="tg-chat-messages">
-              <div class="text-center text-muted">—</div>
-            </div>
-            <div class="flex gap-2">
-              <input id="tg-chat-input" class="input input-bordered flex-1" placeholder="اكتب رسالة…">
-              <button type="button" class="btn btn-primary" id="tg-chat-send">إرسال</button>
+              </div>
+              <div class="border rounded-lg p-3 max-h-80 overflow-y-auto bg-base-200/40" id="tg-chat-messages">
+                <div class="text-center text-muted">—</div>
+              </div>
+              <div class="flex flex-wrap gap-2 items-center">
+                <input id="tg-chat-input" class="input input-bordered flex-1" placeholder="اكتب رسالة…">
+                <button type="button" class="btn btn-primary" id="tg-chat-send">إرسال</button>
+                <button type="button" class="btn btn-outline" id="tg-chat-send-photo">📷 صورة</button>
+                <button type="button" class="btn btn-outline" id="tg-chat-send-photos">🖼️ صور متعددة</button>
+              </div>
+              </div>
             </div>
           </section>
         </div>
