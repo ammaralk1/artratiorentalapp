@@ -42,10 +42,29 @@ try {
     }
 
     // telegram_messages (chat)
-    $checks[] = [ 'name' => 'telegram_messages', 'ok' => $hasTable('telegram_messages'), 'hint' => 'Run backend/sql/add_telegram_messages.sql' ];
+    $tmOk = $hasTable('telegram_messages');
+    $checks[] = [ 'name' => 'telegram_messages', 'ok' => $tmOk, 'hint' => 'Run backend/sql/add_telegram_messages.sql' ];
 
-    respond($checks);
+    // Extra diagnostics meta: DB name, user, session time_zone
+    $meta = [];
+    try {
+        $meta['database'] = (string) ($pdo->query('SELECT DATABASE()')->fetchColumn() ?: '');
+    } catch (Throwable $_) { $meta['database'] = ''; }
+    try {
+        $meta['db_user'] = (string) ($pdo->query('SELECT USER()')->fetchColumn() ?: '');
+    } catch (Throwable $_) { $meta['db_user'] = ''; }
+    try {
+        $meta['db_time_zone'] = (string) ($pdo->query('SELECT @@session.time_zone')->fetchColumn() ?: '');
+    } catch (Throwable $_) { $meta['db_time_zone'] = ''; }
+    // Snapshot of found tables/columns
+    $meta['found'] = [
+        'telegram_links' => $tlOk,
+        'telegram_messages' => $tmOk,
+        'technicians.telegram_chat_id' => $hasCol('technicians','telegram_chat_id'),
+        'notification_events' => $neOk,
+    ];
+
+    respond($checks, 200, $meta);
 } catch (Throwable $e) {
     respondError('Unexpected server error', 500, [ 'details' => $e->getMessage() ]);
 }
-
