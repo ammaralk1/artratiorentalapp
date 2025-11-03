@@ -1116,13 +1116,26 @@ export function initTemplatesTab() {
   document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
     const el = e.target;
     if ((el instanceof HTMLElement) && el.isContentEditable) {
+      // Only normalize for numeric-like cells to avoid disturbing free text
+      const td = el.closest('td');
+      const isNumericCell = td?.hasAttribute('data-num') || /^(?:[\d\u0660-\u0669\u06F0-\u06F9.,\s-]+)$/.test(el.textContent || '');
       const before = el.textContent || '';
-      const after = (function normalizeDigits(str){
-        const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
-        return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
-      })(before);
-      if (after !== before) {
-        el.textContent = after;
+      if (isNumericCell) {
+        const after = (function normalizeDigits(str){
+          const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+          return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
+        })(before);
+        if (after !== before) {
+          el.textContent = after;
+          // Keep caret at end to avoid reversed sequence while typing
+          try {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+          } catch (_) {}
+        }
       }
       recomputeExpensesSubtotals();
     }
