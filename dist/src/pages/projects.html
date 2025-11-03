@@ -17,26 +17,26 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.7kR8Uzgk.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.BDXZMkvU.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.BI29i5WK.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService.BUPXmn_D.js">
-  <link rel="modulepreload" crossorigin href="../../assets/state.C3hmi0TE.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.Cqdx1FDo.js">
-  <link rel="modulepreload" crossorigin href="../../assets/constants.45rHdsFz.js">
-  <link rel="modulepreload" crossorigin href="../../assets/form.DV5_hBYL.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.CKr4I5Cw.js">
-  <link rel="modulepreload" crossorigin href="../../assets/details.DKXkDfuL.js">
-  <link rel="modulepreload" crossorigin href="../../assets/equipment.BvbH6ipz.js">
+  <script type="module" crossorigin src="../../assets/projects.Z65Zcqna.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.CIDuDiYC.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CVctHkd7.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.Czgl-8xJ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/state.LA28UGJ5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.BIddNe5f.js">
+  <link rel="modulepreload" crossorigin href="../../assets/constants.lh14OkrE.js">
+  <link rel="modulepreload" crossorigin href="../../assets/form.I_70WdZT.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.B_S1w8ms.js">
+  <link rel="modulepreload" crossorigin href="../../assets/details.DgsX7x5Q.js">
+  <link rel="modulepreload" crossorigin href="../../assets/equipment.BbEoB9JY.js">
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.C2lQPEPC.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.sCGpcuXh.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.DTNhV4vb.js">
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.Dv6JMAlF.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.KgXULarh.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.BvEOZJp1.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/calculations.CzQC-2n2.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.Dqh5RUqt.css">
-  <link rel="stylesheet" crossorigin href="../../assets/projects.DQ_qH9S0.css">
+  <link rel="modulepreload" crossorigin href="../../assets/calculations.cBc8G0w5.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.CG73C9i6.css">
+  <link rel="stylesheet" crossorigin href="../../assets/projects.Djeh_f8j.css">
 </head>
 <body class="page-shell theme-loading projects-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
@@ -340,6 +340,7 @@
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-list-tab" role="tab" aria-selected="false" aria-controls="projects-list-tab" data-i18n data-i18n-key="projects.subtabs.list">مشاريعي</button>
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-reports-tab" role="tab" aria-selected="false" aria-controls="projects-reports-tab" data-i18n data-i18n-key="projects.subtabs.reports">تقارير المشاريع</button>
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-expenses-tab" role="tab" aria-selected="false" aria-controls="projects-expenses-tab" data-i18n data-i18n-key="projects.subtabs.expenses">مصاريف المشاريع</button>
+                      <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-templates-tab" role="tab" aria-selected="false" aria-controls="projects-templates-tab" data-i18n data-i18n-key="projects.subtabs.templates">القوالب</button>
                     </div>
                   </div>
                   <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
@@ -773,7 +774,7 @@
                 </div>
               </div>
 
-              <div class="tab-pane d-none space-y-6" id="projects-expenses-tab" data-project-subtab="projects-expenses-tab">
+  <div class="tab-pane d-none space-y-6" id="projects-expenses-tab" data-project-subtab="projects-expenses-tab">
                 <div class="reports-wrapper reports-wrapper--projects">
                   <div class="reports-surface-card glass-card expenses-hero-card">
                     <div class="reports-card-title reports-header-leading">
@@ -1117,6 +1118,50 @@
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <div class="tab-pane d-none space-y-6" id="projects-templates-tab" data-project-subtab="projects-templates-tab">
+    <div class="reports-wrapper reports-wrapper--projects">
+      <div class="reports-surface-card glass-card">
+        <div class="reports-card-title reports-header-leading">
+          <span class="reports-card-icon" aria-hidden="true">🧩</span>
+          <div class="reports-card-text">
+            <h2 class="fw-bold mb-2" data-i18n data-i18n-key="projects.templates.title">القوالب الجاهزة (A4)</h2>
+            <p class="reports-subtitle" data-i18n data-i18n-key="projects.templates.subtitle">اربط مشروعاً وحجزاً بالقالب، عدِّل الخانات ثم اطبع PDF.</p>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap align-items-end gap-3" id="templates-controls">
+          <div>
+            <label class="form-label" for="templates-project" data-i18n data-i18n-key="projects.templates.labels.project">📁 المشروع</label>
+            <select id="templates-project" class="form-select"></select>
+          </div>
+          <div>
+            <label class="form-label" for="templates-reservation" data-i18n data-i18n-key="projects.templates.labels.reservation">🔗 الحجز (اختياري)</label>
+            <select id="templates-reservation" class="form-select">
+              <option value="" selected data-i18n data-i18n-key="projects.templates.noReservation">— بدون ربط —</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="templates-type" data-i18n data-i18n-key="projects.templates.labels.type">📄 نوع القالب</label>
+            <select id="templates-type" class="form-select">
+              <option value="expenses" selected data-i18n data-i18n-key="projects.templates.types.expenses">ورقة مصاريف (A4 عمودي)</option>
+              <option value="callsheet" data-i18n data-i18n-key="projects.templates.types.callsheet">كول شيت (A4 أفقي)</option>
+              <option value="shotlist" data-i18n data-i18n-key="projects.templates.types.shotlist">شوت ليست (A4 أفقي)</option>
+            </select>
+          </div>
+          <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh">تحديث</button>
+            <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print">🖨️ طباعة PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card" style="overflow:auto;">
+        <div id="templates-preview-host" style="display:flex;justify-content:center;align-items:flex-start;padding:16px;min-height:60vh;">
+          <!-- A4 preview here -->
+        </div>
+      </div>
     </div>
   </div>
 

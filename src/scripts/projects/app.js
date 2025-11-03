@@ -36,6 +36,7 @@ import {
   capturePendingProjectRequest,
   openPendingProjectDetailIfReady
 } from './pending.js';
+import { initTemplatesTab } from './templatesTab.js';
 import {
   renderProjects,
   renderFocusCards,
@@ -51,6 +52,7 @@ export function initProjectsPage() {
     initProjectDatePickers();
     initTabNavigation();
     initProjectSubTabs();
+    initTemplatesTab();
     bindLogout();
 
     bindFormEvents();

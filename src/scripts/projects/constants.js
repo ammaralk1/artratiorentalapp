@@ -9,7 +9,8 @@ export const PROJECT_SUB_TAB_ALIASES = {
   create: 'create-project-tab',
   list: 'projects-list-tab',
   reports: 'projects-reports-tab',
-  expenses: 'projects-expenses-tab'
+  expenses: 'projects-expenses-tab',
+  templates: 'projects-templates-tab'
 };
 
 export const statusFallbackLabels = {
