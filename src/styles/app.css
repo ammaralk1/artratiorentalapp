@@ -5412,6 +5412,22 @@
     outline: none;
   }
 
+  /* Technician Financial Modal – ensure dark mode table has no light backgrounds */
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal .table-responsive {
+    background-color: transparent !important;
+    box-shadow: none;
+  }
+
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal table,
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal thead,
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal tbody,
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal tr,
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal th,
+  :is(html.dark, body.dark, html.dark-mode, body.dark-mode, html[data-theme="dark"], body[data-theme="dark"]) #technician-financial-modal td {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
   .btn-close::before {
     content: '✕';
     font-size: 0.9rem;
