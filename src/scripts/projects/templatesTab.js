@@ -179,12 +179,12 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const mkItemRow = (code = '', desc = '') => el('tr', { 'data-row': 'item' }, [
     el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
     el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
     el('td', { 'data-editable': 'true', contenteditable: 'true' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', text: '1' }),
-    el('td', { class: 'total', text: '' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;' }),
+    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '1' }),
+    el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;text-align:right;', text: '' }),
   ]);
 
   const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [

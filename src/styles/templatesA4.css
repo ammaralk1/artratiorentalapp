@@ -30,7 +30,9 @@
 .tpl-subtitle { font-size:12px; opacity:.85; margin:0; }
 .tpl-meta { display:grid; grid-template-columns:repeat(6, 1fr); gap:6px; font-size:11px; margin-bottom:6mm; }
 .tpl-meta .cell { border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; }
-.tpl-meta .label { display:block; font-size:10px; opacity:.7; margin-bottom:2px; }
+.tpl-meta .cell { text-align:center; }
+.tpl-meta .label { display:block; font-size:12px; font-weight:600; opacity:.85; margin-bottom:2px; text-align:center; }
+.tpl-meta .cell [data-editable] { text-align:center; }
 
 table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; border:1.5px solid #9ca3af; }
 table.tpl-table th { background:#f3f4f6; border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; }
@@ -94,6 +96,8 @@ table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
+/* Numeric cells: enforce LTR order but keep right alignment */
+table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:right; }
 table.exp-table tr.exp-subheader th { background:#374151; color:#fff; font-weight:800; text-align:center; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
