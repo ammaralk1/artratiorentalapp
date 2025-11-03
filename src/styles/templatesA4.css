@@ -41,6 +41,11 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .tpl-subtotal-row td { background:#f9fafb !important; font-weight:700; }
 .tpl-subtotal-label { opacity:.85; }
 
+/* Summary footer */
+.tpl-summary { width:100%; max-width:320px; margin:6mm 0 0 auto; border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; }
+.tpl-summary-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; }
+.tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
+
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; }
 .tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }

@@ -11,6 +11,7 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf } from '../reports/external.js';
+import { PROJECT_TAX_RATE } from './constants.js';
 import { apiRequest } from '../apiClient.js';
 
 function el(tag, attrs = {}, children = []) {
@@ -130,6 +131,15 @@ function buildExpensesPage(project, reservations) {
   ]));
   table.appendChild(tb);
   inner.appendChild(table);
+  // Summary footer (subtotal, tax, total)
+  const summary = el('div', { id: 'expenses-summary', class: 'tpl-summary' });
+  const taxLabel = t('projects.templates.expenses.tax', `الضريبة ${Math.round(PROJECT_TAX_RATE * 100)}%`);
+  summary.innerHTML = `
+    <div class="tpl-summary-row"><span>${t('projects.templates.expenses.subtotal', 'المجموع')}</span><span data-summary-subtotal></span></div>
+    <div class="tpl-summary-row"><span>${taxLabel}</span><span data-summary-tax></span></div>
+    <div class="tpl-summary-row tpl-summary-total"><span>${t('projects.templates.expenses.total', 'الإجمالي')}</span><span data-summary-total></span></div>
+  `;
+  inner.appendChild(summary);
   return root;
 }
 
@@ -396,6 +406,7 @@ function recomputeExpensesSubtotals() {
   const table = document.querySelector('#templates-preview-host #expenses-table');
   if (!table) return;
   let running = 0;
+  let grand = 0;
   const rows = Array.from(table.querySelectorAll('tbody tr'));
   rows.forEach((tr) => {
     if (tr.matches('[data-section-bar]')) { running = 0; return; }
@@ -409,7 +420,20 @@ function recomputeExpensesSubtotals() {
     const total = qty * rate;
     if (tr.children[5]) tr.children[5].textContent = String(total.toFixed(2));
     running += total;
+    grand += total;
   });
+  // Update summary footer
+  const project = getSelectedProject();
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+  const applyTax = Boolean(project?.applyTax);
+  const taxAmount = applyTax ? Number((grand * PROJECT_TAX_RATE).toFixed(2)) : 0;
+  const totalWithTax = Number((grand + taxAmount).toFixed(2));
+  const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
+  const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
+  const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
+  if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
+  if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
+  if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
 }
 
 function handleTableActionClick(e) {
