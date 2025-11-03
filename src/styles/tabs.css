@@ -249,11 +249,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 /* Force center for crew sub-tabs at all sizes */
 .tech-subtabs-container .tabs {
   justify-content: center !important;
+  width: auto !important; /* fit content so true centering works */
+  margin-inline: auto !important;
 }
 
 .tech-subtabs-container .tab-scroll-track {
   display: flex;
   justify-content: center !important;
+  padding-inline: 0 !important; /* remove side padding that shifts centering */
 }
 
 .crew-picker-modal__dialog {
