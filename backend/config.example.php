@@ -54,6 +54,10 @@ return [
         'enabled' => false,
         'bot_token' => 'YOUR_TELEGRAM_BOT_TOKEN',
         // 'api_base' => 'https://api.telegram.org',
+        // Optional: set default parse mode for messages ('HTML' or 'MarkdownV2')
+        // 'parse_mode' => 'HTML',
+        // Optional: secret to verify webhook origin via X-Telegram-Bot-Api-Secret-Token
+        // 'secret_token' => 'CHANGE_ME_TO_RANDOM_LONG_SECRET',
     ],
     'notifications' => [
         // Optional top-level toggles (fallbacks to email.enabled/telegram.enabled)

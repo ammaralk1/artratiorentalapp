@@ -24,6 +24,8 @@ function getTelegramConfig(): array
 
     $botToken = trim((string)($config['bot_token'] ?? ''));
     $apiBase = rtrim((string)($config['api_base'] ?? 'https://api.telegram.org'), '/');
+    $parseMode = trim((string)($config['parse_mode'] ?? ''));
+    $secretToken = trim((string)($config['secret_token'] ?? ''));
 
     if ($botToken === '') {
         throw new RuntimeException('Telegram is enabled but bot token is missing.');
@@ -33,6 +35,9 @@ function getTelegramConfig(): array
         'enabled' => true,
         'bot_token' => $botToken,
         'api_base' => $apiBase,
+        // Optional defaults
+        'parse_mode' => $parseMode !== '' ? $parseMode : null,
+        'secret_token' => $secretToken !== '' ? $secretToken : null,
     ];
 }
 
@@ -40,7 +45,7 @@ function getTelegramConfig(): array
  * Send a plain text Telegram message via Bot API.
  * Returns true on success, false on failure.
  */
-function sendTelegramText(string $chatId, string $message): bool
+function sendTelegramText(string $chatId, string $message, ?array $options = null): bool
 {
     try {
         $cfg = getTelegramConfig();
@@ -73,6 +78,12 @@ function sendTelegramText(string $chatId, string $message): bool
         'text' => $message,
         'disable_web_page_preview' => true,
     ];
+    // Optional formatting and reply markup
+    $parseMode = $options['parse_mode'] ?? ($cfg['parse_mode'] ?? null);
+    if (is_string($parseMode) && $parseMode !== '') { $payload['parse_mode'] = $parseMode; }
+    if (!empty($options['reply_markup']) && is_array($options['reply_markup'])) {
+        $payload['reply_markup'] = $options['reply_markup'];
+    }
 
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
@@ -117,7 +128,7 @@ function sendTelegramText(string $chatId, string $message): bool
 /**
  * Send a Telegram photo with optional caption.
  */
-function sendTelegramPhoto(string $chatId, string $photoUrl, ?string $caption = null): bool
+function sendTelegramPhoto(string $chatId, string $photoUrl, ?string $caption = null, ?array $options = null): bool
 {
     try { $cfg = getTelegramConfig(); } catch (Throwable $e) { telegramSetLastError('Telegram config error: ' . $e->getMessage()); return false; }
     if (empty($cfg['enabled'])) { telegramSetLastError('Telegram disabled by configuration'); return false; }
@@ -125,6 +136,12 @@ function sendTelegramPhoto(string $chatId, string $photoUrl, ?string $caption = 
     $endpoint = sprintf('%s/bot%s/sendPhoto', $cfg['api_base'], $cfg['bot_token']);
     $payload = [ 'chat_id' => trim($chatId), 'photo' => $photoUrl ];
     if ($caption !== null && $caption !== '') { $payload['caption'] = $caption; }
+    // Optional formatting and reply markup (applies to caption)
+    $parseMode = $options['parse_mode'] ?? ($cfg['parse_mode'] ?? null);
+    if (is_string($parseMode) && $parseMode !== '') { $payload['parse_mode'] = $parseMode; }
+    if (!empty($options['reply_markup']) && is_array($options['reply_markup'])) {
+        $payload['reply_markup'] = $options['reply_markup'];
+    }
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
@@ -259,6 +276,10 @@ function telegramSetWebhook(string $webhookUrl): ?array
     if (empty($cfg['enabled']) || !extension_loaded('curl')) { return null; }
     $endpoint = sprintf('%s/bot%s/setWebhook', $cfg['api_base'], $cfg['bot_token']);
     $payload = [ 'url' => $webhookUrl ];
+    // If a secret token is configured, include it so Telegram signs requests
+    if (!empty($cfg['secret_token'])) {
+        $payload['secret_token'] = (string)$cfg['secret_token'];
+    }
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,

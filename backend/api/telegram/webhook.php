@@ -11,12 +11,74 @@ function tg_reply_text(string $chatId, string $text): void {
 }
 
 try {
+    // Optional: verify Telegram secret token header if configured
+    try {
+        $cfg = getTelegramConfig();
+        if (!empty($cfg['secret_token'])) {
+            // Header comes as X-Telegram-Bot-Api-Secret-Token (PHP exposes as HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN)
+            $provided = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+            if (!hash_equals((string)$cfg['secret_token'], (string)$provided)) {
+                // Silently ignore to not leak details
+                echo 'ok';
+                exit;
+            }
+        }
+    } catch (Throwable $_) { /* ignore and proceed */ }
+
     // Telegram sends POST JSON updates
     $raw = file_get_contents('php://input') ?: '';
     $update = $raw !== '' ? json_decode($raw, true) : null;
     if (!is_array($update)) { echo 'ok'; exit; }
 
     $pdo = getDatabaseConnection();
+    // Minimal handling for callback_query (inline buttons)
+    if (isset($update['callback_query']) && is_array($update['callback_query'])) {
+        $cb = $update['callback_query'];
+        $chatId = isset($cb['message']['chat']['id']) ? (string)$cb['message']['chat']['id'] : '';
+        $data = isset($cb['data']) ? (string)$cb['data'] : '';
+        // Store as inbound control event for visibility (optional)
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS telegram_messages (
+              id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+              message_id BIGINT NULL,
+              chat_id VARCHAR(64) NOT NULL,
+              technician_id BIGINT UNSIGNED NULL,
+              direction ENUM('inbound','outbound') NOT NULL,
+              text TEXT NULL,
+              from_id BIGINT NULL,
+              from_username VARCHAR(191) NULL,
+              raw_json JSON NULL,
+              media_json JSON NULL,
+              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_tm_chat (chat_id),
+              INDEX idx_tm_tech (technician_id),
+              INDEX idx_tm_created (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            if ($chatId !== '') {
+                $stmt = $pdo->prepare('INSERT INTO telegram_messages (chat_id, direction, text, raw_json) VALUES (:cid, :dir, :txt, :raw)');
+                $stmt->execute(['cid' => $chatId, 'dir' => 'inbound', 'txt' => $data !== '' ? ('callback:' . $data) : 'callback', 'raw' => json_encode($cb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+            }
+        } catch (Throwable $_) {}
+        // Acknowledge callback to remove client-side spinner if possible
+        try {
+            $cfg = getTelegramConfig();
+            if (!empty($cfg['enabled']) && extension_loaded('curl') && !empty($cb['id'])) {
+                $endpoint = sprintf('%s/bot%s/answerCallbackQuery', $cfg['api_base'], $cfg['bot_token']);
+                $ch = curl_init($endpoint);
+                curl_setopt_array($ch, [
+                    CURLOPT_POST => true,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTPHEADER => [ 'Content-Type: application/json' ],
+                    CURLOPT_POSTFIELDS => json_encode(['callback_query_id' => (string)$cb['id']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    CURLOPT_TIMEOUT => 10,
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+            }
+        } catch (Throwable $_) {}
+        echo 'ok';
+        exit;
+    }
 
     $msg = $update['message'] ?? $update['channel_post'] ?? null;
     if (!$msg) { echo 'ok'; exit; }
