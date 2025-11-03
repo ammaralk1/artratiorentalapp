@@ -1245,6 +1245,33 @@ export function initTemplatesTab() {
   document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
   document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
 
+  // Row highlight on focus (spreadsheet-like)
+  (function bindRowFocusHighlight(){
+    const host = document.getElementById('templates-preview-host');
+    if (!host) return;
+    let focusedRow = null;
+    host.addEventListener('focusin', (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.isContentEditable) return;
+      const tr = el.closest('tr');
+      if (focusedRow && focusedRow !== tr) focusedRow.classList.remove('focus-row');
+      if (tr) tr.classList.add('focus-row');
+      focusedRow = tr;
+    });
+    host.addEventListener('focusout', (e) => {
+      const el = e.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.isContentEditable) return;
+      const tr = el.closest('tr');
+      // Remove highlight if row no longer contains focus
+      setTimeout(() => {
+        if (tr && !tr.contains(document.activeElement)) tr.classList.remove('focus-row');
+        if (focusedRow === tr && (!tr || !tr.contains(document.activeElement))) focusedRow = null;
+      }, 0);
+    });
+  })();
+
   // Re-populate when data loads later
   let repopulating = false;
   const repopulate = async () => {

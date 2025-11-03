@@ -94,7 +94,7 @@ table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
 table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
-table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
+table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; position:relative; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 #templates-a4-root[dir="ltr"] table.exp-table td.code { text-align:left; }
@@ -132,11 +132,15 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* === Highlights (Preview) === */
 /* Zebra striping for better readability */
 table.exp-table tbody tr.exp-row-alt td { background:#f8fafc; }
-/* Hover row highlight */
-table.exp-table tbody tr[data-row="item"]:hover td { background:#eef2ff; }
-/* Focus cell highlight */
+/* Hover row highlight (use app primary light) */
+table.exp-table tbody tr[data-row="item"]:hover td { background: var(--clr-primary-light, #eef3ff); }
+/* Focus cell highlight (use app primary) */
 table.exp-table td[contenteditable="true"], table.exp-table td [contenteditable="true"] { outline: 0; }
-table.exp-table td:focus-within { box-shadow: inset 0 0 0 2px #bfdbfe; background:#eef2ff; }
+table.exp-table td:focus-within { box-shadow: inset 0 0 0 2px var(--clr-primary-soft, #5a8dff); background: var(--clr-primary-light, #eef3ff); }
+/* Small focus anchor like spreadsheets */
+table.exp-table td:focus-within::after { content:""; position:absolute; top:2px; left:2px; width:6px; height:6px; border-radius:2px; background: var(--clr-primary, #4c6ef5); }
+/* Highlight whole row when a cell is focused */
+table.exp-table tbody tr.focus-row td { background: var(--clr-primary-light, #eef3ff); }
 /* Subtotal rows slightly tinted */
 table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6; }
 
