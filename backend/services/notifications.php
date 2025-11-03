@@ -395,6 +395,7 @@ function notifyReservationReminder(PDO $pdo, array $reservation, string $windowK
 
 function fetchReservationForNotification(PDO $pdo, int $reservationId): ?array
 {
+    if (!defined('API_INCLUDE_MODE')) { define('API_INCLUDE_MODE', true); }
     require_once __DIR__ . '/../api/reservations/index.php';
     $res = fetchReservationById($pdo, $reservationId);
     if (!$res) { return null; }
