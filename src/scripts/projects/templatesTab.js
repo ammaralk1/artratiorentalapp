@@ -58,6 +58,13 @@ const COMPANY_INFO = {
   companyLicense: '159460'
 };
 
+let TEMPLATE_LANG = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang')) || 'en';
+function setTemplateLang(lang) {
+  TEMPLATE_LANG = (lang === 'ar') ? 'ar' : 'en';
+  try { localStorage.setItem('templates.lang', TEMPLATE_LANG); } catch (_) {}
+}
+function L(en, ar) { return TEMPLATE_LANG === 'ar' ? (ar || en) : en; }
+
 function readHeaderFooterOptions() {
   // Simplified: always use fixed company info and no external header/footer overlay
   return {
@@ -111,27 +118,25 @@ function buildExpensesPage(project, reservations, opts = {}) {
       el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
       el('div', {}, [
         el('div', { class: 'text', text: (opts.companyName || project?.clientCompany || project?.title || 'Company') }),
-        (opts.companyCR ? el('div', { class: 'meta' }, [
-          el('span', { class: 'line', text: `CR: ${opts.companyCR}` }),
-          (opts.companyLicense ? el('span', { class: 'line', text: `Media License: ${opts.companyLicense}` }) : null)
-        ]) : el('div', { class: 'meta' }, [
-          (opts.companyLicense ? el('span', { class: 'line', text: `Media License: ${opts.companyLicense}` }) : null)
-        ]))
+        el('div', { class: 'meta' }, [
+          el('span', { class: 'line', text: `${L('CR','السجل التجاري')}: ${opts.companyCR || ''}` }),
+          el('span', { class: 'line', text: `${L('Media License','ترخيص إعلامي')}: ${opts.companyLicense || ''}` })
+        ])
       ])
     ]),
-    el('div', { class: 'title', text: 'Expenses Sheet' })
+    el('div', { class: 'title', text: L('Expenses Sheet', 'ورقة المصاريف') })
   ]);
   inner.appendChild(masthead);
 
   // Meta grid
   const meta = el('div', { class: 'tpl-meta' });
-  meta.appendChild(metaCell('Production Co.', project?.clientCompany || ''));
-  meta.appendChild(metaCell('Project Title / اسم المشروع', project?.title || ''));
-  meta.appendChild(metaCell('Budget Date / تاريخ الميزانية', new Date().toISOString().slice(0, 10)));
-  meta.appendChild(metaCell('Prepared by / إعداد', ''));
+  meta.appendChild(metaCell(L('Production Co.', 'شركة الإنتاج'), project?.clientCompany || ''));
+  meta.appendChild(metaCell(L('Project Title', 'اسم المشروع'), project?.title || ''));
+  meta.appendChild(metaCell(L('Budget Date', 'تاريخ الميزانية'), new Date().toISOString().slice(0, 10)));
+  meta.appendChild(metaCell(L('Prepared by', 'إعداد'), ''));
   const locs = Array.from(new Set((reservations || []).map((r) => (r?.location || '').trim()).filter(Boolean))).join(', ');
-  meta.appendChild(metaCell('Locations / المواقع', locs));
-  meta.appendChild(metaCell('Shoot Days / أيام التصوير', ''));
+  meta.appendChild(metaCell(L('Locations', 'المواقع'), locs));
+  meta.appendChild(metaCell(L('Shoot Days', 'أيام التصوير'), ''));
   inner.appendChild(meta);
 
   // Expenses table
@@ -139,14 +144,14 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const thead = el('thead');
   const head = el('tr');
   const headCols = [
-    { text: 'CODE', cls: 'exp-col-code' },
-    { text: 'DESCRIPTION', cls: 'exp-col-item' },
-    { text: 'AMOUNT', cls: 'exp-col-amount' },
-    { text: 'PAID', cls: 'exp-col-paid' },
+    { text: L('CODE','الكود'), cls: 'exp-col-code' },
+    { text: L('DESCRIPTION','الوصف'), cls: 'exp-col-item' },
+    { text: L('AMOUNT','الكمية'), cls: 'exp-col-amount' },
+    { text: L('PAID','مدفوع'), cls: 'exp-col-paid' },
     { text: 'X', cls: 'exp-col-x' },
-    { text: 'RATE', cls: 'exp-col-rate' },
-    { text: 'TAB', cls: 'exp-col-tab' },
-    { text: 'TOTAL', cls: 'exp-col-total' },
+    { text: L('RATE','السعر'), cls: 'exp-col-rate' },
+    { text: L('TAB','تب'), cls: 'exp-col-tab' },
+    { text: L('TOTAL','الإجمالي'), cls: 'exp-col-total' },
   ];
   headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
   thead.appendChild(head);
@@ -160,12 +165,12 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
     el('th', { class: 'exp-col-code', text: code }),
     el('th', { class: 'exp-col-item', text: label }),
-    el('th', { class: 'exp-col-amount', text: 'AMOUNT' }),
-    el('th', { class: 'exp-col-paid', text: 'PAID' }),
+    el('th', { class: 'exp-col-amount', text: L('AMOUNT','الكمية') }),
+    el('th', { class: 'exp-col-paid', text: L('PAID','مدفوع') }),
     el('th', { class: 'exp-col-x', text: 'X' }),
-    el('th', { class: 'exp-col-rate', text: 'RATE' }),
-    el('th', { class: 'exp-col-tab', text: 'TAB' }),
-    el('th', { class: 'exp-col-total', text: 'TOTAL' }),
+    el('th', { class: 'exp-col-rate', text: L('RATE','السعر') }),
+    el('th', { class: 'exp-col-tab', text: L('TAB','تب') }),
+    el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
   ]);
 
   const mkItemRow = (code = '', desc = '') => el('tr', { 'data-row': 'item' }, [
@@ -181,7 +186,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
 
   const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
     el('td', { class: 'code', text: code }),
-    el('td', { text: 'Subtotal' }),
+    el('td', { text: L('Subtotal','المجموع الفرعي') }),
     el('td', { colspan: '5' }),
     el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
   ]);
@@ -201,14 +206,14 @@ function buildExpensesPage(project, reservations, opts = {}) {
   };
 
   // ABOVE THE LINE
-  tb.appendChild(mkGroupBar('ABOVE THE LINE', 'exp-group-bar--atl'));
+  tb.appendChild(mkGroupBar(L('ABOVE THE LINE','فوق الخط'), 'exp-group-bar--atl'));
   addSubGroup('atl', '12-00', 'PRODUCERS UNIT', 2);
   addSubGroup('atl', '13-00', 'DIRECTOR & STAFF', 2);
   addSubGroup('atl', '14-00', 'CAST', 3);
-  tb.appendChild(mkGroupTotalRow('Total Above the Line', 'atl'));
+  tb.appendChild(mkGroupTotalRow(L('Total Above the Line','إجمالي فوق الخط'), 'atl'));
 
   // PRODUCTION EXPENSES
-  tb.appendChild(mkGroupBar('PRODUCTION EXPENSES', 'exp-group-bar--prod'));
+  tb.appendChild(mkGroupBar(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), 'exp-group-bar--prod'));
   addSubGroup('prod', '20-00', 'PRODUCTION STAFF', 3);
   addSubGroup('prod', '22-00', 'SET DESIGN', 3);
   addSubGroup('prod', '23-00', 'SET CONSTRUCTION', 2);
@@ -218,17 +223,17 @@ function buildExpensesPage(project, reservations, opts = {}) {
   addSubGroup('prod', '30-00', 'CAMERA', 3);
   addSubGroup('prod', '33-00', 'TRANSPORTATION', 1);
   addSubGroup('prod', '34-00', 'LOCATIONS', 2);
-  tb.appendChild(mkGroupTotalRow('Total Production', 'prod'));
+  tb.appendChild(mkGroupTotalRow(L('Total Production','إجمالي الإنتاج'), 'prod'));
 
   // POST-PRODUCTION
-  tb.appendChild(mkGroupBar('POST-PRODUCTION EXPENSES', 'exp-group-bar--post'));
+  tb.appendChild(mkGroupBar(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), 'exp-group-bar--post'));
   addSubGroup('post', '45-00', 'FILM EDITING', 2);
   addSubGroup('post', '49-00', 'VOICE OVER', 1);
-  tb.appendChild(mkGroupTotalRow('Total Post Production', 'post'));
+  tb.appendChild(mkGroupTotalRow(L('Total Post Production','إجمالي ما بعد الإنتاج'), 'post'));
 
   // GRAND TOTAL
   const grand = el('tr', { class: 'exp-grand-total' }, [
-    el('td', { colspan: '7', text: 'GRAND TOTAL' }),
+    el('td', { colspan: '7', text: L('GRAND TOTAL','الإجمالي الكلي') }),
     el('td', { 'data-grand-total': 'true', text: '' })
   ]);
   tb.appendChild(grand);
@@ -238,11 +243,11 @@ function buildExpensesPage(project, reservations, opts = {}) {
 
   // Summary footer for A4 page
   const summary = el('div', { id: 'expenses-summary', class: 'tpl-summary' });
-  const taxLabel = t('projects.templates.expenses.tax', `الضريبة ${Math.round(PROJECT_TAX_RATE * 100)}%`);
+  const taxLabel = L(`Tax ${Math.round(PROJECT_TAX_RATE * 100)}%`, `الضريبة ${Math.round(PROJECT_TAX_RATE * 100)}%`);
   summary.innerHTML = `
-    <div class="tpl-summary-row"><span>${t('projects.templates.expenses.subtotal', 'المجموع')}</span><span data-summary-subtotal></span></div>
+    <div class="tpl-summary-row"><span>${L('Subtotal','المجموع')}</span><span data-summary-subtotal></span></div>
     <div class="tpl-summary-row"><span>${taxLabel}</span><span data-summary-tax></span></div>
-    <div class="tpl-summary-row tpl-summary-total"><span>${t('projects.templates.expenses.total', 'الإجمالي')}</span><span data-summary-total></span></div>
+    <div class="tpl-summary-row tpl-summary-total"><span>${L('Total','الإجمالي')}</span><span data-summary-total></span></div>
   `;
   inner.appendChild(summary);
   return root;
@@ -981,6 +986,16 @@ export function initTemplatesTab() {
   typeSel?.addEventListener('change', renderTemplatesPreview);
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   printBtn?.addEventListener('click', printTemplatesPdf);
+  const langBtn = document.getElementById('templates-lang-toggle');
+  if (langBtn) {
+    const updateBtn = () => { langBtn.textContent = TEMPLATE_LANG === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${TEMPLATE_LANG.toUpperCase()}`; };
+    updateBtn();
+    langBtn.addEventListener('click', () => {
+      setTemplateLang(TEMPLATE_LANG === 'ar' ? 'en' : 'ar');
+      updateBtn();
+      renderTemplatesPreview();
+    });
+  }
   saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
