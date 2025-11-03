@@ -31,7 +31,7 @@ try {
     $last = (int)$sinceId;
     while (time() - $start < $timeout) {
         try {
-            $stmt = $pdo->prepare('SELECT id, technician_id, direction, text, created_at FROM telegram_messages WHERE chat_id = :c AND id > :id ORDER BY id ASC LIMIT 100');
+            $stmt = $pdo->prepare('SELECT id, technician_id, direction, text, media_json, created_at FROM telegram_messages WHERE chat_id = :c AND id > :id ORDER BY id ASC LIMIT 100');
             $stmt->execute(['c' => $chatId, 'id' => $last]);
             $rows = $stmt->fetchAll();
             if ($rows) {
@@ -41,6 +41,7 @@ try {
                     'technician_id' => $r['technician_id'] !== null ? (int)$r['technician_id'] : null,
                     'direction' => (string)$r['direction'],
                     'text' => (string)($r['text'] ?? ''),
+                    'media_json' => isset($r['media_json']) && $r['media_json'] !== null ? (json_decode((string)$r['media_json'], true) ?: null) : null,
                     'created_at' => (string)$r['created_at'],
                 ]; }
                 echo 'data: ' . json_encode($batch, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n\n";
@@ -56,4 +57,3 @@ try {
     header('Content-Type: text/event-stream');
     echo "event: error\n" . 'data: {"error":"server"}' . "\n\n";
 }
-

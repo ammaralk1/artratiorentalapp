@@ -82,8 +82,8 @@ try {
                 } catch (Throwable $_) {}
                 // Unread count (inbound only) based on read mark
                 $unread = 0;
+                $mark = 0;
                 try {
-                    $mark = 0;
                     $m = $pdo->prepare('SELECT last_message_id FROM telegram_read_marks WHERE user_id = :u AND chat_id = :c ORDER BY updated_at DESC LIMIT 1');
                     $m->execute(['u' => $userId, 'c' => $chatId]);
                     $mark = (int)($m->fetchColumn() ?: 0);
@@ -91,6 +91,10 @@ try {
                     $c->execute(['c' => $chatId, 'mark' => $mark]);
                     $unread = (int)$c->fetchColumn();
                 } catch (Throwable $_) {}
+                $seenAt = null;
+                if ($mark > 0) {
+                    try { $sa = $pdo->prepare('SELECT created_at FROM telegram_messages WHERE id = :id LIMIT 1'); $sa->execute(['id' => $mark]); $seenAt = $sa->fetchColumn() ?: null; } catch (Throwable $_) {}
+                }
                 $rows[] = [
                     'chat_id' => $chatId,
                     'technician_id' => $tid ?: null,
@@ -100,6 +104,8 @@ try {
                     'last_direction' => $lastDir,
                     'last_at' => $lastAt,
                     'unread' => $unread,
+                    'last_seen_id' => $mark,
+                    'last_seen_at' => $seenAt,
                 ];
             }
             respond($rows);
@@ -119,7 +125,7 @@ try {
         if ($sinceId > 0) { $where[] = 'm.id > :since'; $params['since'] = $sinceId; }
         $whereClause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-        $sql = 'SELECT m.id, m.message_id, m.chat_id, m.technician_id, m.direction, m.text, m.from_id, m.from_username, m.created_at,
+        $sql = 'SELECT m.id, m.message_id, m.chat_id, m.technician_id, m.direction, m.text, m.media_json, m.from_id, m.from_username, m.created_at,
                        t.full_name AS technician_name
                 FROM telegram_messages m
                 LEFT JOIN technicians t ON t.id = m.technician_id
@@ -142,6 +148,7 @@ try {
                 'technician_name' => $r['technician_name'] ?? null,
                 'direction' => (string)$r['direction'],
                 'text' => $r['text'] ?? '',
+                'media_json' => (isset($r['media_json']) && $r['media_json'] !== null) ? (json_decode((string)$r['media_json'], true) ?: null) : null,
                 'from_id' => $r['from_id'] !== null ? (int)$r['from_id'] : null,
                 'from_username' => $r['from_username'] ?? null,
                 'created_at' => (string)$r['created_at'],

@@ -102,11 +102,18 @@ try {
           from_id BIGINT NULL,
           from_username VARCHAR(191) NULL,
           raw_json JSON NULL,
+          media_json JSON NULL,
           created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
           INDEX idx_tm_chat (chat_id),
           INDEX idx_tm_tech (technician_id),
           INDEX idx_tm_created (created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        // Add media_json if missing
+        try {
+            $chk = $pdo->prepare("SHOW COLUMNS FROM telegram_messages LIKE 'media_json'");
+            $chk->execute();
+            if (!$chk->fetch()) { $pdo->exec("ALTER TABLE telegram_messages ADD COLUMN media_json JSON NULL"); }
+        } catch (Throwable $_) {}
 
         // Try to resolve technician_id by chat_id
         $techId = 0;
@@ -122,7 +129,18 @@ try {
             }
         } catch (Throwable $_) { $techId = 0; }
 
-        $stmt = $pdo->prepare('INSERT INTO telegram_messages (message_id, chat_id, technician_id, direction, text, from_id, from_username, raw_json) VALUES (:mid, :cid, :tid, :dir, :txt, :fromid, :fromuser, :raw)');
+        // Detect inbound photo(s)
+        $media = null;
+        if (isset($msg['photo']) && is_array($msg['photo']) && count($msg['photo']) > 0) {
+            // pick largest size id for preview; also store all ids
+            $all = $msg['photo'];
+            $best = $all[count($all)-1];
+            $ids = [];
+            foreach ($all as $p) { if (!empty($p['file_id'])) { $ids[] = (string)$p['file_id']; } }
+            $media = [ 'photos' => $ids, 'best' => isset($best['file_id']) ? (string)$best['file_id'] : null ];
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO telegram_messages (message_id, chat_id, technician_id, direction, text, from_id, from_username, raw_json, media_json) VALUES (:mid, :cid, :tid, :dir, :txt, :fromid, :fromuser, :raw, :media)');
         $stmt->execute([
             'mid' => isset($msg['message_id']) ? (int)$msg['message_id'] : null,
             'cid' => $chatId,
@@ -132,6 +150,7 @@ try {
             'fromid' => isset($msg['from']['id']) ? (int)$msg['from']['id'] : null,
             'fromuser' => $msg['from']['username'] ?? null,
             'raw' => json_encode($msg, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'media' => $media ? json_encode($media, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
         ]);
     } catch (Throwable $_) { /* ignore */ }
 

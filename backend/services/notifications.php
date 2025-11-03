@@ -308,9 +308,9 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
             }
         }
 
-        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
-            $recipient = (string) $contacts['telegram_chat_id'];
-            if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
+        if ($channels['telegram']) {
+            $recipient = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
+            if ($recipient !== '' && !hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
                 $ok = sendTelegramText($recipient, $text);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'telegram', $ok ? 'sent' : 'failed');
             }
@@ -526,9 +526,12 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
-            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
-            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            $cid = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
+            if ($cid !== '') {
+                $ok = sendTelegramText($cid, $text);
+                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $cid, 'telegram', $ok ? 'sent' : 'failed');
+            }
         }
     }
 
@@ -601,9 +604,12 @@ function notifyProjectTechnicianAssigned(PDO $pdo, array $project, array $techni
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
-            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
-            recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            $cid = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
+            if ($cid !== '') {
+                $ok = sendTelegramText($cid, $text);
+                recordNotificationEvent($pdo, $eventType, 'project', $entityId, 'technician', $cid, 'telegram', $ok ? 'sent' : 'failed');
+            }
         }
     }
 
@@ -669,9 +675,12 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
             $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
-        if ($channels['telegram'] && !empty($contacts['telegram_chat_id'])) {
-            $ok = sendTelegramText((string)$contacts['telegram_chat_id'], $text);
-            recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['telegram_chat_id'], 'telegram', $ok ? 'sent' : 'failed');
+        if ($channels['telegram']) {
+            $cid = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
+            if ($cid !== '') {
+                $ok = sendTelegramText($cid, $text);
+                recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $cid, 'telegram', $ok ? 'sent' : 'failed');
+            }
         }
     }
 

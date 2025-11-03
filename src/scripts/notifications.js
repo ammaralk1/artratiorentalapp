@@ -99,6 +99,8 @@ function cacheElements() {
   els.tgChatSendPhoto = q('#tg-chat-send-photo');
   els.tgChatSendPhotos = q('#tg-chat-send-photos');
   els.tgChatLive = q('#tg-chat-live');
+  els.tgLiveStatus = q('#tg-live-status');
+  els.tgChatLastSeen = q('#tg-chat-last-seen');
   els.tgChatList = q('#tg-chat-list');
   els.tgChatListRefresh = q('#tg-chat-list-refresh');
 }
@@ -1018,10 +1020,20 @@ async function chatRefresh() {
     if (CHAT_LIVE && !CHAT_POLL_TIMER) chatStartLive();
     // Mark as read up to latest and refresh chat list badges
     try { await markChatRead(CHAT_SELECTED_TECH.id, CHAT_LAST_ID); fetchChatList(); } catch (_) {}
+    try { updateLastSeenLabelFromListCache(); } catch (_) {}
   } catch (e) {
     console.error(e);
     els.tgChatMessages.innerHTML = '<div class="text-center text-error">فشل تحميل المحادثة</div>';
   }
+}
+
+function updateLastSeenLabelFromListCache() {
+  try {
+    const items = window.__CHAT_LIST_CACHE__ || [];
+    if (!CHAT_SELECTED_TECH || !els.tgChatLastSeen) return;
+    const found = items.find((c) => Number(c.technician_id || 0) === Number(CHAT_SELECTED_TECH.id));
+    els.tgChatLastSeen.textContent = found && found.last_seen_at ? String(found.last_seen_at) : '—';
+  } catch (_) {}
 }
 
 function buildChatBubble(m) {
@@ -1031,7 +1043,17 @@ function buildChatBubble(m) {
   const bubble = isOut ? 'bg-primary text-primary-content' : 'bg-base-200';
   const time = m.created_at || '';
   const txt = (m.text || '').replace(/</g,'&lt;');
-  return `<div class="flex ${side}"><div class="rounded-xl px-3 py-2 m-1 max-w-[80%] ${bubble}"><div class="text-xs opacity-70">${who} • ${time}</div><div>${txt}</div></div></div>`;
+  const imgs = [];
+  try {
+    const media = m.media_json || null;
+    const photos = Array.isArray(media?.photos) ? media.photos : [];
+    photos.forEach((p) => {
+      const src = /^https?:\/\//i.test(String(p)) ? String(p) : `/backend/api/telegram/file.php?file_id=${encodeURIComponent(String(p))}`;
+      imgs.push(`<img src="${src}" class="rounded mt-2 max-w-[240px] max-h-[240px]" loading="lazy">`);
+    });
+  } catch (_) {}
+  const mediaHtml = imgs.length ? imgs.join('') : '';
+  return `<div class="flex ${side}"><div class="rounded-xl px-3 py-2 m-1 max-w-[80%] ${bubble}"><div class="text-xs opacity-70">${who} • ${time}</div><div>${txt}</div>${mediaHtml}</div></div>`;
 }
 
 function chatStartLive() {
@@ -1041,9 +1063,10 @@ function chatStartLive() {
   if (els.tgChatLive) els.tgChatLive.checked = true;
   // Try SSE first if supported and not disabled
   if (typeof EventSource !== 'undefined' && !CHAT_SSE_DISABLED) {
-    try { chatOpenSSE(); return; } catch (_) { /* fallback to polling */ }
+    try { if (els.tgLiveStatus) els.tgLiveStatus.textContent = 'Connecting…'; chatOpenSSE(); return; } catch (_) { /* fallback to polling */ }
   }
   CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
+  if (els.tgLiveStatus) els.tgLiveStatus.textContent = 'Polling';
 }
 
 function chatStopLive() {
@@ -1055,6 +1078,7 @@ function chatStopLive() {
     try { CHAT_SSE.close(); } catch (_) {}
     CHAT_SSE = null;
   }
+  if (els.tgLiveStatus) els.tgLiveStatus.textContent = 'متوقف';
 }
 
 async function chatFetchNew() {
@@ -1079,6 +1103,7 @@ async function chatFetchNew() {
       els.tgChatMessages.appendChild(frag);
       els.tgChatMessages.scrollTop = els.tgChatMessages.scrollHeight;
     }
+    try { await markChatRead(CHAT_SELECTED_TECH.id, CHAT_LAST_ID); fetchChatList(); } catch (_) {}
   } catch (e) {
     // Silent on polling errors to avoid spamming UI
   } finally {
@@ -1093,6 +1118,7 @@ function chatOpenSSE() {
   const url = `/backend/api/telegram/stream.php?technician_id=${encodeURIComponent(tid)}${since}&timeout=25`;
   try { if (CHAT_SSE) { CHAT_SSE.close(); CHAT_SSE = null; } } catch (_) {}
   CHAT_SSE = new EventSource(url, { withCredentials: true });
+  CHAT_SSE.onopen = () => { if (els.tgLiveStatus) els.tgLiveStatus.textContent = 'SSE'; };
   CHAT_SSE.addEventListener('message', async (ev) => {
     try {
       const data = ev.data ? JSON.parse(ev.data) : [];
@@ -1136,6 +1162,7 @@ function chatOpenSSE() {
     if (CHAT_LIVE && !CHAT_POLL_TIMER) {
       CHAT_POLL_TIMER = setInterval(() => chatFetchNew().catch(()=>{}), 3000);
     }
+    if (els.tgLiveStatus) els.tgLiveStatus.textContent = 'Polling';
   };
 }
 
@@ -1146,12 +1173,14 @@ async function fetchChatList() {
     const res = await apiRequest('/telegram/messages.php?list=recent');
     const items = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
     if (!items.length) { els.tgChatList.innerHTML = '<li class="px-3 py-1 text-center text-muted">لا محادثات</li>'; return; }
+    window.__CHAT_LIST_CACHE__ = items;
     els.tgChatList.innerHTML = items.map((c) => {
       const name = c.technician_name || c.chat_id || 'دردشة';
       const unread = Number(c.unread || 0);
       const badge = unread ? `<span class="badge badge-primary badge-sm ms-2">${unread}</span>` : '';
       return `<li class="px-3 py-2 cursor-pointer hover:bg-base-300" data-tech-id="${c.technician_id || ''}" data-tech-name="${name}">${name}${badge}<div class="text-xs opacity-70 truncate">${(c.last_text || '').toString()}</div></li>`;
     }).join('');
+    updateLastSeenLabelFromListCache();
   } catch (e) {
     console.error(e);
     els.tgChatList.innerHTML = '<li class="px-3 py-1 text-center text-error">فشل تحميل القائمة</li>';
