@@ -382,7 +382,7 @@ function populateProjectSelect() {
 function populateReservationSelect(projectId) {
   const sel = document.getElementById('templates-reservation');
   if (!sel) return;
-  const list = projectId ? getReservationsForProject(projectId) : [];
+  const list = projectId ? getReservationsForProjectLocal(projectId) : [];
   const options = ['<option value="" selected>— بدون ربط —</option>'];
   list.forEach((r) => {
     const id = r.id ?? r.reservationId;
