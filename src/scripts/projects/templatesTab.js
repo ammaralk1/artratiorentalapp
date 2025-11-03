@@ -457,6 +457,104 @@ function handleTableActionClick(e) {
   recomputeExpensesSubtotals();
 }
 
+function getCellIndex(td) {
+  if (!td || !td.parentElement) return -1;
+  const cells = Array.from(td.parentElement.children);
+  return cells.indexOf(td);
+}
+
+function isSpecialRow(tr) {
+  return tr?.matches('[data-section-bar]') || tr?.classList.contains('tpl-subtotal-row');
+}
+
+function nextEditableRow(tr) {
+  let n = tr?.nextElementSibling;
+  while (n && isSpecialRow(n)) n = n.nextElementSibling;
+  return n;
+}
+
+function ensureExtraRows(tbody, sampleRow, needed) {
+  if (!tbody || !sampleRow || needed <= 0) return;
+  for (let i = 0; i < needed; i += 1) {
+    const clone = sampleRow.cloneNode(true);
+    clone.querySelectorAll('[contenteditable]')?.forEach((el) => { el.textContent = ''; });
+    tbody.appendChild(clone);
+  }
+}
+
+function parseClipboardTable(text) {
+  if (!text) return [];
+  const rows = text
+    .split(/\r?\n/)
+    .map((r) => r.replace(/\r$/, ''))
+    .filter((r) => r.trim().length > 0)
+    .map((line) => line.split(/\t|,|;/).map((c) => c.trim()));
+  return rows;
+}
+
+function fillRowFromArray(tr, startCol, values) {
+  if (!tr || !values || !values.length) return;
+  const tds = Array.from(tr.children);
+  let col = Math.max(0, startCol);
+  for (let i = 0; i < values.length && col < tds.length; i += 1) {
+    // Skip non-editable cells (e.g., Total, actions)
+    while (col < tds.length && !tds[col].hasAttribute('contenteditable')) col += 1;
+    if (col >= tds.length) break;
+    const td = tds[col];
+    const raw = values[i] ?? '';
+    td.textContent = String(raw);
+    col += 1;
+  }
+}
+
+function handleTablePaste(e) {
+  const target = e.target;
+  const editable = target && (target.closest('[contenteditable]'));
+  const table = target && target.closest('table.tpl-table');
+  if (!editable || !table) return; // allow normal paste into non-table elements
+
+  const plain = e.clipboardData?.getData('text/plain') ?? '';
+  if (!plain || (!plain.includes('\t') && !plain.includes('\n'))) return; // Single-cell paste: let default happen
+
+  e.preventDefault();
+
+  const rows = parseClipboardTable(plain);
+  if (!rows.length) return;
+
+  const td = target.closest('td');
+  const startCol = getCellIndex(td);
+  const tbody = table.tBodies?.[0] || table.querySelector('tbody');
+  if (!tbody) return;
+
+  // Find a sample editable row to clone when needed
+  let sampleRow = Array.from(tbody.children).find((r) => r && !isSpecialRow(r));
+  // Ensure enough rows exist from current row onward
+  let currentRow = td.parentElement;
+  // Count how many editable rows remain including current
+  let remaining = 0; let cursor = currentRow;
+  while (cursor) { if (!isSpecialRow(cursor)) remaining += 1; cursor = cursor.nextElementSibling; }
+  const deficit = rows.length - remaining;
+  if (deficit > 0 && sampleRow) {
+    ensureExtraRows(tbody, sampleRow, deficit);
+  }
+
+  // Write values row by row
+  let tr = currentRow;
+  rows.forEach((arr, i) => {
+    // Skip special rows
+    while (tr && isSpecialRow(tr)) tr = nextEditableRow(tr);
+    if (!tr) return;
+    const start = i === 0 ? startCol : 0;
+    fillRowFromArray(tr, start, arr);
+    tr = nextEditableRow(tr) || tr?.nextElementSibling;
+  });
+
+  // Recompute totals for expenses tables
+  if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
+    recomputeExpensesSubtotals();
+  }
+}
+
 async function saveTemplateSnapshot({ copy = false } = {}) {
   const project = getSelectedProject();
   if (!project) return;
@@ -653,6 +751,8 @@ export function initTemplatesTab() {
   });
 
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+  // Paste from Excel/Sheets into tables
+  document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
 
   // Re-populate when data loads later
   let repopulating = false;
