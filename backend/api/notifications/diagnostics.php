@@ -12,11 +12,33 @@ try {
 
     $checks = [];
 
-    $hasTable = function(string $table) use ($pdo): bool {
-        try { $s = $pdo->prepare("SHOW TABLES LIKE :t"); $s->execute(['t' => $table]); return (bool)$s->fetch(); } catch (Throwable $_) { return false; }
+    // MySQL doesn't support bound parameters in SHOW statements reliably across versions.
+    // Build safe queries using whitelisted table names and quoted LIKE patterns.
+    $allowedTables = ['technicians','telegram_links','telegram_messages','notification_events'];
+    $sanitizeTable = function(string $table) use ($allowedTables): ?string {
+        if (in_array($table, $allowedTables, true)) return $table;
+        if (preg_match('/^[a-zA-Z0-9_]+$/', $table)) return $table; // fallback safe-ish
+        return null;
     };
-    $hasCol = function(string $table, string $col) use ($pdo): bool {
-        try { $s = $pdo->prepare("SHOW COLUMNS FROM `$table` LIKE :c"); $s->execute(['c' => $col]); return (bool)$s->fetch(); } catch (Throwable $_) { return false; }
+    $hasTable = function(string $table) use ($pdo, $sanitizeTable): bool {
+        try {
+            $tbl = $sanitizeTable($table);
+            if ($tbl === null) return false;
+            $like = $pdo->quote($tbl);
+            $sql = "SHOW TABLES LIKE $like";
+            $s = $pdo->query($sql);
+            return $s && (bool)$s->fetch();
+        } catch (Throwable $_) { return false; }
+    };
+    $hasCol = function(string $table, string $col) use ($pdo, $sanitizeTable): bool {
+        try {
+            $tbl = $sanitizeTable($table);
+            if ($tbl === null) return false;
+            $like = $pdo->quote($col);
+            $sql = "SHOW COLUMNS FROM `" . $tbl . "` LIKE $like";
+            $s = $pdo->query($sql);
+            return $s && (bool)$s->fetch();
+        } catch (Throwable $_) { return false; }
     };
 
     // technicians.telegram_chat_id
