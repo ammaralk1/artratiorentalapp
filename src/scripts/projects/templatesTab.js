@@ -505,6 +505,8 @@ export function initTemplatesTab() {
     const saveCopyBtn = document.getElementById('templates-save-copy');
     const savedSel = document.getElementById('templates-saved');
     const fromResBtn = document.getElementById('templates-from-res');
+    // Debug indicator if needed
+    try { console.debug('[templatesTab] init DOM ready'); } catch(_) {}
 
     if (!projectSel) return;
     populateProjectSelect();
@@ -534,6 +536,7 @@ export function initTemplatesTab() {
 
     // Re-populate when data loads later
     const repopulate = async () => {
+      try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
       const before = (projectSel?.value || '');
       // If state is empty، اجلب من الواجهة الخلفية
       try {
@@ -543,7 +546,7 @@ export function initTemplatesTab() {
         if (!getReservationsState()?.length) {
           await refreshReservationsFromApi();
         }
-      } catch (_) {}
+      } catch (e) { try { console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
 
       populateProjectSelect();
       // Keep selection if exists; otherwise choose first project
@@ -555,6 +558,7 @@ export function initTemplatesTab() {
       populateReservationSelect(projectSel.value || '');
       renderTemplatesPreview();
       try { await populateSavedTemplates(); } catch {}
+      try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
     };
     document.addEventListener('projects:changed', repopulate);
     document.addEventListener('reservations:changed', repopulate);
