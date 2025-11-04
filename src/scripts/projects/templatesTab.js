@@ -592,27 +592,7 @@ async function printTemplatesPdf() {
   overlay.appendChild(clone);
   document.body.appendChild(overlay);
 
-  // Strong force-light style to exactly match preview colors
-  const forceStyle = document.createElement('style');
-  forceStyle.textContent = `
-    /* scope rules to the export clone only */
-    #templates-a4-root-export, #templates-a4-root-export * { 
-      color-scheme: light !important;
-      color: #000 !important; 
-      background: none !important; background-image: none !important; background-color: transparent !important;
-      filter: none !important; box-shadow: none !important; text-shadow: none !important; outline-color:#94a3b8 !important;
-      --fallback-bc: #ffffff !important; --b1: #ffffff !important; --b2: #ffffff !important; --b3: #ffffff !important; 
-    }
-    #templates-a4-root-export .a4-page,
-    #templates-a4-root-export .a4-inner,
-    #templates-a4-root-export table.exp-table,
-    #templates-a4-root-export .exp-masthead { background:#ffffff !important; }
-    #templates-a4-root-export th, #templates-a4-root-export td { background-color:#ffffff !important; }
-    #templates-a4-root-export table.exp-details thead th,
-    #templates-a4-root-export tr.exp-subheader th { background: rgba(37,99,235,0.30) !important; color:#000 !important; }
-    #templates-a4-root-export .exp-group-bar { background:#2563EB !important; color:#ffffff !important; }
-  `;
-  document.head.appendChild(forceStyle);
+  // Avoid adding global force style; rely on export context CSS + sanitizers
 
   // Common capture options for html2canvas via html2pdf
   const h2cOpts = {
@@ -685,7 +665,7 @@ async function printTemplatesPdf() {
       }).from(clone).save();
     }
   } finally {
-    try { document.head.removeChild(forceStyle); } catch (_) {}
+    // no forced style to remove
     try { revertStyleMutations(revert); } catch (_) {}
     try { removeExportSanitizer(clone, sanitizerHandle); } catch (_) {}
     try { overlay.remove(); } catch (_) {}
