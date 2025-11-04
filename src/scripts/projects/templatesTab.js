@@ -783,8 +783,19 @@ function autoPaginateTemplates() {
     i += 1;
   }
 
-  // Place summary at the end (last page)
-  if (summary) currentInner.appendChild(summary);
+  // Place summary at the end (last page) and ensure it fits; otherwise move to fresh page
+  if (summary) {
+    currentInner.appendChild(summary);
+    if (!fitsInner()) {
+      currentInner.removeChild(summary);
+      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+      pagesWrap.appendChild(currentPage);
+      // create an empty table on the final page to keep structure consistent
+      workingTable = makeTable();
+      currentInner.appendChild(workingTable);
+      currentInner.appendChild(summary);
+    }
+  }
 
   // Update page numbers if header/footer enabled
   if (headerFooter) {
