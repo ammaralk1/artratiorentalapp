@@ -592,6 +592,28 @@ async function printTemplatesPdf() {
   overlay.appendChild(clone);
   document.body.appendChild(overlay);
 
+  // Strong force-light style to exactly match preview colors
+  const forceStyle = document.createElement('style');
+  forceStyle.textContent = `
+    /* scope rules to the export clone only */
+    #templates-a4-root-export, #templates-a4-root-export * { 
+      color-scheme: light !important;
+      color: #000 !important; 
+      background: none !important; background-image: none !important; background-color: transparent !important;
+      filter: none !important; box-shadow: none !important; text-shadow: none !important; outline-color:#94a3b8 !important;
+      --fallback-bc: #ffffff !important; --b1: #ffffff !important; --b2: #ffffff !important; --b3: #ffffff !important; 
+    }
+    #templates-a4-root-export .a4-page,
+    #templates-a4-root-export .a4-inner,
+    #templates-a4-root-export table.exp-table,
+    #templates-a4-root-export .exp-masthead { background:#ffffff !important; }
+    #templates-a4-root-export th, #templates-a4-root-export td { background-color:#ffffff !important; }
+    #templates-a4-root-export table.exp-details thead th,
+    #templates-a4-root-export tr.exp-subheader th { background: rgba(37,99,235,0.30) !important; color:#000 !important; }
+    #templates-a4-root-export .exp-group-bar { background:#2563EB !important; color:#ffffff !important; }
+  `;
+  document.head.appendChild(forceStyle);
+
   // Common capture options for html2canvas via html2pdf
   const h2cOpts = {
     scale: 2,
@@ -621,12 +643,27 @@ async function printTemplatesPdf() {
   try {
     if (jsPdfCtor && pages.length) {
       const doc = new jsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' });
+      // Optional alignment preferences (in mm). Defaults keep full width; small right shift anchors to page right.
+      const prefs = (() => {
+        try {
+          return {
+            rightMm: Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0,
+            topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
+            scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
+          };
+        } catch (_) { return { rightMm: 0, topMm: 0, scale: 1 }; }
+      })();
+      const shrink = Math.max(0.95, Math.min(1, prefs.scale || 1));
+      const targetW = Math.max(0.1, A4_W_MM * shrink);
+      const targetH = A4_H_MM; // keep full height aspect; pages already A4 ratio
+      const xOffset = Math.max(0, Math.min(A4_W_MM - targetW, prefs.rightMm || 0));
+      const yOffset = Math.max(-10, Math.min(10, prefs.topMm || 0));
       for (let i = 0; i < pages.length; i += 1) {
         // eslint-disable-next-line no-await-in-loop
         const canvas = await captureToCanvas(pages[i]);
         const img = canvas.toDataURL('image/jpeg', 0.98);
         if (i > 0) doc.addPage();
-        doc.addImage(img, 'JPEG', 0, 0, A4_W_MM, A4_H_MM, `page-${i + 1}`, 'FAST');
+        doc.addImage(img, 'JPEG', xOffset, yOffset, targetW, targetH, `page-${i + 1}`, 'FAST');
         // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => requestAnimationFrame(r));
       }
@@ -643,6 +680,7 @@ async function printTemplatesPdf() {
       }).from(clone).save();
     }
   } finally {
+    try { document.head.removeChild(forceStyle); } catch (_) {}
     try { revertStyleMutations(revert); } catch (_) {}
     try { removeExportSanitizer(clone, sanitizerHandle); } catch (_) {}
     try { overlay.remove(); } catch (_) {}
