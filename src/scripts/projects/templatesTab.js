@@ -564,7 +564,8 @@ async function printTemplatesPdf() {
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
   const html2pdf = await ensureHtml2Pdf();
-  const rootWidthPx = 794; // A4 portrait px width at 96dpi
+  const rootWidthPx = landscape ? 1123 : 794; // A4 px width at 96dpi
+  const rootHeightPx = landscape ? 794 : 1123;
   const opt = {
     margin: [0, 0, 0, 0],
     filename: `template-${type}.pdf`,
@@ -577,7 +578,7 @@ async function printTemplatesPdf() {
       scrollY: 0,
       windowWidth: rootWidthPx,
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+    jsPDF: { unit: 'px', format: [rootWidthPx, rootHeightPx], orientation: landscape ? 'landscape' : 'portrait' },
     pagebreak: { mode: ['css', 'legacy'] }
   };
   host.setAttribute('data-render-context', 'export');
