@@ -149,7 +149,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const topWrap = el('div', { id: 'expenses-top-sheet' });
   const mkTopRow = (code, label) => el('tr', { 'data-top-row': code }, [
     el('td', { class: 'code', text: code }),
-    el('td', { class: 'label', text: label }),
+    el('td', { class: 'exp-top-label', text: label }),
     el('td', { 'data-top-count': code, text: '' }),
     el('td', { 'data-top-total': code, text: '' })
   ]);
