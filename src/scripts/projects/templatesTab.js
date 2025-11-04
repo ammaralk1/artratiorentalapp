@@ -580,97 +580,97 @@ async function printTemplatesPdf() {
   const A4_W_MM = landscape ? 297 : 210;
   const A4_H_MM = landscape ? 210 : 297;
 
-  // Clone into a fixed overlay at (0,0) so there is no horizontal offset from layout containers
-  const overlay = document.createElement('div');
-  Object.assign(overlay.style, {
-    position: 'fixed', left: '-10000px', top: '0', width: `${A4_W_PX}px`, height: 'auto',
-    background: '#ffffff', zIndex: '999999', padding: '0', margin: '0', overflow: 'hidden'
-  });
-  const clone = host.cloneNode(true);
-  clone.id = 'templates-a4-root-export';
-  clone.setAttribute('data-render-context', 'export');
-  overlay.appendChild(clone);
-  document.body.appendChild(overlay);
-
-  // Avoid adding global force style; rely on export context CSS + sanitizers
-
-  // Common capture options for html2canvas via html2pdf
-  const h2cOpts = {
-    scale: 2,
-    useCORS: true,
-    letterRendering: true,
-    backgroundColor: '#ffffff',
-    scrollX: 0,
-    scrollY: 0,
-    windowWidth: A4_W_PX,
-    windowHeight: A4_H_PX,
-  };
-
-  // Sanitize modern CSS color functions to avoid html2canvas oklab/oklch errors
-  patchHtml2CanvasColorParsing();
-  const revert = [];
-  const sanitizerHandle = injectExportSanitizer(clone);
-  try { scrubUnsupportedColorFunctions(clone); } catch (_) {}
-  try { sanitizeComputedColorFunctions(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
-  try { enforceLegacyColorFallback(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
-
-  // helper to capture a node to a canvas using html2canvas directly (more predictable)
+  const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
   const h2c = window.html2canvas;
-  const captureToCanvas = async (el) => {
-    if (typeof h2c !== 'function') throw new Error('html2canvas not available');
-    return h2c(el, h2cOpts);
-  };
-
-  const jsPdfCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
-  const pages = Array.from(clone.querySelectorAll('.a4-page'));
-
-  try {
-    if (jsPdfCtor && pages.length) {
-      const doc = new jsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' });
-      // Optional alignment preferences (in mm). Defaults keep full width; small right shift anchors to page right.
-      const prefs = (() => {
-        try {
-          return {
-            rightMm: Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0,
-            topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
-            scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
-          };
-        } catch (_) { return { rightMm: 0, topMm: 0, scale: 1 }; }
-      })();
-      const shrink = Math.max(0.95, Math.min(1, prefs.scale || 1));
-      const targetW = Math.max(0.1, A4_W_MM * shrink);
-      // targetH is proportional to captured canvas to preserve exact ratio
-      const xOffset = Math.max(0, Math.min(A4_W_MM - targetW, prefs.rightMm || 0));
-      const yOffset = Math.max(-10, Math.min(10, prefs.topMm || 0));
-      for (let i = 0; i < pages.length; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        const canvas = await captureToCanvas(pages[i]);
-        const img = canvas.toDataURL('image/jpeg', 0.98);
-        if (i > 0) doc.addPage();
-        const ratioH = (canvas.height / canvas.width) * targetW;
-        doc.addImage(img, 'JPEG', xOffset, yOffset, targetW, ratioH, `page-${i + 1}`, 'FAST');
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((r) => requestAnimationFrame(r));
-      }
-      try { doc.save(`template-${type}.pdf`); } catch { /* ignore */ }
-    } else {
-      // Fallback: capture entire root as one document
-      await html2pdf().set({
-        margin: [0, 0, 0, 0],
-        filename: `template-${type}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: h2cOpts,
-        jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(clone).save();
-    }
-  } finally {
-    // no forced style to remove
-    try { revertStyleMutations(revert); } catch (_) {}
-    try { removeExportSanitizer(clone, sanitizerHandle); } catch (_) {}
-    try { overlay.remove(); } catch (_) {}
-    try { host.setAttribute('data-render-context', 'preview'); } catch (_) {}
+  if (!(typeof JsPdfCtor === 'function' && typeof h2c === 'function')) {
+    return html2pdf().set({ margin: 0, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(host).save(`template-${type}.pdf`);
   }
+
+  // Preferences for slight alignment tweaks
+  const prefs = (() => {
+    try {
+      return {
+        rightMm: Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0,
+        topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
+        scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
+      };
+    } catch (_) { return { rightMm: 0, topMm: 0, scale: 1 }; }
+  })();
+
+  // Helper fns as used in reports exporter
+  const CSS_DPI = 96; const PX_PER_MM = CSS_DPI / 25.4;
+  const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
+  const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false };
+  const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
+  const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
+  const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
+
+  patchHtml2CanvasColorParsing();
+  const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait', compress: true });
+  const pages = Array.from(host.querySelectorAll('.a4-page'));
+  let pdfPageIndex = 0;
+  for (let i = 0; i < pages.length; i += 1) {
+    const page = pages[i];
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
+    const scope = document.createElement('div');
+    scope.id = 'templates-a4-root';
+    scope.setAttribute('data-render-context', 'export');
+    scope.setAttribute('dir', host.getAttribute('dir') || document.documentElement.getAttribute('dir') || 'rtl');
+    scope.style.width = `${A4_W_PX}px`;
+    scope.style.maxWidth = `${A4_W_PX}px`;
+    scope.style.minWidth = `${A4_W_PX}px`;
+    scope.style.background = '#ffffff';
+    const pagesWrap = document.createElement('div');
+    pagesWrap.setAttribute('data-a4-pages', '');
+    const clone = page.cloneNode(true);
+    clone.style.width = `${A4_W_PX}px`;
+    clone.style.maxWidth = `${A4_W_PX}px`;
+    clone.style.minWidth = `${A4_W_PX}px`;
+    clone.style.height = `${A4_H_PX}px`;
+    clone.style.maxHeight = `${A4_H_PX}px`;
+    clone.style.minHeight = `${A4_H_PX}px`;
+    clone.style.position = 'relative';
+    clone.style.background = '#ffffff';
+    clone.style.overflow = 'hidden';
+    pagesWrap.appendChild(clone);
+    scope.appendChild(pagesWrap);
+    wrap.appendChild(scope);
+    document.body.appendChild(wrap);
+
+    const revert = [];
+    const sanitizerHandle = injectExportSanitizer(scope);
+    try { scrubUnsupportedColorFunctions(scope); sanitizeComputedColorFunctions(scope, window, revert); enforceLegacyColorFallback(scope, window, revert); } catch (_) {}
+
+    let canvas;
+    try {
+      canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
+    } finally {
+      try { revertStyleMutations(revert); } catch (_) {}
+      try { removeExportSanitizer(scope, sanitizerHandle); } catch (_) {}
+      wrap.parentNode?.removeChild(wrap);
+    }
+
+    if (!canvas) continue;
+    const topWhitePx = measureTopWhitespacePx(canvas, 246);
+    const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
+    const cropped = cropCanvasVertical(canvas, topWhitePx, bottomWhitePx);
+
+    const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
+    const targetWmm = A4_W_MM * shrink;
+    const targetHmm = (cropped.height / cropped.width) * targetWmm;
+    let finalX = (Number(prefs.rightMm) || 0);
+    let finalY = (Number(prefs.topMm) || 0);
+    if (pdfPageIndex > 0) doc.addPage();
+    const img = cropped.toDataURL('image/jpeg', 0.95);
+    doc.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
+    pdfPageIndex += 1;
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise((r) => requestAnimationFrame(r));
+  }
+
+  if (pdfPageIndex === 0) throw new Error('PDF generation produced no pages');
+  try { doc.save(`template-${type}.pdf`); } catch { doc.save('template.pdf'); }
 }
 
 function populateProjectSelect() {
