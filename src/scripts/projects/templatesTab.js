@@ -754,8 +754,8 @@ async function printTemplatesPdf() {
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
     const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
     // زيادة قصّ الفراغ العلوي مع الحفاظ على هامش أمان قبل عنوان الصفحة
-    const extraTrimMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.extraTrimMm')); return Number.isFinite(v) ? Math.max(0, Math.min(40, v)) : 10; } catch(_) { return 10; } })();
-    const safeMarginMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.safeMarginMm')); return Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 2; } catch(_) { return 2; } })();
+    const extraTrimMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.extraTrimMm')); return Number.isFinite(v) ? Math.max(0, Math.min(40, v)) : 14; } catch(_) { return 14; } })();
+    const safeMarginMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.safeMarginMm')); return Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 0.5; } catch(_) { return 0.5; } })();
     const headerTopScaledPx = Math.max(0, headerTopCssPx * captureScale);
     const extraTrimPx = mmToPx(extraTrimMm);
     const safeMarginPx = mmToPx(safeMarginMm);
@@ -789,8 +789,8 @@ async function printTemplatesPdf() {
     const mmPerPx = targetWmm / cropped.width;
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
-    // تعويض افتراضي خفيف (-2mm) ويمكن تعديله من LocalStorage
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-20, Math.min(20, v)) : -2; } catch(_) { return -2; } })();
+    // تعويض افتراضي قوي للرفع (-18mm) ويمكن تعديله من LocalStorage
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : -18; } catch(_) { return -18; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
     let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
