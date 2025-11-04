@@ -59,9 +59,10 @@ table.exp-top-table td.label { text-align: right; }
 table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
 
 /* Editable cells */
-[data-editable="true"] { outline:1px dashed transparent; min-height:16px; }
-[data-editable="true"]:hover { outline-color:#cbd5e1; }
-[data-editable="true"]:focus { outline-color:#60a5fa; box-shadow:0 0 0 2px #bfdbfe inset; }
+/* Cleaner editable look: plain table-like cells */
+[data-editable="true"] { outline:none; min-height:16px; }
+[data-editable="true"]:hover { background:#f8fafc; }
+[data-editable="true"]:focus { outline:1px solid #cbd5e1; box-shadow:none; background:#f1f5f9; }
 
 .tpl-columns { display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
 .tpl-card { border:1px solid #e5e7eb; border-radius:12px; padding:10px; }
@@ -128,6 +129,8 @@ table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !impor
 table.exp-table thead { display:none; }
 /* But keep head visible for the Top Sheet table */
 table.exp-top-table thead { display: table-header-group; }
+table.exp-details thead { display: table-header-group; }
+table.exp-details thead th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */

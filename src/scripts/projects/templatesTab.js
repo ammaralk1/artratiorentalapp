@@ -114,6 +114,8 @@ function createPageSection({ landscape = false, headerFooter = false, logoUrl = 
 function buildExpensesPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: false, headerFooter, logoUrl });
+  // Explicit multi-page mode (skip auto-paginate splitter)
+  try { root.setAttribute('data-exp-mode', 'multipage'); } catch(_) {}
 
   // Masthead (title + brand)
   const masthead = el('div', { class: 'exp-masthead' }, [
@@ -204,10 +206,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
   top.appendChild(topBody);
   inner.appendChild(top);
 
-  // Expenses table
-  const table = el('table', { class: 'exp-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
-  const thead = el('thead');
-  const head = el('tr');
+  // Column definitions used for all details tables
   const headCols = [
     { text: L('CODE','الكود'), cls: 'exp-col-code' },
     { text: L('DESCRIPTION','الوصف'), cls: 'exp-col-item' },
@@ -218,93 +217,104 @@ function buildExpensesPage(project, reservations, opts = {}) {
     { text: L('TAB','تب'), cls: 'exp-col-tab' },
     { text: L('TOTAL','الإجمالي'), cls: 'exp-col-total' },
   ];
-  headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
-  thead.appendChild(head);
-  table.appendChild(thead);
-  const tb = el('tbody');
+  const makeDetailsTable = (groupKey, groupTitle, subDefs) => {
+    const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
+    const thead = el('thead');
+    const head = el('tr');
+    headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
+    thead.appendChild(head);
+    table.appendChild(thead);
+    const tb = el('tbody');
 
-  const mkGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
-    el('td', { colspan: '8' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
-  ]);
+    const mkGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
+      el('td', { colspan: '8' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
+    ]);
 
-  const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
-    el('th', { class: 'exp-col-code', text: code }),
-    el('th', { class: 'exp-col-item', text: label }),
-    el('th', { class: 'exp-col-amount', text: L('AMOUNT','الكمية') }),
-    el('th', { class: 'exp-col-paid', text: L('PAID','مدفوع') }),
-    el('th', { class: 'exp-col-x', text: 'X' }),
-    el('th', { class: 'exp-col-rate', text: L('RATE','السعر') }),
-    el('th', { class: 'exp-col-tab', text: L('TAB','تب') }),
-    el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
-  ]);
+    const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
+      el('th', { class: 'exp-col-code', text: code }),
+      el('th', { class: 'exp-col-item', text: label }),
+      el('th', { class: 'exp-col-amount', text: L('AMOUNT','الكمية') }),
+      el('th', { class: 'exp-col-paid', text: L('PAID','مدفوع') }),
+      el('th', { class: 'exp-col-x', text: 'X' }),
+      el('th', { class: 'exp-col-rate', text: L('RATE','السعر') }),
+      el('th', { class: 'exp-col-tab', text: L('TAB','تب') }),
+      el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
+    ]);
 
-  const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
-    el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;' }),
-    el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
-    el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '' }),
-  ]);
+    const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
+      el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+      el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '' }),
+    ]);
 
-  const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
-    el('td', { class: 'code', text: code }),
-    el('td', { text: L('Subtotal','المجموع الفرعي') }),
-    el('td', { colspan: '5' }),
-    el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
-  ]);
+    const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
+      el('td', { class: 'code', text: code }),
+      el('td', { text: L('Subtotal','المجموع الفرعي') }),
+      el('td', { colspan: '5' }),
+      el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
+    ]);
 
-  const mkGroupTotalRow = (label, key) => el('tr', { class: 'exp-summary-row', 'data-group-total': key }, [
-    el('td', { colspan: '7', text: label }),
-    el('td', { class: 'total', 'data-total-group': key, text: '' }),
-  ]);
+    const mkGroupTotalRow = (label, key) => el('tr', { class: 'exp-summary-row', 'data-group-total': key }, [
+      el('td', { colspan: '7', text: label }),
+      el('td', { class: 'total', 'data-total-group': key, text: '' }),
+    ]);
+    const addSubGroup = (groupKey2, code, label, n = 2) => {
+      tb.appendChild(mkSubHeader(code, label));
+      for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow('', '', i % 2 === 1));
+      tb.appendChild(mkSubtotalRow(code));
+      // hidden marker to map subgroup to parent group
+      const marker = el('tr', { 'data-subgroup-marker': code, 'data-parent-group': groupKey2, style: 'display:none' });
+      tb.appendChild(marker);
+    };
 
-  const addSubGroup = (groupKey, code, label, n = 2) => {
-    tb.appendChild(mkSubHeader(code, label));
-    for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow('', '', i % 2 === 1));
-    tb.appendChild(mkSubtotalRow(code));
-    // hidden marker to map subgroup to parent group
-    const marker = el('tr', { 'data-subgroup-marker': code, 'data-parent-group': groupKey, style: 'display:none' });
-    tb.appendChild(marker);
+    // Group header bar
+    tb.appendChild(mkGroupBar(groupTitle, `exp-group-bar--${groupKey}`));
+
+    // Subgroups
+    subDefs.forEach((def) => addSubGroup(groupKey, def.code, def.label, def.n || def.rows || 2));
+    // Group total row
+    const label = groupKey === 'atl' ? L('Total Above the Line','إجمالي فوق الخط') : groupKey === 'prod' ? L('Total Production','إجمالي الإنتاج') : L('Total Post Production','إجمالي ما بعد الإنتاج');
+    tb.appendChild(mkGroupTotalRow(label, groupKey));
+
+    // For unified grand total, add marker row that recompute function will ignore
+    table.appendChild(tb);
+    return table;
   };
 
-  // ABOVE THE LINE
-  tb.appendChild(mkGroupBar(L('ABOVE THE LINE','فوق الخط'), 'exp-group-bar--atl'));
-  addSubGroup('atl', '12-00', 'PRODUCERS UNIT', 2);
-  addSubGroup('atl', '13-00', 'DIRECTOR & STAFF', 2);
-  addSubGroup('atl', '14-00', 'CAST', 3);
-  tb.appendChild(mkGroupTotalRow(L('Total Above the Line','إجمالي فوق الخط'), 'atl'));
+  // Build group pages under Top Sheet
+  const pagesWrap = root.querySelector('[data-a4-pages]');
+  const addGroupPage = (groupKey, title, subDefs) => {
+    const { page, inner: pgInner } = createPageSection({ headerFooter, logoUrl, landscape: false });
+    const tbl = makeDetailsTable(groupKey, title, subDefs);
+    pgInner.appendChild(tbl);
+    pagesWrap.appendChild(page);
+  };
 
-  // PRODUCTION EXPENSES
-  tb.appendChild(mkGroupBar(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), 'exp-group-bar--prod'));
-  addSubGroup('prod', '20-00', 'PRODUCTION STAFF', 3);
-  addSubGroup('prod', '22-00', 'SET DESIGN', 3);
-  addSubGroup('prod', '23-00', 'SET CONSTRUCTION', 2);
-  addSubGroup('prod', '24-00', 'CASTING SERVICES', 1);
-  addSubGroup('prod', '28-00', 'WARDROBE', 3);
-  addSubGroup('prod', '29-00', 'ELECTRIC', 3);
-  addSubGroup('prod', '30-00', 'CAMERA', 3);
-  addSubGroup('prod', '33-00', 'TRANSPORTATION', 1);
-  addSubGroup('prod', '34-00', 'LOCATIONS', 2);
-  tb.appendChild(mkGroupTotalRow(L('Total Production','إجمالي الإنتاج'), 'prod'));
-
-  // POST-PRODUCTION
-  tb.appendChild(mkGroupBar(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), 'exp-group-bar--post'));
-  addSubGroup('post', '45-00', 'FILM EDITING', 2);
-  addSubGroup('post', '49-00', 'VOICE OVER', 1);
-  tb.appendChild(mkGroupTotalRow(L('Total Post Production','إجمالي ما بعد الإنتاج'), 'post'));
-
-  // GRAND TOTAL
-  const grand = el('tr', { class: 'exp-grand-total' }, [
-    el('td', { colspan: '7', text: L('GRAND TOTAL','الإجمالي الكلي') }),
-    el('td', { 'data-grand-total': 'true', text: '' })
+  addGroupPage('atl', L('ABOVE THE LINE','فوق الخط'), [
+    { code: '12-00', label: 'PRODUCERS UNIT', rows: 2 },
+    { code: '13-00', label: 'DIRECTOR & STAFF', rows: 2 },
+    { code: '14-00', label: 'CAST', rows: 6 },
   ]);
-  tb.appendChild(grand);
-
-  table.appendChild(tb);
-  inner.appendChild(table);
+  addGroupPage('prod', L('PRODUCTION EXPENSES','مصاريف الإنتاج'), [
+    { code: '20-00', label: 'PRODUCTION STAFF', rows: 3 },
+    { code: '22-00', label: 'SET DESIGN', rows: 3 },
+    { code: '23-00', label: 'SET CONSTRUCTION', rows: 2 },
+    { code: '24-00', label: 'CASTING SERVICES', rows: 2 },
+    { code: '28-00', label: 'WARDROBE', rows: 4 },
+    { code: '29-00', label: 'ELECTRIC', rows: 4 },
+    { code: '30-00', label: 'CAMERA', rows: 4 },
+    { code: '33-00', label: 'TRANSPORTATION', rows: 2 },
+    { code: '34-00', label: 'LOCATIONS', rows: 2 },
+  ]);
+  addGroupPage('post', L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [
+    { code: '45-00', label: 'FILM EDITING', rows: 2 },
+    { code: '49-00', label: 'VOICE OVER', rows: 2 },
+  ]);
 
   // Summary footer for A4 page
   const summary = el('div', { id: 'expenses-summary', class: 'tpl-summary' });
@@ -582,12 +592,13 @@ function populateReservationSelect(projectId) {
 }
 
 function recomputeExpensesSubtotals() {
+  const multi = Array.from(document.querySelectorAll('#templates-preview-host table.exp-details'));
   const table = document.querySelector('#templates-preview-host #expenses-table');
-  if (!table) return;
-  const isNew = table.classList.contains('exp-table');
+  const tables = multi.length ? multi : (table ? [table] : []);
+  if (!tables.length) return;
 
-  // New exp-table calculation
-  if (isNew) {
+  // New exp-table calculation (supports multi-table)
+  if (tables[0].classList.contains('exp-table')) {
     const number = (txt, def = 0) => {
       const n = Number(String(txt || '').replace(/[^\d.\.-]/g, ''));
       return Number.isFinite(n) ? n : def;
@@ -597,8 +608,8 @@ function recomputeExpensesSubtotals() {
     const subgroupTotals = {}; // code -> subtotal
     const subgroupCounts = {}; // code -> count of filled items
 
-    // For each subgroup header
-    const headers = Array.from(table.querySelectorAll('tbody tr[data-subgroup-header]'));
+    // For each subgroup header across all tables
+    const headers = tables.flatMap((t) => Array.from(t.querySelectorAll('tbody tr[data-subgroup-header]')));
     headers.forEach((hdr) => {
       const code = hdr.getAttribute('data-subgroup');
       let subtotal = 0;
@@ -620,23 +631,23 @@ function recomputeExpensesSubtotals() {
         tr = tr.nextElementSibling;
       }
       // write subgroup subtotal
-      const subCell = table.querySelector(`[data-subtotal="${CSS.escape(code)}"]`);
+      const subCell = document.querySelector(`#templates-preview-host [data-subtotal="${CSS.escape(code)}"]`);
       if (subCell) subCell.textContent = String(subtotal.toFixed(2));
       subgroupTotals[code] = subtotal;
       subgroupCounts[code] = count;
       grand += subtotal;
       // map to parent group
-      const marker = table.querySelector(`tr[data-subgroup-marker="${CSS.escape(code)}"]`);
+      const marker = document.querySelector(`#templates-preview-host tr[data-subgroup-marker="${CSS.escape(code)}"]`);
       const parent = marker?.getAttribute('data-parent-group') || null;
       if (parent && groupTotals[parent] != null) groupTotals[parent] += subtotal;
     });
 
     // group totals
     Object.entries(groupTotals).forEach(([key, val]) => {
-      const cell = table.querySelector(`[data-total-group="${CSS.escape(key)}"]`);
+      const cell = document.querySelector(`#templates-preview-host [data-total-group="${CSS.escape(key)}"]`);
       if (cell) cell.textContent = String(val.toFixed(2));
     });
-    const gcell = table.querySelector('[data-grand-total]');
+    const gcell = document.querySelector('#templates-preview-host [data-grand-total]');
     if (gcell) gcell.textContent = String(grand.toFixed(2));
 
     // Update Top Sheet summary figures
@@ -707,6 +718,7 @@ function recomputeExpensesSubtotals() {
 function autoPaginateTemplates() {
   const root = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!root) return;
+  if (root.hasAttribute('data-exp-mode')) return; // explicit multi-page mode
   const type = document.getElementById('templates-type')?.value || 'expenses';
   if (type !== 'expenses') return; // حالياً نطبّق التقسيم التلقائي على ورقة المصاريف فقط
 
