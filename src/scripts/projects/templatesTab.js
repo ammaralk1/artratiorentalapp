@@ -634,8 +634,12 @@ async function printTemplatesPdf() {
   try { sanitizeComputedColorFunctions(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
   try { enforceLegacyColorFallback(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
 
-  // helper to capture a node to a canvas
-  const captureToCanvas = async (el) => html2pdf().set({ html2canvas: h2cOpts }).from(el).toCanvas().then((c) => c);
+  // helper to capture a node to a canvas using html2canvas directly (more predictable)
+  const h2c = window.html2canvas;
+  const captureToCanvas = async (el) => {
+    if (typeof h2c !== 'function') throw new Error('html2canvas not available');
+    return h2c(el, h2cOpts);
+  };
 
   const jsPdfCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
   const pages = Array.from(clone.querySelectorAll('.a4-page'));
@@ -655,7 +659,7 @@ async function printTemplatesPdf() {
       })();
       const shrink = Math.max(0.95, Math.min(1, prefs.scale || 1));
       const targetW = Math.max(0.1, A4_W_MM * shrink);
-      const targetH = A4_H_MM; // keep full height aspect; pages already A4 ratio
+      // targetH is proportional to captured canvas to preserve exact ratio
       const xOffset = Math.max(0, Math.min(A4_W_MM - targetW, prefs.rightMm || 0));
       const yOffset = Math.max(-10, Math.min(10, prefs.topMm || 0));
       for (let i = 0; i < pages.length; i += 1) {
@@ -663,7 +667,8 @@ async function printTemplatesPdf() {
         const canvas = await captureToCanvas(pages[i]);
         const img = canvas.toDataURL('image/jpeg', 0.98);
         if (i > 0) doc.addPage();
-        doc.addImage(img, 'JPEG', xOffset, yOffset, targetW, targetH, `page-${i + 1}`, 'FAST');
+        const ratioH = (canvas.height / canvas.width) * targetW;
+        doc.addImage(img, 'JPEG', xOffset, yOffset, targetW, ratioH, `page-${i + 1}`, 'FAST');
         // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => requestAnimationFrame(r));
       }
