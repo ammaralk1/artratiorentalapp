@@ -10,8 +10,6 @@
 #templates-a4-root .a4-page,
 #templates-a4-root .a4-inner,
 #templates-a4-root table.exp-table,
-#templates-a4-root table.exp-table td,
-#templates-a4-root table.exp-table th,
 #templates-a4-root .exp-masthead { background:#fff !important; }
 #templates-a4-root[dir="ltr"] { direction:ltr; text-align:left; }
 
@@ -119,7 +117,8 @@ table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */
-.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; display:block; width:100%; }
+table.exp-table tr[data-group-bar] td { padding:0 !important; }
+.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:0; padding:8px 10px; margin:0; display:block; width:100%; }
 .exp-group-bar--atl { background: inherit; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }

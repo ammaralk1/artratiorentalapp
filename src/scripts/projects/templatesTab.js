@@ -810,6 +810,7 @@ function autoPaginateTemplates() {
 
   try { applyZebraStripes(); } catch (_) {}
   try { shrinkSubHeaderLabels(); } catch (_) {}
+  try { shrinkSingleWordCells(); } catch (_) {}
 }
 
 // bindPreviewAdjustControls removed
@@ -833,6 +834,7 @@ function handleTableActionClick(e) {
     tbody.removeChild(tr);
   }
   recomputeExpensesSubtotals();
+  try { shrinkSingleWordCells(tbody); } catch (_) {}
 }
 
 function getCellIndex(td) {
@@ -937,6 +939,7 @@ function handleTablePaste(e) {
   if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
     recomputeExpensesSubtotals();
   }
+  try { shrinkSingleWordCells(table); } catch (_) {}
 }
 
 function focusFirstEditableCell(tr, preferCol = 0) {
@@ -1011,6 +1014,25 @@ function shrinkSubHeaderLabels() {
       size -= 0.5;
       th.style.fontSize = size + 'px';
     }
+  });
+}
+
+function shrinkSingleWordCells(scope) {
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const base = scope && (scope instanceof HTMLElement) ? scope : root;
+  const cells = Array.from(base.querySelectorAll('table.exp-table td'));
+  const isSingleWord = (s) => s && !/\s/.test(s);
+  cells.forEach((td) => {
+    const text = (td.textContent || '').trim();
+    if (!text || !isSingleWord(text)) return;
+    td.style.fontSize = '';
+    const computed = Number.parseFloat(getComputedStyle(td).fontSize || '11');
+    let size = Number.isFinite(computed) ? computed : 11;
+    const min = 7;
+    const fits = () => td.scrollWidth <= td.clientWidth && td.scrollHeight <= td.clientHeight;
+    let guard = 0;
+    while (!fits() && size > min && guard < 40) { size -= 0.5; td.style.fontSize = size + 'px'; guard += 1; }
   });
 }
 
@@ -1298,6 +1320,7 @@ export function initTemplatesTab() {
         }
       }
       recomputeExpensesSubtotals();
+      try { shrinkSingleWordCells(td || table); } catch (_) {}
     }
   });
   // Paste from Excel/Sheets into tables
