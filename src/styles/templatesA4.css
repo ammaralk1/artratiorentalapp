@@ -102,6 +102,7 @@ table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
 /* Remove header shading */
+/* Light, print-safe header background */
 table.exp-table th { background:#fff !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
@@ -111,6 +112,7 @@ table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
 /* Subgroup header with a very light tint */
+/* Sub-headers: very light tint for readability */
 table.exp-table tr.exp-subheader th { background: var(--clr-primary-light, #eef3ff) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
@@ -123,7 +125,7 @@ table.exp-table tr[data-group-bar] td { padding:0 !important; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }
 
-.exp-summary-row { background:rgba(0,0,0,0.07) !important; font-weight:800; }
+.exp-summary-row { font-weight:800; }
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
@@ -145,7 +147,10 @@ table.exp-table tr[data-group-bar] td { padding:0 !important; }
 /* Remove zebra under headers per request */
 table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
 /* Subtotal rows slightly tinted (print-safe) */
-table.exp-table tbody tr.exp-summary-row td { background:rgba(0,0,0,0.07) !important; }
+/* Summary rows: keep the numeric cell slightly tinted, remove tint from the wide label cell */
+table.exp-table tbody tr.exp-summary-row td:last-child,
+table.exp-table tbody tr.exp-summary-row td.subtotal { background:rgba(0,0,0,0.07) !important; }
+table.exp-table tbody tr.exp-summary-row td[colspan] { background:#fff !important; }
 /* Ensure backgrounds render in print */
 table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
