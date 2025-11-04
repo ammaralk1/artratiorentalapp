@@ -699,7 +699,8 @@ async function printTemplatesPdf() {
       }
     } catch (_) { headerTopCssPx = 0; pageTopPaddingMm = 0; }
     const headerTopMm = headerTopCssPx / PX_PER_MM;
-    let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
+    // Push content up by the exact header top offset so the first visible element touches page top
+    let finalY = (Number(prefs.topMm) || 0) - headerTopMm;
     if (finalY < -80) finalY = -80;
     if (pdfPageIndex > 0) doc.addPage();
     const img = cropped.toDataURL('image/jpeg', 0.95);
