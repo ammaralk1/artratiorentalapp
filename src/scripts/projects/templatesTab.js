@@ -11,6 +11,15 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf } from '../reports/external.js';
+import {
+  patchHtml2CanvasColorParsing,
+  sanitizeComputedColorFunctions,
+  enforceLegacyColorFallback,
+  scrubUnsupportedColorFunctions,
+  revertStyleMutations,
+  injectExportSanitizer,
+  removeExportSanitizer,
+} from '../canvasColorUtils.js';
 import { PROJECT_TAX_RATE } from './constants.js';
 import { apiRequest } from '../apiClient.js';
 
@@ -574,7 +583,7 @@ async function printTemplatesPdf() {
   // Clone into a fixed overlay at (0,0) so there is no horizontal offset from layout containers
   const overlay = document.createElement('div');
   Object.assign(overlay.style, {
-    position: 'fixed', left: '0', top: '0', width: `${A4_W_PX}px`, height: 'auto',
+    position: 'fixed', left: '-10000px', top: '0', width: `${A4_W_PX}px`, height: 'auto',
     background: '#ffffff', zIndex: '999999', padding: '0', margin: '0', overflow: 'hidden'
   });
   const clone = host.cloneNode(true);
@@ -594,6 +603,14 @@ async function printTemplatesPdf() {
     windowWidth: A4_W_PX,
     windowHeight: A4_H_PX,
   };
+
+  // Sanitize modern CSS color functions to avoid html2canvas oklab/oklch errors
+  patchHtml2CanvasColorParsing();
+  const revert = [];
+  const sanitizerHandle = injectExportSanitizer(clone);
+  try { scrubUnsupportedColorFunctions(clone); } catch (_) {}
+  try { sanitizeComputedColorFunctions(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
+  try { enforceLegacyColorFallback(clone, clone.ownerDocument?.defaultView || window, revert); } catch (_) {}
 
   // helper to capture a node to a canvas
   const captureToCanvas = async (el) => html2pdf().set({ html2canvas: h2cOpts }).from(el).toCanvas().then((c) => c);
@@ -626,6 +643,8 @@ async function printTemplatesPdf() {
       }).from(clone).save();
     }
   } finally {
+    try { revertStyleMutations(revert); } catch (_) {}
+    try { removeExportSanitizer(clone, sanitizerHandle); } catch (_) {}
     try { overlay.remove(); } catch (_) {}
     try { host.setAttribute('data-render-context', 'preview'); } catch (_) {}
   }
