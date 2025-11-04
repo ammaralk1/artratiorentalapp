@@ -566,9 +566,27 @@ async function printTemplatesPdf() {
   const html2pdf = await ensureHtml2Pdf();
   const rootWidthPx = landscape ? 1123 : 794; // A4 px width at 96dpi
   const rootHeightPx = landscape ? 794 : 1123;
+
+  // Clone into a fixed overlay at (0,0) so there is no horizontal offset from layout containers
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.left = '0';
+  overlay.style.top = '0';
+  overlay.style.width = rootWidthPx + 'px';
+  overlay.style.background = '#ffffff';
+  overlay.style.zIndex = '999999';
+  overlay.style.padding = '0';
+  overlay.style.margin = '0';
+  const clone = host.cloneNode(true);
+  clone.id = 'templates-a4-root-export';
+  clone.setAttribute('data-render-context', 'export');
+  overlay.appendChild(clone);
+  document.body.appendChild(overlay);
+
   const opt = {
     margin: [0, 0, 0, 0],
     filename: `template-${type}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
       scale: 2,
       useCORS: true,
@@ -577,12 +595,17 @@ async function printTemplatesPdf() {
       scrollX: 0,
       scrollY: 0,
       windowWidth: rootWidthPx,
+      windowHeight: rootHeightPx
     },
-    jsPDF: { unit: 'px', format: [rootWidthPx, rootHeightPx], orientation: landscape ? 'landscape' : 'portrait' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
     pagebreak: { mode: ['css', 'legacy'] }
   };
-  host.setAttribute('data-render-context', 'export');
-  try { await html2pdf().set(opt).from(host).save(); } finally { host.setAttribute('data-render-context', 'preview'); }
+  try {
+    await html2pdf().set(opt).from(clone).save();
+  } finally {
+    overlay.remove();
+    host.setAttribute('data-render-context', 'preview');
+  }
 }
 
 function populateProjectSelect() {
