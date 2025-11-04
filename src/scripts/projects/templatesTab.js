@@ -564,62 +564,70 @@ async function printTemplatesPdf() {
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
   const html2pdf = await ensureHtml2Pdf();
-  const rootWidthPx = landscape ? 1123 : 794; // A4 px width at 96dpi
-  const rootHeightPx = landscape ? 794 : 1123;
+
+  // Dimensions for A4 at CSS 96dpi
+  const A4_W_PX = landscape ? 1123 : 794;
+  const A4_H_PX = landscape ? 794 : 1123;
+  const A4_W_MM = landscape ? 297 : 210;
+  const A4_H_MM = landscape ? 210 : 297;
 
   // Clone into a fixed overlay at (0,0) so there is no horizontal offset from layout containers
   const overlay = document.createElement('div');
-  overlay.style.position = 'fixed';
-  overlay.style.left = '0';
-  overlay.style.top = '0';
-  overlay.style.width = rootWidthPx + 'px';
-  overlay.style.background = '#ffffff';
-  overlay.style.zIndex = '999999';
-  overlay.style.padding = '0';
-  overlay.style.margin = '0';
+  Object.assign(overlay.style, {
+    position: 'fixed', left: '0', top: '0', width: `${A4_W_PX}px`, height: 'auto',
+    background: '#ffffff', zIndex: '999999', padding: '0', margin: '0', overflow: 'hidden'
+  });
   const clone = host.cloneNode(true);
   clone.id = 'templates-a4-root-export';
   clone.setAttribute('data-render-context', 'export');
   overlay.appendChild(clone);
   document.body.appendChild(overlay);
 
-  const opt = {
-    margin: [0, 0, 0, 0],
-    filename: `template-${type}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      letterRendering: true,
-      backgroundColor: '#ffffff',
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: rootWidthPx,
-      windowHeight: rootHeightPx
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'] }
+  // Common capture options for html2canvas via html2pdf
+  const h2cOpts = {
+    scale: 2,
+    useCORS: true,
+    letterRendering: true,
+    backgroundColor: '#ffffff',
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: A4_W_PX,
+    windowHeight: A4_H_PX,
   };
-  // As a last resort, inject a style into the cloned document to neutralize any dynamic theme rules
-  opt.html2canvas.onclone = (doc) => {
-    try {
-      const style = doc.createElement('style');
-      style.textContent = `
-      [data-render-context="export"],
-      [data-render-context="export"] * {background: none !important; background-image: none !important; color:#000 !important; border-color:#94a3b8 !important; box-shadow:none !important; text-shadow:none !important; filter:none !important;}
-      [data-render-context="export"] .a4-page, [data-render-context="export"] .a4-inner, [data-render-context="export"] table.exp-table { background:#ffffff !important; }
-      [data-render-context="export"] table.exp-top-table thead th, [data-render-context="export"] table.exp-details thead th, [data-render-context="export"] tr.exp-subheader th { background: rgba(37,99,235,0.30) !important; }
-      [data-render-context="export"] .exp-group-bar { background:#2563EB !important; color:#fff !important; }
-      [data-render-context="export"] tr[data-subgroup-subtotal] td { background: rgba(0,0,0,0.07) !important; }
-      `;
-      doc.head.appendChild(style);
-    } catch {}
-  };
+
+  // helper to capture a node to a canvas
+  const captureToCanvas = async (el) => html2pdf().set({ html2canvas: h2cOpts }).from(el).toCanvas().then((c) => c);
+
+  const jsPdfCtor = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
+  const pages = Array.from(clone.querySelectorAll('.a4-page'));
+
   try {
-    await html2pdf().set(opt).from(clone).save();
+    if (jsPdfCtor && pages.length) {
+      const doc = new jsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' });
+      for (let i = 0; i < pages.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        const canvas = await captureToCanvas(pages[i]);
+        const img = canvas.toDataURL('image/jpeg', 0.98);
+        if (i > 0) doc.addPage();
+        doc.addImage(img, 'JPEG', 0, 0, A4_W_MM, A4_H_MM, `page-${i + 1}`, 'FAST');
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      try { doc.save(`template-${type}.pdf`); } catch { /* ignore */ }
+    } else {
+      // Fallback: capture entire root as one document
+      await html2pdf().set({
+        margin: [0, 0, 0, 0],
+        filename: `template-${type}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: h2cOpts,
+        jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(clone).save();
+    }
   } finally {
-    overlay.remove();
-    host.setAttribute('data-render-context', 'preview');
+    try { overlay.remove(); } catch (_) {}
+    try { host.setAttribute('data-render-context', 'preview'); } catch (_) {}
   }
 }
 
