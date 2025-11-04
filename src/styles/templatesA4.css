@@ -43,6 +43,26 @@
 #templates-a4-root[data-render-context="export"] .a4-page { page-break-after: always; break-after: page; }
 #templates-a4-root[data-render-context="export"] .a4-page:last-child { page-break-after: auto; break-after: auto; }
 
+/* Prevent html2canvas color parser errors (oklab/oklch) by forcing safe colors in export */
+#templates-a4-root[data-render-context="export"],
+#templates-a4-root[data-render-context="export"] * {
+  color: #000 !important;
+  border-color: #94a3b8 !important;
+  outline-color: #94a3b8 !important;
+  box-shadow: none !important;
+}
+#templates-a4-root[data-render-context="export"] * { background-color: transparent !important; }
+/* Re-apply needed backgrounds explicitly (safe hex/rgb values) */
+#templates-a4-root[data-render-context="export"] .a4-page,
+#templates-a4-root[data-render-context="export"] .a4-inner,
+#templates-a4-root[data-render-context="export"] table.exp-table,
+#templates-a4-root[data-render-context="export"] .exp-masthead { background-color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] table.exp-top-table th,
+#templates-a4-root[data-render-context="export"] table.exp-details thead th,
+#templates-a4-root[data-render-context="export"] tr.exp-subheader th { background-color: rgba(37, 99, 235, 0.30) !important; }
+#templates-a4-root[data-render-context="export"] .exp-group-bar { background-color: #2563EB !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background-color: rgba(0,0,0,0.07) !important; }
+
 /* Simple Notion-like blocks */
 .tpl-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8mm; }
 .tpl-title { font-weight:800; font-size:18px; margin:0; }
