@@ -737,8 +737,11 @@ async function printTemplatesPdf() {
       }
     } catch (_) { headerTopCssPx = 0; pageTopPaddingMm = 0; }
     const headerTopMm = headerTopCssPx / PX_PER_MM;
-    // Push content up by the exact header top offset so the first visible element touches page top
-    let finalY = (Number(prefs.topMm) || 0) - headerTopMm;
+    // Use whichever is larger: detected header offset or the page top padding,
+    // so even if detection fails we still eliminate inner padding from the top.
+    const shiftMm = Math.max(headerTopMm, pageTopPaddingMm, 0);
+    // Push content up so the first element touches the page's top edge.
+    let finalY = (Number(prefs.topMm) || 0) - shiftMm;
     if (finalY < -80) finalY = -80;
     if (pdfPageIndex > 0) doc.addPage();
     const img = cropped.toDataURL('image/jpeg', 0.95);

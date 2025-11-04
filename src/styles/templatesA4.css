@@ -33,6 +33,11 @@
 .a4-inner { position:absolute; inset:0; padding:12mm 24mm 12mm 20mm; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
+/* In export/print contexts, remove the extra top padding so the
+   first element starts exactly at the top edge of the page. */
+#templates-a4-root[data-render-context="export"] .a4-inner { padding-top: 0mm !important; }
+.a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
+
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */
 #templates-a4-root[data-render-context="export"] { width: 794px; margin: 0 auto; display:block; position: static; left: auto; transform: none; }
 #templates-a4-root[data-render-context="export"] .a4-page--landscape { width: 1123px; }
@@ -230,6 +235,8 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
   [data-a4-pages] { display:block !important; }
   /* Hide preview-specific separators when printing */
   .a4-page::before { display: none !important; content: none !important; }
+  /* Align content to the very top of the printed page */
+  .a4-inner { padding-top: 0mm !important; }
   .a4-page { page-break-after: always; break-after: page; }
   .a4-page:last-child { page-break-after: auto; break-after: auto; }
 }
