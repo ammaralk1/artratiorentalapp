@@ -674,10 +674,19 @@ function autoPaginateTemplates() {
   const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
 
   const fitsInner = () => {
-    const innerRect = currentInner.getBoundingClientRect();
-    const tableRect = workingTable.getBoundingClientRect();
-    const contentBottom = tableRect.bottom - innerRect.top; // includes masthead/meta heights
-    return contentBottom <= innerRect.height;
+    // Primary check: scrollHeight vs clientHeight of fixed A4 inner box
+    const fitsByScroll = currentInner.scrollHeight <= currentInner.clientHeight + 0.5;
+    if (!fitsByScroll) return false;
+    // Fallback: measure last child bottom relative to inner top
+    try {
+      const innerRect = currentInner.getBoundingClientRect();
+      const last = currentInner.lastElementChild;
+      if (!last) return fitsByScroll;
+      const lastRect = last.getBoundingClientRect();
+      return (lastRect.bottom - innerRect.top) <= innerRect.height + 0.5;
+    } catch (_) {
+      return fitsByScroll;
+    }
   };
   const appendOrNewPage = (node) => {
     const tbody = workingTable.tBodies[0];
