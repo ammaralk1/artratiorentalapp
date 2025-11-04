@@ -583,7 +583,45 @@ async function printTemplatesPdf() {
   const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
   const h2c = window.html2canvas;
   if (!(typeof JsPdfCtor === 'function' && typeof h2c === 'function')) {
-    return html2pdf().set({ margin: 0, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }, image: { type: 'jpeg', quality: 0.98 } }).from(host).save(`template-${type}.pdf`);
+    // Fallback through html2pdf: render from an isolated "export" scope
+    // to avoid preview gaps/margins pushing content down.
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
+    const scope = document.createElement('div');
+    scope.id = 'templates-a4-root';
+    scope.setAttribute('data-render-context', 'export');
+    scope.setAttribute('dir', host.getAttribute('dir') || document.documentElement.getAttribute('dir') || 'rtl');
+    // Clone current preview content into the isolated export scope
+    const pagesWrap = document.createElement('div');
+    pagesWrap.setAttribute('data-a4-pages', '');
+    const clone = host.querySelector('[data-a4-pages]')?.cloneNode(true) || host.cloneNode(true);
+    pagesWrap.innerHTML = '';
+    if (clone.classList && clone.hasAttribute('data-a4-pages')) {
+      // If we cloned the pages container, use it directly
+      scope.appendChild(clone);
+    } else {
+      // Otherwise append pages into a fresh container
+      Array.from(host.children).forEach((c) => pagesWrap.appendChild(c.cloneNode(true)));
+      scope.appendChild(pagesWrap);
+    }
+    wrap.appendChild(scope);
+    document.body.appendChild(wrap);
+
+    try {
+      await html2pdf()
+        .set({
+          margin: 0,
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] },
+          image: { type: 'jpeg', quality: 0.98 }
+        })
+        .from(scope)
+        .save(`template-${type}.pdf`);
+    } finally {
+      try { wrap.parentNode?.removeChild(wrap); } catch (_) {}
+    }
+    return;
   }
 
   // Preferences for slight alignment tweaks
