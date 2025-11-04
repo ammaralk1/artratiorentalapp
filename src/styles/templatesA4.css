@@ -2,7 +2,7 @@
 
 /* Base A4 preview root (reuse reports A4 conventions) */
 #templates-a4-root { direction: rtl; text-align: right; font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif; color:#000; }
-/* Keep root white, but don't force white background on all children to allow row shading */
+/* Keep root white, and allow children backgrounds */
 #templates-a4-root { background:#fff !important; }
 #templates-a4-root * { color:#000 !important; box-shadow:none !important; }
 #templates-a4-root[dir="ltr"] { direction:ltr; text-align:left; }
@@ -77,16 +77,16 @@ table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:rig
 .tpl-print-footer .page-num { font-weight:700; }
 
 /* Expenses A4 specific layout */
-.exp-masthead { direction:rtl; background:#374151; color:#fff !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.exp-masthead { direction:rtl; background:#fff; color:#000 !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .exp-masthead .title { font-size:18px; font-weight:800; color:#fff !important; }
 .exp-masthead .brand-info { flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
-.exp-masthead .brand-info .text { font-weight:800; font-size:14px; color:#fff !important; }
-.exp-masthead .brand-info .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#e5e7eb !important; justify-content:center; }
+.exp-masthead .brand-info .text { font-weight:800; font-size:14px; color:#000 !important; }
+.exp-masthead .brand-info .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#334155 !important; justify-content:center; }
 .exp-masthead .brand-info .meta .line { margin:0; padding:0; }
 .exp-masthead .brand-logo { flex:0 0 auto; align-self:center; }
 .exp-masthead .brand-logo img { height:84px; width:auto; object-fit:contain; display:block; }
-.exp-masthead .brand .text { font-weight:800; font-size:14px; color:#fff !important; }
-.exp-masthead .brand .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#e5e7eb !important; }
+.exp-masthead .brand .text { font-weight:800; font-size:14px; color:#000 !important; }
+.exp-masthead .brand .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#334155 !important; }
 .exp-masthead .brand .meta .line { margin:0; padding:0; }
 
 table.exp-table { position:relative; width:100%; border-collapse:collapse; table-layout:fixed; font-size:11px; border:1.5px solid #94a3b8; }
@@ -95,7 +95,8 @@ table.exp-table::before,
 table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1.5px; background:#94a3b8; pointer-events:none; }
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
-table.exp-table th { background:#e5e7eb !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
+/* Remove header shading */
+table.exp-table th { background:#fff !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
@@ -103,8 +104,8 @@ table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
-/* Subgroup header in brand blue; keep text within cell */
-table.exp-table tr.exp-subheader th { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Subgroup header without shading; keep text within cell */
+table.exp-table tr.exp-subheader th { background:#fff !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
@@ -115,8 +116,8 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }
 
-.exp-summary-row { background:#f3f4f6; font-weight:800; }
-.exp-grand-total { background:#1f2937; color:#fff !important; font-weight:900; font-size:12px; }
+.exp-summary-row { background:rgba(0,0,0,0.05) !important; font-weight:800; }
+.exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
 .exp-col-code { width:10%; }
