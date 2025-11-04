@@ -602,6 +602,25 @@ async function printTemplatesPdf() {
   const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
   const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false };
   const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
+  // Scan right region for first non-white pixels (better at detecting logo/title area)
+  const measureRightRegionContentTopPx = (canvas, threshold = 244) => {
+    try {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
+      const xStart = Math.floor(width * 0.55);
+      const regionW = Math.max(10, width - xStart);
+      const minDark = Math.max(3, Math.ceil(regionW * 0.015));
+      for (let y = 0; y < height; y += 2) {
+        const data = ctx.getImageData(xStart, y, regionW, 1).data;
+        let darkCount = 0;
+        for (let x = 0; x < regionW; x += 1) {
+          const i4 = x * 4; const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+          if (r < threshold || g < threshold || b < threshold) { if (++darkCount >= minDark) return y; }
+        }
+      }
+      return 0;
+    } catch (_) { return 0; }
+  };
   const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
   const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
 
@@ -653,8 +672,10 @@ async function printTemplatesPdf() {
 
     if (!canvas) continue;
     const topWhitePx = measureTopWhitespacePx(canvas, 246);
+    const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+    const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
-    const cropped = cropCanvasVertical(canvas, topWhitePx, bottomWhitePx);
+    const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
     const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
     const targetWmm = A4_W_MM * shrink;
