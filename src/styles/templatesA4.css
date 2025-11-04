@@ -126,6 +126,8 @@ table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-
 table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
+/* But keep head visible for the Top Sheet table */
+table.exp-top-table thead { display: table-header-group; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */
