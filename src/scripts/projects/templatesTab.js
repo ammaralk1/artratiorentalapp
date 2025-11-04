@@ -660,7 +660,26 @@ async function printTemplatesPdf() {
     const targetWmm = A4_W_MM * shrink;
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     let finalX = (Number(prefs.rightMm) || 0);
-    let finalY = (Number(prefs.topMm) || 0);
+
+    // Calibrate top alignment like reports: push content to page top
+    const PX_PER_MM = 96 / 25.4;
+    let headerTopCssPx = 0;
+    let pageTopPaddingMm = 0;
+    try {
+      const inner = clone.querySelector('.a4-inner') || clone;
+      const headerEl = inner.querySelector('.exp-masthead') || inner.firstElementChild;
+      const computed = window.getComputedStyle(inner);
+      const padTopPx = parseFloat(computed?.paddingTop || '0') || 0;
+      pageTopPaddingMm = padTopPx / PX_PER_MM;
+      if (headerEl) {
+        const baseRect = clone.getBoundingClientRect();
+        const hdrRect = headerEl.getBoundingClientRect();
+        headerTopCssPx = Math.max(0, hdrRect.top - baseRect.top);
+      }
+    } catch (_) { headerTopCssPx = 0; pageTopPaddingMm = 0; }
+    const headerTopMm = headerTopCssPx / PX_PER_MM;
+    let finalY = (Number(prefs.topMm) || 0) + pageTopPaddingMm - headerTopMm;
+    if (finalY < -80) finalY = -80;
     if (pdfPageIndex > 0) doc.addPage();
     const img = cropped.toDataURL('image/jpeg', 0.95);
     doc.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
