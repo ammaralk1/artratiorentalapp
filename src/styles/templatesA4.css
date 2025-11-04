@@ -59,7 +59,8 @@ table.exp-top-table td.exp-top-label { text-align: right; }
 table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
 /* Top sheet caption as colored section bar */
 table.exp-top-table > caption { caption-side: top; padding: 0; margin: 0 0 2px; }
-table.exp-top-table > caption .exp-group-bar { border-radius: 0; }
+table.exp-top-table > caption .exp-group-bar { border-radius: 0; text-align: left !important; padding-left: 12px; }
+#templates-a4-root[dir="rtl"] table.exp-top-table > caption .exp-group-bar { text-align: left !important; }
 /* Ensure grid lines without inner outlines on top sheet */
 table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; outline: none !important; }
 
