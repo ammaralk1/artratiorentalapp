@@ -50,18 +50,24 @@
   border-color: #94a3b8 !important;
   outline-color: #94a3b8 !important;
   box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  background: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  caret-color: #000 !important;
+  accent-color: #2563EB !important;
 }
-#templates-a4-root[data-render-context="export"] * { background-color: transparent !important; }
 /* Re-apply needed backgrounds explicitly (safe hex/rgb values) */
 #templates-a4-root[data-render-context="export"] .a4-page,
 #templates-a4-root[data-render-context="export"] .a4-inner,
 #templates-a4-root[data-render-context="export"] table.exp-table,
-#templates-a4-root[data-render-context="export"] .exp-masthead { background-color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] .exp-masthead { background: #ffffff !important; background-color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] table.exp-top-table th,
 #templates-a4-root[data-render-context="export"] table.exp-details thead th,
-#templates-a4-root[data-render-context="export"] tr.exp-subheader th { background-color: rgba(37, 99, 235, 0.30) !important; }
-#templates-a4-root[data-render-context="export"] .exp-group-bar { background-color: #2563EB !important; color:#ffffff !important; }
-#templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background-color: rgba(0,0,0,0.07) !important; }
+#templates-a4-root[data-render-context="export"] tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; background-color: rgba(37,99,235,0.30) !important; }
+#templates-a4-root[data-render-context="export"] .exp-group-bar { background: #2563EB !important; background-color: #2563EB !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background: rgba(0,0,0,0.07) !important; background-color: rgba(0,0,0,0.07) !important; }
 /* Also sanitize pseudo-elements to avoid oklab/oklch usage from frameworks */
 #templates-a4-root[data-render-context="export"] *::before,
 #templates-a4-root[data-render-context="export"] *::after {

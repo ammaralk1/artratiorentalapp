@@ -600,6 +600,21 @@ async function printTemplatesPdf() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
     pagebreak: { mode: ['css', 'legacy'] }
   };
+  // As a last resort, inject a style into the cloned document to neutralize any dynamic theme rules
+  opt.html2canvas.onclone = (doc) => {
+    try {
+      const style = doc.createElement('style');
+      style.textContent = `
+      [data-render-context="export"],
+      [data-render-context="export"] * {background: none !important; background-image: none !important; color:#000 !important; border-color:#94a3b8 !important; box-shadow:none !important; text-shadow:none !important; filter:none !important;}
+      [data-render-context="export"] .a4-page, [data-render-context="export"] .a4-inner, [data-render-context="export"] table.exp-table { background:#ffffff !important; }
+      [data-render-context="export"] table.exp-top-table thead th, [data-render-context="export"] table.exp-details thead th, [data-render-context="export"] tr.exp-subheader th { background: rgba(37,99,235,0.30) !important; }
+      [data-render-context="export"] .exp-group-bar { background:#2563EB !important; color:#fff !important; }
+      [data-render-context="export"] tr[data-subgroup-subtotal] td { background: rgba(0,0,0,0.07) !important; }
+      `;
+      doc.head.appendChild(style);
+    } catch {}
+  };
   try {
     await html2pdf().set(opt).from(clone).save();
   } finally {
