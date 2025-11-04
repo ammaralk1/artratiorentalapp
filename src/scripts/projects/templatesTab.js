@@ -640,6 +640,30 @@ async function printTemplatesPdf() {
   const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
   const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false };
   const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
+  // Detect the first significant content row, ignoring the thin page border.
+  // Scans the central 60% width and skips the first 4px rows, requiring a
+  // substantial number of dark pixels so a 1px border does not trigger.
+  const measureContentTopIgnoringBorderPx = (canvas, threshold = 244) => {
+    try {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
+      const xStart = Math.floor(width * 0.2);
+      const regionW = Math.max(10, Math.floor(width * 0.6));
+      const minDark = Math.max(12, Math.ceil(regionW * 0.08));
+      const yStart = 4; // skip possible 1px border + antialias row
+      for (let y = yStart; y < height; y += 2) {
+        const data = ctx.getImageData(xStart, y, regionW, 1).data;
+        let darkCount = 0;
+        for (let x = 0; x < regionW; x += 1) {
+          const i4 = x * 4; const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+          if (r < threshold || g < threshold || b < threshold) {
+            if (++darkCount >= minDark) return y;
+          }
+        }
+      }
+      return 0;
+    } catch (_) { return 0; }
+  };
   // Scan right region for first non-white pixels (better at detecting logo/title area)
   const measureRightRegionContentTopPx = (canvas, threshold = 244) => {
     try {
@@ -711,11 +735,12 @@ async function printTemplatesPdf() {
     if (!canvas) continue;
     const topWhitePx = measureTopWhitespacePx(canvas, 246);
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+    const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
     const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
     const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
-    const shrink = Math.max(0.9, Math.min(1, prefs.scale || 1));
+    const shrink = Math.max(0.95, Math.min(1, prefs.scale || 1));
     const targetWmm = A4_W_MM * shrink;
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     let finalX = (Number(prefs.rightMm) || 0);
@@ -737,9 +762,10 @@ async function printTemplatesPdf() {
       }
     } catch (_) { headerTopCssPx = 0; pageTopPaddingMm = 0; }
     const headerTopMm = headerTopCssPx / PX_PER_MM;
-    // Use whichever is larger: detected header offset or the page top padding,
-    // so even if detection fails we still eliminate inner padding from the top.
-    const shiftMm = Math.max(headerTopMm, pageTopPaddingMm, 0);
+    // Include visual content top (ignoring the thin page border) so the first
+    // visible content line touches the top of the PDF page.
+    const visualTopMm = (visualTopPx / PX_PER_MM);
+    const shiftMm = Math.max(headerTopMm, pageTopPaddingMm, visualTopMm, 0);
     // Push content up so the first element touches the page's top edge.
     let finalY = (Number(prefs.topMm) || 0) - shiftMm;
     if (finalY < -80) finalY = -80;
