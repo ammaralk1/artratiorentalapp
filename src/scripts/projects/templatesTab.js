@@ -565,6 +565,7 @@ function renderTemplatesPreview() {
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
+  try { ensurePdfTunerUI(); } catch (_) {}
 }
 
 async function printTemplatesPdf() {
@@ -608,8 +609,19 @@ async function printTemplatesPdf() {
     document.body.appendChild(wrap);
 
     try {
-      // Force إزالة أي حشو علوي داخل صفحات التصدير لضمان عدم وجود فراغ أعلى الصفحة
+      // Force إزالة أي حشو علوي داخل صفحات التصدير وضبط الإزاحة وفق الإعدادات
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
+      // تطبيق إزاحة أعلى/يمين في مسار html2pdf الاحتياطي أيضاً
+      try {
+        const rightMm = Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0;
+        const tightFudgeMm = Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -18;
+        const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
+        const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
+        scope.querySelectorAll('.a4-page').forEach((pg) => {
+          pg.style.transformOrigin = 'top left';
+          pg.style.transform = `translate(${rightMm}mm, ${tightFudgeMm}mm) scale(${s})`;
+        });
+      } catch(_) {}
 
       await html2pdf()
         .set({
@@ -869,6 +881,18 @@ async function renderPdfLivePreview() {
   const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
   const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
 
+  // Measure header top inside export clone (pre-capture) like print path
+  let headerTopCssPx = 0;
+  try {
+    const inner0 = clone.querySelector('.a4-inner') || clone;
+    const hdr0 = inner0.querySelector('.exp-masthead') || inner0.firstElementChild;
+    if (hdr0) {
+      const base0 = clone.getBoundingClientRect();
+      const r0 = hdr0.getBoundingClientRect();
+      headerTopCssPx = Math.max(0, r0.top - base0.top);
+    }
+  } catch (_) { headerTopCssPx = 0; }
+
   // Capture
   let canvas;
   try {
@@ -884,7 +908,7 @@ async function renderPdfLivePreview() {
   const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
   const extraTrimMm = readPdfPref('templatesPdf.extraTrimMm', 14);
   const safeMarginMm = readPdfPref('templatesPdf.safeMarginMm', 0.5);
-  const captureHeaderTopPx = visualTopPx; // approximate header position
+  const captureHeaderTopPx = Math.max(visualTopPx, headerTopCssPx * captureScale);
   const extraTrimPx = extraTrimMm * PX_PER_MM * captureScale;
   const safeMarginPx = safeMarginMm * PX_PER_MM * captureScale;
   const baseChosenTopPx = Math.max(topWhitePx, rightRegionTopPx, visualTopPx);
@@ -902,7 +926,7 @@ async function renderPdfLivePreview() {
 
   // Simulated placement
   const finalXmm = rightMm;
-  const headerInCroppedMm = (visualTopPx - chosenTopPx) * (targetWmm / cropped.width);
+  const headerInCroppedMm = Math.max(0, (headerTopCssPx * captureScale - chosenTopPx)) * (targetWmm / cropped.width);
   let finalYmm = -headerInCroppedMm + tightFudgeMm + globalYmm;
 
   // Draw into a page-sized canvas
@@ -970,8 +994,13 @@ function ensurePdfTunerUI() {
         <span>Scale (%)</span>
         <input id="pdftun-scale" type="number" step="1" min="90" max="110" style="width:90px;" />
       </label>
+      <label style="display:flex; align-items:center; gap:6px; margin-inline-start:auto;">
+        <input id="pdftun-auto" type="checkbox" checked />
+        <span>Auto Preview</span>
+      </label>
       <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
       <button type="button" class="btn btn-primary" id="pdftun-preview">👁️ معاينة</button>
+      <button type="button" class="btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
     </div>
     <div id="templates-pdf-live-slot" style="margin-top:10px; max-width:420px;"></div>
   `;
@@ -991,9 +1020,10 @@ function ensurePdfTunerUI() {
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     if (panel.style.display === 'block') renderPdfLivePreview();
   });
+  const auto = panel.querySelector('#pdftun-auto');
   const bind = (id, key) => {
     const input = document.getElementById(id);
-    input.addEventListener('input', () => { writePdfPref(key, input.value); });
+    input.addEventListener('input', () => { writePdfPref(key, input.value); if (auto.checked) renderPdfLivePreview(); });
     input.addEventListener('change', () => { writePdfPref(key, input.value); renderPdfLivePreview(); });
   };
   bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm');
@@ -1010,6 +1040,7 @@ function ensurePdfTunerUI() {
     renderPdfLivePreview();
   });
   document.getElementById('pdftun-preview').addEventListener('click', renderPdfLivePreview);
+  document.getElementById('pdftun-print').addEventListener('click', printTemplatesPdf);
 }
 
 function populateProjectSelect() {
