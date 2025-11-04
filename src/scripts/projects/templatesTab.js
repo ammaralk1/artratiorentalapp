@@ -565,11 +565,11 @@ async function printTemplatesPdf() {
   const landscape = type !== 'expenses';
   const html2pdf = await ensureHtml2Pdf();
   const opt = {
-    margin: [6, 6, 6, 6],
+    margin: [0, 0, 0, 0],
     filename: `template-${type}.pdf`,
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
-    pagebreak: { mode: ['avoid-all'] }
+    pagebreak: { mode: ['css', 'legacy'] }
   };
   host.setAttribute('data-render-context', 'export');
   try { await html2pdf().set(opt).from(host).save(); } finally { host.setAttribute('data-render-context', 'preview'); }
