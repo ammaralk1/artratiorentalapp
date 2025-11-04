@@ -726,6 +726,20 @@ async function printTemplatesPdf() {
     const sanitizerHandle = injectExportSanitizer(scope);
     try { scrubUnsupportedColorFunctions(scope); sanitizeComputedColorFunctions(scope, window, revert); enforceLegacyColorFallback(scope, window, revert); } catch (_) {}
 
+    // قياس موضع عنوان الصفحة داخل نسخة التصدير قبل الالتقاط لنهتم بألا نقتص فوقه
+    const PX_PER_MM_EXPORT = 96 / 25.4;
+    const mmToPx = (mm) => mm * PX_PER_MM_EXPORT * captureScale;
+    let headerTopCssPx = 0; // in export clone (pre-crop, CSS px)
+    try {
+      const innerForHead = clone.querySelector('.a4-inner') || clone;
+      const headerForHead = innerForHead.querySelector('.exp-masthead') || innerForHead.firstElementChild;
+      if (headerForHead) {
+        const baseRect0 = clone.getBoundingClientRect();
+        const hdrRect0 = headerForHead.getBoundingClientRect();
+        headerTopCssPx = Math.max(0, hdrRect0.top - baseRect0.top);
+      }
+    } catch (_) { headerTopCssPx = 0; }
+
     let canvas;
     try {
       canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
@@ -739,10 +753,14 @@ async function printTemplatesPdf() {
     const topWhitePx = measureTopWhitespacePx(canvas, 246);
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
     const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
-    // Be more aggressive trimming top whitespace so the exported
-    // PDF aligns with what we see in the preview (ignore the
-    // thin page border and any anti‑alias rows at the top).
-    const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx, visualTopPx);
+    // زيادة قصّ الفراغ العلوي مع الحفاظ على هامش أمان قبل عنوان الصفحة
+    const extraTrimMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.extraTrimMm')); return Number.isFinite(v) ? Math.max(0, Math.min(40, v)) : 10; } catch(_) { return 10; } })();
+    const safeMarginMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.safeMarginMm')); return Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 2; } catch(_) { return 2; } })();
+    const headerTopScaledPx = Math.max(0, headerTopCssPx * captureScale);
+    const extraTrimPx = mmToPx(extraTrimMm);
+    const safeMarginPx = mmToPx(safeMarginMm);
+    const baseChosenTopPx = Math.max(topWhitePx, rightRegionTopPx, visualTopPx);
+    const chosenTopPx = Math.min(Math.max(0, baseChosenTopPx + extraTrimPx), Math.max(0, headerTopScaledPx - safeMarginPx));
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
     const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
@@ -752,23 +770,9 @@ async function printTemplatesPdf() {
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     let finalX = (Number(prefs.rightMm) || 0);
 
-    // Compute placement so the printed PDF header aligns with the
-    // exact top offset seen in the on‑screen preview. We measure the
-    // header (or first element) position in both the live preview page
-    // and the export clone, then compensate for cropping and scaling.
+    // Compute placement to push content to the very top edge.
     const PX_PER_MM = 96 / 25.4;
-    let headerTopCssPx = 0; // in export clone (pre-crop)
     let previewHeaderTopCssPx = 0; // in on-screen preview page
-    try {
-      // Export clone header position
-      const inner = clone.querySelector('.a4-inner') || clone;
-      const headerEl = inner.querySelector('.exp-masthead') || inner.firstElementChild;
-      if (headerEl) {
-        const baseRect = clone.getBoundingClientRect();
-        const hdrRect = headerEl.getBoundingClientRect();
-        headerTopCssPx = Math.max(0, hdrRect.top - baseRect.top);
-      }
-    } catch (_) { headerTopCssPx = 0; }
     try {
       // Preview header position for the same logical page
       const previewInner = page.querySelector('.a4-inner') || page;
@@ -785,8 +789,8 @@ async function printTemplatesPdf() {
     const mmPerPx = targetWmm / cropped.width;
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
-    // تعويض قوي للرفع لأعلى بشكل افتراضي (-6mm) ويمكن تعديله من LocalStorage
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-20, Math.min(20, v)) : -6; } catch(_) { return -6; } })();
+    // تعويض افتراضي خفيف (-2mm) ويمكن تعديله من LocalStorage
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-20, Math.min(20, v)) : -2; } catch(_) { return -2; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
     let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
