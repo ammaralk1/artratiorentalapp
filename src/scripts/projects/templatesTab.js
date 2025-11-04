@@ -608,6 +608,28 @@ async function printTemplatesPdf() {
     document.body.appendChild(wrap);
 
     try {
+      // Ensure the export pages replicate the preview's top offset.
+      try {
+        const prevPages = Array.from(host.querySelectorAll('.a4-page'));
+        const exportPages = Array.from(scope.querySelectorAll('.a4-page'));
+        const PX_PER_MM = 96 / 25.4;
+        for (let pi = 0; pi < Math.min(prevPages.length, exportPages.length); pi += 1) {
+          const pPrev = prevPages[pi];
+          const pExp = exportPages[pi];
+          const prevInner = pPrev.querySelector('.a4-inner') || pPrev;
+          const prevHeader = prevInner.querySelector('.exp-masthead') || prevInner.firstElementChild;
+          if (!pExp) continue;
+          const expInner = pExp.querySelector('.a4-inner') || pExp;
+          if (prevHeader && expInner) {
+            const pBase = pPrev.getBoundingClientRect();
+            const pHdr = prevHeader.getBoundingClientRect();
+            const topPx = Math.max(0, pHdr.top - pBase.top);
+            const topMm = topPx / PX_PER_MM;
+            try { expInner.style.paddingTop = `${topMm}mm`; } catch(_) {}
+          }
+        }
+      } catch(_) {}
+
       await html2pdf()
         .set({
           margin: 0,
@@ -736,7 +758,10 @@ async function printTemplatesPdf() {
     const topWhitePx = measureTopWhitespacePx(canvas, 246);
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
     const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
-    const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx);
+    // Be more aggressive trimming top whitespace so the exported
+    // PDF aligns with what we see in the preview (ignore the
+    // thin page border and any anti‑alias rows at the top).
+    const chosenTopPx = Math.max(topWhitePx, rightRegionTopPx, visualTopPx);
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
     const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
@@ -745,30 +770,43 @@ async function printTemplatesPdf() {
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     let finalX = (Number(prefs.rightMm) || 0);
 
-    // Calibrate top alignment like reports: push content to page top
+    // Compute placement so the printed PDF header aligns with the
+    // exact top offset seen in the on‑screen preview. We measure the
+    // header (or first element) position in both the live preview page
+    // and the export clone, then compensate for cropping and scaling.
     const PX_PER_MM = 96 / 25.4;
-    let headerTopCssPx = 0;
-    let pageTopPaddingMm = 0;
+    let headerTopCssPx = 0; // in export clone (pre-crop)
+    let previewHeaderTopCssPx = 0; // in on-screen preview page
     try {
+      // Export clone header position
       const inner = clone.querySelector('.a4-inner') || clone;
       const headerEl = inner.querySelector('.exp-masthead') || inner.firstElementChild;
-      const computed = window.getComputedStyle(inner);
-      const padTopPx = parseFloat(computed?.paddingTop || '0') || 0;
-      pageTopPaddingMm = padTopPx / PX_PER_MM;
       if (headerEl) {
         const baseRect = clone.getBoundingClientRect();
         const hdrRect = headerEl.getBoundingClientRect();
         headerTopCssPx = Math.max(0, hdrRect.top - baseRect.top);
       }
-    } catch (_) { headerTopCssPx = 0; pageTopPaddingMm = 0; }
-    const headerTopMm = headerTopCssPx / PX_PER_MM;
-    // Include visual content top (ignoring the thin page border) so the first
-    // visible content line touches the top of the PDF page.
-    const visualTopMm = (visualTopPx / PX_PER_MM);
-    const shiftMm = Math.max(headerTopMm, pageTopPaddingMm, visualTopMm, 0);
-    // Push content up so the first element touches the page's top edge.
-    let finalY = (Number(prefs.topMm) || 0) - shiftMm;
+    } catch (_) { headerTopCssPx = 0; }
+    try {
+      // Preview header position for the same logical page
+      const previewInner = page.querySelector('.a4-inner') || page;
+      const previewHeader = previewInner.querySelector('.exp-masthead') || previewInner.firstElementChild;
+      if (previewHeader) {
+        const pBase = page.getBoundingClientRect();
+        const pHdr = previewHeader.getBoundingClientRect();
+        previewHeaderTopCssPx = Math.max(0, pHdr.top - pBase.top);
+      }
+    } catch (_) { previewHeaderTopCssPx = 0; }
+
+    // After cropping, the header moves up by `chosenTopPx` pixels.
+    // Convert that in-cropped offset to mm using the final scaling.
+    const mmPerPx = targetWmm / cropped.width;
+    const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
+    const desiredHeaderTopMm = previewHeaderTopCssPx / PX_PER_MM;
+    let finalY = (Number(prefs.topMm) || 0) + (desiredHeaderTopMm - headerInCroppedMm);
+    // Clamp just in case
     if (finalY < -80) finalY = -80;
+    if (finalY > 60) finalY = 60;
     if (pdfPageIndex > 0) doc.addPage();
     const img = cropped.toDataURL('image/jpeg', 0.95);
     doc.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
