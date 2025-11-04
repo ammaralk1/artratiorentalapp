@@ -62,6 +62,16 @@
 #templates-a4-root[data-render-context="export"] tr.exp-subheader th { background-color: rgba(37, 99, 235, 0.30) !important; }
 #templates-a4-root[data-render-context="export"] .exp-group-bar { background-color: #2563EB !important; color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background-color: rgba(0,0,0,0.07) !important; }
+/* Also sanitize pseudo-elements to avoid oklab/oklch usage from frameworks */
+#templates-a4-root[data-render-context="export"] *::before,
+#templates-a4-root[data-render-context="export"] *::after {
+  color: #000 !important;
+  background-color: transparent !important;
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
 
 /* Simple Notion-like blocks */
 .tpl-header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8mm; }
