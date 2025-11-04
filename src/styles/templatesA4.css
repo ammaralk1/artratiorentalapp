@@ -2,7 +2,9 @@
 
 /* Base A4 preview root (reuse reports A4 conventions) */
 #templates-a4-root { direction: rtl; text-align: right; font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif; color:#000; }
-#templates-a4-root, #templates-a4-root * { color:#000 !important; background:#fff !important; box-shadow:none !important; }
+/* Keep root white, but don't force white background on all children to allow row shading */
+#templates-a4-root { background:#fff !important; }
+#templates-a4-root * { color:#000 !important; box-shadow:none !important; }
 #templates-a4-root[dir="ltr"] { direction:ltr; text-align:left; }
 
 [data-a4-pages] { display:flex; flex-direction:column; gap:18px; align-items:center; }
@@ -93,7 +95,7 @@ table.exp-table::before,
 table.exp-table::after { content:""; position:absolute; top:0; bottom:0; width:1.5px; background:#94a3b8; pointer-events:none; }
 table.exp-table::before { left:0; }
 table.exp-table::after { right:0; }
-table.exp-table th { background:#e5e7eb; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
+table.exp-table th { background:#e5e7eb !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
 table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
@@ -102,13 +104,13 @@ table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
 /* Subgroup header in brand blue; keep text within cell */
-table.exp-table tr.exp-subheader th { background: var(--clr-primary, #2563EB); color:#fff; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+table.exp-table tr.exp-subheader th { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue */
-.exp-group-bar { background: var(--clr-primary, #2563EB); color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
+.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
 .exp-group-bar--atl { background: inherit; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }
@@ -133,9 +135,9 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 
 /* === Static Highlights (print-safe) === */
 /* Zebra striping for better readability (applied via class exp-row-alt) */
-table.exp-table tbody tr.exp-row-alt td { background:#f8fafc; }
+table.exp-table tbody tr.exp-row-alt td { background:#f8fafc !important; }
 /* Subtotal rows slightly tinted (print-safe) */
-table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6; }
+table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6 !important; }
 /* Ensure backgrounds render in print */
 table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 

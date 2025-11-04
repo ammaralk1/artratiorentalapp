@@ -673,11 +673,16 @@ function autoPaginateTemplates() {
   const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
   const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
 
+  const fitsInner = () => {
+    const innerRect = currentInner.getBoundingClientRect();
+    const tableRect = workingTable.getBoundingClientRect();
+    const contentBottom = tableRect.bottom - innerRect.top; // includes masthead/meta heights
+    return contentBottom <= innerRect.height;
+  };
   const appendOrNewPage = (node) => {
     const tbody = workingTable.tBodies[0];
     tbody.appendChild(node);
-    const fits = currentInner.scrollHeight <= currentInner.clientHeight;
-    if (!fits) {
+    if (!fitsInner()) {
       // rollback this node and move to a fresh page
       tbody.removeChild(node);
       ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
@@ -714,8 +719,7 @@ function autoPaginateTemplates() {
       const tbody = workingTable.tBodies[0];
       // Append to measure
       pack.forEach((n) => tbody.appendChild(n));
-      const fits = currentInner.scrollHeight <= currentInner.clientHeight;
-      if (!fits) {
+      if (!fitsInner()) {
         // rollback
         pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
         ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
@@ -733,8 +737,7 @@ function autoPaginateTemplates() {
     if (isGroupTotal(row)) {
       const tbody = workingTable.tBodies[0];
       tbody.appendChild(row);
-      let fits = currentInner.scrollHeight <= currentInner.clientHeight;
-      if (!fits) {
+      if (!fitsInner()) {
         // remove and start a new page; also try to carry the previous item/subtotal row with it
         tbody.removeChild(row);
         const prev = tbody.lastElementChild;
@@ -751,8 +754,7 @@ function autoPaginateTemplates() {
         if (carry) tb2.appendChild(carry);
         tb2.appendChild(row);
         // Final guard: if even this overflows (unlikely), push row alone to a fresh page
-        fits = currentInner.scrollHeight <= currentInner.clientHeight;
-        if (!fits) {
+        if (!fitsInner()) {
           // move group total alone to a new page
           tb2.removeChild(row);
           if (carry) { /* keep carry on this page */ }
