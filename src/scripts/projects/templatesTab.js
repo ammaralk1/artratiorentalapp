@@ -809,6 +809,209 @@ async function printTemplatesPdf() {
   try { doc.save(`template-${type}.pdf`); } catch { doc.save('template.pdf'); }
 }
 
+// ============== PDF Live Tuner ==============
+function readPdfPref(key, def) {
+  try {
+    const v = localStorage.getItem(key);
+    if (v == null) return def;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : def;
+  } catch (_) { return def; }
+}
+
+function writePdfPref(key, val) {
+  try { localStorage.setItem(key, String(val)); } catch (_) {}
+}
+
+async function renderPdfLivePreview() {
+  const host = document.querySelector('#templates-preview-host > #templates-a4-root');
+  if (!host) return;
+  const type = document.getElementById('templates-type')?.value || 'expenses';
+  const landscape = type !== 'expenses';
+  const html2pdf = await ensureHtml2Pdf();
+  const h2c = window.html2canvas;
+  if (typeof h2c !== 'function') return;
+
+  const A4_W_PX = landscape ? 1123 : 794;
+  const A4_H_PX = landscape ? 794 : 1123;
+  const A4_W_MM = landscape ? 297 : 210;
+  const A4_H_MM = landscape ? 210 : 297;
+  const CSS_DPI = 96; const PX_PER_MM = CSS_DPI / 25.4;
+
+  const page = host.querySelector('.a4-page');
+  if (!page) return;
+
+  // Build isolated export scope for a single page
+  const wrap = document.createElement('div');
+  Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
+  const scope = document.createElement('div');
+  scope.id = 'templates-a4-root';
+  scope.setAttribute('data-render-context', 'export');
+  scope.setAttribute('dir', host.getAttribute('dir') || document.documentElement.getAttribute('dir') || 'rtl');
+  const pagesWrap = document.createElement('div');
+  pagesWrap.setAttribute('data-a4-pages', '');
+  const clone = page.cloneNode(true);
+  clone.style.width = `${A4_W_PX}px`;
+  clone.style.height = `${A4_H_PX}px`;
+  clone.style.background = '#ffffff';
+  clone.style.overflow = 'hidden';
+  pagesWrap.appendChild(clone);
+  scope.appendChild(pagesWrap);
+  wrap.appendChild(scope);
+  document.body.appendChild(wrap);
+
+  // Helpers copied from export logic
+  const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
+  const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false };
+  const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
+  const measureRightRegionContentTopPx = (canvas, threshold = 244) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; const xStart = Math.floor(width * 0.55); const regionW = Math.max(10, width - xStart); const minDark = Math.max(3, Math.ceil(regionW * 0.015)); for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(xStart, y, regionW, 1).data; let darkCount = 0; for (let x = 0; x < regionW; x += 1) { const i4 = x * 4; const r = data[i4], g = data[i4 + 1], b = data[i4 + 2]; if (r < threshold || g < threshold || b < threshold) { if (++darkCount >= minDark) return y; } } } return 0; } catch (_) { return 0; } };
+  const measureContentTopIgnoringBorderPx = (canvas, threshold = 244) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; const xStart = Math.floor(width * 0.2); const regionW = Math.max(10, Math.floor(width * 0.6)); const minDark = Math.max(12, Math.ceil(regionW * 0.08)); const yStart = 4; for (let y = yStart; y < height; y += 2) { const data = ctx.getImageData(xStart, y, regionW, 1).data; let darkCount = 0; for (let x = 0; x < regionW; x += 1) { const i4 = x * 4; const r = data[i4], g = data[i4 + 1], b = data[i4 + 2]; if (r < threshold || g < threshold || b < threshold) { if (++darkCount >= minDark) return y; } } } return 0; } catch (_) { return 0; } };
+  const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
+  const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
+
+  // Capture
+  let canvas;
+  try {
+    canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
+  } finally {
+    try { wrap.parentNode?.removeChild(wrap); } catch (_) {}
+  }
+  if (!canvas) return;
+
+  // Measurements (use current prefs from localStorage)
+  const topWhitePx = measureTopWhitespacePx(canvas, 246);
+  const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
+  const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
+  const extraTrimMm = readPdfPref('templatesPdf.extraTrimMm', 14);
+  const safeMarginMm = readPdfPref('templatesPdf.safeMarginMm', 0.5);
+  const captureHeaderTopPx = visualTopPx; // approximate header position
+  const extraTrimPx = extraTrimMm * PX_PER_MM * captureScale;
+  const safeMarginPx = safeMarginMm * PX_PER_MM * captureScale;
+  const baseChosenTopPx = Math.max(topWhitePx, rightRegionTopPx, visualTopPx);
+  const chosenTopPx = Math.min(Math.max(0, baseChosenTopPx + extraTrimPx), Math.max(0, captureHeaderTopPx - safeMarginPx));
+  const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
+  const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
+
+  const prefsScale = readPdfPref('templatesPdf.scalePct', 100) / 100;
+  const shrink = Math.max(0.98, Math.min(1, prefsScale || 1));
+  const targetWmm = A4_W_MM * shrink;
+  const targetHmm = (cropped.height / cropped.width) * targetWmm;
+  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 0);
+  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -18);
+  const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
+
+  // Simulated placement
+  const finalXmm = rightMm;
+  const headerInCroppedMm = (visualTopPx - chosenTopPx) * (targetWmm / cropped.width);
+  let finalYmm = -headerInCroppedMm + tightFudgeMm + globalYmm;
+
+  // Draw into a page-sized canvas
+  const pageCanvas = document.createElement('canvas');
+  pageCanvas.width = A4_W_PX;
+  pageCanvas.height = A4_H_PX;
+  const ctx = pageCanvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+  const drawX = Math.round(finalXmm * PX_PER_MM);
+  const drawY = Math.round(finalYmm * PX_PER_MM);
+  const drawW = Math.round(targetWmm * PX_PER_MM);
+  const drawH = Math.round(targetHmm * PX_PER_MM);
+  try { ctx.drawImage(cropped, drawX, drawY, drawW, drawH); } catch (_) {}
+
+  const slot = document.getElementById('templates-pdf-live-slot');
+  if (slot) {
+    slot.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = pageCanvas.toDataURL('image/png');
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.style.border = '1px solid #e5e7eb';
+    slot.appendChild(img);
+  }
+}
+
+function ensurePdfTunerUI() {
+  const controls = document.getElementById('templates-controls');
+  if (!controls || document.getElementById('templates-pdf-tuner-toggle')) return;
+  const actionsRow = controls.querySelector('.ms-auto') || controls;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'templates-pdf-tuner-toggle';
+  btn.className = 'btn btn-outline';
+  btn.textContent = '🛠️ ضبط/معاينة PDF';
+  actionsRow.appendChild(btn);
+
+  const panel = document.createElement('div');
+  panel.id = 'templates-pdf-tuner';
+  panel.style.display = 'none';
+  panel.style.marginTop = '10px';
+  panel.style.border = '1px solid #e5e7eb';
+  panel.style.borderRadius = '10px';
+  panel.style.padding = '10px';
+  panel.innerHTML = `
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Top Trim (mm)</span>
+        <input id="pdftun-extraTrim" type="number" step="0.5" min="0" max="40" style="width:90px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Safe Margin (mm)</span>
+        <input id="pdftun-safeMargin" type="number" step="0.1" min="0" max="10" style="width:90px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Top Offset (mm)</span>
+        <input id="pdftun-tightFudge" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Right Shift (mm)</span>
+        <input id="pdftun-right" type="number" step="0.5" min="-40" max="40" style="width:90px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Scale (%)</span>
+        <input id="pdftun-scale" type="number" step="1" min="90" max="110" style="width:90px;" />
+      </label>
+      <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
+      <button type="button" class="btn btn-primary" id="pdftun-preview">👁️ معاينة</button>
+    </div>
+    <div id="templates-pdf-live-slot" style="margin-top:10px; max-width:420px;"></div>
+  `;
+  controls.parentElement?.appendChild(panel);
+
+  // Init values from current prefs
+  const init = () => {
+    document.getElementById('pdftun-extraTrim').value = String(readPdfPref('templatesPdf.extraTrimMm', 14));
+    document.getElementById('pdftun-safeMargin').value = String(readPdfPref('templatesPdf.safeMarginMm', 0.5));
+    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -18));
+    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 0));
+    document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
+  };
+  init();
+
+  btn.addEventListener('click', () => {
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') renderPdfLivePreview();
+  });
+  const bind = (id, key) => {
+    const input = document.getElementById(id);
+    input.addEventListener('input', () => { writePdfPref(key, input.value); });
+    input.addEventListener('change', () => { writePdfPref(key, input.value); renderPdfLivePreview(); });
+  };
+  bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm');
+  bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm');
+  bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm');
+  bind('pdftun-right', 'templatesPdf.shiftRightMm');
+  bind('pdftun-scale', 'templatesPdf.scalePct');
+
+  document.getElementById('pdftun-reset').addEventListener('click', () => {
+    try {
+      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm'].forEach((k) => localStorage.removeItem(k));
+    } catch (_) {}
+    init();
+    renderPdfLivePreview();
+  });
+  document.getElementById('pdftun-preview').addEventListener('click', renderPdfLivePreview);
+}
+
 function populateProjectSelect() {
   const sel = document.getElementById('templates-project');
   if (!sel) return;
@@ -1653,6 +1856,7 @@ export function initTemplatesTab() {
   // Paste from Excel/Sheets into tables
   document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
   document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
+  try { ensurePdfTunerUI(); } catch (_) {}
 
   // (Row focus highlight removed per latest request)
 
