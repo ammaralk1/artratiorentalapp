@@ -613,8 +613,8 @@ async function printTemplatesPdf() {
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
       // تطبيق إزاحة أعلى/يمين في مسار html2pdf الاحتياطي أيضاً
       try {
-        const rightMm = Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0;
-        const tightFudgeMm = Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -18;
+        const rightMm = (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 38);
+        const tightFudgeMm = (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -166);
         const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
         const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
         scope.querySelectorAll('.a4-page').forEach((pg) => {
@@ -643,11 +643,11 @@ async function printTemplatesPdf() {
   const prefs = (() => {
     try {
       return {
-        rightMm: Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0,
+        rightMm: (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 38),
         topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
         scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
       };
-    } catch (_) { return { rightMm: 0, topMm: 0, scale: 1 }; }
+    } catch (_) { return { rightMm: 38, topMm: 0, scale: 1 }; }
   })();
 
   // Helper fns as used in reports exporter
@@ -801,14 +801,14 @@ async function printTemplatesPdf() {
     const mmPerPx = targetWmm / cropped.width;
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
-    // تعويض افتراضي قوي للرفع (-18mm) ويمكن تعديله من LocalStorage
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : -18; } catch(_) { return -18; } })();
+    // تعويض افتراضي قوي للرفع (-166mm) ويمكن تعديله من LocalStorage
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -166; } catch(_) { return -166; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
     let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
-    // Clamp just in case
-    if (finalY < -80) finalY = -80;
-    if (finalY > 60) finalY = 60;
+    // Clamp just in case (واسع للسماح بضبط قوي)
+    if (finalY < -220) finalY = -220;
+    if (finalY > 120) finalY = 120;
     if (pdfPageIndex > 0) doc.addPage();
     const img = cropped.toDataURL('image/jpeg', 0.95);
     doc.addImage(img, 'JPEG', finalX, finalY, targetWmm, targetHmm, `page-${pdfPageIndex + 1}`, 'FAST');
@@ -920,8 +920,8 @@ async function renderPdfLivePreview() {
   const shrink = Math.max(0.98, Math.min(1, prefsScale || 1));
   const targetWmm = A4_W_MM * shrink;
   const targetHmm = (cropped.height / cropped.width) * targetWmm;
-  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 0);
-  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -18);
+  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 38);
+  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -166);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
 
   // Simulated placement
@@ -1010,8 +1010,8 @@ function ensurePdfTunerUI() {
   const init = () => {
     document.getElementById('pdftun-extraTrim').value = String(readPdfPref('templatesPdf.extraTrimMm', 14));
     document.getElementById('pdftun-safeMargin').value = String(readPdfPref('templatesPdf.safeMarginMm', 0.5));
-    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -18));
-    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 0));
+    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -166));
+    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 38));
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
   };
   init();
