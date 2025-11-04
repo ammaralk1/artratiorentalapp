@@ -143,6 +143,67 @@ function buildExpensesPage(project, reservations, opts = {}) {
   meta.appendChild(metaCell(L('Shoot Days', 'أيام التصوير'), ''));
   inner.appendChild(meta);
 
+  // Top Sheet (summary) table aggregating all sections
+  const top = el('table', { class: 'exp-table exp-top-table', id: 'expenses-top-sheet' });
+  const topHead = el('thead');
+  const topHeadRow = el('tr');
+  [
+    { text: L('CODE','الكود'), cls: 'exp-top-col-code' },
+    { text: L('DESCRIPTION','الوصف'), cls: 'exp-top-col-label' },
+    { text: L('COUNT','العدد'), cls: 'exp-top-col-count' },
+    { text: L('TOTAL','الإجمالي'), cls: 'exp-top-col-total' },
+  ].forEach((c) => topHeadRow.appendChild(el('th', { class: c.cls, text: c.text })));
+  topHead.appendChild(topHeadRow);
+  top.appendChild(topHead);
+  const topBody = el('tbody');
+  const mkTopGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
+    el('td', { colspan: '4' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
+  ]);
+  const mkTopRow = (code, label) => el('tr', { 'data-top-row': code }, [
+    el('td', { class: 'code', text: code }),
+    el('td', { class: 'label', text: label }),
+    el('td', { 'data-top-count': code, text: '' }),
+    el('td', { 'data-top-total': code, text: '' })
+  ]);
+  const mkTopGroupTotal = (label, key) => el('tr', { class: 'exp-summary-row', 'data-top-group-total': key }, [
+    el('td', { colspan: '3', text: label }),
+    el('td', { 'data-top-total-group': key, text: '' })
+  ]);
+
+  // ABOVE THE LINE SUMMARY
+  topBody.appendChild(mkTopGroupBar(L('ABOVE THE LINE','فوق الخط'), 'exp-group-bar--atl'));
+  topBody.appendChild(mkTopRow('12-00', 'PRODUCERS UNIT'));
+  topBody.appendChild(mkTopRow('13-00', 'DIRECTOR & STAFF'));
+  topBody.appendChild(mkTopRow('14-00', 'CAST'));
+  topBody.appendChild(mkTopGroupTotal(L('Total Above the Line','إجمالي فوق الخط'), 'atl'));
+
+  // PRODUCTION EXPENSES SUMMARY
+  topBody.appendChild(mkTopGroupBar(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), 'exp-group-bar--prod'));
+  topBody.appendChild(mkTopRow('20-00', 'PRODUCTION STAFF'));
+  topBody.appendChild(mkTopRow('22-00', 'SET DESIGN'));
+  topBody.appendChild(mkTopRow('23-00', 'SET CONSTRUCTION'));
+  topBody.appendChild(mkTopRow('24-00', 'CASTING SERVICES'));
+  topBody.appendChild(mkTopRow('28-00', 'WARDROBE'));
+  topBody.appendChild(mkTopRow('29-00', 'ELECTRIC'));
+  topBody.appendChild(mkTopRow('30-00', 'CAMERA'));
+  topBody.appendChild(mkTopRow('33-00', 'TRANSPORTATION'));
+  topBody.appendChild(mkTopRow('34-00', 'LOCATIONS'));
+  topBody.appendChild(mkTopGroupTotal(L('Total Production','إجمالي الإنتاج'), 'prod'));
+
+  // POST-PRODUCTION SUMMARY
+  topBody.appendChild(mkTopGroupBar(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), 'exp-group-bar--post'));
+  topBody.appendChild(mkTopRow('45-00', 'FILM EDITING'));
+  topBody.appendChild(mkTopRow('49-00', 'VOICE OVER'));
+  topBody.appendChild(mkTopGroupTotal(L('Total Post Production','إجمالي ما بعد الإنتاج'), 'post'));
+
+  // GRAND TOTAL
+  topBody.appendChild(el('tr', { class: 'exp-grand-total' }, [
+    el('td', { colspan: '3', text: L('GRAND TOTAL','الإجمالي الكلي') }),
+    el('td', { 'data-top-grand': 'true', text: '' })
+  ]));
+  top.appendChild(topBody);
+  inner.appendChild(top);
+
   // Expenses table
   const table = el('table', { class: 'exp-table', id: 'expenses-table', 'data-editable-table': 'expenses' });
   const thead = el('thead');
@@ -533,12 +594,15 @@ function recomputeExpensesSubtotals() {
     };
     const groupTotals = { atl: 0, prod: 0, post: 0 };
     let grand = 0;
+    const subgroupTotals = {}; // code -> subtotal
+    const subgroupCounts = {}; // code -> count of filled items
 
     // For each subgroup header
     const headers = Array.from(table.querySelectorAll('tbody tr[data-subgroup-header]'));
     headers.forEach((hdr) => {
       const code = hdr.getAttribute('data-subgroup');
       let subtotal = 0;
+      let count = 0;
       let tr = hdr.nextElementSibling;
       while (tr && !tr.hasAttribute('data-subgroup-header') && !tr.hasAttribute('data-subgroup-subtotal')) {
         if (tr.getAttribute('data-row') === 'item') {
@@ -550,12 +614,16 @@ function recomputeExpensesSubtotals() {
           const total = amount * x * rate * tab;
           if (tds[7]) tds[7].textContent = String(total.toFixed(2));
           subtotal += total;
+          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[5]?.textContent, 0) || number(tds[2]?.textContent, 0);
+          if (hasContent) count += 1;
         }
         tr = tr.nextElementSibling;
       }
       // write subgroup subtotal
       const subCell = table.querySelector(`[data-subtotal="${CSS.escape(code)}"]`);
       if (subCell) subCell.textContent = String(subtotal.toFixed(2));
+      subgroupTotals[code] = subtotal;
+      subgroupCounts[code] = count;
       grand += subtotal;
       // map to parent group
       const marker = table.querySelector(`tr[data-subgroup-marker="${CSS.escape(code)}"]`);
@@ -570,6 +638,23 @@ function recomputeExpensesSubtotals() {
     });
     const gcell = table.querySelector('[data-grand-total]');
     if (gcell) gcell.textContent = String(grand.toFixed(2));
+
+    // Update Top Sheet summary figures
+    try {
+      Object.entries(subgroupTotals).forEach(([code, val]) => {
+        const cnt = subgroupCounts[code] || 0;
+        const cntEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-count="${CSS.escape(code)}"]`);
+        const totEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total="${CSS.escape(code)}"]`);
+        if (cntEl) cntEl.textContent = String(cnt);
+        if (totEl) totEl.textContent = String(Number(val).toFixed(2));
+      });
+      Object.entries(groupTotals).forEach(([key, val]) => {
+        const el2 = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total-group="${CSS.escape(key)}"]`);
+        if (el2) el2.textContent = String(Number(val).toFixed(2));
+      });
+      const g2 = document.querySelector('#templates-preview-host #expenses-top-sheet [data-top-grand]');
+      if (g2) g2.textContent = String(grand.toFixed(2));
+    } catch(_) {}
 
     // Summary footer
     const project = getSelectedProject();
@@ -636,6 +721,7 @@ function autoPaginateTemplates() {
   // Gather original blocks
   const masthead = firstInner.querySelector('.exp-masthead');
   const meta = firstInner.querySelector('.tpl-meta');
+  const topSheet = firstInner.querySelector('#expenses-top-sheet');
   const table = firstInner.querySelector('#expenses-table');
   const summary = firstInner.querySelector('#expenses-summary');
   if (!table) return;
@@ -643,11 +729,12 @@ function autoPaginateTemplates() {
   // Reset pages to rebuild
   while (pagesWrap.firstChild) pagesWrap.removeChild(pagesWrap.firstChild);
 
-  // Start first page and keep masthead + meta in first page
+  // Start first page and keep masthead + meta + top sheet in first page
   let { page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false });
   pagesWrap.appendChild(currentPage);
   if (masthead) currentInner.appendChild(masthead);
   if (meta) currentInner.appendChild(meta);
+  if (topSheet) currentInner.appendChild(topSheet);
 
   // Create a working table with thead copy
   const thead = table.querySelector('thead');
@@ -662,6 +749,7 @@ function autoPaginateTemplates() {
     return t;
   };
 
+  // Details will start from the second page if they don't fit after top sheet
   let workingTable = makeTable();
   currentInner.appendChild(workingTable);
 

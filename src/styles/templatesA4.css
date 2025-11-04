@@ -48,6 +48,16 @@ table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-la
 table.tpl-table th { background: rgba(37, 99, 235, 0.30); border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; color:#000; }
 table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
 
+/* Top Sheet column sizing */
+table.exp-top-table .exp-top-col-code { width: 16%; }
+table.exp-top-table .exp-top-col-label { width: 54%; }
+table.exp-top-table .exp-top-col-count { width: 10%; }
+table.exp-top-table .exp-top-col-total { width: 20%; }
+table.exp-top-table td.label { text-align: right; }
+#templates-a4-root[dir="ltr"] table.exp-top-table td.label { text-align: left; }
+/* Top sheet header tint */
+table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
+
 /* Editable cells */
 [data-editable="true"] { outline:1px dashed transparent; min-height:16px; }
 [data-editable="true"]:hover { outline-color:#cbd5e1; }
