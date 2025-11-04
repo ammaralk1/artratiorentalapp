@@ -35,6 +35,31 @@ function el(tag, attrs = {}, children = []) {
   return e;
 }
 
+// Utilities to ensure deterministic capture (fonts/images fully loaded)
+async function waitForFontsReady() {
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+  } catch (_) {}
+}
+function waitForImages(container) {
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if (!imgs.length) return Promise.resolve();
+  return Promise.all(imgs.map((img) => new Promise((resolve) => {
+    try {
+      if (img.complete && img.naturalWidth > 0) return resolve();
+      const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    } catch (_) { resolve(); }
+  })));
+}
+async function ensureAssetsReady(container) {
+  await waitForFontsReady();
+  await waitForImages(container || document);
+}
+
 function metaCell(label, value = '', editable = true) {
   const cell = el('div', { class: 'cell' });
   cell.appendChild(el('span', { class: 'label', text: label }));
@@ -623,6 +648,8 @@ async function printTemplatesPdf() {
         });
       } catch(_) {}
 
+      // Ensure assets ready before rendering
+      await ensureAssetsReady(scope);
       await html2pdf()
         .set({
           margin: 0,
@@ -754,6 +781,8 @@ async function printTemplatesPdf() {
 
     let canvas;
     try {
+      // Ensure fonts and images are fully loaded before capture for consistency
+      await ensureAssetsReady(scope);
       canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
     } finally {
       try { revertStyleMutations(revert); } catch (_) {}
@@ -896,6 +925,7 @@ async function renderPdfLivePreview() {
   // Capture
   let canvas;
   try {
+    await ensureAssetsReady(scope);
     canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
   } finally {
     try { wrap.parentNode?.removeChild(wrap); } catch (_) {}
