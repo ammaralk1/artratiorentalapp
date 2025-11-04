@@ -104,14 +104,14 @@ table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
-/* Subgroup header without shading; keep text within cell */
-table.exp-table tr.exp-subheader th { background:#fff !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Subgroup header with a very light tint */
+table.exp-table tr.exp-subheader th { background: var(--clr-primary-light, #eef3ff) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
-/* Main section bars unified in brand blue */
-.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; }
+/* Main section bars unified in brand blue; fill whole cell width */
+.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:8px; padding:6px 10px; margin:5mm 0 3mm; display:block; width:100%; }
 .exp-group-bar--atl { background: inherit; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }
@@ -135,10 +135,10 @@ table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 .tpl-action-btn:hover { background:#f8fafc; }
 
 /* === Static Highlights (print-safe) === */
-/* Zebra striping for better readability (applied via class exp-row-alt) */
-table.exp-table tbody tr.exp-row-alt td { background:#f8fafc !important; }
+/* Remove zebra under headers per request */
+table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
 /* Subtotal rows slightly tinted (print-safe) */
-table.exp-table tbody tr.exp-summary-row td { background:#f3f4f6 !important; }
+table.exp-table tbody tr.exp-summary-row td { background:rgba(0,0,0,0.10) !important; }
 /* Ensure backgrounds render in print */
 table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 
