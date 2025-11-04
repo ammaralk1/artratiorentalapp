@@ -746,7 +746,8 @@ async function printTemplatesPdf() {
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
     const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
 
-    const shrink = Math.max(0.95, Math.min(1, prefs.scale || 1));
+    // استخدم تحجيم 1:1 افتراضياً لضمان عدم إضافة فراغات هامشية
+    const shrink = Math.max(0.98, Math.min(1, prefs.scale || 1));
     const targetWmm = A4_W_MM * shrink;
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     let finalX = (Number(prefs.rightMm) || 0);
@@ -784,8 +785,11 @@ async function printTemplatesPdf() {
     const mmPerPx = targetWmm / cropped.width;
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-3, Math.min(3, v)) : -0.25; } catch(_) { return -0.25; } })();
-    let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm;
+    // تعويض قوي للرفع لأعلى بشكل افتراضي (-6mm) ويمكن تعديله من LocalStorage
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-20, Math.min(20, v)) : -6; } catch(_) { return -6; } })();
+    // إزاحة عامة إضافية اختيارية
+    const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
+    let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
     // Clamp just in case
     if (finalY < -80) finalY = -80;
     if (finalY > 60) finalY = 60;
