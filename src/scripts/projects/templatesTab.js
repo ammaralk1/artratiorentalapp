@@ -145,22 +145,8 @@ function buildExpensesPage(project, reservations, opts = {}) {
   meta.appendChild(metaCell(L('Shoot Days', 'أيام التصوير'), ''));
   inner.appendChild(meta);
 
-  // Top Sheet (summary) table aggregating all sections
-  const top = el('table', { class: 'exp-table exp-top-table', id: 'expenses-top-sheet' });
-  const topHead = el('thead');
-  const topHeadRow = el('tr');
-  [
-    { text: L('CODE','الكود'), cls: 'exp-top-col-code' },
-    { text: L('DESCRIPTION','الوصف'), cls: 'exp-top-col-label' },
-    { text: L('COUNT','العدد'), cls: 'exp-top-col-count' },
-    { text: L('TOTAL','الإجمالي'), cls: 'exp-top-col-total' },
-  ].forEach((c) => topHeadRow.appendChild(el('th', { class: c.cls, text: c.text })));
-  topHead.appendChild(topHeadRow);
-  top.appendChild(topHead);
-  const topBody = el('tbody');
-  const mkTopGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
-    el('td', { colspan: '4' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
-  ]);
+  // Top Sheet as multiple small tables (title as caption, then header, then rows)
+  const topWrap = el('div', { id: 'expenses-top-sheet' });
   const mkTopRow = (code, label) => el('tr', { 'data-top-row': code }, [
     el('td', { class: 'code', text: code }),
     el('td', { class: 'label', text: label }),
@@ -171,40 +157,58 @@ function buildExpensesPage(project, reservations, opts = {}) {
     el('td', { colspan: '3', text: label }),
     el('td', { 'data-top-total-group': key, text: '' })
   ]);
-
-  // ABOVE THE LINE SUMMARY
-  topBody.appendChild(mkTopGroupBar(L('ABOVE THE LINE','فوق الخط'), 'exp-group-bar--atl'));
-  topBody.appendChild(mkTopRow('12-00', 'PRODUCERS UNIT'));
-  topBody.appendChild(mkTopRow('13-00', 'DIRECTOR & STAFF'));
-  topBody.appendChild(mkTopRow('14-00', 'CAST'));
-  topBody.appendChild(mkTopGroupTotal(L('Total Above the Line','إجمالي فوق الخط'), 'atl'));
-
-  // PRODUCTION EXPENSES SUMMARY
-  topBody.appendChild(mkTopGroupBar(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), 'exp-group-bar--prod'));
-  topBody.appendChild(mkTopRow('20-00', 'PRODUCTION STAFF'));
-  topBody.appendChild(mkTopRow('22-00', 'SET DESIGN'));
-  topBody.appendChild(mkTopRow('23-00', 'SET CONSTRUCTION'));
-  topBody.appendChild(mkTopRow('24-00', 'CASTING SERVICES'));
-  topBody.appendChild(mkTopRow('28-00', 'WARDROBE'));
-  topBody.appendChild(mkTopRow('29-00', 'ELECTRIC'));
-  topBody.appendChild(mkTopRow('30-00', 'CAMERA'));
-  topBody.appendChild(mkTopRow('33-00', 'TRANSPORTATION'));
-  topBody.appendChild(mkTopRow('34-00', 'LOCATIONS'));
-  topBody.appendChild(mkTopGroupTotal(L('Total Production','إجمالي الإنتاج'), 'prod'));
-
-  // POST-PRODUCTION SUMMARY
-  topBody.appendChild(mkTopGroupBar(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), 'exp-group-bar--post'));
-  topBody.appendChild(mkTopRow('45-00', 'FILM EDITING'));
-  topBody.appendChild(mkTopRow('49-00', 'VOICE OVER'));
-  topBody.appendChild(mkTopGroupTotal(L('Total Post Production','إجمالي ما بعد الإنتاج'), 'post'));
-
-  // GRAND TOTAL
-  topBody.appendChild(el('tr', { class: 'exp-grand-total' }, [
+  const mkTopTable = (title, codes, cls) => {
+    const tbl = el('table', { class: 'exp-table exp-top-table' });
+    const cap = el('caption', { class: 'exp-group-cap' }, [ el('div', { class: `exp-group-bar ${cls||''}`, text: title }) ]);
+    tbl.appendChild(cap);
+    const thead = el('thead');
+    const trh = el('tr');
+    [
+      { text: L('CODE','الكود'), cls: 'exp-top-col-code' },
+      { text: L('DESCRIPTION','الوصف'), cls: 'exp-top-col-label' },
+      { text: L('COUNT','العدد'), cls: 'exp-top-col-count' },
+      { text: L('TOTAL','الإجمالي'), cls: 'exp-top-col-total' },
+    ].forEach((c) => trh.appendChild(el('th', { class: c.cls, text: c.text })));
+    thead.appendChild(trh);
+    tbl.appendChild(thead);
+    const body = el('tbody');
+    codes.forEach((c) => body.appendChild(mkTopRow(c.code, c.label)));
+    // group total row at end
+    const totalLabel = (cls && cls.includes('atl')) ? L('Total Above the Line','إجمالي فوق الخط') : (cls && cls.includes('prod')) ? L('Total Production','إجمالي الإنتاج') : L('Total Post Production','إجمالي ما بعد الإنتاج');
+    body.appendChild(mkTopGroupTotal(totalLabel, cls?.includes('atl') ? 'atl' : cls?.includes('prod') ? 'prod' : 'post'));
+    tbl.appendChild(body);
+    return tbl;
+  };
+  topWrap.appendChild(mkTopTable(L('ABOVE THE LINE','فوق الخط'), [
+    { code: '12-00', label: 'PRODUCERS UNIT' },
+    { code: '13-00', label: 'DIRECTOR & STAFF' },
+    { code: '14-00', label: 'CAST' },
+  ], 'exp-group-bar--atl'));
+  topWrap.appendChild(mkTopTable(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), [
+    { code: '20-00', label: 'PRODUCTION STAFF' },
+    { code: '22-00', label: 'SET DESIGN' },
+    { code: '23-00', label: 'SET CONSTRUCTION' },
+    { code: '24-00', label: 'CASTING SERVICES' },
+    { code: '28-00', label: 'WARDROBE' },
+    { code: '29-00', label: 'ELECTRIC' },
+    { code: '30-00', label: 'CAMERA' },
+    { code: '33-00', label: 'TRANSPORTATION' },
+    { code: '34-00', label: 'LOCATIONS' },
+  ], 'exp-group-bar--prod'));
+  topWrap.appendChild(mkTopTable(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [
+    { code: '45-00', label: 'FILM EDITING' },
+    { code: '49-00', label: 'VOICE OVER' },
+  ], 'exp-group-bar--post'));
+  // GRAND TOTAL separate bar
+  const gtbl = el('table', { class: 'exp-table exp-top-table exp-top-grand' });
+  const gbody = el('tbody');
+  gbody.appendChild(el('tr', { class: 'exp-grand-total' }, [
     el('td', { colspan: '3', text: L('GRAND TOTAL','الإجمالي الكلي') }),
     el('td', { 'data-top-grand': 'true', text: '' })
   ]));
-  top.appendChild(topBody);
-  inner.appendChild(top);
+  gtbl.appendChild(gbody);
+  topWrap.appendChild(gtbl);
+  inner.appendChild(topWrap);
 
   // Column definitions used for all details tables
   const headCols = [
