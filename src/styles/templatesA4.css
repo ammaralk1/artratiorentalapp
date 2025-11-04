@@ -44,7 +44,8 @@
 .tpl-meta .cell [data-editable] { text-align:center; }
 
 table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; border:1.5px solid #9ca3af; }
-table.tpl-table th { background:#f3f4f6; border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; }
+/* General tables (Call Sheet / Shot List) header tint ~30% of brand */
+table.tpl-table th { background: rgba(37, 99, 235, 0.30); border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; color:#000; }
 table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
 
 /* Editable cells */
@@ -111,9 +112,8 @@ table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
-/* Subgroup header with a very light tint */
-/* Sub-headers: very light tint for readability */
-table.exp-table tr.exp-subheader th { background: var(--clr-primary-light, #eef3ff) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Sub-headers tint ~30% of brand for readability */
+table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide global table header (we use sub-headers per section) */
 table.exp-table thead { display:none; }
 /* Ensure borders are continuous on sub-header rows */
@@ -146,13 +146,17 @@ table.exp-table tr[data-group-bar] td { padding:0 !important; }
 /* === Static Highlights (print-safe) === */
 /* Remove zebra under headers per request */
 table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
-/* Subtotal rows slightly tinted (print-safe) */
-/* Summary rows: keep the numeric cell slightly tinted, remove tint from the wide label cell */
-table.exp-table tbody tr.exp-summary-row td:last-child,
-table.exp-table tbody tr.exp-summary-row td.subtotal { background:rgba(0,0,0,0.07) !important; }
-table.exp-table tbody tr.exp-summary-row td[colspan] { background:#fff !important; }
+/* Highlight only the SUBTOTAL rows across the full width */
+table.exp-table tbody tr[data-subgroup-subtotal] td { background:rgba(0,0,0,0.07) !important; }
+/* Group TOTAL rows (e.g., Above the Line totals) should not be shaded */
+table.exp-table tbody tr[data-group-total] td { background:#fff !important; }
+/* Keep ordinary item rows clear */
+table.exp-table tbody tr.exp-row-alt td { background:transparent !important; }
 /* Ensure backgrounds render in print */
 table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+
+/* Allow scrolling to view all pages in preview container */
+#templates-preview-host { max-height: 78vh; overflow: auto; }
 
 /* Print rules */
 @media print {

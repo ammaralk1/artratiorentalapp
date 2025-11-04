@@ -674,16 +674,8 @@ function autoPaginateTemplates() {
   const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
 
   const fitsInner = () => {
-    // Robust measurement: compute max bottom among children relative to inner top
-    const innerRect = currentInner.getBoundingClientRect();
-    let maxBottom = 0;
-    const kids = Array.from(currentInner.children);
-    for (const k of kids) {
-      const r = k.getBoundingClientRect();
-      const bottom = r.bottom - innerRect.top;
-      if (bottom > maxBottom) maxBottom = bottom;
-    }
-    return maxBottom <= innerRect.height + 0.5;
+    // Simpler and more robust in various layouts: compare scrollHeight to clientHeight
+    return currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
   };
   const appendOrNewPage = (node) => {
     const tbody = workingTable.tBodies[0];
