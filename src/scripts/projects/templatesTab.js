@@ -608,27 +608,8 @@ async function printTemplatesPdf() {
     document.body.appendChild(wrap);
 
     try {
-      // Ensure the export pages replicate the preview's top offset.
-      try {
-        const prevPages = Array.from(host.querySelectorAll('.a4-page'));
-        const exportPages = Array.from(scope.querySelectorAll('.a4-page'));
-        const PX_PER_MM = 96 / 25.4;
-        for (let pi = 0; pi < Math.min(prevPages.length, exportPages.length); pi += 1) {
-          const pPrev = prevPages[pi];
-          const pExp = exportPages[pi];
-          const prevInner = pPrev.querySelector('.a4-inner') || pPrev;
-          const prevHeader = prevInner.querySelector('.exp-masthead') || prevInner.firstElementChild;
-          if (!pExp) continue;
-          const expInner = pExp.querySelector('.a4-inner') || pExp;
-          if (prevHeader && expInner) {
-            const pBase = pPrev.getBoundingClientRect();
-            const pHdr = prevHeader.getBoundingClientRect();
-            const topPx = Math.max(0, pHdr.top - pBase.top);
-            const topMm = topPx / PX_PER_MM;
-            try { expInner.style.paddingTop = `${topMm}mm`; } catch(_) {}
-          }
-        }
-      } catch(_) {}
+      // Force إزالة أي حشو علوي داخل صفحات التصدير لضمان عدم وجود فراغ أعلى الصفحة
+      try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
 
       await html2pdf()
         .set({
@@ -802,8 +783,9 @@ async function printTemplatesPdf() {
     // Convert that in-cropped offset to mm using the final scaling.
     const mmPerPx = targetWmm / cropped.width;
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
-    const desiredHeaderTopMm = previewHeaderTopCssPx / PX_PER_MM;
-    let finalY = (Number(prefs.topMm) || 0) + (desiredHeaderTopMm - headerInCroppedMm);
+    // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-3, Math.min(3, v)) : -0.25; } catch(_) { return -0.25; } })();
+    let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm;
     // Clamp just in case
     if (finalY < -80) finalY = -80;
     if (finalY > 60) finalY = 60;
