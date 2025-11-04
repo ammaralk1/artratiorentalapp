@@ -564,10 +564,19 @@ async function printTemplatesPdf() {
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
   const html2pdf = await ensureHtml2Pdf();
+  const rootWidthPx = 794; // A4 portrait px width at 96dpi
   const opt = {
     margin: [0, 0, 0, 0],
     filename: `template-${type}.pdf`,
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      letterRendering: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: rootWidthPx,
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
     pagebreak: { mode: ['css', 'legacy'] }
   };

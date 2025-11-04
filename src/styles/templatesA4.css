@@ -34,7 +34,7 @@
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */
-#templates-a4-root[data-render-context="export"] { width: 794px; margin: 0 auto; }
+#templates-a4-root[data-render-context="export"] { width: 794px; margin: 0 auto; display:block; }
 #templates-a4-root[data-render-context="export"] .a4-page--landscape { width: 1123px; }
 #templates-a4-root[data-render-context="export"] [data-a4-pages] { display:block; }
 #templates-a4-root[data-render-context="export"] .a4-page { box-shadow:none; }
