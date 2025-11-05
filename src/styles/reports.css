@@ -123,6 +123,27 @@ body.dark-mode {
   z-index: 0;
 }
 
+/* Raise the header card when templates actions dropdown is open so its menu
+   can float above the preview card that follows in DOM order. */
+.reports-surface-card.--raise-on-top { z-index: 12 !important; }
+
+/* Templates actions dropdown menu: keep above surrounding cards and adapt to dark mode */
+#templates-actions-dd { position: relative; }
+#templates-actions-menu {
+  z-index: 2000 !important;
+  background: var(--reports-surface) !important;
+  color: var(--reports-text) !important;
+  border-color: var(--reports-border) !important;
+  box-shadow: var(--reports-shadow) !important;
+}
+:is(html.dark-mode, body.dark-mode) #templates-actions-menu,
+:where(html.dark, body.dark) #templates-actions-menu {
+  background: var(--reports-surface) !important;
+  color: var(--reports-text) !important;
+  border-color: var(--reports-border) !important;
+  box-shadow: var(--reports-shadow) !important;
+}
+
 #reservations-report-printable .reports-header-card,
 .reports-header-card {
   display: flex;

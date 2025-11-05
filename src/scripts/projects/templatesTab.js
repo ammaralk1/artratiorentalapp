@@ -2211,13 +2211,36 @@ export function initTemplatesTab() {
   const actionsDD = document.getElementById('templates-actions-dd');
   if (actionsToggle && actionsMenu) {
     const closeMenu = (ev) => {
-      if (!actionsDD?.contains(ev.target)) { actionsMenu.style.display = 'none'; document.removeEventListener('click', closeMenu, true); }
+      if (!actionsDD?.contains(ev.target)) {
+        actionsMenu.style.display = 'none';
+        try {
+          actionsDD.classList.remove('dropdown-open');
+          const card = actionsDD.closest('.reports-surface-card');
+          if (card) card.classList.remove('--raise-on-top');
+          if (card) card.style.zIndex = '';
+        } catch (_) {}
+        document.removeEventListener('click', closeMenu, true);
+      }
     };
     actionsToggle.addEventListener('click', (e2) => {
       e2.preventDefault(); e2.stopPropagation();
       const isOpen = actionsMenu.style.display === 'block';
       actionsMenu.style.display = isOpen ? 'none' : 'block';
-      if (!isOpen) { document.addEventListener('click', closeMenu, true); }
+      if (!isOpen) {
+        try {
+          actionsDD.classList.add('dropdown-open');
+          const card = actionsDD.closest('.reports-surface-card');
+          if (card) { card.classList.add('--raise-on-top'); card.style.zIndex = '12'; }
+        } catch (_) {}
+        document.addEventListener('click', closeMenu, true);
+      } else {
+        try {
+          actionsDD.classList.remove('dropdown-open');
+          const card = actionsDD.closest('.reports-surface-card');
+          if (card) card.classList.remove('--raise-on-top');
+          if (card) card.style.zIndex = '';
+        } catch (_) {}
+      }
     });
   }
   const langBtn = document.getElementById('templates-lang-toggle');
