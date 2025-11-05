@@ -43,6 +43,7 @@
 #templates-a4-root[data-render-context="export"] .a4-page--landscape { width: 1123px; }
 #templates-a4-root[data-render-context="export"] [data-a4-pages] { display:block; }
 #templates-a4-root[data-render-context="export"] .a4-page { box-shadow:none; }
+#templates-a4-root[data-render-context="export"] .a4-page { border: none !important; }
 #templates-a4-root[data-render-context="export"] .a4-page + .a4-page { margin-top: 0; }
 #templates-a4-root[data-render-context="export"] .a4-page::before { display:none; content:none; }
 #templates-a4-root[data-render-context="export"] .a4-page { page-break-after: always; break-after: page; }
