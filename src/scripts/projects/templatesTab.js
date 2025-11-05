@@ -912,8 +912,8 @@ async function renderPdfLivePreview() {
   const A4_H_MM = landscape ? 210 : 297;
   const CSS_DPI = 96; const PX_PER_MM = CSS_DPI / 25.4;
 
-  const selVal = document.getElementById('pdftun-page')?.value || 'all';
-  const pageIndex = selVal === 'all' ? 0 : Math.max(0, Number(selVal) || 0);
+  const selVal = document.getElementById('pdftun-page')?.value;
+  const pageIndex = Math.max(0, Number(selVal ?? 0) || 0);
   const pagesAll = Array.from(host.querySelectorAll('.a4-page'));
   const page = pagesAll[pageIndex] || pagesAll[0];
   if (!page) return;
@@ -1083,27 +1083,22 @@ function ensurePdfTunerUI() {
   const refreshPagesList = () => {
     const sel = panel.querySelector('#pdftun-page');
     const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
-    const cur = sel.value || 'all';
-    const opts = ['<option value="all">كل الصفحات</option>'];
+    const cur = sel.value || '0';
+    const opts = [];
     pages.forEach((_, idx) => { opts.push(`<option value="${idx}">الصفحة ${idx+1}</option>`); });
     sel.innerHTML = opts.join('');
-    if (Array.from(sel.options).some((o) => o.value === cur)) sel.value = cur; else sel.value = 'all';
+    if (Array.from(sel.options).some((o) => o.value === cur)) sel.value = cur; else sel.value = '0';
   };
   const loadValuesForSelected = () => {
     const sel = panel.querySelector('#pdftun-page');
-    const v = sel.value || 'all';
-    const pageIndex = v === 'all' ? null : Number(v);
-    const extraTrimVal = pageIndex == null
-      ? readPdfPref('templatesPdf.extraTrimMm', 14)
-      : readPdfPrefForPage('templatesPdf.extraTrimMm', pageIndex, readPdfPref('templatesPdf.extraTrimMm', 14));
-    const safeMarginVal = pageIndex == null
-      ? readPdfPref('templatesPdf.safeMarginMm', 0.5)
-      : readPdfPrefForPage('templatesPdf.safeMarginMm', pageIndex, readPdfPref('templatesPdf.safeMarginMm', 0.5));
+    const pageIndex = Math.max(0, Number(sel.value || '0'));
+    const extraTrimVal = readPdfPrefForPage('templatesPdf.extraTrimMm', pageIndex, readPdfPref('templatesPdf.extraTrimMm', 14));
+    const safeMarginVal = readPdfPrefForPage('templatesPdf.safeMarginMm', pageIndex, readPdfPref('templatesPdf.safeMarginMm', 0.5));
     document.getElementById('pdftun-extraTrim').value = String(extraTrimVal);
     document.getElementById('pdftun-safeMargin').value = String(safeMarginVal);
-    const defaultFudge = pageIndex == null ? -144.5 : (pageIndex === 0 ? -144.5 : 0);
-    const fudgeVal = pageIndex == null ? readPdfPref('templatesPdf.tightFudgeMm', defaultFudge) : readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, defaultFudge);
-    const rightVal = pageIndex == null ? readPdfPref('templatesPdf.shiftRightMm', 40) : readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
+    const defaultFudge = (pageIndex === 0 ? -144.5 : 0);
+    const fudgeVal = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, defaultFudge);
+    const rightVal = readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
     document.getElementById('pdftun-tightFudge').value = String(fudgeVal);
     document.getElementById('pdftun-right').value = String(rightVal);
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
@@ -1117,26 +1112,34 @@ function ensurePdfTunerUI() {
   });
   panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); renderPdfLivePreview(); });
   const auto = panel.querySelector('#pdftun-auto');
-  const bind = (id, key) => {
+  const bind = (id, key, perPage = true) => {
     const input = document.getElementById(id);
     input.addEventListener('input', () => {
       const v = input.value;
-      const sel = panel.querySelector('#pdftun-page').value || 'all';
-      if (sel === 'all') writePdfPref(key, v); else setPdfPageOverride(Number(sel), key, v);
+      if (perPage) {
+        const sel = panel.querySelector('#pdftun-page').value || '0';
+        setPdfPageOverride(Number(sel), key, v);
+      } else {
+        writePdfPref(key, v);
+      }
       if (auto.checked) renderPdfLivePreview();
     });
     input.addEventListener('change', () => {
       const v = input.value;
-      const sel = panel.querySelector('#pdftun-page').value || 'all';
-      if (sel === 'all') writePdfPref(key, v); else setPdfPageOverride(Number(sel), key, v);
+      if (perPage) {
+        const sel = panel.querySelector('#pdftun-page').value || '0';
+        setPdfPageOverride(Number(sel), key, v);
+      } else {
+        writePdfPref(key, v);
+      }
       renderPdfLivePreview();
     });
   };
-  bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm');
-  bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm');
-  bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm');
-  bind('pdftun-right', 'templatesPdf.shiftRightMm');
-  bind('pdftun-scale', 'templatesPdf.scalePct');
+  bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm', true);
+  bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm', true);
+  bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm', true);
+  bind('pdftun-right', 'templatesPdf.shiftRightMm', true);
+  bind('pdftun-scale', 'templatesPdf.scalePct', false);
 
   document.getElementById('pdftun-reset').addEventListener('click', () => {
     try {
