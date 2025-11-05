@@ -641,6 +641,14 @@ async function printTemplatesPdf() {
           pg.style.transformOrigin = 'top left';
           pg.style.transform = `translate(${rightMm}mm, ${fudge}mm) scale(${s})`;
         });
+        // Remove pages that have no data rows to avoid blank pages in fallback
+        pages.forEach((pg) => {
+          const hasDataRow = pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+          const hasTopSheet = pg.querySelector('#expenses-top-sheet');
+          if (!hasTopSheet && !hasDataRow) {
+            try { pg.parentElement.removeChild(pg); } catch(_) {}
+          }
+        });
       } catch(_) {}
 
       // Ensure assets ready before rendering
@@ -722,6 +730,28 @@ async function printTemplatesPdf() {
   };
   const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
   const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
+  // Estimate if a canvas is nearly blank (no significant dark pixels)
+  const isCanvasAlmostBlank = (canvas, threshold = 244) => {
+    try {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = canvas;
+      const xStart = Math.floor(width * 0.15);
+      const regionW = Math.max(10, Math.floor(width * 0.70));
+      const stepY = Math.max(4, Math.floor(height / 80));
+      let darkTotal = 0;
+      let samples = 0;
+      for (let y = 6; y < height - 6; y += stepY) {
+        const data = ctx.getImageData(xStart, y, regionW, 1).data;
+        samples += regionW;
+        for (let x = 0; x < regionW; x += 1) {
+          const i4 = x * 4; const r = data[i4], g = data[i4 + 1], b = data[i4 + 2];
+          if (r < threshold || g < threshold || b < threshold) darkTotal += 1;
+        }
+      }
+      const coverage = darkTotal / Math.max(1, samples);
+      return coverage < 0.001; // ~0.1% dark coverage treated as blank
+    } catch (_) { return false; }
+  };
 
   patchHtml2CanvasColorParsing();
   const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait', compress: true });
@@ -786,6 +816,8 @@ async function printTemplatesPdf() {
     }
 
     if (!canvas) continue;
+    // Skip truly blank pages early
+    if (isCanvasAlmostBlank(canvas)) { continue; }
     const topWhitePx = measureTopWhitespacePx(canvas, 246);
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
     const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
@@ -801,6 +833,8 @@ async function printTemplatesPdf() {
     const chosenTopPx = Math.min(Math.max(0, baseChosenTopPx + extraTrimPx), Math.max(0, headerTopScaledPx - safeMarginPx));
     const bottomWhitePx = measureBottomWhitespacePx(canvas, 246);
     const cropped = cropCanvasVertical(canvas, chosenTopPx, bottomWhitePx);
+    // Guard: if cropped result is still almost blank, skip adding this page
+    if (isCanvasAlmostBlank(cropped)) { continue; }
 
     // استخدم تحجيم 1:1 افتراضياً لضمان عدم إضافة فراغات هامشية
     const shrink = Math.max(0.98, Math.min(1, prefs.scale || 1));
