@@ -638,8 +638,8 @@ async function printTemplatesPdf() {
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
       // تطبيق إزاحة أعلى/يمين في مسار html2pdf الاحتياطي أيضاً
       try {
-        const rightMm = (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 36.5);
-        const tightFudgeMm = (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -148);
+        const rightMm = (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40);
+        const tightFudgeMm = (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5);
         const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
         const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
         scope.querySelectorAll('.a4-page').forEach((pg) => {
@@ -670,11 +670,11 @@ async function printTemplatesPdf() {
   const prefs = (() => {
     try {
       return {
-        rightMm: (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 36.5),
+        rightMm: (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40),
         topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
         scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
       };
-    } catch (_) { return { rightMm: 36.5, topMm: 0, scale: 1 }; }
+    } catch (_) { return { rightMm: 40, topMm: 0, scale: 1 }; }
   })();
 
   // Helper fns as used in reports exporter
@@ -831,7 +831,7 @@ async function printTemplatesPdf() {
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
     // تعويض افتراضي قوي للرفع (-166mm) ويمكن تعديله من LocalStorage
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -148; } catch(_) { return -148; } })();
+    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
     let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
@@ -950,8 +950,8 @@ async function renderPdfLivePreview() {
   const shrink = Math.max(0.98, Math.min(1, prefsScale || 1));
   const targetWmm = A4_W_MM * shrink;
   const targetHmm = (cropped.height / cropped.width) * targetWmm;
-  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 36.5);
-  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -148);
+  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 40);
+  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -144.5);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
 
   // Simulated placement
@@ -1040,8 +1040,8 @@ function ensurePdfTunerUI() {
   const init = () => {
     document.getElementById('pdftun-extraTrim').value = String(readPdfPref('templatesPdf.extraTrimMm', 14));
     document.getElementById('pdftun-safeMargin').value = String(readPdfPref('templatesPdf.safeMarginMm', 0.5));
-    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -148));
-    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 36.5));
+    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -144.5));
+    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 40));
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
   };
   init();
