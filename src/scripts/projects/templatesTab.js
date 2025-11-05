@@ -10,7 +10,7 @@ function getReservationsForProjectLocal(projectId) {
     ? list.filter((r) => String(r?.projectId ?? r?.project_id ?? '') === String(projectId))
     : [];
 }
-import { ensureHtml2Pdf } from '../reports/external.js';
+import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -1002,9 +1002,20 @@ async function renderPdfLivePreview() {
   if (!host) return;
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
-  const html2pdf = await ensureHtml2Pdf();
-  const h2c = window.html2canvas;
-  if (typeof h2c !== 'function') return;
+  // Ensure preview slot indicates action
+  try { const slot0 = document.getElementById('templates-pdf-live-slot'); if (slot0) { slot0.innerHTML = '<div style="padding:8px;color:#64748b">… جار إنشاء المعاينة</div>'; } } catch(_) {}
+  let html2pdf;
+  try { html2pdf = await ensureHtml2Pdf(); } catch(_) { html2pdf = null; }
+  let h2c = window.html2canvas;
+  if (typeof h2c !== 'function') {
+    try { await loadExternalScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'); } catch(_) {}
+    h2c = window.html2canvas;
+  }
+  if (typeof h2c !== 'function') {
+    const slot = document.getElementById('templates-pdf-live-slot');
+    if (slot) slot.innerHTML = '<div style="padding:8px;color:#ef4444">تعذر تحميل html2canvas لمعاينة PDF. تأكد من اتصال الشبكة ثم أعد المحاولة.</div>';
+    return;
+  }
 
   const A4_W_PX = landscape ? 1123 : 794;
   const A4_H_PX = landscape ? 794 : 1123;
