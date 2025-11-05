@@ -33,9 +33,9 @@
 .a4-inner { position:absolute; inset:0; padding:12mm 24mm 12mm 20mm; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
-/* In export/print contexts, remove the extra top padding so the
-   first element starts exactly at the top edge of the page. */
-#templates-a4-root[data-render-context="export"] .a4-inner { padding-top: 0mm !important; }
+/* In export/print contexts, remove all inner paddings so content
+   starts exactly at the top-left edge of the page. */
+#templates-a4-root[data-render-context="export"] .a4-inner { padding: 0mm !important; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */

@@ -1678,6 +1678,7 @@ function paginateExpDetailsTables() {
     const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
     const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
     const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+    const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
     const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
     const appendOrNewPage = (node) => {
       const tbody = workingTable.tBodies[0];
@@ -1688,13 +1689,26 @@ function paginateExpDetailsTables() {
         if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
         workingTable = makeTable();
         currentInner.appendChild(workingTable);
+        // Repeat group title at the top of each continuation page
+        if (groupBarTpl) { workingTable.tBodies[0].appendChild(groupBarTpl.cloneNode(true)); }
         workingTable.tBodies[0].appendChild(node);
       }
     };
 
+    // Keep a template of the group title bar to repeat on new pages
+    let groupBarTpl = null;
+
     let i = 0;
     while (i < rows.length) {
       const row = rows[i];
+      if (isGroupBar(row)) {
+        groupBarTpl = row.cloneNode(true);
+        // Ensure the first page has the bar at the top of the working table
+        const tb = workingTable.tBodies[0];
+        if (!tb.firstElementChild) tb.appendChild(row);
+        else tb.insertBefore(row, tb.firstElementChild);
+        i += 1; continue;
+      }
       if (isSubHeader(row)) {
         const pack = [row];
         const headerCode = row.getAttribute('data-subgroup');
