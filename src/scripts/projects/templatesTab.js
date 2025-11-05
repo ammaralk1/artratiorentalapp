@@ -882,15 +882,20 @@ async function printTemplatesPdf() {
 
     // استخدم تحجيم 1:1 افتراضياً لضمان عدم إضافة فراغات هامشية
     let targetWmm, targetHmm, finalX;
+    // Shared right-shift (applies in both strict and non-strict)
+    let globalRightAll = 0;
+    try { globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0; } catch(_) { globalRightAll = 0; }
     if (strictWysiwyg) {
       // Force exact A4 dimensions for 1:1 export
-      targetWmm = A4_W_MM; targetHmm = A4_H_MM; finalX = 0;
+      targetWmm = A4_W_MM; targetHmm = A4_H_MM;
+      finalX = Number(readPdfPrefForPage('templatesPdf.shiftRightMm', i, (Number(prefs.rightMm) || 0))) || 0;
+      finalX += globalRightAll;
     } else {
       const shrink = Math.max(0.98, Math.min(1, prefs.scale || 1));
       targetWmm = A4_W_MM * shrink;
       targetHmm = (cropped.height / cropped.width) * targetWmm;
       finalX = Number(readPdfPrefForPage('templatesPdf.shiftRightMm', i, (Number(prefs.rightMm) || 0))) || 0;
-      try { finalX += Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0; } catch(_) {}
+      finalX += globalRightAll;
     }
 
     // Compute placement to push content to the very top edge.
@@ -928,8 +933,9 @@ async function printTemplatesPdf() {
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (strictWysiwyg) {
-      // ادفع الصورة للأعلى بمقدار الفراغ المقاس
-      finalY = -headerInCroppedMm;
+      // ادفع الصورة للأعلى بمقدار الفراغ المقاس + السماح بتحكم يدوي لكل صفحة
+      const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, (i === 0 ? globalTightFudgeMm : 0))) || 0;
+      finalY = -headerInCroppedMm + pageFudge + globalYmm + (Number.isFinite(globalAllYmm) ? globalAllYmm : 0);
     } else {
       if (pdfPageIndex > 0) {
         const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, 0)) || 0;
