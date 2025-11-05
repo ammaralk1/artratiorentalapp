@@ -867,7 +867,7 @@ async function printTemplatesPdf() {
     const globalTightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
-    const globalAllYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalAllYmm')); return Number.isFinite(v) ? v : 0; } catch(_) { return 0; } })();
+    const globalAllYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalAllYmm')); return Number.isFinite(v) ? v : -1; } catch(_) { return -1; } })();
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (pdfPageIndex > 0) {
@@ -1029,7 +1029,7 @@ async function renderPdfLivePreview() {
   const baselineFudge = (pageIndex === 0) ? readPdfPref('templatesPdf.tightFudgeMm', -144.5) : 0;
   const tightFudgeMm = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, baselineFudge);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
-  const globalAllYmm = readPdfPref('templatesPdf.globalAllYmm', 0);
+  const globalAllYmm = readPdfPref('templatesPdf.globalAllYmm', -1);
 
   // Simulated placement
   const finalXmm = rightMm;
@@ -1150,7 +1150,7 @@ function ensurePdfTunerUI() {
     document.getElementById('pdftun-tightFudge').value = String(fudgeVal);
     document.getElementById('pdftun-right').value = String(rightVal);
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
-    try { document.getElementById('pdftun-globalY').value = String(readPdfPref('templatesPdf.globalAllYmm', 0)); } catch(_) {}
+    try { document.getElementById('pdftun-globalY').value = String(readPdfPref('templatesPdf.globalAllYmm', -1)); } catch(_) {}
   };
   const init = () => { refreshPagesList(); loadValuesForSelected(); };
   init();
@@ -1162,13 +1162,13 @@ function ensurePdfTunerUI() {
       // Seed preset once if there are no overrides at all
       try {
         const ov = getPdfPageOverrides();
-        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v3')) {
+        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v4')) {
           const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
           if (pages.length) {
             const right = 61, safe = 0.5;
-            const offsets = [-145, -289, -435, -581, -727];
-            const trims =   [  14,   14,   14,   14,  114];
-            const stepAfter = -146;
+            const offsets = [-145, -290, -435, -580, -725];
+            const trims =   [  14,   14,   14,   14,   14];
+            const stepAfter = -145;
             pages.forEach((_, idx) => {
               const off = (idx < offsets.length) ? offsets[idx] : (offsets[offsets.length - 1] + stepAfter * (idx - (offsets.length - 1)));
               const trim = (idx < trims.length) ? trims[idx] : trims[trims.length - 1];
@@ -1177,7 +1177,8 @@ function ensurePdfTunerUI() {
               setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
               setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
             });
-            localStorage.setItem('templatesPdf.presetSeeded.v3', '1');
+            localStorage.setItem('templatesPdf.presetSeeded.v4', '1');
+            try { localStorage.setItem('templatesPdf.globalAllYmm', '-1'); } catch(_) {}
             loadValuesForSelected();
           }
         }
@@ -1232,9 +1233,10 @@ function ensurePdfTunerUI() {
   const applyPreset = () => {
     const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
     const right = 61; const safe = 0.5;
-    const offsets = [-145, -289, -435, -581, -727]; // per screenshots (pages 1..5)
-    const trims =   [  14,   14,   14,   14,  114]; // page 5 has Top Trim 114
-    const stepAfter = -146; // for pages >5, keep stepping
+    // New series from latest screenshots
+    const offsets = [-145, -290, -435, -580, -725]; // pages 1..5
+    const trims =   [  14,   14,   14,   14,   14]; // 14 for all
+    const stepAfter = -145; // for pages >5, keep same step
     pages.forEach((_, idx) => {
       const off = (idx < offsets.length) ? offsets[idx] : (offsets[offsets.length - 1] + stepAfter * (idx - (offsets.length - 1)));
       const trim = (idx < trims.length) ? trims[idx] : trims[trims.length - 1];
@@ -1243,6 +1245,7 @@ function ensurePdfTunerUI() {
       setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
       setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
     });
+    try { localStorage.setItem('templatesPdf.globalAllYmm', '-1'); } catch (_) {}
     loadValuesForSelected();
     renderPdfLivePreview();
   };
