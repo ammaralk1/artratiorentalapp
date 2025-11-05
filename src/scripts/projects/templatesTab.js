@@ -1072,6 +1072,7 @@ function ensurePdfTunerUI() {
         <input id="pdftun-auto" type="checkbox" checked />
         <span>Auto Preview</span>
       </label>
+      <button type="button" class="btn btn-outline" id="pdftun-preset">تطبيق القيم</button>
       <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
       <button type="button" class="btn btn-primary" id="pdftun-preview">👁️ معاينة</button>
       <button type="button" class="btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
@@ -1116,6 +1117,24 @@ function ensurePdfTunerUI() {
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     if (panel.style.display === 'block') {
       try { refreshPagesList(); loadValuesForSelected(); } catch(_) {}
+      // Seed preset once if there are no overrides at all
+      try {
+        const ov = getPdfPageOverrides();
+        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v1')) {
+          const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
+          if (pages.length) {
+            const baseRight = 61, baseTop = -123, step = -122, trim = 14, safe = 0.5;
+            pages.forEach((_, idx) => {
+              setPdfPageOverride(idx, 'templatesPdf.shiftRightMm', baseRight);
+              setPdfPageOverride(idx, 'templatesPdf.tightFudgeMm', baseTop + (step * idx));
+              setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
+              setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
+            });
+            localStorage.setItem('templatesPdf.presetSeeded.v1', '1');
+            loadValuesForSelected();
+          }
+        }
+      } catch(_) {}
       try {
         if (window.__pdfTunerMO) { try { window.__pdfTunerMO.disconnect(); } catch(_) {} }
         const wrap = document.querySelector('#templates-preview-host #templates-a4-root [data-a4-pages]') || document.querySelector('#templates-preview-host #templates-a4-root');
@@ -1160,6 +1179,26 @@ function ensurePdfTunerUI() {
   bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm', true);
   bind('pdftun-right', 'templatesPdf.shiftRightMm', true);
   bind('pdftun-scale', 'templatesPdf.scalePct', false);
+
+  // Apply recommended per-page alignment from provided screenshots
+  const applyPreset = () => {
+    const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
+    const baseRight = 61; // mm
+    const baseTop = -123; // page 1
+    const step = -122; // delta per next page
+    const trim = 14;
+    const safe = 0.5;
+    pages.forEach((_, idx) => {
+      const t = baseTop + (step * idx);
+      setPdfPageOverride(idx, 'templatesPdf.shiftRightMm', baseRight);
+      setPdfPageOverride(idx, 'templatesPdf.tightFudgeMm', t);
+      setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
+      setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
+    });
+    loadValuesForSelected();
+    renderPdfLivePreview();
+  };
+  document.getElementById('pdftun-preset').addEventListener('click', applyPreset);
 
   document.getElementById('pdftun-reset').addEventListener('click', () => {
     try {
