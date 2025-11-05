@@ -1148,6 +1148,8 @@ function ensurePdfTunerUI() {
   });
   document.getElementById('pdftun-preview').addEventListener('click', renderPdfLivePreview);
   document.getElementById('pdftun-print').addEventListener('click', printTemplatesPdf);
+  // Expose refreshers for external calls after pages rebuild
+  try { window.__pdfTunerRefreshPages = refreshPagesList; window.__pdfTunerLoadValues = loadValuesForSelected; } catch (_) {}
 }
 
 function populateProjectSelect() {
@@ -1479,6 +1481,8 @@ function autoPaginateTemplates() {
   try { applyZebraStripes(); } catch (_) {}
   try { shrinkSubHeaderLabels(); } catch (_) {}
   try { shrinkSingleWordCells(); } catch (_) {}
+  try { if (window.__pdfTunerRefreshPages) window.__pdfTunerRefreshPages(); } catch(_) {}
+  try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {}
 }
 
 // bindPreviewAdjustControls removed
