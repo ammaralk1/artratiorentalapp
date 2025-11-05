@@ -193,6 +193,13 @@ function buildExpensesPage(project, reservations, opts = {}) {
   ]);
   const mkTopTable = (title, codes, cls) => {
     const tbl = el('table', { class: 'exp-table exp-top-table' });
+    // Widen DESCRIPTION in top sheet tables as well
+    try {
+      const colgroup = el('colgroup');
+      const widths = ['12%','56%','12%','20%'];
+      widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
+      tbl.appendChild(colgroup);
+    } catch(_) {}
     const cap = el('caption', { class: 'exp-group-cap' }, [ el('div', { class: `exp-group-bar ${cls||''}`, text: title }) ]);
     tbl.appendChild(cap);
     const thead = el('thead');
@@ -261,8 +268,8 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Define exact column widths via <colgroup> to ensure fixed layout works
     try {
       const colgroup = el('colgroup');
-      // Expanded DESCRIPTION column for better readability; rebalanced others
-      const widths = ['6%','42%','6%','6%','6%','10%','6%','10%','8%'];
+      // Expanded DESCRIPTION further to fit at least two words
+      const widths = ['5%','50%','6%','6%','5%','9%','5%','10%','4%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       table.appendChild(colgroup);
     } catch(_) {}

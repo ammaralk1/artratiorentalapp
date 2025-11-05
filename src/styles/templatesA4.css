@@ -30,12 +30,12 @@
 }
 .a4-page { position:relative; width:794px; height:1123px; background:#fff; border:1px solid #e5e7eb; }
 .a4-page--landscape { width:1123px; height:794px; }
-.a4-inner { position:absolute; inset:0; padding:12mm 24mm 12mm 20mm; }
+.a4-inner { position:absolute; inset:0; padding:10mm 12mm 10mm 12mm; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* In export/print contexts, remove all inner paddings so content
    starts exactly at the top-left edge of the page. */
-#templates-a4-root[data-render-context="export"] .a4-inner { padding: 12mm 24mm 12mm 20mm !important; }
+#templates-a4-root[data-render-context="export"] .a4-inner { padding: 10mm 12mm 10mm 12mm !important; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */
@@ -203,7 +203,9 @@ table.exp-details thead th { background: rgba(37, 99, 235, 0.30) !important; col
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */
 table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { padding:0 !important; }
-.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:0; padding:8px 10px; margin:0; display:block; width:100%; }
+.exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:0; padding:10px 12px; margin:0; display:block; width:100%; }
+/* Avoid clipped header in preview by nudging group bar slightly down */
+table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px; }
 .exp-group-bar--atl { background: inherit; }
 .exp-group-bar--prod { background: inherit; }
 .exp-group-bar--post { background: inherit; }
@@ -212,24 +214,25 @@ table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { p
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
-/* Expand DESCRIPTION to allow longer text; rebalance other columns accordingly */
-.exp-col-code { width:6%; }
-.exp-col-item { width:42%; }
+/* Further expand DESCRIPTION and rebalance others (preview & export) */
+.exp-col-code { width:5%; }
+.exp-col-item { width:50%; }
 .exp-col-amount { width:6%; }
 .exp-col-paid { width:6%; }
-.exp-col-x { width:6%; }
-.exp-col-rate { width:10%; }
-.exp-col-tab { width:6%; }
+.exp-col-x { width:5%; }
+.exp-col-rate { width:9%; }
+.exp-col-tab { width:5%; }
 .exp-col-total { width:10%; }
-/* Actions column */
-.exp-col-actions { width:8%; }
+/* Actions column (hidden in export) */
+.exp-col-actions { width:4%; }
 
 /* Make DESCRIPTION column readable: right/left aligned per dir, allow wrapping */
 table.exp-details tbody td:nth-child(2) {
   text-align: right;
   white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  /* Prefer breaking at word boundaries; still allow breaking long tokens */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 #templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) {
   text-align: left;
