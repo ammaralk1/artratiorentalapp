@@ -638,26 +638,21 @@ async function printTemplatesPdf() {
     document.body.appendChild(wrap);
 
     try {
-      // Force إزالة أي حشو علوي داخل صفحات التصدير وضبط الإزاحة وفق الإعدادات
+      // Force إزالة أي حشو علوي داخل صفحات التصدير
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
-      // تطبيق إزاحة أعلى/يمين في مسار html2pdf الاحتياطي أيضاً
+      // تطبيق الإزاحة اليدوية في مسار html2pdf دائماً (حتى في الوضع الصارم)
       try {
-        const strict = ((localStorage.getItem('templatesPdf.wysiwyg') ?? '1') !== '0');
         const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
-        const s = strict ? 1 : Math.max(0.98, Math.min(1.05, scalePct / 100));
         const pages = Array.from(scope.querySelectorAll('.a4-page'));
+        const globalAll = Number(localStorage.getItem('templatesPdf.globalAllYmm')) || 0;
+        const globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0;
         pages.forEach((pg, idx) => {
-          const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40));
+          const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0));
           const defaultFudge = (idx === 0) ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5) : 0;
           const fudge = (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, defaultFudge) || 0);
-          const globalAll = Number(localStorage.getItem('templatesPdf.globalAllYmm')) || 0;
-          const globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0;
+          const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
           pg.style.transformOrigin = 'top left';
-          if (strict) {
-            pg.style.transform = 'none';
-          } else {
-            pg.style.transform = `translate(${rightMm + globalRightAll}mm, ${fudge + globalAll}mm) scale(${s})`;
-          }
+          pg.style.transform = `translate(${rightMm + globalRightAll}mm, ${fudge + globalAll}mm) scale(${s})`;
         });
         // Remove pages that have no data rows to avoid blank pages in fallback
         pages.forEach((pg) => {
