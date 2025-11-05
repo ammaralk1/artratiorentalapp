@@ -1503,21 +1503,46 @@ function autoPaginateTemplates() {
   const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
   const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
   const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+  const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
 
   const fitsInner = () => {
     // Simpler and more robust in various layouts: compare scrollHeight to clientHeight
     return currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
   };
+  // Keep templates for repeating titles across page breaks
+  let groupBarTpl = null; // current group's blue bar
+  let subHeaderTpl = null; // current subgroup header row
+  let subHeaderCode = null;
+
+  const startNewPage = (firstNodeAboutToPlace = null) => {
+    ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+    pagesWrap.appendChild(currentPage);
+    workingTable = makeTable();
+    currentInner.appendChild(workingTable);
+    const tb = workingTable.tBodies[0];
+    // Repeat group bar at top of continuation pages unless we are placing a fresh bar now
+    if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) {
+      tb.appendChild(groupBarTpl.cloneNode(true));
+    }
+    // If continuing a subgroup and the next node isn't its header, repeat header
+    if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
+      const n = firstNodeAboutToPlace;
+      const belongsToSameSub = !!(n && (
+        (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
+        (n.getAttribute && n.getAttribute('data-row') === 'item') ||
+        (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
+      ));
+      if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
+    }
+  };
+
   const appendOrNewPage = (node) => {
     const tbody = workingTable.tBodies[0];
     tbody.appendChild(node);
     if (!fitsInner()) {
-      // rollback this node and move to a fresh page
+      // rollback this node and move to a fresh page and repeat context
       tbody.removeChild(node);
-      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-      pagesWrap.appendChild(currentPage);
-      workingTable = makeTable();
-      currentInner.appendChild(workingTable);
+      startNewPage(node);
       workingTable.tBodies[0].appendChild(node);
     }
   };
@@ -1525,6 +1550,15 @@ function autoPaginateTemplates() {
   let i = 0;
   while (i < rows.length) {
     const row = rows[i];
+
+    // Track current context while iterating
+    if (isGroupBar(row)) {
+      groupBarTpl = row.cloneNode(true);
+    }
+    if (isSubHeader(row)) {
+      subHeaderTpl = row.cloneNode(true);
+      subHeaderCode = row.getAttribute('data-subgroup');
+    }
 
     // Keep subgroup header with first 2 rows (and subtotal when immediately follows)
     if (isSubHeader(row)) {
@@ -1551,10 +1585,7 @@ function autoPaginateTemplates() {
       if (!fitsInner()) {
         // rollback
         pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
-        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-        pagesWrap.appendChild(currentPage);
-        workingTable = makeTable();
-        currentInner.appendChild(workingTable);
+        startNewPage(pack[0]);
         const tb2 = workingTable.tBodies[0];
         pack.forEach((n) => tb2.appendChild(n));
       }
@@ -1575,10 +1606,7 @@ function autoPaginateTemplates() {
           carry = prev;
           tbody.removeChild(prev);
         }
-        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-        pagesWrap.appendChild(currentPage);
-        workingTable = makeTable();
-        currentInner.appendChild(workingTable);
+        startNewPage(row);
         const tb2 = workingTable.tBodies[0];
         if (carry) tb2.appendChild(carry);
         tb2.appendChild(row);
@@ -1587,13 +1615,12 @@ function autoPaginateTemplates() {
           // move group total alone to a new page
           tb2.removeChild(row);
           if (carry) { /* keep carry on this page */ }
-          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-          pagesWrap.appendChild(currentPage);
-          workingTable = makeTable();
-          currentInner.appendChild(workingTable);
+          startNewPage(row);
           workingTable.tBodies[0].appendChild(row);
         }
       }
+      // Reset subgroup context at the end of the group
+      subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null;
       i += 1;
       continue;
     }
