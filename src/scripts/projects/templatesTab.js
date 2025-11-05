@@ -600,7 +600,8 @@ async function printTemplatesPdf() {
   if (!host) return;
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
-  const strictWysiwyg = (() => { try { return (localStorage.getItem('templatesPdf.wysiwyg') ?? '1') !== '0'; } catch(_) { return true; } })();
+  // Default to non-strict so we trim any accidental top whitespace and align header to the very top
+  const strictWysiwyg = (() => { try { return (localStorage.getItem('templatesPdf.wysiwyg') ?? '0') !== '0'; } catch(_) { return false; } })();
   const html2pdf = await ensureHtml2Pdf();
 
   // Dimensions for A4 at CSS 96dpi
@@ -798,6 +799,25 @@ async function printTemplatesPdf() {
     clone.style.position = 'relative';
     clone.style.background = '#ffffff';
     clone.style.overflow = 'hidden';
+    // Ensure every exp-details table starts with its group title bar on this page
+    try {
+      const ensureGroupBarTop = (cl, origin) => {
+        const tbl = cl.querySelector('table.exp-details');
+        if (!tbl) return;
+        const tb = tbl.tBodies && tbl.tBodies[0];
+        if (!tb) return;
+        const first = tb.firstElementChild;
+        const isBar = first && first.hasAttribute && first.hasAttribute('data-group-bar');
+        if (isBar) return;
+        let bar = cl.querySelector('tbody > tr[data-group-bar]');
+        if (!bar && origin) bar = origin.querySelector('tbody > tr[data-group-bar]');
+        if (bar) {
+          const barClone = bar.cloneNode(true);
+          tb.insertBefore(barClone, tb.firstElementChild);
+        }
+      };
+      ensureGroupBarTop(clone, page);
+    } catch (_) {}
     pagesWrap.appendChild(clone);
     scope.appendChild(pagesWrap);
     wrap.appendChild(scope);
@@ -999,6 +1019,21 @@ async function renderPdfLivePreview() {
   clone.style.height = `${A4_H_PX}px`;
   clone.style.background = '#ffffff';
   clone.style.overflow = 'hidden';
+  // Ensure the group bar is at the very top of the table in the single-page clone
+  try {
+    const ensureBar = (cl, origin) => {
+      const tbl = cl.querySelector('table.exp-details');
+      if (!tbl) return;
+      const tb = tbl.tBodies && tbl.tBodies[0];
+      if (!tb) return;
+      const first = tb.firstElementChild;
+      if (first && first.hasAttribute && first.hasAttribute('data-group-bar')) return;
+      let bar = cl.querySelector('tbody > tr[data-group-bar]');
+      if (!bar && origin) bar = origin.querySelector('tbody > tr[data-group-bar]');
+      if (bar) tb.insertBefore(bar.cloneNode(true), tb.firstElementChild);
+    };
+    ensureBar(clone, page);
+  } catch (_) {}
   pagesWrap.appendChild(clone);
   scope.appendChild(pagesWrap);
   wrap.appendChild(scope);
@@ -1444,6 +1479,7 @@ function recomputeExpensesSubtotals() {
   if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
   if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
   try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
+  try { requestAnimationFrame(() => { try { paginateExpDetailsTables(); } catch (_) {} }); } catch (_) {}
 }
 
 function autoPaginateTemplates() {
