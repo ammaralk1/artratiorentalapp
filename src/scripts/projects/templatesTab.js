@@ -1120,17 +1120,17 @@ function ensurePdfTunerUI() {
       // Seed preset once if there are no overrides at all
       try {
         const ov = getPdfPageOverrides();
-        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v1')) {
+        if (ov && Object.keys(ov).length === 0 && !localStorage.getItem('templatesPdf.presetSeeded.v2')) {
           const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
           if (pages.length) {
-            const baseRight = 61, baseTop = -123, step = -122, trim = 14, safe = 0.5;
+            const baseRight = 61, baseTop = -126, step = -125.5, trim = 14, safe = 0.5;
             pages.forEach((_, idx) => {
               setPdfPageOverride(idx, 'templatesPdf.shiftRightMm', baseRight);
               setPdfPageOverride(idx, 'templatesPdf.tightFudgeMm', baseTop + (step * idx));
               setPdfPageOverride(idx, 'templatesPdf.extraTrimMm', trim);
               setPdfPageOverride(idx, 'templatesPdf.safeMarginMm', safe);
             });
-            localStorage.setItem('templatesPdf.presetSeeded.v1', '1');
+            localStorage.setItem('templatesPdf.presetSeeded.v2', '1');
             loadValuesForSelected();
           }
         }
@@ -1183,9 +1183,9 @@ function ensurePdfTunerUI() {
   // Apply recommended per-page alignment from provided screenshots
   const applyPreset = () => {
     const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
-    const baseRight = 61; // mm
-    const baseTop = -123; // page 1
-    const step = -122; // delta per next page
+    const baseRight = 61; // mm (constant across pages)
+    const baseTop = -126; // page 1 Top Offset per latest screenshots
+    const step = -125.5; // delta per next page (e.g., -126, -251.5, -377, -502, -627, ...)
     const trim = 14;
     const safe = 0.5;
     pages.forEach((_, idx) => {
