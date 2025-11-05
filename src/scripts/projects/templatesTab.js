@@ -258,6 +258,13 @@ function buildExpensesPage(project, reservations, opts = {}) {
   ];
   const makeDetailsTable = (groupKey, groupTitle, subDefs) => {
     const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
+    // Define exact column widths via <colgroup> to ensure fixed layout works
+    try {
+      const colgroup = el('colgroup');
+      const widths = ['8%','34%','7%','9%','6%','11%','6%','11%','8%'];
+      widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
+      table.appendChild(colgroup);
+    } catch(_) {}
     const thead = el('thead');
     // فقط شريط العنوان في THEAD ليتكرر في كل صفحة — نزيل صف الأعمدة العام لتفادي الدبل هيدر
     const groupTitleRow = el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [
