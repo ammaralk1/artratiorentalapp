@@ -1086,7 +1086,12 @@ function ensurePdfTunerUI() {
     const cur = sel.value || '0';
     const opts = [];
     pages.forEach((_, idx) => { opts.push(`<option value="${idx}">الصفحة ${idx+1}</option>`); });
-    sel.innerHTML = opts.join('');
+    if (!opts.length) {
+      sel.innerHTML = '<option value="0">الصفحة 1</option>';
+      setTimeout(() => { try { refreshPagesList(); } catch(_) {} }, 120);
+    } else {
+      sel.innerHTML = opts.join('');
+    }
     if (Array.from(sel.options).some((o) => o.value === cur)) sel.value = cur; else sel.value = '0';
   };
   const loadValuesForSelected = () => {
@@ -1108,7 +1113,21 @@ function ensurePdfTunerUI() {
 
   btn.addEventListener('click', () => {
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    if (panel.style.display === 'block') renderPdfLivePreview();
+    if (panel.style.display === 'block') {
+      try { refreshPagesList(); loadValuesForSelected(); } catch(_) {}
+      try {
+        if (window.__pdfTunerMO) { try { window.__pdfTunerMO.disconnect(); } catch(_) {} }
+        const wrap = document.querySelector('#templates-preview-host #templates-a4-root [data-a4-pages]') || document.querySelector('#templates-preview-host #templates-a4-root');
+        if (wrap) {
+          const mo = new MutationObserver(() => { try { refreshPagesList(); } catch(_) {} });
+          mo.observe(wrap, { childList: true, subtree: true });
+          window.__pdfTunerMO = mo;
+        }
+      } catch(_) {}
+      renderPdfLivePreview();
+    } else {
+      try { if (window.__pdfTunerMO) { window.__pdfTunerMO.disconnect(); window.__pdfTunerMO = null; } } catch(_) {}
+    }
   });
   panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); renderPdfLivePreview(); });
   const auto = panel.querySelector('#pdftun-auto');
