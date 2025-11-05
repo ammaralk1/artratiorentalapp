@@ -835,7 +835,7 @@ async function printTemplatesPdf() {
       const innerForHead = clone.querySelector('.a4-inner') || clone;
       const headerForHead = innerForHead.querySelector('.exp-masthead') || innerForHead.firstElementChild;
       if (headerForHead) {
-        const baseRect0 = clone.getBoundingClientRect();
+        const baseRect0 = innerForHead.getBoundingClientRect();
         const hdrRect0 = headerForHead.getBoundingClientRect();
         headerTopCssPx = Math.max(0, hdrRect0.top - baseRect0.top);
       }
@@ -845,7 +845,9 @@ async function printTemplatesPdf() {
     try {
       // Ensure fonts and images are fully loaded before capture for consistency
       await ensureAssetsReady(scope);
-      canvas = await h2c(clone, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: A4_W_PX, windowHeight: A4_H_PX });
+      const captureTarget = clone.querySelector('.a4-inner') || clone;
+      const rect = captureTarget.getBoundingClientRect();
+      canvas = await h2c(captureTarget, { ...baseOpts, scrollX: 0, scrollY: 0, windowWidth: Math.ceil(rect.width), windowHeight: Math.ceil(rect.height) });
     } finally {
       try { revertStyleMutations(revert); } catch (_) {}
       try { removeExportSanitizer(scope, sanitizerHandle); } catch (_) {}
