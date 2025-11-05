@@ -638,8 +638,9 @@ async function printTemplatesPdf() {
           const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40));
           const defaultFudge = (idx === 0) ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5) : 0;
           const fudge = (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, defaultFudge) || 0);
+          const globalAll = Number(localStorage.getItem('templatesPdf.globalAllYmm')) || 0;
           pg.style.transformOrigin = 'top left';
-          pg.style.transform = `translate(${rightMm}mm, ${fudge}mm) scale(${s})`;
+          pg.style.transform = `translate(${rightMm}mm, ${fudge + globalAll}mm) scale(${s})`;
         });
         // Remove pages that have no data rows to avoid blank pages in fallback
         pages.forEach((pg) => {
@@ -866,14 +867,15 @@ async function printTemplatesPdf() {
     const globalTightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
+    const globalAllYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalAllYmm')); return Number.isFinite(v) ? v : 0; } catch(_) { return 0; } })();
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (pdfPageIndex > 0) {
       const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, 0)) || 0;
-      finalY = -headerInCroppedMm + pageFudge;
+      finalY = -headerInCroppedMm + pageFudge + globalAllYmm;
     } else {
       const pageFudge0 = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, globalTightFudgeMm)) || 0;
-      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + pageFudge0 + globalYmm;
+      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + pageFudge0 + globalYmm + globalAllYmm;
     }
     // Clamp just in case (واسع للسماح بضبط قوي)
     if (finalY < -220) finalY = -220;
@@ -1027,11 +1029,12 @@ async function renderPdfLivePreview() {
   const baselineFudge = (pageIndex === 0) ? readPdfPref('templatesPdf.tightFudgeMm', -144.5) : 0;
   const tightFudgeMm = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, baselineFudge);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
+  const globalAllYmm = readPdfPref('templatesPdf.globalAllYmm', 0);
 
   // Simulated placement
   const finalXmm = rightMm;
   const headerInCroppedMm = Math.max(0, (headerTopCssPx * captureScale - chosenTopPx)) * (targetWmm / cropped.width);
-  let finalYmm = -headerInCroppedMm + tightFudgeMm + globalYmm;
+  let finalYmm = -headerInCroppedMm + tightFudgeMm + globalYmm + globalAllYmm;
 
   // Draw into a page-sized canvas
   const pageCanvas = document.createElement('canvas');
@@ -1081,6 +1084,10 @@ function ensurePdfTunerUI() {
       <label style=\"display:flex; flex-direction:column; gap:4px;\">
         <span>الصفحة</span>
         <select id=\"pdftun-page\" style=\"width:110px;\"></select>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Top Offset (All)</span>
+        <input id="pdftun-globalY" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
       </label>
       <label style="display:flex; flex-direction:column; gap:4px;">
         <span>Top Trim (mm)</span>
@@ -1143,6 +1150,7 @@ function ensurePdfTunerUI() {
     document.getElementById('pdftun-tightFudge').value = String(fudgeVal);
     document.getElementById('pdftun-right').value = String(rightVal);
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
+    try { document.getElementById('pdftun-globalY').value = String(readPdfPref('templatesPdf.globalAllYmm', 0)); } catch(_) {}
   };
   const init = () => { refreshPagesList(); loadValuesForSelected(); };
   init();
@@ -1218,6 +1226,7 @@ function ensurePdfTunerUI() {
   bind('pdftun-tightFudge', 'templatesPdf.tightFudgeMm', true);
   bind('pdftun-right', 'templatesPdf.shiftRightMm', true);
   bind('pdftun-scale', 'templatesPdf.scalePct', false);
+  bind('pdftun-globalY', 'templatesPdf.globalAllYmm', false);
 
   // Apply recommended per-page alignment from provided screenshots
   const applyPreset = () => {
@@ -1241,7 +1250,7 @@ function ensurePdfTunerUI() {
 
   document.getElementById('pdftun-reset').addEventListener('click', () => {
     try {
-      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm'].forEach((k) => localStorage.removeItem(k));
+      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm','templatesPdf.globalAllYmm'].forEach((k) => localStorage.removeItem(k));
       clearPdfPageOverrides();
     } catch (_) {}
     init();
