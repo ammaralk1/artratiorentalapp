@@ -599,7 +599,7 @@ async function printTemplatesPdf() {
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
   // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
-  const strictWysiwyg = (() => { try { return (localStorage.getItem('templatesPdf.wysiwyg') ?? '1') !== '0'; } catch(_) { return true; } })();
+  const strictWysiwyg = (() => { try { return (readPdfString('templatesPdf.wysiwyg','1') ?? '1') !== '0'; } catch(_) { return true; } })();
   const html2pdf = await ensureHtml2Pdf();
 
   // Dimensions for A4 at CSS 96dpi
@@ -640,13 +640,13 @@ async function printTemplatesPdf() {
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
       // تطبيق الإزاحة اليدوية في مسار html2pdf دائماً (حتى في الوضع الصارم)
       try {
-        const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
+        const scalePct = Number(readPdfPref('templatesPdf.scalePct', 100)) || 100;
         const pages = Array.from(scope.querySelectorAll('.a4-page'));
-        const globalAll = Number(localStorage.getItem('templatesPdf.globalAllYmm')) || 0;
-        const globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0;
+        const globalAll = Number(readPdfPref('templatesPdf.globalAllYmm', 0)) || 0;
+        const globalRightAll = Number(readPdfPref('templatesPdf.globalAllRightMm', 0)) || 0;
         pages.forEach((pg, idx) => {
-          const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 0));
-          const defaultFudge = (idx === 0) ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5) : 0;
+          const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, readPdfPref('templatesPdf.shiftRightMm', 0));
+          const defaultFudge = (idx === 0) ? (readPdfPref('templatesPdf.tightFudgeMm', -144.5)) : 0;
           const fudge = (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, defaultFudge) || 0);
           const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
           pg.style.transformOrigin = 'top left';
@@ -684,9 +684,9 @@ async function printTemplatesPdf() {
   const prefs = (() => {
     try {
       return {
-        rightMm: (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40),
-        topMm: Number(localStorage.getItem('templatesPdf.shiftTopMm')) || 0,
-        scale: (Number(localStorage.getItem('templatesPdf.scalePct')) || 100) / 100,
+        rightMm: readPdfPref('templatesPdf.shiftRightMm', 40),
+        topMm: readPdfPref('templatesPdf.shiftTopMm', 0),
+        scale: (readPdfPref('templatesPdf.scalePct', 100)) / 100,
       };
     } catch (_) { return { rightMm: 40, topMm: 0, scale: 1 }; }
   })();
@@ -877,7 +877,7 @@ async function printTemplatesPdf() {
     let targetWmm, targetHmm, finalX;
     // Shared right-shift (applies in both strict and non-strict)
     let globalRightAll = 0;
-    try { globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0; } catch(_) { globalRightAll = 0; }
+    try { globalRightAll = Number(readPdfPref('templatesPdf.globalAllRightMm', 0)) || 0; } catch(_) { globalRightAll = 0; }
     if (strictWysiwyg) {
       // Force exact A4 dimensions for 1:1 export
       targetWmm = A4_W_MM; targetHmm = A4_H_MM;
@@ -919,10 +919,10 @@ async function printTemplatesPdf() {
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
     // تعويض افتراضي قوي للرفع (-166mm) ويمكن تعديله من LocalStorage
-    const globalTightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
+    const globalTightFudgeMm = (() => { try { const v = Number(readPdfPref('templatesPdf.tightFudgeMm', -144.5)); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
-    const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
-    const globalAllYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalAllYmm')); return Number.isFinite(v) ? v : -1; } catch(_) { return -1; } })();
+    const globalYmm = (() => { try { const v = Number(readPdfPref('templatesPdf.globalYmm', 0)); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
+    const globalAllYmm = (() => { try { const v = Number(readPdfPref('templatesPdf.globalAllYmm', -1)); return Number.isFinite(v) ? v : -1; } catch(_) { return -1; } })();
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (strictWysiwyg) {
@@ -954,45 +954,43 @@ async function printTemplatesPdf() {
 }
 
 // ============== PDF Live Tuner ==============
+// ============== PDF Prefs (namespaced per template type) ==============
+function __pdfNsKeyBase() {
+  try { const type = document.getElementById('templates-type')?.value || 'expenses'; return `templatesPdf.${type}`; } catch(_) { return 'templatesPdf.expenses'; }
+}
+function __pdfResolve(key) {
+  const clean = String(key || '').replace(/^templatesPdf[.:]/, '');
+  const base = __pdfNsKeyBase();
+  return { ns: `${base}.${clean}`, legacy: `templatesPdf.${clean}` };
+}
 function readPdfPref(key, def) {
   try {
-    const v = localStorage.getItem(key);
+    const { ns, legacy } = __pdfResolve(key);
+    let v = localStorage.getItem(ns);
+    if (v == null) v = localStorage.getItem(legacy);
     if (v == null) return def;
     const n = Number(v);
     return Number.isFinite(n) ? n : def;
   } catch (_) { return def; }
 }
-
-function writePdfPref(key, val) {
-  try { localStorage.setItem(key, String(val)); } catch (_) {}
+function readPdfString(key, def) {
+  try { const { ns, legacy } = __pdfResolve(key); const v = localStorage.getItem(ns) ?? localStorage.getItem(legacy); return (v == null) ? def : String(v); } catch(_) { return def; }
 }
-
-// Per-page overrides helpers
+function writePdfPref(key, val) {
+  try { const { ns } = __pdfResolve(key); localStorage.setItem(ns, String(val)); } catch (_) {}
+}
+// Per-page overrides helpers (namespaced)
+function __pdfPageOverridesKey() { return `${__pdfNsKeyBase()}.pageOverrides`; }
 function getPdfPageOverrides() {
-  try {
-    const raw = localStorage.getItem('templatesPdf.pageOverrides');
-    return raw ? JSON.parse(raw) : {};
-  } catch(_) { return {}; }
+  try { const raw = localStorage.getItem(__pdfPageOverridesKey()); return raw ? JSON.parse(raw) : {}; } catch(_) { return {}; }
 }
 function setPdfPageOverride(pageIndex, key, val) {
-  try {
-    const obj = getPdfPageOverrides();
-    const idx = String(pageIndex);
-    obj[idx] = obj[idx] || {};
-    obj[idx][key] = Number(val);
-    localStorage.setItem('templatesPdf.pageOverrides', JSON.stringify(obj));
-  } catch(_) {}
+  try { const obj = getPdfPageOverrides(); const idx = String(pageIndex); obj[idx] = obj[idx] || {}; obj[idx][key] = Number(val); localStorage.setItem(__pdfPageOverridesKey(), JSON.stringify(obj)); } catch(_) {}
 }
 function readPdfPrefForPage(key, pageIndex, defWhenMissing) {
-  try {
-    const obj = getPdfPageOverrides();
-    const page = obj[String(pageIndex)];
-    if (page && page[key] != null && Number.isFinite(Number(page[key]))) return Number(page[key]);
-    return readPdfPref(key, defWhenMissing);
-  } catch(_) { return readPdfPref(key, defWhenMissing); }
+  try { const obj = getPdfPageOverrides(); const page = obj[String(pageIndex)]; if (page && page[key] != null && Number.isFinite(Number(page[key]))) return Number(page[key]); return readPdfPref(key, defWhenMissing); } catch(_) { return readPdfPref(key, defWhenMissing); }
 }
-function clearPdfPageOverrides() {
-  try { localStorage.removeItem('templatesPdf.pageOverrides'); } catch(_) {}
+function clearPdfPageOverrides() { try { localStorage.removeItem(__pdfPageOverridesKey()); } catch(_) {}
 }
 
 async function renderPdfLivePreview() {
@@ -2273,7 +2271,7 @@ export function initTemplatesTab() {
     (async () => { try { await populateSavedTemplates(); } catch {} })();
   });
   reservationSel?.addEventListener('change', renderTemplatesPreview);
-  typeSel?.addEventListener('change', renderTemplatesPreview);
+  typeSel?.addEventListener('change', () => { renderTemplatesPreview(); try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {} });
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   printBtn?.addEventListener('click', printTemplatesPdf);
   // Dropdown actions menu toggle
