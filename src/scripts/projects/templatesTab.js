@@ -259,14 +259,11 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const makeDetailsTable = (groupKey, groupTitle, subDefs) => {
     const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
     const thead = el('thead');
-    // Group title row placed inside THEAD so it repeats on each page
+    // فقط شريط العنوان في THEAD ليتكرر في كل صفحة — نزيل صف الأعمدة العام لتفادي الدبل هيدر
     const groupTitleRow = el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [
       el('th', { colspan: '9' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ])
     ]);
     thead.appendChild(groupTitleRow);
-    const head = el('tr');
-    headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
-    thead.appendChild(head);
     table.appendChild(thead);
     const tb = el('tbody');
 
