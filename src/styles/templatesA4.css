@@ -74,6 +74,12 @@
 #templates-a4-root[data-render-context="export"] tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; background-color: rgba(37,99,235,0.30) !important; }
 #templates-a4-root[data-render-context="export"] .exp-group-bar { background: #2563EB !important; background-color: #2563EB !important; color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] tr[data-subgroup-subtotal] td { background: rgba(0,0,0,0.07) !important; background-color: rgba(0,0,0,0.07) !important; }
+/* In export: allow cell text to wrap and grow row height so content never gets clipped */
+#templates-a4-root[data-render-context="export"] table.exp-table td,
+#templates-a4-root[data-render-context="export"] table.exp-table th { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; height: auto !important; min-height: 26px !important; line-height: 1.2 !important; }
+/* Keep numeric cells single-line */
+#templates-a4-root[data-render-context="export"] table.exp-table td[data-num],
+#templates-a4-root[data-render-context="export"] table.exp-table td.total { white-space: nowrap !important; }
 /* Also sanitize pseudo-elements to avoid oklab/oklch usage from frameworks */
 #templates-a4-root[data-render-context="export"] *::before,
 #templates-a4-root[data-render-context="export"] *::after {
@@ -174,13 +180,13 @@ table.exp-table::after { right:0; }
 /* Remove header shading */
 /* Light, print-safe header background */
 table.exp-table th { background:#fff !important; border:1.5px solid #94a3b8; padding:8px 8px; text-align:center; font-weight:700; }
-table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
+table.exp-table td { border:1.5px solid #cbd5e1; padding:6px 8px; text-align:center; vertical-align:middle; height:auto; min-height:26px; line-height:1.2; }
 #templates-a4-root[dir="ltr"] table.exp-table td { text-align:center; }
 table.exp-table td.code { text-align:center; font-weight:700; color:#334155; }
 #templates-a4-root[dir="ltr"] table.exp-table td.code { text-align:left; }
 table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 /* Numeric cells: enforce LTR order but keep right alignment */
-table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
+table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; white-space: nowrap; }
 /* Sub-headers tint ~30% of brand for readability */
 table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Default: don't force-hide thead; allow per-table control */
@@ -268,4 +274,8 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
   .a4-page:last-child { page-break-after: auto; break-after: auto; }
   /* Align inner content to the very top of the printed page */
   .a4-inner { padding-top: 0mm !important; }
+
+  /* Ensure table text wraps in print and rows expand as needed */
+  table.exp-table td, table.exp-table th { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; height: auto !important; min-height: 26px !important; line-height: 1.2 !important; }
+  table.exp-table td[data-num], table.exp-table td.total { white-space: nowrap !important; }
 }
