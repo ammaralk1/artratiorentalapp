@@ -635,9 +635,8 @@ async function printTemplatesPdf() {
         const pages = Array.from(scope.querySelectorAll('.a4-page'));
         pages.forEach((pg, idx) => {
           const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40));
-          const fudge = (idx === 0)
-            ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5)
-            : (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, 0) || 0);
+          const defaultFudge = (idx === 0) ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5) : 0;
+          const fudge = (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, defaultFudge) || 0);
           pg.style.transformOrigin = 'top left';
           pg.style.transform = `translate(${rightMm}mm, ${fudge}mm) scale(${s})`;
         });
@@ -838,7 +837,8 @@ async function printTemplatesPdf() {
       const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, 0)) || 0;
       finalY = -headerInCroppedMm + pageFudge;
     } else {
-      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + globalTightFudgeMm + globalYmm;
+      const pageFudge0 = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, globalTightFudgeMm)) || 0;
+      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + pageFudge0 + globalYmm;
     }
     // Clamp just in case (واسع للسماح بضبط قوي)
     if (finalY < -220) finalY = -220;
