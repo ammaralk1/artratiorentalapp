@@ -600,8 +600,8 @@ async function printTemplatesPdf() {
   if (!host) return;
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
-  // Default to non-strict so we trim any accidental top whitespace and align header to the very top
-  const strictWysiwyg = (() => { try { return (localStorage.getItem('templatesPdf.wysiwyg') ?? '0') !== '0'; } catch(_) { return false; } })();
+  // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
+  const strictWysiwyg = (() => { try { return (localStorage.getItem('templatesPdf.wysiwyg') ?? '1') !== '0'; } catch(_) { return true; } })();
   const html2pdf = await ensureHtml2Pdf();
 
   // Dimensions for A4 at CSS 96dpi

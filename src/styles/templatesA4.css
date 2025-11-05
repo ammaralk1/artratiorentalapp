@@ -35,7 +35,7 @@
 
 /* In export/print contexts, remove all inner paddings so content
    starts exactly at the top-left edge of the page. */
-#templates-a4-root[data-render-context="export"] .a4-inner { padding: 0mm !important; }
+#templates-a4-root[data-render-context="export"] .a4-inner { padding: 12mm 24mm 12mm 20mm !important; }
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */
@@ -183,12 +183,14 @@ table.exp-table td.total, table.exp-table td.subtotal { font-weight:800; }
 table.exp-table td[data-num], table.exp-table td.total { direction:ltr; unicode-bidi: plaintext; text-align:center; }
 /* Sub-headers tint ~30% of brand for readability */
 table.exp-table tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; font-weight:800; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-/* Hide global table header (we use sub-headers per section) */
-table.exp-table thead { display:none; }
-/* But keep head visible فقط للتوب شيت */
+/* Default: don't force-hide thead; allow per-table control */
+table.exp-table thead { display: table-header-group; }
+/* Top sheet header should repeat as well */
 table.exp-top-table thead { display: table-header-group; }
-/* إخفاء هيدر الأعمدة في صفحات المجموعات (لا نحتاجه) */
-table.exp-details thead { display: none !important; }
+/* Details tables: show thead and let it repeat on page breaks (print + export capture) */
+table.exp-details thead { display: table-header-group !important; }
+/* Tint details thead for readability */
+table.exp-details thead th { background: rgba(37, 99, 235, 0.30) !important; color:#000 !important; }
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */
