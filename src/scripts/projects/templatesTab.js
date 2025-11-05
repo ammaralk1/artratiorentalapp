@@ -2085,6 +2085,21 @@ export function initTemplatesTab() {
   typeSel?.addEventListener('change', renderTemplatesPreview);
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   printBtn?.addEventListener('click', printTemplatesPdf);
+  // Dropdown actions menu toggle
+  const actionsToggle = document.getElementById('templates-actions-toggle');
+  const actionsMenu = document.getElementById('templates-actions-menu');
+  const actionsDD = document.getElementById('templates-actions-dd');
+  if (actionsToggle && actionsMenu) {
+    const closeMenu = (ev) => {
+      if (!actionsDD?.contains(ev.target)) { actionsMenu.style.display = 'none'; document.removeEventListener('click', closeMenu, true); }
+    };
+    actionsToggle.addEventListener('click', (e2) => {
+      e2.preventDefault(); e2.stopPropagation();
+      const isOpen = actionsMenu.style.display === 'block';
+      actionsMenu.style.display = isOpen ? 'none' : 'block';
+      if (!isOpen) { document.addEventListener('click', closeMenu, true); }
+    });
+  }
   const langBtn = document.getElementById('templates-lang-toggle');
   if (langBtn) {
     const updateBtn = () => { langBtn.textContent = TEMPLATE_LANG === 'ar' ? '🌐 AR' : '🌐 EN'; langBtn.title = `Language: ${TEMPLATE_LANG.toUpperCase()}`; };

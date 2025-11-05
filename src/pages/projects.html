@@ -777,20 +777,27 @@
                         </select>
                       </div>
                       
-                      <div class="ms-auto d-flex gap-2">
+                      <div class="ms-auto d-flex gap-2" id="templates-actions">
                         <input type="text" id="templates-save-title" class="form-control" placeholder="اسم النسخة" style="min-width:160px;">
                         <select id="templates-saved" class="form-select"></select>
-                        <button type="button" class="btn btn-outline" id="templates-save">💾 حفظ</button>
-                        <button type="button" class="btn btn-outline" id="templates-save-copy">📎 حفظ كنسخة</button>
-                        <button type="button" class="btn btn-outline" id="templates-from-res">📅 من الحجز</button>
-                        <button type="button" class="btn btn-outline" id="templates-rename" title="إعادة تسمية المحفوظ المحدد">✏️ إعادة تسمية</button>
-                        <button type="button" class="btn btn-outline btn-danger" id="templates-delete" title="حذف المحفوظ المحدد">🗑️ حذف</button>
-                        <button type="button" class="btn btn-outline" id="templates-export" title="تصدير JSON">⬇️ تصدير</button>
-                        <button type="button" class="btn btn-outline" id="templates-import" title="استيراد JSON">⬆️ استيراد</button>
-                        <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
-                        <button type="button" class="btn btn-outline" id="templates-lang-toggle" title="Language: EN">🌐 EN</button>
-                        <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh">تحديث</button>
-                        <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print">🖨️ طباعة PDF</button>
+                        <div id="templates-actions-dd" class="position-relative" style="position:relative;">
+                          <button type="button" class="btn btn-outline" id="templates-actions-toggle">⋯ الإجراءات</button>
+                          <div id="templates-actions-menu" class="shadow" style="position:absolute; right:0; top:100%; min-width:240px; display:none; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:8px; z-index:50;">
+                            <button type="button" class="btn btn-outline" id="templates-save" style="display:block;width:100%;text-align:right;margin:4px 0;">💾 حفظ</button>
+                            <button type="button" class="btn btn-outline" id="templates-save-copy" style="display:block;width:100%;text-align:right;margin:4px 0;">📎 حفظ كنسخة</button>
+                            <button type="button" class="btn btn-outline" id="templates-from-res" style="display:block;width:100%;text-align:right;margin:4px 0;">📅 من الحجز</button>
+                            <button type="button" class="btn btn-outline" id="templates-rename" title="إعادة تسمية المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">✏️ إعادة تسمية</button>
+                            <button type="button" class="btn btn-outline btn-danger" id="templates-delete" title="حذف المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">🗑️ حذف</button>
+                            <hr class="dropdown-divider" style="margin:6px 0;">
+                            <button type="button" class="btn btn-outline" id="templates-export" title="تصدير JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬇️ تصدير</button>
+                            <button type="button" class="btn btn-outline" id="templates-import" title="استيراد JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬆️ استيراد</button>
+                            <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
+                            <hr class="dropdown-divider" style="margin:6px 0;">
+                            <button type="button" class="btn btn-outline" id="templates-lang-toggle" title="Language: EN" style="display:block;width:100%;text-align:right;margin:4px 0;">🌐 EN</button>
+                            <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh" style="display:block;width:100%;text-align:right;margin:4px 0;">تحديث</button>
+                            <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print" style="display:block;width:100%;text-align:right;margin:4px 0;">🖨️ طباعة PDF</button>
+                          </div>
+                        </div>
                       </div>
                       
                     </div>
