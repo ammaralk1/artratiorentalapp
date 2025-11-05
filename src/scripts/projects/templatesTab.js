@@ -582,6 +582,7 @@ function renderTemplatesPreview() {
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
+  try { paginateExpDetailsTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
 }
 
@@ -1505,6 +1506,127 @@ function autoPaginateTemplates() {
   try { shrinkSingleWordCells(); } catch (_) {}
   try { if (window.__pdfTunerRefreshPages) window.__pdfTunerRefreshPages(); } catch(_) {}
   try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {}
+}
+
+// Split long group tables (exp-details) into multiple pages and repeat headers.
+function paginateExpDetailsTables() {
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const pagesWrap = root.querySelector('[data-a4-pages]');
+  if (!pagesWrap) return;
+  const headerFooter = false;
+  const logoUrl = COMPANY_INFO.logoUrl;
+
+  const groupPages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
+  groupPages.forEach((pg) => {
+    const inner = pg.querySelector('.a4-inner');
+    if (!inner) return;
+    const table = inner.querySelector('table.exp-details');
+    if (!table || table.getAttribute('data-split-done') === '1') return;
+
+    const thead = table.querySelector('thead');
+    const rows = Array.from(table.querySelectorAll('tbody > tr'));
+    if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
+
+    const makeTable = () => {
+      const t = document.createElement('table');
+      t.className = table.className;
+      t.setAttribute('data-editable-table', 'expenses');
+      const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
+      t.appendChild(hd);
+      t.appendChild(document.createElement('tbody'));
+      return t;
+    };
+
+    let currentPage = pg;
+    let currentInner = inner;
+    const anchorNext = pg.nextSibling;
+    const workingFirst = makeTable();
+    try { inner.removeChild(table); } catch (_) {}
+    currentInner.appendChild(workingFirst);
+    let workingTable = workingFirst;
+
+    const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
+    const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
+    const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
+    const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
+    const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+    const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
+    const appendOrNewPage = (node) => {
+      const tbody = workingTable.tBodies[0];
+      tbody.appendChild(node);
+      if (!fitsInner()) {
+        tbody.removeChild(node);
+        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+        if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+        workingTable = makeTable();
+        currentInner.appendChild(workingTable);
+        workingTable.tBodies[0].appendChild(node);
+      }
+    };
+
+    let i = 0;
+    while (i < rows.length) {
+      const row = rows[i];
+      if (isSubHeader(row)) {
+        const pack = [row];
+        const headerCode = row.getAttribute('data-subgroup');
+        let j = i + 1;
+        let itemsAdded = 0;
+        while (j < rows.length && itemsAdded < 2) {
+          if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
+          else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
+          else if (isSubTotal(rows[j])) { break; } else { break; }
+        }
+        if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === headerCode) {
+          pack.push(rows[j]);
+          j += 1;
+        }
+        const tbody = workingTable.tBodies[0];
+        pack.forEach((n) => tbody.appendChild(n));
+        if (!fitsInner()) {
+          pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
+          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+          if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+          workingTable = makeTable();
+          currentInner.appendChild(workingTable);
+          const tb2 = workingTable.tBodies[0];
+          pack.forEach((n) => tb2.appendChild(n));
+        }
+        i = j; continue;
+      }
+      if (isGroupTotal(row)) {
+        const tbody = workingTable.tBodies[0];
+        tbody.appendChild(row);
+        if (!fitsInner()) {
+          tbody.removeChild(row);
+          const prev = tbody.lastElementChild;
+          let carry = null;
+          if (prev && (isItem(prev) || isSubTotal(prev))) { carry = prev; tbody.removeChild(prev); }
+          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+          if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+          workingTable = makeTable();
+          currentInner.appendChild(workingTable);
+          const tb2 = workingTable.tBodies[0];
+          if (carry) tb2.appendChild(carry);
+          tb2.appendChild(row);
+          if (!fitsInner()) {
+            tb2.removeChild(row);
+            ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+            if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+            workingTable = makeTable();
+            currentInner.appendChild(workingTable);
+            workingTable.tBodies[0].appendChild(row);
+          }
+        }
+        i += 1; continue;
+      }
+      appendOrNewPage(row);
+      i += 1;
+    }
+
+    table.setAttribute('data-split-done', '1');
+  });
 }
 
 // bindPreviewAdjustControls removed
