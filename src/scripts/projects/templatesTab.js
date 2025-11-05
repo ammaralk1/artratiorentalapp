@@ -630,13 +630,16 @@ async function printTemplatesPdf() {
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
       // تطبيق إزاحة أعلى/يمين في مسار html2pdf الاحتياطي أيضاً
       try {
-        const rightMm = (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40);
-        const tightFudgeMm = (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5);
         const scalePct = Number(localStorage.getItem('templatesPdf.scalePct')) || 100;
         const s = Math.max(0.98, Math.min(1.05, scalePct / 100));
-        scope.querySelectorAll('.a4-page').forEach((pg) => {
+        const pages = Array.from(scope.querySelectorAll('.a4-page'));
+        pages.forEach((pg, idx) => {
+          const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', idx, (Number(localStorage.getItem('templatesPdf.shiftRightMm')) || 40));
+          const fudge = (idx === 0)
+            ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5)
+            : (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, 0) || 0);
           pg.style.transformOrigin = 'top left';
-          pg.style.transform = `translate(${rightMm}mm, ${tightFudgeMm}mm) scale(${s})`;
+          pg.style.transform = `translate(${rightMm}mm, ${fudge}mm) scale(${s})`;
         });
       } catch(_) {}
 
@@ -801,7 +804,8 @@ async function printTemplatesPdf() {
     const shrink = Math.max(0.98, Math.min(1, prefs.scale || 1));
     const targetWmm = A4_W_MM * shrink;
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
-    let finalX = (Number(prefs.rightMm) || 0);
+    // Allow per-page right shift override
+    let finalX = Number(readPdfPrefForPage('templatesPdf.shiftRightMm', i, (Number(prefs.rightMm) || 0))) || 0;
 
     // Compute placement to push content to the very top edge.
     const PX_PER_MM = 96 / 25.4;
@@ -823,15 +827,16 @@ async function printTemplatesPdf() {
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
     // تعويض افتراضي قوي للرفع (-166mm) ويمكن تعديله من LocalStorage
-    const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
+    const globalTightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (pdfPageIndex > 0) {
-      finalY = -headerInCroppedMm;
+      const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, 0)) || 0;
+      finalY = -headerInCroppedMm + pageFudge;
     } else {
-      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
+      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + globalTightFudgeMm + globalYmm;
     }
     // Clamp just in case (واسع للسماح بضبط قوي)
     if (finalY < -220) finalY = -220;
@@ -862,6 +867,34 @@ function writePdfPref(key, val) {
   try { localStorage.setItem(key, String(val)); } catch (_) {}
 }
 
+// Per-page overrides helpers
+function getPdfPageOverrides() {
+  try {
+    const raw = localStorage.getItem('templatesPdf.pageOverrides');
+    return raw ? JSON.parse(raw) : {};
+  } catch(_) { return {}; }
+}
+function setPdfPageOverride(pageIndex, key, val) {
+  try {
+    const obj = getPdfPageOverrides();
+    const idx = String(pageIndex);
+    obj[idx] = obj[idx] || {};
+    obj[idx][key] = Number(val);
+    localStorage.setItem('templatesPdf.pageOverrides', JSON.stringify(obj));
+  } catch(_) {}
+}
+function readPdfPrefForPage(key, pageIndex, defWhenMissing) {
+  try {
+    const obj = getPdfPageOverrides();
+    const page = obj[String(pageIndex)];
+    if (page && page[key] != null && Number.isFinite(Number(page[key]))) return Number(page[key]);
+    return readPdfPref(key, defWhenMissing);
+  } catch(_) { return readPdfPref(key, defWhenMissing); }
+}
+function clearPdfPageOverrides() {
+  try { localStorage.removeItem('templatesPdf.pageOverrides'); } catch(_) {}
+}
+
 async function renderPdfLivePreview() {
   const host = document.querySelector('#templates-preview-host > #templates-a4-root');
   if (!host) return;
@@ -877,7 +910,10 @@ async function renderPdfLivePreview() {
   const A4_H_MM = landscape ? 210 : 297;
   const CSS_DPI = 96; const PX_PER_MM = CSS_DPI / 25.4;
 
-  const page = host.querySelector('.a4-page');
+  const selVal = document.getElementById('pdftun-page')?.value || 'all';
+  const pageIndex = selVal === 'all' ? 0 : Math.max(0, Number(selVal) || 0);
+  const pagesAll = Array.from(host.querySelectorAll('.a4-page'));
+  const page = pagesAll[pageIndex] || pagesAll[0];
   if (!page) return;
 
   // Build isolated export scope for a single page
@@ -948,8 +984,9 @@ async function renderPdfLivePreview() {
   const shrink = Math.max(0.98, Math.min(1, prefsScale || 1));
   const targetWmm = A4_W_MM * shrink;
   const targetHmm = (cropped.height / cropped.width) * targetWmm;
-  const rightMm = readPdfPref('templatesPdf.shiftRightMm', 40);
-  const tightFudgeMm = readPdfPref('templatesPdf.tightFudgeMm', -144.5);
+  const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
+  const baselineFudge = (pageIndex === 0) ? readPdfPref('templatesPdf.tightFudgeMm', -144.5) : 0;
+  const tightFudgeMm = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, baselineFudge);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
 
   // Simulated placement
@@ -1002,6 +1039,10 @@ function ensurePdfTunerUI() {
   panel.style.padding = '10px';
   panel.innerHTML = `
     <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+      <label style=\"display:flex; flex-direction:column; gap:4px;\">
+        <span>الصفحة</span>
+        <select id=\"pdftun-page\" style=\"width:110px;\"></select>
+      </label>
       <label style="display:flex; flex-direction:column; gap:4px;">
         <span>Top Trim (mm)</span>
         <input id="pdftun-extraTrim" type="number" step="0.5" min="0" max="40" style="width:90px;" />
@@ -1035,24 +1076,51 @@ function ensurePdfTunerUI() {
   controls.parentElement?.appendChild(panel);
 
   // Init values from current prefs
-  const init = () => {
+  const refreshPagesList = () => {
+    const sel = panel.querySelector('#pdftun-page');
+    const pages = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root .a4-page'));
+    const cur = sel.value || 'all';
+    const opts = ['<option value="all">كل الصفحات</option>'];
+    pages.forEach((_, idx) => { opts.push(`<option value="${idx}">الصفحة ${idx+1}</option>`); });
+    sel.innerHTML = opts.join('');
+    if (Array.from(sel.options).some((o) => o.value === cur)) sel.value = cur; else sel.value = 'all';
+  };
+  const loadValuesForSelected = () => {
+    const sel = panel.querySelector('#pdftun-page');
+    const v = sel.value || 'all';
+    const pageIndex = v === 'all' ? null : Number(v);
     document.getElementById('pdftun-extraTrim').value = String(readPdfPref('templatesPdf.extraTrimMm', 14));
     document.getElementById('pdftun-safeMargin').value = String(readPdfPref('templatesPdf.safeMarginMm', 0.5));
-    document.getElementById('pdftun-tightFudge').value = String(readPdfPref('templatesPdf.tightFudgeMm', -144.5));
-    document.getElementById('pdftun-right').value = String(readPdfPref('templatesPdf.shiftRightMm', 40));
+    const defaultFudge = pageIndex == null ? -144.5 : (pageIndex === 0 ? -144.5 : 0);
+    const fudgeVal = pageIndex == null ? readPdfPref('templatesPdf.tightFudgeMm', defaultFudge) : readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, defaultFudge);
+    const rightVal = pageIndex == null ? readPdfPref('templatesPdf.shiftRightMm', 40) : readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
+    document.getElementById('pdftun-tightFudge').value = String(fudgeVal);
+    document.getElementById('pdftun-right').value = String(rightVal);
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
   };
+  const init = () => { refreshPagesList(); loadValuesForSelected(); };
   init();
 
   btn.addEventListener('click', () => {
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     if (panel.style.display === 'block') renderPdfLivePreview();
   });
+  panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); renderPdfLivePreview(); });
   const auto = panel.querySelector('#pdftun-auto');
   const bind = (id, key) => {
     const input = document.getElementById(id);
-    input.addEventListener('input', () => { writePdfPref(key, input.value); if (auto.checked) renderPdfLivePreview(); });
-    input.addEventListener('change', () => { writePdfPref(key, input.value); renderPdfLivePreview(); });
+    input.addEventListener('input', () => {
+      const v = input.value;
+      const sel = panel.querySelector('#pdftun-page').value || 'all';
+      if (sel === 'all') writePdfPref(key, v); else setPdfPageOverride(Number(sel), key, v);
+      if (auto.checked) renderPdfLivePreview();
+    });
+    input.addEventListener('change', () => {
+      const v = input.value;
+      const sel = panel.querySelector('#pdftun-page').value || 'all';
+      if (sel === 'all') writePdfPref(key, v); else setPdfPageOverride(Number(sel), key, v);
+      renderPdfLivePreview();
+    });
   };
   bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm');
   bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm');
@@ -1063,6 +1131,7 @@ function ensurePdfTunerUI() {
   document.getElementById('pdftun-reset').addEventListener('click', () => {
     try {
       ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm'].forEach((k) => localStorage.removeItem(k));
+      clearPdfPageOverrides();
     } catch (_) {}
     init();
     renderPdfLivePreview();
