@@ -17,25 +17,25 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.CoNfsZ6Q.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.CIDuDiYC.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CVctHkd7.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService.Czgl-8xJ.js">
-  <link rel="modulepreload" crossorigin href="../../assets/state.LA28UGJ5.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.BIddNe5f.js">
-  <link rel="modulepreload" crossorigin href="../../assets/constants.lh14OkrE.js">
-  <link rel="modulepreload" crossorigin href="../../assets/form.I_70WdZT.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.B_S1w8ms.js">
-  <link rel="modulepreload" crossorigin href="../../assets/details.DgsX7x5Q.js">
-  <link rel="modulepreload" crossorigin href="../../assets/equipment.BbEoB9JY.js">
+  <script type="module" crossorigin src="../../assets/projects.4dE2sl4T.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.Co_dIG69.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.BxRAaVGU.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.vRkbDjHM.js">
+  <link rel="modulepreload" crossorigin href="../../assets/state.CMNuYVcO.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.DbKtl5I6.js">
+  <link rel="modulepreload" crossorigin href="../../assets/constants.BqSZCigY.js">
+  <link rel="modulepreload" crossorigin href="../../assets/form.DqdQiFsN.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.DVSQmMRc.js">
+  <link rel="modulepreload" crossorigin href="../../assets/details.Dz_TEpiI.js">
+  <link rel="modulepreload" crossorigin href="../../assets/equipment.Db_09GLr.js">
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.C2lQPEPC.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.C2cKNlRQ.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.DTNhV4vb.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.x_kOVovQ.js">
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.Dv6JMAlF.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.NgTZEBzu.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.DHCS_4T_.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/calculations.D936Ulyo.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.CG73C9i6.css">
+  <link rel="modulepreload" crossorigin href="../../assets/calculations.DKYVJEo5.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.bN-xB7Nh.css">
   <link rel="stylesheet" crossorigin href="../../assets/projects.C2Ywx4uh.css">
 </head>
 <body class="page-shell theme-loading projects-page" data-theme="light">
@@ -795,20 +795,27 @@
                         </select>
                       </div>
                       
-                      <div class="ms-auto d-flex gap-2">
+                      <div class="ms-auto d-flex gap-2" id="templates-actions">
                         <input type="text" id="templates-save-title" class="form-control" placeholder="اسم النسخة" style="min-width:160px;">
                         <select id="templates-saved" class="form-select"></select>
-                        <button type="button" class="btn btn-outline" id="templates-save">💾 حفظ</button>
-                        <button type="button" class="btn btn-outline" id="templates-save-copy">📎 حفظ كنسخة</button>
-                        <button type="button" class="btn btn-outline" id="templates-from-res">📅 من الحجز</button>
-                        <button type="button" class="btn btn-outline" id="templates-rename" title="إعادة تسمية المحفوظ المحدد">✏️ إعادة تسمية</button>
-                        <button type="button" class="btn btn-outline btn-danger" id="templates-delete" title="حذف المحفوظ المحدد">🗑️ حذف</button>
-                        <button type="button" class="btn btn-outline" id="templates-export" title="تصدير JSON">⬇️ تصدير</button>
-                        <button type="button" class="btn btn-outline" id="templates-import" title="استيراد JSON">⬆️ استيراد</button>
-                        <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
-                        <button type="button" class="btn btn-outline" id="templates-lang-toggle" title="Language: EN">🌐 EN</button>
-                        <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh">تحديث</button>
-                        <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print">🖨️ طباعة PDF</button>
+                        <div id="templates-actions-dd" class="position-relative" style="position:relative;">
+                          <button type="button" class="btn btn-outline" id="templates-actions-toggle">⋯ الإجراءات</button>
+                          <div id="templates-actions-menu" class="shadow" style="position:absolute; right:0; top:100%; min-width:240px; display:none; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:8px; z-index:50;">
+                            <button type="button" class="btn btn-outline" id="templates-save" style="display:block;width:100%;text-align:right;margin:4px 0;">💾 حفظ</button>
+                            <button type="button" class="btn btn-outline" id="templates-save-copy" style="display:block;width:100%;text-align:right;margin:4px 0;">📎 حفظ كنسخة</button>
+                            <button type="button" class="btn btn-outline" id="templates-from-res" style="display:block;width:100%;text-align:right;margin:4px 0;">📅 من الحجز</button>
+                            <button type="button" class="btn btn-outline" id="templates-rename" title="إعادة تسمية المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">✏️ إعادة تسمية</button>
+                            <button type="button" class="btn btn-outline btn-danger" id="templates-delete" title="حذف المحفوظ المحدد" style="display:block;width:100%;text-align:right;margin:4px 0;">🗑️ حذف</button>
+                            <hr class="dropdown-divider" style="margin:6px 0;">
+                            <button type="button" class="btn btn-outline" id="templates-export" title="تصدير JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬇️ تصدير</button>
+                            <button type="button" class="btn btn-outline" id="templates-import" title="استيراد JSON" style="display:block;width:100%;text-align:right;margin:4px 0;">⬆️ استيراد</button>
+                            <input type="file" id="templates-import-file" accept="application/json" class="d-none" />
+                            <hr class="dropdown-divider" style="margin:6px 0;">
+                            <button type="button" class="btn btn-outline" id="templates-lang-toggle" title="Language: EN" style="display:block;width:100%;text-align:right;margin:4px 0;">🌐 EN</button>
+                            <button type="button" class="btn btn-outline" id="templates-refresh" data-i18n data-i18n-key="projects.templates.actions.refresh" style="display:block;width:100%;text-align:right;margin:4px 0;">تحديث</button>
+                            <button type="button" class="btn btn-primary" id="templates-print" data-i18n data-i18n-key="projects.templates.actions.print" style="display:block;width:100%;text-align:right;margin:4px 0;">🖨️ طباعة PDF</button>
+                          </div>
+                        </div>
                       </div>
                       
                     </div>
