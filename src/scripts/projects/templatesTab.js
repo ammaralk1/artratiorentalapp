@@ -1707,17 +1707,40 @@ function paginateExpDetailsTables() {
     const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
     const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
     const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
+
+    // Remember current group bar and subgroup header to repeat on page breaks
+    let groupBarTpl = null;
+    let subHeaderTpl = null;
+    let subHeaderCode = null;
+
+    const startNewPage = (firstNodeAboutToPlace = null) => {
+      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+      if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+      workingTable = makeTable();
+      currentInner.appendChild(workingTable);
+      const tb = workingTable.tBodies[0];
+      // Repeat group title bar unless the next node is already a new bar
+      if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) {
+        tb.appendChild(groupBarTpl.cloneNode(true));
+      }
+      // If continuing same subgroup, add its header too (unless we're placing it now)
+      if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
+        const n = firstNodeAboutToPlace;
+        const belongsToSameSub = !!(n && (
+          (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
+          (n.getAttribute && n.getAttribute('data-row') === 'item') ||
+          (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
+        ));
+        if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
+      }
+    };
+
     const appendOrNewPage = (node) => {
       const tbody = workingTable.tBodies[0];
       tbody.appendChild(node);
       if (!fitsInner()) {
         tbody.removeChild(node);
-        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-        if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
-        workingTable = makeTable();
-        currentInner.appendChild(workingTable);
-        // Repeat group title at the top of each continuation page
-        if (groupBarTpl) { workingTable.tBodies[0].appendChild(groupBarTpl.cloneNode(true)); }
+        startNewPage(node);
         workingTable.tBodies[0].appendChild(node);
       }
     };
@@ -1737,6 +1760,8 @@ function paginateExpDetailsTables() {
         i += 1; continue;
       }
       if (isSubHeader(row)) {
+        subHeaderTpl = row.cloneNode(true);
+        subHeaderCode = row.getAttribute('data-subgroup');
         const pack = [row];
         const headerCode = row.getAttribute('data-subgroup');
         let j = i + 1;
@@ -1754,10 +1779,7 @@ function paginateExpDetailsTables() {
         pack.forEach((n) => tbody.appendChild(n));
         if (!fitsInner()) {
           pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
-          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-          if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
-          workingTable = makeTable();
-          currentInner.appendChild(workingTable);
+          startNewPage(pack[0]);
           const tb2 = workingTable.tBodies[0];
           pack.forEach((n) => tb2.appendChild(n));
         }
@@ -1771,22 +1793,18 @@ function paginateExpDetailsTables() {
           const prev = tbody.lastElementChild;
           let carry = null;
           if (prev && (isItem(prev) || isSubTotal(prev))) { carry = prev; tbody.removeChild(prev); }
-          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-          if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
-          workingTable = makeTable();
-          currentInner.appendChild(workingTable);
+          startNewPage(row);
           const tb2 = workingTable.tBodies[0];
           if (carry) tb2.appendChild(carry);
           tb2.appendChild(row);
           if (!fitsInner()) {
             tb2.removeChild(row);
-            ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-            if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
-            workingTable = makeTable();
-            currentInner.appendChild(workingTable);
+            startNewPage(row);
             workingTable.tBodies[0].appendChild(row);
           }
         }
+        // reset subgroup context after group ends
+        subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null;
         i += 1; continue;
       }
       appendOrNewPage(row);
