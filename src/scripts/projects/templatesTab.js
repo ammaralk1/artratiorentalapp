@@ -1745,9 +1745,6 @@ function paginateExpDetailsTables() {
       }
     };
 
-    // Keep a template of the group title bar to repeat on new pages
-    let groupBarTpl = null;
-
     let i = 0;
     while (i < rows.length) {
       const row = rows[i];
