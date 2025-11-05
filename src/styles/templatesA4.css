@@ -209,6 +209,8 @@ table.exp-table tr[data-group-bar] td { padding:0 !important; }
 .exp-col-rate { width:12%; }
 .exp-col-tab { width:6%; }
 .exp-col-total { width:12%; }
+/* Actions column */
+.exp-col-actions { width:8%; }
 
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; }

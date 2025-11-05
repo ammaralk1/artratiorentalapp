@@ -254,6 +254,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
     { text: L('RATE','السعر'), cls: 'exp-col-rate' },
     { text: L('TAB','تب'), cls: 'exp-col-tab' },
     { text: L('TOTAL','الإجمالي'), cls: 'exp-col-total' },
+    { text: '', cls: 'exp-col-actions' },
   ];
   const makeDetailsTable = (groupKey, groupTitle, subDefs) => {
     const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
@@ -277,6 +278,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
       el('th', { class: 'exp-col-rate', text: L('RATE','السعر') }),
       el('th', { class: 'exp-col-tab', text: L('TAB','تب') }),
       el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
+      el('th', { class: 'exp-col-actions', text: '' }),
     ]);
 
     const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
@@ -288,6 +290,12 @@ function buildExpensesPage(project, reservations, opts = {}) {
       el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;' }),
       el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
       el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '' }),
+      el('td', {}, [el('div', { class: 'tpl-actions' }, [
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+        el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+      ])]),
     ]);
 
     const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
@@ -295,10 +303,11 @@ function buildExpensesPage(project, reservations, opts = {}) {
       el('td', { text: L('Subtotal','المجموع الفرعي') }),
       el('td', { colspan: '5' }),
       el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
+      el('td', { text: '' }),
     ]);
 
     const mkGroupTotalRow = (label, key) => el('tr', { class: 'exp-summary-row', 'data-group-total': key }, [
-      el('td', { colspan: '7', text: label }),
+      el('td', { colspan: '8', text: label }),
       el('td', { class: 'total', 'data-total-group': key, text: '' }),
     ]);
     const addSubGroup = (groupKey2, code, label, n = 2) => {
