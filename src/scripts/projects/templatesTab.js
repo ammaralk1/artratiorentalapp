@@ -261,7 +261,8 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Define exact column widths via <colgroup> to ensure fixed layout works
     try {
       const colgroup = el('colgroup');
-      const widths = ['8%','34%','7%','9%','6%','11%','6%','11%','8%'];
+      // Expanded DESCRIPTION column for better readability; rebalanced others
+      const widths = ['6%','42%','6%','6%','6%','10%','6%','10%','8%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       table.appendChild(colgroup);
     } catch(_) {}

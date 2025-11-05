@@ -212,14 +212,15 @@ table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { p
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
-.exp-col-code { width:8%; }
-.exp-col-item { width:34%; }
-.exp-col-amount { width:7%; }
-.exp-col-paid { width:9%; }
+/* Expand DESCRIPTION to allow longer text; rebalance other columns accordingly */
+.exp-col-code { width:6%; }
+.exp-col-item { width:42%; }
+.exp-col-amount { width:6%; }
+.exp-col-paid { width:6%; }
 .exp-col-x { width:6%; }
-.exp-col-rate { width:11%; }
+.exp-col-rate { width:10%; }
 .exp-col-tab { width:6%; }
-.exp-col-total { width:11%; }
+.exp-col-total { width:10%; }
 /* Actions column */
 .exp-col-actions { width:8%; }
 
