@@ -354,15 +354,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
     { code: '49-00', label: 'VOICE OVER', rows: 2 },
   ]);
 
-  // Summary footer for A4 page
-  const summary = el('div', { id: 'expenses-summary', class: 'tpl-summary' });
-  const taxLabel = L(`Tax ${Math.round(PROJECT_TAX_RATE * 100)}%`, `الضريبة ${Math.round(PROJECT_TAX_RATE * 100)}%`);
-  summary.innerHTML = `
-    <div class="tpl-summary-row"><span>${L('Subtotal','المجموع')}</span><span data-summary-subtotal></span></div>
-    <div class="tpl-summary-row"><span>${taxLabel}</span><span data-summary-tax></span></div>
-    <div class="tpl-summary-row tpl-summary-total"><span>${L('Total','الإجمالي')}</span><span data-summary-total></span></div>
-  `;
-  inner.appendChild(summary);
+  // لا حاجة لصندوق الملخص أسفل GRAND TOTAL في التوب شيت
   return root;
 }
 
