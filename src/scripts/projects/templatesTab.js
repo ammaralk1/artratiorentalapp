@@ -857,7 +857,7 @@ async function printTemplatesPdf() {
     if (isCanvasAlmostBlank(canvas)) { continue; }
     let cropped;
     if (strictWysiwyg) {
-      // لا قص ولا إزاحة، التقط الصفحة كما هي بالحجم القياسي
+      // لا قص: التقط الصفحة كما هي بالحجم القياسي، ثم نقيس الفراغ العلوي ونزحزح عند الإدراج فقط
       cropped = canvas;
     } else {
       const topWhitePx = measureTopWhitespacePx(canvas, 246);
@@ -908,6 +908,14 @@ async function printTemplatesPdf() {
     // After cropping, the header moves up by `chosenTopPx` pixels.
     // Convert that in-cropped offset to mm using the final scaling.
     const mmPerPx = targetWmm / cropped.width;
+    // حتى مع الوضع الصارم، قِس أقصى فراغ علوي مرئي لتثبيت المحتوى تماماً أعلى الصفحة دون قص
+    let chosenTopPx = 0;
+    try {
+      const t1 = measureTopWhitespacePx(cropped, 246);
+      const t2 = measureRightRegionContentTopPx(cropped, 244);
+      const t3 = measureContentTopIgnoringBorderPx(cropped, 244);
+      chosenTopPx = Math.max(t1, t2, t3);
+    } catch(_) { chosenTopPx = 0; }
     const headerInCroppedMm = Math.max(0, (headerTopCssPx - chosenTopPx) * mmPerPx);
     // Tight-top mode: ارفع المحتوى ليلامس أعلى الصفحة قدر الإمكان
     // تعويض افتراضي قوي للرفع (-166mm) ويمكن تعديله من LocalStorage
@@ -918,7 +926,8 @@ async function printTemplatesPdf() {
     // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
     let finalY;
     if (strictWysiwyg) {
-      finalY = 0;
+      // ادفع الصورة للأعلى بمقدار الفراغ المقاس
+      finalY = -headerInCroppedMm;
     } else {
       if (pdfPageIndex > 0) {
         const pageFudge = Number(readPdfPrefForPage('templatesPdf.tightFudgeMm', i, 0)) || 0;
