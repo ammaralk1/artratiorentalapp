@@ -105,6 +105,8 @@ table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-la
 /* General tables (Call Sheet / Shot List) header tint ~30% of brand */
 table.tpl-table th { background: rgba(37, 99, 235, 0.30); border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; color:#000; }
 table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
+/* Repeat thead in print/export for generic templates tables */
+table.tpl-table thead { display: table-header-group; }
 
 /* Top Sheet column sizing */
 table.exp-top-table .exp-top-col-code { width: 16%; }

@@ -589,6 +589,7 @@ function renderTemplatesPreview() {
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
   try { paginateExpDetailsTables(); } catch (_) {}
+  try { paginateGenericTplTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
 }
 
@@ -1156,7 +1157,7 @@ function ensurePdfTunerUI() {
   btn.type = 'button';
   btn.id = 'templates-pdf-tuner-toggle';
   btn.className = 'btn btn-outline';
-  btn.textContent = '🛠️ ضبط/معاينة PDF';
+  btn.textContent = '🛠️ ضبط PDF';
   actionsRow.appendChild(btn);
 
   const panel = document.createElement('div');
@@ -1200,16 +1201,11 @@ function ensurePdfTunerUI() {
         <span>Scale (%)</span>
         <input id="pdftun-scale" type="number" step="1" min="90" max="110" style="width:90px;" />
       </label>
-      <label style="display:flex; align-items:center; gap:6px; margin-inline-start:auto;">
-        <input id="pdftun-auto" type="checkbox" checked />
-        <span>Auto Preview</span>
-      </label>
+      <span style="flex:1 1 auto"></span>
       <button type="button" class="btn btn-outline" id="pdftun-preset">تطبيق القيم</button>
       <button type="button" class="btn btn-outline" id="pdftun-reset">الافتراضيات</button>
-      <button type="button" class="btn btn-primary" id="pdftun-preview">👁️ معاينة</button>
       <button type="button" class="btn btn-primary" id="pdftun-print">🖨️ طباعة</button>
     </div>
-    <div id="templates-pdf-live-slot" style="margin-top:10px; max-width:420px;"></div>
   `;
   controls.parentElement?.appendChild(panel);
 
@@ -1289,8 +1285,7 @@ function ensurePdfTunerUI() {
       try { if (window.__pdfTunerMO) { window.__pdfTunerMO.disconnect(); window.__pdfTunerMO = null; } } catch(_) {}
     }
   });
-  panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); renderPdfLivePreview(); });
-  const auto = panel.querySelector('#pdftun-auto');
+  panel.querySelector('#pdftun-page').addEventListener('change', () => { loadValuesForSelected(); });
   const bind = (id, key, perPage = true) => {
     const input = document.getElementById(id);
     input.addEventListener('input', () => {
@@ -1301,7 +1296,7 @@ function ensurePdfTunerUI() {
       } else {
         writePdfPref(key, v);
       }
-      if (auto.checked) renderPdfLivePreview();
+      // no live preview
     });
     input.addEventListener('change', () => {
       const v = input.value;
@@ -1311,8 +1306,8 @@ function ensurePdfTunerUI() {
       } else {
         writePdfPref(key, v);
       }
-      renderPdfLivePreview();
-    });
+      // no live preview
+  });
   };
   bind('pdftun-extraTrim', 'templatesPdf.extraTrimMm', true);
   bind('pdftun-safeMargin', 'templatesPdf.safeMarginMm', true);
@@ -1340,7 +1335,7 @@ function ensurePdfTunerUI() {
     });
     try { localStorage.setItem('templatesPdf.globalAllYmm', '-1'); } catch (_) {}
     loadValuesForSelected();
-    renderPdfLivePreview();
+    // no live preview
   };
   document.getElementById('pdftun-preset').addEventListener('click', applyPreset);
 
@@ -1350,9 +1345,7 @@ function ensurePdfTunerUI() {
       clearPdfPageOverrides();
     } catch (_) {}
     init();
-    renderPdfLivePreview();
   });
-  document.getElementById('pdftun-preview').addEventListener('click', renderPdfLivePreview);
   document.getElementById('pdftun-print').addEventListener('click', printTemplatesPdf);
   // Expose refreshers for external calls after pages rebuild
   try { window.__pdfTunerRefreshPages = refreshPagesList; window.__pdfTunerLoadValues = loadValuesForSelected; } catch (_) {}
@@ -1865,6 +1858,63 @@ function paginateExpDetailsTables() {
       i += 1;
     }
 
+    table.setAttribute('data-split-done', '1');
+  });
+}
+
+// Generic paginator for non-expenses templates (Call Sheet / Shot List)
+function paginateGenericTplTables() {
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const type = document.getElementById('templates-type')?.value || 'expenses';
+  if (type === 'expenses') return; // فقط للأنواع الأخرى
+  const pagesWrap = root.querySelector('[data-a4-pages]');
+  if (!pagesWrap) return;
+
+  const headerFooter = false;
+  const logoUrl = COMPANY_INFO.logoUrl;
+  const isLandscape = true;
+
+  const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
+  pages.forEach((pg) => {
+    const inner = pg.querySelector('.a4-inner');
+    if (!inner) return;
+    const table = inner.querySelector('table.tpl-table');
+    if (!table || table.getAttribute('data-split-done') === '1') return;
+    const thead = table.querySelector('thead');
+    const rows = Array.from(table.querySelectorAll('tbody > tr'));
+    if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
+
+    const makeTable = () => {
+      const t = document.createElement('table');
+      t.className = table.className;
+      const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
+      t.appendChild(hd);
+      t.appendChild(document.createElement('tbody'));
+      return t;
+    };
+    const fitsInner = (container) => container.scrollHeight <= (container.clientHeight + 0.5);
+
+    let currentPage = pg; let currentInner = inner;
+    try { inner.removeChild(table); } catch(_) {}
+    let workingTable = makeTable();
+    currentInner.appendChild(workingTable);
+
+    let i = 0;
+    while (i < rows.length) {
+      const tbody = workingTable.tBodies[0];
+      tbody.appendChild(rows[i]);
+      if (!fitsInner(currentInner)) {
+        // rollback row and create new page
+        tbody.removeChild(rows[i]);
+        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
+        pagesWrap.appendChild(currentPage);
+        workingTable = makeTable();
+        currentInner.appendChild(workingTable);
+        workingTable.tBodies[0].appendChild(rows[i]);
+      }
+      i += 1;
+    }
     table.setAttribute('data-split-done', '1');
   });
 }
