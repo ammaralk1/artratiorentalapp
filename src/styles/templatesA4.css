@@ -223,6 +223,21 @@ table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { p
 /* Actions column */
 .exp-col-actions { width:8%; }
 
+/* Make DESCRIPTION column readable: right/left aligned per dir, allow wrapping */
+table.exp-details tbody td:nth-child(2) {
+  text-align: right;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+#templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) {
+  text-align: left;
+}
+
+/* Keep actions compact so it doesn't visually dominate */
+table.exp-details tbody td:last-child .tpl-actions { gap: 2px; }
+table.exp-details tbody td:last-child .tpl-action-btn { padding: 1px 5px; font-size: 10px; }
+
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; flex-wrap:wrap; }
 .tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }
