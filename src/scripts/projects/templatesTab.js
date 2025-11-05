@@ -790,8 +790,10 @@ async function printTemplatesPdf() {
     const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
     const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
     // زيادة قصّ الفراغ العلوي مع الحفاظ على هامش أمان قبل عنوان الصفحة
-    const extraTrimMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.extraTrimMm')); return Number.isFinite(v) ? Math.max(0, Math.min(40, v)) : 14; } catch(_) { return 14; } })();
-    const safeMarginMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.safeMarginMm')); return Number.isFinite(v) ? Math.max(0, Math.min(10, v)) : 0.5; } catch(_) { return 0.5; } })();
+    let extraTrimMm = readPdfPrefForPage('templatesPdf.extraTrimMm', i, readPdfPref('templatesPdf.extraTrimMm', 14));
+    let safeMarginMm = readPdfPrefForPage('templatesPdf.safeMarginMm', i, readPdfPref('templatesPdf.safeMarginMm', 0.5));
+    extraTrimMm = Math.max(0, Math.min(40, Number(extraTrimMm) || 0));
+    safeMarginMm = Math.max(0, Math.min(10, Number(safeMarginMm) || 0));
     const headerTopScaledPx = Math.max(0, headerTopCssPx * captureScale);
     const extraTrimPx = mmToPx(extraTrimMm);
     const safeMarginPx = mmToPx(safeMarginMm);
@@ -970,8 +972,10 @@ async function renderPdfLivePreview() {
   const topWhitePx = measureTopWhitespacePx(canvas, 246);
   const rightRegionTopPx = measureRightRegionContentTopPx(canvas, 244);
   const visualTopPx = measureContentTopIgnoringBorderPx(canvas, 244);
-  const extraTrimMm = readPdfPref('templatesPdf.extraTrimMm', 14);
-  const safeMarginMm = readPdfPref('templatesPdf.safeMarginMm', 0.5);
+  const vSel = document.getElementById('pdftun-page')?.value || 'all';
+  const idxSel = vSel === 'all' ? 0 : Math.max(0, Number(vSel) || 0);
+  const extraTrimMm = readPdfPrefForPage('templatesPdf.extraTrimMm', idxSel, readPdfPref('templatesPdf.extraTrimMm', 14));
+  const safeMarginMm = readPdfPrefForPage('templatesPdf.safeMarginMm', idxSel, readPdfPref('templatesPdf.safeMarginMm', 0.5));
   const captureHeaderTopPx = Math.max(visualTopPx, headerTopCssPx * captureScale);
   const extraTrimPx = extraTrimMm * PX_PER_MM * captureScale;
   const safeMarginPx = safeMarginMm * PX_PER_MM * captureScale;
@@ -1089,8 +1093,14 @@ function ensurePdfTunerUI() {
     const sel = panel.querySelector('#pdftun-page');
     const v = sel.value || 'all';
     const pageIndex = v === 'all' ? null : Number(v);
-    document.getElementById('pdftun-extraTrim').value = String(readPdfPref('templatesPdf.extraTrimMm', 14));
-    document.getElementById('pdftun-safeMargin').value = String(readPdfPref('templatesPdf.safeMarginMm', 0.5));
+    const extraTrimVal = pageIndex == null
+      ? readPdfPref('templatesPdf.extraTrimMm', 14)
+      : readPdfPrefForPage('templatesPdf.extraTrimMm', pageIndex, readPdfPref('templatesPdf.extraTrimMm', 14));
+    const safeMarginVal = pageIndex == null
+      ? readPdfPref('templatesPdf.safeMarginMm', 0.5)
+      : readPdfPrefForPage('templatesPdf.safeMarginMm', pageIndex, readPdfPref('templatesPdf.safeMarginMm', 0.5));
+    document.getElementById('pdftun-extraTrim').value = String(extraTrimVal);
+    document.getElementById('pdftun-safeMargin').value = String(safeMarginVal);
     const defaultFudge = pageIndex == null ? -144.5 : (pageIndex === 0 ? -144.5 : 0);
     const fudgeVal = pageIndex == null ? readPdfPref('templatesPdf.tightFudgeMm', defaultFudge) : readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, defaultFudge);
     const rightVal = pageIndex == null ? readPdfPref('templatesPdf.shiftRightMm', 40) : readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
