@@ -826,7 +826,13 @@ async function printTemplatesPdf() {
     const tightFudgeMm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.tightFudgeMm')); return Number.isFinite(v) ? Math.max(-300, Math.min(300, v)) : -144.5; } catch(_) { return -144.5; } })();
     // إزاحة عامة إضافية اختيارية
     const globalYmm = (() => { try { const v = Number(localStorage.getItem('templatesPdf.globalYmm')); return Number.isFinite(v) ? Math.max(-40, Math.min(40, v)) : 0; } catch(_) { return 0; } })();
-    let finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
+    // صفحات بعد الأولى: اجعل أول عنصر يلامس أعلى الصفحة بدقة
+    let finalY;
+    if (pdfPageIndex > 0) {
+      finalY = -headerInCroppedMm;
+    } else {
+      finalY = (Number(prefs.topMm) || 0) - headerInCroppedMm + tightFudgeMm + globalYmm;
+    }
     // Clamp just in case (واسع للسماح بضبط قوي)
     if (finalY < -220) finalY = -220;
     if (finalY > 120) finalY = 120;
