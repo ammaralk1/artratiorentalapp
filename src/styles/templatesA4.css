@@ -194,7 +194,7 @@ table.exp-details thead th { background: rgba(37, 99, 235, 0.30) !important; col
 /* Ensure borders are continuous on sub-header rows */
 table.exp-table tr.exp-subheader th { border:1.5px solid #94a3b8 !important; }
 /* Main section bars unified in brand blue; fill whole cell width */
-table.exp-table tr[data-group-bar] td { padding:0 !important; }
+table.exp-table tr[data-group-bar] td, table.exp-table tr[data-group-bar] th { padding:0 !important; }
 .exp-group-bar { background: var(--clr-primary, #2563EB) !important; color:#fff !important; font-weight:800; border-radius:0; padding:8px 10px; margin:0; display:block; width:100%; }
 .exp-group-bar--atl { background: inherit; }
 .exp-group-bar--prod { background: inherit; }

@@ -259,15 +259,16 @@ function buildExpensesPage(project, reservations, opts = {}) {
   const makeDetailsTable = (groupKey, groupTitle, subDefs) => {
     const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
     const thead = el('thead');
+    // Group title row placed inside THEAD so it repeats on each page
+    const groupTitleRow = el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [
+      el('th', { colspan: '9' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ])
+    ]);
+    thead.appendChild(groupTitleRow);
     const head = el('tr');
     headCols.forEach((c) => head.appendChild(el('th', { class: c.cls, text: c.text })));
     thead.appendChild(head);
     table.appendChild(thead);
     const tb = el('tbody');
-
-    const mkGroupBar = (label, cls) => el('tr', { 'data-group-bar': 'true' }, [
-      el('td', { colspan: '8' }, [el('div', { class: `exp-group-bar ${cls || ''}`, text: label })])
-    ]);
 
     const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
       el('th', { class: 'exp-col-code', text: code }),
@@ -319,8 +320,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
       tb.appendChild(marker);
     };
 
-    // Group header bar
-    tb.appendChild(mkGroupBar(groupTitle, `exp-group-bar--${groupKey}`));
+    // Group header bar is now in THEAD, so no body bar here
 
     // Subgroups
     subDefs.forEach((def) => addSubGroup(groupKey, def.code, def.label, def.n || def.rows || 2));
@@ -881,6 +881,7 @@ async function printTemplatesPdf() {
     // استخدم تحجيم 1:1 افتراضياً لضمان عدم إضافة فراغات هامشية
     let targetWmm, targetHmm, finalX;
     if (strictWysiwyg) {
+      // Force exact A4 dimensions for 1:1 export
       targetWmm = A4_W_MM; targetHmm = A4_H_MM; finalX = 0;
     } else {
       const shrink = Math.max(0.98, Math.min(1, prefs.scale || 1));
