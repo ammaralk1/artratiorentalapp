@@ -648,8 +648,9 @@ async function printTemplatesPdf() {
           const defaultFudge = (idx === 0) ? (Number(localStorage.getItem('templatesPdf.tightFudgeMm')) || -144.5) : 0;
           const fudge = (readPdfPrefForPage('templatesPdf.tightFudgeMm', idx, defaultFudge) || 0);
           const globalAll = Number(localStorage.getItem('templatesPdf.globalAllYmm')) || 0;
+          const globalRightAll = Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0;
           pg.style.transformOrigin = 'top left';
-          pg.style.transform = `translate(${rightMm}mm, ${fudge + globalAll}mm) scale(${s})`;
+          pg.style.transform = `translate(${rightMm + globalRightAll}mm, ${fudge + globalAll}mm) scale(${s})`;
         });
         // Remove pages that have no data rows to avoid blank pages in fallback
         pages.forEach((pg) => {
@@ -852,6 +853,7 @@ async function printTemplatesPdf() {
     const targetHmm = (cropped.height / cropped.width) * targetWmm;
     // Allow per-page right shift override
     let finalX = Number(readPdfPrefForPage('templatesPdf.shiftRightMm', i, (Number(prefs.rightMm) || 0))) || 0;
+    try { finalX += Number(localStorage.getItem('templatesPdf.globalAllRightMm')) || 0; } catch(_) {}
 
     // Compute placement to push content to the very top edge.
     const PX_PER_MM = 96 / 25.4;
@@ -1035,13 +1037,14 @@ async function renderPdfLivePreview() {
   const targetWmm = A4_W_MM * shrink;
   const targetHmm = (cropped.height / cropped.width) * targetWmm;
   const rightMm = readPdfPrefForPage('templatesPdf.shiftRightMm', pageIndex, readPdfPref('templatesPdf.shiftRightMm', 40));
+  const globalRightAllMm = readPdfPref('templatesPdf.globalAllRightMm', 0);
   const baselineFudge = (pageIndex === 0) ? readPdfPref('templatesPdf.tightFudgeMm', -144.5) : 0;
   const tightFudgeMm = readPdfPrefForPage('templatesPdf.tightFudgeMm', pageIndex, baselineFudge);
   const globalYmm = readPdfPref('templatesPdf.globalYmm', 0);
   const globalAllYmm = readPdfPref('templatesPdf.globalAllYmm', -1);
 
   // Simulated placement
-  const finalXmm = rightMm;
+  const finalXmm = rightMm + globalRightAllMm;
   const headerInCroppedMm = Math.max(0, (headerTopCssPx * captureScale - chosenTopPx)) * (targetWmm / cropped.width);
   let finalYmm = -headerInCroppedMm + tightFudgeMm + globalYmm + globalAllYmm;
 
@@ -1097,6 +1100,10 @@ function ensurePdfTunerUI() {
       <label style="display:flex; flex-direction:column; gap:4px;">
         <span>Top Offset (All)</span>
         <input id="pdftun-globalY" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:4px;">
+        <span>Right Shift (All)</span>
+        <input id="pdftun-globalX" type="number" step="0.5" min="-1000" max="1000" style="width:90px;" />
       </label>
       <label style="display:flex; flex-direction:column; gap:4px;">
         <span>Top Trim (mm)</span>
@@ -1160,6 +1167,7 @@ function ensurePdfTunerUI() {
     document.getElementById('pdftun-right').value = String(rightVal);
     document.getElementById('pdftun-scale').value = String(readPdfPref('templatesPdf.scalePct', 100));
     try { document.getElementById('pdftun-globalY').value = String(readPdfPref('templatesPdf.globalAllYmm', -1)); } catch(_) {}
+    try { document.getElementById('pdftun-globalX').value = String(readPdfPref('templatesPdf.globalAllRightMm', 0)); } catch(_) {}
   };
   const init = () => { refreshPagesList(); loadValuesForSelected(); };
   init();
@@ -1237,6 +1245,7 @@ function ensurePdfTunerUI() {
   bind('pdftun-right', 'templatesPdf.shiftRightMm', true);
   bind('pdftun-scale', 'templatesPdf.scalePct', false);
   bind('pdftun-globalY', 'templatesPdf.globalAllYmm', false);
+  bind('pdftun-globalX', 'templatesPdf.globalAllRightMm', false);
 
   // Apply recommended per-page alignment from provided screenshots
   const applyPreset = () => {
@@ -1262,7 +1271,7 @@ function ensurePdfTunerUI() {
 
   document.getElementById('pdftun-reset').addEventListener('click', () => {
     try {
-      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm','templatesPdf.globalAllYmm'].forEach((k) => localStorage.removeItem(k));
+      ['templatesPdf.extraTrimMm','templatesPdf.safeMarginMm','templatesPdf.tightFudgeMm','templatesPdf.shiftRightMm','templatesPdf.scalePct','templatesPdf.globalYmm','templatesPdf.globalAllYmm','templatesPdf.globalAllRightMm'].forEach((k) => localStorage.removeItem(k));
       clearPdfPageOverrides();
     } catch (_) {}
     init();
