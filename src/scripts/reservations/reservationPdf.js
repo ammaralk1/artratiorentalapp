@@ -104,7 +104,9 @@ const QUOTE_SECTION_DEFS = [
   { id: 'financialSummary', labelKey: 'reservations.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'items', labelKey: 'reservations.quote.sections.items', fallback: 'قائمة المعدات', defaultSelected: true },
   { id: 'crew', labelKey: 'reservations.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true },
-  { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true }
+  { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true },
+  // جعل بيانات الدفع اختيارية من خلال المعاينة
+  { id: 'payment', labelKey: 'reservations.quote.sections.payment', fallback: 'بيانات الدفع', defaultSelected: false }
 ];
 
 const QUOTE_ITEMS_COLUMN_DEFS = [
@@ -334,7 +336,9 @@ const PROJECT_QUOTE_SECTION_DEFS = [
   { id: 'projectCrew', labelKey: 'projects.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true },
   { id: 'financialSummary', labelKey: 'projects.quote.sections.financial', fallback: 'الملخص المالي', defaultSelected: true },
   { id: 'projectEquipment', labelKey: 'projects.quote.sections.equipment', fallback: 'المعدات', defaultSelected: true },
-  { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true }
+  { id: 'projectNotes', labelKey: 'projects.quote.sections.notes', fallback: 'ملاحظات المشروع', defaultSelected: true },
+  // خيار إظهار/إخفاء بيانات الدفع في معاينة المشروع
+  { id: 'payment', labelKey: 'reservations.quote.sections.payment', fallback: 'بيانات الدفع', defaultSelected: false }
 ];
 
 const PROJECT_QUOTE_FIELD_DEFS = {
@@ -3306,7 +3310,7 @@ function buildProjectQuotationHtml({
   }
 
   const footerBlocks = [
-    withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' }),
+    ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
     withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
   ];
 
@@ -3941,7 +3945,7 @@ function buildQuotationHtml(options) {
   }
 
   const footerBlocks = [
-    withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' }),
+    ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
     withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
   ];
 
