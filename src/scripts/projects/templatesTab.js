@@ -2344,13 +2344,19 @@ function handleTableKeydown(e) {
 
 async function saveTemplateSnapshot({ copy = false } = {}) {
   const project = getSelectedProject();
-  if (!project) return;
+  if (!project) {
+    alert('اختر مشروعاً أولاً');
+    throw new Error('No project selected');
+  }
   const typeSel = document.getElementById('templates-type');
   const type = typeSel ? typeSel.value : 'expenses';
   const reservationSel = document.getElementById('templates-reservation');
   const reservationId = reservationSel && reservationSel.value ? Number(reservationSel.value) : null;
   const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
+  if (!root) {
+    alert('لا يوجد محتوى للحفظ');
+    throw new Error('No template root to save');
+  }
   const payload = { html: root.outerHTML };
   const nameInput = document.getElementById('templates-save-title');
   const customTitle = nameInput && nameInput.value ? String(nameInput.value).trim() : '';
