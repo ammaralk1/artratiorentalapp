@@ -159,7 +159,7 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
    ============================== */
 .callsheet-v1 { display:block; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
-.cs-logo { height:48px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; }
+.cs-logo { height:48px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; }
 .cs-titlebox { text-align:center; }
 .cs-brand { font-size:38px; font-weight:800; letter-spacing:1px; }
 .cs-date { font-size:16px; font-weight:700; margin-top:2px; }
@@ -190,8 +190,9 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 .cs-schedule thead th { font-weight:800; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
-.cs-schedule tbody tr:nth-child(odd) td { background:#f3f8fe; }
-.cs-schedule tbody tr:nth-child(even) td { background:#ffffff; }
+/* Remove any zebra tint entirely */
+.cs-schedule tbody tr:nth-child(odd) td,
+.cs-schedule tbody tr:nth-child(even) td { background:#ffffff !important; }
 
 /* Wrap footer */
 .cs-wrap { margin-top:6px; border:1.5px solid #9ca3af; display:flex; align-items:center; justify-content:center; gap:12px; background:#ffffff; padding:6px 8px; }
@@ -205,7 +206,19 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 #templates-a4-root[data-render-context="export"] .cs-row-note td,
 #templates-a4-root[data-render-context="export"] .cs-row-strong td,
 #templates-a4-root[data-render-context="export"] .cs-schedule tbody td,
-#templates-a4-root[data-render-context="export"] .cs-schedule thead th { background-color:#ffffff !important; color:#000 !important; }
+#templates-a4-root[data-render-context="export"] .cs-schedule thead th,
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table td,
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table th,
+#templates-a4-root[data-render-context="export"] .cs-wrap,
+#templates-a4-root[data-render-context="export"] .cs-logo { background-color:#ffffff !important; color:#000 !important; }
+
+/* Force white backgrounds for all Call Sheet tables in preview too */
+#templates-a4-root .callsheet-v1 table th,
+#templates-a4-root .callsheet-v1 table td,
+#templates-a4-root .callsheet-v1 .cs-label,
+#templates-a4-root .callsheet-v1 .cs-section,
+#templates-a4-root .callsheet-v1 .cs-cast-title,
+#templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Print header/footer (inside each A4 page) */
