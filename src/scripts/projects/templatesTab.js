@@ -636,11 +636,35 @@ function renderTemplatesPreview() {
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
   host.appendChild(pageRoot);
+  // Prune pages with no visible content (avoid phantom pages)
+  try {
+    const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
+    pages0.forEach((pg) => {
+      const hasTop = !!pg.querySelector('#expenses-top-sheet');
+      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      if (!(hasTop || hasDetailsRow || hasTplRows)) {
+        pg.parentElement?.removeChild(pg);
+      }
+    });
+  } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
   try { paginateExpDetailsTables(); } catch (_) {}
+  // Prune again after pagination
+  try {
+    const pages1 = Array.from(pageRoot.querySelectorAll('.a4-page'));
+    pages1.forEach((pg) => {
+      const hasTop = !!pg.querySelector('#expenses-top-sheet');
+      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      if (!(hasTop || hasDetailsRow || hasTplRows)) {
+        pg.parentElement?.removeChild(pg);
+      }
+    });
+  } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
@@ -829,6 +853,11 @@ async function printTemplatesPdf() {
 
   patchHtml2CanvasColorParsing();
   const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait', compress: true });
+  // Ensure DOM is pruned before taking snapshots
+  try {
+    const domPages = Array.from(host.querySelectorAll('.a4-page'));
+    domPages.forEach((pg) => { if (!pageHasMeaningfulContent(pg)) { pg.parentElement?.removeChild(pg); } });
+  } catch (_) {}
   const pages = Array.from(host.querySelectorAll('.a4-page')).filter(pageHasMeaningfulContent);
   let pdfPageIndex = 0;
   for (let i = 0; i < pages.length; i += 1) {
