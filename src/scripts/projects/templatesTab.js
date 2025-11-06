@@ -2379,6 +2379,8 @@ async function fetchSavedTemplatesForCurrent() {
   const typeSel = document.getElementById('templates-type');
   const type = typeSel ? typeSel.value : 'expenses';
   const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`);
+  // Backend responds as { ok: true, data: [...] }
+  if (Array.isArray(res?.data)) return res.data;
   if (Array.isArray(res)) return res;
   if (res && Array.isArray(res.items)) return res.items;
   return [];
@@ -2387,14 +2389,20 @@ async function fetchSavedTemplatesForCurrent() {
 async function populateSavedTemplates() {
   const select = document.getElementById('templates-saved');
   if (!select) return;
+  const prev = select.value || '';
   const items = await fetchSavedTemplatesForCurrent();
   select.innerHTML = '<option value="">— محفوظات —</option>' + items.map((it) => `<option value="${String(it.id)}">${(it.title || `#${it.id}`)}</option>`).join('');
+  // try to keep previous selection if still present
+  if (prev && Array.from(select.options).some(o => o.value === String(prev))) {
+    select.value = String(prev);
+  }
 }
 
 async function loadSnapshotById(id) {
   if (!id) return;
   const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
-  const item = Array.isArray(res) ? res[0] : res;
+  const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
+  const item = Array.isArray(payload) ? payload[0] : payload;
   const host = document.getElementById('templates-preview-host');
   if (!host || !item) return;
   host.innerHTML = '';
@@ -2592,7 +2600,8 @@ export function initTemplatesTab() {
     if (!id) { alert('اختر محفوظاً أولاً'); return; }
     try {
       const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
-      const item = Array.isArray(res) ? res[0] : res;
+      const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
+      const item = Array.isArray(payload) ? payload[0] : payload;
       if (!item) { alert('تعذر جلب المحفوظ'); return; }
       const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
       const blob = new Blob([JSON.stringify({
