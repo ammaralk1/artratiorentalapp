@@ -2539,7 +2539,8 @@ export function initTemplatesTab() {
     const title = prompt('اسم جديد للمحفوظ:', currentText);
     if (!title || title.trim() === currentText) return;
     try {
-      await apiRequest('/project-templates/', { method: 'PATCH', body: { id: Number(id), title: String(title).trim() } });
+      // Backend expects id in query string for PATCH
+      await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { title: String(title).trim() } });
       await populateSavedTemplates();
       // re-select same id if still present
       const opt = Array.from(savedSel.options).find(o => o.value === String(id));
