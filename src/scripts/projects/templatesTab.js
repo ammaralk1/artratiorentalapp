@@ -196,7 +196,7 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Widen DESCRIPTION in top sheet tables as well
     try {
       const colgroup = el('colgroup');
-      const widths = ['12%','56%','12%','20%'];
+      const widths = ['10%','62%','10%','18%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       tbl.appendChild(colgroup);
     } catch(_) {}
@@ -268,8 +268,8 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Define exact column widths via <colgroup> to ensure fixed layout works
     try {
       const colgroup = el('colgroup');
-      // Expanded DESCRIPTION further (58%) and shrunk AMOUNT/PAID/X/TAB
-      const widths = ['4%','58%','5%','4%','4%','7%','4%','11%','3%'];
+      // Maximize DESCRIPTION (64%) and shrink others (matches CSS classes)
+      const widths = ['3%','64%','4%','3%','3%','6%','3%','11%','3%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       table.appendChild(colgroup);
     } catch(_) {}
