@@ -4,7 +4,7 @@
 #templates-a4-root { direction: rtl; text-align: right; font-family: 'Tajawal', 'Arial', 'Tahoma', sans-serif; color:#000; }
 /* Keep root white, and allow children backgrounds */
 #templates-a4-root { background:#fff !important; }
-#templates-a4-root * { color:#000 !important; box-shadow:none !important; }
+#templates-a4-root * { color:#000 !important; box-shadow:none !important; letter-spacing: normal !important; word-spacing: normal !important; font-kerning: normal !important; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 /* Force white surfaces inside A4 regardless of dark-mode */
 #templates-a4-root .a4-page,
@@ -99,7 +99,7 @@
 .tpl-meta .cell { border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; }
 .tpl-meta .cell { text-align:center; }
 .tpl-meta .label { display:block; font-size:12px; font-weight:600; opacity:.85; margin-bottom:2px; text-align:center; }
-.tpl-meta .cell [data-editable] { text-align:center; }
+.tpl-meta .cell [data-editable] { text-align:center; unicode-bidi: plaintext; direction: auto; word-break: break-word; overflow-wrap: anywhere; white-space: normal; }
 
 table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; border:1.5px solid #9ca3af; }
 /* General tables (Call Sheet / Shot List) header tint ~30% of brand */
@@ -163,6 +163,8 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 /* Expenses A4 specific layout */
 .exp-masthead { direction:rtl; background:#fff; color:#000 !important; border-radius:10px; padding:12px 14px; margin-bottom:6mm; display:flex; align-items:center; justify-content:space-between; gap:16px; }
 .exp-masthead .title { font-size:18px; font-weight:800; color:#fff !important; }
+.exp-masthead .title-wrap { display:flex; flex-direction:column; gap:4px; align-items:flex-start; }
+.exp-masthead .date { font-size:11px; color:#334155 !important; font-weight:600; }
 .exp-masthead .brand-info { flex:1; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; }
 .exp-masthead .brand-info .text { font-weight:800; font-size:14px; color:#000 !important; }
 .exp-masthead .brand-info .meta { display:flex; flex-direction:row; gap:12px; flex-wrap:wrap; font-size:11px; color:#334155 !important; justify-content:center; }

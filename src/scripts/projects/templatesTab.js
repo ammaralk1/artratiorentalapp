@@ -74,6 +74,8 @@ function metaCell(label, value = '', editable = true) {
   const cell = el('div', { class: 'cell' });
   cell.appendChild(el('span', { class: 'label', text: label }));
   const val = el('div', { 'data-editable': editable ? 'true' : 'false', contenteditable: editable ? 'true' : 'false' });
+  // Improve readability for mixed AR/EN values in print by letting browser choose text direction
+  try { val.setAttribute('dir', 'auto'); } catch (_) {}
   val.textContent = value || '';
   cell.appendChild(val);
   return cell;
@@ -186,13 +188,22 @@ function buildExpensesPage(project, reservations, opts = {}) {
         el('span', { class: 'line', text: `${L('Media License','ترخيص إعلامي')}: ${opts.companyLicense || ''}` })
       ])
     ]),
-    el('div', { class: 'title', text: L('Expenses Sheet', 'ورقة المصاريف') })
+    (() => {
+      const block = document.createElement('div');
+      block.className = 'title-wrap';
+      block.appendChild(el('div', { class: 'title', text: L('Expenses Sheet', 'ورقة المصاريف') }));
+      const today = new Date();
+      const iso = today.toISOString().slice(0, 10);
+      // Always show EN label per request
+      block.appendChild(el('div', { class: 'date', text: `Date: ${iso}` }));
+      return block;
+    })()
   ]);
   inner.appendChild(masthead);
 
   // Meta grid
   const meta = el('div', { class: 'tpl-meta' });
-  meta.appendChild(metaCell(L('Production Co.', 'شركة الإنتاج'), project?.clientCompany || ''));
+  meta.appendChild(metaCell(L('Client', 'العميل'), project?.clientCompany || ''));
   meta.appendChild(metaCell(L('Project Title', 'اسم المشروع'), project?.title || ''));
   meta.appendChild(metaCell(L('Budget Date', 'تاريخ الميزانية'), new Date().toISOString().slice(0, 10)));
   meta.appendChild(metaCell(L('Prepared by', 'إعداد'), ''));
