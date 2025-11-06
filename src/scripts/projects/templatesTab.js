@@ -699,7 +699,9 @@ function renderTemplatesPreview() {
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
       const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
-      if (!(hasTop || hasDetailsRow || hasTplRows)) {
+      // Call Sheet / Shot List first pages may not have tpl-table rows; allow callsheet blocks
+      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
+      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
         pg.parentElement?.removeChild(pg);
       }
     });
@@ -716,7 +718,8 @@ function renderTemplatesPreview() {
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
       const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
-      if (!(hasTop || hasDetailsRow || hasTplRows)) {
+      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
+      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
         pg.parentElement?.removeChild(pg);
       }
     });
@@ -749,7 +752,9 @@ async function printTemplatesPdf() {
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
       // Other templates: any table rows in tpl-table
       const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
-      return hasTop || hasDetailsRow || hasTplRows;
+      // Call Sheet first page may have only cs blocks
+      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
+      return hasTop || hasDetailsRow || hasTplRows || hasCallsheet;
     } catch (_) { return true; }
   };
   // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
