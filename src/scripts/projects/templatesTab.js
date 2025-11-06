@@ -232,25 +232,26 @@ function buildExpensesPage(project, reservations, opts = {}) {
     tbl.appendChild(body);
     return tbl;
   };
+  // Renumbered subgroups to start from 01-00 across all sections
   topWrap.appendChild(mkTopTable(L('ABOVE THE LINE','فوق الخط'), [
-    { code: '12-00', label: 'PRODUCERS UNIT' },
-    { code: '13-00', label: 'DIRECTOR & STAFF' },
-    { code: '14-00', label: 'CAST' },
+    { code: '01-00', label: 'PRODUCERS UNIT' },
+    { code: '02-00', label: 'DIRECTOR & STAFF' },
+    { code: '03-00', label: 'CAST' },
   ], 'exp-group-bar--atl'));
   topWrap.appendChild(mkTopTable(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), [
-    { code: '20-00', label: 'PRODUCTION STAFF' },
-    { code: '22-00', label: 'SET DESIGN' },
-    { code: '23-00', label: 'SET CONSTRUCTION' },
-    { code: '24-00', label: 'CASTING SERVICES' },
-    { code: '28-00', label: 'WARDROBE' },
-    { code: '29-00', label: 'ELECTRIC' },
-    { code: '30-00', label: 'CAMERA' },
-    { code: '33-00', label: 'TRANSPORTATION' },
-    { code: '34-00', label: 'LOCATIONS' },
+    { code: '04-00', label: 'PRODUCTION STAFF' },
+    { code: '05-00', label: 'SET DESIGN' },
+    { code: '06-00', label: 'SET CONSTRUCTION' },
+    { code: '07-00', label: 'CASTING SERVICES' },
+    { code: '08-00', label: 'WARDROBE' },
+    { code: '09-00', label: 'ELECTRIC' },
+    { code: '10-00', label: 'CAMERA' },
+    { code: '11-00', label: 'TRANSPORTATION' },
+    { code: '12-00', label: 'LOCATIONS' },
   ], 'exp-group-bar--prod'));
   topWrap.appendChild(mkTopTable(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [
-    { code: '45-00', label: 'FILM EDITING' },
-    { code: '49-00', label: 'VOICE OVER' },
+    { code: '13-00', label: 'FILM EDITING' },
+    { code: '14-00', label: 'VOICE OVER' },
   ], 'exp-group-bar--post'));
   // GRAND TOTAL separate bar
   const gtbl = el('table', { class: 'exp-table exp-top-table exp-top-grand' });
@@ -337,7 +338,12 @@ function buildExpensesPage(project, reservations, opts = {}) {
     ]);
     const addSubGroup = (groupKey2, code, label, n = 2) => {
       tb.appendChild(mkSubHeader(code, label));
-      for (let i = 0; i < n; i += 1) tb.appendChild(mkItemRow('', '', i % 2 === 1));
+      // Seed rows with auto-generated codes based on subgroup code prefix
+      const prefix = String(code).split('-')[0] || '';
+      for (let i = 0; i < n; i += 1) {
+        const serial = String(i + 1).padStart(2, '0');
+        tb.appendChild(mkItemRow(`${prefix}-${serial}`, '', i % 2 === 1));
+      }
       tb.appendChild(mkSubtotalRow(code));
       // hidden marker to map subgroup to parent group
       const marker = el('tr', { 'data-subgroup-marker': code, 'data-parent-group': groupKey2, style: 'display:none' });
@@ -612,10 +618,12 @@ function renderTemplatesPreview() {
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
   host.appendChild(pageRoot);
+  try { renumberExpenseCodes(); } catch (_) {}
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
   try { paginateExpDetailsTables(); } catch (_) {}
+  try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
 }
@@ -1968,6 +1976,7 @@ function handleTableActionClick(e) {
   } else if (action === 'row-delete') {
     tbody.removeChild(tr);
   }
+  try { renumberExpenseCodes(); } catch (_) {}
   recomputeExpensesSubtotals();
   try { shrinkSingleWordCells(tbody); } catch (_) {}
 }
@@ -2020,6 +2029,49 @@ function fillRowFromArray(tr, startCol, values) {
     td.textContent = String(raw);
     col += 1;
   }
+}
+
+// Auto-generate/renumber codes within each subgroup:
+// If subgroup header is e.g. 01-00, then items become 01-01, 01-02, ...
+function renumberExpenseCodes() {
+  const root = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  const tables = Array.from(root.querySelectorAll('table.exp-details'));
+  if (!tables.length) return;
+  const counters = new Map(); // subgroupCode -> count assigned so far
+
+  const isHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
+  const isSubtotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
+  const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+  const getPrefix = (subCode) => String(subCode || '').split('-')[0] || '';
+
+  tables.forEach((table) => {
+    const rows = Array.from(table.querySelectorAll('tbody > tr'));
+    let activeSubCode = null;
+    let prefix = '';
+    let count = 0;
+    rows.forEach((tr) => {
+      if (isHeader(tr)) {
+        activeSubCode = tr.getAttribute('data-subgroup');
+        prefix = getPrefix(activeSubCode);
+        count = counters.get(activeSubCode) || 0;
+        return;
+      }
+      if (isSubtotal(tr)) {
+        counters.set(activeSubCode, count);
+        activeSubCode = null; prefix = ''; return;
+      }
+      if (isItem(tr) && prefix) {
+        count += 1;
+        const codeCell = tr.children[0];
+        if (codeCell && codeCell.hasAttribute('contenteditable')) {
+          const serial = String(count).padStart(2, '0');
+          codeCell.textContent = `${prefix}-${serial}`;
+        }
+      }
+    });
+    if (activeSubCode) counters.set(activeSubCode, count);
+  });
 }
 
 function handleTablePaste(e) {
