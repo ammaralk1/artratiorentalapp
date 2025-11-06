@@ -730,7 +730,23 @@ async function printTemplatesPdf() {
       // تطبيق الإزاحة اليدوية في مسار html2pdf دائماً (حتى في الوضع الصارم)
       try {
         const scalePct = Number(readPdfPref('templatesPdf.scalePct', 100)) || 100;
-        const pages = Array.from(scope.querySelectorAll('.a4-page'));
+        // Collect pages, prune blanks, and cap to first 5 for expenses
+        let pages = Array.from(scope.querySelectorAll('.a4-page'));
+        pages = pages.filter((pg) => pageHasMeaningfulContent(pg));
+        if ((type === 'expenses') && pages.length > 5) {
+          const keep = new Set(pages.slice(0, 5));
+          Array.from(scope.querySelectorAll('.a4-page')).forEach((pg) => {
+            if (!keep.has(pg)) { try { pg.parentElement.removeChild(pg); } catch(_) {}
+            }
+          });
+          pages = Array.from(keep);
+        } else {
+          // Remove pages without meaningful content to avoid blank pages in fallback
+          Array.from(scope.querySelectorAll('.a4-page')).forEach((pg) => {
+            if (!pageHasMeaningfulContent(pg)) { try { pg.parentElement.removeChild(pg); } catch(_) {} }
+          });
+        }
+
         const globalAll = Number(readPdfPref('templatesPdf.globalAllYmm', 0)) || 0;
         const globalRightAll = Number(readPdfPref('templatesPdf.globalAllRightMm', 0)) || 0;
         pages.forEach((pg, idx) => {
@@ -741,10 +757,8 @@ async function printTemplatesPdf() {
           pg.style.transformOrigin = 'top left';
           pg.style.transform = `translate(${rightMm + globalRightAll}mm, ${fudge + globalAll}mm) scale(${s})`;
         });
-        // Remove pages without meaningful content to avoid blank pages in fallback
-        pages.forEach((pg) => { if (!pageHasMeaningfulContent(pg)) { try { pg.parentElement.removeChild(pg); } catch(_) {} } });
       } catch(_) {}
-
+    
       // Ensure assets ready before rendering
       await ensureAssetsReady(scope);
       await html2pdf()
@@ -858,7 +872,11 @@ async function printTemplatesPdf() {
     const domPages = Array.from(host.querySelectorAll('.a4-page'));
     domPages.forEach((pg) => { if (!pageHasMeaningfulContent(pg)) { pg.parentElement?.removeChild(pg); } });
   } catch (_) {}
-  const pages = Array.from(host.querySelectorAll('.a4-page')).filter(pageHasMeaningfulContent);
+  // Limit to first 5 pages for expenses PDFs
+  let pages = Array.from(host.querySelectorAll('.a4-page')).filter(pageHasMeaningfulContent);
+  if ((type === 'expenses') && pages.length > 5) {
+    pages = pages.slice(0, 5);
+  }
   let pdfPageIndex = 0;
   for (let i = 0; i < pages.length; i += 1) {
     const page = pages[i];
