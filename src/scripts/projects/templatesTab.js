@@ -2532,16 +2532,18 @@ export function initTemplatesTab() {
     saveTemplateSnapshot({ copy: false })
       .then(populateSavedTemplates)
       .catch((e) => {
-        const msg = (e && (e.message || e?.payload?.error)) || 'تعذر الحفظ';
+        const msg = (e && (e.message || e?.payload?.error || e?.payload?.details)) || 'تعذر الحفظ';
         alert(msg);
+        try { console.error('[templates/save] error', e); } catch(_) {}
       });
   });
   saveCopyBtn?.addEventListener('click', () => {
     saveTemplateSnapshot({ copy: true })
       .then(populateSavedTemplates)
       .catch((e) => {
-        const msg = (e && (e.message || e?.payload?.error)) || 'تعذر الحفظ';
+        const msg = (e && (e.message || e?.payload?.error || e?.payload?.details)) || 'تعذر الحفظ';
         alert(msg);
+        try { console.error('[templates/saveCopy] error', e); } catch(_) {}
       });
   });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
