@@ -891,6 +891,8 @@ async function printTemplatesPdf() {
         if (!tbl) return;
         const tb = tbl.tBodies && tbl.tBodies[0];
         if (!tb) return;
+        const hasItems = !!tb.querySelector('tr[data-row="item"]');
+        if (!hasItems) return;
         const first = tb.firstElementChild;
         const isBar = first && first.hasAttribute && first.hasAttribute('data-group-bar');
         if (isBar) return;
@@ -1138,6 +1140,9 @@ async function renderPdfLivePreview() {
       if (!tbl) return;
       const tb = tbl.tBodies && tbl.tBodies[0];
       if (!tb) return;
+      // Do not inject a bar if this page has no item rows — avoids non-blank empty pages
+      const hasItems = !!tb.querySelector('tr[data-row="item"]');
+      if (!hasItems) return;
       const first = tb.firstElementChild;
       if (first && first.hasAttribute && first.hasAttribute('data-group-bar')) return;
       let bar = cl.querySelector('tbody > tr[data-group-bar]');
