@@ -1742,6 +1742,8 @@ function paginateExpDetailsTables() {
     if (!table || table.getAttribute('data-split-done') === '1') return;
 
     const thead = table.querySelector('thead');
+    // Preserve column widths across split tables
+    const colTpl = table.querySelector('colgroup');
     const rows = Array.from(table.querySelectorAll('tbody > tr'));
     if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
 
@@ -1749,6 +1751,8 @@ function paginateExpDetailsTables() {
       const t = document.createElement('table');
       t.className = table.className;
       t.setAttribute('data-editable-table', 'expenses');
+      // clone colgroup if present to keep exact column widths (preview + export)
+      if (colTpl) t.appendChild(colTpl.cloneNode(true));
       const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
       t.appendChild(hd);
       t.appendChild(document.createElement('tbody'));
