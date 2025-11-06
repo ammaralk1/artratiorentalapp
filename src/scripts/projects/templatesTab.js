@@ -583,13 +583,6 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     namesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 7 ? 'Motaz' : '' }));
     timesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 0 ? '07:30AM' : '' }));
   }
-  // Weather cell on the right spanning two rows
-  const w = el('td', { class: 'cs-weather', rowspan: '2' });
-  w.appendChild(el('div', { class: 'cs-city', 'data-editable': 'true', contenteditable: 'true', text: res?.location || 'jeddah' }));
-  w.appendChild(el('div', { class: 'cs-temp', 'data-editable': 'true', contenteditable: 'true', text: '38°C - 25°C' }));
-  w.appendChild(el('div', { class: 'cs-wind', 'data-editable': 'true', contenteditable: 'true', text: 'Wind: 16 km/h' }));
-  w.appendChild(el('div', { class: 'cs-rain', 'data-editable': 'true', contenteditable: 'true', text: 'Chance of rain : 0%' }));
-  namesRow.appendChild(w);
   cb.appendChild(namesRow);
   cb.appendChild(timesRow);
   cast.appendChild(cb);
@@ -610,9 +603,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     el('th', { text: 'Notes' })
   ])]));
   const sb = el('tbody');
-  // Highlight rows (breakfast, prep)
-  const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
-  const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);
+  // No pre-seeded note rows below the header
   for (let i = 0; i < 16; i += 1) {
     const tr = el('tr');
     for (let c = 0; c < 9; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
@@ -621,12 +612,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   sched.appendChild(sb);
   wrap.appendChild(sched);
 
-  // Wrap footer
-  const footer = el('div', { class: 'cs-wrap' }, [
-    el('div', { class: 'cs-wrap-time', 'data-editable': 'true', contenteditable: 'true', text: '07:00 PM' }),
-    el('div', { class: 'cs-wrap-label', text: 'WRAP' })
-  ]);
-  wrap.appendChild(footer);
+  // Remove WRAP footer per request
 
   inner.appendChild(wrap);
   return root;
