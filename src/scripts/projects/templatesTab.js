@@ -2522,8 +2522,22 @@ export function initTemplatesTab() {
   }, true);
 
   // Preview adjust controls removed
-  saveBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: false }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
-  saveCopyBtn?.addEventListener('click', () => { saveTemplateSnapshot({ copy: true }).then(populateSavedTemplates).catch(() => alert('تعذر الحفظ')); });
+  saveBtn?.addEventListener('click', () => {
+    saveTemplateSnapshot({ copy: false })
+      .then(populateSavedTemplates)
+      .catch((e) => {
+        const msg = (e && (e.message || e?.payload?.error)) || 'تعذر الحفظ';
+        alert(msg);
+      });
+  });
+  saveCopyBtn?.addEventListener('click', () => {
+    saveTemplateSnapshot({ copy: true })
+      .then(populateSavedTemplates)
+      .catch((e) => {
+        const msg = (e && (e.message || e?.payload?.error)) || 'تعذر الحفظ';
+        alert(msg);
+      });
+  });
   savedSel?.addEventListener('change', () => { if (savedSel.value) loadSnapshotById(savedSel.value).catch(() => {}); });
   fromResBtn?.addEventListener('click', () => {
     if (typeSel) typeSel.value = 'callsheet';
