@@ -153,6 +153,59 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 /* Summary footer */
 .tpl-summary { width:100%; max-width:320px; margin:6mm 0 0 auto; border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; }
 .tpl-summary-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; }
+
+/* ==============================
+   Call Sheet (v1) specific styles
+   ============================== */
+.callsheet-v1 { display:block; }
+.cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
+.cs-logo { height:48px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; }
+.cs-titlebox { text-align:center; }
+.cs-brand { font-size:38px; font-weight:800; letter-spacing:1px; }
+.cs-date { font-size:16px; font-weight:700; margin-top:2px; }
+.cs-title { font-size:20px; font-weight:900; letter-spacing:1px; }
+
+table.cs-info { width:100%; border-collapse:collapse; table-layout:fixed; margin:4px 0 8px; }
+table.cs-info td { border:1.5px solid #9ca3af; vertical-align:top; }
+table.cs-info > tbody > tr > td { width:33.3333%; }
+table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; }
+.cs-roles td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
+.cs-label { background:#9aa0a6; color:#fff; font-weight:700; width:40%; }
+.cs-center td { border:1.5px solid #9ca3af; padding:6px 8px; }
+.cs-notes-h { background:#f3f4f6; font-weight:700; text-align:center; }
+.cs-notes { line-height:1.35; min-height:54px; }
+.cs-section { background:#d16060; color:#fff; text-align:center; font-weight:800; }
+.cs-locations { height:36px; }
+.cs-times td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
+
+/* Cast calls */
+table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
+table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
+.cs-cast-title { background:#d16060; color:#fff; font-weight:800; text-align:center; }
+.cs-weather { text-align:center; font-weight:700; }
+.cs-weather .cs-city { font-size:14px; margin-bottom:4px; }
+.cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; }
+
+/* Schedule */
+.cs-schedule thead th { font-weight:800; }
+.cs-row-note td { background:#e8f5e9 !important; font-weight:700; text-align:center; }
+.cs-row-strong td { background:#f7fbe9 !important; font-weight:800; text-align:center; }
+.cs-schedule tbody tr:nth-child(odd) td { background:#f3f8fe; }
+.cs-schedule tbody tr:nth-child(even) td { background:#ffffff; }
+
+/* Wrap footer */
+.cs-wrap { margin-top:6px; border:1.5px solid #9ca3af; display:flex; align-items:center; justify-content:center; gap:12px; background:#e9a5a5; padding:6px 8px; }
+.cs-wrap-time { font-weight:800; }
+.cs-wrap-label { font-weight:900; }
+
+/* Ensure white backgrounds in export context too */
+#templates-a4-root[data-render-context="export"] .cs-label,
+#templates-a4-root[data-render-context="export"] .cs-section,
+#templates-a4-root[data-render-context="export"] .cs-cast-title,
+#templates-a4-root[data-render-context="export"] .cs-row-note td,
+#templates-a4-root[data-render-context="export"] .cs-row-strong td,
+#templates-a4-root[data-render-context="export"] .cs-schedule tbody td,
+#templates-a4-root[data-render-context="export"] .cs-schedule thead th { background-color:#ffffff !important; color:#000 !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Print header/footer (inside each A4 page) */

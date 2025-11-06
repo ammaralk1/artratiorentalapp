@@ -514,149 +514,120 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
   const res = reservations?.[0] || null;
-  inner.appendChild(el('div', { class: 'tpl-header' }, [
-    el('div', {}, [
-      el('h1', { class: 'tpl-title', text: t('projects.templates.callsheet.title', 'Call Sheet / قالب كول شيت') }),
-      el('p', { class: 'tpl-subtitle', text: (project?.title || '').trim() })
-    ])
-  ]));
 
-  const meta = el('div', { class: 'tpl-meta' });
-  meta.appendChild(metaCell('Project / المشروع', project?.title || ''));
-  meta.appendChild(metaCell('Date / التاريخ', res?.start ? new Date(res.start).toISOString().slice(0,10) : ''));
-  meta.appendChild(metaCell('Location / الموقع', res?.location || ''));
-  meta.appendChild(metaCell('Call Time / وقت التجمع', res?.start ? new Date(res.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''));
-  meta.appendChild(metaCell('Weather / الطقس', 'Clear - 28°C'));
-  meta.appendChild(metaCell('Nearest Hospital / أقرب مستشفى', ''));
-  meta.appendChild(metaCell('Map Link / رابط الموقع', ''));
-  meta.appendChild(metaCell('Notes / ملاحظات', ''));
-  inner.appendChild(meta);
+  const wrap = el('div', { class: 'callsheet-v1' });
 
-  const columns = el('div', { class: 'tpl-columns' });
-  // Key contacts
-  const contactsCard = el('div', { class: 'tpl-card' });
-  contactsCard.appendChild(el('h4', { text: t('projects.templates.callsheet.contacts', 'جهات الاتصال الأساسية') }));
-  const contactsTable = el('table', { class: 'tpl-table' });
-  contactsTable.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: 'الاسم' }), el('th', { text: 'الدور' }), el('th', { text: 'الهاتف' })])]))
-  const ctb = el('tbody');
-  const techs = Array.isArray(project?.techniciansDetails) ? project.techniciansDetails : [];
-  (techs.length ? techs : new Array(5).fill(null)).forEach((tch) => {
-    const tr = el('tr');
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: tch?.name || tch?.fullName || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: tch?.role || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: tch?.phone || '' }));
-    ctb.appendChild(tr);
+  // Header (logos + title + date)
+  const hdr = el('div', { class: 'cs-header' });
+  hdr.appendChild(el('div', { class: 'cs-logo cs-logo--left' }, [ el('div', { 'data-editable': 'true', contenteditable: 'true', text: 'Logo' }) ]));
+  const titleBox = el('div', { class: 'cs-titlebox' }, [
+    el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.clientCompany || project?.title || 'WKK.') }),
+    el('div', { class: 'cs-date', 'data-editable': 'true', contenteditable: 'true', text: (res?.start ? new Date(res.start).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) }),
+    el('div', { class: 'cs-title', text: 'CALL SHEET' })
+  ]);
+  hdr.appendChild(titleBox);
+  hdr.appendChild(el('div', { class: 'cs-logo cs-logo--right' }, [ el('div', { 'data-editable': 'true', contenteditable: 'true', text: 'Logo' }) ]));
+  wrap.appendChild(hdr);
+
+  // Info grid (left roles + center notes/locations + right timings)
+  const info = el('table', { class: 'cs-info' });
+  const infoBody = el('tbody');
+  const makeRow = (...cells) => { const tr = el('tr'); cells.forEach((c) => tr.appendChild(c)); return tr; };
+  const leftCol = (label) => el('td', { class: 'cs-label', text: label });
+  const leftVal = (text = '') => el('td', { 'data-editable': 'true', contenteditable: 'true', text });
+  // Left roles (6 rows)
+  const leftTable = el('table', { class: 'cs-roles' });
+  const ltBody = el('tbody');
+  ['Producer', 'Director', 'DOP', 'Production Manager', '1st Assistant Director'].forEach((lab) => {
+    const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal('')); ltBody.appendChild(r);
   });
-  contactsTable.appendChild(ctb);
-  contactsCard.appendChild(contactsTable);
-  columns.appendChild(contactsCard);
+  leftTable.appendChild(ltBody);
 
-  // Day schedule
-  const scheduleCard = el('div', { class: 'tpl-card' });
-  scheduleCard.appendChild(el('h4', { text: t('projects.templates.callsheet.schedule', 'جدول اليوم') }));
-  const schedTable = el('table', { class: 'tpl-table', 'data-editable-table': 'callsheet' });
-  schedTable.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)', style: 'width:16%' }),
-    el('th', { text: 'Shot #', style: 'width:8%' }),
-    el('th', { text: 'Description', style: 'width:36%' }),
-    el('th', { text: 'Location', style: 'width:20%' }),
-    el('th', { text: 'Notes', style: 'width:16%' }),
-    el('th', { text: '', style: 'width:4%' })
-  ])]));
-  const stb = el('tbody');
-  (reservations || []).forEach((r, i) => {
-    const tr = el('tr');
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: String(i + 1) }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.title || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: r?.location || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-    tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
-      el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
-    ])]));
-    stb.appendChild(tr);
-  });
-  if (stb.children.length < 8) {
-    for (let i = stb.children.length; i < 8; i += 1) {
-      const tr = el('tr');
-      for (let c = 0; c < 5; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-      tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
-        el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
-        el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
-        el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
-        el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
-      ])]));
-      stb.appendChild(tr);
-    }
+  // Center notes and locations
+  const centerTable = el('table', { class: 'cs-center' });
+  const ctBody = el('tbody');
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-notes-h', text: 'Important Notes' })));
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-notes', 'data-editable': 'true', contenteditable: 'true', html: 'Please be on Time<br>Have Fun and make Art<br>If you need any help please contact the AD or Production manager' })));
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-section', text: 'Locations' })));
+  ctBody.appendChild(makeRow(el('td', { class: 'cs-locations', 'data-editable': 'true', contenteditable: 'true' })));
+  centerTable.appendChild(ctBody);
+
+  // Right timings grid
+  const rightTable = el('table', { class: 'cs-times' });
+  const rtBody = el('tbody');
+  const addTime = (lab, val = '') => { const tr = el('tr'); tr.appendChild(leftCol(`${lab}`)); tr.appendChild(leftVal(val)); rtBody.appendChild(tr); };
+  addTime('Call Time:');
+  addTime('Client:');
+  addTime('Ready to shoot:');
+  addTime('Lunch:');
+  addTime('Est. Wrap:');
+  rightTable.appendChild(rtBody);
+
+  // Build info as one row (three columns)
+  const infoRow = el('tr');
+  const tdL = el('td'); tdL.appendChild(leftTable); infoRow.appendChild(tdL);
+  const tdC = el('td'); tdC.appendChild(centerTable); infoRow.appendChild(tdC);
+  const tdR = el('td'); tdR.appendChild(rightTable); infoRow.appendChild(tdR);
+  infoBody.appendChild(infoRow);
+  info.appendChild(infoBody);
+  wrap.appendChild(info);
+
+  // Cast calls block
+  const cast = el('table', { class: 'cs-cast' });
+  const cb = el('tbody');
+  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '10' })));
+  const namesRow = el('tr');
+  const timesRow = el('tr');
+  const N = 8;
+  for (let i = 0; i < N; i += 1) {
+    namesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 7 ? 'Motaz' : '' }));
+    timesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 0 ? '07:30AM' : '' }));
   }
-  schedTable.appendChild(stb);
-  scheduleCard.appendChild(schedTable);
-  columns.appendChild(scheduleCard);
+  // Weather cell on the right spanning two rows
+  const w = el('td', { class: 'cs-weather', rowspan: '2' });
+  w.appendChild(el('div', { class: 'cs-city', 'data-editable': 'true', contenteditable: 'true', text: res?.location || 'jeddah' }));
+  w.appendChild(el('div', { class: 'cs-temp', 'data-editable': 'true', contenteditable: 'true', text: '38°C - 25°C' }));
+  w.appendChild(el('div', { class: 'cs-wind', 'data-editable': 'true', contenteditable: 'true', text: 'Wind: 16 km/h' }));
+  w.appendChild(el('div', { class: 'cs-rain', 'data-editable': 'true', contenteditable: 'true', text: 'Chance of rain : 0%' }));
+  namesRow.appendChild(w);
+  cb.appendChild(namesRow);
+  cb.appendChild(timesRow);
+  cast.appendChild(cb);
+  wrap.appendChild(cast);
 
-  inner.appendChild(columns);
-
-  // Crew by department
-  const crewGrid = el('div', { class: 'tpl-columns' });
-  const departments = [
-    { key: 'Camera', labels: ['Role', 'Name'] },
-    { key: 'Grip', labels: ['Role', 'Name'] },
-    { key: 'Sound', labels: ['Role', 'Name'] },
-    { key: 'Lighting', labels: ['Role', 'Name'] },
-    { key: 'Art', labels: ['Role', 'Name'] },
-    { key: 'Production', labels: ['Role', 'Name'] },
-  ];
-  departments.forEach((dept) => {
-    const card = el('div', { class: 'tpl-card' });
-    card.appendChild(el('h4', { text: `${dept.key} / ${dept.key}` }));
-    const tbl = el('table', { class: 'tpl-table' });
-    tbl.appendChild(el('thead', {}, [el('tr', {}, [el('th', { text: dept.labels[0] }), el('th', { text: dept.labels[1] })])]))
-    const body = el('tbody');
-    for (let i = 0; i < 4; i += 1) {
-      const tr = el('tr');
-      tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-      tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-      body.appendChild(tr);
-    }
-    tbl.appendChild(body);
-    card.appendChild(tbl);
-    crewGrid.appendChild(card);
-  });
-  inner.appendChild(crewGrid);
-
-  // Locations card
-  const locationsCard = el('div', { class: 'tpl-card' });
-  locationsCard.appendChild(el('h4', { text: 'Locations / المواقع' }));
-  const locTbl = el('table', { class: 'tpl-table' });
-  locTbl.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Location' }), el('th', { text: 'Address' }), el('th', { text: 'Notes' })
+  // Schedule table
+  const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
+  sched.appendChild(el('thead', {}, [el('tr', {}, [
+    el('th', { text: 'Time (Duration)' }),
+    el('th', { text: 'Shot #' }),
+    el('th', { text: 'Description' }),
+    el('th', { text: 'Location' }),
+    el('th', { text: 'MOVEMENT' }),
+    el('th', { text: 'VO' }),
+    el('th', { text: 'Cast' }),
+    el('th', { text: 'Action Props' }),
+    el('th', { text: 'Notes' })
   ])]));
-  const locBody = el('tbody');
-  const locs = Array.from(new Set((reservations || []).map((r) => r?.location).filter(Boolean)));
-  (locs.length ? locs : ['']).forEach((name) => {
+  const sb = el('tbody');
+  // Highlight rows (breakfast, prep)
+  const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
+  const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);
+  for (let i = 0; i < 16; i += 1) {
     const tr = el('tr');
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: name || '' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-    locBody.appendChild(tr);
-  });
-  locTbl.appendChild(locBody);
-  locationsCard.appendChild(locTbl);
-  inner.appendChild(locationsCard);
-
-  // Logistics & Safety card
-  const safetyCard = el('div', { class: 'tpl-card' });
-  safetyCard.appendChild(el('h4', { text: 'Logistics / Safety' }));
-  const ul = el('ul');
-  for (let i = 0; i < 4; i += 1) {
-    const li = el('li', { 'data-editable': 'true', contenteditable: 'true' });
-    li.textContent = '';
-    ul.appendChild(li);
+    for (let c = 0; c < 9; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    sb.appendChild(tr);
   }
-  safetyCard.appendChild(ul);
-  inner.appendChild(safetyCard);
+  sched.appendChild(sb);
+  wrap.appendChild(sched);
+
+  // Wrap footer
+  const footer = el('div', { class: 'cs-wrap' }, [
+    el('div', { class: 'cs-wrap-time', 'data-editable': 'true', contenteditable: 'true', text: '07:00 PM' }),
+    el('div', { class: 'cs-wrap-label', text: 'WRAP' })
+  ]);
+  wrap.appendChild(footer);
+
+  inner.appendChild(wrap);
   return root;
 }
 
