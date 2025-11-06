@@ -28,11 +28,16 @@ import { showToast } from '../utils.js';
 let TPL_PREVIEW_ZOOM = 1;
 let TPL_USER_ADJUSTED_ZOOM = false;
 let TPL_ZOOM_VALUE_EL = null;
+let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
+let TPL_ZOOM_FIT_BTN = null;
+let TPL_ZOOM_RESIZE_BOUND = false;
 
 function readTplZoomPref() {
   try { return Math.max(0.3, Math.min(2.5, Number(localStorage.getItem('templates.preview.zoom') || '1'))); } catch (_) { return 1; }
 }
 function writeTplZoomPref(v) { try { localStorage.setItem('templates.preview.zoom', String(v)); } catch (_) {} }
+function readTplZoomModePref() { try { const m = localStorage.getItem('templates.preview.zoomMode') || 'manual'; return (m === 'fit') ? 'fit' : 'manual'; } catch(_) { return 'manual'; } }
+function writeTplZoomModePref(m) { try { localStorage.setItem('templates.preview.zoomMode', (m === 'fit') ? 'fit' : 'manual'); } catch(_) {} }
 function setTemplatesPreviewZoom(value, { silent = false, markManual = false } = {}) {
   TPL_PREVIEW_ZOOM = Math.min(Math.max(value, 0.25), 2.5);
   if (markManual) TPL_USER_ADJUSTED_ZOOM = true;
@@ -50,6 +55,40 @@ function applyTemplatesPreviewZoom(value) {
   try { root.style.transformOrigin = 'top center'; } catch (_) {}
   try { root.style.transform = `scale(${value})`; } catch (_) {}
 }
+
+function computeTemplatesBaseWidth() {
+  try {
+    const page = document.querySelector('#templates-preview-host #templates-a4-root .a4-page');
+    if (page) return page.getBoundingClientRect().width || page.offsetWidth || 794;
+  } catch (_) {}
+  const type = document.getElementById('templates-type')?.value || 'expenses';
+  return (type !== 'expenses') ? 1123 : 794;
+}
+function computeTemplatesAvailableWidth() {
+  const host = document.getElementById('templates-preview-host');
+  if (!host) return null;
+  try {
+    const cs = window.getComputedStyle(host);
+    const pl = parseFloat(cs.paddingLeft || '0') || 0;
+    const pr = parseFloat(cs.paddingRight || '0') || 0;
+    return Math.max(0, host.clientWidth - pl - pr);
+  } catch (_) { return host.clientWidth || null; }
+}
+function computeTemplatesFitZoom() {
+  const base = computeTemplatesBaseWidth();
+  const avail = computeTemplatesAvailableWidth();
+  if (!base || !avail) return 1;
+  return Math.max(0.25, Math.min(2.5, avail / base));
+}
+function applyTemplatesFitZoom() {
+  const z = computeTemplatesFitZoom();
+  setTemplatesPreviewZoom(z, { silent: false });
+}
+function ensureResizeBinding() {
+  if (TPL_ZOOM_RESIZE_BOUND) return;
+  window.addEventListener('resize', () => { if (TPL_ZOOM_MODE === 'fit') applyTemplatesFitZoom(); }, { passive: true });
+  TPL_ZOOM_RESIZE_BOUND = true;
+}
 function ensureTemplatesZoomUI() {
   const actionsRow = document.getElementById('templates-actions');
   if (!actionsRow || document.getElementById('tpl-zoom-controls')) return;
@@ -60,18 +99,24 @@ function ensureTemplatesZoomUI() {
     <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-out title=\"تصغير\">−</button>
     <span class=\"tpl-zoom-value\" data-tpl-zoom-value>100%</span>
     <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-in title=\"تكبير\">+</button>
+    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-fit title=\"ملء العرض\">↔︎</button>
     <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-reset title=\"1:1\">1:1</button>
   `;
   actionsRow.appendChild(wrap);
   const outBtn = wrap.querySelector('[data-tpl-zoom-out]');
   const inBtn = wrap.querySelector('[data-tpl-zoom-in]');
   const resetBtn = wrap.querySelector('[data-tpl-zoom-reset]');
+  const fitBtn = wrap.querySelector('[data-tpl-zoom-fit]');
   TPL_ZOOM_VALUE_EL = wrap.querySelector('[data-tpl-zoom-value]');
   outBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(-0.1));
   inBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(0.1));
-  resetBtn?.addEventListener('click', () => setTemplatesPreviewZoom(1, { markManual: true }));
+  resetBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'manual'; writeTplZoomModePref(TPL_ZOOM_MODE); setTemplatesPreviewZoom(1, { markManual: true }); });
+  fitBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'fit'; writeTplZoomModePref(TPL_ZOOM_MODE); applyTemplatesFitZoom(); ensureResizeBinding(); });
+  TPL_ZOOM_FIT_BTN = fitBtn;
   // initialize
-  setTemplatesPreviewZoom(readTplZoomPref(), { silent: false });
+  TPL_ZOOM_MODE = readTplZoomModePref();
+  if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); ensureResizeBinding(); }
+  else { setTemplatesPreviewZoom(readTplZoomPref(), { silent: false }); }
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -720,8 +765,11 @@ function renderTemplatesPreview() {
   try { ensurePdfTunerUI(); } catch (_) {}
   // Apply saved zoom after render
   try {
-    if (!TPL_USER_ADJUSTED_ZOOM) { TPL_PREVIEW_ZOOM = readTplZoomPref(); }
-    setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM, { silent: true });
+    if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); }
+    else {
+      if (!TPL_USER_ADJUSTED_ZOOM) { TPL_PREVIEW_ZOOM = readTplZoomPref(); }
+      setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM, { silent: true });
+    }
     if (TPL_ZOOM_VALUE_EL) TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
   } catch (_) {}
 }
