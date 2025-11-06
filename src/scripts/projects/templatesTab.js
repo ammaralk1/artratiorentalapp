@@ -268,8 +268,8 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Define exact column widths via <colgroup> to ensure fixed layout works
     try {
       const colgroup = el('colgroup');
-      // Maximize DESCRIPTION (64%) and shrink others (matches CSS classes)
-      const widths = ['3%','64%','4%','3%','3%','6%','3%','11%','3%'];
+      // Balanced widths to match CSS: code 6, desc 60, amount/paid/x/tab 4, rate 6, total 10, actions 2
+      const widths = ['6%','60%','4%','4%','4%','6%','4%','10%','2%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       table.appendChild(colgroup);
     } catch(_) {}

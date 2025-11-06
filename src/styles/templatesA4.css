@@ -214,17 +214,17 @@ table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
-/* Maximize DESCRIPTION (64%) and shrink others accordingly */
-.exp-col-code { width:3%; }
-.exp-col-item { width:64%; }
+/* Balanced: wider CODE, large DESCRIPTION, equal mini columns for A/P/X/TAB */
+.exp-col-code { width:6%; }
+.exp-col-item { width:60%; }
 .exp-col-amount { width:4%; }
-.exp-col-paid { width:3%; }
-.exp-col-x { width:3%; }
+.exp-col-paid { width:4%; }
+.exp-col-x { width:4%; }
 .exp-col-rate { width:6%; }
-.exp-col-tab { width:3%; }
-.exp-col-total { width:11%; }
+.exp-col-tab { width:4%; }
+.exp-col-total { width:10%; }
 /* Actions column (hidden in export) */
-.exp-col-actions { width:3%; }
+.exp-col-actions { width:2%; }
 
 /* Make DESCRIPTION column readable: right/left aligned per dir, allow wrapping */
 table.exp-details tbody td:nth-child(2) {
