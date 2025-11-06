@@ -583,6 +583,13 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     namesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 7 ? 'Motaz' : '' }));
     timesRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: i === 0 ? '07:30AM' : '' }));
   }
+  // Weather cell on the right spanning two rows (restored)
+  const w = el('td', { class: 'cs-weather', rowspan: '2' });
+  w.appendChild(el('div', { class: 'cs-city', 'data-editable': 'true', contenteditable: 'true', text: res?.location || 'jeddah' }));
+  w.appendChild(el('div', { class: 'cs-temp', 'data-editable': 'true', contenteditable: 'true', text: '38°C - 25°C' }));
+  w.appendChild(el('div', { class: 'cs-wind', 'data-editable': 'true', contenteditable: 'true', text: 'Wind: 16 km/h' }));
+  w.appendChild(el('div', { class: 'cs-rain', 'data-editable': 'true', contenteditable: 'true', text: 'Chance of rain : 0%' }));
+  namesRow.appendChild(w);
   cb.appendChild(namesRow);
   cb.appendChild(timesRow);
   cast.appendChild(cb);

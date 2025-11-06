@@ -182,7 +182,9 @@ table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; 
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 .cs-cast-title { background:#ffffff; color:#000; font-weight:800; text-align:center; }
-/* Weather block removed in this variant */
+.cs-weather { text-align:center; font-weight:700; background:#ffffff; }
+.cs-weather .cs-city { font-size:14px; margin-bottom:4px; }
+.cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; font-weight:700; }
 
 /* Schedule */
 /* Ensure schedule header is visible (to appear at top of schedule page) */
