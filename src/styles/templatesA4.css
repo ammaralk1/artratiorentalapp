@@ -214,15 +214,17 @@ table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px
 .exp-grand-total { background:#fff; color:#000 !important; font-weight:900; font-size:12px; }
 
 /* Column widths for expenses table */
-/* As requested: code 8, description 30, amount 10, paid 10, x 6, rate 10, tab 6, total 10, actions 10 */
+/* New order/rations (TAB removed, width added to No. of Days):
+   code 8, description 30, rate 10, amount 10, No. of Days 12, paid 10, total 10, actions 10 */
 .exp-col-code { width:8%; }
 .exp-col-item { width:30%; }
-.exp-col-amount { width:10%; }
-.exp-col-paid { width:10%; }
-.exp-col-x { width:6%; }
 .exp-col-rate { width:10%; }
-.exp-col-tab { width:6%; }
+.exp-col-amount { width:10%; }
+.exp-col-x { width:12%; }
+.exp-col-paid { width:10%; }
 .exp-col-total { width:10%; }
+/* Unused now */
+.exp-col-tab { width:0%; }
 /* Actions column (hidden in export) */
 .exp-col-actions { width:10%; }
 

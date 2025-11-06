@@ -264,15 +264,14 @@ function buildExpensesPage(project, reservations, opts = {}) {
   topWrap.appendChild(gtbl);
   inner.appendChild(topWrap);
 
-  // Column definitions used for all details tables
+  // Column definitions used for all details tables (order only for reference)
   const headCols = [
     { text: L('CODE','الكود'), cls: 'exp-col-code' },
     { text: L('DESCRIPTION','الوصف'), cls: 'exp-col-item' },
-    { text: L('AMOUNT','الكمية'), cls: 'exp-col-amount' },
-    { text: L('PAID','مدفوع'), cls: 'exp-col-paid' },
-    { text: 'X', cls: 'exp-col-x' },
     { text: L('RATE','السعر'), cls: 'exp-col-rate' },
-    { text: L('TAB','تب'), cls: 'exp-col-tab' },
+    { text: L('AMOUNT','الكمية'), cls: 'exp-col-amount' },
+    { text: L('No. of Days','عدد الأيام'), cls: 'exp-col-x' },
+    { text: L('PAID','مدفوع'), cls: 'exp-col-paid' },
     { text: L('TOTAL','الإجمالي'), cls: 'exp-col-total' },
     { text: '', cls: 'exp-col-actions' },
   ];
@@ -281,15 +280,15 @@ function buildExpensesPage(project, reservations, opts = {}) {
     // Define exact column widths via <colgroup> to ensure fixed layout works
     try {
       const colgroup = el('colgroup');
-      // Match requested ratios: code 8, desc 30, amount 10, paid 10, x 6, rate 10, tab 6, total 10, actions 10
-      const widths = ['8%','30%','10%','10%','6%','10%','6%','10%','10%'];
+      // New order/ratios: code 8, desc 30, rate 10, amount 10, days 12, paid 10, total 10, actions 10
+      const widths = ['8%','30%','10%','10%','12%','10%','10%','10%'];
       widths.forEach((w) => colgroup.appendChild(el('col', { style: `width:${w}` })));
       table.appendChild(colgroup);
     } catch(_) {}
     const thead = el('thead');
     // فقط شريط العنوان في THEAD ليتكرر في كل صفحة — نزيل صف الأعمدة العام لتفادي الدبل هيدر
     const groupTitleRow = el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [
-      el('th', { colspan: '9' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ])
+      el('th', { colspan: '8' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ])
     ]);
     thead.appendChild(groupTitleRow);
     table.appendChild(thead);
@@ -298,11 +297,10 @@ function buildExpensesPage(project, reservations, opts = {}) {
     const mkSubHeader = (code, label) => el('tr', { class: 'exp-subheader', 'data-subgroup-header': code, 'data-subgroup': code }, [
       el('th', { class: 'exp-col-code', text: code }),
       el('th', { class: 'exp-col-item', text: label }),
-      el('th', { class: 'exp-col-amount', text: L('AMOUNT','الكمية') }),
-      el('th', { class: 'exp-col-paid', text: L('PAID','مدفوع') }),
-      el('th', { class: 'exp-col-x', text: 'X' }),
       el('th', { class: 'exp-col-rate', text: L('RATE','السعر') }),
-      el('th', { class: 'exp-col-tab', text: L('TAB','تب') }),
+      el('th', { class: 'exp-col-amount', text: L('AMOUNT','الكمية') }),
+      el('th', { class: 'exp-col-x', text: L('No. of Days','عدد الأيام') }),
+      el('th', { class: 'exp-col-paid', text: L('PAID','مدفوع') }),
       el('th', { class: 'exp-col-total', text: L('TOTAL','الإجمالي') }),
       el('th', { class: 'exp-col-actions', text: '' }),
     ]);
@@ -310,11 +308,10 @@ function buildExpensesPage(project, reservations, opts = {}) {
     const mkItemRow = (code = '', desc = '', alt = false) => el('tr', { 'data-row': 'item', class: alt ? 'exp-row-alt' : '' }, [
       el('td', { class: 'code', 'data-editable': 'true', contenteditable: 'true', text: code }),
       el('td', { 'data-editable': 'true', contenteditable: 'true', text: desc }),
-      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
-      el('td', { 'data-editable': 'true', contenteditable: 'true' }),
-      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
       el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;' }),
       el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '1' }),
+      el('td', { 'data-editable': 'true', contenteditable: 'true' }),
       el('td', { class: 'total', 'data-num': 'true', dir: 'ltr', style: 'direction:ltr;', text: '' }),
       el('td', {}, [el('div', { class: 'tpl-actions' }, [
         el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
@@ -327,13 +324,13 @@ function buildExpensesPage(project, reservations, opts = {}) {
     const mkSubtotalRow = (code) => el('tr', { class: 'exp-summary-row', 'data-subgroup-subtotal': code }, [
       el('td', { class: 'code', text: code }),
       el('td', { text: L('Subtotal','المجموع الفرعي') }),
-      el('td', { colspan: '5' }),
+      el('td', { colspan: '4' }),
       el('td', { class: 'subtotal', 'data-subtotal': code, text: '' }),
       el('td', { text: '' }),
     ]);
 
     const mkGroupTotalRow = (label, key) => el('tr', { class: 'exp-summary-row', 'data-group-total': key }, [
-      el('td', { colspan: '8', text: label }),
+      el('td', { colspan: '7', text: label }),
       el('td', { class: 'total', 'data-total-group': key, text: '' }),
     ]);
     const addSubGroup = (groupKey2, code, label, n = 2) => {
@@ -373,24 +370,24 @@ function buildExpensesPage(project, reservations, opts = {}) {
   };
 
   addGroupPage('atl', L('ABOVE THE LINE','فوق الخط'), [
-    { code: '12-00', label: 'PRODUCERS UNIT', rows: 2 },
-    { code: '13-00', label: 'DIRECTOR & STAFF', rows: 2 },
-    { code: '14-00', label: 'CAST', rows: 6 },
+    { code: '01-00', label: 'PRODUCERS UNIT', rows: 2 },
+    { code: '02-00', label: 'DIRECTOR & STAFF', rows: 2 },
+    { code: '03-00', label: 'CAST', rows: 6 },
   ]);
   addGroupPage('prod', L('PRODUCTION EXPENSES','مصاريف الإنتاج'), [
-    { code: '20-00', label: 'PRODUCTION STAFF', rows: 3 },
-    { code: '22-00', label: 'SET DESIGN', rows: 3 },
-    { code: '23-00', label: 'SET CONSTRUCTION', rows: 2 },
-    { code: '24-00', label: 'CASTING SERVICES', rows: 2 },
-    { code: '28-00', label: 'WARDROBE', rows: 4 },
-    { code: '29-00', label: 'ELECTRIC', rows: 4 },
-    { code: '30-00', label: 'CAMERA', rows: 4 },
-    { code: '33-00', label: 'TRANSPORTATION', rows: 2 },
-    { code: '34-00', label: 'LOCATIONS', rows: 2 },
+    { code: '04-00', label: 'PRODUCTION STAFF', rows: 3 },
+    { code: '05-00', label: 'SET DESIGN', rows: 3 },
+    { code: '06-00', label: 'SET CONSTRUCTION', rows: 2 },
+    { code: '07-00', label: 'CASTING SERVICES', rows: 2 },
+    { code: '08-00', label: 'WARDROBE', rows: 4 },
+    { code: '09-00', label: 'ELECTRIC', rows: 4 },
+    { code: '10-00', label: 'CAMERA', rows: 4 },
+    { code: '11-00', label: 'TRANSPORTATION', rows: 2 },
+    { code: '12-00', label: 'LOCATIONS', rows: 2 },
   ]);
   addGroupPage('post', L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [
-    { code: '45-00', label: 'FILM EDITING', rows: 2 },
-    { code: '49-00', label: 'VOICE OVER', rows: 2 },
+    { code: '13-00', label: 'FILM EDITING', rows: 2 },
+    { code: '14-00', label: 'VOICE OVER', rows: 2 },
   ]);
 
   // لا حاجة لصندوق الملخص أسفل GRAND TOTAL في التوب شيت
@@ -1431,14 +1428,13 @@ function recomputeExpensesSubtotals() {
       while (tr && !tr.hasAttribute('data-subgroup-header') && !tr.hasAttribute('data-subgroup-subtotal')) {
         if (tr.getAttribute('data-row') === 'item') {
           const tds = tr.children;
-          const amount = number(tds[2]?.textContent, 1);
+          const rate = number(tds[2]?.textContent, 0);
+          const amount = number(tds[3]?.textContent, 1);
           const x = number(tds[4]?.textContent, 1);
-          const rate = number(tds[5]?.textContent, 0);
-          const tab = number(tds[6]?.textContent, 1);
-          const total = amount * x * rate * tab;
-          if (tds[7]) tds[7].textContent = formatIntNoDecimals(total);
+          const total = amount * x * rate;
+          if (tds[6]) tds[6].textContent = formatIntNoDecimals(total);
           subtotal += total;
-          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[5]?.textContent, 0) || number(tds[2]?.textContent, 0);
+          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[2]?.textContent, 0) || number(tds[3]?.textContent, 0);
           if (hasContent) count += 1;
         }
         tr = tr.nextElementSibling;
