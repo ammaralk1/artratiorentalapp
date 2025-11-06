@@ -99,6 +99,18 @@ function setTemplateLang(lang) {
 }
 function L(en, ar) { return TEMPLATE_LANG === 'ar' ? (ar || en) : en; }
 
+// Format numbers with thousand separators and no decimals (preview + export)
+function formatIntNoDecimals(value) {
+  try {
+    const n = Math.round(Number(value) || 0);
+    const locale = (TEMPLATE_LANG === 'ar') ? 'ar-SA' : 'en-US';
+    return n.toLocaleString(locale, { maximumFractionDigits: 0, minimumFractionDigits: 0, useGrouping: true });
+  } catch (_) {
+    const n = Math.round(Number(value) || 0);
+    return String(n);
+  }
+}
+
 // Removed temporary preview padding adjustment logic per request
 
 function readHeaderFooterOptions() {
@@ -1416,7 +1428,7 @@ function recomputeExpensesSubtotals() {
           const rate = number(tds[5]?.textContent, 0);
           const tab = number(tds[6]?.textContent, 1);
           const total = amount * x * rate * tab;
-          if (tds[7]) tds[7].textContent = String(total.toFixed(2));
+          if (tds[7]) tds[7].textContent = formatIntNoDecimals(total);
           subtotal += total;
           const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[5]?.textContent, 0) || number(tds[2]?.textContent, 0);
           if (hasContent) count += 1;
@@ -1425,7 +1437,7 @@ function recomputeExpensesSubtotals() {
       }
       // write subgroup subtotal
       const subCell = document.querySelector(`#templates-preview-host [data-subtotal="${CSS.escape(code)}"]`);
-      if (subCell) subCell.textContent = String(subtotal.toFixed(2));
+      if (subCell) subCell.textContent = formatIntNoDecimals(subtotal);
       subgroupTotals[code] = subtotal;
       subgroupCounts[code] = count;
       grand += subtotal;
@@ -1438,10 +1450,10 @@ function recomputeExpensesSubtotals() {
     // group totals
     Object.entries(groupTotals).forEach(([key, val]) => {
       const cell = document.querySelector(`#templates-preview-host [data-total-group="${CSS.escape(key)}"]`);
-      if (cell) cell.textContent = String(val.toFixed(2));
+      if (cell) cell.textContent = formatIntNoDecimals(val);
     });
     const gcell = document.querySelector('#templates-preview-host [data-grand-total]');
-    if (gcell) gcell.textContent = String(grand.toFixed(2));
+    if (gcell) gcell.textContent = formatIntNoDecimals(grand);
 
     // Update Top Sheet summary figures
     try {
@@ -1449,29 +1461,29 @@ function recomputeExpensesSubtotals() {
         const cnt = subgroupCounts[code] || 0;
         const cntEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-count="${CSS.escape(code)}"]`);
         const totEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total="${CSS.escape(code)}"]`);
-        if (cntEl) cntEl.textContent = String(cnt);
-        if (totEl) totEl.textContent = String(Number(val).toFixed(2));
+        if (cntEl) cntEl.textContent = formatIntNoDecimals(cnt);
+        if (totEl) totEl.textContent = formatIntNoDecimals(val);
       });
       Object.entries(groupTotals).forEach(([key, val]) => {
         const el2 = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total-group="${CSS.escape(key)}"]`);
-        if (el2) el2.textContent = String(Number(val).toFixed(2));
+        if (el2) el2.textContent = formatIntNoDecimals(val);
       });
       const g2 = document.querySelector('#templates-preview-host #expenses-top-sheet [data-top-grand]');
-      if (g2) g2.textContent = String(grand.toFixed(2));
+      if (g2) g2.textContent = formatIntNoDecimals(grand);
     } catch(_) {}
 
     // Summary footer
     const project = getSelectedProject();
     const currencyLabel = t('reservations.create.summary.currency', 'SR');
     const applyTax = Boolean(project?.applyTax);
-    const taxAmount = applyTax ? Number((grand * PROJECT_TAX_RATE).toFixed(2)) : 0;
-    const totalWithTax = Number((grand + taxAmount).toFixed(2));
+    const taxAmount = applyTax ? Math.round(grand * PROJECT_TAX_RATE) : 0;
+    const totalWithTax = Math.round(grand + taxAmount);
     const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
     const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
     const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
-    if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
-    if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
-    if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
+    if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
+    if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
+    if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
     try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
     return;
   }
@@ -1484,27 +1496,27 @@ function recomputeExpensesSubtotals() {
     if (tr.matches('[data-section-bar]')) { running = 0; return; }
     if (tr.classList.contains('tpl-subtotal-row')) {
       const cell = tr.querySelector('[data-subtotal]') || tr.children[5];
-      if (cell) cell.textContent = String((running || 0).toFixed(2));
+      if (cell) cell.textContent = formatIntNoDecimals(running || 0);
       return;
     }
     const qty = Number(String(tr.children[3]?.textContent || '1').replace(/[^\d.\-]/g, '')) || 1;
     const rate = Number(String(tr.children[4]?.textContent || '0').replace(/[^\d.\-]/g, '')) || 0;
     const total = qty * rate;
-    if (tr.children[5]) tr.children[5].textContent = String(total.toFixed(2));
+    if (tr.children[5]) tr.children[5].textContent = formatIntNoDecimals(total);
     running += total;
     grand += total;
   });
   const project = getSelectedProject();
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const applyTax = Boolean(project?.applyTax);
-  const taxAmount = applyTax ? Number((grand * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const totalWithTax = Number((grand + taxAmount).toFixed(2));
+  const taxAmount = applyTax ? Math.round(grand * PROJECT_TAX_RATE) : 0;
+  const totalWithTax = Math.round(grand + taxAmount);
   const subEl = document.querySelector('#expenses-summary [data-summary-subtotal]');
   const taxEl = document.querySelector('#expenses-summary [data-summary-tax]');
   const totalEl = document.querySelector('#expenses-summary [data-summary-total]');
-  if (subEl) subEl.textContent = `${String(grand.toFixed(2))} ${currencyLabel}`;
-  if (taxEl) taxEl.textContent = applyTax ? `${String(taxAmount.toFixed(2))} ${currencyLabel}` : `0.00 ${currencyLabel}`;
-  if (totalEl) totalEl.textContent = `${String(totalWithTax.toFixed(2))} ${currencyLabel}`;
+  if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
+  if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
+  if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
   try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
   try { requestAnimationFrame(() => { try { paginateExpDetailsTables(); } catch (_) {} }); } catch (_) {}
 }
