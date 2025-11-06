@@ -24,6 +24,56 @@ import { PROJECT_TAX_RATE } from './constants.js';
 import { apiRequest } from '../apiClient.js';
 import { showToast } from '../utils.js';
 
+// Templates A4 preview zoom state and controls
+let TPL_PREVIEW_ZOOM = 1;
+let TPL_USER_ADJUSTED_ZOOM = false;
+let TPL_ZOOM_VALUE_EL = null;
+
+function readTplZoomPref() {
+  try { return Math.max(0.3, Math.min(2.5, Number(localStorage.getItem('templates.preview.zoom') || '1'))); } catch (_) { return 1; }
+}
+function writeTplZoomPref(v) { try { localStorage.setItem('templates.preview.zoom', String(v)); } catch (_) {} }
+function setTemplatesPreviewZoom(value, { silent = false, markManual = false } = {}) {
+  TPL_PREVIEW_ZOOM = Math.min(Math.max(value, 0.25), 2.5);
+  if (markManual) TPL_USER_ADJUSTED_ZOOM = true;
+  applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM);
+  writeTplZoomPref(TPL_PREVIEW_ZOOM);
+  if (!silent && TPL_ZOOM_VALUE_EL) {
+    TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
+  }
+}
+function adjustTemplatesPreviewZoom(delta) { setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM + delta, { markManual: true }); }
+function applyTemplatesPreviewZoom(value) {
+  const root = document.querySelector('#templates-preview-host > #templates-a4-root')
+    || document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!root) return;
+  try { root.style.transformOrigin = 'top center'; } catch (_) {}
+  try { root.style.transform = `scale(${value})`; } catch (_) {}
+}
+function ensureTemplatesZoomUI() {
+  const actionsRow = document.getElementById('templates-actions');
+  if (!actionsRow || document.getElementById('tpl-zoom-controls')) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'tpl-zoom-controls';
+  wrap.className = 'tpl-zoom-controls';
+  wrap.innerHTML = `
+    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-out title=\"تصغير\">−</button>
+    <span class=\"tpl-zoom-value\" data-tpl-zoom-value>100%</span>
+    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-in title=\"تكبير\">+</button>
+    <button type=\"button\" class=\"tpl-zoom-btn\" data-tpl-zoom-reset title=\"1:1\">1:1</button>
+  `;
+  actionsRow.appendChild(wrap);
+  const outBtn = wrap.querySelector('[data-tpl-zoom-out]');
+  const inBtn = wrap.querySelector('[data-tpl-zoom-in]');
+  const resetBtn = wrap.querySelector('[data-tpl-zoom-reset]');
+  TPL_ZOOM_VALUE_EL = wrap.querySelector('[data-tpl-zoom-value]');
+  outBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(-0.1));
+  inBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(0.1));
+  resetBtn?.addEventListener('click', () => setTemplatesPreviewZoom(1, { markManual: true }));
+  // initialize
+  setTemplatesPreviewZoom(readTplZoomPref(), { silent: false });
+}
+
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -668,6 +718,12 @@ function renderTemplatesPreview() {
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
+  // Apply saved zoom after render
+  try {
+    if (!TPL_USER_ADJUSTED_ZOOM) { TPL_PREVIEW_ZOOM = readTplZoomPref(); }
+    setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM, { silent: true });
+    if (TPL_ZOOM_VALUE_EL) TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
+  } catch (_) {}
 }
 
 async function printTemplatesPdf() {
@@ -2656,6 +2712,8 @@ export function initTemplatesTab() {
   });
 
   document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+  // Ensure zoom controls are present once controls mount
+  try { ensureTemplatesZoomUI(); } catch (_) {}
   // Normalize digits to English and recompute on edits
   document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
     const el = e.target;

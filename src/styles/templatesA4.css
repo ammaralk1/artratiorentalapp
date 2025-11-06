@@ -304,3 +304,12 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
   table.exp-table td, table.exp-table th { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; height: auto !important; min-height: 26px !important; line-height: 1.2 !important; }
   table.exp-table td[data-num], table.exp-table td.total { white-space: nowrap !important; }
 }
+/* Templates preview zoom controls (match quote preview style) */
+.tpl-zoom-controls { display:inline-flex; align-items:center; gap:8px; margin-bottom:0; background: rgba(15,23,42,0.06); border-radius:999px; padding:6px 12px; }
+:is(html.dark-mode, body.dark-mode) .tpl-zoom-controls { background: rgba(30,41,59,0.72); border: 1px solid rgba(93,133,255,0.32); }
+.tpl-zoom-btn { border:none; background:#ffffff; border-radius:999px; width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; font-weight:600; cursor:pointer; box-shadow:0 2px 6px rgba(15,23,42,0.12); transition: transform 120ms ease, box-shadow 120ms ease; }
+:is(html.dark-mode, body.dark-mode) .tpl-zoom-btn { background: rgba(51,65,85,0.9); color: rgba(226,232,240,0.92); box-shadow: 0 2px 6px rgba(15,23,42,0.35); }
+.tpl-zoom-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.16); }
+:is(html.dark-mode, body.dark-mode) .tpl-zoom-btn:hover { box-shadow: 0 4px 12px rgba(8,47,73,0.45); }
+.tpl-zoom-value { min-width:48px; text-align:center; font-weight:600; color:#1f2937; }
+:is(html.dark-mode, body.dark-mode) .tpl-zoom-value { color: rgba(226,232,240,0.9); }
