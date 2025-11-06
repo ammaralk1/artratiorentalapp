@@ -597,17 +597,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
-  sched.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)' }),
-    el('th', { text: 'Shot #' }),
-    el('th', { text: 'Description' }),
-    el('th', { text: 'Location' }),
-    el('th', { text: 'MOVEMENT' }),
-    el('th', { text: 'VO' }),
-    el('th', { text: 'Cast' }),
-    el('th', { text: 'Action Props' }),
-    el('th', { text: 'Notes' })
-  ])]));
+  // No header row needed per request (hide column labels)
   const sb = el('tbody');
   // Highlight rows (breakfast, prep)
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);

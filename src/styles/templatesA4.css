@@ -187,7 +187,7 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 .cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; }
 
 /* Schedule */
-.cs-schedule thead th { font-weight:800; }
+.cs-schedule thead, .cs-schedule thead tr, .cs-schedule thead th { display:none !important; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */
