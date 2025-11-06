@@ -603,7 +603,13 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     el('th', { text: 'Notes' })
   ])]));
   const sb = el('tbody');
-  // No pre-seeded note rows below the header
+  // Pre-seeded milestone rows (kept) below the header
+  const r1 = el('tr', { class: 'cs-row-note' });
+  r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' }));
+  sb.appendChild(r1);
+  const r2 = el('tr', { class: 'cs-row-strong' });
+  r2.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' }));
+  sb.appendChild(r2);
   for (let i = 0; i < 16; i += 1) {
     const tr = el('tr');
     for (let c = 0; c < 9; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
