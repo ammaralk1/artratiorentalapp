@@ -22,6 +22,7 @@ import {
 } from '../canvasColorUtils.js';
 import { PROJECT_TAX_RATE } from './constants.js';
 import { apiRequest } from '../apiClient.js';
+import { showToast } from '../utils.js';
 
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
@@ -2359,7 +2360,33 @@ export function initTemplatesTab() {
   reservationSel?.addEventListener('change', renderTemplatesPreview);
   typeSel?.addEventListener('change', () => { renderTemplatesPreview(); try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {} });
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
-  printBtn?.addEventListener('click', printTemplatesPdf);
+  if (printBtn) {
+    printBtn.addEventListener('click', async (ev) => {
+      try {
+        ev.preventDefault(); ev.stopPropagation();
+      } catch (_) {}
+      try {
+        // Close actions dropdown if open to avoid overlay issues
+        try {
+          const actionsMenu = document.getElementById('templates-actions-menu');
+          if (actionsMenu) actionsMenu.style.display = 'none';
+        } catch (_) {}
+        // Disable to prevent double clicks
+        const originalText = printBtn.textContent;
+        printBtn.disabled = true;
+        printBtn.textContent = '… جاري الطباعة';
+        await printTemplatesPdf();
+        // Success toast
+        try { showToast('تم إنشاء ملف PDF', 'success', 3500); } catch (_) {}
+        printBtn.textContent = originalText;
+        printBtn.disabled = false;
+      } catch (error) {
+        console.error('❌ [templatesTab] print failed', error);
+        try { showToast('تعذر إنشاء PDF، حاول مجددًا', 'error', 6000); } catch (_) { alert('تعذر إنشاء PDF، حاول مجددًا'); }
+        try { printBtn.disabled = false; } catch (_) {}
+      }
+    });
+  }
   // Dropdown actions menu toggle
   const actionsToggle = document.getElementById('templates-actions-toggle');
   const actionsMenu = document.getElementById('templates-actions-menu');
