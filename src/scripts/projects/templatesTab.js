@@ -597,7 +597,18 @@ function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
-  // No header row needed per request (hide column labels)
+  // Restore header so it appears at the top of the schedule page
+  sched.appendChild(el('thead', {}, [el('tr', {}, [
+    el('th', { text: 'Time (Duration)' }),
+    el('th', { text: 'Shot #' }),
+    el('th', { text: 'Description' }),
+    el('th', { text: 'Location' }),
+    el('th', { text: 'MOVEMENT' }),
+    el('th', { text: 'VO' }),
+    el('th', { text: 'Cast' }),
+    el('th', { text: 'Action Props' }),
+    el('th', { text: 'Notes' })
+  ])]));
   const sb = el('tbody');
   // Highlight rows (breakfast, prep)
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
@@ -2093,6 +2104,15 @@ function paginateGenericTplTables() {
       if (!fitsInner(currentInner)) {
         // rollback row and create new page
         tbody.removeChild(rows[i]);
+        // If current table has no data rows, remove it to avoid header-only on previous page
+        try {
+          const hadNoRows = !(tbody.children && tbody.children.length);
+          if (hadNoRows) {
+            const prev = workingTable;
+            const prevInner = currentInner;
+            try { prevInner.removeChild(prev); } catch (_) {}
+          }
+        } catch (_) {}
         ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
         pagesWrap.appendChild(currentPage);
         workingTable = makeTable();
