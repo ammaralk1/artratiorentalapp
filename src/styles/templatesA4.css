@@ -69,6 +69,8 @@
 #templates-a4-root[data-render-context="export"] .a4-inner,
 #templates-a4-root[data-render-context="export"] table.exp-table,
 #templates-a4-root[data-render-context="export"] .exp-masthead { background: #ffffff !important; background-color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] table.tpl-table th,
+#templates-a4-root[data-render-context="export"] table.tpl-table td { background: #ffffff !important; background-color:#ffffff !important; color:#000 !important; }
 #templates-a4-root[data-render-context="export"] table.exp-top-table th,
 #templates-a4-root[data-render-context="export"] table.exp-details thead th,
 #templates-a4-root[data-render-context="export"] tr.exp-subheader th { background: rgba(37, 99, 235, 0.30) !important; background-color: rgba(37,99,235,0.30) !important; }
@@ -102,9 +104,12 @@
 .tpl-meta .cell [data-editable] { text-align:center; unicode-bidi: plaintext; direction: auto; word-break: break-word; overflow-wrap: anywhere; white-space: normal; }
 
 table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; border:1.5px solid #9ca3af; }
-/* General tables (Call Sheet / Shot List) header tint ~30% of brand */
-table.tpl-table th { background: rgba(37, 99, 235, 0.30); border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; color:#000; }
-table.tpl-table td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
+/* Make all template tables fully light (no dark/tinted backgrounds) in preview */
+#templates-a4-root table.tpl-table th { background:#ffffff !important; color:#000 !important; border:1.5px solid #9ca3af; padding:8px 10px; text-align:right; height:28px; }
+#templates-a4-root table.tpl-table td { background:#ffffff !important; border:1.5px solid #9ca3af; padding:6px 8px; text-align:right; vertical-align:middle; height:26px; }
+/* Ensure same in dark-mode */
+:is(html.dark-mode, body.dark-mode) #templates-a4-root table.tpl-table th { background:#ffffff !important; color:#000 !important; }
+:is(html.dark-mode, body.dark-mode) #templates-a4-root table.tpl-table td { background:#ffffff !important; }
 /* Repeat thead in print/export for generic templates tables */
 table.tpl-table thead { display: table-header-group; }
 
