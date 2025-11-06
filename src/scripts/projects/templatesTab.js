@@ -798,18 +798,17 @@ async function printTemplatesPdf() {
         }
       }
       const coverage = darkTotal / Math.max(1, samples);
-      return coverage < 0.001; // ~0.1% dark coverage treated as blank
+      // Treat canvas as blank if very little dark coverage (≈0.6%)
+      return coverage < 0.006;
     } catch (_) { return false; }
   };
 
   patchHtml2CanvasColorParsing();
   const doc = new JsPdfCtor({ unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait', compress: true });
-  const pages = Array.from(host.querySelectorAll('.a4-page'));
+  const pages = Array.from(host.querySelectorAll('.a4-page')).filter(pageHasMeaningfulContent);
   let pdfPageIndex = 0;
   for (let i = 0; i < pages.length; i += 1) {
     const page = pages[i];
-    // Skip DOM-empty pages early (no tables/rows)
-    if (!pageHasMeaningfulContent(page)) { continue; }
     const wrap = document.createElement('div');
     Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
     const scope = document.createElement('div');
