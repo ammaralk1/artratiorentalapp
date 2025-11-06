@@ -575,7 +575,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   // Cast calls block
   const cast = el('table', { class: 'cs-cast' });
   const cb = el('tbody');
-  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '10' })));
+  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '9' })));
   const namesRow = el('tr');
   const timesRow = el('tr');
   const N = 8;

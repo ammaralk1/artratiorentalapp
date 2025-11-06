@@ -158,6 +158,7 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
    Call Sheet (v1) specific styles
    ============================== */
 .callsheet-v1 { display:block; }
+.callsheet-v1, .callsheet-v1 * { background:#ffffff !important; background-image:none !important; box-shadow:none !important; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
 .cs-logo { height:48px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; }
 .cs-titlebox { text-align:center; }
@@ -221,6 +222,7 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 #templates-a4-root .callsheet-v1 .cs-section,
 #templates-a4-root .callsheet-v1 .cs-cast-title,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
+#templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Print header/footer (inside each A4 page) */
