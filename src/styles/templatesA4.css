@@ -170,31 +170,31 @@ table.cs-info td { border:1.5px solid #9ca3af; vertical-align:top; }
 table.cs-info > tbody > tr > td { width:33.3333%; }
 table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; }
 .cs-roles td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
-.cs-label { background:#9aa0a6; color:#fff; font-weight:700; width:40%; }
+.cs-label { background:#ffffff; color:#000; font-weight:700; width:40%; }
 .cs-center td { border:1.5px solid #9ca3af; padding:6px 8px; }
-.cs-notes-h { background:#f3f4f6; font-weight:700; text-align:center; }
+.cs-notes-h { background:#ffffff; font-weight:700; text-align:center; }
 .cs-notes { line-height:1.35; min-height:54px; }
-.cs-section { background:#d16060; color:#fff; text-align:center; font-weight:800; }
+.cs-section { background:#ffffff; color:#000; text-align:center; font-weight:800; }
 .cs-locations { height:36px; }
 .cs-times td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
 
 /* Cast calls */
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
-.cs-cast-title { background:#d16060; color:#fff; font-weight:800; text-align:center; }
+.cs-cast-title { background:#ffffff; color:#000; font-weight:800; text-align:center; }
 .cs-weather { text-align:center; font-weight:700; }
 .cs-weather .cs-city { font-size:14px; margin-bottom:4px; }
 .cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; }
 
 /* Schedule */
 .cs-schedule thead th { font-weight:800; }
-.cs-row-note td { background:#e8f5e9 !important; font-weight:700; text-align:center; }
-.cs-row-strong td { background:#f7fbe9 !important; font-weight:800; text-align:center; }
+.cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
+.cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 .cs-schedule tbody tr:nth-child(odd) td { background:#f3f8fe; }
 .cs-schedule tbody tr:nth-child(even) td { background:#ffffff; }
 
 /* Wrap footer */
-.cs-wrap { margin-top:6px; border:1.5px solid #9ca3af; display:flex; align-items:center; justify-content:center; gap:12px; background:#e9a5a5; padding:6px 8px; }
+.cs-wrap { margin-top:6px; border:1.5px solid #9ca3af; display:flex; align-items:center; justify-content:center; gap:12px; background:#ffffff; padding:6px 8px; }
 .cs-wrap-time { font-weight:800; }
 .cs-wrap-label { font-weight:900; }
 
