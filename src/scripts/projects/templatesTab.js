@@ -44,6 +44,15 @@ async function waitForFontsReady() {
     }
   } catch (_) {}
 }
+
+// Canvas helper: request a 2D context optimized for frequent readbacks
+function getCtx2d(canvas) {
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (ctx) return ctx;
+  } catch (_) {}
+  try { return canvas.getContext('2d'); } catch (_) { return null; }
+}
 function waitForImages(container) {
   const imgs = Array.from(container.querySelectorAll('img'));
   if (!imgs.length) return Promise.resolve();
@@ -734,13 +743,14 @@ async function printTemplatesPdf() {
   const CSS_DPI = 96; const PX_PER_MM = CSS_DPI / 25.4;
   const captureScale = Math.min(2.0, Math.max(1.6, (window.devicePixelRatio || 1) * 1.25));
   const baseOpts = { scale: captureScale, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', letterRendering: false, removeContainer: false };
-  const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
+  const measureTopWhitespacePx = (canvas, threshold = 246) => { try { const ctx = getCtx2d(canvas); if (!ctx) return 0; const { width, height } = canvas; for (let y = 0; y < height; y += 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return y; } } } return 0; } catch (_) { return 0; } };
   // Detect the first significant content row, ignoring the thin page border.
   // Scans the central 60% width and skips the first 4px rows, requiring a
   // substantial number of dark pixels so a 1px border does not trigger.
   const measureContentTopIgnoringBorderPx = (canvas, threshold = 244) => {
     try {
-      const ctx = canvas.getContext('2d');
+      const ctx = getCtx2d(canvas);
+      if (!ctx) return 0;
       const { width, height } = canvas;
       const xStart = Math.floor(width * 0.2);
       const regionW = Math.max(10, Math.floor(width * 0.6));
@@ -762,7 +772,8 @@ async function printTemplatesPdf() {
   // Scan right region for first non-white pixels (better at detecting logo/title area)
   const measureRightRegionContentTopPx = (canvas, threshold = 244) => {
     try {
-      const ctx = canvas.getContext('2d');
+      const ctx = getCtx2d(canvas);
+      if (!ctx) return 0;
       const { width, height } = canvas;
       const xStart = Math.floor(width * 0.55);
       const regionW = Math.max(10, width - xStart);
@@ -778,12 +789,13 @@ async function printTemplatesPdf() {
       return 0;
     } catch (_) { return 0; }
   };
-  const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = canvas.getContext('2d'); const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
-  const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = out.getContext('2d'); ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
+  const measureBottomWhitespacePx = (canvas, threshold = 246) => { try { const ctx = getCtx2d(canvas); if (!ctx) return 0; const { width, height } = canvas; for (let y = height-1; y >= 0; y -= 2) { const data = ctx.getImageData(0, y, width, 1).data; let dark = 0; for (let x = 0; x < width; x += 1) { const i = x * 4; if (data[i] < threshold || data[i+1] < threshold || data[i+2] < threshold) { if (++dark > Math.max(2, Math.ceil(width*0.003))) return (height-1-y); } } } return 0; } catch (_) { return 0; } };
+  const cropCanvasVertical = (canvas, topPx, bottomPx) => { try { const { width, height } = canvas; const cropTop = Math.max(0, Math.min(height - 1, Math.round(topPx))); const cropBottom = Math.max(0, Math.min(height - cropTop, Math.round(bottomPx))); const newH = Math.max(1, height - cropTop - cropBottom); if (cropTop === 0 && cropBottom === 0) return canvas; const out = document.createElement('canvas'); out.width = width; out.height = newH; const ctx = getCtx2d(out); if (!ctx) return canvas; ctx.drawImage(canvas, 0, -cropTop); return out; } catch (_) { return canvas; } };
   // Estimate if a canvas is nearly blank (no significant dark pixels)
   const isCanvasAlmostBlank = (canvas, threshold = 244) => {
     try {
-      const ctx = canvas.getContext('2d');
+      const ctx = getCtx2d(canvas);
+      if (!ctx) return false;
       const { width, height } = canvas;
       const xStart = Math.floor(width * 0.15);
       const regionW = Math.max(10, Math.floor(width * 0.70));
