@@ -630,6 +630,18 @@ async function printTemplatesPdf() {
   if (!host) return;
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
+  // Helper: detect if a page contains meaningful content (avoid blank pages)
+  const pageHasMeaningfulContent = (pg) => {
+    try {
+      if (!pg) return false;
+      // Expenses: either Top Sheet present, or at least one data row in details
+      const hasTop = !!pg.querySelector('#expenses-top-sheet');
+      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+      // Other templates: any table rows in tpl-table
+      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      return hasTop || hasDetailsRow || hasTplRows;
+    } catch (_) { return true; }
+  };
   // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
   const strictWysiwyg = (() => { try { return (readPdfString('templatesPdf.wysiwyg','1') ?? '1') !== '0'; } catch(_) { return true; } })();
   const html2pdf = await ensureHtml2Pdf();
@@ -684,14 +696,8 @@ async function printTemplatesPdf() {
           pg.style.transformOrigin = 'top left';
           pg.style.transform = `translate(${rightMm + globalRightAll}mm, ${fudge + globalAll}mm) scale(${s})`;
         });
-        // Remove pages that have no data rows to avoid blank pages in fallback
-        pages.forEach((pg) => {
-          const hasDataRow = pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-          const hasTopSheet = pg.querySelector('#expenses-top-sheet');
-          if (!hasTopSheet && !hasDataRow) {
-            try { pg.parentElement.removeChild(pg); } catch(_) {}
-          }
-        });
+        // Remove pages without meaningful content to avoid blank pages in fallback
+        pages.forEach((pg) => { if (!pageHasMeaningfulContent(pg)) { try { pg.parentElement.removeChild(pg); } catch(_) {} } });
       } catch(_) {}
 
       // Ensure assets ready before rendering
@@ -802,6 +808,8 @@ async function printTemplatesPdf() {
   let pdfPageIndex = 0;
   for (let i = 0; i < pages.length; i += 1) {
     const page = pages[i];
+    // Skip DOM-empty pages early (no tables/rows)
+    if (!pageHasMeaningfulContent(page)) { continue; }
     const wrap = document.createElement('div');
     Object.assign(wrap.style, { position: 'fixed', top: '0', left: '-12000px', pointerEvents: 'none', zIndex: '-1', backgroundColor: '#ffffff' });
     const scope = document.createElement('div');
