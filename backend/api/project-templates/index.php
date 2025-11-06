@@ -136,3 +136,21 @@ function mapTemplateRow(array $row): array {
     ];
 }
 
+/**
+ * Read and parse JSON request payload into an associative array.
+ * Mirrors helper used by other endpoints (projects, equipment, etc.).
+ */
+function readJsonPayload(): array
+{
+    $raw = file_get_contents('php://input');
+    if ($raw === false || $raw === '') {
+        return [];
+    }
+
+    $data = json_decode($raw, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new InvalidArgumentException('Invalid JSON payload');
+    }
+
+    return is_array($data) ? $data : [];
+}
