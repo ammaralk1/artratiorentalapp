@@ -2113,6 +2113,16 @@ function paginateGenericTplTables() {
       }
       i += 1;
     }
+    // Remove any tables that ended up with no body rows (header-only leftovers)
+    try {
+      const allTables = Array.from(pagesWrap.querySelectorAll('table.tpl-table'));
+      allTables.forEach((t) => {
+        const body = t.tBodies && t.tBodies[0];
+        const hasRows = !!(body && body.children && body.children.length);
+        if (!hasRows) { try { t.parentElement?.removeChild(t); } catch (_) {} }
+      });
+    } catch (_) {}
+
     table.setAttribute('data-split-done', '1');
   });
 }
