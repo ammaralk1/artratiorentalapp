@@ -1,5 +1,13 @@
 const DEFAULT_API_BASE = '/backend/api';
 
+// Simple in-memory inflight de-duplication and failure backoff
+const __inflight = new Map(); // key -> Promise
+let __lastNetworkFailureAt = 0;
+let __consecutiveNetworkFailures = 0;
+const NETWORK_COOLDOWN_BASE_MS = 5000; // base backoff window
+const NETWORK_COOLDOWN_MAX_MS = 30000; // cap
+const DEFAULT_TIMEOUT_MS = 12000; // abort fetch after 12s
+
 export class ApiError extends Error {
   constructor(message, { status, payload } = {}) {
     super(message);
@@ -16,7 +24,7 @@ export function getApiBase() {
   return String(base).replace(/\/$/, '');
 }
 
-export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include' } = {}) {
+export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include', timeout = DEFAULT_TIMEOUT_MS } = {}) {
   // Normalize path: accept strings, URL/Request objects, or plain objects with common keys
   let pathStr = path;
   try {
@@ -45,6 +53,25 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
   const cleanedPath = isAbsolute ? pathStr : (pathStr.charAt(0) === '/' ? pathStr : `/${pathStr}`);
   const url = isAbsolute ? cleanedPath : `${getApiBase()}${cleanedPath}`;
 
+  // Backoff if recent network failures have been observed
+  try {
+    if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) {
+      const offlineErr = new ApiError('Network offline', { status: 0 });
+      offlineErr.offline = true;
+      throw offlineErr;
+    }
+  } catch (_) { /* ignore */ }
+  const now = Date.now();
+  const cooldownMs = Math.min(
+    NETWORK_COOLDOWN_MAX_MS,
+    NETWORK_COOLDOWN_BASE_MS * Math.max(1, Math.pow(2, Math.max(0, __consecutiveNetworkFailures - 1)))
+  );
+  if (__consecutiveNetworkFailures > 0 && (now - __lastNetworkFailureAt) < cooldownMs) {
+    const err = new ApiError('Network cooldown after failures', { status: 0 });
+    err.cooldown = true;
+    throw err;
+  }
+
   const finalHeaders = {
     Accept: 'application/json',
     ...headers,
@@ -71,7 +98,46 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
     }
   }
 
-  const response = await fetch(url, fetchOptions);
+  // De-duplicate identical inflight requests (method+url)
+  const key = `${method} ${url}`;
+  if (__inflight.has(key)) {
+    return __inflight.get(key);
+  }
+
+  const doFetch = async () => {
+    // Support timeout via AbortController
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timeoutId = (controller && Number.isFinite(timeout) && timeout > 0)
+      ? setTimeout(() => { try { controller.abort(); } catch (_) {} }, timeout)
+      : null;
+    const effectiveSignal = controller ? (signal ? new AbortSignalAny([signal, controller.signal]) : controller.signal) : signal;
+
+    // A minimal polyfill to merge multiple signals
+    function AbortSignalAny(signals) {
+      const ctrl = new AbortController();
+      const onAbort = () => { try { ctrl.abort(); } catch (_) {} };
+      signals.filter(Boolean).forEach((s) => { try { if (s.aborted) onAbort(); else s.addEventListener('abort', onAbort, { once: true }); } catch (_) {} });
+      return ctrl.signal;
+    }
+
+    try {
+      const response = await fetch(url, { ...fetchOptions, signal: effectiveSignal });
+      __consecutiveNetworkFailures = 0;
+      __lastNetworkFailureAt = 0;
+      return response;
+    } catch (err) {
+      // Treat fetch/abort errors as network failures for backoff purposes
+      __consecutiveNetworkFailures = Math.min(10, __consecutiveNetworkFailures + 1);
+      __lastNetworkFailureAt = Date.now();
+      throw err;
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
+
+  const inflight = doFetch().finally(() => { __inflight.delete(key); });
+  __inflight.set(key, inflight);
+  const response = await inflight;
   const contentType = response.headers.get('content-type') || '';
   let payload = null;
 
