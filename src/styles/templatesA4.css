@@ -224,17 +224,8 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 .cs-schedule { table-layout: fixed; width: 100%; }
 /* Outer border to visually close the grid even across page flow */
 table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
-.cs-schedule thead th:nth-child(1), .cs-schedule tbody td:nth-child(1) { width: 12%; text-align: center; }
-.cs-schedule thead th:nth-child(2), .cs-schedule tbody td:nth-child(2) { width: 8%; text-align: center; }
-.cs-schedule thead th:nth-child(3), .cs-schedule tbody td:nth-child(3) { width: 22%; }
-.cs-schedule thead th:nth-child(4), .cs-schedule tbody td:nth-child(4) { width: 12%; }
-.cs-schedule thead th:nth-child(5), .cs-schedule tbody td:nth-child(5) { width: 12%; }
-.cs-schedule thead th:nth-child(6), .cs-schedule tbody td:nth-child(6) { width: 8%; text-align: center; }
-.cs-schedule thead th:nth-child(7), .cs-schedule tbody td:nth-child(7) { width: 10%; }
-.cs-schedule thead th:nth-child(8), .cs-schedule tbody td:nth-child(8) { width: 8%; }
-.cs-schedule thead th:nth-child(9), .cs-schedule tbody td:nth-child(9) { width: 8%; }
-/* Hide any accidental extra header cells beyond the expected 9 */
-.cs-schedule thead tr > th:nth-child(n+10) { display:none !important; }
+/* Center all text in schedule */
+.cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */

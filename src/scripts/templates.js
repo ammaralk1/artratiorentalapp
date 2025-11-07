@@ -204,15 +204,16 @@ export async function exportProjectCallSheetXlsx({ project, reservations = [] } 
   }
   aoa.push([]);
   aoa.push(['Schedule / جدول اليوم']);
-  aoa.push(['Time (Duration)', 'Shot #', 'Description', 'Location', 'MOVEMENT', 'VO', 'Cast', 'Action Props', 'Notes']);
+  aoa.push(['Shot #', 'Time (Duration)', 'Description', 'Movement', 'Rig', 'Lens', 'Location', 'I/E', 'D/N', 'Sound', 'Cast', 'Notes / Props']);
   const schedRows = reservations.map((res) => [
-    '',
     res?.reservationCode || '',
+    '',
     res?.title || '',
+    '', '', '',
     (res?.location || ''),
     '', '', '', '', ''
   ]);
-  (schedRows.length ? schedRows : Array.from({ length: 20 }, () => ['', '', '', '', '', '', '', '', '']))
+  (schedRows.length ? schedRows : Array.from({ length: 20 }, () => ['', '', '', '', '', '', '', '', '', '', '', '']))
     .forEach((r) => aoa.push(r));
   aoa.push(['WRAP / نهاية اليوم']);
 
@@ -228,4 +229,3 @@ export default {
   exportProjectShotListXlsx,
   exportProjectCallSheetXlsx,
 };
-

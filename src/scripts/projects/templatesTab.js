@@ -692,40 +692,43 @@ function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
-  // Define explicit column widths via colgroup to guarantee alignment
-  const cols = [12, 8, 22, 12, 12, 8, 10, 8, 8];
+  // Define explicit column widths via colgroup to guarantee alignment (12 cols)
+  const cols = [6, 10, 22, 9, 7, 8, 10, 4, 4, 5, 7, 8];
   const cg = el('colgroup');
   cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` })));
   sched.appendChild(cg);
   // Restore header so it appears at the top of the schedule page
   sched.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)', style: 'width:12%' }),
-    el('th', { text: 'Shot #', style: 'width:8%; text-align:center' }),
-    el('th', { text: 'Description', style: 'width:22%' }),
-    el('th', { text: 'Location', style: 'width:12%' }),
-    el('th', { text: 'MOVEMENT', style: 'width:12%' }),
-    el('th', { text: 'VO', style: 'width:8%; text-align:center' }),
-    el('th', { text: 'Cast', style: 'width:10%' }),
-    el('th', { text: 'Action Props', style: 'width:8%' }),
-    el('th', { text: 'Notes', style: 'width:8%' })
+    el('th', { text: 'Shot #' }),
+    el('th', { text: 'Time (Duration)' }),
+    el('th', { text: 'Description' }),
+    el('th', { text: 'Movement' }),
+    el('th', { text: 'Rig' }),
+    el('th', { text: 'Lens' }),
+    el('th', { text: 'Location' }),
+    el('th', { text: 'I/E' }),
+    el('th', { text: 'D/N' }),
+    el('th', { text: 'Sound' }),
+    el('th', { text: 'Cast' }),
+    el('th', { text: 'Notes / Props' })
   ])]));
   // Final guard: if any extra header cells slip in, remove them
   try {
     const headRow = sched.querySelector('thead tr');
     const ths = Array.from(headRow?.children || []);
-    if (ths.length > 9) ths.slice(9).forEach((th) => th.remove());
+    if (ths.length > 12) ths.slice(12).forEach((th) => th.remove());
   } catch (_) {}
   const sb = el('tbody');
   // Pre-seeded milestone rows (kept) below the header
   const r1 = el('tr', { class: 'cs-row-note' });
-  r1.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' }));
+  r1.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' }));
   sb.appendChild(r1);
   const r2 = el('tr', { class: 'cs-row-strong' });
-  r2.appendChild(el('td', { colspan: '9', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' }));
+  r2.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' }));
   sb.appendChild(r2);
   for (let i = 0; i < 16; i += 1) {
     const tr = el('tr');
-    for (let c = 0; c < 9; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    for (let c = 0; c < 12; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
     sb.appendChild(tr);
   }
   sched.appendChild(sb);
