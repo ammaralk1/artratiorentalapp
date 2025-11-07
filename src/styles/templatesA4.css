@@ -228,6 +228,32 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .callsheet-v1 .cs-schedule th { font-size: 10px; }
 .callsheet-v1 .cs-schedule td { font-size: 10px; }
+/* Hard enforce the requested column widths (preview + export) */
+.callsheet-v1 .cs-schedule col:nth-child(1) { width: 2.5% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(2) { width: 4% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(3) { width: 25% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(4) { width: 5% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(5) { width: 5% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(6) { width: 4% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(7) { width: 6% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(8) { width: 2% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(9) { width: 2% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(10) { width: 10% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(11) { width: 6% !important; }
+.callsheet-v1 .cs-schedule col:nth-child(12) { width: 15% !important; }
+/* Make sure cells mirror widths even if colgroup gets lost */
+.callsheet-v1 .cs-schedule th:nth-child(1), .callsheet-v1 .cs-schedule td:nth-child(1) { width: 2.5% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(2), .callsheet-v1 .cs-schedule td:nth-child(2) { width: 4% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(3), .callsheet-v1 .cs-schedule td:nth-child(3) { width: 25% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(4), .callsheet-v1 .cs-schedule td:nth-child(4) { width: 5% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(5), .callsheet-v1 .cs-schedule td:nth-child(5) { width: 5% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(6), .callsheet-v1 .cs-schedule td:nth-child(6) { width: 4% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(7), .callsheet-v1 .cs-schedule td:nth-child(7) { width: 6% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(8), .callsheet-v1 .cs-schedule td:nth-child(8) { width: 2% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(9), .callsheet-v1 .cs-schedule td:nth-child(9) { width: 2% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(10), .callsheet-v1 .cs-schedule td:nth-child(10) { width: 10% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(11), .callsheet-v1 .cs-schedule td:nth-child(11) { width: 6% !important; }
+.callsheet-v1 .cs-schedule th:nth-child(12), .callsheet-v1 .cs-schedule td:nth-child(12) { width: 15% !important; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */

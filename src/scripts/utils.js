@@ -62,10 +62,11 @@ function scheduleToastRemoval(toast, duration) {
       try { document.removeEventListener('click', onAnyClick, { capture: true }); } catch (_) { /* noop */ }
       hide();
     };
-    // Defer attaching to avoid immediately catching the same click that triggered the toast
+    // Defer attaching to avoid catching the same click that triggered the toast
+    // and to prevent immediate dismissal from programmatic focus/clicks.
     setTimeout(() => {
       try { document.addEventListener('click', onAnyClick, { once: true, capture: true }); } catch (_) { /* noop */ }
-    }, 0);
+    }, 500);
     return { hide, timeoutId };
   }
 

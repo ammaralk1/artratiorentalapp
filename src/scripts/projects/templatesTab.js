@@ -197,8 +197,8 @@ function ensureLogoControls(type = 'expenses') {
   // Font size controls
   const fontDown = document.getElementById('tpl-font-down');
   const fontUp = document.getElementById('tpl-font-up');
-  fontDown?.addEventListener('click', () => { try { adjustSelectionFont(-1); } catch (_) {} });
-  fontUp?.addEventListener('click', () => { try { adjustSelectionFont(+1); } catch (_) {} });
+  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -2 : -1); } catch (_) {} });
+  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +2 : +1); } catch (_) {} });
 }
 
 function el(tag, attrs = {}, children = []) {

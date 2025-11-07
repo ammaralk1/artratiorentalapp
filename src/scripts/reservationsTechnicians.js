@@ -740,7 +740,14 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
   // Check time conflict against reservation interval if available
   const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
   if (start && end && hasTechnicianConflict(String(technicianIdValue), start, end, ignoreReservationId)) {
-    showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+    try {
+      const codes = getTechnicianConflictingReservationCodes(String(technicianIdValue), start, end, ignoreReservationId);
+      const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
+      const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
+      showToast(`${base}${suffix}`, 'warning', -1);
+    } catch (_) {
+      showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'), 'warning', -1);
+    }
     renderAssignmentsTable();
     return;
   }
