@@ -161,9 +161,9 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .callsheet-v1, .callsheet-v1 * { background:#ffffff !important; background-image:none !important; box-shadow:none !important; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
 .cs-logo { min-height:48px; height:auto; padding:4px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; }
-.cs-logo img { max-width:100%; height:auto; display:block; }
-.cs-logo--left img { max-height:96px; cursor:move; user-select:none; -webkit-user-drag:none; }
-.cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; max-height:96px; }
+.cs-logo img { height:56px; width:auto; max-height:none; max-width:none; display:block; transform-origin: top left; }
+.cs-logo--left img { cursor:move; user-select:none; -webkit-user-drag:none; }
+.cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; }
 /* Hide secondary logo box entirely if no URL */
 .cs-logo--right[data-empty="1"] { display:none; }
 /* Optional visual handle if we add resize UI later */

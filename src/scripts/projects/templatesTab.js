@@ -123,29 +123,40 @@ function ensureTemplatesZoomUI() {
 function ensureLogoControls(type = 'expenses') {
   const row = document.getElementById('templates-actions');
   if (!row) return;
-  // Only show for Call Sheet
+  // Only show for Call Sheet. Controls go in 2nd row inside container
+  const controls = document.getElementById('templates-controls');
   const existing = document.getElementById('tpl-logo-controls');
+  const row2 = document.getElementById('tpl-controls-row2') || (() => {
+    const r = document.createElement('div');
+    r.id = 'tpl-controls-row2';
+    Object.assign(r.style, { display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%', alignItems: 'center', marginTop: '6px' });
+    controls?.appendChild(r);
+    return r;
+  })();
   if (type !== 'callsheet') { if (existing) existing.remove(); return; }
   if (existing) return;
   const box = document.createElement('div');
   box.id = 'tpl-logo-controls';
-  box.style.display = 'inline-flex';
-  box.style.gap = '6px';
-  box.style.alignItems = 'center';
+  Object.assign(box.style, { display: 'inline-flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' });
   box.innerHTML = `
-    <label class="form-label" style="margin:0 4px 0 0;">لوغو ارت ريشيو</label>
-    <input type="range" id="tpl-logo1-size" min="24" max="320" step="1" title="حجم لوغو ارت ريشيو">
-    <button type="button" class="btn btn-outline" id="tpl-logo1-reset" title="إعادة تموضع لوغو ارت ريشيو">↺</button>
-    <span style="width:8px;"></span>
-    <input type="url" id="tpl-logo2-url" class="form-control" placeholder="🔗 رابط لوغو إضافي" style="min-width:220px;max-width:320px;">
-    <input type="range" id="tpl-logo2-size" min="24" max="320" step="1" title="حجم اللوغو">
-    <button type="button" class="btn btn-outline" id="tpl-logo2-apply">تطبيق</button>
-    <button type="button" class="btn btn-outline" id="tpl-logo2-reset">إعادة تموضع</button>
-    <button type="button" class="btn btn-outline btn-danger" id="tpl-logo2-clear">حذف</button>
+    <div class="input-group" style="display:inline-flex;gap:6px;align-items:center;">
+      <label class="form-label" style="margin:0 4px 0 0;">لوغو ارت ريشيو</label>
+      <input type="range" id="tpl-logo1-size" min="0.3" max="3" step="0.01" title="حجم لوغو ارت ريشيو">
+      <button type="button" class="btn btn-outline" id="tpl-logo1-reset" title="إعادة تموضع لوغو ارت ريشيو">↺</button>
+    </div>
+    <div class="input-group" style="display:inline-flex;gap:6px;align-items:center;">
+      <input type="url" id="tpl-logo2-url" class="form-control" placeholder="🔗 رابط لوغو إضافي" style="min-width:220px;max-width:320px;">
+      <input type="range" id="tpl-logo2-size" min="0.3" max="3" step="0.01" title="حجم لوغو العميل">
+      <button type="button" class="btn btn-outline" id="tpl-logo2-apply">تطبيق</button>
+      <button type="button" class="btn btn-outline" id="tpl-logo2-reset">إعادة تموضع</button>
+      <button type="button" class="btn btn-outline btn-danger" id="tpl-logo2-clear">حذف</button>
+    </div>
+    <div class="input-group" id="tpl-history-controls" style="display:inline-flex;gap:6px;align-items:center;">
+      <button type="button" class="btn btn-outline" id="tpl-undo" title="تراجع">↶</button>
+      <button type="button" class="btn btn-outline" id="tpl-redo" title="تقديم">↷</button>
+    </div>
   `;
-  // Insert before the actions dropdown to keep layout tight
-  const dd = document.getElementById('templates-actions-dd');
-  row.insertBefore(box, dd || row.firstChild);
+  row2.appendChild(box);
 
   // Seed values
   try {
@@ -153,10 +164,10 @@ function ensureLogoControls(type = 'expenses') {
     const urlEl = document.getElementById('tpl-logo2-url');
     const szEl2 = document.getElementById('tpl-logo2-size');
     if (urlEl && st2.url) urlEl.value = st2.url;
-    if (szEl2) szEl2.value = String(st2.w || 96);
+    if (szEl2) szEl2.value = String(st2.s || 1);
     const st1 = readPrimaryLogoState();
     const szEl1 = document.getElementById('tpl-logo1-size');
-    if (szEl1) szEl1.value = String(st1.w || 96);
+    if (szEl1) szEl1.value = String(st1.s || 1);
   } catch(_) {}
 
   // Bind actions
@@ -174,6 +185,9 @@ function ensureLogoControls(type = 'expenses') {
     writeSecondaryLogoState({ x: 0, y: 0 });
     try { renderTemplatesPreview(); } catch(_) {}
   });
+  // History controls
+  document.getElementById('tpl-undo')?.addEventListener('click', () => undoTemplatesChange());
+  document.getElementById('tpl-redo')?.addEventListener('click', () => redoTemplatesChange());
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -581,9 +595,8 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const leftImg = el('img', { src: (logoUrl || COMPANY_INFO.logoUrl || ''), alt: 'Art Ratio Logo', draggable: 'false', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' });
   try {
     const lstate = readPrimaryLogoState();
-    if (lstate.w) leftImg.style.width = `${Math.max(24, Math.min(320, Number(lstate.w))) }px`;
-    const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0;
-    if (x || y) leftImg.style.transform = `translate(${x}px, ${y}px)`;
+    const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1)));
+    leftImg.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
   } catch(_) {}
   leftBrandLogo.appendChild(leftImg);
   hdr.appendChild(leftBrandLogo);
@@ -601,9 +614,8 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   if (secState.url) rightImg.setAttribute('src', secState.url);
   // Apply saved size/position
   try {
-    if (secState.w) rightImg.style.width = `${Math.max(24, Math.min(320, Number(secState.w))) }px`;
-    const x = Number(secState.x || 0) || 0; const y = Number(secState.y || 0) || 0;
-    if (x || y) rightImg.style.transform = `translate(${x}px, ${y}px)`;
+    const x = Number(secState.x || 0) || 0; const y = Number(secState.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(secState.s || 1)));
+    rightImg.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
   } catch(_) {}
   rightLogoWrap.appendChild(rightImg);
   rightLogoWrap.appendChild(el('div', { class: 'cs-logo__resize', title: 'resize' }));
@@ -731,7 +743,7 @@ function readSecondaryLogoState() {
   try {
     return {
       url: localStorage.getItem('templates.callsheet.logo2.url') || '',
-      w: Number(localStorage.getItem('templates.callsheet.logo2.w') || '0') || 0,
+      s: Number(localStorage.getItem('templates.callsheet.logo2.s') || '1') || 1,
       x: Number(localStorage.getItem('templates.callsheet.logo2.x') || '0') || 0,
       y: Number(localStorage.getItem('templates.callsheet.logo2.y') || '0') || 0,
     };
@@ -742,7 +754,7 @@ function writeSecondaryLogoState(patch = {}) {
     const cur = readSecondaryLogoState();
     const nx = { ...cur, ...patch };
     if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', nx.url);
-    if (Number.isFinite(nx.w)) localStorage.setItem('templates.callsheet.logo2.w', String(nx.w));
+    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo2.s', String(nx.s));
     if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x));
     if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y));
   } catch(_) {}
@@ -767,10 +779,12 @@ function enableSecondaryLogoInteractions(wrap, img) {
   const onMove = (ev) => {
     if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy;
     const nx = Math.round(ox + dx); const ny = Math.round(oy + dy);
-    img.style.transform = `translate(${nx}px, ${ny}px)`;
+    const s = Math.max(0.3, Math.min(3, Number(readSecondaryLogoState().s || 1)));
+    img.style.transform = `translate(${nx}px, ${ny}px) scale(${s})`;
   };
   const onUp = () => {
     if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y });
+    try { pushHistoryDebounced(); } catch(_) {}
   };
   img.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -780,9 +794,10 @@ function enableSecondaryLogoInteractions(wrap, img) {
   try {
     const slider = document.getElementById('tpl-logo2-size');
     if (slider) {
-      const apply = (v) => { const w = Math.max(24, Math.min(320, Number(v)||0)); img.style.width = `${w}px`; writeSecondaryLogoState({ w }); };
+      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `translate(${m.x}px, ${m.y}px) scale(${s})`; writeSecondaryLogoState({ s }); };
       slider.addEventListener('input', (e) => apply(e.target.value));
-      const st = readSecondaryLogoState(); if (st.w) { slider.value = String(st.w); apply(st.w); }
+      slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
+      const st = readSecondaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
     }
   } catch(_) {}
 }
@@ -828,6 +843,79 @@ function enablePrimaryLogoInteractions(wrap, img) {
     }
     document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = 'translate(0px, 0px)'; } catch(_) {} });
   } catch(_) {}
+}
+
+// ===== Simple undo/redo for Templates preview =====
+let TPL_HISTORY = [];
+let TPL_FUTURE = [];
+let TPL_RESTORING = false;
+let TPL_HISTORY_BOUND = false;
+let TPL_HISTORY_TIMER = null;
+
+function getTemplatesSnapshot() {
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return null;
+  const edits = Array.from(root.querySelectorAll('[data-editable="true"]')).map((el) => el.innerHTML);
+  return { edits, l: readPrimaryLogoState(), r: readSecondaryLogoState() };
+}
+function applyTemplatesSnapshot(snap) {
+  if (!snap) return;
+  const host = document.getElementById('templates-preview-host');
+  if (!host) return;
+  TPL_RESTORING = true;
+  try {
+    writePrimaryLogoState(snap.l || {});
+    writeSecondaryLogoState(snap.r || {});
+    // Apply content edits in order
+    const root = document.getElementById('templates-a4-root');
+    if (root && Array.isArray(snap.edits)) {
+      const nodes = Array.from(root.querySelectorAll('[data-editable="true"]'));
+      nodes.forEach((el, i) => { if (i < snap.edits.length) el.innerHTML = snap.edits[i]; });
+    }
+  } finally {
+    // Re-render to reflect logo states
+    try { renderTemplatesPreview(); } catch(_) {}
+    TPL_RESTORING = false;
+  }
+}
+function pushTemplatesHistory() {
+  if (TPL_RESTORING) return;
+  const snap = getTemplatesSnapshot();
+  if (!snap) return;
+  TPL_HISTORY.push(snap);
+  if (TPL_HISTORY.length > 50) TPL_HISTORY.shift();
+  TPL_FUTURE = [];
+}
+function pushHistoryDebounced() {
+  clearTimeout(TPL_HISTORY_TIMER); TPL_HISTORY_TIMER = setTimeout(pushTemplatesHistory, 250);
+}
+function undoTemplatesChange() {
+  if (TPL_HISTORY.length < 2) return; // keep initial state
+  const cur = TPL_HISTORY.pop();
+  const prev = TPL_HISTORY[TPL_HISTORY.length - 1];
+  if (cur) TPL_FUTURE.push(cur);
+  applyTemplatesSnapshot(prev);
+}
+function redoTemplatesChange() {
+  const next = TPL_FUTURE.pop();
+  if (!next) return;
+  TPL_HISTORY.push(next);
+  applyTemplatesSnapshot(next);
+}
+function setupTemplatesHistory(pageRoot, type) {
+  if (type !== 'callsheet') return;
+  // Seed initial snapshot once per render
+  pushTemplatesHistory();
+  if (TPL_HISTORY_BOUND) return;
+  const host = document.getElementById('templates-preview-host');
+  if (!host) return;
+  host.addEventListener('input', (e) => {
+    const target = e.target;
+    if (target && target.getAttribute && target.getAttribute('data-editable') === 'true') {
+      pushHistoryDebounced();
+    }
+  }, true);
+  TPL_HISTORY_BOUND = true;
 }
 
 function buildShotListPage(project, reservations, opts = {}) {
@@ -902,6 +990,8 @@ function renderTemplatesPreview() {
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
   host.appendChild(pageRoot);
+  // Bind history listeners and seed snapshot
+  try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
