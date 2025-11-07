@@ -614,6 +614,12 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     el('th', { text: 'Action Props', style: 'width:8%' }),
     el('th', { text: 'Notes', style: 'width:8%' })
   ])]));
+  // Final guard: if any extra header cells slip in, remove them
+  try {
+    const headRow = sched.querySelector('thead tr');
+    const ths = Array.from(headRow?.children || []);
+    if (ths.length > 9) ths.slice(9).forEach((th) => th.remove());
+  } catch (_) {}
   const sb = el('tbody');
   // Pre-seeded milestone rows (kept) below the header
   const r1 = el('tr', { class: 'cs-row-note' });
