@@ -1033,6 +1033,17 @@ function renderTemplatesPreview() {
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
+
+  // Debug toggle utility for quiet consoles in production
+  function isTemplatesDebugEnabled() {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      if (params.get('debugTemplates') === '1') return true;
+      const ls = window.localStorage?.getItem('__DEBUG_TEMPLATES__');
+      if (ls && ['1','true','on','yes'].includes(String(ls).toLowerCase())) return true;
+    } catch (_) { /* ignore */ }
+    return false;
+  }
   // Apply saved zoom after render
   try {
     if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); }
@@ -3098,7 +3109,7 @@ export function initTemplatesTab() {
   const doRepopulate = async () => {
     if (repopulating) { repopulateQueued = true; return; }
     repopulating = true;
-    try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
+    try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate start'); } catch(_) {}
     const before = (projectSel?.value || '');
     try {
       if (!getProjectsState()?.length) {
@@ -3107,7 +3118,7 @@ export function initTemplatesTab() {
       if (!getReservationsState()?.length) {
         await refreshReservationsFromApi();
       }
-    } catch (e) { try { console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
+    } catch (e) { try { if (isTemplatesDebugEnabled()) console.warn('[templatesTab] fetch fallback failed', e); } catch(_) {} }
 
     populateProjectSelect();
     if (!projectSel.value && projectSel.options.length > 1) {
@@ -3118,7 +3129,7 @@ export function initTemplatesTab() {
     populateReservationSelect(projectSel.value || '');
     renderTemplatesPreview();
     try { await populateSavedTemplates(); } catch {}
-    try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
+    try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate done'); } catch(_) {}
     repopulating = false;
     if (repopulateQueued) {
       repopulateQueued = false;
