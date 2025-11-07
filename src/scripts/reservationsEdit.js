@@ -912,23 +912,23 @@ export async function saveReservationChanges({
       const packageId = item.packageId ?? item.package_id ?? null;
       const packageName = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
       if (packageId && hasPackageConflictFn(packageId, start, end, ignoreReservationKey)) {
-        let codes = [];
-        try {
-          const params = new URLSearchParams();
-          params.set('type', 'package');
-          params.set('id', String(packageId));
-          params.set('start', start);
-          params.set('end', end);
-          if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
-          const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-          const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-          codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-        } catch (_) {
-          // Fallback to local scan across package items
-          const pkgBarcodes = Array.isArray(item?.packageItems)
-            ? item.packageItems.map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean)
-            : [];
-          codes = getEquipmentConflictingReservationCodes(pkgBarcodes, start, end, ignoreReservationKey);
+        // Prefer local scan first to avoid noisy 400s; only call API if needed
+        const pkgBarcodesLocal = Array.isArray(item?.packageItems)
+          ? item.packageItems.map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean)
+          : [];
+        let codes = getEquipmentConflictingReservationCodes(pkgBarcodesLocal, start, end, ignoreReservationKey);
+        if (!codes.length) {
+          try {
+            const params = new URLSearchParams();
+            params.set('type', 'package');
+            params.set('id', String(packageId));
+            params.set('start', start);
+            params.set('end', end);
+            if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+            const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+            codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+          } catch (_) { /* keep local codes (empty) */ }
         }
         const suffix = codes.length ? ` (${codes.join('، ')})` : '';
         showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
@@ -943,20 +943,20 @@ export async function saveReservationChanges({
         const total = codes.length;
         const conflictsCount = codes.filter((code) => hasEquipmentConflictFn(code, start, end, ignoreReservationKey)).length;
         if (total > 0 && conflictsCount >= total) {
-          let rcodes = [];
-          try {
-            const params = new URLSearchParams();
-            params.set('type', 'package');
-            if (packageId != null) params.set('id', String(packageId));
-            params.set('start', start);
-            params.set('end', end);
-            if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
-            const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-            rcodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-          } catch (_) {
-            const pkgBarcodes = (item.packageItems || []).map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean);
-            rcodes = getEquipmentConflictingReservationCodes(pkgBarcodes, start, end, ignoreReservationKey);
+          const pkgBarcodes = (item.packageItems || []).map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean);
+          let rcodes = getEquipmentConflictingReservationCodes(pkgBarcodes, start, end, ignoreReservationKey);
+          if (!rcodes.length) {
+            try {
+              const params = new URLSearchParams();
+              params.set('type', 'package');
+              if (packageId != null) params.set('id', String(packageId));
+              params.set('start', start);
+              params.set('end', end);
+              if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+              const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+              const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+              rcodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+            } catch (_) { /* no-op */ }
           }
           const suffix = rcodes.length ? ` (${rcodes.join('، ')})` : '';
           showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
