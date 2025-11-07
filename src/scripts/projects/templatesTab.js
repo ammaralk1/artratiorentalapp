@@ -789,7 +789,8 @@ function enableSecondaryLogoInteractions(wrap, img) {
   };
   const onUp = () => {
     if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y });
-    try { pushHistoryDebounced(); } catch(_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
+    markTemplatesEditingActivity();
   };
   img.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -800,8 +801,8 @@ function enableSecondaryLogoInteractions(wrap, img) {
     const slider = document.getElementById('tpl-logo2-size');
     if (slider) {
       const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writeSecondaryLogoState({ s }); };
-      slider.addEventListener('input', (e) => apply(e.target.value));
-      slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
+      slider.addEventListener('input', (e) => { apply(e.target.value); markTemplatesEditingActivity(); });
+      slider.addEventListener('change', () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} });
       const st = readSecondaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
     }
   } catch(_) {}
@@ -843,8 +844,8 @@ function enablePrimaryLogoInteractions(wrap, img) {
     const slider = document.getElementById('tpl-logo1-size');
     if (slider) {
       const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writePrimaryLogoState({ s }); };
-      slider.addEventListener('input', (e) => apply(e.target.value));
-      slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
+      slider.addEventListener('input', (e) => { apply(e.target.value); markTemplatesEditingActivity(); });
+      slider.addEventListener('change', () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} });
       const st = readPrimaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
     }
     document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { const s = (readPrimaryLogoState().s||1); writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = `scale(${s}) translate(0px, 0px)`; } catch(_) {} });
@@ -857,12 +858,92 @@ let TPL_FUTURE = [];
 let TPL_RESTORING = false;
 let TPL_HISTORY_BOUND = false;
 let TPL_HISTORY_TIMER = null;
+let TPL_EDITING = false;
+let TPL_EDITING_TIMER = null;
+let TPL_AUTOSAVE_TIMER = null;
+
+function markTemplatesEditingActivity() {
+  TPL_EDITING = true;
+  clearTimeout(TPL_EDITING_TIMER);
+  // Consider user idle if no edits for 1200ms
+  TPL_EDITING_TIMER = setTimeout(() => {
+    TPL_EDITING = false;
+    // If a refresh was queued while editing, schedule it now
+    try { if (typeof scheduleRepopulate === 'function') scheduleRepopulate(0); } catch(_) {}
+  }, 1200);
+}
+
+function getTemplatesContextKey() {
+  try {
+    const project = getSelectedProject();
+    const typeSel = document.getElementById('templates-type');
+    const type = typeSel ? typeSel.value : 'expenses';
+    const reservationSel = document.getElementById('templates-reservation');
+    const reservationId = reservationSel && reservationSel.value ? String(reservationSel.value) : 'all';
+    const pid = project?.id != null ? String(project.id) : 'no-project';
+    return `templates.callsheet.autosave.${pid}.${type}.${reservationId}`;
+  } catch(_) { return 'templates.callsheet.autosave'; }
+}
+
+function saveTemplatesAutosaveToStorage() {
+  try {
+    const snap = getTemplatesSnapshot();
+    if (!snap) return;
+    const payload = { v: 1, ts: Date.now(), snap };
+    localStorage.setItem(getTemplatesContextKey(), JSON.stringify(payload));
+  } catch(_) {}
+}
+function saveAutosaveDebounced() {
+  clearTimeout(TPL_AUTOSAVE_TIMER); TPL_AUTOSAVE_TIMER = setTimeout(saveTemplatesAutosaveToStorage, 250);
+}
+function restoreTemplatesAutosaveIfPresent() {
+  try {
+    const raw = localStorage.getItem(getTemplatesContextKey());
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.snap) {
+      applyTemplatesSnapshotInPlace(parsed.snap);
+      // Seed history with restored state so undo works from there
+      try { TPL_HISTORY.push(parsed.snap); } catch(_) {}
+    }
+  } catch(_) {}
+}
 
 function getTemplatesSnapshot() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return null;
   const edits = Array.from(root.querySelectorAll('[data-editable="true"]')).map((el) => el.innerHTML);
   return { edits, l: readPrimaryLogoState(), r: readSecondaryLogoState() };
+}
+function applyTemplatesSnapshotInPlace(snap) {
+  if (!snap) return;
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return;
+  // Apply editable content in order
+  try {
+    const nodes = Array.from(root.querySelectorAll('[data-editable="true"]'));
+    nodes.forEach((el, i) => { if (i < snap.edits.length) el.innerHTML = snap.edits[i]; });
+  } catch(_) {}
+  // Apply logo transforms directly on current DOM without re-render
+  try {
+    writePrimaryLogoState(snap.l || {});
+    const left = root.querySelector('.cs-logo--left img');
+    if (left && snap.l) {
+      const s = Math.max(0.3, Math.min(3, Number(snap.l.s || 1)));
+      const x = Number(snap.l.x || 0) || 0; const y = Number(snap.l.y || 0) || 0;
+      left.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
+    }
+  } catch(_) {}
+  try {
+    writeSecondaryLogoState(snap.r || {});
+    const right = root.querySelector('.cs-logo--right img');
+    if (right && snap.r) {
+      if (snap.r.url) { try { right.setAttribute('src', snap.r.url); } catch(_) {} }
+      const s2 = Math.max(0.3, Math.min(3, Number(snap.r.s || 1)));
+      const x2 = Number(snap.r.x || 0) || 0; const y2 = Number(snap.r.y || 0) || 0;
+      right.style.transform = `scale(${s2}) translate(${x2}px, ${y2}px)`;
+    }
+  } catch(_) {}
 }
 function applyTemplatesSnapshot(snap) {
   if (!snap) return;
@@ -919,6 +1000,8 @@ function setupTemplatesHistory(pageRoot, type) {
     const target = e.target;
     if (target && target.getAttribute && target.getAttribute('data-editable') === 'true') {
       pushHistoryDebounced();
+      saveAutosaveDebounced();
+      markTemplatesEditingActivity();
     }
   }, true);
   TPL_HISTORY_BOUND = true;
@@ -998,6 +1081,8 @@ function renderTemplatesPreview() {
   host.appendChild(pageRoot);
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
+  // Try to restore user's autosaved draft (if any) without re-rendering
+  try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
@@ -2777,6 +2862,7 @@ async function saveTemplateSnapshot({ copy = false } = {}) {
     },
   });
   alert('تم حفظ القالب');
+  try { localStorage.removeItem(getTemplatesContextKey()); } catch(_) {}
 }
 
 async function fetchSavedTemplatesForCurrent() {
@@ -3107,7 +3193,7 @@ export function initTemplatesTab() {
   const REPOPULATE_DEBOUNCE_MS = 250;
 
   const doRepopulate = async () => {
-    if (repopulating) { repopulateQueued = true; return; }
+    if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
     repopulating = true;
     try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate start'); } catch(_) {}
     const before = (projectSel?.value || '');
@@ -3139,7 +3225,7 @@ export function initTemplatesTab() {
 
   function scheduleRepopulate(delay = REPOPULATE_DEBOUNCE_MS) {
     // If currently running, flag a queued run; otherwise debounce
-    if (repopulating) { repopulateQueued = true; return; }
+    if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
     if (repopulateTimer) { clearTimeout(repopulateTimer); repopulateTimer = null; }
     repopulateTimer = setTimeout(() => {
       repopulateTimer = null;
