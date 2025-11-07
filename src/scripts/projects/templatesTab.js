@@ -3089,10 +3089,14 @@ export function initTemplatesTab() {
 
   // (Row focus highlight removed per latest request)
 
-  // Re-populate when data loads later
+  // Re-populate when data loads later (debounced + queued to avoid console spam)
   let repopulating = false;
-  const repopulate = async () => {
-    if (repopulating) { try { console.debug('[templatesTab] repopulate skipped (busy)'); } catch(_) {} return; }
+  let repopulateQueued = false;
+  let repopulateTimer = null;
+  const REPOPULATE_DEBOUNCE_MS = 250;
+
+  const doRepopulate = async () => {
+    if (repopulating) { repopulateQueued = true; return; }
     repopulating = true;
     try { console.debug('[templatesTab] repopulate start'); } catch(_) {}
     const before = (projectSel?.value || '');
@@ -3116,18 +3120,33 @@ export function initTemplatesTab() {
     try { await populateSavedTemplates(); } catch {}
     try { console.debug('[templatesTab] repopulate done'); } catch(_) {}
     repopulating = false;
+    if (repopulateQueued) {
+      repopulateQueued = false;
+      scheduleRepopulate();
+    }
   };
-  document.addEventListener('projects:changed', repopulate);
-  document.addEventListener('reservations:changed', repopulate);
-  document.addEventListener('reservations:updated', repopulate);
+
+  function scheduleRepopulate(delay = REPOPULATE_DEBOUNCE_MS) {
+    // If currently running, flag a queued run; otherwise debounce
+    if (repopulating) { repopulateQueued = true; return; }
+    if (repopulateTimer) { clearTimeout(repopulateTimer); repopulateTimer = null; }
+    repopulateTimer = setTimeout(() => {
+      repopulateTimer = null;
+      void doRepopulate();
+    }, Math.max(0, delay));
+  }
+
+  document.addEventListener('projects:changed', () => scheduleRepopulate());
+  document.addEventListener('reservations:changed', () => scheduleRepopulate());
+  document.addEventListener('reservations:updated', () => scheduleRepopulate());
 
   const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
   templatesTabBtn?.addEventListener('click', () => {
-    setTimeout(repopulate, 0);
+    scheduleRepopulate(0);
   });
 
-  setTimeout(repopulate, 800);
-  setTimeout(repopulate, 2000);
+  setTimeout(() => scheduleRepopulate(0), 800);
+  setTimeout(() => scheduleRepopulate(0), 2000);
 }
 
 export default { initTemplatesTab };
