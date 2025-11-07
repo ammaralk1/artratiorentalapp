@@ -593,6 +593,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   // Left brand logo (Art Ratio) – always visible with saved size/position
   const leftBrandLogo = el('div', { class: 'cs-logo cs-logo--left' });
   const leftImg = el('img', { src: (logoUrl || COMPANY_INFO.logoUrl || ''), alt: 'Art Ratio Logo', draggable: 'false', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' });
+  try { leftImg.style.removeProperty('width'); } catch(_) {}
   try {
     const lstate = readPrimaryLogoState();
     const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1)));
@@ -611,6 +612,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const secState = readSecondaryLogoState();
   const rightLogoWrap = el('div', { class: 'cs-logo cs-logo--right', 'data-empty': secState.url ? '0' : '1' });
   const rightImg = el('img', { alt: 'Client Logo', draggable: 'false', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' });
+  try { rightImg.style.removeProperty('width'); } catch(_) {}
   if (secState.url) rightImg.setAttribute('src', secState.url);
   // Apply saved size/position
   try {
@@ -806,17 +808,17 @@ function enableSecondaryLogoInteractions(wrap, img) {
 function readPrimaryLogoState() {
   try {
     return {
-      w: Number(localStorage.getItem('templates.callsheet.logo1.w') || '0') || 0,
+      s: Number(localStorage.getItem('templates.callsheet.logo1.s') || '1') || 1,
       x: Number(localStorage.getItem('templates.callsheet.logo1.x') || '0') || 0,
       y: Number(localStorage.getItem('templates.callsheet.logo1.y') || '0') || 0,
     };
-  } catch(_) { return { w: 0, x: 0, y: 0 }; }
+  } catch(_) { return { s: 1, x: 0, y: 0 }; }
 }
 function writePrimaryLogoState(patch = {}) {
   try {
     const cur = readPrimaryLogoState();
     const nx = { ...cur, ...patch };
-    if (Number.isFinite(nx.w)) localStorage.setItem('templates.callsheet.logo1.w', String(nx.w));
+    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo1.s', String(nx.s));
     if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo1.x', String(nx.x));
     if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo1.y', String(nx.y));
   } catch(_) {}
@@ -828,7 +830,7 @@ function enablePrimaryLogoInteractions(wrap, img) {
     try { const st = getComputedStyle(img).transform; if (!st || st === 'none') return { x: 0, y: 0 }; const m = new DOMMatrix(st); return { x: m.m41 || 0, y: m.m42 || 0 }; } catch(_) { return { x: 0, y: 0 }; }
   };
   const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; ev.preventDefault(); };
-  const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); img.style.transform = `translate(${nx}px, ${ny}px)`; };
+  const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); img.style.transform = `translate(${nx}px, ${ny}px) scale(${s})`; };
   const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writePrimaryLogoState({ x: m.x, y: m.y }); };
   img.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -837,11 +839,12 @@ function enablePrimaryLogoInteractions(wrap, img) {
   try {
     const slider = document.getElementById('tpl-logo1-size');
     if (slider) {
-      const apply = (v) => { const w = Math.max(24, Math.min(320, Number(v)||0)); img.style.width = `${w}px`; writePrimaryLogoState({ w }); };
+      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `translate(${m.x}px, ${m.y}px) scale(${s})`; writePrimaryLogoState({ s }); };
       slider.addEventListener('input', (e) => apply(e.target.value));
-      const st = readPrimaryLogoState(); if (st.w) { slider.value = String(st.w); apply(st.w); }
+      slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
+      const st = readPrimaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
     }
-    document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = 'translate(0px, 0px)'; } catch(_) {} });
+    document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = 'translate(0px, 0px) scale(' + (readPrimaryLogoState().s||1) + ')'; } catch(_) {} });
   } catch(_) {}
 }
 
