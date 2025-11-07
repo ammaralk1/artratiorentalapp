@@ -160,7 +160,9 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .callsheet-v1 { display:block; }
 .callsheet-v1, .callsheet-v1 * { background:#ffffff !important; background-image:none !important; box-shadow:none !important; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
-.cs-logo { min-height:48px; height:auto; padding:4px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; }
+.cs-header { position: relative; z-index: 50; background:#ffffff; }
+.cs-logo { min-height:48px; height:auto; padding:4px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; z-index:51; }
+.cs-logo::before { content:""; position:absolute; inset:-3px; background:#ffffff; border-radius:6px; z-index:-1; }
 .cs-logo img { height:56px; width:auto; max-height:none; max-width:none; display:block; transform-origin: top left; }
 .cs-logo--left img { cursor:move; user-select:none; -webkit-user-drag:none; }
 .cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; }
@@ -256,6 +258,12 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table th,
 #templates-a4-root[data-render-context="export"] .cs-wrap,
 #templates-a4-root[data-render-context="export"] .cs-logo { background-color:#ffffff !important; color:#000 !important; }
+
+/* Preview-only: make table outlines clearer and visibly closed */
+#templates-a4-root[data-render-context="preview"] table.cs-info,
+#templates-a4-root[data-render-context="preview"] table.cs-cast,
+#templates-a4-root[data-render-context="preview"] table.cs-schedule { outline: 1.5px solid #9ca3af; outline-offset: -1px; }
+#templates-a4-root[data-render-context="preview"] table.cs-schedule { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 /* Ensure bottom outlines are closed on first page tables */
 table.cs-info tbody tr:last-child td,
 table.cs-cast tbody tr:last-child td,
