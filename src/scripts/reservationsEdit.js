@@ -18,6 +18,8 @@ import {
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
 import { renderEquipment, syncEquipmentStatuses } from './equipment.js';
+import { getTechnicianConflictingReservationCodes } from './reservations/state.js';
+import { apiRequest } from './apiClient.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import {
   getReservationsState,
@@ -909,6 +911,9 @@ export async function saveReservationChanges({
     }
   }
 
+  // Collect all conflicting equipment names to present a clear toast
+  const conflictingEquipment = [];
+
   for (const item of editingItems) {
     if (item?.type === 'package' && Array.isArray(item.packageItems)) {
       for (const pkgItem of item.packageItems) {
@@ -916,9 +921,10 @@ export async function saveReservationChanges({
         if (!code) continue;
         if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
           const label = pkgItem?.desc || pkgItem?.barcode || t('reservations.create.packages.unnamedItem', 'معدة بدون اسم');
-          const conflictMessage = `${t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات')} (${normalizeNumbers(String(label))})`;
-          showToast(conflictMessage);
-          return;
+          conflictingEquipment.push({
+            label: normalizeNumbers(String(label)),
+            barcode: code,
+          });
         }
       }
       continue;
@@ -926,9 +932,45 @@ export async function saveReservationChanges({
 
     const code = normalizeBarcodeValue(item.barcode);
     if (hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
-      showToast(t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات'));
-      return;
+      const label = item?.desc || item?.name || item?.barcode || t('reservations.create.packages.unnamedItem', 'معدة بدون اسم');
+      conflictingEquipment.push({
+        label: normalizeNumbers(String(label)),
+        barcode: code,
+      });
     }
+  }
+
+  if (conflictingEquipment.length) {
+    const prefix = t('reservations.toast.updateEquipmentConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في أحد المعدات');
+    // Try to fetch reservation codes causing conflicts (best-effort)
+    let annotatedList = null;
+    try {
+      const uniqueBarcodes = Array.from(new Set(conflictingEquipment.map((e) => e.barcode).filter(Boolean)));
+      const codeMap = new Map();
+      await Promise.all(uniqueBarcodes.map(async (barcode) => {
+        const params = new URLSearchParams();
+        params.set('type', 'equipment');
+        params.set('id', barcode);
+        params.set('start', start);
+        params.set('end', end);
+        if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+        const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+        const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+        const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+        codeMap.set(barcode, codes);
+      }));
+      annotatedList = conflictingEquipment.map(({ label, barcode }) => {
+        const codes = codeMap.get(barcode) || [];
+        return codes.length ? `${label} (${codes.join('، ')})` : label;
+      }).join('، ');
+    } catch (_) {
+      // fallback to labels-only if API not available
+    }
+
+    const list = annotatedList
+      || conflictingEquipment.map((e) => e.label).filter(Boolean).map(String).join('، ');
+    showToast(`${prefix}: ${list}`);
+    return;
   }
 
   const hasPackageConflictFn = typeof hasPackageConflict === 'function'
@@ -941,7 +983,21 @@ export async function saveReservationChanges({
     if (!packageId) continue;
     if (hasPackageConflictFn(packageId, start, end, ignoreReservationKey)) {
       const packageName = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
-      showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`));
+      try {
+        const params = new URLSearchParams();
+        params.set('type', 'package');
+        params.set('id', String(packageId));
+        params.set('start', start);
+        params.set('end', end);
+        if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+        const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+        const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+        const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+        const suffix = codes.length ? ` (${codes.join('، ')})` : '';
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix);
+      } catch (_) {
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`));
+      }
       return;
     }
   }
@@ -950,11 +1006,24 @@ export async function saveReservationChanges({
     ? hasTechnicianConflict
     : () => false;
 
+  const crewConflicts = [];
   for (const assignment of crewAssignments) {
-    if (assignment?.technicianId && hasTechnicianConflictFn(assignment.technicianId, start, end, ignoreReservationKey)) {
-      showToast(t('reservations.toast.updateCrewConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في جدول أحد أعضاء الطاقم'));
-      return;
-    }
+    if (!assignment?.technicianId) continue;
+    if (!hasTechnicianConflictFn(assignment.technicianId, start, end, ignoreReservationKey)) continue;
+    const label = assignment?.technicianName || assignment?.positionLabel || String(assignment.technicianId);
+    let codes = [];
+    try {
+      codes = getTechnicianConflictingReservationCodes(assignment.technicianId, start, end, ignoreReservationKey);
+    } catch (_) { /* ignore */ }
+    crewConflicts.push({ label: normalizeNumbers(String(label)), codes });
+  }
+  if (crewConflicts.length) {
+    const prefix = t('reservations.toast.updateCrewConflict', '⚠️ لا يمكن حفظ التعديلات بسبب تعارض في جدول أحد أعضاء الطاقم');
+    const details = crewConflicts
+      .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
+      .join('، ');
+    showToast(`${prefix}: ${details}`);
+    return;
   }
 
   const projectsList = Array.isArray(modalEventsContext.projects) && modalEventsContext.projects.length

@@ -3,7 +3,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { loadData } from './storage.js';
-import { combineDateTime, hasTechnicianConflict } from './reservations/state.js';
+import { combineDateTime, hasTechnicianConflict, getTechnicianConflictingReservationCodes } from './reservations/state.js';
 import {
   ensureTechnicianPositionsLoaded,
   getTechnicianPositionsCache,
@@ -553,7 +553,19 @@ function handleAutocompleteSelection(input, assignmentId) {
 
   if (match.dataset.disabled === 'true') {
     if (match.dataset.conflict === 'true') {
-      showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+      // Annotate conflict with reservation codes if possible
+      try {
+        const { start, end, ignoreReservationId } = getReservationContextMeta(crewPickerContext);
+        const techId = match.dataset.id || '';
+        const codes = (start && end && techId)
+          ? getTechnicianConflictingReservationCodes(String(techId), start, end, ignoreReservationId)
+          : [];
+        const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
+        const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
+        showToast(`${base}${suffix}`);
+      } catch (_) {
+        showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+      }
     } else {
       showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));
     }

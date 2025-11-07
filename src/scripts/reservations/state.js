@@ -805,6 +805,47 @@ export function hasTechnicianConflict(technicianId, startIso, endIso, ignoreRese
   });
 }
 
+export function getTechnicianConflictingReservationCodes(technicianId, startIso, endIso, ignoreReservationId = null) {
+  if (!technicianId || !startIso || !endIso) return [];
+
+  const start = parseDateFlexible(startIso);
+  const end = parseDateFlexible(endIso);
+  if (!start || !end || start >= end) return [];
+
+  const { reservations = [] } = loadData();
+  const normalizedId = String(technicianId);
+  const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
+
+  const codes = [];
+
+  reservations.forEach((reservation) => {
+    if (!reservation?.start || !reservation?.end) return;
+    if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) return;
+
+    const statusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (statusValue === 'cancelled' || statusValue === 'canceled') return;
+
+    const resStart = parseDateFlexible(reservation.start);
+    const resEnd = parseDateFlexible(reservation.end);
+    if (!resStart || !resEnd) return;
+    if (!(resStart < end && resEnd > start)) return;
+
+    const assigned = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+    if (!assigned.some((assignedId) => String(assignedId) === normalizedId)) return;
+
+    const code = reservation.reservationCode || reservation.reservation_code || null;
+    if (code) {
+      codes.push(String(code));
+    } else if (reservation.id != null || reservation.reservationId != null) {
+      const rid = reservation.id ?? reservation.reservationId;
+      codes.push(`#${String(rid)}`);
+    }
+  });
+
+  // Unique preserve order
+  return Array.from(new Set(codes));
+}
+
 export function resetState() {
   selectedItems = [];
   resetCachedData();

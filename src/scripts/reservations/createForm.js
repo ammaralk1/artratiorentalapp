@@ -34,6 +34,7 @@ import {
   normalizeBarcodeValue,
   hasEquipmentConflict,
   hasTechnicianConflict,
+  getTechnicianConflictingReservationCodes,
   getEquipmentBookingMode,
   setEquipmentBookingMode,
   getBlockingPackagesForEquipment,
@@ -41,6 +42,7 @@ import {
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
 import { syncTechniciansStatuses } from '../technicians.js';
+import { apiRequest } from '../apiClient.js';
 import {
   createReservationApi,
   buildReservationPayload,
@@ -2310,23 +2312,91 @@ async function handleReservationSubmit() {
     }
   }
 
+  // Collect all conflicting equipment names (and barcodes) to present a clear toast
+  const conflictingEquipment = [];
   for (const item of draftItems) {
     const code = normalizeBarcodeValue(item.barcode);
     if (hasEquipmentConflict(code, start, end)) {
-      showToast(
-        t('reservations.toast.cannotCreateEquipmentConflict', '⚠️ لا يمكن إتمام الحجز، إحدى المعدات محجوزة في نفس الفترة الزمنية')
-      );
-      return;
+      const label = item?.desc || item?.name || item?.barcode || t('reservations.create.packages.unnamedItem', 'معدة بدون اسم');
+      conflictingEquipment.push({
+        label: normalizeNumbers(String(label)),
+        barcode: code,
+      });
     }
   }
-
-  for (const assignment of crewAssignments) {
-    if (assignment?.technicianId && hasTechnicianConflict(assignment.technicianId, start, end)) {
-      showToast(
-        t('reservations.toast.cannotCreateCrewConflict', '⚠️ لا يمكن إتمام الحجز، أحد أعضاء الطاقم مرتبط بحجز آخر في نفس الفترة')
-      );
-      return;
+  if (conflictingEquipment.length) {
+    const prefix = t('reservations.toast.cannotCreateEquipmentConflict', '⚠️ لا يمكن إتمام الحجز، إحدى المعدات محجوزة في نفس الفترة الزمنية');
+    // Try to fetch reservation codes causing conflicts (best-effort)
+    let annotatedList = null;
+    try {
+      const uniqueBarcodes = Array.from(new Set(conflictingEquipment.map((e) => e.barcode).filter(Boolean)));
+      const codeMap = new Map();
+      await Promise.all(uniqueBarcodes.map(async (barcode) => {
+        const params = new URLSearchParams({ type: 'equipment', id: barcode, start, end });
+        const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+        const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+        const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+        codeMap.set(barcode, codes);
+      }));
+      annotatedList = conflictingEquipment.map(({ label, barcode }) => {
+        const codes = codeMap.get(barcode) || [];
+        return codes.length ? `${label} (${codes.join('، ')})` : label;
+      }).join('، ');
+    } catch (_) {
+      // fallback to labels-only if API not available
     }
+    const list = annotatedList
+      || conflictingEquipment.map((e) => e.label).filter(Boolean).map(String).join('، ');
+    showToast(`${prefix}: ${list}`);
+    return;
+  }
+
+  // Validate package conflicts at submit time and include blocking reservation codes
+  const packageConflicts = [];
+  for (const item of draftItems) {
+    if (item?.type !== 'package') continue;
+    const packageId = item.packageId ?? item.package_id ?? null;
+    if (!packageId) continue;
+    if (hasPackageConflict(packageId, start, end)) {
+      const name = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
+      let codes = [];
+      try {
+        const params = new URLSearchParams({ type: 'package', id: String(packageId), start, end });
+        const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+        const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+        codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+      } catch (_) { /* ignore */ }
+      packageConflicts.push({ label: normalizeNumbers(String(name)), codes });
+    }
+  }
+  if (packageConflicts.length) {
+    const details = packageConflicts
+      .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
+      .join('، ');
+    const msg = t('reservations.toast.packageTimeConflict', `⚠️ الحزمة محجوزة بالفعل في الفترة المختارة`);
+    showToast(`${msg}: ${details}`);
+    return;
+  }
+
+  // Collect crew conflicts and annotate with reservation codes
+  const crewConflicts = [];
+  for (const assignment of crewAssignments) {
+    if (!assignment?.technicianId) continue;
+    if (!hasTechnicianConflict(assignment.technicianId, start, end)) continue;
+    const label = assignment?.technicianName || assignment?.positionLabel || String(assignment.technicianId);
+    let codes = [];
+    try {
+      codes = getTechnicianConflictingReservationCodes(assignment.technicianId, start, end, null);
+    } catch (_) { /* ignore */ }
+    crewConflicts.push({ label: normalizeNumbers(String(label)), codes });
+  }
+  if (crewConflicts.length) {
+    const prefix = t('reservations.toast.cannotCreateCrewConflict', '⚠️ لا يمكن إتمام الحجز، أحد أعضاء الطاقم مرتبط بحجز آخر في نفس الفترة');
+    const details = crewConflicts
+      .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
+      .join('، ');
+    showToast(`${prefix}: ${details}`);
+    return;
   }
 
   const taxCheckbox = document.getElementById('res-tax');
