@@ -15,6 +15,20 @@ export const AUTH_EVENTS = {
   USER_UPDATED: 'auth:user-updated',
 };
 
+// Prevent multiple simultaneous redirects to the login page
+let __authRedirectInFlight = false;
+
+function redirectToLogin() {
+  if (__authRedirectInFlight) return;
+  __authRedirectInFlight = true;
+  try {
+    window.location.href = 'login.html';
+  } finally {
+    // allow future attempts after a short delay in case navigation was blocked
+    setTimeout(() => { __authRedirectInFlight = false; }, 2000);
+  }
+}
+
 function isLocalhost() {
   try {
     const host = window?.location?.hostname || '';
@@ -242,7 +256,11 @@ export async function getCurrentUser({ refresh = false } = {}) {
 
   try {
     const response = await apiRequest('/auth/');
-    setCurrentUser(response?.data ?? null);
+    // Be tolerant to servers that may return either `{ ok, data }` or the raw user object
+    const userPayload = (response && typeof response === 'object')
+      ? (Object.prototype.hasOwnProperty.call(response, 'data') ? response.data : response)
+      : null;
+    setCurrentUser(userPayload ?? null);
     return currentUser;
   } catch (error) {
     // If unauthorized, propagate so callers may redirect
@@ -257,7 +275,7 @@ export async function getCurrentUser({ refresh = false } = {}) {
   }
 }
 
-export function checkAuth({ redirect = true } = {}) {
+export function checkAuth({ redirect = true, retries = 1, retryDelay = 300 } = {}) {
   // If bypass is enabled, consider the user authenticated
   if (shouldBypassAuth()) {
     if (!currentUser) {
@@ -266,25 +284,35 @@ export function checkAuth({ redirect = true } = {}) {
     return Promise.resolve(currentUser);
   }
 
-  return getCurrentUser({ refresh: true })
-    .then((user) => {
-      if (!user && redirect) {
-        window.location.href = 'login.html';
-      }
-      return user;
-    })
-    .catch((error) => {
-      if (error instanceof ApiError && error.status === 401) {
-        if (redirect) {
-          window.location.href = 'login.html';
+  const attempt = (remaining) => {
+    return getCurrentUser({ refresh: true })
+      .then((user) => {
+        if (!user && redirect) {
+          redirectToLogin();
         }
-        return null;
-      }
+        return user;
+      })
+      .catch((error) => {
+        // Retry once on 401 to avoid race conditions just after login
+        if (error instanceof ApiError && error.status === 401 && remaining > 0) {
+          return new Promise((resolve) => setTimeout(resolve, Math.max(0, retryDelay)))
+            .then(() => attempt(remaining - 1));
+        }
 
-      // Network / server issues: do NOT redirect; keep current page
-      console.warn('⚠️ checkAuth: network/server issue, skipping redirect', error);
-      return currentUser;
-    });
+        if (error instanceof ApiError && error.status === 401) {
+          if (redirect) {
+            redirectToLogin();
+          }
+          return null;
+        }
+
+        // Network / server issues: do NOT redirect; keep current page
+        console.warn('⚠️ checkAuth: network/server issue, skipping redirect', error);
+        return currentUser;
+      });
+  };
+
+  return attempt(Math.max(0, Number.isFinite(retries) ? retries : 1));
 }
 
 export function getCurrentUserRole() {
