@@ -562,9 +562,9 @@ function handleAutocompleteSelection(input, assignmentId) {
           : [];
         const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
         const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
-        showToast(`${base}${suffix}`);
+        showToast(`${base}${suffix}`, 'warning', -1);
       } catch (_) {
-        showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'));
+        showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'), 'warning', -1);
       }
     } else {
       showToast(t('technicians.picker.optionTaken', '⚠️ لا يمكن اختيار هذا العضو لأنه مرتبط بمنصب آخر'));

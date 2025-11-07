@@ -903,6 +903,62 @@ export async function saveReservationChanges({
     }
   }
 
+  // Before listing item-level conflicts, handle package-level conflicts or
+  // cases where ALL items within a package conflict: show package only.
+  {
+    const hasPackageConflictFn = typeof hasPackageConflict === 'function' ? hasPackageConflict : () => false;
+    for (const item of editingItems) {
+      if (item?.type !== 'package') continue;
+      const packageId = item.packageId ?? item.package_id ?? null;
+      const packageName = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
+      if (packageId && hasPackageConflictFn(packageId, start, end, ignoreReservationKey)) {
+        try {
+          const params = new URLSearchParams();
+          params.set('type', 'package');
+          params.set('id', String(packageId));
+          params.set('start', start);
+          params.set('end', end);
+          if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+          const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+          const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+          const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+          const suffix = codes.length ? ` (${codes.join('، ')})` : '';
+          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+        } catch (_) {
+          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
+        }
+        return;
+      }
+
+      // If not package-level, check if all items inside the package conflict => treat as package
+      if (Array.isArray(item?.packageItems) && item.packageItems.length) {
+        const codes = (item.packageItems || [])
+          .map((pkgItem) => normalizeBarcodeValue(pkgItem?.barcode ?? pkgItem?.normalizedBarcode ?? ''))
+          .filter(Boolean);
+        const total = codes.length;
+        const conflictsCount = codes.filter((code) => hasEquipmentConflictFn(code, start, end, ignoreReservationKey)).length;
+        if (total > 0 && conflictsCount >= total) {
+          try {
+            const params = new URLSearchParams();
+            params.set('type', 'package');
+            if (packageId != null) params.set('id', String(packageId));
+            params.set('start', start);
+            params.set('end', end);
+            if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
+            const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+            const rcodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+            const suffix = rcodes.length ? ` (${rcodes.join('، ')})` : '';
+            showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+          } catch (_) {
+            showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
+          }
+          return;
+        }
+      }
+    }
+  }
+
   // Collect all conflicting equipment names to present a clear toast
   const conflictingEquipment = [];
 
@@ -961,7 +1017,7 @@ export async function saveReservationChanges({
 
     const list = annotatedList
       || conflictingEquipment.map((e) => e.label).filter(Boolean).map(String).join('، ');
-    showToast(`${prefix}: ${list}`);
+    showToast(`${prefix}: ${list}`, 'warning', -1);
     return;
   }
 
@@ -986,9 +1042,9 @@ export async function saveReservationChanges({
         const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
         const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
         const suffix = codes.length ? ` (${codes.join('، ')})` : '';
-        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix);
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
       } catch (_) {
-        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`));
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
       }
       return;
     }
@@ -1014,7 +1070,7 @@ export async function saveReservationChanges({
     const details = crewConflicts
       .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
       .join('، ');
-    showToast(`${prefix}: ${details}`);
+    showToast(`${prefix}: ${details}`, 'warning', -1);
     return;
   }
 

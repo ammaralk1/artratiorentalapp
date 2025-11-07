@@ -151,6 +151,11 @@ function ensureLogoControls(type = 'expenses') {
       <button type="button" class="btn btn-outline" id="tpl-logo2-reset">إعادة تموضع</button>
       <button type="button" class="btn btn-outline btn-danger" id="tpl-logo2-clear">حذف</button>
     </div>
+    <div class="input-group" id="tpl-font-controls" style="display:inline-flex;gap:6px;align-items:center;">
+      <label class="form-label" style="margin:0 4px 0 0;">حجم الخط</label>
+      <button type="button" class="btn btn-outline" id="tpl-font-down" title="تصغير الخط">A−</button>
+      <button type="button" class="btn btn-outline" id="tpl-font-up" title="تكبير الخط">A+</button>
+    </div>
     <div class="input-group" id="tpl-history-controls" style="display:inline-flex;gap:6px;align-items:center;">
       <button type="button" class="btn btn-outline" id="tpl-undo" title="تراجع">↶</button>
       <button type="button" class="btn btn-outline" id="tpl-redo" title="تقديم">↷</button>
@@ -188,6 +193,12 @@ function ensureLogoControls(type = 'expenses') {
   // History controls
   document.getElementById('tpl-undo')?.addEventListener('click', () => undoTemplatesChange());
   document.getElementById('tpl-redo')?.addEventListener('click', () => redoTemplatesChange());
+
+  // Font size controls
+  const fontDown = document.getElementById('tpl-font-down');
+  const fontUp = document.getElementById('tpl-font-up');
+  fontDown?.addEventListener('click', () => { try { adjustSelectionFont(-1); } catch (_) {} });
+  fontUp?.addEventListener('click', () => { try { adjustSelectionFont(+1); } catch (_) {} });
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -871,6 +882,71 @@ function markTemplatesEditingActivity() {
     // If a refresh was queued while editing, schedule it now
     try { if (typeof scheduleRepopulate === 'function') scheduleRepopulate(0); } catch(_) {}
   }, 1200);
+}
+
+// Adjust font size for current selection or current editable cell
+function adjustSelectionFont(deltaPx = 0) {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root || !Number.isFinite(deltaPx) || deltaPx === 0) return;
+    const sel = window.getSelection();
+
+    // Find nearest editable container for anchor/caret
+    const nearestEditable = () => {
+      let node = (sel && sel.anchorNode) || document.activeElement;
+      if (!node) return null;
+      if (node.nodeType === 3) node = node.parentElement; // text -> element
+      let el = (node instanceof Element) ? node : null;
+      while (el && el !== document.body) {
+        if (el.hasAttribute && el.hasAttribute('contenteditable')) return el;
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const target = nearestEditable();
+    if (!target) return;
+
+    // Current base size from target
+    const base = Number.parseFloat(getComputedStyle(target).fontSize || '11') || 11;
+    const clamp = (v) => Math.max(7, Math.min(20, v));
+    const next = clamp(base + deltaPx);
+
+    const applyToEditable = (el) => {
+      try { el.style.fontSize = next + 'px'; } catch (_) {}
+    };
+
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      const range = sel.getRangeAt(0);
+      // Ensure selection is inside the same editable container
+      if (target.contains(range.commonAncestorContainer)) {
+        try {
+          const span = document.createElement('span');
+          span.style.fontSize = next + 'px';
+          const frag = range.extractContents();
+          span.appendChild(frag);
+          range.insertNode(span);
+          // Move caret after the inserted span
+          sel.removeAllRanges();
+          const nr = document.createRange();
+          nr.setStartAfter(span);
+          nr.setEndAfter(span);
+          sel.addRange(nr);
+        } catch (_) {
+          // Fallback to whole cell
+          applyToEditable(target);
+        }
+      } else {
+        applyToEditable(target);
+      }
+    } else {
+      // No selection: apply to entire editable cell
+      applyToEditable(target);
+    }
+
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
+    markTemplatesEditingActivity();
+  } catch (_) {}
 }
 
 function getTemplatesContextKey() {

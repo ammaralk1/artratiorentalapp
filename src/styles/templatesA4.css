@@ -226,6 +226,8 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Center all text in schedule */
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
+.callsheet-v1 .cs-schedule th { font-size: 10px; }
+.callsheet-v1 .cs-schedule td { font-size: 10px; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */

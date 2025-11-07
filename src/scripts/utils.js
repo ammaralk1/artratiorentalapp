@@ -46,7 +46,7 @@ function fadeInToast(toast) {
 }
 
 function scheduleToastRemoval(toast, duration) {
-  let timeoutId;
+  let timeoutId = null;
   const hide = () => {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -55,7 +55,21 @@ function scheduleToastRemoval(toast, duration) {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 320);
   };
-  timeoutId = setTimeout(hide, duration);
+
+  // duration === -1 => persistent until user clicks anywhere on the page
+  if (duration === -1) {
+    const onAnyClick = () => {
+      try { document.removeEventListener('click', onAnyClick, { capture: true }); } catch (_) { /* noop */ }
+      hide();
+    };
+    // Defer attaching to avoid immediately catching the same click that triggered the toast
+    setTimeout(() => {
+      try { document.addEventListener('click', onAnyClick, { once: true, capture: true }); } catch (_) { /* noop */ }
+    }, 0);
+    return { hide, timeoutId };
+  }
+
+  timeoutId = setTimeout(hide, Math.max(0, duration));
   return { hide, timeoutId };
 }
 

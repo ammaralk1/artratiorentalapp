@@ -1044,9 +1044,9 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
       const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
       const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
       const suffix = codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix);
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix, 'warning', -1);
     } catch (_) {
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'), 'warning', -1);
     }
     return;
   }
@@ -1120,9 +1120,9 @@ export async function addEquipmentToEditingByDescription(inputElement) {
       const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
       const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
       const suffix = codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix);
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix, 'warning', -1);
     } catch (_) {
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'), 'warning', -1);
     }
     return;
   }
