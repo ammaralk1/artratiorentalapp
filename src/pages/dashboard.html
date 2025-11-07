@@ -703,6 +703,7 @@
           <div class="d-flex flex-wrap gap-2">
             <button type="button" id="equipment-clear-btn" class="btn btn-error btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.clearAll">🗑️ مسح الكل</button>
             <button type="button" id="excel-upload-trigger" class="btn btn-primary btn-sm requires-admin" data-i18n data-i18n-key="equipment.actions.uploadExcel">📤 رفع من Excel</button>
+            <button type="button" id="excel-download-trigger" class="btn btn-outline btn-sm" data-i18n data-i18n-key="equipment.actions.downloadExcel">📥 تنزيل Excel</button>
           </div>
           <div class="d-none">
             <input type="file" id="excel-upload" accept=".xlsx, .xls" hidden class="requires-admin">
@@ -746,6 +747,10 @@
               <div class="form-field">
                 <label for="new-equipment-sub" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
                 <input type="text" class="form-control" id="new-equipment-sub" placeholder="القسم الثانوي" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.subcategory">
+              </div>
+              <div class="form-field">
+                <label for="new-equipment-lessor" class="form-label" data-i18n data-i18n-key="equipment.form.labels.lessor">🏢 المؤجر</label>
+                <input type="text" class="form-control" id="new-equipment-lessor" placeholder="اسم المؤجر" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.lessor">
               </div>
             </div>
             <div class="management-form-actions equipment-form-actions">
@@ -1859,6 +1864,9 @@
             <div class="equipment-details-header__media" id="equipment-details-cover">
               <span class="equipment-details-header__placeholder" aria-hidden="true">📦</span>
             </div>
+            <div class="equipment-details-header__badges" style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span id="equipment-lessor-badge" class="badge-soft" hidden>🏢</span>
+            </div>
           </div>
           <button type="button" class="btn-close equipment-details-header__close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
         </div>
@@ -1898,6 +1906,10 @@
               <div class="equipment-details-field equipment-details-field--wide">
                 <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
                 <textarea class="form-control" id="edit-equipment-image" rows="2" placeholder="ضع رابط مباشر للصورة" data-i18n data-i18n-placeholder-key="equipment.modal.placeholders.image" disabled></textarea>
+              </div>
+              <div class="equipment-details-field">
+                <label for="edit-equipment-lessor" class="form-label" data-i18n data-i18n-key="equipment.modal.labels.lessor">🏢 المؤجر</label>
+                <input type="text" class="form-control" id="edit-equipment-lessor" disabled>
               </div>
             </div>
 

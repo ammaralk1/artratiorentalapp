@@ -55,6 +55,7 @@ CREATE TABLE equipment (
   barcode VARCHAR(100) DEFAULT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'available',
   image_url TEXT,
+  lessor VARCHAR(255) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -212,10 +213,10 @@ INSERT INTO technicians (full_name, phone, email, specialization, department, da
 ('ليث الحربي', '+966-502-345678', 'laith@art-ratio.test', 'صوتيات', 'الفريق الميداني', 600, 'active', 'فني صوت معتمد'),
 ('Amina Al Harbi', '+966-503-456789', 'amina@art-ratio.test', 'إدارة مشاريع', 'المكتب', 700, 'active', 'منسقة مشاريع');
 
-INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url) VALUES
-('إضاءة', 'LED Panels', 'Aputure LS 300X', 'مصباح LED عالي السطوع', 8, 4500, 'EQ-LED-300X', 'available', NULL),
-('صوت', 'Mixers', 'Yamaha TF1 Mixer', 'جهاز مكساج صوتي رقمي', 4, 12000, 'EQ-AUDIO-TF1', 'available', NULL),
-('تصوير', 'Cameras', 'Sony FX6 Camera', 'كاميرا سينمائية كاملة الإطار', 5, 24000, 'EQ-CAM-FX6', 'maintenance', NULL);
+INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url, lessor) VALUES
+('إضاءة', 'LED Panels', 'Aputure LS 300X', 'مصباح LED عالي السطوع', 8, 4500, 'EQ-LED-300X', 'available', NULL, NULL),
+('صوت', 'Mixers', 'Yamaha TF1 Mixer', 'جهاز مكساج صوتي رقمي', 4, 12000, 'EQ-AUDIO-TF1', 'available', NULL, NULL),
+('تصوير', 'Cameras', 'Sony FX6 Camera', 'كاميرا سينمائية كاملة الإطار', 5, 24000, 'EQ-CAM-FX6', 'maintenance', NULL, NULL);
 
 INSERT INTO projects (
   project_code,

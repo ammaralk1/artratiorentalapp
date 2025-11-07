@@ -61,6 +61,7 @@ function toInternalEquipment(raw = {}) {
   const status = normalizeStatusValue(raw.status ?? raw.state ?? raw.status_label ?? raw.statusLabel ?? "available");
   const imageUrl = raw.image_url ?? raw.imageUrl ?? raw.image ?? "";
   const name = raw.name ?? raw.item_name ?? description;
+  const lessor = raw.lessor ?? raw.owner ?? "";
 
   return {
     id: hasValue(idValue) ? String(idValue) : "",
@@ -74,6 +75,7 @@ function toInternalEquipment(raw = {}) {
     status,
     image: imageUrl,
     imageUrl,
+    lessor,
     created_at: raw.created_at ?? null,
     updated_at: raw.updated_at ?? null,
   };
@@ -186,6 +188,8 @@ function normalizeStatusValue(value) {
       return "available";
     case "reserved":
     case "محجوز":
+    case "مؤجرة":
+    case "rented":
       return "reserved";
     case "maintenance":
     case "صيانة":
@@ -451,6 +455,20 @@ function updateEquipmentHeaderMedia(item) {
   }
 }
 
+function updateEquipmentLessorBadge(item) {
+  const tag = document.getElementById('equipment-lessor-badge');
+  if (!tag) return;
+  const value = (item?.lessor || '').trim();
+  if (value) {
+    const label = t('equipment.modal.labels.lessor', '🏢 المؤجر');
+    tag.textContent = `${label}: ${value}`;
+    tag.hidden = false;
+  } else {
+    tag.hidden = true;
+    tag.textContent = '🏢';
+  }
+}
+
 function getEquipmentFormElements() {
   return {
     category: document.getElementById('edit-equipment-category'),
@@ -461,6 +479,7 @@ function getEquipmentFormElements() {
     image: document.getElementById('edit-equipment-image'),
     barcode: document.getElementById('edit-equipment-barcode'),
     status: document.getElementById('edit-equipment-status'),
+    lessor: document.getElementById('edit-equipment-lessor'),
   };
 }
 
@@ -475,6 +494,7 @@ function captureEquipmentFormValues() {
     image: elements.image?.value ?? '',
     barcode: elements.barcode?.value ?? '',
     status: elements.status?.value ?? '',
+    lessor: elements.lessor?.value ?? '',
   };
 }
 
@@ -488,6 +508,7 @@ function applyEquipmentFormValues(values = {}) {
   if (elements.image) elements.image.value = values.image ?? '';
   if (elements.barcode) elements.barcode.value = values.barcode ?? '';
   if (elements.status) elements.status.value = values.status ?? '';
+  if (elements.lessor) elements.lessor.value = values.lessor ?? '';
 }
 
 function setEquipmentEditMode(isEditing) {
@@ -508,6 +529,7 @@ function setEquipmentEditMode(isEditing) {
     elements.quantity,
     elements.price,
     elements.image,
+    elements.lessor,
   ];
 
   inputs.forEach((input) => {
@@ -583,8 +605,8 @@ export async function uploadEquipmentFromExcel(file) {
         const quantity = row["الكمية"] ?? row.quantity ?? 0;
         const unitPrice = row["السعر"] ?? row.price ?? 0;
         const barcodeRaw = row["الباركود"] ?? row.barcode ?? "";
-        const status = row["الحالة"] ?? row.status ?? "متاح";
         const imageUrl = row["الصورة"] ?? row.image_url ?? row.image ?? "";
+        const lessor = row["المؤجر"] ?? row["المؤجر "] ?? row["Lessor"] ?? row["lessor"] ?? row.lessor ?? "";
 
         const cleanedBarcode = normalizeNumbers(String(barcodeRaw || "")).trim();
 
@@ -601,8 +623,8 @@ export async function uploadEquipmentFromExcel(file) {
             quantity,
             unit_price: unitPrice,
             barcode: cleanedBarcode,
-            status,
             image_url: imageUrl,
+            lessor,
           })
         );
       });
@@ -659,6 +681,54 @@ export async function uploadEquipmentFromExcel(file) {
   };
 
   reader.readAsArrayBuffer(file);
+}
+
+export async function downloadEquipmentToExcel({ onlyAvailable = false } = {}) {
+  try {
+    await ensureXLSXLoaded();
+  } catch (error) {
+    console.error("❌ [equipment.js] Unable to load XLSX for download", error);
+    showToast(t("equipment.toast.xlsxMissing", "⚠️ مكتبة Excel (XLSX) غير محملة."));
+    return;
+  }
+
+  const items = getAllEquipment();
+  const rows = items
+    .filter((item) => {
+      if (!onlyAvailable) return true;
+      return normalizeStatusValue(item.status) === 'available';
+    })
+    .map((item) => ({
+      'القسم': item.category || '',
+      'القسم الثانوي': item.sub || '',
+      'الوصف': item.desc || item.description || item.name || '',
+      'الكمية': Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0,
+      'السعر': Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+      'الباركود': item.barcode || '',
+      'الصورة': getEquipmentImage(item) || '',
+      'المؤجر': (item.lessor || ''),
+    }));
+
+  // Create workbook
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Equipment');
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = pad2(now.getMonth() + 1);
+  const d = pad2(now.getDate());
+  const hh = pad2(now.getHours());
+  const mm = pad2(now.getMinutes());
+  const filename = `${onlyAvailable ? 'equipment-available' : 'equipment-all'}-${y}${m}${d}-${hh}${mm}.xlsx`;
+
+  try {
+    XLSX.writeFile(workbook, filename, { compression: true });
+  } catch (error) {
+    console.error('❌ [equipment.js] Failed to generate Excel file', error);
+    showToast(t('equipment.toast.uploadFailed', '❌ حدث خطأ أثناء قراءة ملف الإكسل'), 'error');
+  }
 }
 
 const XLSX_CDN_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
@@ -724,6 +794,7 @@ function buildEquipmentPayload({
   barcode = "",
   status = "متاح",
   image_url = "",
+  lessor = "",
 }) {
   const cleanedBarcode = normalizeNumbers(String(barcode || "")).trim();
   const normalizedStatus = statusToApi(status);
@@ -738,6 +809,7 @@ function buildEquipmentPayload({
     barcode: cleanedBarcode,
     status: normalizedStatus,
     image_url: image_url?.trim() || null,
+    lessor: (typeof lessor === 'string' ? lessor.trim() : '') || null,
   };
 }
 
@@ -1457,6 +1529,7 @@ async function handleAddEquipmentSubmit(event) {
   const image = form.querySelector("#new-equipment-image")?.value?.trim() || "";
   const category = form.querySelector("#new-equipment-category")?.value?.trim() || "";
   const sub = form.querySelector("#new-equipment-sub")?.value?.trim() || "";
+  const lessor = form.querySelector("#new-equipment-lessor")?.value?.trim() || "";
   const statusValue = form.querySelector("#new-equipment-status")?.value || "متاح";
 
   if (!desc || !barcode) {
@@ -1473,6 +1546,7 @@ async function handleAddEquipmentSubmit(event) {
     barcode,
     status: statusValue,
     image_url: image,
+    lessor,
   });
 
   try {
@@ -1552,6 +1626,7 @@ async function editEquipment(index, updatedData) {
     barcode: updatedData.barcode,
     status: updatedData.status,
     image_url: updatedData.image,
+    lessor: updatedData.lessor,
   });
 
   try {
@@ -1606,11 +1681,13 @@ function openEditEquipmentModal(index) {
     image: getEquipmentImage(primary) || '',
     barcode: primary.barcode || '',
     status: primary.status || aggregatedStatus,
+    lessor: primary.lessor || '',
   });
 
   setEquipmentEditMode(false);
   currentEquipmentSnapshot = captureEquipmentFormValues();
   updateEquipmentHeaderMedia(primary);
+  updateEquipmentLessorBadge(primary);
 
   renderEquipmentVariantsSection(primary);
   currentVariantsContext = {
@@ -1752,6 +1829,8 @@ function refreshVariantsIfNeeded() {
   }
 
   renderEquipmentVariantsSection(activeItem);
+  updateEquipmentHeaderMedia(activeItem);
+  updateEquipmentLessorBadge(activeItem);
 
   if (!isEquipmentEditMode) {
     const variants = getVariantsForItem(activeItem);
@@ -1771,6 +1850,7 @@ function refreshVariantsIfNeeded() {
       image: getEquipmentImage(primary) || '',
       barcode: primary.barcode || '',
       status: primary.status || aggregatedStatus,
+      lessor: primary.lessor || '',
     });
 
     currentEquipmentSnapshot = captureEquipmentFormValues();
@@ -1795,6 +1875,17 @@ function wireUpEquipmentUI() {
       });
     });
     clearButton.dataset.listenerAttached = 'true';
+  }
+
+  const excelDownloadBtn = document.getElementById('excel-download-trigger');
+  if (excelDownloadBtn && !excelDownloadBtn.dataset.listenerAttached) {
+    excelDownloadBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      downloadEquipmentToExcel().catch((error) => {
+        console.error('❌ [equipment.js] downloadEquipmentToExcel', error);
+      });
+    });
+    excelDownloadBtn.dataset.listenerAttached = 'true';
   }
 
   const equipmentList = document.getElementById('equipment-list');
@@ -1842,6 +1933,7 @@ document.getElementById("save-equipment-changes")?.addEventListener("click", asy
     barcode: normalizeNumbers(document.getElementById("edit-equipment-barcode").value).trim(),
     status: document.getElementById("edit-equipment-status").value,
     image: document.getElementById("edit-equipment-image").value,
+    lessor: document.getElementById("edit-equipment-lessor").value,
   };
 
   try {

@@ -152,8 +152,8 @@ function handleEquipmentCreate(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url)';
+    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url, lessor) 
+        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url, :lessor)';
 
     $statement = $pdo->prepare($sql);
     $statement->execute($data);
@@ -237,8 +237,8 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url)';
+    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url, lessor) 
+        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url, :lessor)';
 
     $insertedIds = [];
 
@@ -438,6 +438,7 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
     $barcode = isset($payload['barcode']) ? trim((string) $payload['barcode']) : null;
     $status = isset($payload['status']) ? trim((string) $payload['status']) : null;
     $imageUrl = isset($payload['image_url']) ? trim((string) $payload['image_url']) : null;
+    $lessor = isset($payload['lessor']) ? trim((string) $payload['lessor']) : null;
 
     if (!$isUpdate || array_key_exists('description', $payload)) {
         if ($description === null || $description === '') {
@@ -506,6 +507,10 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
         $errors['image_url'] = 'Image URL is too long (max 255 characters)';
     }
 
+    if ($lessor !== null && mb_strlen($lessor) > 255) {
+        $errors['lessor'] = 'Lessor is too long (max 255 characters)';
+    }
+
     $data = [];
 
     if ($errors) {
@@ -546,6 +551,10 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
 
     if (!$isUpdate || array_key_exists('image_url', $payload)) {
         $data['image_url'] = $imageUrl;
+    }
+
+    if (!$isUpdate || array_key_exists('lessor', $payload)) {
+        $data['lessor'] = $lessor;
     }
 
     return [$data, $errors];
@@ -592,7 +601,7 @@ function normalizeStatus(string $value): ?string
 
     return match ($normalized) {
         'available', 'متاح', 'متوفر' => 'available',
-        'reserved', 'محجوز' => 'reserved',
+        'reserved', 'محجوز', 'مؤجرة', 'rented' => 'reserved',
         'maintenance', 'صيانة' => 'maintenance',
         'retired', 'متوقف', 'خارج الخدمة' => 'retired',
         default => null,
