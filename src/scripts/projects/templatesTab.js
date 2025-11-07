@@ -705,7 +705,8 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
   // Define explicit column widths via colgroup to guarantee alignment (12 cols)
   // Shot #, Time, Description, Movement, Rig, Lens, Location, I/E, D/N, Sound, Cast, Notes/Props
-  const cols = [2.5, 4, 25, 5, 5, 4, 6, 2, 2, 10, 6, 15];
+  // Total = 100%
+  const cols = [5, 5, 25, 6, 5, 5, 6, 4, 4, 10, 8, 17];
   const cg = el('colgroup');
   cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` })));
   sched.appendChild(cg);
