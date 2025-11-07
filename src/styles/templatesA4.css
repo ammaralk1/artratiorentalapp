@@ -192,7 +192,9 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 /* Schedule */
 /* Ensure schedule header is visible (to appear at top of schedule page) */
 .cs-schedule thead { display: table-header-group !important; }
-.cs-schedule thead tr, .cs-schedule thead th { display: table-cell !important; }
+/* Correct display roles to avoid layout artifacts (e.g., dark strip) */
+.cs-schedule thead tr { display: table-row !important; }
+.cs-schedule thead th { display: table-cell !important; }
 /* Hard reset any inherited dark/table header styles */
 #templates-a4-root .cs-schedule thead,
 #templates-a4-root .cs-schedule thead tr,
@@ -210,6 +212,8 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 #templates-a4-root .cs-schedule thead th::after { content:none !important; display:none !important; }
 /* Ensure schedule header columns line up exactly with body */
 .cs-schedule { table-layout: fixed; width: 100%; }
+/* Outer border to visually close the grid even across page flow */
+table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule thead th:nth-child(1), .cs-schedule tbody td:nth-child(1) { width: 12%; text-align: center; }
 .cs-schedule thead th:nth-child(2), .cs-schedule tbody td:nth-child(2) { width: 8%; text-align: center; }
 .cs-schedule thead th:nth-child(3), .cs-schedule tbody td:nth-child(3) { width: 22%; }
