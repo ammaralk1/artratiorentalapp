@@ -193,6 +193,21 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 /* Ensure schedule header is visible (to appear at top of schedule page) */
 .cs-schedule thead { display: table-header-group !important; }
 .cs-schedule thead tr, .cs-schedule thead th { display: table-cell !important; }
+/* Hard reset any inherited dark/table header styles */
+#templates-a4-root .cs-schedule thead,
+#templates-a4-root .cs-schedule thead tr,
+#templates-a4-root .cs-schedule thead th {
+  background:#ffffff !important;
+  border-color:#9ca3af !important;
+  box-shadow:none !important;
+  outline:none !important;
+}
+#templates-a4-root .cs-schedule thead::before,
+#templates-a4-root .cs-schedule thead::after,
+#templates-a4-root .cs-schedule thead tr::before,
+#templates-a4-root .cs-schedule thead tr::after,
+#templates-a4-root .cs-schedule thead th::before,
+#templates-a4-root .cs-schedule thead th::after { content:none !important; display:none !important; }
 /* Ensure schedule header columns line up exactly with body */
 .cs-schedule { table-layout: fixed; width: 100%; }
 .cs-schedule thead th:nth-child(1), .cs-schedule tbody td:nth-child(1) { width: 12%; text-align: center; }
@@ -204,8 +219,8 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 .cs-schedule thead th:nth-child(7), .cs-schedule tbody td:nth-child(7) { width: 10%; }
 .cs-schedule thead th:nth-child(8), .cs-schedule tbody td:nth-child(8) { width: 8%; }
 .cs-schedule thead th:nth-child(9), .cs-schedule tbody td:nth-child(9) { width: 8%; }
-/* Hide any accidental empty header cell (prevents stray dark header block) */
-.cs-schedule thead th:empty { display: none; }
+/* Hide any accidental extra header cells beyond the expected 9 */
+.cs-schedule thead tr > th:nth-child(n+10) { display:none !important; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */

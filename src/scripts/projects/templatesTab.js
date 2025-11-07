@@ -597,6 +597,11 @@ function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
+  // Define explicit column widths via colgroup to guarantee alignment
+  const cols = [12, 8, 22, 12, 12, 8, 10, 8, 8];
+  const cg = el('colgroup');
+  cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` })));
+  sched.appendChild(cg);
   // Restore header so it appears at the top of the schedule page
   sched.appendChild(el('thead', {}, [el('tr', {}, [
     el('th', { text: 'Time (Duration)', style: 'width:12%' }),
