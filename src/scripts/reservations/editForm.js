@@ -1,6 +1,7 @@
 import { loadData } from '../storage.js';
 import { t } from '../language.js';
 import { showToast, normalizeNumbers, formatDateTime } from '../utils.js';
+import { apiRequest } from '../apiClient.js';
 import { groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier, sanitizePriceValue, parsePriceValue, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
   resolveItemImage,
@@ -999,7 +1000,7 @@ export function removeEditReservationItem(index) {
   updateEditReservationSummary();
 }
 
-export function addEquipmentToEditingReservation(barcodeInput) {
+export async function addEquipmentToEditingReservation(barcodeInput) {
   const rawCode = barcodeInput?.value ?? '';
   const code = normalizeBarcodeValue(rawCode);
   if (!code) return;
@@ -1036,7 +1037,17 @@ export function addEquipmentToEditingReservation(barcodeInput) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    try {
+      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+      if (ignoreId != null) params.set('ignore', String(ignoreId));
+      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix);
+    } catch (_) {
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    }
     return;
   }
 
@@ -1066,7 +1077,7 @@ export function addEquipmentToEditingReservation(barcodeInput) {
   updateEditReservationSummary();
 }
 
-export function addEquipmentToEditingByDescription(inputElement) {
+export async function addEquipmentToEditingByDescription(inputElement) {
   if (!inputElement) return;
   const rawValue = inputElement.value.trim();
   if (!rawValue) return;
@@ -1102,7 +1113,17 @@ export function addEquipmentToEditingByDescription(inputElement) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    try {
+      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+      if (ignoreId != null) params.set('ignore', String(ignoreId));
+      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix);
+    } catch (_) {
+      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    }
     return;
   }
 

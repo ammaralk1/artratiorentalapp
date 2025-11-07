@@ -1166,7 +1166,14 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
   }
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
-    const message = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+    let message = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+    try {
+      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+      if (codes.length) message += `: ${codes.join('، ')}`;
+    } catch (_) { /* ignore */ }
     if (!silent) showToast(message);
     return { success: false, message };
   }
@@ -1271,7 +1278,16 @@ function addDraftEquipmentByDescription(inputElement) {
   }
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
-    showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
+    try {
+      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
+      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
+      showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية') + suffix);
+    } catch (_) {
+      showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
+    }
     return;
   }
 

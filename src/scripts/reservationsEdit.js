@@ -882,12 +882,8 @@ export async function saveReservationChanges({
         const packageBarcode = pkgItem?.barcode ?? pkgItem?.normalizedBarcode ?? '';
         if (!packageBarcode) continue;
         const status = getEquipmentAvailabilityStatus(packageBarcode);
-        if (status === 'reserved') {
-          const code = normalizeBarcodeValue(packageBarcode);
-          if (!hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
-            continue;
-          }
-        }
+        // For 'reserved' we defer to the conflict aggregation below
+        if (status === 'reserved') continue;
 
         if (status !== 'available') {
           showToast(getEquipmentUnavailableMessage(status));
@@ -898,12 +894,8 @@ export async function saveReservationChanges({
     }
 
     const status = getEquipmentAvailabilityStatus(item.barcode);
-    if (status === 'reserved') {
-      const code = normalizeBarcodeValue(item.barcode);
-      if (!hasEquipmentConflictFn(code, start, end, ignoreReservationKey)) {
-        continue;
-      }
-    }
+    // For 'reserved' we defer to the conflict aggregation below
+    if (status === 'reserved') continue;
 
     if (status !== 'available') {
       showToast(getEquipmentUnavailableMessage(status));
