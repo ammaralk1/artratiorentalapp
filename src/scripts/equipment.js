@@ -635,7 +635,7 @@ export async function uploadEquipmentFromExcel(file) {
       }
 
       try {
-        const response = await apiRequest('/equipment/?bulk=1', {
+        const response = await apiRequest('/equipment/?bulk=1&update_existing=1&skip_duplicates=1', {
           method: "POST",
           body: payloads,
         });
@@ -653,9 +653,13 @@ export async function uploadEquipmentFromExcel(file) {
         renderEquipment();
 
         const metaCount = response?.meta?.count ?? created.length;
+        const skippedDup = Number(response?.meta?.skipped_duplicates || 0);
+        const updatedCount = Number(response?.meta?.updated || 0);
         const parts = [];
         if (metaCount) parts.push(`${metaCount} ✔️`);
-        if (skippedRows) parts.push(`${skippedRows} ⚠️`);
+        if (updatedCount) parts.push(`${updatedCount} 🔁`);
+        const totalSkipped = (skippedRows || 0) + skippedDup;
+        if (totalSkipped) parts.push(`${totalSkipped} ⚠️`);
 
         showToast(
           t("equipment.toast.uploadSuccess", "✅ تم رفع المعدات بنجاح") +

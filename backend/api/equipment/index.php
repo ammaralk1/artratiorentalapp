@@ -187,6 +187,10 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
     $prepared = [];
     $errors = [];
     $seenBarcodes = [];
+    $skipDuplicates = isset($_GET['skip_duplicates']) ? filter_var($_GET['skip_duplicates'], FILTER_VALIDATE_BOOLEAN) : false;
+    $updateExisting = isset($_GET['update_existing']) ? filter_var($_GET['update_existing'], FILTER_VALIDATE_BOOLEAN) : false;
+    $skippedDuplicates = 0;
+    $updates = [];
 
     foreach ($items as $index => $item) {
         if (!is_array($item)) {
@@ -202,6 +206,67 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         [$data, $itemErrors] = validateEquipmentPayload($item, false, $pdo);
 
         if ($itemErrors) {
+            $dupError = isset($itemErrors['barcode']) && $itemErrors['barcode'] === 'Barcode already exists';
+            if ($dupError && $updateExisting) {
+                // Prepare update for existing record
+                $barcodeValue = isset($item['barcode']) ? trim((string) $item['barcode']) : (isset($item['باركود']) ? trim((string) $item['باركود']) : null);
+                if ($barcodeValue === null || $barcodeValue === '') {
+                    $errors[] = [ 'index' => $index, 'errors' => $itemErrors ];
+                    continue;
+                }
+                $existingStmt = $pdo->prepare('SELECT * FROM equipment WHERE barcode = :barcode LIMIT 1');
+                $existingStmt->execute(['barcode' => $barcodeValue]);
+                $existing = $existingStmt->fetch();
+                if (!$existing) {
+                    // fallback
+                    $errors[] = [ 'index' => $index, 'errors' => $itemErrors ];
+                    continue;
+                }
+
+                // Validate as update against existing id
+                [$updateData, $updateErrors] = validateEquipmentPayload($item, true, $pdo, (int) $existing['id']);
+                if ($updateErrors) {
+                    $errors[] = [ 'index' => $index, 'errors' => $updateErrors ];
+                    continue;
+                }
+                // Never update status via bulk import
+                unset($updateData['status']);
+                // Never change barcode via this flow
+                unset($updateData['barcode']);
+                if (!$updateData) {
+                    $skippedDuplicates++;
+                    continue;
+                }
+                // Compute only changed fields
+                $changed = [];
+                foreach ($updateData as $col => $val) {
+                    $currentVal = $existing[$col] ?? null;
+                    // Normalize numeric comparisons
+                    if (is_numeric($val) && is_numeric($currentVal)) {
+                        if ((string) (0 + $val) !== (string) (0 + $currentVal)) {
+                            $changed[$col] = $val;
+                        }
+                    } else {
+                        if ((string) $val !== (string) $currentVal) {
+                            $changed[$col] = $val;
+                        }
+                    }
+                }
+
+                if ($changed) {
+                    $updates[] = [ 'id' => (int) $existing['id'], 'data' => $changed ];
+                } else {
+                    $skippedDuplicates++;
+                }
+                continue;
+            }
+
+            // If only duplication-related errors and skipDuplicates is enabled, silently skip
+            if ($skipDuplicates && $dupError) {
+                $skippedDuplicates++;
+                continue;
+            }
+
             $errors[] = [
                 'index' => $index,
                 'errors' => $itemErrors,
@@ -211,6 +276,10 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
 
         $barcode = $data['barcode'] ?? null;
         if ($barcode && isset($seenBarcodes[$barcode])) {
+            if ($skipDuplicates) {
+                $skippedDuplicates++;
+                continue;
+            }
             $errors[] = [
                 'index' => $index,
                 'errors' => [
@@ -227,13 +296,14 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         $prepared[] = $data;
     }
 
-    if ($errors) {
+    if ($errors && !$prepared) {
         respondError('Validation failed', 422, ['errors' => $errors]);
         return;
     }
 
-    if (!$prepared) {
-        respondError('No equipment payload provided', 422);
+    if (!$prepared && !$updates) {
+        // Nothing to insert or update
+        respond([], 201, ['count' => 0, 'updated' => 0, 'skipped_duplicates' => $skippedDuplicates]);
         return;
     }
 
@@ -244,10 +314,32 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
 
     try {
         $pdo->beginTransaction();
-        $statement = $pdo->prepare($sql);
-        foreach ($prepared as $data) {
-            $statement->execute($data);
-            $insertedIds[] = (int) $pdo->lastInsertId();
+        // Inserts
+        if ($prepared) {
+            $statement = $pdo->prepare($sql);
+            foreach ($prepared as $data) {
+                $statement->execute($data);
+                $insertedIds[] = (int) $pdo->lastInsertId();
+            }
+        }
+        // Updates
+        $updatedCount = 0;
+        if ($updates) {
+            foreach ($updates as $entry) {
+                $id = $entry['id'];
+                $data = $entry['data'];
+                if (!$data) continue;
+                $fields = [];
+                foreach ($data as $col => $_v) {
+                    $fields[] = sprintf('%s = :%s', $col, $col);
+                }
+                if ($fields) {
+                    $data['id'] = $id;
+                    $upd = $pdo->prepare('UPDATE equipment SET ' . implode(', ', $fields) . ' WHERE id = :id');
+                    $upd->execute($data);
+                    $updatedCount += $upd->rowCount() >= 0 ? 1 : 0; // count item as processed
+                }
+            }
         }
         $pdo->commit();
     } catch (Throwable $exception) {
@@ -264,16 +356,24 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
     }
 
     $placeholders = implode(',', array_fill(0, count($insertedIds), '?'));
-    $statement = $pdo->prepare('SELECT * FROM equipment WHERE id IN (' . $placeholders . ') ORDER BY id ASC');
-    $statement->execute($insertedIds);
-    $created = $statement->fetchAll();
+    $created = [];
+    if ($insertedIds) {
+        $statement = $pdo->prepare('SELECT * FROM equipment WHERE id IN (' . $placeholders . ') ORDER BY id ASC');
+        $statement->execute($insertedIds);
+        $created = $statement->fetchAll();
+    }
 
     logActivity($pdo, 'EQUIPMENT_BULK_CREATE', [
         'count' => count($insertedIds),
         'ids' => $insertedIds,
     ]);
 
-    respond($created, 201, ['count' => count($created)]);
+    respond($created, 201, [
+        'count' => count($created),
+        'updated' => isset($updatedCount) ? $updatedCount : 0,
+        'skipped_duplicates' => $skippedDuplicates,
+        'errors' => $errors ?: null,
+    ]);
 }
 
 function handleEquipmentUpdate(PDO $pdo): void
