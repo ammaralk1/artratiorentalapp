@@ -167,6 +167,7 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .cs-title { font-size:20px; font-weight:900; letter-spacing:1px; }
 
 table.cs-info { width:100%; border-collapse:collapse; table-layout:fixed; margin:4px 0 8px; }
+table.cs-info { border:1.5px solid #9ca3af; }
 table.cs-info td { border:1.5px solid #9ca3af; vertical-align:top; }
 table.cs-info > tbody > tr > td { width:33.3333%; }
 table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -181,6 +182,7 @@ table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; 
 
 /* Cast calls */
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
+table.cs-cast { border:1.5px solid #9ca3af; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 .cs-cast-title { background:#ffffff; color:#000; font-weight:800; text-align:center; }
 .cs-weather { text-align:center; font-weight:700; background:#ffffff; }
@@ -191,6 +193,19 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 /* Ensure schedule header is visible (to appear at top of schedule page) */
 .cs-schedule thead { display: table-header-group !important; }
 .cs-schedule thead tr, .cs-schedule thead th { display: table-cell !important; }
+/* Ensure schedule header columns line up exactly with body */
+.cs-schedule { table-layout: fixed; width: 100%; }
+.cs-schedule thead th:nth-child(1), .cs-schedule tbody td:nth-child(1) { width: 12%; text-align: center; }
+.cs-schedule thead th:nth-child(2), .cs-schedule tbody td:nth-child(2) { width: 8%; text-align: center; }
+.cs-schedule thead th:nth-child(3), .cs-schedule tbody td:nth-child(3) { width: 22%; }
+.cs-schedule thead th:nth-child(4), .cs-schedule tbody td:nth-child(4) { width: 12%; }
+.cs-schedule thead th:nth-child(5), .cs-schedule tbody td:nth-child(5) { width: 12%; }
+.cs-schedule thead th:nth-child(6), .cs-schedule tbody td:nth-child(6) { width: 8%; text-align: center; }
+.cs-schedule thead th:nth-child(7), .cs-schedule tbody td:nth-child(7) { width: 10%; }
+.cs-schedule thead th:nth-child(8), .cs-schedule tbody td:nth-child(8) { width: 8%; }
+.cs-schedule thead th:nth-child(9), .cs-schedule tbody td:nth-child(9) { width: 8%; }
+/* Hide any accidental empty header cell (prevents stray dark header block) */
+.cs-schedule thead th:empty { display: none; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */
@@ -214,6 +229,10 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table th,
 #templates-a4-root[data-render-context="export"] .cs-wrap,
 #templates-a4-root[data-render-context="export"] .cs-logo { background-color:#ffffff !important; color:#000 !important; }
+/* Ensure bottom outlines are closed on first page tables */
+table.cs-info tbody tr:last-child td,
+table.cs-cast tbody tr:last-child td,
+.cs-schedule tbody tr:last-child td { border-bottom: 1.5px solid #9ca3af !important; }
 
 /* Force white backgrounds for all Call Sheet tables in preview too */
 #templates-a4-root .callsheet-v1 table th,

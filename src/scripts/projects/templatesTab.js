@@ -599,15 +599,15 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
   // Restore header so it appears at the top of the schedule page
   sched.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Time (Duration)' }),
-    el('th', { text: 'Shot #' }),
-    el('th', { text: 'Description' }),
-    el('th', { text: 'Location' }),
-    el('th', { text: 'MOVEMENT' }),
-    el('th', { text: 'VO' }),
-    el('th', { text: 'Cast' }),
-    el('th', { text: 'Action Props' }),
-    el('th', { text: 'Notes' })
+    el('th', { text: 'Time (Duration)', style: 'width:12%' }),
+    el('th', { text: 'Shot #', style: 'width:8%; text-align:center' }),
+    el('th', { text: 'Description', style: 'width:22%' }),
+    el('th', { text: 'Location', style: 'width:12%' }),
+    el('th', { text: 'MOVEMENT', style: 'width:12%' }),
+    el('th', { text: 'VO', style: 'width:8%; text-align:center' }),
+    el('th', { text: 'Cast', style: 'width:10%' }),
+    el('th', { text: 'Action Props', style: 'width:8%' }),
+    el('th', { text: 'Notes', style: 'width:8%' })
   ])]));
   const sb = el('tbody');
   // Pre-seeded milestone rows (kept) below the header
