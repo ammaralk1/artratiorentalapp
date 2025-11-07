@@ -1166,16 +1166,23 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
   }
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
-    let message = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
-    try {
-      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-      if (codes.length) message += `: ${codes.join('، ')}`;
-    } catch (_) { /* ignore */ }
-    if (!silent) showToast(message);
-    return { success: false, message };
+    const base = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+    if (!silent) {
+      try {
+        const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+        apiRequest(`/reservations/availability.php?${params.toString()}`)
+          .then((res) => {
+            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+            const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+            const msg = codes.length ? `${base}: ${codes.join('، ')}` : base;
+            showToast(msg);
+          })
+          .catch(() => showToast(base));
+      } catch (_) {
+        showToast(base);
+      }
+    }
+    return { success: false, message: base };
   }
 
   const item = findEquipmentByBarcode(normalizedCode);
@@ -1278,15 +1285,19 @@ function addDraftEquipmentByDescription(inputElement) {
   }
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
+    const base = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
     try {
       const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية') + suffix);
+      apiRequest(`/reservations/availability.php?${params.toString()}`)
+        .then((res) => {
+          const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+          const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+          const msg = codes.length ? `${base}: ${codes.join('، ')}` : base;
+          showToast(msg);
+        })
+        .catch(() => showToast(base));
     } catch (_) {
-      showToast(t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية'));
+      showToast(base);
     }
     return;
   }
