@@ -20,8 +20,19 @@ export class ApiError extends Error {
 export function getApiBase() {
   const envBase = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL;
   const globalBase = typeof window !== 'undefined' ? window.APP_API_BASE : null;
-  const base = envBase || globalBase || DEFAULT_API_BASE;
-  return String(base).replace(/\/$/, '');
+
+  // If env base points to localhost but we are on a real host, ignore it.
+  let preferred = envBase || globalBase || DEFAULT_API_BASE;
+  try {
+    const isLocalEnv = typeof preferred === 'string' && /^(https?:)?\/\/(localhost|127\.|\[::1\])\b/i.test(preferred);
+    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '[::1]');
+    if (isLocalEnv && !isLocalHost) {
+      // Use same-origin backend path in production even if bundle has a dev env var baked in
+      preferred = DEFAULT_API_BASE;
+    }
+  } catch (_) { /* ignore */ }
+
+  return String(preferred).replace(/\/$/, '');
 }
 
 export async function apiRequest(path, { method = 'GET', headers = {}, body, signal, credentials = 'include', timeout = DEFAULT_TIMEOUT_MS } = {}) {
