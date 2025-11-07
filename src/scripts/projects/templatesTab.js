@@ -119,6 +119,56 @@ function ensureTemplatesZoomUI() {
   else { setTemplatesPreviewZoom(readTplZoomPref(), { silent: false }); }
 }
 
+// Secondary logo controls UI in the actions row (URL + size + reset)
+function ensureSecondaryLogoControls(type = 'expenses') {
+  const row = document.getElementById('templates-actions');
+  if (!row) return;
+  // Only show for Call Sheet
+  const existing = document.getElementById('tpl-logo2-controls');
+  if (type !== 'callsheet') { if (existing) existing.remove(); return; }
+  if (existing) return;
+  const box = document.createElement('div');
+  box.id = 'tpl-logo2-controls';
+  box.style.display = 'inline-flex';
+  box.style.gap = '6px';
+  box.style.alignItems = 'center';
+  box.innerHTML = `
+    <input type="url" id="tpl-logo2-url" class="form-control" placeholder="🔗 رابط لوغو إضافي" style="min-width:220px;max-width:320px;">
+    <input type="range" id="tpl-logo2-size" min="24" max="320" step="1" title="حجم اللوغو">
+    <button type="button" class="btn btn-outline" id="tpl-logo2-apply">تطبيق</button>
+    <button type="button" class="btn btn-outline" id="tpl-logo2-reset">إعادة تموضع</button>
+    <button type="button" class="btn btn-outline btn-danger" id="tpl-logo2-clear">حذف</button>
+  `;
+  // Insert before the actions dropdown to keep layout tight
+  const dd = document.getElementById('templates-actions-dd');
+  row.insertBefore(box, dd || row.firstChild);
+
+  // Seed values
+  try {
+    const st = readSecondaryLogoState();
+    const urlEl = document.getElementById('tpl-logo2-url');
+    const szEl = document.getElementById('tpl-logo2-size');
+    if (urlEl && st.url) urlEl.value = st.url;
+    if (szEl) szEl.value = String(st.w || 96);
+  } catch(_) {}
+
+  // Bind actions
+  document.getElementById('tpl-logo2-apply')?.addEventListener('click', () => {
+    const url = document.getElementById('tpl-logo2-url')?.value?.trim() || '';
+    writeSecondaryLogoState({ url });
+    // Re-render preview to apply
+    try { renderTemplatesPreview(); } catch(_) {}
+  });
+  document.getElementById('tpl-logo2-clear')?.addEventListener('click', () => {
+    writeSecondaryLogoState({ url: '', w: 0, x: 0, y: 0 });
+    try { renderTemplatesPreview(); } catch(_) {}
+  });
+  document.getElementById('tpl-logo2-reset')?.addEventListener('click', () => {
+    writeSecondaryLogoState({ x: 0, y: 0 });
+    try { renderTemplatesPreview(); } catch(_) {}
+  });
+}
+
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -519,14 +569,32 @@ function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Header (logos + title + date)
   const hdr = el('div', { class: 'cs-header' });
-  hdr.appendChild(el('div', { class: 'cs-logo cs-logo--left' }, [ el('div', { 'data-editable': 'true', contenteditable: 'true', text: 'Logo' }) ]));
+  // Left brand logo (Art Ratio) – always visible
+  const leftBrandLogo = el('div', { class: 'cs-logo cs-logo--left' }, [
+    el('img', { src: (logoUrl || COMPANY_INFO.logoUrl || ''), alt: 'Art Ratio Logo', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' })
+  ]);
+  hdr.appendChild(leftBrandLogo);
   const titleBox = el('div', { class: 'cs-titlebox' }, [
     el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.clientCompany || project?.title || 'WKK.') }),
     el('div', { class: 'cs-date', 'data-editable': 'true', contenteditable: 'true', text: (res?.start ? new Date(res.start).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) }),
     el('div', { class: 'cs-title', text: 'CALL SHEET' })
   ]);
   hdr.appendChild(titleBox);
-  hdr.appendChild(el('div', { class: 'cs-logo cs-logo--right' }, [ el('div', { 'data-editable': 'true', contenteditable: 'true', text: 'Logo' }) ]));
+
+  // Secondary (client) logo with draggable position and adjustable width
+  const secState = readSecondaryLogoState();
+  const rightLogoWrap = el('div', { class: 'cs-logo cs-logo--right', 'data-empty': secState.url ? '0' : '1' });
+  const rightImg = el('img', { alt: 'Client Logo', draggable: 'false', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' });
+  if (secState.url) rightImg.setAttribute('src', secState.url);
+  // Apply saved size/position
+  try {
+    if (secState.w) rightImg.style.width = `${Math.max(24, Math.min(320, Number(secState.w))) }px`;
+    const x = Number(secState.x || 0) || 0; const y = Number(secState.y || 0) || 0;
+    if (x || y) rightImg.style.transform = `translate(${x}px, ${y}px)`;
+  } catch(_) {}
+  rightLogoWrap.appendChild(rightImg);
+  rightLogoWrap.appendChild(el('div', { class: 'cs-logo__resize', title: 'resize' }));
+  hdr.appendChild(rightLogoWrap);
   wrap.appendChild(hdr);
 
   // Info grid (left roles + center notes/locations + right timings)
@@ -639,7 +707,70 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   // Remove WRAP footer per request
 
   inner.appendChild(wrap);
+  // Enable drag + live width updates for secondary logo in preview only
+  try { enableSecondaryLogoInteractions(rightLogoWrap, rightImg); } catch(_) {}
   return root;
+}
+
+// ===== Secondary logo state (persisted in localStorage) =====
+function readSecondaryLogoState() {
+  try {
+    return {
+      url: localStorage.getItem('templates.callsheet.logo2.url') || '',
+      w: Number(localStorage.getItem('templates.callsheet.logo2.w') || '0') || 0,
+      x: Number(localStorage.getItem('templates.callsheet.logo2.x') || '0') || 0,
+      y: Number(localStorage.getItem('templates.callsheet.logo2.y') || '0') || 0,
+    };
+  } catch(_) { return { url: '', w: 0, x: 0, y: 0 }; }
+}
+function writeSecondaryLogoState(patch = {}) {
+  try {
+    const cur = readSecondaryLogoState();
+    const nx = { ...cur, ...patch };
+    if (typeof nx.url === 'string') localStorage.setItem('templates.callsheet.logo2.url', nx.url);
+    if (Number.isFinite(nx.w)) localStorage.setItem('templates.callsheet.logo2.w', String(nx.w));
+    if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo2.x', String(nx.x));
+    if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo2.y', String(nx.y));
+  } catch(_) {}
+}
+
+function enableSecondaryLogoInteractions(wrap, img) {
+  if (!wrap || !img) return;
+  // Drag to move (translate) within the logo cell
+  let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
+  const readMatrix = () => {
+    try {
+      const st = getComputedStyle(img).transform;
+      if (!st || st === 'none') return { x: 0, y: 0 };
+      const m = new DOMMatrix(st); return { x: m.m41 || 0, y: m.m42 || 0 };
+    } catch(_) { return { x: 0, y: 0 }; }
+  };
+  const onDown = (ev) => {
+    dragging = true; wrap.setAttribute('data-empty', '0');
+    const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY;
+    ev.preventDefault();
+  };
+  const onMove = (ev) => {
+    if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy;
+    const nx = Math.round(ox + dx); const ny = Math.round(oy + dy);
+    img.style.transform = `translate(${nx}px, ${ny}px)`;
+  };
+  const onUp = () => {
+    if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y });
+  };
+  img.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove, { passive: true });
+  window.addEventListener('pointerup', onUp, { passive: true });
+
+  // Listen to size slider (if present)
+  try {
+    const slider = document.getElementById('tpl-logo2-size');
+    if (slider) {
+      const apply = (v) => { const w = Math.max(24, Math.min(320, Number(v)||0)); img.style.width = `${w}px`; writeSecondaryLogoState({ w }); };
+      slider.addEventListener('input', (e) => apply(e.target.value));
+      const st = readSecondaryLogoState(); if (st.w) { slider.value = String(st.w); apply(st.w); }
+    }
+  } catch(_) {}
 }
 
 function buildShotListPage(project, reservations, opts = {}) {
@@ -708,6 +839,7 @@ function renderTemplatesPreview() {
   const reservations = getSelectedReservations(project.id);
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const hf = readHeaderFooterOptions();
+  ensureSecondaryLogoControls(type);
   let pageRoot = null;
   if (type === 'callsheet') pageRoot = buildCallSheetPage(project, reservations, hf);
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);

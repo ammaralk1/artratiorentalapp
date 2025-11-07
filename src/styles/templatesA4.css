@@ -160,7 +160,14 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .callsheet-v1 { display:block; }
 .callsheet-v1, .callsheet-v1 * { background:#ffffff !important; background-image:none !important; box-shadow:none !important; }
 .cs-header { display:grid; grid-template-columns: 1fr 2fr 1fr; align-items:center; gap:8px; margin-bottom:6px; }
-.cs-logo { height:48px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; }
+.cs-logo { min-height:48px; height:auto; padding:4px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; border-radius:6px; background:#ffffff; position:relative; overflow:visible; }
+.cs-logo img { max-width:100%; height:auto; display:block; }
+.cs-logo--left img { max-height:64px; }
+.cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; max-height:96px; }
+.cs-logo--right[data-empty="1"] { opacity:0.6; }
+/* Optional visual handle if we add resize UI later */
+.cs-logo__resize { position:absolute; right:4px; bottom:4px; width:10px; height:10px; background:#334155; border-radius:2px; cursor:nwse-resize; display:none; }
+.cs-logo--right:hover .cs-logo__resize { display:block; }
 .cs-titlebox { text-align:center; }
 .cs-brand { font-size:38px; font-weight:800; letter-spacing:1px; }
 .cs-date { font-size:16px; font-weight:700; margin-top:2px; }
