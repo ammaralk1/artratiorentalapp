@@ -245,10 +245,15 @@ export async function getCurrentUser({ refresh = false } = {}) {
     setCurrentUser(response?.data ?? null);
     return currentUser;
   } catch (error) {
+    // If unauthorized, propagate so callers may redirect
     if (error instanceof ApiError && error.status === 401) {
       setCurrentUser(null);
+      throw error;
     }
-    throw error;
+    // For network/timeouts or non-401 API errors, keep the current user
+    // and allow the UI to continue instead of bouncing back to login.
+    console.warn('⚠️ getCurrentUser: non-auth error, preserving session', error);
+    return currentUser;
   }
 }
 
@@ -276,11 +281,9 @@ export function checkAuth({ redirect = true } = {}) {
         return null;
       }
 
-      console.error('❌ خطأ أثناء التحقق من الجلسة', error);
-      if (redirect) {
-        window.location.href = 'login.html';
-      }
-      return null;
+      // Network / server issues: do NOT redirect; keep current page
+      console.warn('⚠️ checkAuth: network/server issue, skipping redirect', error);
+      return currentUser;
     });
 }
 
