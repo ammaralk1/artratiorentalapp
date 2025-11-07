@@ -146,7 +146,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
           <div class="tile-body">
           <div class="tile-row">
             <span class="tile-label">${labels.client}</span>
-            <span class="tile-value">${customer?.customerName || unknownCustomer}</span>
+            <span class="tile-value">${customer?.customerName || reservation.customerName || unknownCustomer}</span>
           </div>
           <div class="tile-row">
             <span class="tile-label">${labels.project}</span>

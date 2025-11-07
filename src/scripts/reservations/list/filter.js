@@ -128,7 +128,7 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
     }
 
     if (searchCustomerNameTerm) {
-      const customerNameText = normalizeText(customer?.customerName || '');
+      const customerNameText = normalizeText(customer?.customerName || reservation.customerName || '');
       if (!customerNameText.includes(searchCustomerNameTerm)) return false;
     }
 
@@ -161,7 +161,7 @@ export function filterReservationEntries({ reservations = [], filters = {}, cust
 
     const haystack = normalizeText([
       reservation.reservationId,
-      customer?.customerName,
+      customer?.customerName || reservation.customerName,
       reservation.notes,
       itemsText,
       techniciansText,

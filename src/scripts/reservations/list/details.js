@@ -791,7 +791,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   }
 
   const infoRows = [];
-  infoRows.push(renderInfoRow('👤', customerLabel, customer?.customerName || unknownCustomer));
+  infoRows.push(renderInfoRow('👤', customerLabel, customer?.customerName || reservation.customerName || unknownCustomer));
   infoRows.push(renderInfoRow('📞', contactLabel, customer?.phone || '—'));
   infoRows.push(renderInfoRow('🗓️', startLabel, startDisplay));
   infoRows.push(renderInfoRow('🗓️', endLabel, endDisplay));
