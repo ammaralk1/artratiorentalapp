@@ -597,7 +597,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   try {
     const lstate = readPrimaryLogoState();
     const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1)));
-    leftImg.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    leftImg.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
   } catch(_) {}
   leftBrandLogo.appendChild(leftImg);
   hdr.appendChild(leftBrandLogo);
@@ -617,7 +617,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   // Apply saved size/position
   try {
     const x = Number(secState.x || 0) || 0; const y = Number(secState.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(secState.s || 1)));
-    rightImg.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    rightImg.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
   } catch(_) {}
   rightLogoWrap.appendChild(rightImg);
   rightLogoWrap.appendChild(el('div', { class: 'cs-logo__resize', title: 'resize' }));
@@ -785,7 +785,7 @@ function enableSecondaryLogoInteractions(wrap, img) {
     if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy;
     const nx = Math.round(ox + dx); const ny = Math.round(oy + dy);
     const s = Math.max(0.3, Math.min(3, Number(readSecondaryLogoState().s || 1)));
-    img.style.transform = `translate(${nx}px, ${ny}px) scale(${s})`;
+    img.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`;
   };
   const onUp = () => {
     if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y });
@@ -799,7 +799,7 @@ function enableSecondaryLogoInteractions(wrap, img) {
   try {
     const slider = document.getElementById('tpl-logo2-size');
     if (slider) {
-      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `translate(${m.x}px, ${m.y}px) scale(${s})`; writeSecondaryLogoState({ s }); };
+      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writeSecondaryLogoState({ s }); };
       slider.addEventListener('input', (e) => apply(e.target.value));
       slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
       const st = readSecondaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
@@ -833,7 +833,7 @@ function enablePrimaryLogoInteractions(wrap, img) {
     try { const st = getComputedStyle(img).transform; if (!st || st === 'none') return { x: 0, y: 0 }; const m = new DOMMatrix(st); return { x: m.m41 || 0, y: m.m42 || 0 }; } catch(_) { return { x: 0, y: 0 }; }
   };
   const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; ev.preventDefault(); };
-  const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); img.style.transform = `translate(${nx}px, ${ny}px) scale(${s})`; };
+  const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); img.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
   const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writePrimaryLogoState({ x: m.x, y: m.y }); };
   img.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -842,12 +842,12 @@ function enablePrimaryLogoInteractions(wrap, img) {
   try {
     const slider = document.getElementById('tpl-logo1-size');
     if (slider) {
-      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `translate(${m.x}px, ${m.y}px) scale(${s})`; writePrimaryLogoState({ s }); };
+      const apply = (v) => { const s = Math.max(0.3, Math.min(3, Number(v)||1)); const m = readMatrix(); img.style.transform = `scale(${s}) translate(${m.x}px, ${m.y}px)`; writePrimaryLogoState({ s }); };
       slider.addEventListener('input', (e) => apply(e.target.value));
       slider.addEventListener('change', () => { try { pushHistoryDebounced(); } catch(_) {} });
       const st = readPrimaryLogoState(); slider.value = String(st.s || 1); apply(slider.value);
     }
-    document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = 'translate(0px, 0px) scale(' + (readPrimaryLogoState().s||1) + ')'; } catch(_) {} });
+    document.getElementById('tpl-logo1-reset')?.addEventListener('click', () => { const s = (readPrimaryLogoState().s||1); writePrimaryLogoState({ x: 0, y: 0 }); try { img.style.transform = `scale(${s}) translate(0px, 0px)`; } catch(_) {} });
   } catch(_) {}
 }
 
