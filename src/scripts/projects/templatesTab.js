@@ -704,25 +704,21 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
   // Define explicit column widths via colgroup to guarantee alignment (12 cols)
-  const cols = [6, 10, 22, 9, 7, 8, 10, 4, 4, 5, 7, 8];
+  // Shot #, Time, Description, Movement, Rig, Lens, Location, I/E, D/N, Sound, Cast, Notes/Props
+  const cols = [2.5, 4, 25, 5, 5, 4, 6, 2, 2, 10, 6, 15];
   const cg = el('colgroup');
   cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` })));
   sched.appendChild(cg);
   // Restore header so it appears at the top of the schedule page
-  sched.appendChild(el('thead', {}, [el('tr', {}, [
-    el('th', { text: 'Shot #' }),
-    el('th', { text: 'Time (Duration)' }),
-    el('th', { text: 'Description' }),
-    el('th', { text: 'Movement' }),
-    el('th', { text: 'Rig' }),
-    el('th', { text: 'Lens' }),
-    el('th', { text: 'Location' }),
-    el('th', { text: 'I/E' }),
-    el('th', { text: 'D/N' }),
-    el('th', { text: 'Sound' }),
-    el('th', { text: 'Cast' }),
-    el('th', { text: 'Notes / Props' })
-  ])]));
+  // Also apply explicit widths on TH to mirror colgroup (some engines require it with table-layout:fixed)
+  const headerLabels = [
+    'Shot #','Time (Duration)','Description','Movement','Rig','Lens','Location','I/E','D/N','Sound','Cast','Notes / Props'
+  ];
+  const thead = el('thead');
+  const trh = el('tr');
+  headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, style: `width:${cols[i]}%` })));
+  thead.appendChild(trh);
+  sched.appendChild(thead);
   // Final guard: if any extra header cells slip in, remove them
   try {
     const headRow = sched.querySelector('thead tr');
@@ -2546,12 +2542,15 @@ function paginateGenericTplTables() {
     const table = inner.querySelector('table.tpl-table');
     if (!table || table.getAttribute('data-split-done') === '1') return;
     const thead = table.querySelector('thead');
+    // Preserve exact column widths if source table defines a <colgroup>
+    const colTpl = table.querySelector('colgroup');
     const rows = Array.from(table.querySelectorAll('tbody > tr'));
     if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
 
     const makeTable = () => {
       const t = document.createElement('table');
       t.className = table.className;
+      if (colTpl) t.appendChild(colTpl.cloneNode(true));
       const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
       t.appendChild(hd);
       t.appendChild(document.createElement('tbody'));

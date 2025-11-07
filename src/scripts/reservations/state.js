@@ -846,6 +846,51 @@ export function getTechnicianConflictingReservationCodes(technicianId, startIso,
   return Array.from(new Set(codes));
 }
 
+export function getEquipmentConflictingReservationCodes(barcodes = [], startIso, endIso, ignoreReservationId = null) {
+  const list = Array.isArray(barcodes) ? barcodes : [barcodes];
+  const normalized = list
+    .map((b) => normalizeBarcodeValue(b))
+    .filter(Boolean);
+  if (!normalized.length || !startIso || !endIso) return [];
+
+  const start = parseDateFlexible(startIso);
+  const end = parseDateFlexible(endIso);
+  if (!start || !end || start >= end) return [];
+
+  const { reservations = [] } = loadData();
+  const ignoreIdentifiers = buildReservationIdentifierSet(ignoreReservationId);
+  const codes = [];
+
+  reservations.forEach((reservation) => {
+    if (!reservation?.start || !reservation?.end) return;
+    if (shouldIgnoreReservationByIdentifiers(reservation, ignoreIdentifiers)) return;
+
+    const statusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    if (statusValue === 'cancelled' || statusValue === 'canceled') return;
+
+    const resStart = parseDateFlexible(reservation.start);
+    const resEnd = parseDateFlexible(reservation.end);
+    if (!resStart || !resEnd) return;
+    if (!(resStart < end && resEnd > start)) return;
+
+    // If reservation contains any of the target barcodes, collect its code/id
+    for (const b of normalized) {
+      if (doesReservationContainBarcode(reservation, b)) {
+        const code = reservation.reservationCode || reservation.reservation_code || null;
+        if (code) {
+          codes.push(String(code));
+        } else if (reservation.id != null || reservation.reservationId != null) {
+          const rid = reservation.id ?? reservation.reservationId;
+          codes.push(`#${String(rid)}`);
+        }
+        break;
+      }
+    }
+  });
+
+  return Array.from(new Set(codes));
+}
+
 export function resetState() {
   selectedItems = [];
   resetCachedData();

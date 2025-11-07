@@ -18,7 +18,7 @@ import {
 import { ensureCompanyShareEnabled, getEquipmentUnavailableMessage } from './reservations/createForm.js';
 import { setupEditEquipmentDescriptionInput } from './reservations/formUtils.js';
 import { renderEquipment, syncEquipmentStatuses } from './equipment.js';
-import { getTechnicianConflictingReservationCodes } from './reservations/state.js';
+import { getTechnicianConflictingReservationCodes, getEquipmentConflictingReservationCodes } from './reservations/state.js';
 import { apiRequest } from './apiClient.js';
 import { syncTechniciansStatuses } from './technicians.js';
 import {
@@ -912,6 +912,7 @@ export async function saveReservationChanges({
       const packageId = item.packageId ?? item.package_id ?? null;
       const packageName = item.desc || item.packageName || t('reservations.create.packages.genericName', 'الحزمة');
       if (packageId && hasPackageConflictFn(packageId, start, end, ignoreReservationKey)) {
+        let codes = [];
         try {
           const params = new URLSearchParams();
           params.set('type', 'package');
@@ -921,12 +922,16 @@ export async function saveReservationChanges({
           if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
           const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
           const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-          const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-          const suffix = codes.length ? ` (${codes.join('، ')})` : '';
-          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+          codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
         } catch (_) {
-          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
+          // Fallback to local scan across package items
+          const pkgBarcodes = Array.isArray(item?.packageItems)
+            ? item.packageItems.map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean)
+            : [];
+          codes = getEquipmentConflictingReservationCodes(pkgBarcodes, start, end, ignoreReservationKey);
         }
+        const suffix = codes.length ? ` (${codes.join('، ')})` : '';
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
         return;
       }
 
@@ -938,6 +943,7 @@ export async function saveReservationChanges({
         const total = codes.length;
         const conflictsCount = codes.filter((code) => hasEquipmentConflictFn(code, start, end, ignoreReservationKey)).length;
         if (total > 0 && conflictsCount >= total) {
+          let rcodes = [];
           try {
             const params = new URLSearchParams();
             params.set('type', 'package');
@@ -947,12 +953,13 @@ export async function saveReservationChanges({
             if (ignoreReservationKey != null) params.set('ignore', String(ignoreReservationKey));
             const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
             const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-            const rcodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-            const suffix = rcodes.length ? ` (${rcodes.join('، ')})` : '';
-            showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+            rcodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
           } catch (_) {
-            showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
+            const pkgBarcodes = (item.packageItems || []).map((pi) => normalizeBarcodeValue(pi?.barcode ?? pi?.normalizedBarcode ?? '')).filter(Boolean);
+            rcodes = getEquipmentConflictingReservationCodes(pkgBarcodes, start, end, ignoreReservationKey);
           }
+          const suffix = rcodes.length ? ` (${rcodes.join('، ')})` : '';
+          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
           return;
         }
       }
