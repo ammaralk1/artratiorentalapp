@@ -280,8 +280,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   padding: 4px 3px !important;
   hyphens: auto;
 }
-.callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; }
-.callsheet-v1 .cs-crew .cs-crew-title { font-weight:800; text-align:center; }
+.callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; font-size: 11px; }
+.callsheet-v1 .cs-crew .cs-crew-title { font-weight:900; text-align:center; font-size: 14px; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }

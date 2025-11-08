@@ -228,8 +228,27 @@ function ensureLogoControls(type = 'expenses') {
   });
   document.getElementById('tpl-logo2-clear')?.addEventListener('click', () => {
     writeSecondaryLogoState({ url: '', w: 0, x: 0, y: 0 });
-    // Clear autosave so old logo URL doesn't get restored
-    try { localStorage.removeItem(getTemplatesContextKey()); } catch(_) {}
+    // Update local autosave snapshot/HTML instead of wiping all data (to keep shading etc.)
+    try {
+      const key = getTemplatesContextKey();
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed) {
+          if (parsed.snap && parsed.snap.r) { parsed.snap.r.url = ''; }
+          if (parsed.html && typeof parsed.html === 'string') {
+            try {
+              const tmp = document.createElement('div'); tmp.innerHTML = parsed.html;
+              const root = tmp.firstElementChild;
+              const img = root && root.querySelector('.cs-logo--right img');
+              if (img) { img.removeAttribute('src'); const wrap = img.closest('.cs-logo--right'); if (wrap) wrap.setAttribute('data-empty','1'); }
+              parsed.html = root ? root.outerHTML : parsed.html;
+            } catch(_) {}
+          }
+          localStorage.setItem(key, JSON.stringify(parsed));
+        }
+      }
+    } catch(_) {}
     try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
     try { renderTemplatesPreview(); } catch(_) {}
   });
@@ -470,7 +489,7 @@ function ensureCellToolbar() {
 
   const place = (cell) => {
     if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; return; }
-    const sched = cell.closest('table.cs-schedule');
+    const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew');
     const cast = cell.closest('table.cs-cast');
     if (!sched && !cast) { bar.style.display = 'none'; bar.__targetCell = null; return; }
     // Toggle groups
@@ -3308,7 +3327,19 @@ function pruneEmptyA4Pages() {
         pg.parentElement?.removeChild(pg);
       }
     });
+    // Deduplicate Crew tables if any duplicates slipped in
+    try { dedupeCrewTables(); } catch(_) {}
   } catch (_) {}
+}
+
+function dedupeCrewTables() {
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return;
+  const crews = Array.from(root.querySelectorAll('table.cs-crew'));
+  if (crews.length <= 1) return;
+  // Keep the first non-empty table, remove the rest
+  let keep = crews.find((t) => (t.tBodies?.[0]?.children?.length || 0) > 0) || crews[0];
+  crews.forEach((t) => { if (t !== keep) { try { t.parentElement?.removeChild(t); } catch(_) {} } });
 }
 
 // bindPreviewAdjustControls removed
