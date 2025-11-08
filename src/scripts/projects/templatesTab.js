@@ -373,7 +373,10 @@ function ensureCellToolbar() {
         deleteRow(tr);
       };
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
-      const updateAfter = () => { try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
+      const updateAfter = () => {
+        try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
+        try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch(_) {}
+      };
       const doRowFull = () => {
         const table = sched || cell.closest('table');
         if (!table) return;
@@ -3207,6 +3210,24 @@ function paginateGenericTplTables() {
   });
 }
 
+// Remove empty A4 pages that no longer contain any meaningful content
+function pruneEmptyA4Pages() {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root) return;
+    const pages = Array.from(root.querySelectorAll('.a4-page'));
+    pages.forEach((pg) => {
+      const hasTop = !!pg.querySelector('#expenses-top-sheet');
+      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
+      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
+        pg.parentElement?.removeChild(pg);
+      }
+    });
+  } catch (_) {}
+}
+
 // bindPreviewAdjustControls removed
 
 function handleTableActionClick(e) {
@@ -3509,7 +3530,7 @@ function handleTableKeydown(e) {
         recomputeExpensesSubtotals();
       }
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
     return;
   }
 
@@ -3520,7 +3541,7 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotals();
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
     return;
   }
 
@@ -3531,7 +3552,7 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotals();
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
   }
 }
 
