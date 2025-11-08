@@ -3472,8 +3472,6 @@ function paginateGenericTplTables() {
 // Remove empty A4 pages that no longer contain any meaningful content
 function pruneEmptyA4Pages() {
   try {
-    // Avoid pruning while the user is actively editing to prevent newly added blank rows from vanishing
-    try { if (typeof TPL_EDITING !== 'undefined' && TPL_EDITING) return; } catch(_) {}
     const root = document.getElementById('templates-a4-root');
     if (!root) return;
     const pages = Array.from(root.querySelectorAll('.a4-page'));
@@ -3490,7 +3488,9 @@ function pruneEmptyA4Pages() {
       });
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
       if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
-        pg.parentElement?.removeChild(pg);
+        // Keep at least one page present, remove the rest
+        const total = root.querySelectorAll('.a4-page').length;
+        if (total > 1) pg.parentElement?.removeChild(pg);
       }
     });
     // Deduplicate Crew tables if any duplicates slipped in
