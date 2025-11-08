@@ -99,6 +99,7 @@ function scheduleToastRemoval(toast, duration) {
  *  - showToast('Saved', 'error', 6000);
  */
 export function showToast(message, typeOrDuration = 3000, maybeDuration) {
+  try { console.debug('[toast]', message); } catch (_) {}
   const container = ensureToastContainer();
   const toast = document.createElement('div');
   toast.className = 'toast-message';
@@ -147,7 +148,9 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
     try {
       const rect = toast.getBoundingClientRect();
       const offscreen = rect.height < 8 || rect.width < 8 || rect.top < -10 || rect.top > (window.innerHeight + 10);
-      if (offscreen) {
+      const style = window.getComputedStyle(toast);
+      const invisible = style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || '1') < 0.05;
+      if (offscreen || invisible) {
         toast.style.position = 'fixed';
         toast.style.top = '20px';
         toast.style.bottom = 'auto';
@@ -159,6 +162,19 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
       }
     } catch (_) { /* ignore */ }
   }, 30);
+
+  // Final fallback: if لا يزال مخفياً لأي سبب، أظهر تنبيه بسيط لتجنب ضياع الرسالة
+  setTimeout(() => {
+    try {
+      const rect2 = toast.getBoundingClientRect();
+      const style2 = window.getComputedStyle(toast);
+      const invisible2 = style2.display === 'none' || style2.visibility === 'hidden' || Number(style2.opacity || '1') < 0.05;
+      const offscreen2 = rect2.height < 8 || rect2.width < 8 || rect2.top < -10 || rect2.top > (window.innerHeight + 10);
+      if (invisible2 || offscreen2) {
+        alert(message);
+      }
+    } catch (_) { /* ignore */ }
+  }, 450);
   const { hide } = scheduleToastRemoval(toast, duration);
   toast.addEventListener('click', hide);
 }
