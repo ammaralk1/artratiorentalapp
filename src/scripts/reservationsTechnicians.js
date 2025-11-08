@@ -562,7 +562,7 @@ function handleAutocompleteSelection(input, assignmentId) {
           : [];
         const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
         const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
-        showToast(`${base}${suffix}`, 'warning', -1);
+        showToast(`${base}${suffix}`, 'warning', 6000);
       } catch (_) {
         showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'), 'warning', -1);
       }
@@ -744,7 +744,7 @@ function handleTechnicianSelectionChange(assignmentId, technicianIdValue) {
       const codes = getTechnicianConflictingReservationCodes(String(technicianIdValue), start, end, ignoreReservationId);
       const base = t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد');
       const suffix = codes && codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(`${base}${suffix}`, 'warning', -1);
+      showToast(`${base}${suffix}`, 'warning', 6000);
     } catch (_) {
       showToast(t('technicians.picker.optionConflict', '⚠️ هذا العضو لديه تعارض في التاريخ/الوقت المحدد'), 'warning', -1);
     }

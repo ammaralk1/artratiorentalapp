@@ -2374,7 +2374,7 @@ async function handleReservationSubmit() {
     }
     const list = annotatedList
       || conflictingEquipment.map((e) => e.label).filter(Boolean).map(String).join('، ');
-    showToast(`${prefix}: ${list}`, 'warning', -1);
+    showToast(`${prefix}: ${list}`, 'warning', 6000);
     return;
   }
 
@@ -2401,7 +2401,7 @@ async function handleReservationSubmit() {
       .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
       .join('، ');
     const msg = t('reservations.toast.packageTimeConflict', `⚠️ الحزمة محجوزة بالفعل في الفترة المختارة`);
-    showToast(`${msg}: ${details}`, 'warning', -1);
+    showToast(`${msg}: ${details}`, 'warning', 6000);
     return;
   }
 

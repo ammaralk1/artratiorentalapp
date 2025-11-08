@@ -999,7 +999,7 @@ export async function saveReservationChanges({
             } catch (_) { /* no-op */ }
           }
           const suffix = rcodes.length ? ` (${rcodes.join('، ')})` : '';
-          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+          showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', 6000);
           return;
         }
       }
@@ -1064,7 +1064,7 @@ export async function saveReservationChanges({
 
     const list = annotatedList
       || conflictingEquipment.map((e) => e.label).filter(Boolean).map(String).join('، ');
-    showToast(`${prefix}: ${list}`, 'warning', -1);
+    showToast(`${prefix}: ${list}`, 'warning', 6000);
     return;
   }
 
@@ -1089,9 +1089,9 @@ export async function saveReservationChanges({
         const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
         const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
         const suffix = codes.length ? ` (${codes.join('، ')})` : '';
-        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', -1);
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`) + suffix, 'warning', 6000);
       } catch (_) {
-        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', -1);
+        showToast(t('reservations.toast.packageTimeConflict', `⚠️ الحزمة ${normalizeNumbers(String(packageName))} محجوزة بالفعل في الفترة المختارة`), 'warning', 6000);
       }
       return;
     }
@@ -1117,7 +1117,7 @@ export async function saveReservationChanges({
     const details = crewConflicts
       .map(({ label, codes }) => (codes && codes.length ? `${label} (${codes.join('، ')})` : label))
       .join('، ');
-    showToast(`${prefix}: ${details}`, 'warning', -1);
+    showToast(`${prefix}: ${details}`, 'warning', 6000);
     return;
   }
 

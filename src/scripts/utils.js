@@ -117,11 +117,6 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
     type = typeOrDuration;
     if (typeof maybeDuration === 'number' && Number.isFinite(maybeDuration)) {
       duration = Math.max(0, maybeDuration);
-    } else {
-      // Make warning toasts persistent by default unless a duration is explicitly provided
-      if (type === 'warning') {
-        duration = -1;
-      }
     }
   } else {
     // Fallback: keep defaults
