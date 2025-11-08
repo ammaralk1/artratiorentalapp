@@ -3206,6 +3206,23 @@ function paginateGenericTplTables() {
       });
     } catch (_) {}
 
+    // Move Crew Call table (if present after the schedule) to the last page and ensure it fits
+    try {
+      const crew = inner.querySelector('table.cs-crew');
+      if (crew) {
+        try { inner.removeChild(crew); } catch (_) {}
+        // Append to the current (last) page
+        currentInner.appendChild(crew);
+        if (!fitsInner(currentInner)) {
+          // If it doesn't fit, move to a fresh page
+          try { currentInner.removeChild(crew); } catch (_) {}
+          const { page: pg2, inner: in2 } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape });
+          pagesWrap.appendChild(pg2);
+          in2.appendChild(crew);
+        }
+      }
+    } catch (_) {}
+
     table.setAttribute('data-split-done', '1');
   });
 }
