@@ -272,6 +272,14 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   max-width: 100%;
   box-sizing: border-box;
 }
+/* Targeted tweak: make only Time (Duration) [col 2] and Movement [col 4] a bit tighter */
+.callsheet-v1 .cs-schedule thead th:nth-child(2),
+.callsheet-v1 .cs-schedule thead th:nth-child(4) {
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+  padding: 4px 3px !important;
+  hyphens: auto;
+}
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
