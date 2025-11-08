@@ -381,7 +381,8 @@ function ensureCellToolbar() {
       const act = btn.getAttribute('data-act');
       const cell = bar.__targetCell || null;
       if (!cell) return;
-      const sched = cell.closest('table.cs-schedule');
+      // Support both Schedule and Crew tables for row actions
+      const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew');
       const cast = cell.closest('table.cs-cast');
       const doRowAdd = () => {
         const tr = cell.closest('tr');
@@ -1150,6 +1151,24 @@ function populateCrewFromReservation(crewTable, reservation) {
     }
     return [];
   })();
+  // Enrich with phone/role/name when missing using current technicians list
+  try {
+    if (assignments.length) {
+      const techs = getTechniciansState() || [];
+      const byId = new Map(techs.map((t) => [String(t.id), t]));
+      const byName = new Map(techs.map((t) => [String((t.name || '').trim().toLowerCase()), t]));
+      assignments.forEach((a) => {
+        const aid = a.technicianId ?? a.technician_id ?? a.id;
+        const aname = a.technicianName ?? a.name;
+        const t = (aid != null && byId.get(String(aid))) || (aname ? byName.get(String(aname).trim().toLowerCase()) : null);
+        if (t) {
+          if (!a.technicianName && (t.name || t.full_name)) a.technicianName = t.name || t.full_name;
+          if (!a.technicianPhone && t.phone) a.technicianPhone = t.phone;
+          if (!a.technicianRole && (t.role || t.specialization)) a.technicianRole = t.role || t.specialization;
+        }
+      });
+    }
+  } catch (_) {}
   if (!assignments.length) return;
   const rows = Array.from(crewTable.querySelectorAll('tbody tr'));
   const ensureRows = (need) => {
@@ -1869,13 +1888,28 @@ function renderTemplatesPreview() {
   } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
   try { if (type === 'callsheet') populateCrewFromReservationIfEmpty(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
+  // Trim trailing blank rows to minimize empty pages in preview
+  try {
+    if (type === 'callsheet') {
+      const sched = pageRoot.querySelector('table.cs-schedule');
+      const crew = pageRoot.querySelector('table.cs-crew');
+      if (sched) trimTrailingEmptyRows(sched, 4);
+      if (crew) trimTrailingEmptyRows(crew, 2);
+    }
+  } catch (_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
     pages0.forEach((pg) => {
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
+        try {
+          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
+          const tds = Array.from(tr.querySelectorAll('td'));
+          return tds.some((td) => ((td.textContent || '').trim().length > 0));
+        } catch (_) { return false; }
+      });
       // Call Sheet / Shot List first pages may not have tpl-table rows; allow callsheet blocks
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
       if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
@@ -1894,7 +1928,13 @@ function renderTemplatesPreview() {
     pages1.forEach((pg) => {
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
+        try {
+          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
+          const tds = Array.from(tr.querySelectorAll('td'));
+          return tds.some((td) => ((td.textContent || '').trim().length > 0));
+        } catch (_) { return false; }
+      });
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
       if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
         pg.parentElement?.removeChild(pg);
@@ -1951,8 +1991,14 @@ async function printTemplatesPdf() {
       // Expenses: either Top Sheet present, or at least one data row in details
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      // Other templates: any table rows in tpl-table
-      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      // Other templates: any non-empty table rows in tpl-table
+      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
+        try {
+          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
+          const tds = Array.from(tr.querySelectorAll('td'));
+          return tds.some((td) => ((td.textContent || '').trim().length > 0));
+        } catch (_) { return false; }
+      });
       // Call Sheet first page may have only cs blocks
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
       return hasTop || hasDetailsRow || hasTplRows || hasCallsheet;
@@ -1996,6 +2042,11 @@ async function printTemplatesPdf() {
     document.body.appendChild(wrap);
 
     try {
+      // Trim trailing blank rows in export clone to avoid blank pages
+      try {
+        Array.from(scope.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRows(t, 4));
+        Array.from(scope.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRows(t, 2));
+      } catch (_) {}
       // Force إزالة أي حشو علوي داخل صفحات التصدير
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
       // تطبيق الإزاحة اليدوية في مسار html2pdf دائماً (حتى في الوضع الصارم)
@@ -2173,6 +2224,11 @@ async function printTemplatesPdf() {
     clone.style.position = 'relative';
     clone.style.background = '#ffffff';
     clone.style.overflow = 'hidden';
+    // Trim trailing blanks in this page clone as well
+    try {
+      Array.from(clone.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRows(t, 4));
+      Array.from(clone.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRows(t, 2));
+    } catch (_) {}
     // Ensure every exp-details table starts with its group title bar on this page
     try {
       const ensureGroupBarTop = (cl, origin) => {
@@ -3250,6 +3306,29 @@ function paginateExpDetailsTables() {
 }
 
 // Generic paginator for non-expenses templates (Call Sheet / Shot List)
+// Helper: remove trailing blank rows to reduce phantom pages
+function trimTrailingEmptyRows(table, keepTail = 0) {
+  try {
+    const tbody = table?.tBodies?.[0] || table.querySelector('tbody');
+    if (!tbody) return;
+    const rows = Array.from(tbody.children);
+    if (!rows.length) return;
+    let blankTail = 0;
+    for (let i = rows.length - 1; i >= 0; i -= 1) {
+      const tr = rows[i];
+      // Preserve special rows
+      if (tr.classList && (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong'))) break;
+      const tds = Array.from(tr.querySelectorAll('td'));
+      const isBlank = tds.length > 0 && !tds.some((td) => ((td.textContent || '').trim().length > 0));
+      if (!isBlank) break;
+      blankTail += 1;
+      if (blankTail > Math.max(0, keepTail)) {
+        try { tbody.removeChild(tr); } catch (_) {}
+      }
+    }
+  } catch (_) {}
+}
+
 function paginateGenericTplTables() {
   const root = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!root) return;
@@ -3270,6 +3349,11 @@ function paginateGenericTplTables() {
     const tables = Array.from(inner.querySelectorAll('table.tpl-table'));
     tables.forEach((table) => {
       if (!table || table.getAttribute('data-split-done') === '1') return;
+      // Trim trailing blank rows to avoid generating empty pages
+      try {
+        const keepTail = table.classList.contains('cs-schedule') ? 4 : (table.classList.contains('cs-crew') ? 2 : 0);
+        if (keepTail >= 0) trimTrailingEmptyRows(table, keepTail);
+      } catch (_) {}
       const thead = table.querySelector('thead');
       const colTpl = table.querySelector('colgroup');
       const rows = Array.from(table.querySelectorAll('tbody > tr'));
@@ -3333,7 +3417,14 @@ function pruneEmptyA4Pages() {
     pages.forEach((pg) => {
       const hasTop = !!pg.querySelector('#expenses-top-sheet');
       const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      const hasTplRows = !!pg.querySelector('table.tpl-table tbody tr');
+      // Consider only rows with visible text, not empty placeholders
+      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
+        try {
+          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
+          const tds = Array.from(tr.querySelectorAll('td'));
+          return tds.some((td) => ((td.textContent || '').trim().length > 0));
+        } catch (_) { return false; }
+      });
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
       if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
         pg.parentElement?.removeChild(pg);
