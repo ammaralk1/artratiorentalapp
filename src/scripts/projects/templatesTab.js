@@ -336,6 +336,7 @@ function ensureCellToolbar() {
     bar.innerHTML = `
       <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
         <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
+        <button type="button" data-act="row-full" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف كامل</button>
         <button type="button" data-act="row-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف</button>
         <button type="button" data-act="row-up" class="btn btn-outline" style="height:28px;padding:0 8px">↑</button>
         <button type="button" data-act="row-down" class="btn btn-outline" style="height:28px;padding:0 8px">↓</button>
@@ -372,6 +373,21 @@ function ensureCellToolbar() {
       };
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
       const updateAfter = () => { try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
+      const doRowFull = () => {
+        const table = sched || cell.closest('table');
+        if (!table) return;
+        const tr = cell.closest('tr');
+        const tbody = tr?.parentElement;
+        if (!tr || !tbody) return;
+        const ncols = (() => { try { const head = table.querySelector('thead tr'); return (head && head.children && head.children.length) ? head.children.length : 12; } catch(_) { return 12; } })();
+        const full = document.createElement('tr');
+        const td = document.createElement('td');
+        td.setAttribute('colspan', String(ncols));
+        td.setAttribute('data-editable', 'true');
+        td.setAttribute('contenteditable', 'true');
+        full.appendChild(td);
+        tbody.insertBefore(full, tr.nextElementSibling);
+      };
       const castAddSlot = () => {
         const table = cast; if (!table) return;
         const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
@@ -427,6 +443,7 @@ function ensureCellToolbar() {
         if (weather) { const totalRows = tbody.querySelectorAll('tr').length - 1; weather.setAttribute('rowspan', String(totalRows)); }
       };
       if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
+      else if (act === 'row-full' && sched) { doRowFull(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'row-del' && sched) { doRowDel(); updateAfter(); }
       else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
