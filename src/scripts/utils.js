@@ -225,6 +225,20 @@ export function showToastWithAction({
   toast.addEventListener('click', hide);
 }
 
+// Expose toast helpers for quick manual testing from the browser console.
+// Example: showToast('Hello', 'warning')
+try {
+  if (typeof window !== 'undefined') {
+    // Do not overwrite if already defined elsewhere
+    if (typeof window.showToast !== 'function') {
+      window.showToast = showToast;
+    }
+    if (typeof window.showToastWithAction !== 'function') {
+      window.showToastWithAction = showToastWithAction;
+    }
+  }
+} catch (_) { /* ignore */ }
+
 const RESERVATION_PREFIX = 'RSV';
 const PROJECT_PREFIX = 'PRJ';
 const DEFAULT_CODE_PAD = 4;
