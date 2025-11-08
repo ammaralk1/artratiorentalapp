@@ -1180,6 +1180,25 @@ function populateCrewFromReservation(crewTable, reservation) {
   });
 }
 
+// Populate crew only if the table is mostly empty (to avoid overriding user edits)
+function populateCrewFromReservationIfEmpty(reservation) {
+  try {
+    const crew = document.querySelector('#templates-a4-root .callsheet-v1 table.cs-crew');
+    if (!crew || !reservation) return;
+    const rows = Array.from(crew.querySelectorAll('tbody tr'));
+    const sample = rows.slice(0, Math.min(rows.length, 6));
+    let filledCells = 0; let totalCells = 0;
+    sample.forEach((tr) => {
+      const cells = Array.from(tr.children).slice(0, 3); // pos, name, phone
+      cells.forEach((td) => { totalCells += 1; if ((td.textContent || '').trim()) filledCells += 1; });
+    });
+    const fillRatio = totalCells > 0 ? (filledCells / totalCells) : 0;
+    if (fillRatio <= 0.15) {
+      populateCrewFromReservation(crew, reservation);
+    }
+  } catch(_) {}
+}
+
 // ===== Secondary logo state (persisted in localStorage) =====
 function readSecondaryLogoState() {
   try {
@@ -1836,6 +1855,8 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  // If crew table is still mostly empty, auto-fill from selected reservation
+  try { if (type === 'callsheet') populateCrewFromReservationIfEmpty(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
@@ -3233,82 +3254,61 @@ function paginateGenericTplTables() {
   pages.forEach((pg) => {
     const inner = pg.querySelector('.a4-inner');
     if (!inner) return;
-    const table = inner.querySelector('table.tpl-table');
-    if (!table || table.getAttribute('data-split-done') === '1') return;
-    const thead = table.querySelector('thead');
-    // Preserve exact column widths if source table defines a <colgroup>
-    const colTpl = table.querySelector('colgroup');
-    const rows = Array.from(table.querySelectorAll('tbody > tr'));
-    if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
+    // Split each template table on this page (schedule, crew, etc.)
+    const tables = Array.from(inner.querySelectorAll('table.tpl-table'));
+    tables.forEach((table) => {
+      if (!table || table.getAttribute('data-split-done') === '1') return;
+      const thead = table.querySelector('thead');
+      const colTpl = table.querySelector('colgroup');
+      const rows = Array.from(table.querySelectorAll('tbody > tr'));
+      if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
 
-    const makeTable = () => {
-      const t = document.createElement('table');
-      t.className = table.className;
-      if (colTpl) t.appendChild(colTpl.cloneNode(true));
-      const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
-      t.appendChild(hd);
-      t.appendChild(document.createElement('tbody'));
-      return t;
-    };
-    const fitsInner = (container) => container.scrollHeight <= (container.clientHeight + 0.5);
+      const makeTable = () => {
+        const t = document.createElement('table');
+        t.className = table.className;
+        if (colTpl) t.appendChild(colTpl.cloneNode(true));
+        const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
+        t.appendChild(hd);
+        t.appendChild(document.createElement('tbody'));
+        return t;
+      };
+      const fitsInner = () => inner.scrollHeight <= (inner.clientHeight + 0.5);
 
-    let currentPage = pg; let currentInner = inner;
-    try { inner.removeChild(table); } catch(_) {}
-    let workingTable = makeTable();
-    currentInner.appendChild(workingTable);
+      let currentPage = pg; let currentInner = inner;
+      try { inner.removeChild(table); } catch(_) {}
+      let workingTable = makeTable();
+      currentInner.appendChild(workingTable);
 
-    let i = 0;
-    while (i < rows.length) {
-      const tbody = workingTable.tBodies[0];
-      tbody.appendChild(rows[i]);
-      if (!fitsInner(currentInner)) {
-        // rollback row and create new page
-        tbody.removeChild(rows[i]);
-        // If current table has no data rows, remove it to avoid header-only on previous page
-        try {
-          const hadNoRows = !(tbody.children && tbody.children.length);
-          if (hadNoRows) {
-            const prev = workingTable;
-            const prevInner = currentInner;
-            try { prevInner.removeChild(prev); } catch (_) {}
-          }
-        } catch (_) {}
-        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
-        pagesWrap.appendChild(currentPage);
-        workingTable = makeTable();
-        currentInner.appendChild(workingTable);
-        workingTable.tBodies[0].appendChild(rows[i]);
-      }
-      i += 1;
-    }
-    // Remove any tables that ended up with no body rows (header-only leftovers)
-    try {
-      const allTables = Array.from(pagesWrap.querySelectorAll('table.tpl-table'));
-      allTables.forEach((t) => {
-        const body = t.tBodies && t.tBodies[0];
-        const hasRows = !!(body && body.children && body.children.length);
-        if (!hasRows) { try { t.parentElement?.removeChild(t); } catch (_) {} }
-      });
-    } catch (_) {}
-
-    // Move Crew Call table (if present after the schedule) to the last page and ensure it fits
-    try {
-      const crew = inner.querySelector('table.cs-crew');
-      if (crew) {
-        try { inner.removeChild(crew); } catch (_) {}
-        // Append to the current (last) page
-        currentInner.appendChild(crew);
-        if (!fitsInner(currentInner)) {
-          // If it doesn't fit, move to a fresh page
-          try { currentInner.removeChild(crew); } catch (_) {}
-          const { page: pg2, inner: in2 } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape });
-          pagesWrap.appendChild(pg2);
-          in2.appendChild(crew);
+      let i = 0;
+      while (i < rows.length) {
+        const tbody = workingTable.tBodies[0];
+        tbody.appendChild(rows[i]);
+        if (!fitsInner()) {
+          tbody.removeChild(rows[i]);
+          // Remove table if it ended up header-only
+          try {
+            const hadNoRows = !(tbody.children && tbody.children.length);
+            if (hadNoRows) { const prev = workingTable; try { currentInner.removeChild(prev); } catch (_) {} }
+          } catch (_) {}
+          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
+          pagesWrap.appendChild(currentPage);
+          workingTable = makeTable();
+          currentInner.appendChild(workingTable);
+          workingTable.tBodies[0].appendChild(rows[i]);
         }
+        i += 1;
       }
-    } catch (_) {}
-
-    table.setAttribute('data-split-done', '1');
+      // Remove empty header-only tables
+      try {
+        const allTables = Array.from(pagesWrap.querySelectorAll('table.tpl-table'));
+        allTables.forEach((t) => {
+          const body = t.tBodies && t.tBodies[0];
+          const hasRows = !!(body && body.children && body.children.length);
+          if (!hasRows) { try { t.parentElement?.removeChild(t); } catch (_) {} }
+        });
+      } catch (_) {}
+      table.setAttribute('data-split-done', '1');
+    });
   });
 }
 
