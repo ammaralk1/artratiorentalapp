@@ -13,7 +13,8 @@ function ensureToastContainer() {
     container.style.left = '50%';
     container.style.transform = 'translateX(-50%)';
     // Ensure toast is above any modal/backdrop
-    container.style.zIndex = '110000';
+    // Extremely high z-index to always be above modals/backdrops/tooltips
+    container.style.zIndex = '2147483647';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.alignItems = 'center';
@@ -37,6 +38,8 @@ function applyToastBaseStyles(toast) {
   toast.style.lineHeight = '1.4';
   toast.style.pointerEvents = 'auto';
   toast.style.backdropFilter = 'blur(4px)';
+  toast.style.position = 'relative';
+  toast.style.zIndex = '2147483647';
 }
 
 function fadeInToast(toast) {
