@@ -141,6 +141,24 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
 
   container.appendChild(toast);
   fadeInToast(toast);
+  // Fallback: if not visible after a tick (e.g., due to unexpected CSS),
+  // re-position the toast as a fixed element directly under body.
+  setTimeout(() => {
+    try {
+      const rect = toast.getBoundingClientRect();
+      const offscreen = rect.height < 8 || rect.width < 8 || rect.top < -10 || rect.top > (window.innerHeight + 10);
+      if (offscreen) {
+        toast.style.position = 'fixed';
+        toast.style.top = '20px';
+        toast.style.bottom = 'auto';
+        toast.style.left = '50%';
+        toast.style.right = 'auto';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.zIndex = '2147483647';
+        document.body.appendChild(toast);
+      }
+    } catch (_) { /* ignore */ }
+  }, 30);
   const { hide } = scheduleToastRemoval(toast, duration);
   toast.addEventListener('click', hide);
 }
