@@ -8,20 +8,26 @@ function ensureToastContainer() {
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
-    container.style.position = 'fixed';
-    container.style.top = '20px';
-    container.style.left = '50%';
-    container.style.transform = 'translateX(-50%)';
-    // Ensure toast is above any modal/backdrop
-    // Extremely high z-index to always be above modals/backdrops/tooltips
-    container.style.zIndex = '2147483647';
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.alignItems = 'center';
-    container.style.width = 'min(92vw, 380px)';
-    container.style.pointerEvents = 'none';
     document.body.appendChild(container);
   }
+  // Normalise any pre-existing container (e.g. defined in HTML)
+  try {
+    container.classList.remove('toast-container', 'fixed', 'bottom-6', 'start-6', 'z-50');
+  } catch (_) { /* ignore */ }
+  container.style.position = 'fixed';
+  container.style.top = '20px';
+  container.style.bottom = 'auto';
+  container.style.left = '50%';
+  container.style.right = 'auto';
+  container.style.transform = 'translateX(-50%)';
+  // Ensure toast is above any modal/backdrop
+  // Extremely high z-index to always be above modals/backdrops/tooltips
+  container.style.zIndex = '2147483647';
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.alignItems = 'center';
+  container.style.width = 'min(92vw, 380px)';
+  container.style.pointerEvents = 'none';
   return container;
 }
 
