@@ -2,6 +2,7 @@ import '../../styles/templatesA4.css';
 import { t } from '../language.js';
 import { getProjectsState, refreshProjectsFromApi } from '../projectsService.js';
 import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
+import { getTechniciansState } from '../techniciansService.js';
 // Avoid heavy cross-imports from view.js; compute locally
 function getReservationsForProjectLocal(projectId) {
   if (!projectId) return [];
@@ -227,6 +228,9 @@ function ensureLogoControls(type = 'expenses') {
   });
   document.getElementById('tpl-logo2-clear')?.addEventListener('click', () => {
     writeSecondaryLogoState({ url: '', w: 0, x: 0, y: 0 });
+    // Clear autosave so old logo URL doesn't get restored
+    try { localStorage.removeItem(getTemplatesContextKey()); } catch(_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
     try { renderTemplatesPreview(); } catch(_) {}
   });
   document.getElementById('tpl-logo2-reset')?.addEventListener('click', () => {
@@ -1070,14 +1074,17 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   sched.appendChild(sb);
   wrap.appendChild(sched);
 
-  // Crew Call table (Position / Name / Phone)
+  // Crew Call table (Position / Name / Phone / Time)
   const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew' });
-  const crewCols = [28, 44, 28]; // Position, Name, Phone
+  const crewCols = [30, 34, 20, 16]; // Position, Name, Phone, Time
   const crewCg = el('colgroup'); crewCols.forEach((w) => crewCg.appendChild(el('col', { style: `width:${w}%` })));
   crew.appendChild(crewCg);
   const crewHead = el('thead');
+  const crewTitleRow = el('tr');
+  crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call' }));
+  crewHead.appendChild(crewTitleRow);
   const crewHeadRow = el('tr');
-  ['Position', 'Name', 'Phone'].forEach((label, i) => crewHeadRow.appendChild(el('th', { text: label, style: `width:${crewCols[i]}%` })));
+  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => crewHeadRow.appendChild(el('th', { text: label, style: `width:${crewCols[i]}%` })));
   crewHead.appendChild(crewHeadRow);
   crew.appendChild(crewHead);
   const crewBody = el('tbody');
@@ -1086,10 +1093,19 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Position
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Name
     tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', dir: 'ltr', style: 'direction:ltr;' })); // Phone
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Time (user fills)
     crewBody.appendChild(tr);
   }
   crew.appendChild(crewBody);
   wrap.appendChild(crew);
+
+  // Auto-populate crew from selected reservation if available (Position, Name, Phone)
+  try {
+    const resSelected = reservations?.[0] || null;
+    if (resSelected) {
+      populateCrewFromReservation(crew, resSelected);
+    }
+  } catch (_) {}
 
   // Remove WRAP footer per request
 
@@ -1098,6 +1114,51 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   try { enablePrimaryLogoInteractions(leftBrandLogo, leftImg); } catch(_) {}
   try { enableSecondaryLogoInteractions(rightLogoWrap, rightImg); } catch(_) {}
   return root;
+}
+
+function populateCrewFromReservation(crewTable, reservation) {
+  if (!crewTable || !reservation) return;
+  const assignments = (() => {
+    if (Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length) return reservation.crewAssignments;
+    if (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length) return reservation.techniciansDetails;
+    const ids = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+    if (ids.length) {
+      const byId = new Map((getTechniciansState() || []).map((t) => [String(t.id), t]));
+      return ids.map((id) => {
+        const tech = byId.get(String(id));
+        return tech ? { technicianId: tech.id, technicianName: tech.name || tech.full_name, technicianPhone: tech.phone, technicianRole: tech.role || tech.specialization } : { technicianId: id };
+      });
+    }
+    return [];
+  })();
+  if (!assignments.length) return;
+  const rows = Array.from(crewTable.querySelectorAll('tbody tr'));
+  const ensureRows = (need) => {
+    const toAdd = Math.max(0, need - rows.length);
+    for (let i = 0; i < toAdd; i += 1) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < 4; c += 1) {
+        const td = document.createElement('td');
+        td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true');
+        if (c === 2) { td.setAttribute('dir','ltr'); td.style.direction = 'ltr'; }
+        tr.appendChild(td);
+      }
+      crewTable.tBodies[0].appendChild(tr);
+      rows.push(tr);
+    }
+  };
+  ensureRows(assignments.length);
+  assignments.forEach((a, idx) => {
+    const tr = rows[idx]; if (!tr) return;
+    const cells = Array.from(tr.children);
+    const pos = a.positionLabel || a.position || a.technicianRole || a.role || '';
+    const name = a.technicianName || a.name || '';
+    const phone = a.technicianPhone || a.phone || '';
+    if (cells[0]) cells[0].textContent = pos || '';
+    if (cells[1]) cells[1].textContent = name || '';
+    if (cells[2]) cells[2].textContent = phone || '';
+    // cells[3] is Time: left blank for user
+  });
 }
 
 // ===== Secondary logo state (persisted in localStorage) =====
@@ -1481,6 +1542,7 @@ function applyTemplatesSnapshotInPlace(snap) {
     const right = root.querySelector('.cs-logo--right img');
     if (right && snap.r) {
       if (snap.r.url) { try { right.setAttribute('src', snap.r.url); } catch(_) {} }
+      else { try { right.removeAttribute('src'); right.closest('.cs-logo--right')?.setAttribute('data-empty','1'); } catch(_) {} }
       const s2 = Math.max(0.3, Math.min(3, Number(snap.r.s || 1)));
       const x2 = Number(snap.r.x || 0) || 0; const y2 = Number(snap.r.y || 0) || 0;
       right.style.transform = `scale(${s2}) translate(${x2}px, ${y2}px)`;
@@ -3546,13 +3608,16 @@ function ensureCrewTableExists() {
   const crew = document.createElement('table');
   crew.className = 'tpl-table cs-crew';
   crew.setAttribute('data-editable-table', 'crew');
-  const cols = [28, 44, 28];
+  const cols = [30, 34, 20, 16];
   const cg = document.createElement('colgroup');
   cols.forEach((w) => { const c = document.createElement('col'); c.setAttribute('style', `width:${w}%`); cg.appendChild(c); });
   crew.appendChild(cg);
   const thead = document.createElement('thead');
+  const titleRow = document.createElement('tr');
+  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call'; titleRow.appendChild(titleTh);
+  thead.appendChild(titleRow);
   const trh = document.createElement('tr');
-  ['Position', 'Name', 'Phone'].forEach((label, i) => {
+  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
     const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); trh.appendChild(th);
   });
   thead.appendChild(trh);
@@ -3563,6 +3628,7 @@ function ensureCrewTableExists() {
     const td1 = document.createElement('td'); td1.setAttribute('data-editable','true'); td1.setAttribute('contenteditable','true'); tr.appendChild(td1);
     const td2 = document.createElement('td'); td2.setAttribute('data-editable','true'); td2.setAttribute('contenteditable','true'); tr.appendChild(td2);
     const td3 = document.createElement('td'); td3.setAttribute('data-editable','true'); td3.setAttribute('contenteditable','true'); td3.setAttribute('dir','ltr'); td3.style.direction = 'ltr'; tr.appendChild(td3);
+    const td4 = document.createElement('td'); td4.setAttribute('data-editable','true'); td4.setAttribute('contenteditable','true'); tr.appendChild(td4);
     tbody.appendChild(tr);
   }
   crew.appendChild(tbody);
