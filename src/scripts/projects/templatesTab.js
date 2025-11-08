@@ -2,7 +2,7 @@ import '../../styles/templatesA4.css';
 import { t } from '../language.js';
 import { getProjectsState, refreshProjectsFromApi } from '../projectsService.js';
 import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
-import { getTechniciansState } from '../techniciansService.js';
+import { getTechniciansState, refreshTechniciansFromApi } from '../techniciansService.js';
 // Avoid heavy cross-imports from view.js; compute locally
 function getReservationsForProjectLocal(projectId) {
   if (!projectId) return [];
@@ -1855,6 +1855,18 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  // Ensure technicians are loaded, then auto-fill crew if table is empty
+  try {
+    if (type === 'callsheet') {
+      const selectedRes = getSelectedReservations(project.id)?.[0] || null;
+      const fill = () => populateCrewFromReservationIfEmpty(selectedRes);
+      if (!getTechniciansState()?.length) {
+        refreshTechniciansFromApi().then(fill).catch(() => fill());
+      } else {
+        fill();
+      }
+    }
+  } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
   try { if (type === 'callsheet') populateCrewFromReservationIfEmpty(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
