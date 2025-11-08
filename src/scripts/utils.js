@@ -23,9 +23,10 @@ function ensureToastContainer() {
   container.style.position = 'fixed';
   container.style.top = '20px';
   container.style.bottom = 'auto';
-  container.style.left = '50%';
-  container.style.right = 'auto';
-  container.style.transform = 'translateX(-50%)';
+  container.style.left = '0';
+  container.style.right = '0';
+  container.style.transform = 'none';
+  container.style.margin = '0 auto';
   // Ensure toast is above any modal/backdrop
   // Extremely high z-index to always be above modals/backdrops/tooltips
   container.style.zIndex = '2147483647';
