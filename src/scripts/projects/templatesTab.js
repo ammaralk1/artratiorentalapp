@@ -2081,7 +2081,8 @@ async function printTemplatesPdf() {
 
   const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
   const h2c = window.html2canvas;
-  if (!(typeof JsPdfCtor === 'function' && typeof h2c === 'function')) {
+  const preferFallback = (type === 'callsheet');
+  if (preferFallback || !(typeof JsPdfCtor === 'function' && typeof h2c === 'function')) {
     // Fallback through html2pdf: render from an isolated "export" scope
     // to avoid preview gaps/margins pushing content down.
     const wrap = document.createElement('div');
