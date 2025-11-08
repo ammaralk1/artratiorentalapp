@@ -184,6 +184,13 @@ export async function apiRequest(path, { method = 'GET', headers = {}, body, sig
 
   if (!response.ok) {
     const message = payload?.error || `Request failed with status ${response.status}`;
+    // Treat server-side 5xx responses as failures for cooldown to avoid spamming the backend
+    try {
+      if (response.status >= 500) {
+        __consecutiveNetworkFailures = Math.min(10, __consecutiveNetworkFailures + 1);
+        __lastNetworkFailureAt = Date.now();
+      }
+    } catch (_) { /* ignore */ }
     throw new ApiError(message, {
       status: response.status,
       payload,
