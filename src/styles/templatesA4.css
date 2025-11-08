@@ -280,8 +280,31 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   padding: 4px 3px !important;
   hyphens: auto;
 }
-#templates-a4-root .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; font-size: 11px; text-align: center !important; }
-#templates-a4-root .callsheet-v1 .cs-crew .cs-crew-title { font-weight:900; text-align:center !important; font-size: 14px; display:flex; justify-content:center; align-items:center; }
+#templates-a4-root .callsheet-v1 .cs-crew thead th {
+  /* Force centered labels regardless of generic tbl styles */
+  text-align: center !important;
+  vertical-align: middle !important;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 4px;
+  line-height:1.2;
+  white-space:normal;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size: 11px;
+}
+#templates-a4-root .callsheet-v1 .cs-crew .cs-crew-title {
+  font-weight:900;
+  text-align:center !important;
+  vertical-align: middle !important;
+  font-size: 14px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  line-height: 1.3;
+  height: 28px;
+}
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }

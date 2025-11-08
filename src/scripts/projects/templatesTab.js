@@ -48,7 +48,12 @@ function setTemplatesPreviewZoom(value, { silent = false, markManual = false } =
     TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
   }
 }
-function adjustTemplatesPreviewZoom(delta) { setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM + delta, { markManual: true }); }
+function adjustTemplatesPreviewZoom(delta) {
+  // Switching to manual mode on any explicit user zoom change
+  TPL_ZOOM_MODE = 'manual';
+  writeTplZoomModePref(TPL_ZOOM_MODE);
+  setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM + delta, { markManual: true });
+}
 function applyTemplatesPreviewZoom(value) {
   const root = document.querySelector('#templates-preview-host > #templates-a4-root')
     || document.querySelector('#templates-preview-host #templates-a4-root');
@@ -1154,6 +1159,25 @@ function populateCrewFromReservation(crewTable, reservation) {
   // Enrich with phone/role/name when missing using current technicians list
   try {
     if (assignments.length) {
+      // Normalize nested shapes from API (technician/position objects)
+      assignments.forEach((a) => {
+        try {
+          if (a && typeof a.technician === 'object') {
+            a.technicianId = a.technicianId ?? a.technician?.id ?? a.technician_id;
+            a.technicianName = a.technicianName ?? a.technician?.name ?? a.technician?.full_name ?? a.name;
+            a.technicianPhone = a.technicianPhone ?? a.technician?.phone ?? a.phone;
+            a.technicianRole = a.technicianRole ?? a.technician?.role ?? a.specialization ?? a.role;
+          }
+          if (a && typeof a.position === 'object') {
+            // Prefer label fields, then name
+            a.positionLabel = a.positionLabel ?? a.position?.labelAr ?? a.position?.labelEn ?? a.position?.name ?? a.position_name;
+          }
+          // Fallbacks for alternate keys
+          a.positionLabel = a.positionLabel ?? a.position_name ?? a.positionName ?? a.position;
+          a.technicianPhone = a.technicianPhone ?? a.phone_number ?? a.phoneNumber ?? a.mobile ?? a.whatsapp;
+          a.technicianName = a.technicianName ?? a.full_name ?? a.technician_name;
+        } catch (_) {}
+      });
       const techs = getTechniciansState() || [];
       const byId = new Map(techs.map((t) => [String(t.id), t]));
       const byName = new Map(techs.map((t) => [String((t.name || '').trim().toLowerCase()), t]));
@@ -1991,10 +2015,14 @@ function renderTemplatesPreview() {
   }
   // Apply saved zoom after render
   try {
-    if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); }
-    else {
-      if (!TPL_USER_ADJUSTED_ZOOM) { TPL_PREVIEW_ZOOM = readTplZoomPref(); }
-      setTemplatesPreviewZoom(TPL_PREVIEW_ZOOM, { silent: true });
+    // Re-sync zoom mode from storage each render to keep it sticky
+    TPL_ZOOM_MODE = readTplZoomModePref();
+    if (TPL_ZOOM_MODE === 'fit') {
+      applyTemplatesFitZoom();
+    } else {
+      const saved = readTplZoomPref();
+      TPL_PREVIEW_ZOOM = saved;
+      setTemplatesPreviewZoom(saved, { silent: true });
     }
     if (TPL_ZOOM_VALUE_EL) TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
   } catch (_) {}
