@@ -1059,6 +1059,7 @@ let TPL_HISTORY_TIMER = null;
 let TPL_EDITING = false;
 let TPL_EDITING_TIMER = null;
 let TPL_AUTOSAVE_TIMER = null;
+let TPL_REMOTE_AUTOSAVE_TIMER = null;
 
 function markTemplatesEditingActivity() {
   TPL_EDITING = true;
@@ -1068,6 +1069,8 @@ function markTemplatesEditingActivity() {
     TPL_EDITING = false;
     // If a refresh was queued while editing, schedule it now
     try { if (typeof scheduleRepopulate === 'function') scheduleRepopulate(0); } catch(_) {}
+    // Also autosave to backend when user becomes idle
+    try { autosaveToServerDebounced(); } catch(_) {}
   }, 1200);
 }
 
@@ -1307,6 +1310,66 @@ function applyTemplatesSnapshot(snap) {
     try { renderTemplatesPreview(); } catch(_) {}
     TPL_RESTORING = false;
   }
+}
+
+// ===== Backend autosave (persist full HTML per project/type/reservation) =====
+function readRemoteAutosaveId() {
+  try {
+    const key = `remoteAutosaveId:${getTemplatesContextKey()}`;
+    const v = localStorage.getItem(key);
+    return v ? Number(v) : null;
+  } catch(_) { return null; }
+}
+function writeRemoteAutosaveId(id) {
+  try { const key = `remoteAutosaveId:${getTemplatesContextKey()}`; if (id) localStorage.setItem(key, String(id)); } catch(_) {}
+}
+async function ensureRemoteAutosaveId() {
+  let id = readRemoteAutosaveId();
+  if (id) return id;
+  const items = await fetchSavedTemplatesForCurrent();
+  const draft = (items || []).find((it) => {
+    const t = String(it?.title || '').toLowerCase();
+    return t.includes('autosave') || t.includes('draft') || t.includes('مسودة');
+  });
+  if (draft && draft.id) { writeRemoteAutosaveId(draft.id); return draft.id; }
+  // Create once
+  const project = getSelectedProject();
+  if (!project) return null;
+  const typeSel = document.getElementById('templates-type');
+  const type = typeSel ? typeSel.value : 'expenses';
+  const reservationSel = document.getElementById('templates-reservation');
+  const reservationId = reservationSel && reservationSel.value ? Number(reservationSel.value) : null;
+  const host = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!host) return null;
+  const payload = { html: host.outerHTML };
+  try {
+    await apiRequest('/project-templates/', {
+      method: 'POST',
+      body: {
+        project_id: Number(project.id),
+        reservation_id: reservationId,
+        type,
+        title: `Autosave - ${type}`,
+        data: payload,
+      },
+    });
+    const after = await fetchSavedTemplatesForCurrent();
+    const created = (after || []).find((it) => String(it?.title || '').toLowerCase().includes(`autosave`));
+    if (created && created.id) { writeRemoteAutosaveId(created.id); return created.id; }
+  } catch(_) {}
+  return null;
+}
+async function autosaveTemplateToServer() {
+  const host = document.querySelector('#templates-preview-host #templates-a4-root');
+  if (!host) return;
+  const id = await ensureRemoteAutosaveId();
+  if (!id) return;
+  const payload = { html: host.outerHTML };
+  try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { data: payload } }); } catch(_) {}
+}
+function autosaveToServerDebounced() {
+  clearTimeout(TPL_REMOTE_AUTOSAVE_TIMER);
+  TPL_REMOTE_AUTOSAVE_TIMER = setTimeout(() => { void autosaveTemplateToServer(); }, 800);
 }
 
 // Snapshot/restore shading by table,row,cell indices for Call Sheet
