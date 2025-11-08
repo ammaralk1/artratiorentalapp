@@ -218,6 +218,121 @@ function ensureLogoControls(type = 'expenses') {
   shadeClear?.addEventListener('click', () => { try { clearShadeFromControls(); } catch (_) {} });
 }
 
+// Inline toolbar near focused cell (row ops for schedule, slot ops for cast)
+function ensureCellToolbar() {
+  const host = document.getElementById('templates-preview-host');
+  if (!host) return;
+  const type = document.getElementById('templates-type')?.value || 'expenses';
+  let bar = document.getElementById('tpl-cell-toolbar');
+  if (type !== 'callsheet') { if (bar) bar.style.display = 'none'; return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'tpl-cell-toolbar';
+    Object.assign(bar.style, { position: 'absolute', display: 'none', zIndex: 60 });
+    bar.innerHTML = `
+      <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
+        <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
+        <button type="button" data-act="row-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف</button>
+        <button type="button" data-act="row-up" class="btn btn-outline" style="height:28px;padding:0 8px">↑</button>
+        <button type="button" data-act="row-down" class="btn btn-outline" style="height:28px;padding:0 8px">↓</button>
+        <span data-sep style="width:1px;background:#e5e7eb;margin:0 4px"></span>
+        <button type="button" data-act="cast-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ خانة</button>
+        <button type="button" data-act="cast-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× خانة</button>
+      </div>`;
+    host.appendChild(bar);
+    // Actions
+    bar.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      const act = btn.getAttribute('data-act');
+      const cell = bar.__targetCell || null;
+      if (!cell) return;
+      const sched = cell.closest('table.cs-schedule');
+      const cast = cell.closest('table.cs-cast');
+      const doRowAdd = () => {
+        const tr = cell.closest('tr');
+        if (!tr) return;
+        const newRow = addRowBelow(tr);
+        if (newRow) focusFirstEditableCell(newRow, 0);
+      };
+      const doRowDel = () => {
+        const tr = cell.closest('tr');
+        if (!tr) return;
+        if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return;
+        deleteRow(tr);
+      };
+      const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
+      const updateAfter = () => { try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} try { scheduleRepopulate(0); } catch(_) {} };
+      const castAddSlot = () => {
+        const table = cast; if (!table) return;
+        const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
+        const nameRow = tbody.children && tbody.children[1];
+        const timeRow = tbody.children && tbody.children[2];
+        if (!nameRow || !timeRow) return;
+        const nt = document.createElement('td'); nt.setAttribute('data-editable', 'true'); nt.setAttribute('contenteditable', 'true');
+        const weather = nameRow.querySelector('.cs-weather');
+        if (weather) nameRow.insertBefore(nt, weather); else nameRow.appendChild(nt);
+        const tt = document.createElement('td'); tt.setAttribute('data-editable', 'true'); tt.setAttribute('contenteditable', 'true');
+        timeRow.appendChild(tt);
+        const titleCell = tbody.querySelector('.cs-cast-title');
+        if (titleCell) { titleCell.setAttribute('colspan', String(nameRow.children.length)); }
+      };
+      const castRemoveSlot = () => {
+        const table = cast; if (!table) return;
+        const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
+        const nameRow = tbody.children && tbody.children[1];
+        const timeRow = tbody.children && tbody.children[2];
+        if (!nameRow || !timeRow) return;
+        const weather = nameRow.querySelector('.cs-weather');
+        const count = nameRow.children.length - (weather ? 1 : 0);
+        if (count <= 1) return;
+        // remove last regular cell before weather if present, else last child
+        const lastName = weather ? weather.previousElementSibling : nameRow.lastElementChild;
+        if (lastName && !lastName.classList.contains('cs-weather')) nameRow.removeChild(lastName);
+        const lastTime = timeRow.lastElementChild; if (lastTime) timeRow.removeChild(lastTime);
+        const titleCell = tbody.querySelector('.cs-cast-title');
+        if (titleCell) { titleCell.setAttribute('colspan', String(nameRow.children.length)); }
+      };
+      if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); }
+      else if (act === 'row-del' && sched) { doRowDel(); updateAfter(); }
+      else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); }
+      else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); }
+      else if (act === 'cast-add' && cast) { castAddSlot(); updateAfter(); }
+      else if (act === 'cast-del' && cast) { castRemoveSlot(); updateAfter(); }
+    });
+  }
+
+  const place = (cell) => {
+    if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; return; }
+    const sched = cell.closest('table.cs-schedule');
+    const cast = cell.closest('table.cs-cast');
+    if (!sched && !cast) { bar.style.display = 'none'; bar.__targetCell = null; return; }
+    // Toggle groups
+    const showRowTools = !!sched; const showCastTools = !!cast;
+    Array.from(bar.querySelectorAll('[data-act^="row-"]')).forEach((b) => b.style.display = showRowTools ? 'inline-flex' : 'none');
+    Array.from(bar.querySelectorAll('[data-act^="cast-"]')).forEach((b) => b.style.display = showCastTools ? 'inline-flex' : 'none');
+    bar.querySelector('[data-sep]')?.setAttribute('style', `width:1px;background:#e5e7eb;margin:0 4px;display:${(showRowTools && showCastTools)?'inline-block':'none'}`);
+
+    // Position relative to host
+    const hostRect = host.getBoundingClientRect();
+    const rc = cell.getBoundingClientRect();
+    const top = rc.top - hostRect.top - 32; // above cell
+    const left = Math.min(Math.max(0, rc.right - hostRect.left - 160), host.clientWidth - 120);
+    bar.style.top = `${Math.max(0, top)}px`;
+    bar.style.left = `${left}px`;
+    bar.style.display = 'block';
+    bar.__targetCell = cell;
+  };
+  const findCell = (evTarget) => { return evTarget && evTarget.closest ? evTarget.closest('td,th') : null; };
+  const onFocus = (e) => { const cell = findCell(e.target); place(cell); };
+  const onClick = (e) => { const cell = findCell(e.target); if (cell) place(cell); else bar.style.display = 'none'; };
+  host.removeEventListener('focusin', onFocus, true);
+  host.addEventListener('focusin', onFocus, true);
+  host.removeEventListener('pointerup', onClick, true);
+  host.addEventListener('pointerup', onClick, true);
+  host.addEventListener('scroll', () => { if (bar.__targetCell) place(bar.__targetCell); }, { passive: true });
+}
+
 function el(tag, attrs = {}, children = []) {
   const e = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => {
@@ -726,41 +841,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   };
   updateCastTitleColspan();
 
-  const castTools = el('div', { class: 'tpl-actions cs-toolbar' });
-  try { Object.assign(castTools.style, { display: 'inline-flex', gap: '6px', margin: '4px 0' }); } catch (_) {}
-  castTools.appendChild(el('button', { class: 'btn btn-outline', id: 'cs-cast-add', text: '+' }));
-  castTools.appendChild(el('button', { class: 'btn btn-outline btn-danger', id: 'cs-cast-remove', text: '×' }));
-  wrap.appendChild(castTools);
   wrap.appendChild(cast);
-
-  document.getElementById('cs-cast-add')?.addEventListener('click', () => {
-    try {
-      // Insert before weather cell in namesRow, append to timesRow
-      const nt = el('td', { 'data-editable': 'true', contenteditable: 'true' });
-      namesRow.insertBefore(nt, w);
-      const tt = el('td', { 'data-editable': 'true', contenteditable: 'true' });
-      timesRow.appendChild(tt);
-      updateCastTitleColspan();
-      markTemplatesEditingActivity();
-      pushHistoryDebounced();
-      saveAutosaveDebounced();
-    } catch (_) {}
-  });
-  document.getElementById('cs-cast-remove')?.addEventListener('click', () => {
-    try {
-      // Prevent removing when no more slots (keep at least 1)
-      const count = namesRow.children.length - 1; // exclude weather cell
-      if (count <= 1) return;
-      const lastName = namesRow.children[namesRow.children.length - 2];
-      if (lastName) namesRow.removeChild(lastName);
-      const lastTime = timesRow.lastElementChild;
-      if (lastTime) timesRow.removeChild(lastTime);
-      updateCastTitleColspan();
-      markTemplatesEditingActivity();
-      pushHistoryDebounced();
-      saveAutosaveDebounced();
-    } catch (_) {}
-  });
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
@@ -801,56 +882,7 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     sb.appendChild(tr);
   }
   sched.appendChild(sb);
-  // Toolbar for schedule table (add/remove/move row)
-  const schedTools = el('div', { class: 'tpl-actions cs-toolbar' });
-  try { Object.assign(schedTools.style, { display: 'inline-flex', gap: '6px', margin: '6px 0 4px' }); } catch (_) {}
-  const btnAddRow = el('button', { class: 'btn btn-outline', text: '+ صف' });
-  const btnDelRow = el('button', { class: 'btn btn-outline btn-danger', text: '× حذف صف' });
-  const btnUpRow = el('button', { class: 'btn btn-outline', text: '↑' });
-  const btnDownRow = el('button', { class: 'btn btn-outline', text: '↓' });
-  schedTools.appendChild(btnAddRow);
-  schedTools.appendChild(btnDelRow);
-  schedTools.appendChild(btnUpRow);
-  schedTools.appendChild(btnDownRow);
-  wrap.appendChild(schedTools);
   wrap.appendChild(sched);
-
-  const getActiveSchedRow = () => {
-    try {
-      const elx = document.activeElement;
-      const tr = elx && elx.closest ? elx.closest('tr') : null;
-      if (tr && tr.parentElement && tr.parentElement.parentElement === sched) return tr;
-    } catch (_) {}
-    const body = sched.tBodies && sched.tBodies[0];
-    return (body && body.lastElementChild) ? body.lastElementChild : null;
-  };
-  btnAddRow.addEventListener('click', () => {
-    try {
-      const ref = getActiveSchedRow();
-      const newRow = addRowBelow(ref || sb.lastElementChild);
-      if (newRow) focusFirstEditableCell(newRow, 0);
-      markTemplatesEditingActivity();
-      pushHistoryDebounced();
-      saveAutosaveDebounced();
-    } catch (_) {}
-  });
-  btnDelRow.addEventListener('click', () => {
-    try {
-      const tr = getActiveSchedRow();
-      if (!tr) return;
-      if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return;
-      deleteRow(tr);
-      markTemplatesEditingActivity();
-      pushHistoryDebounced();
-      saveAutosaveDebounced();
-    } catch (_) {}
-  });
-  btnUpRow.addEventListener('click', () => {
-    try { const tr = getActiveSchedRow(); if (tr && !tr.classList.contains('cs-row-note')) moveRow(tr, -1); markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
-  });
-  btnDownRow.addEventListener('click', () => {
-    try { const tr = getActiveSchedRow(); if (tr) moveRow(tr, +1); markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
-  });
 
   // Remove WRAP footer per request
 
@@ -1341,6 +1373,7 @@ function renderTemplatesPreview() {
   host.appendChild(pageRoot);
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
+  try { ensureCellToolbar(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
