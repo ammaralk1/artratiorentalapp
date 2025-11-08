@@ -240,6 +240,9 @@ function ensureCellToolbar() {
         <button type="button" data-act="cast-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× خانة</button>
       </div>`;
     host.appendChild(bar);
+    bar.__lock = false; bar.__switchTimer = null; bar.__freezeUntil = 0;
+    bar.addEventListener('pointerenter', () => { bar.__lock = true; });
+    bar.addEventListener('pointerleave', () => { bar.__lock = false; });
     // Actions
     bar.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-act]');
@@ -322,10 +325,19 @@ function ensureCellToolbar() {
     bar.style.left = `${left}px`;
     bar.style.display = 'block';
     bar.__targetCell = cell;
+    try { bar.__freezeUntil = Date.now() + 350; } catch(_) {}
   };
   const findCell = (evTarget) => { return evTarget && evTarget.closest ? evTarget.closest('td,th') : null; };
-  const onHover = (e) => { const cell = findCell(e.target); if (cell) place(cell); };
-  const onFocus = (e) => { const cell = findCell(e.target); place(cell); };
+  const onHover = (e) => {
+    const cell = findCell(e.target);
+    if (!cell || bar.__lock) return;
+    if (!bar.__targetCell) { place(cell); return; }
+    if (cell === bar.__targetCell) return;
+    if (Date.now() < (bar.__freezeUntil || 0)) return;
+    if (bar.__switchTimer) { clearTimeout(bar.__switchTimer); bar.__switchTimer = null; }
+    bar.__switchTimer = setTimeout(() => { if (!bar.__lock) place(cell); }, 160);
+  };
+  const onFocus = (e) => { const cell = findCell(e.target); if (cell) place(cell); };
   const onOut = (e) => { const to = e.relatedTarget; if (bar.contains(to)) return; const cell = findCell(to); if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; } };
   host.removeEventListener('mousemove', onHover, true);
   host.addEventListener('mousemove', onHover, true);
