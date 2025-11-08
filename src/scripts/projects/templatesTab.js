@@ -250,6 +250,78 @@ function ensureLogoControls(type = 'expenses') {
   shadeClear?.addEventListener('click', () => { try { clearShadeFromControls(); } catch (_) {} });
 }
 
+// Re-bind drag and size interactions for Call Sheet logos when restoring from saved HTML
+function attachCallsheetLogoBehaviors(root) {
+  try {
+    if (!root) return;
+    const rightWrap = root.querySelector('.cs-logo--right');
+    const rightImg = rightWrap?.querySelector('img');
+    if (rightWrap && rightImg) {
+      const readMatrix = () => {
+        try {
+          const s = String(rightImg.style.transform || '');
+          const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(s);
+          const sm = /scale\(([-\d.]+)\)/.exec(s);
+          return { x: Number(m?.[1] || 0) || 0, y: Number(m?.[2] || 0) || 0, s: Number(sm?.[1] || 1) || 1 };
+        } catch (_) { return { x: 0, y: 0, s: 1 }; }
+      };
+      let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
+      const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; try { ev.preventDefault(); } catch(_) {} };
+      const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readSecondaryLogoState().s || 1))); rightImg.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
+      const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writeSecondaryLogoState({ x: m.x, y: m.y }); try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} markTemplatesEditingActivity(); };
+      rightImg.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove, { passive: true });
+      window.addEventListener('pointerup', onUp, { passive: true });
+      // Hook size slider
+      const sliderR = document.getElementById('tpl-logo2-size');
+      if (sliderR) {
+        const apply = (s) => {
+          const scale = Math.max(0.3, Math.min(3, Number(s || 1)));
+          const m = readMatrix();
+          try { rightImg.style.transform = `scale(${scale}) translate(${m.x}px, ${m.y}px)`; } catch(_) {}
+          writeSecondaryLogoState({ s: scale });
+        };
+        sliderR.oninput = (e) => { try { apply(e?.target?.value); } catch(_) {} markTemplatesEditingActivity(); };
+        sliderR.onchange = () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
+      }
+    }
+  } catch(_) {}
+
+  try {
+    const leftWrap = root.querySelector('.cs-logo--left');
+    const leftImg = leftWrap?.querySelector('img');
+    if (leftWrap && leftImg) {
+      const readMatrix = () => {
+        try {
+          const s = String(leftImg.style.transform || '');
+          const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(s);
+          const sm = /scale\(([-\d.]+)\)/.exec(s);
+          return { x: Number(m?.[1] || 0) || 0, y: Number(m?.[2] || 0) || 0, s: Number(sm?.[1] || 1) || 1 };
+        } catch (_) { return { x: 0, y: 0, s: 1 }; }
+      };
+      let dragging = false; let sx = 0; let sy = 0; let ox = 0; let oy = 0;
+      const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; try { ev.preventDefault(); } catch(_) {} };
+      const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); leftImg.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
+      const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writePrimaryLogoState({ x: m.x, y: m.y }); try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} markTemplatesEditingActivity(); };
+      leftImg.addEventListener('pointerdown', onDown);
+      window.addEventListener('pointermove', onMove, { passive: true });
+      window.addEventListener('pointerup', onUp, { passive: true });
+      // Hook size slider
+      const sliderL = document.getElementById('tpl-logo1-size');
+      if (sliderL) {
+        const apply = (s) => {
+          const scale = Math.max(0.3, Math.min(3, Number(s || 1)));
+          const m = readMatrix();
+          try { leftImg.style.transform = `scale(${scale}) translate(${m.x}px, ${m.y}px)`; } catch(_) {}
+          writePrimaryLogoState({ s: scale });
+        };
+        sliderL.oninput = (e) => { try { apply(e?.target?.value); } catch(_) {} markTemplatesEditingActivity(); };
+        sliderL.onchange = () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
+      }
+    }
+  } catch(_) {}
+}
+
 // Inline toolbar near focused cell (row ops for schedule, slot ops for cast)
 function ensureCellToolbar() {
   const host = document.getElementById('templates-preview-host');
@@ -1264,7 +1336,14 @@ function saveTemplatesAutosaveToStorage() {
   try {
     const snap = getTemplatesSnapshot();
     if (!snap) return;
-    const payload = { v: 1, ts: Date.now(), snap };
+    // Also persist full HTML of the current template root so structural changes
+    // (added/removed rows/cells) are preserved across refresh, especially for Call Sheet
+    let html = '';
+    try {
+      const root = document.getElementById('templates-a4-root');
+      if (root) html = root.outerHTML;
+    } catch(_) {}
+    const payload = { v: 1, ts: Date.now(), snap, html };
     localStorage.setItem(getTemplatesContextKey(), JSON.stringify(payload));
   } catch(_) {}
 }
@@ -1276,9 +1355,34 @@ function restoreTemplatesAutosaveIfPresent() {
     const raw = localStorage.getItem(getTemplatesContextKey());
     if (!raw) return;
     const parsed = JSON.parse(raw);
+    const host = document.getElementById('templates-preview-host');
+    // If we have a full HTML snapshot, prefer restoring it to preserve structure
+    if (parsed && parsed.html && host) {
+      try {
+        host.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.innerHTML = parsed.html;
+        const root = wrap.firstElementChild;
+        if (root) host.appendChild(root);
+        // Re-apply transforms/shading/text if available to keep in sync with logo state
+        if (parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
+        // Recreate the inline toolbar if it was cleared
+        try { ensureCellToolbar(); } catch(_) {}
+        // Re-bind logo gestures so drag/size continues to work after restore
+        try { attachCallsheetLogoBehaviors(root); } catch(_) {}
+        // Re-apply the current zoom to the new root
+        try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
+      } catch(_) {
+        // Fallback to in-place snapshot application
+        if (parsed && parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
+      }
+      // Seed history with restored state so undo works from there
+      try { if (parsed.snap) TPL_HISTORY.push(parsed.snap); } catch(_) {}
+      return;
+    }
+    // Legacy path: only edits/shading/logos snapshot available
     if (parsed && parsed.snap) {
       applyTemplatesSnapshotInPlace(parsed.snap);
-      // Seed history with restored state so undo works from there
       try { TPL_HISTORY.push(parsed.snap); } catch(_) {}
     }
   } catch(_) {}
@@ -3067,6 +3171,8 @@ function handleTableActionClick(e) {
   try { renumberExpenseCodes(); } catch (_) {}
   recomputeExpensesSubtotals();
   try { shrinkSingleWordCells(tbody); } catch (_) {}
+  // Persist structure/content changes into history + autosave
+  try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
 }
 
 function getCellIndex(td) {
@@ -3328,6 +3434,7 @@ function handleTableKeydown(e) {
         recomputeExpensesSubtotals();
       }
     }
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
     return;
   }
 
@@ -3338,6 +3445,7 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotals();
     }
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
     return;
   }
 
@@ -3348,6 +3456,7 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotals();
     }
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
   }
 }
 
