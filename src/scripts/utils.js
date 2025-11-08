@@ -163,18 +163,7 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
     } catch (_) { /* ignore */ }
   }, 30);
 
-  // Final fallback: if لا يزال مخفياً لأي سبب، أظهر تنبيه بسيط لتجنب ضياع الرسالة
-  setTimeout(() => {
-    try {
-      const rect2 = toast.getBoundingClientRect();
-      const style2 = window.getComputedStyle(toast);
-      const invisible2 = style2.display === 'none' || style2.visibility === 'hidden' || Number(style2.opacity || '1') < 0.05;
-      const offscreen2 = rect2.height < 8 || rect2.width < 8 || rect2.top < -10 || rect2.top > (window.innerHeight + 10);
-      if (invisible2 || offscreen2) {
-        alert(message);
-      }
-    } catch (_) { /* ignore */ }
-  }, 450);
+  // Remove intrusive alert fallback to avoid double messages; rely on console/debug instead
   const { hide } = scheduleToastRemoval(toast, duration);
   toast.addEventListener('click', hide);
 }

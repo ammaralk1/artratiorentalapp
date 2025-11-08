@@ -46,6 +46,8 @@ function ensureGlobalSaveDelegation() {
     document.addEventListener('click', (event) => {
       const btn = event.target?.closest?.('#save-reservation-changes');
       if (!btn) return;
+      // If the button already has its own listener attached, skip delegated handler
+      try { if (btn.dataset.listenerAttached === 'true') return; } catch (_) {}
       try {
         // Visual feedback: prevent double clicks
         if (!btn.dataset.saving) {
