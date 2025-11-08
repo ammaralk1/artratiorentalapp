@@ -1067,6 +1067,27 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   sched.appendChild(sb);
   wrap.appendChild(sched);
 
+  // Crew Call table (Position / Name / Phone)
+  const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew' });
+  const crewCols = [28, 44, 28]; // Position, Name, Phone
+  const crewCg = el('colgroup'); crewCols.forEach((w) => crewCg.appendChild(el('col', { style: `width:${w}%` })));
+  crew.appendChild(crewCg);
+  const crewHead = el('thead');
+  const crewHeadRow = el('tr');
+  ['Position', 'Name', 'Phone'].forEach((label, i) => crewHeadRow.appendChild(el('th', { text: label, style: `width:${crewCols[i]}%` })));
+  crewHead.appendChild(crewHeadRow);
+  crew.appendChild(crewHead);
+  const crewBody = el('tbody');
+  for (let i = 0; i < 10; i += 1) {
+    const tr = el('tr');
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Position
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Name
+    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', dir: 'ltr', style: 'direction:ltr;' })); // Phone
+    crewBody.appendChild(tr);
+  }
+  crew.appendChild(crewBody);
+  wrap.appendChild(crew);
+
   // Remove WRAP footer per request
 
   inner.appendChild(wrap);
