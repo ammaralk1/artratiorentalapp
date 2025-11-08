@@ -14,6 +14,12 @@ function ensureToastContainer() {
   try {
     container.classList.remove('toast-container', 'fixed', 'bottom-6', 'start-6', 'z-50');
   } catch (_) { /* ignore */ }
+  // If the container exists but is not a direct child of <body>, move it to avoid being hidden by parent styles
+  try {
+    if (container.parentElement && container.parentElement !== document.body) {
+      document.body.appendChild(container);
+    }
+  } catch (_) { /* ignore */ }
   container.style.position = 'fixed';
   container.style.top = '20px';
   container.style.bottom = 'auto';
