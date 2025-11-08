@@ -1189,9 +1189,9 @@ function populateCrewFromReservation(crewTable, reservation) {
   assignments.forEach((a, idx) => {
     const tr = rows[idx]; if (!tr) return;
     const cells = Array.from(tr.children);
-    const pos = a.positionLabel || a.position || a.technicianRole || a.role || '';
-    const name = a.technicianName || a.name || '';
-    const phone = a.technicianPhone || a.phone || '';
+    const pos = a.positionLabel || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
+    const name = a.technicianName || a.name || a.full_name || a.technician_name || '';
+    const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
     if (cells[0]) cells[0].textContent = pos || '';
     if (cells[1]) cells[1].textContent = name || '';
     if (cells[2]) cells[2].textContent = phone || '';
@@ -1214,7 +1214,37 @@ function populateCrewFromReservationIfEmpty(reservation) {
     const fillRatio = totalCells > 0 ? (filledCells / totalCells) : 0;
     if (fillRatio <= 0.15) {
       populateCrewFromReservation(crew, reservation);
+      return;
     }
+    // Otherwise merge missing fields (position/phone) based on technician name
+    try {
+      const assignments = (() => {
+        if (Array.isArray(reservation.crewAssignments) && reservation.crewAssignments.length) return reservation.crewAssignments;
+        if (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length) return reservation.techniciansDetails;
+        const ids = Array.isArray(reservation.technicians) ? reservation.technicians : [];
+        if (ids.length) {
+          const byId = new Map((getTechniciansState() || []).map((t) => [String(t.id), t]));
+          return ids.map((id) => {
+            const tech = byId.get(String(id));
+            return tech ? { technicianId: tech.id, technicianName: tech.name || tech.full_name, technicianPhone: tech.phone, technicianRole: tech.role || tech.specialization } : { technicianId: id };
+          });
+        }
+        return [];
+      })();
+      const byName = new Map(assignments.map((a) => [String((a.technicianName || a.name || a.full_name || '')).trim().toLowerCase(), a]));
+      rows.forEach((tr) => {
+        const cells = Array.from(tr.children);
+        const hasName = (cells[1] && (cells[1].textContent || '').trim());
+        if (!hasName) return;
+        const nameKey = String((cells[1].textContent || '')).trim().toLowerCase();
+        const a = byName.get(nameKey);
+        if (!a) return;
+        const pos = a.positionLabel || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
+        const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
+        if (cells[0] && !(cells[0].textContent || '').trim()) cells[0].textContent = pos || '';
+        if (cells[2] && !(cells[2].textContent || '').trim()) { cells[2].setAttribute('dir','ltr'); cells[2].style.direction = 'ltr'; cells[2].textContent = phone || ''; }
+      });
+    } catch (_) {}
   } catch(_) {}
 }
 
@@ -1888,15 +1918,6 @@ function renderTemplatesPreview() {
   } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
   try { if (type === 'callsheet') populateCrewFromReservationIfEmpty(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
-  // Trim trailing blank rows to minimize empty pages in preview
-  try {
-    if (type === 'callsheet') {
-      const sched = pageRoot.querySelector('table.cs-schedule');
-      const crew = pageRoot.querySelector('table.cs-crew');
-      if (sched) trimTrailingEmptyRows(sched, 4);
-      if (crew) trimTrailingEmptyRows(crew, 2);
-    }
-  } catch (_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
@@ -3349,11 +3370,7 @@ function paginateGenericTplTables() {
     const tables = Array.from(inner.querySelectorAll('table.tpl-table'));
     tables.forEach((table) => {
       if (!table || table.getAttribute('data-split-done') === '1') return;
-      // Trim trailing blank rows to avoid generating empty pages
-      try {
-        const keepTail = table.classList.contains('cs-schedule') ? 4 : (table.classList.contains('cs-crew') ? 2 : 0);
-        if (keepTail >= 0) trimTrailingEmptyRows(table, keepTail);
-      } catch (_) {}
+      // Do not trim trailing rows during interactive preview; pruning blank pages is handled later
       const thead = table.querySelector('thead');
       const colTpl = table.querySelector('colgroup');
       const rows = Array.from(table.querySelectorAll('tbody > tr'));
@@ -3411,6 +3428,8 @@ function paginateGenericTplTables() {
 // Remove empty A4 pages that no longer contain any meaningful content
 function pruneEmptyA4Pages() {
   try {
+    // Avoid pruning while the user is actively editing to prevent newly added blank rows from vanishing
+    try { if (typeof TPL_EDITING !== 'undefined' && TPL_EDITING) return; } catch(_) {}
     const root = document.getElementById('templates-a4-root');
     if (!root) return;
     const pages = Array.from(root.querySelectorAll('.a4-page'));
