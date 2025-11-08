@@ -1107,10 +1107,10 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   crew.appendChild(crewCg);
   const crewHead = el('thead');
   const crewTitleRow = el('tr');
-  crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call' }));
+  crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call', style: 'text-align:center;display:flex;align-items:center;justify-content:center;font-size:14px;' }));
   crewHead.appendChild(crewTitleRow);
   const crewHeadRow = el('tr');
-  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => crewHeadRow.appendChild(el('th', { text: label, style: `width:${crewCols[i]}%` })));
+  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => crewHeadRow.appendChild(el('th', { text: label, style: `width:${crewCols[i]}%;text-align:center;display:flex;align-items:center;justify-content:center;font-size:12.5px;` })));
   crewHead.appendChild(crewHeadRow);
   crew.appendChild(crewHead);
   const crewBody = el('tbody');
@@ -1149,10 +1149,25 @@ function populateCrewFromReservation(crewTable, reservation) {
     if (Array.isArray(reservation.techniciansDetails) && reservation.techniciansDetails.length) return reservation.techniciansDetails;
     const ids = Array.isArray(reservation.technicians) ? reservation.technicians : [];
     if (ids.length) {
-      const byId = new Map((getTechniciansState() || []).map((t) => [String(t.id), t]));
-      return ids.map((id) => {
-        const tech = byId.get(String(id));
-        return tech ? { technicianId: tech.id, technicianName: tech.name || tech.full_name, technicianPhone: tech.phone, technicianRole: tech.role || tech.specialization } : { technicianId: id };
+      const list = getTechniciansState() || [];
+      const byId = new Map(list.map((t) => [String(t.id), t]));
+      const byName = new Map(list.map((t) => [String((t.name || t.full_name || '').trim().toLowerCase()), t]));
+      return ids.map((entry) => {
+        // entry could be an id or a name
+        if (entry && typeof entry === 'object') {
+          const id = entry.id ?? entry.technicianId;
+          const nm = entry.name ?? entry.full_name ?? entry.technician_name;
+          const t = (id != null && byId.get(String(id))) || (nm ? byName.get(String(nm).trim().toLowerCase()) : null);
+          if (t) return { technicianId: t.id, technicianName: t.name || t.full_name, technicianPhone: t.phone, technicianRole: t.role || t.specialization };
+          return { technicianName: nm || '', technicianId: id ?? null };
+        }
+        const key = String(entry || '').trim();
+        const tech = byId.get(key) || byName.get(key.toLowerCase());
+        return tech
+          ? { technicianId: tech.id, technicianName: tech.name || tech.full_name, technicianPhone: tech.phone, technicianRole: tech.role || tech.specialization }
+          : (/^\d+$/.test(key)
+              ? { technicianId: key }
+              : { technicianName: key });
       });
     }
     return [];
@@ -1177,11 +1192,13 @@ function populateCrewFromReservation(crewTable, reservation) {
           a.positionLabel = a.positionLabel ?? a.position_name ?? a.positionName ?? a.position;
           a.technicianPhone = a.technicianPhone ?? a.phone_number ?? a.phoneNumber ?? a.mobile ?? a.whatsapp;
           a.technicianName = a.technicianName ?? a.full_name ?? a.technician_name;
+          // Arabic/English spacing/case-insensitive matching
+          if (!a.technicianName && a.name) a.technicianName = a.name;
         } catch (_) {}
       });
       const techs = getTechniciansState() || [];
       const byId = new Map(techs.map((t) => [String(t.id), t]));
-      const byName = new Map(techs.map((t) => [String((t.name || '').trim().toLowerCase()), t]));
+      const byName = new Map(techs.map((t) => [String((t.name || t.full_name || '').trim().toLowerCase()), t]));
       assignments.forEach((a) => {
         const aid = a.technicianId ?? a.technician_id ?? a.id;
         const aname = a.technicianName ?? a.name;
@@ -1214,7 +1231,7 @@ function populateCrewFromReservation(crewTable, reservation) {
   assignments.forEach((a, idx) => {
     const tr = rows[idx]; if (!tr) return;
     const cells = Array.from(tr.children);
-    const pos = a.positionLabel || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
+    const pos = a.positionLabel || a.positionLabelAr || a.positionLabelEn || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
     const name = a.technicianName || a.name || a.full_name || a.technician_name || '';
     const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
     if (cells[0]) cells[0].textContent = pos || '';
@@ -3794,11 +3811,11 @@ function ensureCrewTableExists() {
   crew.appendChild(cg);
   const thead = document.createElement('thead');
   const titleRow = document.createElement('tr');
-  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call'; titleRow.appendChild(titleTh);
+  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call'; titleTh.style.textAlign = 'center'; titleTh.style.display = 'flex'; titleTh.style.alignItems = 'center'; titleTh.style.justifyContent = 'center'; titleTh.style.fontSize = '14px'; titleRow.appendChild(titleTh);
   thead.appendChild(titleRow);
   const trh = document.createElement('tr');
   ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
-    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); trh.appendChild(th);
+    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); th.style.textAlign = 'center'; th.style.display = 'flex'; th.style.alignItems = 'center'; th.style.justifyContent = 'center'; th.style.fontSize = '12.5px'; trh.appendChild(th);
   });
   thead.appendChild(trh);
   crew.appendChild(thead);
