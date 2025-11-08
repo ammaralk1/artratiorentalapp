@@ -288,6 +288,12 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-logo { z-index: 51; border: none !important; outline: none !important; box-shadow: none !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-logo::before { content:""; position:absolute; inset:-3px; background:#ffffff !important; border:none !important; box-shadow:none !important; border-radius:6px; z-index:-1; }
 
+/* Export: keep custom shading for marked cells */
+#templates-a4-root[data-render-context="export"] .callsheet-v1 [data-shaded="1"] {
+  background: var(--shade, rgba(255, 245, 157, 0.4)) !important;
+  background-color: var(--shade, rgba(255, 245, 157, 0.4)) !important;
+}
+
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
 #templates-a4-root[data-render-context="preview"] table.cs-cast,
@@ -309,6 +315,12 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
+
+/* Allow custom shading on cells when requested */
+#templates-a4-root .callsheet-v1 [data-shaded="1"] {
+  background: var(--shade, rgba(255, 245, 157, 0.4)) !important;
+  background-color: var(--shade, rgba(255, 245, 157, 0.4)) !important;
+}
 
 /* Print header/footer (inside each A4 page) */
 .tpl-print-header { position:absolute; inset:0 0 auto 0; height:24mm; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6mm 14mm; border-bottom:1px solid #e5e7eb; background:#fff; }

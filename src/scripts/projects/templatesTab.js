@@ -156,6 +156,17 @@ function ensureLogoControls(type = 'expenses') {
       <button type="button" class="btn btn-outline" id="tpl-font-down" title="تصغير الخط">A−</button>
       <button type="button" class="btn btn-outline" id="tpl-font-up" title="تكبير الخط">A+</button>
     </div>
+    <div class="input-group" id="tpl-shade-controls" style="display:inline-flex;gap:6px;align-items:center;">
+      <label class="form-label" style="margin:0 4px 0 0;">تظليل</label>
+      <input type="color" id="tpl-shade-color" value="#fff59d" title="لون التظليل">
+      <input type="range" id="tpl-shade-opacity" min="0" max="100" step="1" value="40" title="الشفافية %">
+      <select id="tpl-shade-target" class="form-select" style="height:32px;">
+        <option value="cell">خلية</option>
+        <option value="row">صف</option>
+      </select>
+      <button type="button" class="btn btn-outline" id="tpl-shade-apply">تطبيق</button>
+      <button type="button" class="btn btn-outline btn-danger" id="tpl-shade-clear">إزالة</button>
+    </div>
     <div class="input-group" id="tpl-history-controls" style="display:inline-flex;gap:6px;align-items:center;">
       <button type="button" class="btn btn-outline" id="tpl-undo" title="تراجع">↶</button>
       <button type="button" class="btn btn-outline" id="tpl-redo" title="تقديم">↷</button>
@@ -199,6 +210,12 @@ function ensureLogoControls(type = 'expenses') {
   const fontUp = document.getElementById('tpl-font-up');
   fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -2 : -1); } catch (_) {} });
   fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +2 : +1); } catch (_) {} });
+
+  // Shading controls
+  const shadeApply = document.getElementById('tpl-shade-apply');
+  const shadeClear = document.getElementById('tpl-shade-clear');
+  shadeApply?.addEventListener('click', () => { try { applyShadeFromControls(); } catch (_) {} });
+  shadeClear?.addEventListener('click', () => { try { clearShadeFromControls(); } catch (_) {} });
 }
 
 function el(tag, attrs = {}, children = []) {
@@ -1037,6 +1054,83 @@ function adjustSelectionFont(deltaPx = 0) {
     try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
     markTemplatesEditingActivity();
   } catch (_) {}
+}
+
+// ===== Cell shading helpers =====
+function hexToRgb(hex) {
+  try {
+    let h = (hex || '').trim();
+    if (h.startsWith('#')) h = h.slice(1);
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    const num = parseInt(h, 16);
+    const r = (num >> 16) & 255; const g = (num >> 8) & 255; const b = num & 255;
+    return { r, g, b };
+  } catch (_) { return { r: 255, g: 255, b: 0 }; }
+}
+function nearestCellInCallsheet() {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root) return null;
+    const sel = window.getSelection();
+    let node = (sel && sel.anchorNode) || document.activeElement;
+    if (!node) return null;
+    if (node.nodeType === 3) node = node.parentElement;
+    let el = (node instanceof Element) ? node : null;
+    while (el && el !== document.body) {
+      if ((el.tagName === 'TD' || el.tagName === 'TH') && root.contains(el)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  } catch (_) { return null; }
+}
+function applyShadeToCell(cell, rgba) {
+  if (!cell) return;
+  try {
+    cell.setAttribute('data-shaded', '1');
+    cell.style.setProperty('--shade', rgba);
+    cell.style.setProperty('background', 'var(--shade)', 'important');
+    cell.style.setProperty('background-color', 'var(--shade)', 'important');
+  } catch (_) {}
+}
+function clearShadeOnCell(cell) {
+  if (!cell) return;
+  try {
+    cell.removeAttribute('data-shaded');
+    cell.style.removeProperty('--shade');
+    cell.style.removeProperty('background');
+    cell.style.removeProperty('background-color');
+  } catch (_) {}
+}
+function applyShadeFromControls() {
+  const colorEl = document.getElementById('tpl-shade-color');
+  const opacityEl = document.getElementById('tpl-shade-opacity');
+  const targetEl = document.getElementById('tpl-shade-target');
+  const { r, g, b } = hexToRgb(colorEl?.value || '#fff59d');
+  const a = Math.max(0, Math.min(100, Number(opacityEl?.value || 40))) / 100;
+  const rgba = `rgba(${r}, ${g}, ${b}, ${a})`;
+  const cell = nearestCellInCallsheet();
+  if (!cell) return;
+  const target = (targetEl?.value || 'cell');
+  if (target === 'row') {
+    const tr = cell.closest('tr');
+    if (!tr) { applyShadeToCell(cell, rgba); } else {
+      Array.from(tr.children).forEach((c) => applyShadeToCell(c, rgba));
+    }
+  } else {
+    applyShadeToCell(cell, rgba);
+  }
+  try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+}
+function clearShadeFromControls() {
+  const cell = nearestCellInCallsheet();
+  if (!cell) return;
+  const targetEl = document.getElementById('tpl-shade-target');
+  const target = (targetEl?.value || 'cell');
+  if (target === 'row') {
+    const tr = cell.closest('tr');
+    if (!tr) { clearShadeOnCell(cell); } else { Array.from(tr.children).forEach((c) => clearShadeOnCell(c)); }
+  } else { clearShadeOnCell(cell); }
+  try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
 }
 
 function getTemplatesContextKey() {
