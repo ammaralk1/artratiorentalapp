@@ -83,7 +83,7 @@ function scheduleToastRemoval(toast, duration) {
     // and to prevent immediate dismissal from programmatic focus/clicks.
     setTimeout(() => {
       try { document.addEventListener('click', onAnyClick, { once: true, capture: true }); } catch (_) { /* noop */ }
-    }, 500);
+    }, 1200);
     return { hide, timeoutId };
   }
 
