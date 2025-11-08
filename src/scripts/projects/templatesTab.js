@@ -262,7 +262,7 @@ function ensureCellToolbar() {
         deleteRow(tr);
       };
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
-      const updateAfter = () => { try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} try { scheduleRepopulate(0); } catch(_) {} };
+      const updateAfter = () => { try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {} };
       const castAddSlot = () => {
         const table = cast; if (!table) return;
         const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
@@ -324,12 +324,15 @@ function ensureCellToolbar() {
     bar.__targetCell = cell;
   };
   const findCell = (evTarget) => { return evTarget && evTarget.closest ? evTarget.closest('td,th') : null; };
+  const onHover = (e) => { const cell = findCell(e.target); if (cell) place(cell); };
   const onFocus = (e) => { const cell = findCell(e.target); place(cell); };
-  const onClick = (e) => { const cell = findCell(e.target); if (cell) place(cell); else bar.style.display = 'none'; };
+  const onOut = (e) => { const to = e.relatedTarget; if (bar.contains(to)) return; const cell = findCell(to); if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; } };
+  host.removeEventListener('mousemove', onHover, true);
+  host.addEventListener('mousemove', onHover, true);
   host.removeEventListener('focusin', onFocus, true);
   host.addEventListener('focusin', onFocus, true);
-  host.removeEventListener('pointerup', onClick, true);
-  host.addEventListener('pointerup', onClick, true);
+  host.removeEventListener('mouseleave', onOut, true);
+  host.addEventListener('mouseleave', onOut, true);
   host.addEventListener('scroll', () => { if (bar.__targetCell) place(bar.__targetCell); }, { passive: true });
 }
 
@@ -1205,7 +1208,8 @@ function getTemplatesSnapshot() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return null;
   const edits = Array.from(root.querySelectorAll('[data-editable="true"]')).map((el) => el.innerHTML);
-  return { edits, l: readPrimaryLogoState(), r: readSecondaryLogoState() };
+  const sh = snapshotShading(root);
+  return { edits, l: readPrimaryLogoState(), r: readSecondaryLogoState(), sh };
 }
 function applyTemplatesSnapshotInPlace(snap) {
   if (!snap) return;
@@ -1236,6 +1240,8 @@ function applyTemplatesSnapshotInPlace(snap) {
       right.style.transform = `scale(${s2}) translate(${x2}px, ${y2}px)`;
     }
   } catch(_) {}
+  // Apply shading marks
+  try { if (snap.sh) applyShadingSnapshot(root, snap.sh); } catch(_) {}
 }
 function applyTemplatesSnapshot(snap) {
   if (!snap) return;
@@ -1256,6 +1262,44 @@ function applyTemplatesSnapshot(snap) {
     try { renderTemplatesPreview(); } catch(_) {}
     TPL_RESTORING = false;
   }
+}
+
+// Snapshot/restore shading by table,row,cell indices for Call Sheet
+function snapshotShading(root) {
+  try {
+    const scope = root.querySelector('.callsheet-v1');
+    if (!scope) return [];
+    const tables = Array.from(scope.querySelectorAll('table'));
+    const out = [];
+    tables.forEach((t, ti) => {
+      const rows = Array.from(t.querySelectorAll('tr'));
+      rows.forEach((tr, ri) => {
+        const cells = Array.from(tr.children);
+        cells.forEach((td, ci) => {
+          if (td.getAttribute && td.getAttribute('data-shaded') === '1') {
+            const shade = td.style.getPropertyValue('--shade') || td.style.backgroundColor || '';
+            out.push({ ti, ri, ci, shade });
+          }
+        });
+      });
+    });
+    return out;
+  } catch(_) { return []; }
+}
+function applyShadingSnapshot(root, list) {
+  try {
+    const scope = root.querySelector('.callsheet-v1');
+    if (!scope || !Array.isArray(list)) return;
+    const tables = Array.from(scope.querySelectorAll('table'));
+    list.forEach((it) => {
+      const t = tables[it.ti];
+      const tr = t && t.querySelectorAll('tr')?.[it.ri];
+      const td = tr && tr.children?.[it.ci];
+      if (td) {
+        try { td.setAttribute('data-shaded', '1'); td.style.setProperty('--shade', it.shade); td.style.setProperty('background', 'var(--shade)', 'important'); td.style.setProperty('background-color', 'var(--shade)', 'important'); } catch(_) {}
+      }
+    });
+  } catch(_) {}
 }
 function pushTemplatesHistory() {
   if (TPL_RESTORING) return;
