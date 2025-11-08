@@ -238,6 +238,8 @@ function ensureCellToolbar() {
         <span data-sep style="width:1px;background:#e5e7eb;margin:0 4px"></span>
         <button type="button" data-act="cast-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ خانة</button>
         <button type="button" data-act="cast-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× خانة</button>
+        <button type="button" data-act="cast-add-row" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف اسم/وقت</button>
+        <button type="button" data-act="cast-del-row" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف اسم/وقت</button>
       </div>`;
     host.appendChild(bar);
     bar.__lock = false; bar.__switchTimer = null; bar.__freezeUntil = 0;
@@ -296,12 +298,38 @@ function ensureCellToolbar() {
         const titleCell = tbody.querySelector('.cs-cast-title');
         if (titleCell) { titleCell.setAttribute('colspan', String(nameRow.children.length)); }
       };
-      if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); }
+      const castAddRowPair = () => {
+        const table = cast; if (!table) return;
+        const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
+        const firstName = tbody.children && tbody.children[1];
+        const firstTime = tbody.children && tbody.children[2];
+        if (!firstName || !firstTime) return;
+        const weather = firstName.querySelector('.cs-weather');
+        const cols = firstName.children.length - (weather ? 1 : 0);
+        const nameTr = document.createElement('tr');
+        const timeTr = document.createElement('tr');
+        for (let i=0;i<cols;i+=1) { const td=document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); nameTr.appendChild(td); }
+        for (let i=0;i<cols;i+=1) { const td=document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); timeTr.appendChild(td); }
+        tbody.appendChild(nameTr); tbody.appendChild(timeTr);
+        if (weather) { const totalRows = tbody.querySelectorAll('tr').length - 1; weather.setAttribute('rowspan', String(totalRows)); }
+      };
+      const castRemoveRowPair = () => {
+        const table = cast; if (!table) return;
+        const tbody = table.tBodies && table.tBodies[0]; if (!tbody) return;
+        if (tbody.children.length <= 3) return; // title + first pair must remain
+        const lastTime = tbody.lastElementChild; const lastName = lastTime?.previousElementSibling;
+        if (lastName && lastTime && lastName.tagName === 'TR') { tbody.removeChild(lastTime); tbody.removeChild(lastName); }
+        const firstName = tbody.children[1]; const weather = firstName?.querySelector('.cs-weather');
+        if (weather) { const totalRows = tbody.querySelectorAll('tr').length - 1; weather.setAttribute('rowspan', String(totalRows)); }
+      };
+      if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'row-del' && sched) { doRowDel(); updateAfter(); }
-      else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); }
-      else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); }
+      else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
+      else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'cast-add' && cast) { castAddSlot(); updateAfter(); }
       else if (act === 'cast-del' && cast) { castRemoveSlot(); updateAfter(); }
+      else if (act === 'cast-add-row' && cast) { castAddRowPair(); updateAfter(); }
+      else if (act === 'cast-del-row' && cast) { castRemoveRowPair(); updateAfter(); }
     });
   }
 
@@ -1000,7 +1028,12 @@ function enablePrimaryLogoInteractions(wrap, img) {
   };
   const onDown = (ev) => { dragging = true; const m = readMatrix(); ox = m.x; oy = m.y; sx = ev.clientX; sy = ev.clientY; ev.preventDefault(); };
   const onMove = (ev) => { if (!dragging) return; const dx = ev.clientX - sx; const dy = ev.clientY - sy; const nx = Math.round(ox + dx); const ny = Math.round(oy + dy); const s = Math.max(0.3, Math.min(3, Number(readPrimaryLogoState().s || 1))); img.style.transform = `scale(${s}) translate(${nx}px, ${ny}px)`; };
-  const onUp = () => { if (!dragging) return; dragging = false; const m = readMatrix(); writePrimaryLogoState({ x: m.x, y: m.y }); };
+  const onUp = () => {
+    if (!dragging) return; dragging = false; const m = readMatrix();
+    writePrimaryLogoState({ x: m.x, y: m.y });
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
+    markTemplatesEditingActivity();
+  };
   img.addEventListener('pointerdown', onDown);
   window.addEventListener('pointermove', onMove, { passive: true });
   window.addEventListener('pointerup', onUp, { passive: true });
@@ -1466,6 +1499,19 @@ function renderTemplatesPreview() {
   } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
+  // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
+  try {
+    if (type === 'callsheet') {
+      const raw = localStorage.getItem(getTemplatesContextKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.snap && parsed.snap.sh) {
+          const root = document.getElementById('templates-a4-root');
+          if (root) applyShadingSnapshot(root, parsed.snap.sh);
+        }
+      }
+    }
+  } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
 
   // Debug toggle utility for quiet consoles in production
