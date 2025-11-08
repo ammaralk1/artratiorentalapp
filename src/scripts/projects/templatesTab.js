@@ -337,6 +337,7 @@ function ensureCellToolbar() {
       <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
         <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
         <button type="button" data-act="row-full" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف كامل</button>
+        <button type="button" data-act="row-full-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف كامل</button>
         <button type="button" data-act="row-del" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف</button>
         <button type="button" data-act="row-up" class="btn btn-outline" style="height:28px;padding:0 8px">↑</button>
         <button type="button" data-act="row-down" class="btn btn-outline" style="height:28px;padding:0 8px">↓</button>
@@ -444,6 +445,12 @@ function ensureCellToolbar() {
       };
       if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'row-full' && sched) { doRowFull(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
+      else if (act === 'row-full-del' && sched) {
+        const tr = cell.closest('tr');
+        const headCols = (() => { try { const head = sched.querySelector('thead tr'); return (head && head.children && head.children.length) ? head.children.length : 12; } catch(_) { return 12; } })();
+        const isFull = tr && tr.children && tr.children.length === 1 && Number(tr.children[0]?.getAttribute('colspan') || '1') >= headCols;
+        if (isFull) { tr.parentElement?.removeChild(tr); updateAfter(); }
+      }
       else if (act === 'row-del' && sched) { doRowDel(); updateAfter(); }
       else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
       else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
@@ -464,6 +471,18 @@ function ensureCellToolbar() {
     Array.from(bar.querySelectorAll('[data-act^="row-"]')).forEach((b) => b.style.display = showRowTools ? 'inline-flex' : 'none');
     Array.from(bar.querySelectorAll('[data-act^="cast-"]')).forEach((b) => b.style.display = showCastTools ? 'inline-flex' : 'none');
     bar.querySelector('[data-sep]')?.setAttribute('style', `width:1px;background:#e5e7eb;margin:0 4px;display:${(showRowTools && showCastTools)?'inline-block':'none'}`);
+
+    // Only show the "× صف كامل" button when the focused row is a full-width single cell
+    try {
+      const fullDelBtn = bar.querySelector('[data-act="row-full-del"]');
+      if (fullDelBtn && sched) {
+        const tr = cell.closest('tr');
+        const head = sched.querySelector('thead tr');
+        const headCols = (head && head.children && head.children.length) ? head.children.length : 12;
+        const isFull = tr && tr.children && tr.children.length === 1 && Number(tr.children[0]?.getAttribute('colspan') || '1') >= headCols;
+        fullDelBtn.style.display = (showRowTools && isFull) ? 'inline-flex' : 'none';
+      }
+    } catch(_) {}
 
     // Position relative to host
     const hostRect = host.getBoundingClientRect();
