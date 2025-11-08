@@ -20,44 +20,45 @@ function ensureToastContainer() {
       document.body.appendChild(container);
     }
   } catch (_) { /* ignore */ }
-  container.style.position = 'fixed';
-  container.style.top = '20px';
-  container.style.bottom = 'auto';
-  container.style.left = '0';
-  container.style.right = '0';
-  container.style.transform = 'none';
-  container.style.margin = '0 auto';
-  // Ensure toast is above any modal/backdrop
-  // Extremely high z-index to always be above modals/backdrops/tooltips
-  container.style.zIndex = '2147483647';
-  container.style.display = 'flex';
-  container.style.flexDirection = 'column';
-  container.style.alignItems = 'center';
-  container.style.width = 'min(92vw, 380px)';
-  container.style.pointerEvents = 'none';
+  const setImp = (prop, value) => { try { container.style.setProperty(prop, value, 'important'); } catch (_) { container.style[prop] = value; } };
+  setImp('position', 'fixed');
+  setImp('top', '20px');
+  setImp('bottom', 'auto');
+  setImp('left', '0');
+  setImp('right', '0');
+  setImp('transform', 'none');
+  setImp('margin', '0 auto');
+  // Ensure toast is above any modal/backdrop/tooltips
+  setImp('z-index', '2147483647');
+  setImp('display', 'flex');
+  setImp('flex-direction', 'column');
+  setImp('align-items', 'center');
+  setImp('width', 'min(92vw, 380px)');
+  setImp('pointer-events', 'none');
   return container;
 }
 
 function applyToastBaseStyles(toast) {
-  toast.style.background = '#333';
-  toast.style.color = '#fff';
-  toast.style.padding = '10px 18px';
-  toast.style.marginTop = '10px';
-  toast.style.borderRadius = '10px';
-  toast.style.boxShadow = '0 8px 24px rgba(15, 23, 42, 0.32)';
-  toast.style.opacity = '0';
-  toast.style.transition = 'opacity 0.3s ease';
-  toast.style.fontSize = '0.875rem';
-  toast.style.lineHeight = '1.4';
-  toast.style.pointerEvents = 'auto';
-  toast.style.backdropFilter = 'blur(4px)';
-  toast.style.position = 'relative';
-  toast.style.zIndex = '2147483647';
+  const setImp = (prop, value) => { try { toast.style.setProperty(prop, value, 'important'); } catch (_) { toast.style[prop] = value; } };
+  setImp('background', '#333');
+  setImp('color', '#fff');
+  setImp('padding', '10px 18px');
+  setImp('margin-top', '10px');
+  setImp('border-radius', '10px');
+  setImp('box-shadow', '0 8px 24px rgba(15, 23, 42, 0.32)');
+  setImp('opacity', '0');
+  setImp('transition', 'opacity 0.3s ease');
+  setImp('font-size', '0.875rem');
+  setImp('line-height', '1.4');
+  setImp('pointer-events', 'auto');
+  setImp('backdrop-filter', 'blur(4px)');
+  setImp('position', 'relative');
+  setImp('z-index', '2147483647');
 }
 
 function fadeInToast(toast) {
   requestAnimationFrame(() => {
-    toast.style.opacity = '1';
+    try { toast.style.setProperty('opacity', '1', 'important'); } catch (_) { toast.style.opacity = '1'; }
   });
 }
 
