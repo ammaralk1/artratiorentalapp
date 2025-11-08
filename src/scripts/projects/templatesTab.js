@@ -32,6 +32,7 @@ let TPL_ZOOM_VALUE_EL = null;
 let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
+let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
 
 function readTplZoomPref() {
   try { return Math.max(0.3, Math.min(2.5, Number(localStorage.getItem('templates.preview.zoom') || '1'))); } catch (_) { return 1; }
@@ -1403,9 +1404,7 @@ function markTemplatesEditingActivity() {
   // Consider user idle if no edits for 1200ms
   TPL_EDITING_TIMER = setTimeout(() => {
     TPL_EDITING = false;
-    // If a refresh was queued while editing, schedule it now
-    try { if (typeof scheduleRepopulate === 'function') scheduleRepopulate(0); } catch(_) {}
-    // Also autosave to backend when user becomes idle
+    // Autosave to backend when user becomes idle — no automatic repopulate to avoid flicker
     try { autosaveToServerDebounced(); } catch(_) {}
   }, 1200);
 }
@@ -4186,42 +4185,42 @@ export function initTemplatesTab() {
     }
   });
 
-  document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
-  // Ensure zoom controls are present once controls mount
-  try { ensureTemplatesZoomUI(); } catch (_) {}
-  // Normalize digits to English and recompute on edits
-  document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
-    const el = e.target;
-    if ((el instanceof HTMLElement) && el.isContentEditable) {
-      // Only normalize for numeric-like cells to avoid disturbing free text
-      const td = el.closest('td');
-      const isNumericCell = td?.hasAttribute('data-num') || /^(?:[\d\u0660-\u0669\u06F0-\u06F9.,\s-]+)$/.test(el.textContent || '');
-      const before = el.textContent || '';
-      if (isNumericCell) {
-        const after = (function normalizeDigits(str){
-          const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
-          return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
-        })(before);
-        if (after !== before) {
-          el.textContent = after;
-          // Keep caret at end to avoid reversed sequence while typing
-          try {
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            range.collapse(false);
-            const sel = window.getSelection();
-            if (sel) { sel.removeAllRanges(); sel.addRange(range); }
-          } catch (_) {}
+  if (!TPL_EVENTS_BOUND) {
+    TPL_EVENTS_BOUND = true;
+    document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+    // Normalize digits to English and recompute on edits
+    document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
+      const el = e.target;
+      if ((el instanceof HTMLElement) && el.isContentEditable) {
+        // Only normalize for numeric-like cells to avoid disturbing free text
+        const td = el.closest('td');
+        const isNumericCell = td?.hasAttribute('data-num') || /^(?:[\d\u0660-\u0669\u06F0-\u06F9.,\s-]+)$/.test(el.textContent || '');
+        const before = el.textContent || '';
+        if (isNumericCell) {
+          const after = (function normalizeDigits(str){
+            const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
+            return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
+          })(before);
+          if (after !== before) {
+            el.textContent = after;
+            // Keep caret at end to avoid reversed sequence while typing
+            try {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              range.collapse(false);
+              const sel = window.getSelection();
+              if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+            } catch (_) {}
+          }
         }
+        recomputeExpensesSubtotals();
+        try { shrinkSingleWordCells(td || el.closest('table')); } catch (_) {}
       }
-      recomputeExpensesSubtotals();
-      try { shrinkSingleWordCells(td || table); } catch (_) {}
-    }
-  });
-  // Paste from Excel/Sheets into tables
-  document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
-  document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
-  try { ensurePdfTunerUI(); } catch (_) {}
+    });
+    // Paste from Excel/Sheets into tables
+    document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
+    document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
+    try { ensurePdfTunerUI(); } catch (_) {}
 
   // (Row focus highlight removed per latest request)
 
@@ -4272,17 +4271,20 @@ export function initTemplatesTab() {
     }, Math.max(0, delay));
   }
 
-  document.addEventListener('projects:changed', () => scheduleRepopulate());
-  document.addEventListener('reservations:changed', () => scheduleRepopulate());
-  document.addEventListener('reservations:updated', () => scheduleRepopulate());
+    document.addEventListener('projects:changed', () => scheduleRepopulate());
+    document.addEventListener('reservations:changed', () => scheduleRepopulate());
+    document.addEventListener('reservations:updated', () => scheduleRepopulate());
 
-  const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
-  templatesTabBtn?.addEventListener('click', () => {
-    scheduleRepopulate(0);
-  });
+    const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
+    templatesTabBtn?.addEventListener('click', () => {
+      scheduleRepopulate(0);
+    });
 
-  setTimeout(() => scheduleRepopulate(0), 800);
-  setTimeout(() => scheduleRepopulate(0), 2000);
+    setTimeout(() => scheduleRepopulate(0), 800);
+    setTimeout(() => scheduleRepopulate(0), 2000);
+  }
+  // Ensure zoom controls are present once controls mount (idempotent)
+  try { ensureTemplatesZoomUI(); } catch (_) {}
 }
 
 export default { initTemplatesTab };
