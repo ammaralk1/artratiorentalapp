@@ -89,6 +89,38 @@ function ensureResizeBinding() {
   window.addEventListener('resize', () => { if (TPL_ZOOM_MODE === 'fit') applyTemplatesFitZoom(); }, { passive: true });
   TPL_ZOOM_RESIZE_BOUND = true;
 }
+
+// ===== Persist selected template type (expenses/callsheet/shotlist) =====
+const TPL_TYPE_PREF_KEY = 'projects.templates.type';
+function readTplPreferredType() {
+  try {
+    const v = String(localStorage.getItem(TPL_TYPE_PREF_KEY) || '').trim();
+    if (!v) return '';
+    // Only allow known values
+    return (v === 'expenses' || v === 'callsheet' || v === 'shotlist') ? v : '';
+  } catch (_) { return ''; }
+}
+function writeTplPreferredType(type) {
+  try { if (type) localStorage.setItem(TPL_TYPE_PREF_KEY, String(type)); } catch (_) {}
+}
+function restoreTplPreferredTypeIfAny(selectEl) {
+  if (!selectEl) return;
+  // Prefer URL param if present, else localStorage
+  let requested = '';
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    requested = params.get('tplType') || params.get('templatesType') || '';
+  } catch (_) {}
+  const stored = readTplPreferredType();
+  const preferred = (requested && (requested === 'expenses' || requested === 'callsheet' || requested === 'shotlist'))
+    ? requested
+    : stored;
+  if (!preferred) return;
+  const hasOption = Array.from(selectEl.options).some((o) => o.value === preferred);
+  if (hasOption) {
+    selectEl.value = preferred;
+  }
+}
 function ensureTemplatesZoomUI() {
   const actionsRow = document.getElementById('templates-actions');
   if (!actionsRow || document.getElementById('tpl-zoom-controls')) return;
@@ -3414,6 +3446,9 @@ export function initTemplatesTab() {
   try { console.debug('[templatesTab] init start'); } catch(_) {}
 
   if (!projectSel) return;
+
+  // Restore last-used template type before first render
+  restoreTplPreferredTypeIfAny(typeSel);
   populateProjectSelect();
   populateReservationSelect(projectSel.value || '');
   renderTemplatesPreview();
@@ -3425,7 +3460,12 @@ export function initTemplatesTab() {
     (async () => { try { await populateSavedTemplates(); } catch {} })();
   });
   reservationSel?.addEventListener('change', renderTemplatesPreview);
-  typeSel?.addEventListener('change', () => { renderTemplatesPreview(); try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {} });
+  typeSel?.addEventListener('change', () => {
+    // Persist selection and re-render
+    try { writeTplPreferredType(typeSel.value); } catch (_) {}
+    renderTemplatesPreview();
+    try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {}
+  });
   refreshBtn?.addEventListener('click', renderTemplatesPreview);
   if (printBtn) {
     printBtn.addEventListener('click', async (ev) => {
