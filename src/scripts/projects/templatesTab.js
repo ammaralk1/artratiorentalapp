@@ -1723,6 +1723,8 @@ function renderTemplatesPreview() {
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
   try { ensureCellToolbar(); } catch(_) {}
+  // Keep schedule header tidy and centered within cells
+  try { shrinkScheduleHeaderLabels(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
@@ -3451,6 +3453,22 @@ function shrinkSingleWordCells(scope) {
     let guard = 0;
     while (!fits() && size > min && guard < 40) { size -= 0.5; td.style.fontSize = size + 'px'; guard += 1; }
   });
+}
+
+// Ensure schedule header labels don't overflow their cells by shrinking font-size if needed
+function shrinkScheduleHeaderLabels() {
+  try {
+    const ths = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.cs-schedule thead th'));
+    ths.forEach((th) => {
+      th.style.fontSize = '';
+      const computed = Number.parseFloat(getComputedStyle(th).fontSize || '10');
+      let size = Number.isFinite(computed) ? computed : 10;
+      const min = 8;
+      const fits = () => (th.scrollWidth <= th.clientWidth + 0.5) && (th.scrollHeight <= th.clientHeight + 0.5);
+      let guard = 0;
+      while (!fits() && size > min && guard < 30) { size -= 0.5; th.style.fontSize = size + 'px'; guard += 1; }
+    });
+  } catch (_) {}
 }
 
 function handleTableKeydown(e) {

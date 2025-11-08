@@ -258,7 +258,20 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .callsheet-v1 .cs-schedule th:nth-child(12), .callsheet-v1 .cs-schedule td:nth-child(12) { width: 17% !important; }
 
 /* Make header text wrap inside cells cleanly */
-.callsheet-v1 .cs-schedule thead th { white-space: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; word-break: break-word; overflow-wrap: anywhere; line-height: 1.2; }
+.callsheet-v1 .cs-schedule thead th {
+  white-space: normal !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+  display: flex;               /* center header labels perfectly */
+  align-items: center;         /* vertical centering */
+  justify-content: center;     /* horizontal centering */
+  padding: 6px 4px;            /* tighter padding to fit text */
+  max-width: 100%;
+  box-sizing: border-box;
+}
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
