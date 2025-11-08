@@ -1430,6 +1430,8 @@ function restoreTemplatesAutosaveIfPresent() {
         try { ensureCellToolbar(); } catch(_) {}
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
+        // If Crew table is missing in restored HTML (older autosave), inject it
+        try { ensureCrewTableExists(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -1749,6 +1751,8 @@ function renderTemplatesPreview() {
   try { ensureCellToolbar(); } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabels(); } catch(_) {}
+  // Ensure Crew table exists even if an old autosave overwrote DOM
+  try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
@@ -3528,6 +3532,46 @@ function shrinkScheduleHeaderLabels() {
       while (!fits() && size > min && guard < 30) { size -= 0.5; th.style.fontSize = size + 'px'; guard += 1; }
     });
   } catch (_) {}
+}
+
+// Ensure Crew Call table exists (for older autosaves that predate this table)
+function ensureCrewTableExists() {
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return;
+  const callsheet = root.querySelector('.callsheet-v1');
+  if (!callsheet) return;
+  const existing = callsheet.querySelector('table.cs-crew');
+  if (existing) return;
+  // Build a fresh crew table and append after schedule
+  const crew = document.createElement('table');
+  crew.className = 'tpl-table cs-crew';
+  crew.setAttribute('data-editable-table', 'crew');
+  const cols = [28, 44, 28];
+  const cg = document.createElement('colgroup');
+  cols.forEach((w) => { const c = document.createElement('col'); c.setAttribute('style', `width:${w}%`); cg.appendChild(c); });
+  crew.appendChild(cg);
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  ['Position', 'Name', 'Phone'].forEach((label, i) => {
+    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  crew.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < 10; i += 1) {
+    const tr = document.createElement('tr');
+    const td1 = document.createElement('td'); td1.setAttribute('data-editable','true'); td1.setAttribute('contenteditable','true'); tr.appendChild(td1);
+    const td2 = document.createElement('td'); td2.setAttribute('data-editable','true'); td2.setAttribute('contenteditable','true'); tr.appendChild(td2);
+    const td3 = document.createElement('td'); td3.setAttribute('data-editable','true'); td3.setAttribute('contenteditable','true'); td3.setAttribute('dir','ltr'); td3.style.direction = 'ltr'; tr.appendChild(td3);
+    tbody.appendChild(tr);
+  }
+  crew.appendChild(tbody);
+  // Place after schedule if present, else append at end of callsheet
+  const sched = callsheet.querySelector('table.cs-schedule');
+  if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched.nextSibling);
+  else callsheet.appendChild(crew);
+  // Repaginate and prune empty pages so it flows correctly
+  try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 20); } catch(_) {}
 }
 
 function handleTableKeydown(e) {
