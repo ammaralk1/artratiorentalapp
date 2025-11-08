@@ -799,6 +799,13 @@ export async function editReservation(index, {
   const modalElement = document.getElementById('editReservationModal');
   modalInstance = ensureModalInstance(modalElement, ensureModal);
   modalInstance?.show?.();
+
+  // Ensure action handlers are (re)attached after modal content is present
+  try {
+    setupEditReservationModalEvents?.(modalEventsContext);
+  } catch (e) {
+    console.warn('[reservationsEdit] setupEditReservationModalEvents failed (non-fatal)', e);
+  }
 }
 
 export async function saveReservationChanges({
