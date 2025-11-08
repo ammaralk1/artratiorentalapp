@@ -213,6 +213,7 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
   border-color:#9ca3af !important;
   box-shadow:none !important;
   outline:none !important;
+  text-align:center !important;
 }
 #templates-a4-root .cs-schedule thead::before,
 #templates-a4-root .cs-schedule thead::after,
@@ -257,7 +258,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .callsheet-v1 .cs-schedule th:nth-child(12), .callsheet-v1 .cs-schedule td:nth-child(12) { width: 17% !important; }
 
 /* Make header text wrap inside cells cleanly */
-.callsheet-v1 .cs-schedule thead th { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.15; }
+.callsheet-v1 .cs-schedule thead th { white-space: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; word-break: break-word; overflow-wrap: anywhere; line-height: 1.2; }
+.callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */

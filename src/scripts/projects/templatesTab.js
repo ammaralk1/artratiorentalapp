@@ -699,7 +699,51 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   cb.appendChild(namesRow);
   cb.appendChild(timesRow);
   cast.appendChild(cb);
+
+  // Helpers to manage cast slots (name/time pairs)
+  const updateCastTitleColspan = () => {
+    try {
+      const titleCell = cast.querySelector('.cs-cast-title');
+      if (titleCell) titleCell.setAttribute('colspan', String(namesRow.children.length));
+    } catch (_) {}
+  };
+  updateCastTitleColspan();
+
+  const castTools = el('div', { class: 'tpl-actions cs-toolbar' });
+  try { Object.assign(castTools.style, { display: 'inline-flex', gap: '6px', margin: '4px 0' }); } catch (_) {}
+  castTools.appendChild(el('button', { class: 'btn btn-outline', id: 'cs-cast-add', text: '+' }));
+  castTools.appendChild(el('button', { class: 'btn btn-outline btn-danger', id: 'cs-cast-remove', text: '×' }));
+  wrap.appendChild(castTools);
   wrap.appendChild(cast);
+
+  document.getElementById('cs-cast-add')?.addEventListener('click', () => {
+    try {
+      // Insert before weather cell in namesRow, append to timesRow
+      const nt = el('td', { 'data-editable': 'true', contenteditable: 'true' });
+      namesRow.insertBefore(nt, w);
+      const tt = el('td', { 'data-editable': 'true', contenteditable: 'true' });
+      timesRow.appendChild(tt);
+      updateCastTitleColspan();
+      markTemplatesEditingActivity();
+      pushHistoryDebounced();
+      saveAutosaveDebounced();
+    } catch (_) {}
+  });
+  document.getElementById('cs-cast-remove')?.addEventListener('click', () => {
+    try {
+      // Prevent removing when no more slots (keep at least 1)
+      const count = namesRow.children.length - 1; // exclude weather cell
+      if (count <= 1) return;
+      const lastName = namesRow.children[namesRow.children.length - 2];
+      if (lastName) namesRow.removeChild(lastName);
+      const lastTime = timesRow.lastElementChild;
+      if (lastTime) timesRow.removeChild(lastTime);
+      updateCastTitleColspan();
+      markTemplatesEditingActivity();
+      pushHistoryDebounced();
+      saveAutosaveDebounced();
+    } catch (_) {}
+  });
 
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
@@ -740,7 +784,56 @@ function buildCallSheetPage(project, reservations, opts = {}) {
     sb.appendChild(tr);
   }
   sched.appendChild(sb);
+  // Toolbar for schedule table (add/remove/move row)
+  const schedTools = el('div', { class: 'tpl-actions cs-toolbar' });
+  try { Object.assign(schedTools.style, { display: 'inline-flex', gap: '6px', margin: '6px 0 4px' }); } catch (_) {}
+  const btnAddRow = el('button', { class: 'btn btn-outline', text: '+ صف' });
+  const btnDelRow = el('button', { class: 'btn btn-outline btn-danger', text: '× حذف صف' });
+  const btnUpRow = el('button', { class: 'btn btn-outline', text: '↑' });
+  const btnDownRow = el('button', { class: 'btn btn-outline', text: '↓' });
+  schedTools.appendChild(btnAddRow);
+  schedTools.appendChild(btnDelRow);
+  schedTools.appendChild(btnUpRow);
+  schedTools.appendChild(btnDownRow);
+  wrap.appendChild(schedTools);
   wrap.appendChild(sched);
+
+  const getActiveSchedRow = () => {
+    try {
+      const elx = document.activeElement;
+      const tr = elx && elx.closest ? elx.closest('tr') : null;
+      if (tr && tr.parentElement && tr.parentElement.parentElement === sched) return tr;
+    } catch (_) {}
+    const body = sched.tBodies && sched.tBodies[0];
+    return (body && body.lastElementChild) ? body.lastElementChild : null;
+  };
+  btnAddRow.addEventListener('click', () => {
+    try {
+      const ref = getActiveSchedRow();
+      const newRow = addRowBelow(ref || sb.lastElementChild);
+      if (newRow) focusFirstEditableCell(newRow, 0);
+      markTemplatesEditingActivity();
+      pushHistoryDebounced();
+      saveAutosaveDebounced();
+    } catch (_) {}
+  });
+  btnDelRow.addEventListener('click', () => {
+    try {
+      const tr = getActiveSchedRow();
+      if (!tr) return;
+      if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return;
+      deleteRow(tr);
+      markTemplatesEditingActivity();
+      pushHistoryDebounced();
+      saveAutosaveDebounced();
+    } catch (_) {}
+  });
+  btnUpRow.addEventListener('click', () => {
+    try { const tr = getActiveSchedRow(); if (tr && !tr.classList.contains('cs-row-note')) moveRow(tr, -1); markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
+  });
+  btnDownRow.addEventListener('click', () => {
+    try { const tr = getActiveSchedRow(); if (tr) moveRow(tr, +1); markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
+  });
 
   // Remove WRAP footer per request
 
