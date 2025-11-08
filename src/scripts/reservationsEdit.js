@@ -38,6 +38,34 @@ let editingPayments = [];
 let modalInstance = null;
 let modalEventsContext = {};
 let isSyncingShareTaxEdit = false;
+let globalSaveDelegationBound = false;
+
+function ensureGlobalSaveDelegation() {
+  if (globalSaveDelegationBound) return;
+  try {
+    document.addEventListener('click', (event) => {
+      const btn = event.target?.closest?.('#save-reservation-changes');
+      if (!btn) return;
+      try {
+        // Visual feedback: prevent double clicks
+        if (!btn.dataset.saving) {
+          btn.dataset.saving = 'true';
+          setTimeout(() => { try { delete btn.dataset.saving; } catch (_) {} }, 1200);
+        }
+      } catch (_) { /* noop */ }
+      try {
+        saveReservationChanges(modalEventsContext).catch((error) => {
+          console.error('❌ [reservationsEdit] delegated saveReservationChanges failed', error);
+        });
+      } catch (e) {
+        console.error('❌ [reservationsEdit] delegated saveReservationChanges threw', e);
+      }
+    }, true /* capture to win against bubbling stops */);
+    globalSaveDelegationBound = true;
+  } catch (e) {
+    console.warn('[reservationsEdit] failed to bind global save delegation', e);
+  }
+}
 
 // ===== Crew debug helpers (safe no-op by default) =====
 const CREW_DEBUG_FLAG = '__DEBUG_CREW__';
@@ -806,6 +834,9 @@ export async function editReservation(index, {
   } catch (e) {
     console.warn('[reservationsEdit] setupEditReservationModalEvents failed (non-fatal)', e);
   }
+
+  // Also bind a delegated global listener as a safety net
+  ensureGlobalSaveDelegation();
 }
 
 export async function saveReservationChanges({
