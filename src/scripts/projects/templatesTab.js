@@ -3138,13 +3138,24 @@ export function initTemplatesTab() {
       if (!el.isContentEditable) return;
       if (TPL_IS_COMPOSING) return; // Avoid interfering with Arabic/IME composition
       try { markTemplatesEditingActivity(); } catch(_) {}
-      // Throttle heavy recompute to keep typing smooth
+      // Ultra-light path while typing: only update this row's last cell, avoid touching subtotals/groups now.
+      try {
+        const td = el.closest('td');
+        const tr = td && td.closest('tr');
+        const table = tr && tr.closest('table.exp-details');
+        if (tr && table && tr.getAttribute('data-row') === 'item') {
+          const cells = Array.from(tr.children);
+          const num = (s, d=0) => { try { const t=String(s||'').replace(/[\u0660-\u0669]/g,(d)=>'0123456789'[d.charCodeAt(0)-0x0660]).replace(/[\u06F0-\u06F9]/g,(d)=>'0123456789'[d.charCodeAt(0)-0x06F0]).replace(/[\u066B]/g,'.').replace(/[\u066C]/g,'').replace(/[^\d.\-]/g,''); const n=Number(t); return Number.isFinite(n)?n:d; } catch(_) { return d; } };
+          const rate = num(cells[2]?.textContent, 0);
+          const qty  = num(cells[3]?.textContent, 1);
+          const days = num(cells[4]?.textContent, 1);
+          const total = Math.round(rate * qty * days);
+          const out = cells[6]; if (out) { out.textContent = String(total); try { out.setAttribute('data-num','1'); } catch(_) {} }
+        }
+      } catch(_) {}
+      // After brief idle, recompute subgroup/group/grand totals
       try { clearTimeout(TPL_INPUT_TIMER); } catch (_) {}
-      TPL_INPUT_TIMER = setTimeout(() => {
-        try { const td = el.closest('td'); if (td && td.closest('table.exp-details')) recomputeExpensesForCell(td); } catch(_) {}
-        // احتياط: أعد الحساب الكامل مؤجلًا لتوحيد الأرقام عبر الجداول
-        recomputeExpensesSubtotalsDebounced(320);
-      }, 80);
+      TPL_INPUT_TIMER = setTimeout(() => { recomputeExpensesSubtotalsDebounced(420); }, 180);
     };
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
@@ -3172,6 +3183,11 @@ export function initTemplatesTab() {
       if (!(t instanceof HTMLElement)) return;
       const td = t.closest && t.closest('td');
       if (td) { try { td.classList.remove('editing'); } catch(_) {} }
+      // Commit full recompute on blur to keep sheet consistent
+      try {
+        const table = td && td.closest && td.closest('table.exp-details');
+        if (table) recomputeExpensesSubtotalsDebounced(120);
+      } catch(_) {}
     };
     TPL_HOST_EL?.addEventListener('focusin', onFocusInCell, true);
     TPL_HOST_EL?.addEventListener('focusout', onFocusOutCell, true);
