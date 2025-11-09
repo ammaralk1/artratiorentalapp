@@ -8,7 +8,8 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
   if (!host) { return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
   let bar = document.getElementById('tpl-cell-toolbar');
-  if (type !== 'callsheet') { if (bar) bar.style.display = 'none'; return; }
+  // Enable toolbar for Call Sheet and Expenses tables
+  if (!(type === 'callsheet' || type === 'expenses')) { if (bar) bar.style.display = 'none'; return; }
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'tpl-cell-toolbar';
@@ -38,8 +39,8 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       const act = btn.getAttribute('data-act');
       const cell = bar.__targetCell || null;
       if (!cell) return;
-      // Support both Schedule and Crew tables for row actions
-      const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew');
+      // Support both Schedule/Crew and Expenses tables for row actions
+      const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew') || cell.closest('table.exp-details');
       const cast = cell.closest('table.cs-cast');
       const doRowAdd = () => {
         const tr = cell.closest('tr');
@@ -50,7 +51,9 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       const doRowDel = () => {
         const tr = cell.closest('tr');
         if (!tr) return;
+        // Avoid deleting headers/subtotals/group bars in both schedule and expenses
         if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return;
+        if (tr.hasAttribute('data-group-bar') || tr.hasAttribute('data-subgroup-header') || tr.hasAttribute('data-subgroup-subtotal') || tr.hasAttribute('data-group-total') || tr.hasAttribute('data-subgroup-marker')) return;
         deleteRow(tr);
       };
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
@@ -136,24 +139,36 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
 
   const place = (cell) => {
     if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; return; }
-    const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew');
+    const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew') || cell.closest('table.exp-details');
     const cast = cell.closest('table.cs-cast');
     if (!sched && !cast) { bar.style.display = 'none'; bar.__targetCell = null; return; }
     // Toggle groups
-    const showRowTools = !!sched; const showCastTools = !!cast;
+    // For expenses tables, only show row tools when focusing an item row
+    let showRowTools = !!sched; const showCastTools = !!cast;
+    try {
+      if (showRowTools && sched && sched.matches('table.exp-details')) {
+        const tr = cell.closest('tr');
+        showRowTools = !!(tr && tr.getAttribute('data-row') === 'item');
+      }
+    } catch(_) {}
     Array.from(bar.querySelectorAll('[data-act^="row-"]')).forEach((b) => b.style.display = showRowTools ? 'inline-flex' : 'none');
     Array.from(bar.querySelectorAll('[data-act^="cast-"]')).forEach((b) => b.style.display = showCastTools ? 'inline-flex' : 'none');
     bar.querySelector('[data-sep]')?.setAttribute('style', `width:1px;background:#e5e7eb;margin:0 4px;display:${(showRowTools && showCastTools)?'inline-block':'none'}`);
 
-    // Only show the "× صف كامل" button when the focused row is a full-width single cell
+    // Only show the "× صف كامل" and "+ صف كامل" for schedule/cast; hide for expenses
     try {
+      const fullAddBtn = bar.querySelector('[data-act="row-full"]');
       const fullDelBtn = bar.querySelector('[data-act="row-full-del"]');
-      if (fullDelBtn && sched) {
+      if (sched && sched.matches('table.exp-details')) {
+        if (fullAddBtn) fullAddBtn.style.display = 'none';
+        if (fullDelBtn) fullDelBtn.style.display = 'none';
+      } else if (fullDelBtn && sched) {
         const tr = cell.closest('tr');
         const head = sched.querySelector('thead tr');
         const headCols = (head && head.children && head.children.length) ? head.children.length : 12;
         const isFull = tr && tr.children && tr.children.length === 1 && Number(tr.children[0]?.getAttribute('colspan') || '1') >= headCols;
         fullDelBtn.style.display = isFull ? 'inline-flex' : 'none';
+        if (fullAddBtn) fullAddBtn.style.display = 'inline-flex';
       }
     } catch (_) {}
 
@@ -189,4 +204,3 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
 }
 
 export default { ensureCellToolbar };
-

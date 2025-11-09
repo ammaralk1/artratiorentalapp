@@ -118,7 +118,8 @@ table.exp-top-table .exp-top-col-code { width: 16%; }
 table.exp-top-table .exp-top-col-label { width: 54%; }
 table.exp-top-table .exp-top-col-count { width: 10%; }
 table.exp-top-table .exp-top-col-total { width: 20%; }
-table.exp-top-table td.exp-top-label { text-align: right; }
+/* Always left-align Top Sheet labels */
+table.exp-top-table td.exp-top-label { text-align: left; }
 #templates-a4-root[dir="ltr"] table.exp-top-table td.exp-top-label { text-align: left; }
 /* Top sheet header tint */
 table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
@@ -454,19 +455,18 @@ table.exp-details thead tr[data-group-title] th .exp-group-bar { margin-top: 2px
 /* Actions column (hidden in export) */
 .exp-col-actions { width:10%; }
 
-/* Make DESCRIPTION column readable: right/left aligned per dir, allow wrapping */
+/* Make DESCRIPTION column readable: left aligned and wrap */
 table.exp-details tbody td:nth-child(2) {
-  text-align: right;
+  text-align: left;
   white-space: normal;
   /* Prefer breaking at word boundaries; still allow breaking long tokens */
   overflow-wrap: break-word;
   word-break: normal;
 }
-#templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) {
-  text-align: left;
-}
+#templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) { text-align: left; }
 /* Subgroup header label alignment and filler cell highlight */
-table.exp-details tbody tr[data-subgroup-header] td.label { text-align: right; font-weight:800; }
+/* Subgroup headers: always left */
+table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left; font-weight:800; }
 #templates-a4-root[dir="ltr"] table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left; }
 table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
   background: rgba(37, 99, 235, 0.18) !important;
@@ -499,6 +499,9 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
 #templates-a4-root[data-render-context="export"] .tpl-actions,
 #templates-a4-root[data-render-context="export"] th.exp-col-actions { display:none !important; }
 #templates-a4-root[data-render-context="export"] table.exp-table:not(.exp-top-table) td:last-child { display:none !important; padding:0 !important; width:0 !important; }
+/* Ensure totals columns are clearly lined in printed PDF */
+#templates-a4-root[data-render-context="export"] table.exp-details tbody td:nth-child(7) { border-left:1.5px solid #94a3b8 !important; border-right:1.5px solid #94a3b8 !important; }
+#templates-a4-root[data-render-context="export"] table.exp-top-table tbody td:nth-child(4) { border-left:1.5px solid #94a3b8 !important; border-right:1.5px solid #94a3b8 !important; }
 /* Grand total row in Top Sheet */
 .exp-grand-total-row td { background:#ffffff !important; font-weight:900; }
 .exp-grand-total-label { text-align:right; }
