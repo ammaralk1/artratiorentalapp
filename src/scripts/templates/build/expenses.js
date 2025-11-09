@@ -97,13 +97,15 @@ export function buildExpensesPage(project, reservations, opts = {}) {
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
         // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Code
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Description
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1', inputmode: 'decimal' })); // Rate
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1', inputmode: 'decimal' })); // Qty
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1', inputmode: 'decimal' })); // Days
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1', inputmode: 'decimal' })); // Paid
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1', inputmode: 'decimal' })); // Total
+        const commonTxt = { 'data-editable': 'true', contenteditable: 'true', autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false' };
+        const commonNum = { ...commonTxt, 'data-num': '1', inputmode: 'decimal' };
+        tr.appendChild(el('td', commonTxt)); // Code
+        tr.appendChild(el('td', commonTxt)); // Description
+        tr.appendChild(el('td', commonNum)); // Rate
+        tr.appendChild(el('td', commonNum)); // Qty
+        tr.appendChild(el('td', commonNum)); // Days
+        tr.appendChild(el('td', commonNum)); // Paid
+        tr.appendChild(el('td', commonNum)); // Total
         tb.appendChild(tr);
       }
       // Subtotal row placeholder

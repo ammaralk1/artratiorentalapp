@@ -2245,7 +2245,16 @@ function recomputeExpensesSubtotals() {
   // New exp-table calculation (supports multi-table)
   if (tables[0].classList.contains('exp-table')) {
     const number = (txt, def = 0) => {
-      const n = Number(String(txt || '').replace(/[^\d.\.-]/g, ''));
+      const s = String(txt || '');
+      // Convert Arabic/Persian digits and separators to ASCII without mutating the DOM
+      const mapped = s
+        .replace(/[\u0660-\u0669]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x0660]) // Arabic-Indic
+        .replace(/[\u06F0-\u06F9]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x06F0]) // Eastern Arabic-Indic
+        .replace(/[\u066B]/g, '.') // Arabic decimal separator
+        .replace(/[\u066C]/g, '')  // Arabic thousands separator
+        .replace(/[\u200f\u200e]/g, '') // remove RTL/LTR marks if any
+        .replace(/[^\d.\-]/g, '');
+      const n = Number(mapped);
       return Number.isFinite(n) ? n : def;
     };
     const groupTotals = { atl: 0, prod: 0, post: 0 };
@@ -2983,30 +2992,8 @@ export function initTemplatesTab() {
       const el = e.target;
       if ((el instanceof HTMLElement) && el.isContentEditable) {
         try { markTemplatesEditingActivity(); } catch(_) {}
-        // Only normalize for numeric-like cells to avoid disturbing free text
-        const td = el.closest('td');
-        const isNumericCell = td?.hasAttribute('data-num') || /^(?:[\d\u0660-\u0669\u06F0-\u06F9.,\s-]+)$/.test(el.textContent || '');
-        const before = el.textContent || '';
-        if (isNumericCell) {
-          const after = (function normalizeDigits(str){
-            const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9', '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9' };
-            return String(str).replace(/[\u0660-\u0669]/g,(d)=>map[d]).replace(/[\u06F0-\u06F9]/g,(d)=>map[d]);
-          })(before);
-          if (after !== before) {
-            el.textContent = after;
-            // Keep caret at end to avoid reversed sequence while typing
-            try {
-              const range = document.createRange();
-              range.selectNodeContents(el);
-              range.collapse(false);
-              const sel = window.getSelection();
-              if (sel) { sel.removeAllRanges(); sel.addRange(range); }
-            } catch (_) {}
-          }
-        }
-        // Keep totals responsive but avoid heavy DOM churn while typing
-        recomputeExpensesSubtotalsDebounced(120);
-        // Avoid font shrinking during live typing; it's applied on structural changes instead
+        // فقط أعِد الحساب بشكل مؤجل، بدون تعديل نص الخلية (يمنع قفز المؤشر)
+        recomputeExpensesSubtotalsDebounced(140);
       }
     };
     TPL_LISTENERS.hostInput = onHostInput;
