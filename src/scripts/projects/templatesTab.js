@@ -14,6 +14,7 @@ function getReservationsForProjectLocal(projectId) {
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
 import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from '../templates/tableTools.js';
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
+import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -1939,7 +1940,7 @@ function renderTemplatesPreview() {
   const hf = readHeaderFooterOptions();
   ensureLogoControls(type);
   let pageRoot = null;
-  if (type === 'callsheet') pageRoot = buildCallSheetPage(project, reservations, hf);
+  if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
   // Diff-like replace to avoid losing event handlers on host
@@ -1971,7 +1972,7 @@ function renderTemplatesPreview() {
   try {
     if (type === 'callsheet') {
       const selectedRes = getSelectedReservations(project.id)?.[0] || null;
-      const fill = () => populateCrewFromReservationIfEmpty(selectedRes);
+      const fill = () => populateCrewFromReservationIfEmptyExt(selectedRes);
       if (!getTechniciansState()?.length) {
         refreshTechniciansFromApi().then(fill).catch(() => fill());
       } else {
@@ -1980,7 +1981,7 @@ function renderTemplatesPreview() {
     }
   } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
-  try { if (type === 'callsheet') populateCrewFromReservationIfEmpty(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
+  try { if (type === 'callsheet') populateCrewFromReservationIfEmptyExt(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try {
     const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
