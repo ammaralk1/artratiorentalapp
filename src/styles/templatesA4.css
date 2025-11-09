@@ -537,3 +537,4 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
 :is(html.dark-mode, body.dark-mode) .tpl-zoom-btn:hover { box-shadow: 0 4px 12px rgba(8,47,73,0.45); }
 .tpl-zoom-value { min-width:48px; text-align:center; font-weight:600; color:#1f2937; }
 :is(html.dark-mode, body.dark-mode) .tpl-zoom-value { color: rgba(226,232,240,0.9); }
+#templates-a4-root .dir-ltr { direction: ltr; unicode-bidi: plaintext; }

@@ -43,6 +43,8 @@ let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
 let TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
+let TPL_RESIZE_OBSERVER = null;
+let TPL_SUBTOTAL_TIMER = null;
 
 function destroyTemplatesTab() {
   try {
@@ -61,6 +63,7 @@ function destroyTemplatesTab() {
       if (templatesTabBtn) templatesTabBtn.removeEventListener('click', TPL_LISTENERS.tabClick);
     }
     if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
+    if (TPL_RESIZE_OBSERVER) { try { TPL_RESIZE_OBSERVER.disconnect(); } catch (_) {} TPL_RESIZE_OBSERVER = null; }
   } finally {
     TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
   }
@@ -145,6 +148,23 @@ function ensureResizeBinding() {
   TPL_ZOOM_RESIZE_BOUND = true;
 }
 
+function ensureResizeObserver() {
+  try {
+    if (TPL_RESIZE_OBSERVER) return;
+    const host = document.getElementById('templates-preview-host');
+    if (!host || typeof ResizeObserver === 'undefined') return;
+    TPL_RESIZE_OBSERVER = new ResizeObserver(() => {
+      if (TPL_ZOOM_MODE === 'fit') applyTemplatesFitZoom();
+    });
+    TPL_RESIZE_OBSERVER.observe(host);
+  } catch (_) { /* ignore */ }
+}
+
+function recomputeExpensesSubtotalsDebounced(delay = 180) {
+  try { if (TPL_SUBTOTAL_TIMER) clearTimeout(TPL_SUBTOTAL_TIMER); } catch (_) {}
+  TPL_SUBTOTAL_TIMER = setTimeout(() => { try { recomputeExpensesSubtotals(); } catch (_) {} }, Math.max(0, delay));
+}
+
 // ===== Persist selected template type (expenses/callsheet/shotlist) =====
 const TPL_TYPE_PREF_KEY = 'projects.templates.type';
 function readTplPreferredType() {
@@ -198,11 +218,11 @@ function ensureTemplatesZoomUI() {
   outBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(-0.1));
   inBtn?.addEventListener('click', () => adjustTemplatesPreviewZoom(0.1));
   resetBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'manual'; writeTplZoomModePref(TPL_ZOOM_MODE); setTemplatesPreviewZoom(1, { markManual: true }); });
-  fitBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'fit'; writeTplZoomModePref(TPL_ZOOM_MODE); applyTemplatesFitZoom(); ensureResizeBinding(); });
+  fitBtn?.addEventListener('click', () => { TPL_ZOOM_MODE = 'fit'; writeTplZoomModePref(TPL_ZOOM_MODE); applyTemplatesFitZoom(); ensureResizeBinding(); ensureResizeObserver(); });
   TPL_ZOOM_FIT_BTN = fitBtn;
   // initialize
   TPL_ZOOM_MODE = readTplZoomModePref();
-  if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); ensureResizeBinding(); }
+  if (TPL_ZOOM_MODE === 'fit') { applyTemplatesFitZoom(); ensureResizeBinding(); ensureResizeObserver(); }
   else { setTemplatesPreviewZoom(readTplZoomPref(), { silent: false }); }
 }
 
@@ -3125,9 +3145,9 @@ function handleTablePaste(e) {
   });
 
   // Recompute totals for expenses tables
-  if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
-    recomputeExpensesSubtotals();
-  }
+      if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
+        recomputeExpensesSubtotalsDebounced();
+      }
   try { shrinkSingleWordCells(table); } catch (_) {}
 }
 
@@ -3265,7 +3285,7 @@ function handleTableKeydown(e) {
     if (newRow) {
       focusFirstEditableCell(newRow);
       if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
-        recomputeExpensesSubtotals();
+        recomputeExpensesSubtotalsDebounced();
       }
     }
     try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
@@ -3277,7 +3297,7 @@ function handleTableKeydown(e) {
     e.preventDefault();
     moveRow(tr, e.key === 'ArrowDown' ? 1 : -1);
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
-      recomputeExpensesSubtotals();
+      recomputeExpensesSubtotalsDebounced();
     }
     try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
     return;
@@ -3288,7 +3308,7 @@ function handleTableKeydown(e) {
     e.preventDefault();
     deleteRow(tr);
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
-      recomputeExpensesSubtotals();
+      recomputeExpensesSubtotalsDebounced();
     }
     try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
   }

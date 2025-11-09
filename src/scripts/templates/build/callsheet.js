@@ -114,7 +114,7 @@ export function populateCrewFromReservation(crewTable, reservation) {
       for (let c = 0; c < 4; c += 1) {
         const td = document.createElement('td');
         td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true');
-        if (c === 2) { td.setAttribute('dir','ltr'); td.style.direction = 'ltr'; }
+        if (c === 2) { try { td.removeAttribute('dir'); } catch(_) {} td.classList.add('dir-ltr'); }
         tr.appendChild(td);
       }
       crewTable.tBodies[0].appendChild(tr);
@@ -130,7 +130,7 @@ export function populateCrewFromReservation(crewTable, reservation) {
     const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
     if (cells[0]) cells[0].textContent = pos || '';
     if (cells[1]) cells[1].textContent = name || '';
-    if (cells[2]) { cells[2].setAttribute('dir','ltr'); cells[2].style.direction = 'ltr'; cells[2].textContent = phone || ''; }
+    if (cells[2]) { try { cells[2].removeAttribute('dir'); } catch(_) {} cells[2].classList.add('dir-ltr'); cells[2].textContent = phone || ''; }
   });
 }
 
@@ -170,7 +170,7 @@ export function populateCrewFromReservationIfEmpty(reservation) {
         const pos = a.positionLabel || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
         const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
         if (cells[0] && !(cells[0].textContent || '').trim()) cells[0].textContent = pos || '';
-        if (cells[2] && !(cells[2].textContent || '').trim()) { cells[2].setAttribute('dir','ltr'); cells[2].style.direction = 'ltr'; cells[2].textContent = phone || ''; }
+        if (cells[2] && !(cells[2].textContent || '').trim()) { try { cells[2].removeAttribute('dir'); } catch(_) {} cells[2].classList.add('dir-ltr'); cells[2].textContent = phone || ''; }
       });
     } catch (_) {}
   } catch(_) {}
@@ -256,7 +256,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const crewCols = [30,34,20,16]; const crewCg = el('colgroup'); crewCols.forEach((w)=>crewCg.appendChild(el('col',{style:`width:${w}%`}))); crew.appendChild(crewCg);
   const crewHead = el('thead'); const crewTitleRow = el('tr'); crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call', style:'text-align:center;display:flex;align-items:center;justify-content:center;font-size:14px;' })); crewHead.appendChild(crewTitleRow);
   const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label,i)=>crewHeadRow.appendChild(el('th',{ text: label, style:`width:${crewCols[i]}%;text-align:center;display:flex;align-items:center;justify-content:center;font-size:12.5px;` }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
-  const crewBody = el('tbody'); for (let i=0;i<10;i+=1){ const tr=el('tr'); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true',dir:'ltr',style:'direction:ltr;'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); crewBody.appendChild(tr);} crew.appendChild(crewBody); wrap.appendChild(crew);
+  const crewBody = el('tbody'); for (let i=0;i<10;i+=1){ const tr=el('tr'); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true','class':'dir-ltr'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); crewBody.appendChild(tr);} crew.appendChild(crewBody); wrap.appendChild(crew);
 
   // Try auto-populate
   try { const resSelected = reservations?.[0] || null; if (resSelected) populateCrewFromReservation(crew, resSelected); } catch(_) {}
