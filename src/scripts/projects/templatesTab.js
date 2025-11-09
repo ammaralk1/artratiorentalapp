@@ -1129,8 +1129,9 @@ function restoreTemplatesAutosaveIfPresent() {
         } catch(_) {}
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
-        // If Crew table is missing in restored HTML (older autosave), inject it
+        // If Crew table is missing in restored HTML (older autosave), inject it then drop legacy shapes
         try { ensureCrewTableExists(); } catch(_) {}
+        try { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -2757,8 +2758,10 @@ function unifyCrewCallTables() {
   };
   // Collect content rows from the other tables
   const rowsToMerge = [];
+  // Only merge from other standard-grid tables; drop legacy/odd shapes entirely
   tables.forEach((t) => {
     if (t === primary) return;
+    if (!isStandardGrid(t)) return; // legacy layout -> delete without merging
     const body = t.tBodies && t.tBodies[0]; if (!body) return;
     Array.from(body.children).forEach((tr) => {
       const cells = Array.from(tr.children);
@@ -2900,6 +2903,9 @@ async function loadSnapshotById(id) {
       wrap.innerHTML = data.html;
       const root = wrap.firstElementChild;
       if (root) host.appendChild(root);
+      // Normalize crew table after loading saved HTML (remove old layouts)
+      try { ensureCrewTableExists(); } catch(_) {}
+      try { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
     }
   } catch (_) {}
 }
