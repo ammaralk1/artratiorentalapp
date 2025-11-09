@@ -17,7 +17,8 @@ import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
-import { metaCell as coreMetaCell } from '../templates/core.js';
+import { L, metaCell } from '../templates/core.js';
+import { pageHasMeaningfulContent } from '../templates/pageUtils.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -39,6 +40,31 @@ let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
+let TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+let TPL_HOST_EL = null;
+let TPL_REPOPULATE_TIMER = null;
+
+function destroyTemplatesTab() {
+  try {
+    const host = document.getElementById('templates-preview-host');
+    if (host) {
+      try { host.removeEventListener('click', handleTableActionClick); } catch (_) {}
+      try { if (TPL_LISTENERS.hostInput) host.removeEventListener('input', TPL_LISTENERS.hostInput); } catch (_) {}
+      try { host.removeEventListener('paste', handleTablePaste); } catch (_) {}
+      try { host.removeEventListener('keydown', handleTableKeydown, true); } catch (_) {}
+    }
+    if (TPL_LISTENERS.projChanged) document.removeEventListener('projects:changed', TPL_LISTENERS.projChanged);
+    if (TPL_LISTENERS.resChanged) document.removeEventListener('reservations:changed', TPL_LISTENERS.resChanged);
+    if (TPL_LISTENERS.resUpdated) document.removeEventListener('reservations:updated', TPL_LISTENERS.resUpdated);
+    if (TPL_LISTENERS.tabClick) {
+      const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
+      if (templatesTabBtn) templatesTabBtn.removeEventListener('click', TPL_LISTENERS.tabClick);
+    }
+    if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
+  } finally {
+    TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+  }
+}
 
 function notifyApiError(err, fallback = 'تعذر الاتصال بالخادم') {
   try {
@@ -618,7 +644,7 @@ async function ensureAssetsReady(container) {
 }
 
 // Delegate to core metaCell
-function metaCell(label, value = '', editable = true) { return coreMetaCell(label, value, editable); }
+// Use metaCell directly from core.js (unified)
 
 function getSelectedProject() {
   const sel = document.getElementById('templates-project');
@@ -648,7 +674,11 @@ function setTemplateLang(lang) {
   TEMPLATE_LANG = (lang === 'ar') ? 'ar' : 'en';
   try { localStorage.setItem('templates.lang', TEMPLATE_LANG); } catch (_) {}
 }
-function L(en, ar) { return TEMPLATE_LANG === 'ar' ? (ar || en) : en; }
+// Delegate i18n helper to core.L for consistency
+// Note: TEMPLATE_LANG still controls dir/labels locally; core.L reads localStorage
+// so setTemplateLang() below keeps both in sync.
+// eslint-disable-next-line no-shadow
+// Using L from core.js directly
 
 // Format numbers with thousand separators and no decimals (preview + export)
 function formatIntNoDecimals(value) {
@@ -2004,55 +2034,14 @@ function renderTemplatesPreview() {
   // If crew table is still mostly empty, auto-fill from selected reservation
   try { if (type === 'callsheet') populateCrewFromReservationIfEmptyExt(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
-  try {
-    const pages0 = Array.from(pageRoot.querySelectorAll('.a4-page'));
-    pages0.forEach((pg) => {
-      const hasTop = !!pg.querySelector('#expenses-top-sheet');
-      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
-        try {
-          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
-          const tds = Array.from(tr.querySelectorAll('td'));
-          return tds.some((td) => ((td.textContent || '').trim().length > 0));
-        } catch (_) { return false; }
-      });
-      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
-        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
-      });
-      // Call Sheet / Shot List first pages may not have tpl-table rows; allow callsheet blocks
-      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew)) {
-        pg.parentElement?.removeChild(pg);
-      }
-    });
-  } catch (_) {}
+  try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
   try { autoPaginateTemplates(); } catch (_) {}
   try { paginateExpDetailsTables(); } catch (_) {}
   // Prune again after pagination
-  try {
-    const pages1 = Array.from(pageRoot.querySelectorAll('.a4-page'));
-    pages1.forEach((pg) => {
-      const hasTop = !!pg.querySelector('#expenses-top-sheet');
-      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
-        try {
-          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
-          const tds = Array.from(tr.querySelectorAll('td'));
-          return tds.some((td) => ((td.textContent || '').trim().length > 0));
-        } catch (_) { return false; }
-      });
-      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
-        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
-      });
-      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew)) {
-        pg.parentElement?.removeChild(pg);
-      }
-    });
-  } catch (_) {}
+  try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTables(); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
@@ -4332,9 +4321,10 @@ export function initTemplatesTab() {
 
   if (!TPL_EVENTS_BOUND) {
     TPL_EVENTS_BOUND = true;
-    document.getElementById('templates-preview-host')?.addEventListener('click', handleTableActionClick);
+    TPL_HOST_EL = document.getElementById('templates-preview-host');
+    TPL_HOST_EL?.addEventListener('click', handleTableActionClick);
     // Normalize digits to English and recompute on edits
-    document.getElementById('templates-preview-host')?.addEventListener('input', (e) => {
+    const onHostInput = (e) => {
       const el = e.target;
       if ((el instanceof HTMLElement) && el.isContentEditable) {
         // Only normalize for numeric-like cells to avoid disturbing free text
@@ -4361,10 +4351,12 @@ export function initTemplatesTab() {
         recomputeExpensesSubtotals();
         try { shrinkSingleWordCells(td || el.closest('table')); } catch (_) {}
       }
-    });
+    };
+    TPL_LISTENERS.hostInput = onHostInput;
+    TPL_HOST_EL?.addEventListener('input', onHostInput);
     // Paste from Excel/Sheets into tables
-    document.getElementById('templates-preview-host')?.addEventListener('paste', handleTablePaste);
-    document.getElementById('templates-preview-host')?.addEventListener('keydown', handleTableKeydown, true);
+    TPL_HOST_EL?.addEventListener('paste', handleTablePaste);
+    TPL_HOST_EL?.addEventListener('keydown', handleTableKeydown, true);
     try { ensurePdfTunerUI(); } catch (_) {}
 
   // (Row focus highlight removed per latest request)
@@ -4372,7 +4364,7 @@ export function initTemplatesTab() {
   // Re-populate when data loads later (debounced + queued to avoid console spam)
   let repopulating = false;
   let repopulateQueued = false;
-  let repopulateTimer = null;
+  // moved to module scope for cleanup: TPL_REPOPULATE_TIMER
   const REPOPULATE_DEBOUNCE_MS = 250;
 
   const doRepopulate = async () => {
@@ -4409,21 +4401,27 @@ export function initTemplatesTab() {
   function scheduleRepopulate(delay = REPOPULATE_DEBOUNCE_MS) {
     // If currently running, flag a queued run; otherwise debounce
     if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
-    if (repopulateTimer) { clearTimeout(repopulateTimer); repopulateTimer = null; }
-    repopulateTimer = setTimeout(() => {
-      repopulateTimer = null;
+    if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
+    TPL_REPOPULATE_TIMER = setTimeout(() => {
+      TPL_REPOPULATE_TIMER = null;
       void doRepopulate();
     }, Math.max(0, delay));
   }
 
-    document.addEventListener('projects:changed', () => scheduleRepopulate());
-    document.addEventListener('reservations:changed', () => scheduleRepopulate());
-    document.addEventListener('reservations:updated', () => scheduleRepopulate());
+    const onProj = () => scheduleRepopulate();
+    const onResC = () => scheduleRepopulate();
+    const onResU = () => scheduleRepopulate();
+    TPL_LISTENERS.projChanged = onProj;
+    TPL_LISTENERS.resChanged = onResC;
+    TPL_LISTENERS.resUpdated = onResU;
+    document.addEventListener('projects:changed', onProj);
+    document.addEventListener('reservations:changed', onResC);
+    document.addEventListener('reservations:updated', onResU);
 
     const templatesTabBtn = document.querySelector('[data-project-subtab-target="projects-templates-tab"]');
-    templatesTabBtn?.addEventListener('click', () => {
-      scheduleRepopulate(0);
-    });
+    const onTabClick = () => scheduleRepopulate(0);
+    TPL_LISTENERS.tabClick = onTabClick;
+    templatesTabBtn?.addEventListener('click', onTabClick);
 
     // نفّذ إعادة التعبئة مرة واحدة عند فتح التبويب لتجنب التحديثات المتكررة
     scheduleRepopulate(0);
@@ -4432,4 +4430,4 @@ export function initTemplatesTab() {
   try { ensureTemplatesZoomUI(); } catch (_) {}
 }
 
-export default { initTemplatesTab };
+export default { initTemplatesTab, destroyTemplatesTab };

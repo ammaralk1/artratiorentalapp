@@ -1,19 +1,6 @@
 import { ensureHtml2Pdf } from '../reports/external.js';
 import { ensureFontsReady, preloadImages } from './assets.js';
-
-function pageHasMeaningfulContent(pg) {
-  try {
-    if (!pg) return false;
-    const hasCallsheetBlocks = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-    const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
-      try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
-    });
-    const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
-      try { const tds = Array.from(tr.querySelectorAll('td')); return tds.some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
-    });
-    return hasCallsheetBlocks || hasCrew || hasTplRows;
-  } catch (_) { return true; }
-}
+import { pageHasMeaningfulContent } from './pageUtils.js';
 
 export async function printCallsheetFromHost(host) {
   if (!host) throw new Error('No host');
@@ -61,4 +48,3 @@ export async function printCallsheetFromHost(host) {
 }
 
 export default { printCallsheetFromHost };
-
