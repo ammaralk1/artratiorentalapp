@@ -12,6 +12,7 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
+import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from '../templates/tableTools.js';
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import {
   patchHtml2CanvasColorParsing,
@@ -2492,6 +2493,53 @@ async function printTemplatesPdf() {
   try { doc.save(`template-${type}.pdf`); } catch { doc.save('template.pdf'); }
 }
 
+function showPrintPreviewOverlay() {
+  try {
+    const host = document.querySelector('#templates-preview-host > #templates-a4-root');
+    if (!host) { alert('لا يوجد محتوى للمعاينة'); return; }
+    const overlay = document.createElement('div');
+    Object.assign(overlay.style, { position:'fixed', inset:'0', background:'rgba(15,23,42,0.6)', zIndex:'9998', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' });
+    const panel = document.createElement('div');
+    Object.assign(panel.style, { background:'#fff', borderRadius:'12px', maxWidth:'92vw', maxHeight:'88vh', width:'min(1200px,92vw)', padding:'12px', boxShadow:'0 12px 30px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', gap:'12px' });
+    const head = document.createElement('div'); head.textContent = 'معاينة الطباعة'; head.style.cssText = 'font-weight:800;font-size:16px';
+    const scroller = document.createElement('div'); Object.assign(scroller.style, { overflow:'auto', flex:'1 1 auto', border:'1px solid #e5e7eb', borderRadius:'8px', padding:'10px', background:'#f8fafc' });
+    const actions = document.createElement('div'); Object.assign(actions.style, { display:'flex', gap:'8px', justifyContent:'flex-start' });
+    const closeBtn = document.createElement('button'); closeBtn.className = 'btn btn-outline'; closeBtn.textContent = 'إغلاق'; closeBtn.onclick = () => overlay.remove();
+    const printBtn = document.createElement('button'); printBtn.className = 'btn btn-primary'; printBtn.textContent = 'طباعة الآن'; printBtn.onclick = async () => { overlay.remove(); try { await printTemplatesPdf(); } catch(_) {} };
+    actions.appendChild(printBtn); actions.appendChild(closeBtn);
+
+    // Build preview content by cloning and pruning blank pages
+    const rootClone = host.cloneNode(true);
+    const wrap = rootClone.querySelector('[data-a4-pages]') || rootClone;
+    const pages = Array.from(wrap.querySelectorAll('.a4-page'));
+    const pageHasContent = (pg) => {
+      try {
+        const hasTop = !!pg.querySelector('#expenses-top-sheet');
+        const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
+        const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)));
+        const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)));
+        const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
+        return hasTop || hasDetailsRow || hasTplRows || hasCrew || hasCallsheet;
+      } catch(_) { return true; }
+    };
+    pages.forEach((pg) => { if (!pageHasContent(pg)) pg.parentElement?.removeChild(pg); });
+
+    const pages2 = Array.from(wrap.querySelectorAll('.a4-page'));
+    const info = document.createElement('div'); info.textContent = `عدد الصفحات: ${pages2.length}`; info.style.cssText = 'font-size:12px;color:#475569';
+    const grid = document.createElement('div'); Object.assign(grid.style, { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(360px, 1fr))', gap:'14px' });
+    pages2.forEach((pg) => {
+      const card = document.createElement('div'); Object.assign(card.style, { background:'#fff', border:'1px solid #e5e7eb', borderRadius:'8px', padding:'6px', display:'flex', justifyContent:'center', alignItems:'center' });
+      const ph = pg.cloneNode(true); Object.assign(ph.style, { transform:'scale(0.45)', transformOrigin:'top left', width: pg.clientWidth+'px', height: pg.clientHeight+'px' });
+      card.appendChild(ph); grid.appendChild(card);
+    });
+    scroller.appendChild(info); scroller.appendChild(grid);
+
+    panel.appendChild(head); panel.appendChild(scroller); panel.appendChild(actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+  } catch (_) { alert('تعذر إنشاء المعاينة'); }
+}
+
 // ============== PDF Live Tuner ==============
 // ============== PDF Prefs (namespaced per template type) ==============
 function __pdfNsKeyBase() {
@@ -3570,15 +3618,9 @@ function handleTableActionClick(e) {
   try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
 }
 
-function getCellIndex(td) {
-  if (!td || !td.parentElement) return -1;
-  const cells = Array.from(td.parentElement.children);
-  return cells.indexOf(td);
-}
+// moved to ../templates/tableTools.js
 
-function isSpecialRow(tr) {
-  return tr?.matches('[data-section-bar]') || tr?.classList.contains('tpl-subtotal-row');
-}
+// moved to ../templates/tableTools.js
 
 function nextEditableRow(tr) {
   let n = tr?.nextElementSibling;
@@ -3718,47 +3760,13 @@ function handleTablePaste(e) {
   try { shrinkSingleWordCells(table); } catch (_) {}
 }
 
-function focusFirstEditableCell(tr, preferCol = 0) {
-  if (!tr) return;
-  const cells = Array.from(tr.children);
-  // Try preferred column first
-  const preferred = cells[preferCol];
-  if (preferred && preferred.hasAttribute('contenteditable')) { preferred.focus(); return; }
-  const candidate = cells.find((td) => td.hasAttribute('contenteditable'));
-  candidate?.focus();
-}
+// moved to ../templates/tableTools.js
 
-function addRowBelow(tr) {
-  if (!tr) return null;
-  const tbody = tr.parentElement;
-  const clone = tr.cloneNode(true);
-  clone.querySelectorAll('[contenteditable]')?.forEach((el) => { el.textContent = ''; });
-  tbody.insertBefore(clone, tr.nextElementSibling);
-  return clone;
-}
+// moved to ../templates/tableTools.js
 
-function moveRow(tr, dir = -1) {
-  if (!tr) return;
-  const tbody = tr.parentElement;
-  if (dir < 0) {
-    const prev = tr.previousElementSibling;
-    if (prev && !isSpecialRow(prev)) tbody.insertBefore(tr, prev);
-  } else {
-    const next = tr.nextElementSibling;
-    if (next) {
-      const afterNext = next.nextElementSibling;
-      if (!isSpecialRow(next)) tbody.insertBefore(next, tr); // swap
-      else if (afterNext && !isSpecialRow(afterNext)) tbody.insertBefore(tr, afterNext.nextElementSibling);
-    }
-  }
-}
+// moved to ../templates/tableTools.js
 
-function deleteRow(tr) {
-  const tbody = tr?.parentElement;
-  if (!tbody) return;
-  if (isSpecialRow(tr)) return;
-  tbody.removeChild(tr);
-}
+// moved to ../templates/tableTools.js
 
 function applyZebraStripes() {
   const tables = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.exp-table'));
@@ -4063,6 +4071,19 @@ export function initTemplatesTab() {
   const actionsMenu = document.getElementById('templates-actions-menu');
   const actionsDD = document.getElementById('templates-actions-dd');
   if (actionsToggle && actionsMenu) {
+    // Add print preview button idempotently
+    try {
+      if (!document.getElementById('templates-print-preview')) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline';
+        btn.id = 'templates-print-preview';
+        btn.textContent = '👁️ معاينة الطباعة';
+        btn.style.cssText = 'display:block;width:100%;text-align:right;margin:4px 0;';
+        btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); try { showPrintPreviewOverlay(); } catch(_) {} });
+        actionsMenu.insertBefore(btn, actionsMenu.firstChild);
+      }
+    } catch(_) {}
     const closeMenu = (ev) => {
       if (!actionsDD?.contains(ev.target)) {
         actionsMenu.style.display = 'none';
