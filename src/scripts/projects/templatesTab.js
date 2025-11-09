@@ -1338,6 +1338,27 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  // If لا يوجد Autosave محلي (هاتف/متصفح آخر)، حاول تحميل المسودة المخزنة في الخادم تلقائياً
+  try {
+    if (type === 'callsheet') {
+      const ls = localStorage.getItem(getTemplatesContextKey());
+      if (!ls) {
+        const id = readRemoteAutosaveId();
+        if (id) {
+          await loadSnapshotById(id);
+          try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
+        } else {
+          const items = await fetchSavedTemplatesForCurrent();
+          const draft = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة'));
+          if (draft && draft.id) {
+            writeRemoteAutosaveId(draft.id);
+            await loadSnapshotById(draft.id);
+            try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
+          }
+        }
+      }
+    }
+  } catch(_) {}
   // Ensure technicians are loaded, then auto-fill crew if table is empty
   try {
     if (type === 'callsheet') {
