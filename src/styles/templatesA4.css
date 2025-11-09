@@ -321,6 +321,14 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   text-overflow:ellipsis;
   font-size: 11px;
 }
+#templates-a4-root .callsheet-v1 .cs-crew {
+  border: 1.5px solid #9ca3af;
+  border-radius: 14px;
+  border-collapse: collapse;
+  overflow: hidden;
+}
+#templates-a4-root .callsheet-v1 .cs-crew th,
+#templates-a4-root .callsheet-v1 .cs-crew td { border: 1.5px solid #9ca3af; }
 #templates-a4-root .callsheet-v1 .cs-crew .cs-crew-title {
   font-weight:900;
   text-align:center !important;
@@ -331,7 +339,10 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   align-items:center;
   line-height: 1.3;
   height: 28px;
+  background: #2563EB !important;
+  color:#ffffff !important;
 }
+.callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
 .cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
@@ -366,6 +377,9 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   background: var(--shade, rgba(255, 245, 157, 0.4)) !important;
   background-color: var(--shade, rgba(255, 245, 157, 0.4)) !important;
 }
+/* Re-apply Crew Call colors in export despite the generic white override above */
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
 
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
@@ -388,6 +402,8 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-section,
 #templates-a4-root .callsheet-v1 .cs-cast-title,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
+#templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
+#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 100%; margin-top:6px; }
 .callsheet-v1 .cs-crew th,
