@@ -2,6 +2,10 @@ import { ensureHtml2Pdf } from '../reports/external.js';
 import { ensureFontsReady, preloadImages } from './assets.js';
 import { pageHasMeaningfulContent } from './pageUtils.js';
 
+function getPdfMode() {
+  try { const v = String(localStorage.getItem('templatesPdf.mode')||'').trim(); return (v === 'html2pdf') ? 'html2pdf' : 'iframe'; } catch(_) { return 'iframe'; }
+}
+
 export async function printCallsheetFromHost(host) {
   if (!host) throw new Error('No host');
   let html2pdf = null;
@@ -30,9 +34,10 @@ export async function printCallsheetFromHost(host) {
     // Remove blank pages
     Array.from(scope.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); });
 
-    if (typeof html2pdf === 'function') {
+    const mode = getPdfMode();
+    if (mode === 'html2pdf' && typeof html2pdf === 'function') {
       await html2pdf()
-        .set({ margin: 0, html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css','legacy'] }, image: { type: 'jpeg', quality: 0.98 } })
+        .set({ margin: 0, html2canvas: { scale: 1.5, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }, pagebreak: { mode: ['css','legacy'] }, image: { type: 'jpeg', quality: 0.98 } })
         .from(scope)
         .save('template-callsheet.pdf');
       return;
@@ -81,11 +86,12 @@ export async function printGenericTemplate(host, { orientation = 'portrait', fil
     // Remove blank pages to avoid phantom pages
     Array.from(scope.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) try { pg.parentElement?.removeChild(pg); } catch(_) {} });
 
-    if (typeof html2pdf === 'function') {
+    const mode = getPdfMode();
+    if (mode === 'html2pdf' && typeof html2pdf === 'function') {
       await html2pdf()
         .set({
           margin: 0,
-          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' },
+          html2canvas: { scale: 1.5, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' },
           jsPDF: { unit: 'mm', format: 'a4', orientation: (orientation === 'landscape' ? 'landscape' : 'portrait') },
           pagebreak: { mode: ['css','legacy'] },
           image: { type: 'jpeg', quality: 0.98 },
