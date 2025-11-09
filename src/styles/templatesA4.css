@@ -39,9 +39,10 @@
 .a4-page--with-hf .a4-inner { padding-top:30mm; padding-bottom:18mm; }
 
 /* Export context: remove flex centering and preview gaps so rendering matches PDF */
-#templates-a4-root[data-render-context="export"] { width: 794px; margin: 0 auto; display:block; position: static; left: auto; transform: none; }
+#templates-a4-root[data-render-context="export"] { width: auto; margin: 0 auto; display:block; position: static; left: auto; transform: none; }
 #templates-a4-root[data-render-context="export"] .a4-page--landscape { width: 1123px; }
 #templates-a4-root[data-render-context="export"] [data-a4-pages] { display:block; }
+#templates-a4-root[data-render-context="export"] .a4-page { margin-left:auto; margin-right:auto; }
 #templates-a4-root[data-render-context="export"] .a4-page { box-shadow:none; }
 #templates-a4-root[data-render-context="export"] .a4-page { border: none !important; }
 #templates-a4-root[data-render-context="export"] .a4-page + .a4-page { margin-top: 0; }
@@ -114,6 +115,13 @@ table.tpl-table { width:100%; border-collapse:collapse; font-size:11px; table-la
 :is(html.dark-mode, body.dark-mode) #templates-a4-root table.tpl-table td { background:#ffffff !important; }
 /* Repeat thead in print/export for generic templates tables */
 table.tpl-table thead { display: table-header-group; }
+
+/* Hide optional print footer block entirely (requested: no footer across templates) */
+#templates-a4-root .tpl-print-footer { display:none !important; }
+#templates-a4-root[data-render-context="export"] .tpl-print-footer { display:none !important; }
+@media print { #templates-a4-root .tpl-print-footer { display:none !important; } }
+/* If a page carries the 'with-hf' class from older autosaves, cancel extra bottom padding */
+#templates-a4-root .a4-page--with-hf .a4-inner { padding-bottom: 10mm !important; }
 
 /* Top Sheet column sizing */
 table.exp-top-table .exp-top-col-code { width: 16%; }

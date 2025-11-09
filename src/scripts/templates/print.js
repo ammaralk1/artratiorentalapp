@@ -6,6 +6,29 @@ function getPdfMode() {
   try { const v = String(localStorage.getItem('templatesPdf.mode')||'').trim(); return (v === 'html2pdf') ? 'html2pdf' : 'iframe'; } catch(_) { return 'iframe'; }
 }
 
+function isIOS() { try { return /iP(hone|ad|od)/.test(navigator.userAgent || ''); } catch(_) { return false; } }
+function isSafari() { try { return /^((?!chrome|android).)*safari/i.test(navigator.userAgent || ''); } catch(_) { return false; } }
+function shouldUsePopupPrintOnIOS() { return isIOS() && isSafari(); }
+
+function acquirePrintLock(ms = 2000) {
+  if (window.__tplPrintingLock) return false;
+  window.__tplPrintingLock = true;
+  setTimeout(() => { try { window.__tplPrintingLock = false; } catch(_) {} }, Math.max(500, ms));
+  return true;
+}
+
+function openPopupAndWrite(html) {
+  // Open immediately to keep it in the user-gesture context on iOS
+  const w = window.open('', '_blank');
+  if (!w || !w.document) return null;
+  try {
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } catch(_) {}
+  return w;
+}
+
 async function collectInlineCss() {
   let css = '';
   try {
@@ -82,6 +105,15 @@ export async function printCallsheetFromHost(host) {
     // Fallback: print iframe
     const head = await buildHeadHtml({ orientation: 'landscape', title: 'Call Sheet' });
     const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.outerHTML}</body></html>`;
+    const usePopup = shouldUsePopupPrintOnIOS();
+    if (usePopup && acquirePrintLock()) {
+      const win = openPopupAndWrite(html);
+      if (win) {
+        setTimeout(() => { try { win.focus(); win.print(); } catch(_) {} setTimeout(() => { try { win.close(); } catch(_) {} }, 1200); }, 600);
+        return;
+      }
+    }
+    // Fallback to iframe approach for non‑iOS
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
@@ -89,8 +121,7 @@ export async function printCallsheetFromHost(host) {
     if (doc) {
       doc.open(); doc.write(html); doc.close();
       const tryPrint = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); };
-      // Wait a tick for CSS to load
-      setTimeout(tryPrint, 400);
+      setTimeout(tryPrint, 500);
     }
   } finally { try { wrap.remove(); } catch (_) {} }
 }
@@ -146,6 +177,14 @@ export async function printGenericTemplate(host, { orientation = 'portrait', fil
     // Fallback iframe printing
     const head = await buildHeadHtml({ orientation, title: 'Print' });
     const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.outerHTML}</body></html>`;
+    const usePopup = shouldUsePopupPrintOnIOS();
+    if (usePopup && acquirePrintLock()) {
+      const win = openPopupAndWrite(html);
+      if (win) {
+        setTimeout(() => { try { win.focus(); win.print(); } catch(_) {} setTimeout(() => { try { win.close(); } catch(_) {} }, 1200); }, 600);
+        return;
+      }
+    }
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
@@ -153,7 +192,7 @@ export async function printGenericTemplate(host, { orientation = 'portrait', fil
     if (doc) {
       doc.open(); doc.write(html); doc.close();
       const tryPrint = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); };
-      setTimeout(tryPrint, 400);
+      setTimeout(tryPrint, 500);
     }
   } finally { try { wrap.remove(); } catch (_) {} }
 }
