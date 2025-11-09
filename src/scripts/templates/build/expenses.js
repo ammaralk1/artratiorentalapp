@@ -68,7 +68,8 @@ export function buildExpensesPage(project, reservations, opts = {}) {
   const gtb = document.createElement('tbody');
   gtb.appendChild(el('tr', { class: 'exp-grand-total-row' }, [
     el('td', { colspan: '3', class: 'exp-grand-total-label', text: L('GRAND TOTAL', 'الإجمالي الكلي') }),
-    el('td', { 'data-top-grand': '1', text: '0' }),
+    // Add a dedicated class for styling in preview/print
+    el('td', { 'data-top-grand': '1', class: 'exp-grand-total-value', text: '0' }),
   ]));
   grandTbl.appendChild(gtb);
   topWrap.appendChild(grandTbl);

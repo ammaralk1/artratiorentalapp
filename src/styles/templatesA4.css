@@ -85,6 +85,12 @@
 /* Keep numeric cells single-line */
 #templates-a4-root[data-render-context="export"] table.exp-table td[data-num],
 #templates-a4-root[data-render-context="export"] table.exp-table td.total { white-space: nowrap !important; }
+/* Highlight Grand Total value (exported PDF) */
+#templates-a4-root[data-render-context="export"] .exp-top-table .exp-grand-total-row td.exp-grand-total-value {
+  background: #FEF08A !important; background-color:#FEF08A !important;
+  color: #000 !important;
+  border-color: #f59e0b !important;
+}
 /* Also sanitize pseudo-elements to avoid oklab/oklch usage from frameworks */
 #templates-a4-root[data-render-context="export"] *::before,
 #templates-a4-root[data-render-context="export"] *::after {
@@ -546,6 +552,12 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 .exp-grand-total-row td { background:#ffffff !important; font-weight:900; }
 .exp-grand-total-label { text-align:right; }
 #templates-a4-root[dir="ltr"] .exp-grand-total-label { text-align:left; }
+/* Highlight Grand Total value (preview) */
+#templates-a4-root .exp-top-table .exp-grand-total-row td.exp-grand-total-value {
+  background: #FEF08A !important; /* amber-200 */
+  color: #000 !important;
+  border: 2px solid #f59e0b !important; /* amber-500 */
+}
 
 /* Allow scrolling to view all pages in preview container */
 #templates-preview-host { max-height: 78vh; overflow: auto; }
