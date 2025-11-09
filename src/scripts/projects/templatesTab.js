@@ -1927,8 +1927,9 @@ function renderTemplatesPreview() {
   const host = document.getElementById('templates-preview-host');
   if (!host) return;
   const project = getSelectedProject();
-  host.innerHTML = '';
+  const oldRoot = host.querySelector('#templates-a4-root');
   if (!project) {
+    host.innerHTML = '';
     const msg = el('div', { class: 'text-muted', text: t('projects.templates.empty', 'اختر مشروعاً لبدء إنشاء القوالب.') });
     host.appendChild(msg);
     return;
@@ -1941,7 +1942,22 @@ function renderTemplatesPreview() {
   if (type === 'callsheet') pageRoot = buildCallSheetPage(project, reservations, hf);
   else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
-  host.appendChild(pageRoot);
+  // Diff-like replace to avoid losing event handlers on host
+  const newRoot = pageRoot;
+  if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
+    const oldPages = oldRoot.querySelector('[data-a4-pages]');
+    const newPages = newRoot.querySelector('[data-a4-pages]');
+    if (oldPages && newPages) {
+      try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
+    } else {
+      oldRoot.innerHTML = newRoot.innerHTML;
+    }
+    pageRoot = oldRoot;
+  } else {
+    host.innerHTML = '';
+    host.appendChild(newRoot);
+    pageRoot = newRoot;
+  }
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
   try { ensureCellToolbar(); } catch(_) {}
