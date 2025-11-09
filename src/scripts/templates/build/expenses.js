@@ -97,7 +97,8 @@ export function buildExpensesPage(project, reservations, opts = {}) {
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
         // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
-        const commonTxt = { 'data-editable': 'true', autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false' };
+        // Follow Call Sheet editing model: make TDs contenteditable directly
+        const commonTxt = { 'data-editable': 'true', contenteditable: 'true', autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false' };
         const commonNum = { ...commonTxt, 'data-num': '1', inputmode: 'decimal' };
         tr.appendChild(el('td', commonTxt)); // Code
         tr.appendChild(el('td', commonTxt)); // Description

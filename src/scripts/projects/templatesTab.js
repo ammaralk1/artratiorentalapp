@@ -1436,35 +1436,35 @@ function renderTemplatesPreview() {
   } catch (_) {}
 }
 
+// Unify editing model with Call Sheet: make TDs themselves contenteditable.
+// If older autosaves had inner DIV[contenteditable], lift content up to TD.
 function ensureEditableWrappers() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return;
   const tds = Array.from(root.querySelectorAll('table.exp-details td'));
-  tds.forEach((td, idx) => {
+  tds.forEach((td) => {
     try {
-      const isEditable = td.getAttribute('data-editable') === 'true' || td.getAttribute('contenteditable') === 'true';
-      // Totals column: keep non-editable
-      const isLast = td === td.parentElement?.lastElementChild;
-      if (isLast) { td.removeAttribute('contenteditable'); td.removeAttribute('data-editable'); return; }
-      if (!isEditable) return;
-      // If td itself is contenteditable, move that to inner DIV once
-      if (td.isContentEditable || td.getAttribute('contenteditable') === 'true') {
+      const isLast = td === td.parentElement?.lastElementChild; // totals
+      if (isLast) {
         td.removeAttribute('contenteditable');
+        td.removeAttribute('data-editable');
+        return;
       }
-      const hasInner = td.querySelector('[contenteditable="true"]');
-      if (!hasInner) {
-        const inner = document.createElement('div');
-        inner.setAttribute('contenteditable', 'true');
-        inner.setAttribute('data-editable', 'true');
-        inner.setAttribute('autocapitalize', 'off');
-        inner.setAttribute('autocorrect', 'off');
-        inner.setAttribute('autocomplete', 'off');
-        inner.setAttribute('spellcheck', 'false');
-        inner.textContent = td.textContent || '';
-        td.textContent = '';
-        td.appendChild(inner);
+      const shouldEdit = td.getAttribute('data-editable') === 'true' || td.getAttribute('contenteditable') === 'true' || !!td.querySelector('[contenteditable="true"]');
+      if (!shouldEdit) return;
+      const inner = td.querySelector('[contenteditable="true"]');
+      if (inner) {
+        // Lift inner content to TD and remove wrapper
+        const html = inner.innerHTML;
+        td.innerHTML = html;
       }
-    } catch(_) {}
+      td.setAttribute('data-editable', 'true');
+      td.setAttribute('contenteditable', 'true');
+      td.setAttribute('autocapitalize', 'off');
+      td.setAttribute('autocorrect', 'off');
+      td.setAttribute('autocomplete', 'off');
+      td.setAttribute('spellcheck', 'false');
+    } catch (_) {}
   });
 }
 
