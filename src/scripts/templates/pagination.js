@@ -189,7 +189,7 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
       return t;
     };
 
-    let currentPage = pg; let currentInner = inner; const anchorNext = pg.nextSibling;
+    let currentPage = pg; let currentInner = inner;
     const workingFirst = makeTable();
     try { inner.removeChild(table); } catch (_) {}
     currentInner.appendChild(workingFirst);
@@ -207,7 +207,8 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
 
     const startNewPage = (firstNodeAboutToPlace = null) => {
       ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-      if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
+      // Always append new pages at the end to preserve group ordering across multiple runs
+      pagesWrap.appendChild(currentPage);
       workingTable = makeTable();
       currentInner.appendChild(workingTable);
       const tb = workingTable.tBodies[0];
@@ -234,7 +235,16 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
       const isMarkerRow = isMarker(row);
       const isItemRow = isItem(row);
       const isGroupBarRow = isGroupBar(row);
-      if (isGroupBarRow) { groupBarTpl = row.cloneNode(true); appendOrNewPage(row); i += 1; continue; }
+      if (isGroupBarRow) {
+        groupBarTpl = row.cloneNode(true);
+        // Start a fresh page for each new group so groups don't share pages
+        const tb = workingTable.tBodies[0];
+        if (tb && tb.children && tb.children.length > 0) {
+          startNewPage(row);
+        }
+        appendOrNewPage(row);
+        i += 1; continue;
+      }
       if (isSubHeaderRow) {
         subHeaderTpl = row.cloneNode(true); subHeaderCode = row.getAttribute('data-subgroup');
         const pack = [row]; let j = i + 1; let itemsAdded = 0;
