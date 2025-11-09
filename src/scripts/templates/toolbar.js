@@ -7,9 +7,11 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
   const host = document.getElementById('templates-preview-host');
   if (!host) { return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
+  const enableExpensesTools = (() => { try { return localStorage.getItem('templates.toolbar.expenses') === '1'; } catch(_) { return false; } })();
   let bar = document.getElementById('tpl-cell-toolbar');
-  // Enable toolbar for Call Sheet and Expenses tables
-  if (!(type === 'callsheet' || type === 'expenses')) { if (bar) bar.style.display = 'none'; return; }
+  // Temporarily disable toolbar for Expenses unless explicitly enabled via localStorage
+  if (!(type === 'callsheet' || (type === 'expenses' && enableExpensesTools))) { if (bar) { bar.style.display = 'none'; bar.__disabled = true; } return; }
+  if (type === 'expenses' && !enableExpensesTools) { if (bar) { bar.style.display = 'none'; bar.__disabled = true; } return; }
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'tpl-cell-toolbar';
@@ -140,6 +142,10 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
 
   const place = (cell) => {
     if (!cell) { bar.style.display = 'none'; bar.__targetCell = null; return; }
+    // Abort if disabled dynamically (e.g., when switching to Expenses)
+    const curType = document.getElementById('templates-type')?.value || 'expenses';
+    const allowExpenses = (() => { try { return localStorage.getItem('templates.toolbar.expenses') === '1'; } catch(_) { return false; } })();
+    if (curType === 'expenses' && !allowExpenses) { bar.style.display = 'none'; bar.__targetCell = null; return; }
     const sched = cell.closest('table.cs-schedule') || cell.closest('table.cs-crew') || cell.closest('table.exp-details');
     const cast = cell.closest('table.cs-cast');
     if (!sched && !cast) { bar.style.display = 'none'; bar.__targetCell = null; return; }
@@ -191,6 +197,12 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
     if (!root) return;
     const onSelectionChange = () => {
       if (bar.__lock) return;
+      // Suppress toolbar in Expenses unless explicitly enabled via localStorage
+      try {
+        const curType = document.getElementById('templates-type')?.value || 'expenses';
+        const allowExpenses = localStorage.getItem('templates.toolbar.expenses') === '1';
+        if (curType === 'expenses' && !allowExpenses) { bar.style.display = 'none'; return; }
+      } catch(_) {}
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) { if (!bar.__lock) bar.style.display = 'none'; return; }
       let node = sel.anchorNode;
