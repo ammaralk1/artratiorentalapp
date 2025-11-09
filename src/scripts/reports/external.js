@@ -60,8 +60,11 @@ export function ensureHtml2Pdf() {
     return Promise.resolve(window.html2pdf);
   }
   if (!reportsState.html2PdfReady) {
-    reportsState.html2PdfReady = loadExternalScript('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js')
-      .then(() => window.html2pdf);
+    // جرّب أولاً ملفاً محلياً إن كان متوفراً، ثم ارجع إلى CDN
+    reportsState.html2PdfReady = loadExternalScript('/vendor/html2pdf.bundle.min.js')
+      .catch(() => loadExternalScript('https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'))
+      .then(() => window.html2pdf)
+      .catch(() => null);
   }
   return reportsState.html2PdfReady;
 }

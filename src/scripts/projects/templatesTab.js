@@ -2559,6 +2559,26 @@ function showPrintPreviewOverlay() {
   } catch (_) { alert('تعذر إنشاء المعاينة'); }
 }
 
+async function fetchCrewFromReservation(force = false) {
+  try {
+    const host = document.getElementById('templates-a4-root');
+    if (!host) { alert('لا يوجد محتوى'); return; }
+    const crew = host.querySelector('.callsheet-v1 table.cs-crew');
+    if (!crew) { alert('لا يوجد جدول Crew في القالب الحالي'); return; }
+    const project = getSelectedProject();
+    const res = project ? (getSelectedReservations(project.id)?.[0] || null) : null;
+    if (!res) { alert('اختر حجزاً مرتبطاً أولاً'); return; }
+    if (force) {
+      const mod = await import('../templates/build/callsheet.js');
+      mod.populateCrewFromReservation(crew, res);
+    } else {
+      const mod = await import('../templates/build/callsheet.js');
+      mod.populateCrewFromReservationIfEmpty(res);
+    }
+    try { showToast('تم جلب بيانات الطاقم', 'success', 2500); } catch(_) { /* ignore */ }
+  } catch (_) { alert('تعذر جلب بيانات الطاقم'); }
+}
+
 // ============== PDF Live Tuner ==============
 // ============== PDF Prefs (namespaced per template type) ==============
 function __pdfNsKeyBase() {
@@ -4101,6 +4121,16 @@ export function initTemplatesTab() {
         btn.style.cssText = 'display:block;width:100%;text-align:right;margin:4px 0;';
         btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); try { showPrintPreviewOverlay(); } catch(_) {} });
         actionsMenu.insertBefore(btn, actionsMenu.firstChild);
+      }
+    } catch(_) {}
+    try {
+      if (!document.getElementById('templates-fetch-crew')) {
+        const sep = document.createElement('div'); sep.style.cssText = 'height:1px;background:#e5e7eb;margin:6px 0'; actionsMenu.appendChild(sep);
+        const b1 = document.createElement('button'); b1.type='button'; b1.className='btn btn-outline'; b1.id='templates-fetch-crew'; b1.textContent='👥 جلب الطاقم (إكمال الفراغات)'; b1.style.cssText='display:block;width:100%;text-align:right;margin:4px 0;';
+        const b2 = document.createElement('button'); b2.type='button'; b2.className='btn btn-outline'; b2.id='templates-fetch-crew-force'; b2.textContent='👥 جلب الطاقم (إعادة تعبئة)'; b2.style.cssText='display:block;width:100%;text-align:right;margin:4px 0;';
+        b1.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); try { fetchCrewFromReservation(false); } catch(_) {} });
+        b2.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); try { fetchCrewFromReservation(true); } catch(_) {} });
+        actionsMenu.appendChild(b1); actionsMenu.appendChild(b2);
       }
     } catch(_) {}
     const closeMenu = (ev) => {
