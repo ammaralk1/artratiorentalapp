@@ -2720,6 +2720,16 @@ function rebuildCrewCallTable() {
   if (!root) return;
   const callsheet = root.querySelector('.callsheet-v1');
   if (!callsheet) return;
+  // 1) Purge any legacy/old Crew Call layouts (non-standard tables that contain a Crew Call heading)
+  try {
+    const allTables = Array.from(callsheet.getElementsByTagName('table'));
+    allTables.forEach((t) => {
+      if (t.classList && t.classList.contains('cs-crew')) return; // keep standard
+      const text = (t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
+      if (text.includes('crew call')) { try { t.parentElement?.removeChild(t); } catch(_) {} }
+    });
+  } catch(_) {}
+  // 2) Remove any existing standard Crew Call tables to rebuild fresh
   try { Array.from(callsheet.querySelectorAll('table.cs-crew')).forEach((t) => t.parentElement?.removeChild(t)); } catch(_) {}
   // Build a fresh standard table (same as ensureCrewTableExists but always rebuild)
   const crew = document.createElement('table');
