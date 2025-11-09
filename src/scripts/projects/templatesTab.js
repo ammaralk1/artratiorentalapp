@@ -3170,9 +3170,20 @@ export function initTemplatesTab() {
     } catch (_) {}
     // Ensure clicking a contenteditable cell always focuses caret (helps on Safari/iOS)
     const onMouseDown = (e) => {
-      const td = e.target && (e.target.closest('[contenteditable]'));
-      if (!td) return;
-      try { setTimeout(() => { if (td && td.focus) td.focus(); }, 0); } catch(_) {}
+      // If user clicks inside any contenteditable node, focus it
+      const editable = e.target && e.target.closest && e.target.closest('[contenteditable="true"]');
+      if (editable) {
+        try { setTimeout(() => { if (editable && editable.focus) editable.focus(); }, 0); } catch(_) {}
+        return;
+      }
+      // Otherwise, if clicked a TD that contains an inner editable DIV, focus that DIV
+      const tdHost = e.target && e.target.closest && e.target.closest('td');
+      if (tdHost) {
+        const inner = tdHost.querySelector('[contenteditable="true"]');
+        if (inner) {
+          try { setTimeout(() => { if (inner && inner.focus) inner.focus(); }, 0); } catch(_) {}
+        }
+      }
     };
     TPL_HOST_EL?.addEventListener('mousedown', onMouseDown, true);
     // Store for cleanup
