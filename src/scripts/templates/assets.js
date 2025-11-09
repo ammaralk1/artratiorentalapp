@@ -28,5 +28,26 @@ export async function ensureFontsReady() {
   try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
 }
 
-export default { preloadImage, preloadImages, clearImageCache, ensureFontsReady };
+// Wait for all <img> elements inside a container to finish loading
+export function waitForImages(container = document) {
+  try {
+    const root = container || document;
+    const imgs = Array.from(root.querySelectorAll ? root.querySelectorAll('img') : []);
+    if (!imgs.length) return Promise.resolve();
+    return Promise.all(imgs.map((img) => new Promise((resolve) => {
+      try {
+        if (img.complete && img.naturalWidth > 0) return resolve();
+        const done = () => { try { img.removeEventListener('load', done); img.removeEventListener('error', done); } catch (_) {} resolve(); };
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+      } catch (_) { resolve(); }
+    })));
+  } catch (_) { return Promise.resolve(); }
+}
 
+export async function ensureAssetsReady(container = document) {
+  await ensureFontsReady();
+  await waitForImages(container);
+}
+
+export default { preloadImage, preloadImages, clearImageCache, ensureFontsReady, waitForImages, ensureAssetsReady };

@@ -12,13 +12,20 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
-import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from '../templates/tableTools.js';
+// Table interactions are handled via templates/tableInteractions.js; no direct tableTools use here
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
-import { el, buildRoot, L, metaCell } from '../templates/core.js';
+import { el } from '../templates/core.js';
 import { pageHasMeaningfulContent } from '../templates/pageUtils.js';
+import { ensureAssetsReady } from '../templates/assets.js';
+import { initHistory, pushHistoryDebounced, undoTemplatesChange, redoTemplatesChange, setupTemplatesHistory, pushTemplatesHistory } from '../templates/history.js';
+import { ensureCellToolbar as ensureCellToolbarExt } from '../templates/toolbar.js';
+import { autoPaginateTemplates as autoPaginateTemplatesExt, paginateExpDetailsTables as paginateExpDetailsTablesExt, paginateGenericTplTables as paginateGenericTplTablesExt, pruneEmptyA4Pages as pruneEmptyA4PagesExt, trimTrailingEmptyRows as trimTrailingEmptyRowsExt, shrinkSingleWordCells as shrinkSingleWordCellsExt, shrinkScheduleHeaderLabels as shrinkScheduleHeaderLabelsExt } from '../templates/pagination.js';
+import { bindExpensesRowActions } from '../templates/expensesTools.js';
+import { bindTableInteractions } from '../templates/tableInteractions.js';
+import { snapshotShading, applyShadingSnapshot } from '../templates/shading.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -44,16 +51,23 @@ let TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resU
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
 let TPL_RESIZE_OBSERVER = null;
+let TPL_TABLE_UNBIND = null;
 let TPL_SUBTOTAL_TIMER = null;
+let TPL_EXPENSES_UNBIND = null;
 
 function destroyTemplatesTab() {
   try {
     const host = document.getElementById('templates-preview-host');
     if (host) {
-      try { host.removeEventListener('click', handleTableActionClick); } catch (_) {}
+      // click handler bound via bindExpensesRowActions; unbound below
       try { if (TPL_LISTENERS.hostInput) host.removeEventListener('input', TPL_LISTENERS.hostInput); } catch (_) {}
-      try { host.removeEventListener('paste', handleTablePaste); } catch (_) {}
-      try { host.removeEventListener('keydown', handleTableKeydown, true); } catch (_) {}
+      try { if (TPL_TABLE_UNBIND) { TPL_TABLE_UNBIND(); TPL_TABLE_UNBIND = null; } } catch (_) {}
+      try { if (TPL_EXPENSES_UNBIND) { TPL_EXPENSES_UNBIND(); TPL_EXPENSES_UNBIND = null; } } catch (_) {}
+      // Detach toolbar selection observer if present
+      try {
+        const bar = document.getElementById('tpl-cell-toolbar');
+        if (bar && typeof bar.__detach === 'function') { bar.__detach(); }
+      } catch (_) {}
     }
     if (TPL_LISTENERS.projChanged) document.removeEventListener('projects:changed', TPL_LISTENERS.projChanged);
     if (TPL_LISTENERS.resChanged) document.removeEventListener('reservations:changed', TPL_LISTENERS.resChanged);
@@ -419,6 +433,7 @@ function attachCallsheetLogoBehaviors(root) {
   } catch(_) {}
 }
 
+/* moved to ../templates/toolbar.js
 // Inline toolbar near focused cell (row ops for schedule, slot ops for cast)
 function ensureCellToolbar() {
   const host = document.getElementById('templates-preview-host');
@@ -473,7 +488,7 @@ function ensureCellToolbar() {
       const doRowMove = (dir) => { const tr = cell.closest('tr'); if (tr) moveRow(tr, dir); };
       const updateAfter = () => {
         try { markTemplatesEditingActivity(); pushHistoryDebounced(); saveAutosaveDebounced(); } catch(_) {}
-        try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch(_) {}
+        try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
       };
       const doRowFull = () => {
         const table = sched || cell.closest('table');
@@ -544,8 +559,8 @@ function ensureCellToolbar() {
         const firstName = tbody.children[1]; const weather = firstName?.querySelector('.cs-weather');
         if (weather) { const totalRows = tbody.querySelectorAll('tr').length - 1; weather.setAttribute('rowspan', String(totalRows)); }
       };
-      if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
-      else if (act === 'row-full' && sched) { doRowFull(); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
+      if (act === 'row-add' && sched) { doRowAdd(); updateAfter(); try { setTimeout(() => paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }), 30); } catch(_) {} }
+      else if (act === 'row-full' && sched) { doRowFull(); updateAfter(); try { setTimeout(() => paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }), 30); } catch(_) {} }
       else if (act === 'row-full-del' && sched) {
         const tr = cell.closest('tr');
         const headCols = (() => { try { const head = sched.querySelector('thead tr'); return (head && head.children && head.children.length) ? head.children.length : 12; } catch(_) { return 12; } })();
@@ -553,8 +568,8 @@ function ensureCellToolbar() {
         if (isFull) { tr.parentElement?.removeChild(tr); updateAfter(); }
       }
       else if (act === 'row-del' && sched) { doRowDel(); updateAfter(); }
-      else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
-      else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); try { setTimeout(() => paginateGenericTplTables(), 30); } catch(_) {} }
+      else if (act === 'row-up' && sched) { doRowMove(-1); updateAfter(); try { setTimeout(() => paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }), 30); } catch(_) {} }
+      else if (act === 'row-down' && sched) { doRowMove(+1); updateAfter(); try { setTimeout(() => paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }), 30); } catch(_) {} }
       else if (act === 'cast-add' && cast) { castAddSlot(); updateAfter(); }
       else if (act === 'cast-del' && cast) { castRemoveSlot(); updateAfter(); }
       else if (act === 'cast-add-row' && cast) { castAddRowPair(); updateAfter(); }
@@ -616,17 +631,9 @@ function ensureCellToolbar() {
   host.addEventListener('mouseleave', onOut, true);
   host.addEventListener('scroll', () => { if (bar.__targetCell) place(bar.__targetCell); }, { passive: true });
 }
+*/
 
 // el is imported from templates/core.js
-
-// Utilities to ensure deterministic capture (fonts/images fully loaded)
-async function waitForFontsReady() {
-  try {
-    if (document.fonts && document.fonts.ready) {
-      await document.fonts.ready;
-    }
-  } catch (_) {}
-}
 
 // Canvas helper: request a 2D context optimized for frequent readbacks
 function getCtx2d(canvas) {
@@ -635,22 +642,6 @@ function getCtx2d(canvas) {
     if (ctx) return ctx;
   } catch (_) {}
   try { return canvas.getContext('2d'); } catch (_) { return null; }
-}
-function waitForImages(container) {
-  const imgs = Array.from(container.querySelectorAll('img'));
-  if (!imgs.length) return Promise.resolve();
-  return Promise.all(imgs.map((img) => new Promise((resolve) => {
-    try {
-      if (img.complete && img.naturalWidth > 0) return resolve();
-      const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
-      img.addEventListener('load', done, { once: true });
-      img.addEventListener('error', done, { once: true });
-    } catch (_) { resolve(); }
-  })));
-}
-async function ensureAssetsReady(container) {
-  await waitForFontsReady();
-  await waitForImages(container || document);
 }
 
 // Delegate to core metaCell
@@ -715,30 +706,7 @@ function readHeaderFooterOptions() {
   };
 }
 
-// buildRoot is imported from templates/core.js (kept local createPageSection for pagination flows)
-
-function createPageSection({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
-  const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });
-  const inner = el('div', { class: 'a4-inner' });
-  if (headerFooter) {
-    const brandTitle = 'Art Ratio';
-    const header = el('div', { class: 'tpl-print-header' }, [
-      el('div', { class: 'brand' }, [
-        el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
-        el('div', { class: 'brand-text', text: brandTitle })
-      ]),
-      el('div', { class: 'meta' }, [ el('div', { text: new Date().toLocaleDateString() }) ])
-    ]);
-    const footer = el('div', { class: 'tpl-print-footer' }, [
-      el('div', { class: 'footer-left', text: 'art-ratio.com' }),
-      el('div', { class: 'page-num', html: `<span data-page-num>1</span> / <span data-page-count>1</span>` })
-    ]);
-    page.appendChild(header);
-    page.appendChild(footer);
-  }
-  page.appendChild(inner);
-  return { page, inner };
-}
+ 
 
 
 
@@ -861,11 +829,6 @@ function enablePrimaryLogoInteractions(wrap, img) {
 }
 
 // ===== Simple undo/redo for Templates preview =====
-let TPL_HISTORY = [];
-let TPL_FUTURE = [];
-let TPL_RESTORING = false;
-let TPL_HISTORY_BOUND = false;
-let TPL_HISTORY_TIMER = null;
 let TPL_EDITING = false;
 let TPL_EDITING_TIMER = null;
 let TPL_AUTOSAVE_TIMER = null;
@@ -1071,7 +1034,14 @@ function restoreTemplatesAutosaveIfPresent() {
         // Re-apply transforms/shading/text if available to keep in sync with logo state
         if (parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
         // Recreate the inline toolbar if it was cleared
-        try { ensureCellToolbar(); } catch(_) {}
+        try {
+          ensureCellToolbarExt({
+            onAfterChange: () => {
+              try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+              try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+            },
+          });
+        } catch(_) {}
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
         // If Crew table is missing in restored HTML (older autosave), inject it
@@ -1083,13 +1053,13 @@ function restoreTemplatesAutosaveIfPresent() {
         if (parsed && parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
       }
       // Seed history with restored state so undo works from there
-      try { if (parsed.snap) TPL_HISTORY.push(parsed.snap); } catch(_) {}
+      try { if (parsed.snap) pushTemplatesHistory(); } catch(_) {}
       return;
     }
     // Legacy path: only edits/shading/logos snapshot available
     if (parsed && parsed.snap) {
       applyTemplatesSnapshotInPlace(parsed.snap);
-      try { TPL_HISTORY.push(parsed.snap); } catch(_) {}
+      try { pushTemplatesHistory(); } catch(_) {}
     }
   } catch(_) {}
 }
@@ -1138,7 +1108,6 @@ function applyTemplatesSnapshot(snap) {
   if (!snap) return;
   const host = document.getElementById('templates-preview-host');
   if (!host) return;
-  TPL_RESTORING = true;
   try {
     writePrimaryLogoState(snap.l || {});
     writeSecondaryLogoState(snap.r || {});
@@ -1151,7 +1120,6 @@ function applyTemplatesSnapshot(snap) {
   } finally {
     // Re-render to reflect logo states
     try { renderTemplatesPreview(); } catch(_) {}
-    TPL_RESTORING = false;
   }
 }
 
@@ -1234,108 +1202,7 @@ function autosaveToServerDebounced() {
 }
 
 // Snapshot/restore shading by table,row,cell indices for Call Sheet
-function snapshotShading(root) {
-  try {
-    const scope = root.querySelector('.callsheet-v1');
-    if (!scope) return [];
-    const tables = Array.from(scope.querySelectorAll('table'));
-    const out = [];
-    tables.forEach((t, ti) => {
-      const tp = t.classList.contains('cs-schedule') ? 'schedule'
-        : t.classList.contains('cs-cast') ? 'cast'
-        : t.classList.contains('cs-info') ? 'info'
-        : '';
-      const rows = Array.from(t.querySelectorAll('tr'));
-      rows.forEach((tr, ri) => {
-        const cells = Array.from(tr.children);
-        cells.forEach((td, ci) => {
-          if (td.getAttribute && td.getAttribute('data-shaded') === '1') {
-            const shade = td.style.getPropertyValue('--shade') || td.style.backgroundColor || '';
-            out.push({ ti, ri, ci, shade, tp });
-          }
-        });
-      });
-    });
-    return out;
-  } catch(_) { return []; }
-}
-function applyShadingSnapshot(root, list) {
-  try {
-    const scope = root.querySelector('.callsheet-v1');
-    if (!scope || !Array.isArray(list)) return;
-    const tables = Array.from(scope.querySelectorAll('table'));
-    const schedTables = Array.from(scope.querySelectorAll('table.cs-schedule'));
-    list.forEach((it) => {
-      let td = null;
-      if (it.tp === 'schedule' && schedTables.length) {
-        // Map logical row index across paginated schedule tables if needed
-        let remain = Number(it.ri) || 0;
-        let tSel = null; let trSel = null;
-        for (let k = 0; k < schedTables.length; k += 1) {
-          const rows = schedTables[k].querySelectorAll('tbody tr');
-          const count = rows.length;
-          if (remain < count) { tSel = schedTables[k]; trSel = rows[remain]; break; }
-          remain -= count;
-        }
-        if (!trSel) {
-          // Fallback to last schedule table last row
-          const lastT = schedTables[schedTables.length - 1];
-          const rows = lastT ? lastT.querySelectorAll('tbody tr') : null;
-          trSel = rows ? rows[rows.length - 1] : null; tSel = lastT;
-        }
-        td = trSel && trSel.children?.[it.ci];
-      } else {
-        const t = tables[it.ti];
-        const tr = t && t.querySelectorAll('tr')?.[it.ri];
-        td = tr && tr.children?.[it.ci];
-      }
-      if (td) {
-        try { td.setAttribute('data-shaded', '1'); td.style.setProperty('--shade', it.shade); td.style.setProperty('background', 'var(--shade)', 'important'); td.style.setProperty('background-color', 'var(--shade)', 'important'); } catch(_) {}
-      }
-    });
-  } catch(_) {}
-}
-function pushTemplatesHistory() {
-  if (TPL_RESTORING) return;
-  const snap = getTemplatesSnapshot();
-  if (!snap) return;
-  TPL_HISTORY.push(snap);
-  if (TPL_HISTORY.length > 50) TPL_HISTORY.shift();
-  TPL_FUTURE = [];
-}
-function pushHistoryDebounced() {
-  clearTimeout(TPL_HISTORY_TIMER); TPL_HISTORY_TIMER = setTimeout(pushTemplatesHistory, 250);
-}
-function undoTemplatesChange() {
-  if (TPL_HISTORY.length < 2) return; // keep initial state
-  const cur = TPL_HISTORY.pop();
-  const prev = TPL_HISTORY[TPL_HISTORY.length - 1];
-  if (cur) TPL_FUTURE.push(cur);
-  applyTemplatesSnapshot(prev);
-}
-function redoTemplatesChange() {
-  const next = TPL_FUTURE.pop();
-  if (!next) return;
-  TPL_HISTORY.push(next);
-  applyTemplatesSnapshot(next);
-}
-function setupTemplatesHistory(pageRoot, type) {
-  if (type !== 'callsheet') return;
-  // Seed initial snapshot once per render
-  pushTemplatesHistory();
-  if (TPL_HISTORY_BOUND) return;
-  const host = document.getElementById('templates-preview-host');
-  if (!host) return;
-  host.addEventListener('input', (e) => {
-    const target = e.target;
-    if (target && target.getAttribute && target.getAttribute('data-editable') === 'true') {
-      pushHistoryDebounced();
-      saveAutosaveDebounced();
-      markTemplatesEditingActivity();
-    }
-  }, true);
-  TPL_HISTORY_BOUND = true;
-}
+// History wiring provided by templates/history.js
 
  
 
@@ -1376,9 +1243,16 @@ function renderTemplatesPreview() {
   }
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
-  try { ensureCellToolbar(); } catch(_) {}
+  try {
+    ensureCellToolbarExt({
+      onAfterChange: () => {
+        try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+        try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+      },
+    });
+  } catch(_) {}
   // Keep schedule header tidy and centered within cells
-  try { shrinkScheduleHeaderLabels(); } catch(_) {}
+  try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew table exists even if an old autosave overwrote DOM
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
@@ -1402,12 +1276,12 @@ function renderTemplatesPreview() {
   try { renumberExpenseCodes(); } catch (_) {}
   // Update computed totals where applicable
   recomputeExpensesSubtotals();
-  try { autoPaginateTemplates(); } catch (_) {}
-  try { paginateExpDetailsTables(); } catch (_) {}
+  try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
+  try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
-  try { paginateGenericTplTables(); } catch (_) {}
+  try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
   try {
     if (type === 'callsheet') {
@@ -1454,35 +1328,18 @@ async function printTemplatesPdf() {
   if (!host) { alert('لا يوجد محتوى للطباعة'); return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
-  // Route callsheet through dedicated printer for stability
+  // Route through template printers
   if (type === 'callsheet') {
     try { await (await import('../templates/print.js')).printCallsheetFromHost(host); } catch (_) { alert('تعذر إنشاء PDF'); }
     return;
-  }
-  // Helper: detect if a page contains meaningful content (avoid blank pages)
-  const pageHasMeaningfulContent = (pg) => {
+  } else {
     try {
-      if (!pg) return false;
-      // Expenses: either Top Sheet present, or at least one data row in details
-      const hasTop = !!pg.querySelector('#expenses-top-sheet');
-      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      // Other templates: any non-empty table rows in tpl-table
-      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
-        try {
-          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
-          const tds = Array.from(tr.querySelectorAll('td'));
-          return tds.some((td) => ((td.textContent || '').trim().length > 0));
-        } catch (_) { return false; }
-      });
-      // Crew rows considered as content too
-      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
-        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
-      });
-      // Call Sheet first page may have only cs blocks
-      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      return hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew;
-    } catch (_) { return true; }
-  };
+      const { printGenericTemplate } = await import('../templates/print.js');
+      await printGenericTemplate(host, { orientation: landscape ? 'landscape' : 'portrait', filename: `template-${type}.pdf` });
+    } catch (_) { alert('تعذر إنشاء PDF'); }
+    return;
+  }
+  // Use shared pageHasMeaningfulContent from templates/pageUtils.js
   // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
   const strictWysiwyg = (() => { try { return (readPdfString('templatesPdf.wysiwyg','1') ?? '1') !== '0'; } catch(_) { return true; } })();
   let html2pdf = null;
@@ -1525,8 +1382,8 @@ async function printTemplatesPdf() {
     try {
       // Trim trailing blank rows in export clone to avoid blank pages
       try {
-        Array.from(scope.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRows(t, 4));
-        Array.from(scope.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRows(t, 2));
+        Array.from(scope.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRowsExt(t, 4));
+        Array.from(scope.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRowsExt(t, 2));
       } catch (_) {}
       // Force إزالة أي حشو علوي داخل صفحات التصدير
       try { scope.querySelectorAll('.a4-inner').forEach((el) => { el.style.paddingTop = '0mm'; }); } catch(_) {}
@@ -1718,8 +1575,8 @@ async function printTemplatesPdf() {
     clone.style.overflow = 'hidden';
     // Trim trailing blanks in this page clone as well
     try {
-      Array.from(clone.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRows(t, 4));
-      Array.from(clone.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRows(t, 2));
+      Array.from(clone.querySelectorAll('table.cs-schedule')).forEach((t) => trimTrailingEmptyRowsExt(t, 4));
+      Array.from(clone.querySelectorAll('table.cs-crew')).forEach((t) => trimTrailingEmptyRowsExt(t, 2));
     } catch (_) {}
     // Ensure every exp-details table starts with its group title bar on this page
     try {
@@ -2455,7 +2312,7 @@ function recomputeExpensesSubtotals() {
     if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
     if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
     if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-    try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
+    try { requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
     return;
   }
 
@@ -2488,520 +2345,15 @@ function recomputeExpensesSubtotals() {
   if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
   if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
   if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-  try { requestAnimationFrame(() => { try { autoPaginateTemplates(); } catch (_) {} }); } catch (_) {}
-  try { requestAnimationFrame(() => { try { paginateExpDetailsTables(); } catch (_) {} }); } catch (_) {}
+  try { requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
+  try { requestAnimationFrame(() => { try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
 }
 
-function autoPaginateTemplates() {
-  const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  if (root.hasAttribute('data-exp-mode')) return; // explicit multi-page mode
-  const type = document.getElementById('templates-type')?.value || 'expenses';
-  if (type !== 'expenses') return; // حالياً نطبّق التقسيم التلقائي على ورقة المصاريف فقط
-
-  const pagesWrap = root.querySelector('[data-a4-pages]');
-  const firstPage = pagesWrap?.querySelector('.a4-page');
-  const firstInner = firstPage?.querySelector('.a4-inner');
-  if (!firstInner) return;
-
-  const headerFooter = false;
-  const logoUrl = COMPANY_INFO.logoUrl;
-
-  // Gather original blocks
-  const masthead = firstInner.querySelector('.exp-masthead');
-  const meta = firstInner.querySelector('.tpl-meta');
-  const topSheet = firstInner.querySelector('#expenses-top-sheet');
-  const table = firstInner.querySelector('#expenses-table');
-  const summary = firstInner.querySelector('#expenses-summary');
-  if (!table) return;
-
-  // Reset pages to rebuild
-  while (pagesWrap.firstChild) pagesWrap.removeChild(pagesWrap.firstChild);
-
-  // Start first page and keep masthead + meta + top sheet in first page
-  let { page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false });
-  pagesWrap.appendChild(currentPage);
-  if (masthead) currentInner.appendChild(masthead);
-  if (meta) currentInner.appendChild(meta);
-  if (topSheet) currentInner.appendChild(topSheet);
-
-  // Create a working table with thead copy
-  const thead = table.querySelector('thead');
-  const makeTable = () => {
-    const t = document.createElement('table');
-    t.className = table.className;
-    t.id = 'expenses-table';
-    t.setAttribute('data-editable-table', 'expenses');
-    const head = thead ? thead.cloneNode(true) : document.createElement('thead');
-    t.appendChild(head);
-    t.appendChild(document.createElement('tbody'));
-    return t;
-  };
-
-  // Details will start from the second page if they don't fit after top sheet
-  let workingTable = makeTable();
-  currentInner.appendChild(workingTable);
-
-  const rows = Array.from(table.querySelectorAll('tbody > tr'));
-
-  const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
-  const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
-  const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
-  const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
-  const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
-  const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
-
-  const fitsInner = () => {
-    // Simpler and more robust in various layouts: compare scrollHeight to clientHeight
-    return currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
-  };
-  // Keep templates for repeating titles across page breaks
-  let groupBarTpl = null; // current group's blue bar
-  let subHeaderTpl = null; // current subgroup header row
-  let subHeaderCode = null;
-
-  const startNewPage = (firstNodeAboutToPlace = null) => {
-    ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-    pagesWrap.appendChild(currentPage);
-    workingTable = makeTable();
-    currentInner.appendChild(workingTable);
-    const tb = workingTable.tBodies[0];
-    // Repeat group bar at top of continuation pages unless we are placing a fresh bar now
-    if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) {
-      tb.appendChild(groupBarTpl.cloneNode(true));
-    }
-    // If continuing a subgroup and the next node isn't its header, repeat header
-    if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
-      const n = firstNodeAboutToPlace;
-      const belongsToSameSub = !!(n && (
-        (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
-        (n.getAttribute && n.getAttribute('data-row') === 'item') ||
-        (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
-      ));
-      if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
-    }
-  };
-
-  const appendOrNewPage = (node) => {
-    const tbody = workingTable.tBodies[0];
-    tbody.appendChild(node);
-    if (!fitsInner()) {
-      // rollback this node and move to a fresh page and repeat context
-      tbody.removeChild(node);
-      startNewPage(node);
-      workingTable.tBodies[0].appendChild(node);
-    }
-  };
-
-  let i = 0;
-  while (i < rows.length) {
-    const row = rows[i];
-
-    // Track current context while iterating
-    if (isGroupBar(row)) {
-      groupBarTpl = row.cloneNode(true);
-    }
-    if (isSubHeader(row)) {
-      subHeaderTpl = row.cloneNode(true);
-      subHeaderCode = row.getAttribute('data-subgroup');
-    }
-
-    // Keep subgroup header with first 2 rows (and subtotal when immediately follows)
-    if (isSubHeader(row)) {
-      const pack = [row];
-      const headerCode = row.getAttribute('data-subgroup');
-      let j = i + 1;
-      let itemsAdded = 0;
-      // include up to first 2 item rows after header
-      while (j < rows.length && itemsAdded < 2) {
-        if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
-        else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
-        else if (isSubTotal(rows[j])) { break; } // stop before subtotal; we'll add it below
-        else { break; }
-      }
-      // if the next row is the matching subtotal, include it too
-      if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === headerCode) {
-        pack.push(rows[j]);
-        j += 1;
-      }
-      // Try to place the pack; if it doesn't fit, start a new page first
-      const tbody = workingTable.tBodies[0];
-      // Append to measure
-      pack.forEach((n) => tbody.appendChild(n));
-      if (!fitsInner()) {
-        // rollback
-        pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
-        startNewPage(pack[0]);
-        const tb2 = workingTable.tBodies[0];
-        pack.forEach((n) => tb2.appendChild(n));
-      }
-      i = j;
-      continue;
-    }
-
-    // Keep group total row from being split awkwardly
-    if (isGroupTotal(row)) {
-      const tbody = workingTable.tBodies[0];
-      tbody.appendChild(row);
-      if (!fitsInner()) {
-        // remove and start a new page; also try to carry the previous item/subtotal row with it
-        tbody.removeChild(row);
-        const prev = tbody.lastElementChild;
-        let carry = null;
-        if (prev && (isItem(prev) || isSubTotal(prev))) {
-          carry = prev;
-          tbody.removeChild(prev);
-        }
-        startNewPage(row);
-        const tb2 = workingTable.tBodies[0];
-        if (carry) tb2.appendChild(carry);
-        tb2.appendChild(row);
-        // Final guard: if even this overflows (unlikely), push row alone to a fresh page
-        if (!fitsInner()) {
-          // move group total alone to a new page
-          tb2.removeChild(row);
-          if (carry) { /* keep carry on this page */ }
-          startNewPage(row);
-          workingTable.tBodies[0].appendChild(row);
-        }
-      }
-      // Reset subgroup context at the end of the group
-      subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null;
-      i += 1;
-      continue;
-    }
-
-    // Default: append row normally
-    appendOrNewPage(row);
-    i += 1;
-  }
-
-  // Place summary at the end (last page) and ensure it fits; otherwise move to fresh page
-  if (summary) {
-    currentInner.appendChild(summary);
-    if (!fitsInner()) {
-      currentInner.removeChild(summary);
-      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-      pagesWrap.appendChild(currentPage);
-      // create an empty table on the final page to keep structure consistent
-      workingTable = makeTable();
-      currentInner.appendChild(workingTable);
-      currentInner.appendChild(summary);
-    }
-  }
-
-  // Update page numbers if header/footer enabled
-  if (headerFooter) {
-    const count = pagesWrap.querySelectorAll('.a4-page').length;
-    Array.from(pagesWrap.querySelectorAll('.a4-page')).forEach((p, i2) => {
-      const numEl = p.querySelector('[data-page-num]');
-      const countEl = p.querySelector('[data-page-count]');
-      if (numEl) numEl.textContent = String(i2 + 1);
-      if (countEl) countEl.textContent = String(count);
-    });
-  }
-
-  try { applyZebraStripes(); } catch (_) {}
-  try { shrinkSubHeaderLabels(); } catch (_) {}
-  try { shrinkSingleWordCells(); } catch (_) {}
-  try { if (window.__pdfTunerRefreshPages) window.__pdfTunerRefreshPages(); } catch(_) {}
-  try { if (window.__pdfTunerLoadValues) window.__pdfTunerLoadValues(); } catch(_) {}
-}
-
-// Split long group tables (exp-details) into multiple pages and repeat headers.
-function paginateExpDetailsTables() {
-  const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  const pagesWrap = root.querySelector('[data-a4-pages]');
-  if (!pagesWrap) return;
-  const headerFooter = false;
-  const logoUrl = COMPANY_INFO.logoUrl;
-
-  const groupPages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
-  groupPages.forEach((pg) => {
-    const inner = pg.querySelector('.a4-inner');
-    if (!inner) return;
-    const table = inner.querySelector('table.exp-details');
-    if (!table || table.getAttribute('data-split-done') === '1') return;
-
-    const thead = table.querySelector('thead');
-    // Preserve column widths across split tables
-    const colTpl = table.querySelector('colgroup');
-    const rows = Array.from(table.querySelectorAll('tbody > tr'));
-    if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
-
-    const makeTable = () => {
-      const t = document.createElement('table');
-      t.className = table.className;
-      t.setAttribute('data-editable-table', 'expenses');
-      // clone colgroup if present to keep exact column widths (preview + export)
-      if (colTpl) t.appendChild(colTpl.cloneNode(true));
-      const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
-      t.appendChild(hd);
-      t.appendChild(document.createElement('tbody'));
-      return t;
-    };
-
-    let currentPage = pg;
-    let currentInner = inner;
-    const anchorNext = pg.nextSibling;
-    const workingFirst = makeTable();
-    try { inner.removeChild(table); } catch (_) {}
-    currentInner.appendChild(workingFirst);
-    let workingTable = workingFirst;
-
-    const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
-    const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
-    const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
-    const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
-    const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
-    const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
-    const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
-
-    // Remember current group bar and subgroup header to repeat on page breaks
-    let groupBarTpl = null;
-    let subHeaderTpl = null;
-    let subHeaderCode = null;
-
-    const startNewPage = (firstNodeAboutToPlace = null) => {
-      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-      if (anchorNext) pagesWrap.insertBefore(currentPage, anchorNext); else pagesWrap.appendChild(currentPage);
-      workingTable = makeTable();
-      currentInner.appendChild(workingTable);
-      const tb = workingTable.tBodies[0];
-      // Repeat group title bar unless the next node is already a new bar
-      if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) {
-        tb.appendChild(groupBarTpl.cloneNode(true));
-      }
-      // If continuing same subgroup, add its header too (unless we're placing it now)
-      if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
-        const n = firstNodeAboutToPlace;
-        const belongsToSameSub = !!(n && (
-          (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
-          (n.getAttribute && n.getAttribute('data-row') === 'item') ||
-          (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
-        ));
-        if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
-      }
-    };
-
-    const appendOrNewPage = (node) => {
-      const tbody = workingTable.tBodies[0];
-      tbody.appendChild(node);
-      if (!fitsInner()) {
-        tbody.removeChild(node);
-        startNewPage(node);
-        workingTable.tBodies[0].appendChild(node);
-      }
-    };
-
-    let i = 0;
-    while (i < rows.length) {
-      const row = rows[i];
-      if (isGroupBar(row)) {
-        groupBarTpl = row.cloneNode(true);
-        // Ensure the first page has the bar at the top of the working table
-        const tb = workingTable.tBodies[0];
-        if (!tb.firstElementChild) tb.appendChild(row);
-        else tb.insertBefore(row, tb.firstElementChild);
-        i += 1; continue;
-      }
-      if (isSubHeader(row)) {
-        subHeaderTpl = row.cloneNode(true);
-        subHeaderCode = row.getAttribute('data-subgroup');
-        const pack = [row];
-        const headerCode = row.getAttribute('data-subgroup');
-        let j = i + 1;
-        let itemsAdded = 0;
-        while (j < rows.length && itemsAdded < 2) {
-          if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
-          else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
-          else if (isSubTotal(rows[j])) { break; } else { break; }
-        }
-        if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === headerCode) {
-          pack.push(rows[j]);
-          j += 1;
-        }
-        const tbody = workingTable.tBodies[0];
-        pack.forEach((n) => tbody.appendChild(n));
-        if (!fitsInner()) {
-          pack.forEach((n) => { if (n.parentElement === tbody) tbody.removeChild(n); });
-          startNewPage(pack[0]);
-          const tb2 = workingTable.tBodies[0];
-          pack.forEach((n) => tb2.appendChild(n));
-        }
-        i = j; continue;
-      }
-      if (isGroupTotal(row)) {
-        const tbody = workingTable.tBodies[0];
-        tbody.appendChild(row);
-        if (!fitsInner()) {
-          tbody.removeChild(row);
-          const prev = tbody.lastElementChild;
-          let carry = null;
-          if (prev && (isItem(prev) || isSubTotal(prev))) { carry = prev; tbody.removeChild(prev); }
-          startNewPage(row);
-          const tb2 = workingTable.tBodies[0];
-          if (carry) tb2.appendChild(carry);
-          tb2.appendChild(row);
-          if (!fitsInner()) {
-            tb2.removeChild(row);
-            startNewPage(row);
-            workingTable.tBodies[0].appendChild(row);
-          }
-        }
-        // reset subgroup context after group ends
-        subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null;
-        i += 1; continue;
-      }
-      appendOrNewPage(row);
-      i += 1;
-    }
-
-    table.setAttribute('data-split-done', '1');
-  });
-}
-
-// Generic paginator for non-expenses templates (Call Sheet / Shot List)
-// Helper: remove trailing blank rows to reduce phantom pages
-function trimTrailingEmptyRows(table, keepTail = 0) {
-  try {
-    const tbody = table?.tBodies?.[0] || table.querySelector('tbody');
-    if (!tbody) return;
-    const rows = Array.from(tbody.children);
-    if (!rows.length) return;
-    let blankTail = 0;
-    for (let i = rows.length - 1; i >= 0; i -= 1) {
-      const tr = rows[i];
-      // Preserve special rows
-      if (tr.classList && (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong'))) break;
-      const tds = Array.from(tr.querySelectorAll('td'));
-      const isBlank = tds.length > 0 && !tds.some((td) => ((td.textContent || '').trim().length > 0));
-      if (!isBlank) break;
-      blankTail += 1;
-      if (blankTail > Math.max(0, keepTail)) {
-        try { tbody.removeChild(tr); } catch (_) {}
-      }
-    }
-  } catch (_) {}
-}
-
-function paginateGenericTplTables() {
-  const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  const type = document.getElementById('templates-type')?.value || 'expenses';
-  if (type === 'expenses') return; // فقط للأنواع الأخرى
-  const pagesWrap = root.querySelector('[data-a4-pages]');
-  if (!pagesWrap) return;
-
-  const headerFooter = false;
-  const logoUrl = COMPANY_INFO.logoUrl;
-  const isLandscape = true;
-
-  const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
-  pages.forEach((pg) => {
-    const inner = pg.querySelector('.a4-inner');
-    if (!inner) return;
-    // Split each template table on this page (schedule, crew, etc.)
-    const tables = Array.from(inner.querySelectorAll('table.tpl-table'));
-    tables.forEach((table) => {
-      if (!table || table.getAttribute('data-split-done') === '1') return;
-      // Do not trim trailing rows during interactive preview; pruning blank pages is handled later
-      const thead = table.querySelector('thead');
-      const colTpl = table.querySelector('colgroup');
-      const rows = Array.from(table.querySelectorAll('tbody > tr'));
-      if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
-
-      const makeTable = () => {
-        const t = document.createElement('table');
-        t.className = table.className;
-        if (colTpl) t.appendChild(colTpl.cloneNode(true));
-        const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
-        t.appendChild(hd);
-        t.appendChild(document.createElement('tbody'));
-        return t;
-      };
-      const fitsInner = () => inner.scrollHeight <= (inner.clientHeight + 0.5);
-
-      let currentPage = pg; let currentInner = inner;
-      try { inner.removeChild(table); } catch(_) {}
-      let workingTable = makeTable();
-      currentInner.appendChild(workingTable);
-
-      let i = 0;
-      while (i < rows.length) {
-        const tbody = workingTable.tBodies[0];
-        tbody.appendChild(rows[i]);
-        if (!fitsInner()) {
-          tbody.removeChild(rows[i]);
-          // Remove table if it ended up header-only
-          try {
-            const hadNoRows = !(tbody.children && tbody.children.length);
-            if (hadNoRows) { const prev = workingTable; try { currentInner.removeChild(prev); } catch (_) {} }
-          } catch (_) {}
-          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
-          pagesWrap.appendChild(currentPage);
-          workingTable = makeTable();
-          currentInner.appendChild(workingTable);
-          workingTable.tBodies[0].appendChild(rows[i]);
-        }
-        i += 1;
-      }
-      // Remove empty header-only tables
-      try {
-        const allTables = Array.from(pagesWrap.querySelectorAll('table.tpl-table'));
-        allTables.forEach((t) => {
-          const body = t.tBodies && t.tBodies[0];
-          const hasRows = !!(body && body.children && body.children.length);
-          if (!hasRows) { try { t.parentElement?.removeChild(t); } catch (_) {} }
-        });
-      } catch (_) {}
-      table.setAttribute('data-split-done', '1');
-    });
-  });
-}
-
-// Remove empty A4 pages that no longer contain any meaningful content
-function pruneEmptyA4Pages() {
-  try {
-    const root = document.getElementById('templates-a4-root');
-    if (!root) return;
-    const pages = Array.from(root.querySelectorAll('.a4-page'));
-    pages.forEach((pg) => {
-      const hasTop = !!pg.querySelector('#expenses-top-sheet');
-      const hasDetailsRow = !!pg.querySelector('table.exp-details tbody tr[data-row="item"]');
-      // Consider only rows with visible text, not empty placeholders
-      const hasTplRows = !!Array.from(pg.querySelectorAll('table.tpl-table tbody tr')).find((tr) => {
-        try {
-          if (tr.classList.contains('cs-row-note') || tr.classList.contains('cs-row-strong')) return true;
-          const tds = Array.from(tr.querySelectorAll('td'));
-          return tds.some((td) => ((td.textContent || '').trim().length > 0));
-        } catch (_) { return false; }
-      });
-      const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
-        // Keep at least one page present, remove the rest
-        const total = root.querySelectorAll('.a4-page').length;
-        if (total > 1) pg.parentElement?.removeChild(pg);
-      }
-    });
-    // Deduplicate Crew tables if any duplicates slipped in
-    try { dedupeCrewTables(); } catch(_) {}
-  } catch (_) {}
-}
-
-function dedupeCrewTables() {
-  const root = document.getElementById('templates-a4-root');
-  if (!root) return;
-  const crews = Array.from(root.querySelectorAll('table.cs-crew'));
-  if (crews.length <= 1) return;
-  // Keep the first non-empty table, remove the rest
-  let keep = crews.find((t) => (t.tBodies?.[0]?.children?.length || 0) > 0) || crews[0];
-  crews.forEach((t) => { if (t !== keep) { try { t.parentElement?.removeChild(t); } catch(_) {} } });
-}
+ 
 
 // bindPreviewAdjustControls removed
 
+/* moved to ../templates/expensesTools.js
 function handleTableActionClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
@@ -3022,54 +2374,13 @@ function handleTableActionClick(e) {
   }
   try { renumberExpenseCodes(); } catch (_) {}
   recomputeExpensesSubtotals();
-  try { shrinkSingleWordCells(tbody); } catch (_) {}
+  try { shrinkSingleWordCellsExt(tbody); } catch (_) {}
   // Persist structure/content changes into history + autosave
   try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
 }
+*/
 
-// moved to ../templates/tableTools.js
-
-// moved to ../templates/tableTools.js
-
-function nextEditableRow(tr) {
-  let n = tr?.nextElementSibling;
-  while (n && isSpecialRow(n)) n = n.nextElementSibling;
-  return n;
-}
-
-function ensureExtraRows(tbody, sampleRow, needed) {
-  if (!tbody || !sampleRow || needed <= 0) return;
-  for (let i = 0; i < needed; i += 1) {
-    const clone = sampleRow.cloneNode(true);
-    clone.querySelectorAll('[contenteditable]')?.forEach((el) => { el.textContent = ''; });
-    tbody.appendChild(clone);
-  }
-}
-
-function parseClipboardTable(text) {
-  if (!text) return [];
-  const rows = text
-    .split(/\r?\n/)
-    .map((r) => r.replace(/\r$/, ''))
-    .filter((r) => r.trim().length > 0)
-    .map((line) => line.split(/\t|,|;/).map((c) => c.trim()));
-  return rows;
-}
-
-function fillRowFromArray(tr, startCol, values) {
-  if (!tr || !values || !values.length) return;
-  const tds = Array.from(tr.children);
-  let col = Math.max(0, startCol);
-  for (let i = 0; i < values.length && col < tds.length; i += 1) {
-    // Skip non-editable cells (e.g., Total, actions)
-    while (col < tds.length && !tds[col].hasAttribute('contenteditable')) col += 1;
-    if (col >= tds.length) break;
-    const td = tds[col];
-    const raw = values[i] ?? '';
-    td.textContent = String(raw);
-    col += 1;
-  }
-}
+// nextEditableRow/ensureExtraRows/parseClipboardTable/fillRowFromArray moved to module
 
 // Auto-generate/renumber codes within each subgroup:
 // If subgroup header is e.g. 01-00, then items become 01-01, 01-02, ...
@@ -3114,6 +2425,7 @@ function renumberExpenseCodes() {
   });
 }
 
+/* moved to ../templates/tableInteractions.js
 function handleTablePaste(e) {
   const target = e.target;
   const editable = target && (target.closest('[contenteditable]'));
@@ -3166,84 +2478,15 @@ function handleTablePaste(e) {
       if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
         recomputeExpensesSubtotalsDebounced();
       }
-  try { shrinkSingleWordCells(table); } catch (_) {}
+  try { shrinkSingleWordCellsExt(table); } catch (_) {}
 }
+*/
 
-// moved to ../templates/tableTools.js
+ 
 
-// moved to ../templates/tableTools.js
+ 
 
-// moved to ../templates/tableTools.js
-
-// moved to ../templates/tableTools.js
-
-function applyZebraStripes() {
-  const tables = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.exp-table'));
-  tables.forEach((t) => {
-    const tbody = t.tBodies?.[0];
-    if (!tbody) return;
-    let alt = false;
-    Array.from(tbody.children).forEach((tr) => {
-      if (tr.getAttribute('data-row') === 'item') {
-        tr.classList.toggle('exp-row-alt', alt);
-        alt = !alt;
-      }
-    });
-  });
-}
-
-function shrinkSubHeaderLabels() {
-  const headers = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.exp-table tr.exp-subheader th'));
-  headers.forEach((th) => {
-    // Reset then shrink-to-fit within cell
-    th.style.fontSize = '';
-    th.style.whiteSpace = 'nowrap';
-    th.style.overflow = 'hidden';
-    th.style.textOverflow = 'ellipsis';
-    const max = 12; const min = 9;
-    let size = max;
-    const fit = () => (th.scrollWidth <= th.clientWidth);
-    while (size > min && !fit()) {
-      size -= 0.5;
-      th.style.fontSize = size + 'px';
-    }
-  });
-}
-
-function shrinkSingleWordCells(scope) {
-  const root = document.querySelector('#templates-preview-host #templates-a4-root');
-  if (!root) return;
-  const base = scope && (scope instanceof HTMLElement) ? scope : root;
-  const cells = Array.from(base.querySelectorAll('table.exp-table td'));
-  const isSingleWord = (s) => s && !/\s/.test(s);
-  cells.forEach((td) => {
-    const text = (td.textContent || '').trim();
-    if (!text || !isSingleWord(text)) return;
-    td.style.fontSize = '';
-    const computed = Number.parseFloat(getComputedStyle(td).fontSize || '11');
-    let size = Number.isFinite(computed) ? computed : 11;
-    const min = 7;
-    const fits = () => td.scrollWidth <= td.clientWidth && td.scrollHeight <= td.clientHeight;
-    let guard = 0;
-    while (!fits() && size > min && guard < 40) { size -= 0.5; td.style.fontSize = size + 'px'; guard += 1; }
-  });
-}
-
-// Ensure schedule header labels don't overflow their cells by shrinking font-size if needed
-function shrinkScheduleHeaderLabels() {
-  try {
-    const ths = Array.from(document.querySelectorAll('#templates-preview-host #templates-a4-root table.cs-schedule thead th'));
-    ths.forEach((th) => {
-      th.style.fontSize = '';
-      const computed = Number.parseFloat(getComputedStyle(th).fontSize || '10');
-      let size = Number.isFinite(computed) ? computed : 10;
-      const min = 8;
-      const fits = () => (th.scrollWidth <= th.clientWidth + 0.5) && (th.scrollHeight <= th.clientHeight + 0.5);
-      let guard = 0;
-      while (!fits() && size > min && guard < 30) { size -= 0.5; th.style.fontSize = size + 'px'; guard += 1; }
-    });
-  } catch (_) {}
-}
+// shrinkSubHeaderLabels/shrinkSingleWordCells/shrinkScheduleHeaderLabels moved to ../templates/pagination.js
 
 // Ensure Crew Call table exists (for older autosaves that predate this table)
 function ensureCrewTableExists() {
@@ -3286,9 +2529,10 @@ function ensureCrewTableExists() {
   if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched.nextSibling);
   else callsheet.appendChild(crew);
   // Repaginate and prune empty pages so it flows correctly
-  try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 20); } catch(_) {}
+  try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
 }
 
+/* moved to ../templates/tableInteractions.js
 function handleTableKeydown(e) {
   const target = e.target;
   if (!target || !target.closest('table.tpl-table')) return;
@@ -3306,7 +2550,7 @@ function handleTableKeydown(e) {
         recomputeExpensesSubtotalsDebounced();
       }
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch (_) {}
     return;
   }
 
@@ -3317,7 +2561,7 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotalsDebounced();
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch (_) {}
     return;
   }
 
@@ -3328,9 +2572,10 @@ function handleTableKeydown(e) {
     if (table.getAttribute('data-editable-table') === 'expenses' || table.id === 'expenses-table') {
       recomputeExpensesSubtotalsDebounced();
     }
-    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch (_) {}
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch (_) {}
   }
 }
+*/
 
 async function saveTemplateSnapshot({ copy = false } = {}) {
   const project = getSelectedProject();
@@ -3429,6 +2674,16 @@ export function initTemplatesTab() {
   try { console.debug('[templatesTab] init start'); } catch(_) {}
 
   if (!projectSel) return;
+
+  // Initialize history with local hooks
+  try {
+    initHistory({
+      getSnapshot: getTemplatesSnapshot,
+      applySnapshot: applyTemplatesSnapshot,
+      onAutosaveDebounced: saveAutosaveDebounced,
+      onMarkEditing: markTemplatesEditingActivity,
+    });
+  } catch (_) {}
 
   // Restore last-used template type before first render
   restoreTplPreferredTypeIfAny(typeSel);
@@ -3686,7 +2941,16 @@ export function initTemplatesTab() {
   if (!TPL_EVENTS_BOUND) {
     TPL_EVENTS_BOUND = true;
     TPL_HOST_EL = document.getElementById('templates-preview-host');
-    TPL_HOST_EL?.addEventListener('click', handleTableActionClick);
+    try {
+      TPL_EXPENSES_UNBIND = bindExpensesRowActions(TPL_HOST_EL, {
+        onRenumber: () => { try { renumberExpenseCodes(); } catch (_) {} },
+        onTotalsChange: () => { try { recomputeExpensesSubtotals(); } catch (_) {} },
+        onAfterChange: () => {
+          try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+          try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+        },
+      });
+    } catch (_) {}
     // Normalize digits to English and recompute on edits
     const onHostInput = (e) => {
       const el = e.target;
@@ -3713,14 +2977,21 @@ export function initTemplatesTab() {
           }
         }
         recomputeExpensesSubtotals();
-        try { shrinkSingleWordCells(td || el.closest('table')); } catch (_) {}
+        try { shrinkSingleWordCellsExt(td || el.closest('table')); } catch (_) {}
       }
     };
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
-    // Paste from Excel/Sheets into tables
-    TPL_HOST_EL?.addEventListener('paste', handleTablePaste);
-    TPL_HOST_EL?.addEventListener('keydown', handleTableKeydown, true);
+    // Paste/keydown interactions via shared binder
+    try {
+      TPL_TABLE_UNBIND = bindTableInteractions(TPL_HOST_EL, {
+        onAfterChange: () => {
+          try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch (_) {}
+          try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 30); } catch(_) {}
+        },
+        onTotalsChange: () => recomputeExpensesSubtotalsDebounced(),
+      });
+    } catch (_) {}
     try { ensurePdfTunerUI(); } catch (_) {}
 
   // (Row focus highlight removed per latest request)
