@@ -295,6 +295,15 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
       ordered.forEach((p) => { try { pagesWrap.appendChild(p); } catch (_) {} });
     }
   } catch (_) {}
+
+  // If there are still unsplit exp-details tables left in any page, run another pass
+  try {
+    const remaining = root.querySelector('table.exp-details:not([data-split-done="1"])');
+    if (remaining) {
+      // Defer to next frame to allow DOM to settle
+      requestAnimationFrame(() => { try { paginateExpDetailsTables({ headerFooter, logoUrl }); } catch (_) {} });
+    }
+  } catch (_) {}
 }
 
 export function trimTrailingEmptyRows(table, keepTail = 0) {
