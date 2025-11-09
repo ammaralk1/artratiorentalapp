@@ -197,8 +197,18 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       place(el);
     };
     document.addEventListener('selectionchange', onSelectionChange);
+    // Fallback: show near focused editable cell directly (helps with contenteditable typing in Expenses)
+    const onFocusIn = (e) => {
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      if (t.getAttribute('contenteditable') === 'true' || t.closest('[contenteditable="true"]')) {
+        const cell = t.closest('td,th');
+        if (cell) place(cell);
+      }
+    };
+    root.addEventListener('focusin', onFocusIn, true);
     // Expose a small cleanup hook on the toolbar node
-    bar.__detach = () => { try { document.removeEventListener('selectionchange', onSelectionChange); } catch (_) {} };
+    bar.__detach = () => { try { document.removeEventListener('selectionchange', onSelectionChange); root.removeEventListener('focusin', onFocusIn, true); } catch (_) {} };
   };
   if (!bar.__attachedOnce) { attach(); bar.__attachedOnce = true; }
 }

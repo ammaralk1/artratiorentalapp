@@ -99,11 +99,11 @@ export function buildExpensesPage(project, reservations, opts = {}) {
         // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
         tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Code
         tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Description
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Rate
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Qty
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Days
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Paid
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Total
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Rate
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Qty
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Days
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Paid
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Total
         tb.appendChild(tr);
       }
       // Subtotal row placeholder

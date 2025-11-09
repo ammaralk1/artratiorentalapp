@@ -79,6 +79,8 @@
 /* In export: allow cell text to wrap and grow row height so content never gets clipped */
 #templates-a4-root[data-render-context="export"] table.exp-table td,
 #templates-a4-root[data-render-context="export"] table.exp-table th { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; height: auto !important; min-height: 26px !important; line-height: 1.2 !important; }
+#templates-a4-root[data-render-context="export"] table.exp-table td,
+#templates-a4-root[data-render-context="export"] table.exp-table th { border: 1.5px solid #94a3b8 !important; border-collapse: collapse !important; }
 /* Keep numeric cells single-line */
 #templates-a4-root[data-render-context="export"] table.exp-table td[data-num],
 #templates-a4-root[data-render-context="export"] table.exp-table td.total { white-space: nowrap !important; }
@@ -500,8 +502,12 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
 #templates-a4-root[data-render-context="export"] th.exp-col-actions { display:none !important; }
 #templates-a4-root[data-render-context="export"] table.exp-table:not(.exp-top-table) td:last-child { display:none !important; padding:0 !important; width:0 !important; }
 /* Ensure totals columns are clearly lined in printed PDF */
-#templates-a4-root[data-render-context="export"] table.exp-details tbody td:nth-child(7) { border-left:1.5px solid #94a3b8 !important; border-right:1.5px solid #94a3b8 !important; }
-#templates-a4-root[data-render-context="export"] table.exp-top-table tbody td:nth-child(4) { border-left:1.5px solid #94a3b8 !important; border-right:1.5px solid #94a3b8 !important; }
+#templates-a4-root[data-render-context="export"] table.exp-details tbody td:nth-child(7) { border:1.5px solid #94a3b8 !important; }
+#templates-a4-root[data-render-context="export"] table.exp-top-table tbody td:nth-child(4) { border:1.5px solid #94a3b8 !important; }
+/* Center numeric cells and totals */
+table.exp-table td[data-num], table.exp-table td.total { text-align:center !important; }
+/* Center top sheet count/total */
+table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], table.exp-top-table td[data-top-total-group], table.exp-top-table td[data-top-grand] { text-align:center !important; }
 /* Grand total row in Top Sheet */
 .exp-grand-total-row td { background:#ffffff !important; font-weight:900; }
 .exp-grand-total-label { text-align:right; }

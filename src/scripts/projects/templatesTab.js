@@ -2268,7 +2268,7 @@ function recomputeExpensesSubtotals() {
           const amount = number(tds[3]?.textContent, 1);
           const x = number(tds[4]?.textContent, 1);
           const total = amount * x * rate;
-          if (tds[6]) tds[6].textContent = formatIntNoDecimals(total);
+          if (tds[6]) { tds[6].textContent = formatIntNoDecimals(total); try { tds[6].setAttribute('data-num','1'); } catch(_) {} }
           subtotal += total;
           const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[2]?.textContent, 0) || number(tds[3]?.textContent, 0);
           if (hasContent) count += 1;
@@ -2324,7 +2324,14 @@ function recomputeExpensesSubtotals() {
     if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
     if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
     if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-    try { requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
+    // Avoid repagination while the user is typing inside an expenses editable cell
+    try {
+      const ae = document.activeElement;
+      const isEditing = !!(ae && (ae.getAttribute('contenteditable') === 'true' || ae.closest('[contenteditable="true"]')) && ae.closest('#templates-a4-root table.exp-details'));
+      if (!isEditing) {
+        requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
+      }
+    } catch (_) {}
     return;
   }
 
@@ -2357,8 +2364,15 @@ function recomputeExpensesSubtotals() {
   if (subEl) subEl.textContent = `${formatIntNoDecimals(grand)} ${currencyLabel}`;
   if (taxEl) taxEl.textContent = applyTax ? `${formatIntNoDecimals(taxAmount)} ${currencyLabel}` : `0 ${currencyLabel}`;
   if (totalEl) totalEl.textContent = `${formatIntNoDecimals(totalWithTax)} ${currencyLabel}`;
-  try { requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
-  try { requestAnimationFrame(() => { try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} }); } catch (_) {}
+  // Avoid repagination while typing in expenses cells
+  try {
+    const ae = document.activeElement;
+    const isEditing = !!(ae && (ae.getAttribute('contenteditable') === 'true' || ae.closest('[contenteditable="true"]')) && ae.closest('#templates-a4-root table.exp-details'));
+    if (!isEditing) {
+      requestAnimationFrame(() => { try { autoPaginateTemplatesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
+      requestAnimationFrame(() => { try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {} });
+    }
+  } catch (_) {}
 }
 
  
