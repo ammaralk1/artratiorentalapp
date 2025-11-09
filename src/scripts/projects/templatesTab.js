@@ -14,7 +14,7 @@ function getReservationsForProjectLocal(projectId) {
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
 import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from '../templates/tableTools.js';
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
-import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
+import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
 import { metaCell as coreMetaCell } from '../templates/core.js';
@@ -39,6 +39,22 @@ let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
+
+function notifyApiError(err, fallback = 'تعذر الاتصال بالخادم') {
+  try {
+    let msg = (err && err.message) ? String(err.message) : fallback;
+    // Special-case common backend misconfiguration to guide the user
+    try {
+      const raw = (err && err.payload && err.payload.raw) ? String(err.payload.raw) : '';
+      const combined = `${msg}\n${raw}`;
+      if (/Missing configuration file/i.test(combined)) {
+        msg = 'الخادم غير مُعد: يرجى نسخ backend/config.example.php إلى backend/config.php وتعبئة بيانات الاتصال (Database + allowed_origins) ثم إعادة المحاولة.';
+      }
+    } catch (_) { /* ignore */ }
+    if (typeof showToast === 'function') showToast(msg, 'error', 7000);
+    else alert(msg);
+  } catch (_) { /* ignore */ }
+}
 
 function readTplZoomPref() {
   try { return Math.max(0.3, Math.min(2.5, Number(localStorage.getItem('templates.preview.zoom') || '1'))); } catch (_) { return 1; }
@@ -229,7 +245,7 @@ function ensureLogoControls(type = 'expenses') {
     const st1 = readPrimaryLogoState();
     const szEl1 = document.getElementById('tpl-logo1-size');
     if (szEl1) szEl1.value = String(st1.s || 1);
-  } catch(_) {}
+  } catch(err) { notifyApiError(err, 'تعذر حفظ القالب'); }
 
   // Bind actions
   document.getElementById('tpl-logo2-apply')?.addEventListener('click', () => {
@@ -692,6 +708,7 @@ function createPageSection({ landscape = false, headerFooter = false, logoUrl = 
   return { page, inner };
 }
 
+/* Removed legacy buildExpensesPage (use buildExpensesPageExt)
 function buildExpensesPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: false, headerFooter, logoUrl });
@@ -937,7 +954,9 @@ function buildExpensesPage(project, reservations, opts = {}) {
   // لا حاجة لصندوق الملخص أسفل GRAND TOTAL في التوب شيت
   return root;
 }
+*/
 
+/* Removed legacy buildCallSheetPage (use buildCallSheetPageExt)
 function buildCallSheetPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
@@ -1144,7 +1163,9 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   try { enableSecondaryLogoInteractions(rightLogoWrap, rightImg); } catch(_) {}
   return root;
 }
+*/
 
+/* Removed legacy populateCrewFromReservation (use module)
 function populateCrewFromReservation(crewTable, reservation) {
   if (!crewTable || !reservation) return;
   const assignments = (() => {
@@ -1243,8 +1264,10 @@ function populateCrewFromReservation(crewTable, reservation) {
     // cells[3] is Time: left blank for user
   });
 }
+*/
 
 // Populate crew only if the table is mostly empty (to avoid overriding user edits)
+/* Removed legacy populateCrewFromReservationIfEmpty (use module)
 function populateCrewFromReservationIfEmpty(reservation) {
   try {
     const crew = document.querySelector('#templates-a4-root .callsheet-v1 table.cs-crew');
@@ -1292,6 +1315,7 @@ function populateCrewFromReservationIfEmpty(reservation) {
     } catch (_) {}
   } catch(_) {}
 }
+*/
 
 // ===== Secondary logo state (persisted in localStorage) =====
 function readSecondaryLogoState() {
@@ -1755,7 +1779,7 @@ async function autosaveTemplateToServer() {
   const id = await ensureRemoteAutosaveId();
   if (!id) return;
   const payload = { html: host.outerHTML };
-  try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { data: payload } }); } catch(_) {}
+  try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { data: payload } }); } catch(err) { notifyApiError(err, 'تعذر الحفظ التلقائي'); }
 }
 function autosaveToServerDebounced() {
   clearTimeout(TPL_REMOTE_AUTOSAVE_TIMER);
@@ -1866,6 +1890,7 @@ function setupTemplatesHistory(pageRoot, type) {
   TPL_HISTORY_BOUND = true;
 }
 
+/* Removed legacy buildShotListPage (use buildShotListPageExt)
 function buildShotListPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
@@ -1918,6 +1943,7 @@ function buildShotListPage(project, reservations, opts = {}) {
   inner.appendChild(table);
   return root;
 }
+*/
 
 function renderTemplatesPreview() {
   const host = document.getElementById('templates-preview-host');
@@ -2562,11 +2588,9 @@ async function fetchCrewFromReservation(force = false) {
     const res = project ? (getSelectedReservations(project.id)?.[0] || null) : null;
     if (!res) { alert('اختر حجزاً مرتبطاً أولاً'); return; }
     if (force) {
-      const mod = await import('../templates/build/callsheet.js');
-      mod.populateCrewFromReservation(crew, res);
+      populateCrewFromReservationExt(crew, res);
     } else {
-      const mod = await import('../templates/build/callsheet.js');
-      mod.populateCrewFromReservationIfEmpty(res);
+      populateCrewFromReservationIfEmptyExt(res);
     }
     try { showToast('تم جلب بيانات الطاقم', 'success', 2500); } catch(_) { /* ignore */ }
   } catch (_) { alert('تعذر جلب بيانات الطاقم'); }
@@ -3992,7 +4016,8 @@ async function fetchSavedTemplatesForCurrent() {
   if (!project) return [];
   const typeSel = document.getElementById('templates-type');
   const type = typeSel ? typeSel.value : 'expenses';
-  const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`);
+  let res = null; try { res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`); }
+  catch(err) { notifyApiError(err, 'تعذر تحميل المحفوظات'); return []; }
   // Backend responds as { ok: true, data: [...] }
   if (Array.isArray(res?.data)) return res.data;
   if (Array.isArray(res)) return res;
@@ -4014,7 +4039,8 @@ async function populateSavedTemplates() {
 
 async function loadSnapshotById(id) {
   if (!id) return;
-  const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
+  let res = null; try { res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`); }
+  catch(err) { notifyApiError(err, 'تعذر تحميل القالب'); return; }
   const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
   const item = Array.isArray(payload) ? payload[0] : payload;
   const host = document.getElementById('templates-preview-host');
@@ -4215,7 +4241,8 @@ export function initTemplatesTab() {
     if (!title || title.trim() === currentText) return;
     try {
       // Backend expects id in query string for PATCH
-      await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { title: String(title).trim() } });
+      try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { title: String(title).trim() } }); }
+      catch(err) { notifyApiError(err, 'تعذر إعادة التسمية'); return; }
       await populateSavedTemplates();
       // re-select same id if still present
       const opt = Array.from(savedSel.options).find(o => o.value === String(id));
@@ -4231,7 +4258,8 @@ export function initTemplatesTab() {
     const ok = confirm('هل تريد حذف هذا المحفوظ نهائياً؟');
     if (!ok) return;
     try {
-      await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+      catch(err) { notifyApiError(err, 'تعذر حذف القالب'); return; }
       await populateSavedTemplates();
       // Reload preview to reflect removal
       renderTemplatesPreview();
@@ -4244,7 +4272,8 @@ export function initTemplatesTab() {
     const id = savedSel?.value || '';
     if (!id) { alert('اختر محفوظاً أولاً'); return; }
     try {
-      const res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`);
+      let res = null; try { res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`); }
+      catch(err) { notifyApiError(err, 'تعذر تحميل القالب'); return; }
       const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
       const item = Array.isArray(payload) ? payload[0] : payload;
       if (!item) { alert('تعذر جلب المحفوظ'); return; }
@@ -4281,7 +4310,7 @@ export function initTemplatesTab() {
       const reservationSelEl = document.getElementById('templates-reservation');
       const reservationId = reservationSelEl?.value ? Number(reservationSelEl.value) : null;
       const payload = json?.data?.html ? json.data : { html: document.querySelector('#templates-preview-host')?.innerHTML || '' };
-      await apiRequest('/project-templates/', {
+      try { await apiRequest('/project-templates/', {
         method: 'POST',
         body: {
           project_id: Number(project.id),
@@ -4290,7 +4319,8 @@ export function initTemplatesTab() {
           title: json?.meta?.title || `Imported - ${type}`,
           data: payload,
         },
-      });
+      }); }
+      catch(err) { notifyApiError(err, 'تعذر الاستيراد'); return; }
       await populateSavedTemplates();
       alert('تم الاستيراد بنجاح');
     } catch (err) {
@@ -4395,8 +4425,8 @@ export function initTemplatesTab() {
       scheduleRepopulate(0);
     });
 
-    setTimeout(() => scheduleRepopulate(0), 800);
-    setTimeout(() => scheduleRepopulate(0), 2000);
+    // نفّذ إعادة التعبئة مرة واحدة عند فتح التبويب لتجنب التحديثات المتكررة
+    scheduleRepopulate(0);
   }
   // Ensure zoom controls are present once controls mount (idempotent)
   try { ensureTemplatesZoomUI(); } catch (_) {}
