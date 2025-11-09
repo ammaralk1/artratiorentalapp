@@ -180,6 +180,84 @@ function recomputeExpensesSubtotalsDebounced(delay = 180) {
   TPL_SUBTOTAL_TIMER = setTimeout(() => { try { recomputeExpensesSubtotals(); } catch (_) {} }, Math.max(0, delay));
 }
 
+// Lightweight number parser for Expenses (supports Arabic/Persian digits) without mutating DOM
+function parseExpensesNumber(txt, def = 0) {
+  try {
+    const s = String(txt || '');
+    const mapped = s
+      .replace(/[\u0660-\u0669]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x0660])
+      .replace(/[\u06F0-\u06F9]/g, (d) => '0123456789'[d.charCodeAt(0) - 0x06F0])
+      .replace(/[\u066B]/g, '.')
+      .replace(/[\u066C]/g, '')
+      .replace(/[\u200f\u200e]/g, '')
+      .replace(/[^\d.\-]/g, '');
+    const n = Number(mapped);
+    return Number.isFinite(n) ? n : def;
+  } catch(_) { return def; }
+}
+
+// Fast path: recompute only the changed row + its subgroup + parent group + top sheet
+function recomputeExpensesForCell(targetTd) {
+  try {
+    const td = targetTd instanceof HTMLElement ? targetTd.closest('td') : null;
+    if (!td) return;
+    const tr = td.closest('tr');
+    const table = td.closest('table.exp-details');
+    if (!tr || !table) return;
+    if (tr.getAttribute('data-row') !== 'item') { recomputeExpensesSubtotalsDebounced(220); return; }
+    const tds = Array.from(tr.children);
+    const rate = parseExpensesNumber(tds[2]?.textContent, 0);
+    const qty  = parseExpensesNumber(tds[3]?.textContent, 1);
+    const days = parseExpensesNumber(tds[4]?.textContent, 1);
+    const paid = parseExpensesNumber(tds[5]?.textContent, 0);
+    const total = Math.round(rate * qty * days);
+    if (tds[6]) { tds[6].textContent = String(total); try { tds[6].setAttribute('data-num','1'); } catch(_) {} }
+
+    // Find subgroup bounds (header with data-subgroup + next subtotal)
+    let cursor = tr.previousElementSibling; let header = null;
+    while (cursor) { if (cursor.hasAttribute && cursor.hasAttribute('data-subgroup-header')) { header = cursor; break; } cursor = cursor.previousElementSibling; }
+    if (!header) { recomputeExpensesSubtotalsDebounced(220); return; }
+    const code = header.getAttribute('data-subgroup');
+    let subtotal = 0; let count = 0; let sumCursor = header.nextElementSibling; let subtotalRow = null;
+    while (sumCursor && !sumCursor.hasAttribute('data-subgroup-header')) {
+      if (sumCursor.hasAttribute('data-subgroup-subtotal')) { subtotalRow = sumCursor; break; }
+      if (sumCursor.getAttribute('data-row') === 'item') {
+        const cells = Array.from(sumCursor.children);
+        const r = parseExpensesNumber(cells[2]?.textContent, 0);
+        const q = parseExpensesNumber(cells[3]?.textContent, 1);
+        const d = parseExpensesNumber(cells[4]?.textContent, 1);
+        const tot = Math.round(r * q * d);
+        if (cells[6]) { cells[6].textContent = String(tot); try { cells[6].setAttribute('data-num','1'); } catch(_) {} }
+        subtotal += tot; const hasContent = String(cells[1]?.textContent||'').trim().length || r || q; if (hasContent) count += 1;
+      }
+      sumCursor = sumCursor.nextElementSibling;
+    }
+    if (subtotalRow) {
+      try { const cell = subtotalRow.querySelector('[data-subtotal]') || subtotalRow.lastElementChild; if (cell) cell.textContent = String(subtotal); } catch(_) {}
+    }
+    // Update top sheet for this subgroup
+    try {
+      const cntEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-count="${CSS.escape(code)}"]`);
+      const totEl = document.querySelector(`#templates-preview-host #expenses-top-sheet [data-top-total="${CSS.escape(code)}"]`);
+      if (cntEl) cntEl.textContent = String(count);
+      if (totEl) totEl.textContent = String(subtotal);
+    } catch(_) {}
+    // Update parent group totals and grand total
+    try {
+      const marker = document.querySelector(`#templates-preview-host tr[data-subgroup-marker="${CSS.escape(code)}"]`);
+      const parent = marker?.getAttribute('data-parent-group') || null;
+      if (parent) {
+        const allSubs = Array.from(document.querySelectorAll(`#templates-preview-host [data-subtotal]`));
+        let gsum = 0; let atls=0, prods=0, posts=0;
+        allSubs.forEach((c) => { const k = c.getAttribute('data-subtotal'); const v = parseExpensesNumber(c.textContent, 0); gsum += v; const m = document.querySelector(`#templates-preview-host tr[data-subgroup-marker="${CSS.escape(k)}"]`); const p = m?.getAttribute('data-parent-group'); if (p==='atl') atls+=v; else if(p==='prod') prods+=v; else if(p==='post') posts+=v; });
+        const map = { atl: atls, prod: prods, post: posts };
+        Object.entries(map).forEach(([k,val])=>{ const cell=document.querySelector(`#templates-preview-host [data-top-total-group="${CSS.escape(k)}"]`); if (cell) cell.textContent=String(val); });
+        const g = document.querySelector('#templates-preview-host [data-top-grand]'); if (g) g.textContent = String(gsum);
+      }
+    } catch(_) {}
+  } catch(_) { /* fallback is full recompute via debounce */ }
+}
+
 // ===== Persist selected template type (expenses/callsheet/shotlist) =====
 const TPL_TYPE_PREF_KEY = 'projects.templates.type';
 function readTplPreferredType() {
@@ -2992,8 +3070,10 @@ export function initTemplatesTab() {
       const el = e.target;
       if ((el instanceof HTMLElement) && el.isContentEditable) {
         try { markTemplatesEditingActivity(); } catch(_) {}
-        // فقط أعِد الحساب بشكل مؤجل، بدون تعديل نص الخلية (يمنع قفز المؤشر)
-        recomputeExpensesSubtotalsDebounced(140);
+        // تحديث سريع للصف الحالي + مجموعاته لتجربة كتابة سلسة
+        try { const td = el.closest('td'); if (td && td.closest('table.exp-details')) recomputeExpensesForCell(td); } catch(_) {}
+        // احتياط: أعد الحساب الكامل مؤجلًا لتوحيد الأرقام عبر الجداول
+        recomputeExpensesSubtotalsDebounced(260);
       }
     };
     TPL_LISTENERS.hostInput = onHostInput;
