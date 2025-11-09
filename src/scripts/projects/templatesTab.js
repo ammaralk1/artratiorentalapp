@@ -1327,7 +1327,17 @@ async function printTemplatesPdf() {
   const host = document.querySelector('#templates-preview-host > #templates-a4-root');
   if (!host) { alert('لا يوجد محتوى للطباعة'); return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
-  const landscape = type !== 'expenses';
+  // Resolve orientation per template with optional preference override
+  const resolveOrientationForType = (tpl) => {
+    try {
+      const key = `templatesPdf.orientation.${tpl}`;
+      const v = readPdfPref(key, '');
+      if (v === 'portrait' || v === 'landscape') return v;
+    } catch (_) {}
+    const DEFAULTS = { expenses: 'portrait', callsheet: 'landscape', shotlist: 'portrait' };
+    return DEFAULTS[tpl] || 'landscape';
+  };
+  const orientation = resolveOrientationForType(type);
   // Route through template printers
   if (type === 'callsheet') {
     try { await (await import('../templates/print.js')).printCallsheetFromHost(host); } catch (_) { alert('تعذر إنشاء PDF'); }
@@ -1335,7 +1345,7 @@ async function printTemplatesPdf() {
   } else {
     try {
       const { printGenericTemplate } = await import('../templates/print.js');
-      await printGenericTemplate(host, { orientation: landscape ? 'landscape' : 'portrait', filename: `template-${type}.pdf` });
+      await printGenericTemplate(host, { orientation, filename: `template-${type}.pdf` });
     } catch (_) { alert('تعذر إنشاء PDF'); }
     return;
   }
