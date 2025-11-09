@@ -37,5 +37,21 @@ export function buildRoot({ landscape = false, headerFooter = false, logoUrl = '
   return { root, inner };
 }
 
-export default { el, buildRoot };
+export function L(en, ar) {
+  try {
+    const lang = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang') === 'ar') ? 'ar' : 'en';
+    return lang === 'ar' ? (ar || en) : en;
+  } catch (_) { return en; }
+}
 
+export function metaCell(label, value = '', editable = true) {
+  const cell = el('div', { class: 'cell' });
+  cell.appendChild(el('span', { class: 'label', text: label }));
+  const val = el('div', { 'data-editable': editable ? 'true' : 'false', contenteditable: editable ? 'true' : 'false' });
+  try { val.setAttribute('dir', 'auto'); } catch (_) {}
+  val.textContent = value || '';
+  cell.appendChild(val);
+  return cell;
+}
+
+export default { el, buildRoot, L, metaCell };

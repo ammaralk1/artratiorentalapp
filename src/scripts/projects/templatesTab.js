@@ -16,6 +16,7 @@ import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, 
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
+import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -1943,7 +1944,7 @@ function renderTemplatesPreview() {
   let pageRoot = null;
   if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
   else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
-  else pageRoot = buildExpensesPage(project, reservations, hf);
+  else pageRoot = buildExpensesPageExt(project, reservations, hf);
   // Diff-like replace to avoid losing event handlers on host
   const newRoot = pageRoot;
   if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
