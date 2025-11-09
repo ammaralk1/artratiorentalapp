@@ -17,7 +17,7 @@ import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
-import { L, metaCell } from '../templates/core.js';
+import { el, buildRoot, L, metaCell } from '../templates/core.js';
 import { pageHasMeaningfulContent } from '../templates/pageUtils.js';
 import {
   patchHtml2CanvasColorParsing,
@@ -597,17 +597,7 @@ function ensureCellToolbar() {
   host.addEventListener('scroll', () => { if (bar.__targetCell) place(bar.__targetCell); }, { passive: true });
 }
 
-function el(tag, attrs = {}, children = []) {
-  const e = document.createElement(tag);
-  Object.entries(attrs).forEach(([k, v]) => {
-    if (k === 'class') e.className = v;
-    else if (k === 'text') e.textContent = v;
-    else if (k === 'html') e.innerHTML = v;
-    else e.setAttribute(k, v);
-  });
-  (Array.isArray(children) ? children : [children]).filter(Boolean).forEach((c) => e.appendChild(c));
-  return e;
-}
+// el is imported from templates/core.js
 
 // Utilities to ensure deterministic capture (fonts/images fully loaded)
 async function waitForFontsReady() {
@@ -705,15 +695,7 @@ function readHeaderFooterOptions() {
   };
 }
 
-function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
-  const dir = (TEMPLATE_LANG === 'ar') ? 'rtl' : 'ltr';
-  const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview', dir });
-  const pagesWrap = el('div', { 'data-a4-pages': '' });
-  const { page, inner } = createPageSection({ landscape, headerFooter, logoUrl });
-  pagesWrap.appendChild(page);
-  root.appendChild(pagesWrap);
-  return { root, inner };
-}
+// buildRoot is imported from templates/core.js (kept local createPageSection for pagination flows)
 
 function createPageSection({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
   const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });
