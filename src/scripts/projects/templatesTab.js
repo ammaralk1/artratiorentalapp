@@ -354,7 +354,7 @@ function attachCallsheetLogoBehaviors(root) {
 // Inline toolbar near focused cell (row ops for schedule, slot ops for cast)
 function ensureCellToolbar() {
   const host = document.getElementById('templates-preview-host');
-  if (!host) return;
+  if (!host) { alert('لا يوجد محتوى للطباعة'); return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
   let bar = document.getElementById('tpl-cell-toolbar');
   if (type !== 'callsheet') { if (bar) bar.style.display = 'none'; return; }
@@ -1971,9 +1971,12 @@ function renderTemplatesPreview() {
           return tds.some((td) => ((td.textContent || '').trim().length > 0));
         } catch (_) { return false; }
       });
+      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
+        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
+      });
       // Call Sheet / Shot List first pages may not have tpl-table rows; allow callsheet blocks
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
+      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew)) {
         pg.parentElement?.removeChild(pg);
       }
     });
@@ -1996,8 +1999,11 @@ function renderTemplatesPreview() {
           return tds.some((td) => ((td.textContent || '').trim().length > 0));
         } catch (_) { return false; }
       });
+      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
+        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
+      });
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet)) {
+      if (!(hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew)) {
         pg.parentElement?.removeChild(pg);
       }
     });
@@ -2064,14 +2070,19 @@ async function printTemplatesPdf() {
           return tds.some((td) => ((td.textContent || '').trim().length > 0));
         } catch (_) { return false; }
       });
+      // Crew rows considered as content too
+      const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
+        try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
+      });
       // Call Sheet first page may have only cs blocks
       const hasCallsheet = !!pg.querySelector('.callsheet-v1 .cs-header, .callsheet-v1 .cs-info td, .callsheet-v1 .cs-cast td');
-      return hasTop || hasDetailsRow || hasTplRows || hasCallsheet;
+      return hasTop || hasDetailsRow || hasTplRows || hasCallsheet || hasCrew;
     } catch (_) { return true; }
   };
   // Default to strict 1:1 export so the PDF matches preview exactly (no cropping/offsets)
   const strictWysiwyg = (() => { try { return (readPdfString('templatesPdf.wysiwyg','1') ?? '1') !== '0'; } catch(_) { return true; } })();
-  const html2pdf = await ensureHtml2Pdf();
+  let html2pdf = null;
+  try { html2pdf = await ensureHtml2Pdf(); } catch (_) { html2pdf = null; }
 
   // Dimensions for A4 at CSS 96dpi
   const A4_W_PX = landscape ? 1123 : 794;
@@ -2149,6 +2160,7 @@ async function printTemplatesPdf() {
     
       // Ensure assets ready before rendering
       await ensureAssetsReady(scope);
+      if (typeof html2pdf !== 'function') throw new Error('html2pdf not available');
       await html2pdf()
         .set({
           margin: 0,
@@ -2159,6 +2171,16 @@ async function printTemplatesPdf() {
         })
         .from(scope)
         .save(`template-${type}.pdf`);
+    } catch (fallbackErr) {
+      // آخر حل: اطبع عبر نافذة/إطار مؤقت مباشرة من DOM
+      try {
+        const html = `<!doctype html><html dir="${host.getAttribute('dir')||'rtl'}"><head><meta charset="utf-8"><title>Print</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0;background:#fff}#templates-a4-root{transform:none!important}</style></head><body>${scope.innerHTML}</body></html>`;
+        const frame = document.createElement('iframe');
+        Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
+        document.body.appendChild(frame);
+        const doc = frame.contentWindow?.document;
+        if (doc) { doc.open(); doc.write(html); doc.close(); frame.onload = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); }; }
+      } catch(_) { alert('تعذر إنشاء PDF'); }
     } finally {
       try { wrap.parentNode?.removeChild(wrap); } catch (_) {}
     }
