@@ -2722,16 +2722,28 @@ function unifyCrewCallTables() {
   if (!root) return;
   const tables = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-crew'));
   if (tables.length <= 1) return;
-  // Pick the table that has the most filled cells as primary
+  // Prefer the standard grid Crew Call (our builder): it has a THEAD with a cell '.cs-crew-title'
+  const isStandardGrid = (t) => {
+    try { return !!t.querySelector('thead .cs-crew-title'); } catch(_) { return false; }
+  };
+  // Fallback heuristic: table with the most filled cells
   const score = (t) => {
     try {
       const tds = Array.from(t.querySelectorAll('tbody td'));
       return tds.reduce((n, td) => n + (((td.textContent || '').trim().length > 0) ? 1 : 0), 0);
     } catch (_) { return 0; }
   };
-  let primary = tables[0];
-  let best = score(primary);
-  tables.slice(1).forEach((t) => { const s = score(t); if (s > best) { primary = t; best = s; } });
+  let primary = null;
+  const standard = tables.filter(isStandardGrid);
+  if (standard.length) {
+    // Keep the last standard grid instance (the one we just built)
+    primary = standard[standard.length - 1];
+  } else {
+    // Fallback to the one with most content
+    primary = tables[0];
+    let best = score(primary);
+    tables.slice(1).forEach((t) => { const s = score(t); if (s > best) { primary = t; best = s; } });
+  }
 
   const pBody = primary.tBodies && primary.tBodies[0];
   if (!pBody) return;
