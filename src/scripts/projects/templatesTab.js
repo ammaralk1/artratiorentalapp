@@ -3770,6 +3770,25 @@ export function initTemplatesTab() {
     // نفّذ إعادة التعبئة مرة واحدة عند فتح التبويب لتجنب التحديثات المتكررة
     scheduleRepopulate(0);
   }
+  // Bind one-time destroy on leaving Templates sub-tab or projects section
+  try {
+    // Any projects sub-tab button that is not templates → destroy when clicked
+    Array.from(document.querySelectorAll('.sub-tab-button[data-project-subtab-target]')).forEach((btn) => {
+      const target = btn.getAttribute('data-project-subtab-target') || '';
+      if (target !== 'projects-templates-tab' && btn.dataset.tplDestroyBound !== '1') {
+        btn.addEventListener('click', () => { try { destroyTemplatesTab(); } catch (_) {} });
+        btn.dataset.tplDestroyBound = '1';
+      }
+    });
+    // If switching main tabs away from projects, also destroy
+    Array.from(document.querySelectorAll('.tab-button[data-tab-target]')).forEach((btn) => {
+      const target = btn.getAttribute('data-tab-target') || '';
+      if (target !== 'projects-section' && btn.dataset.tplDestroyMainBound !== '1') {
+        btn.addEventListener('click', () => { try { destroyTemplatesTab(); } catch (_) {} });
+        btn.dataset.tplDestroyMainBound = '1';
+      }
+    });
+  } catch (_) {}
   // Ensure zoom controls are present once controls mount (idempotent)
   try { ensureTemplatesZoomUI(); } catch (_) {}
 }
