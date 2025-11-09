@@ -170,113 +170,125 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
   groupPages.forEach((pg) => {
     const inner = pg.querySelector('.a4-inner');
     if (!inner) return;
-    const table = inner.querySelector('table.exp-details');
-    if (!table || table.getAttribute('data-split-done') === '1') return;
+    const tables = Array.from(inner.querySelectorAll('table.exp-details')).filter((t) => t.getAttribute('data-split-done') !== '1');
+    tables.forEach((table) => {
+      const thead = table.querySelector('thead');
+      const colTpl = table.querySelector('colgroup');
+      const groupKeyAttr = table.getAttribute('data-group') || '';
+      const rows = Array.from(table.querySelectorAll('tbody > tr'));
+      if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
 
-    const thead = table.querySelector('thead');
-    const colTpl = table.querySelector('colgroup');
-    const groupKeyAttr = table.getAttribute('data-group') || '';
-    const rows = Array.from(table.querySelectorAll('tbody > tr'));
-    if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
+      const makeTable = () => {
+        const t = document.createElement('table');
+        t.className = table.className;
+        t.setAttribute('data-editable-table', 'expenses');
+        if (groupKeyAttr) t.setAttribute('data-group', groupKeyAttr);
+        if (colTpl) t.appendChild(colTpl.cloneNode(true));
+        const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
+        t.appendChild(hd);
+        t.appendChild(document.createElement('tbody'));
+        return t;
+      };
 
-    const makeTable = () => {
-      const t = document.createElement('table');
-      t.className = table.className;
-      t.setAttribute('data-editable-table', 'expenses');
-      if (groupKeyAttr) t.setAttribute('data-group', groupKeyAttr);
-      if (colTpl) t.appendChild(colTpl.cloneNode(true));
-      const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
-      t.appendChild(hd);
-      t.appendChild(document.createElement('tbody'));
-      return t;
-    };
+      let currentPage = pg; let currentInner = inner;
+      const workingFirst = makeTable();
+      try { inner.removeChild(table); } catch (_) {}
+      currentInner.appendChild(workingFirst);
+      // Enforce: each expenses group starts on a fresh page (Top Sheet page must not include details)
+      try {
+        const hasTopSheet = !!currentInner.querySelector('#expenses-top-sheet');
+        const anotherDetailsTableExists = !!Array.from(currentInner.querySelectorAll('table.exp-details')).find((t) => t !== workingFirst);
+        if (hasTopSheet || anotherDetailsTableExists) {
+          try { currentInner.removeChild(workingFirst); } catch(_) {}
+          ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+          pagesWrap.appendChild(currentPage);
+          currentInner.appendChild(workingFirst);
+        }
+      } catch(_) {}
+      let workingTable = workingFirst;
 
-    let currentPage = pg; let currentInner = inner;
-    const workingFirst = makeTable();
-    try { inner.removeChild(table); } catch (_) {}
-    currentInner.appendChild(workingFirst);
-    let workingTable = workingFirst;
+      const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
+      const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
+      const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
+      const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
+      const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
+      const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
+      const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
 
-    const isSubHeader = (tr) => tr?.hasAttribute('data-subgroup-header');
-    const isSubTotal = (tr) => tr?.hasAttribute('data-subgroup-subtotal');
-    const isGroupTotal = (tr) => tr?.hasAttribute('data-group-total');
-    const isMarker = (tr) => tr?.hasAttribute('data-subgroup-marker');
-    const isItem = (tr) => tr?.getAttribute('data-row') === 'item';
-    const isGroupBar = (tr) => tr?.hasAttribute('data-group-bar');
-    const fitsInner = () => currentInner.scrollHeight <= (currentInner.clientHeight + 0.5);
+      let groupBarTpl = null; let subHeaderTpl = null; let subHeaderCode = null;
 
-    let groupBarTpl = null; let subHeaderTpl = null; let subHeaderCode = null;
-
-    const startNewPage = (firstNodeAboutToPlace = null) => {
-      ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
-      // Always append new pages at the end to preserve group ordering across multiple runs
-      pagesWrap.appendChild(currentPage);
-      workingTable = makeTable();
-      currentInner.appendChild(workingTable);
-      const tb = workingTable.tBodies[0];
-      if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) { tb.appendChild(groupBarTpl.cloneNode(true)); }
-      if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
-        const n = firstNodeAboutToPlace;
-        const belongsToSameSub = !!(n && (
-          (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
-          (n.getAttribute && n.getAttribute('data-row') === 'item') ||
-          (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
-        ));
-        if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
-      }
-    };
-
-    let i = 0;
-    while (i < rows.length) {
-      const row = rows[i];
-      const tbody = workingTable.tBodies[0];
-      const appendOrNewPage = (node) => { tbody.appendChild(node); if (!fitsInner()) { tbody.removeChild(node); startNewPage(node); workingTable.tBodies[0].appendChild(node); } };
-      const isSubHeaderRow = isSubHeader(row);
-      const isSubTotalRow = isSubTotal(row);
-      const isGroupTotalRow = isGroupTotal(row);
-      const isMarkerRow = isMarker(row);
-      const isItemRow = isItem(row);
-      const isGroupBarRow = isGroupBar(row);
-      if (isGroupBarRow) {
-        groupBarTpl = row.cloneNode(true);
-        // Start a fresh page for each new group so groups don't share pages
+      const startNewPage = (firstNodeAboutToPlace = null) => {
+        ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: false }));
+        pagesWrap.appendChild(currentPage);
+        workingTable = makeTable();
+        currentInner.appendChild(workingTable);
         const tb = workingTable.tBodies[0];
-        if (tb && tb.children && tb.children.length > 0) {
-          startNewPage(row);
+        if (groupBarTpl && !(firstNodeAboutToPlace && isGroupBar(firstNodeAboutToPlace))) { tb.appendChild(groupBarTpl.cloneNode(true)); }
+        if (subHeaderTpl && !(firstNodeAboutToPlace && isSubHeader(firstNodeAboutToPlace))) {
+          const n = firstNodeAboutToPlace;
+          const belongsToSameSub = !!(n && (
+            (n.getAttribute && n.getAttribute('data-subgroup-subtotal') === subHeaderCode) ||
+            (n.getAttribute && n.getAttribute('data-row') === 'item') ||
+            (n.hasAttribute && n.hasAttribute('data-subgroup-marker'))
+          ));
+          if (!firstNodeAboutToPlace || belongsToSameSub) tb.appendChild(subHeaderTpl.cloneNode(true));
+        }
+      };
+
+      let i = 0;
+      while (i < rows.length) {
+        const row = rows[i];
+        const tbody = workingTable.tBodies[0];
+        const appendOrNewPage = (node) => {
+          tbody.appendChild(node);
+          if (!fitsInner()) {
+            try { tbody.removeChild(node); } catch(_){}
+            // If the table on the previous page has no body rows yet (only THEAD), remove it to avoid orphan headers
+            let hadNoRows = false;
+            try { hadNoRows = !(tbody.children && tbody.children.length); } catch(_) {}
+            const prevTable = workingTable;
+            startNewPage(node);
+            if (hadNoRows) { try { prevTable.parentElement?.removeChild(prevTable); } catch(_) {} }
+            workingTable.tBodies[0].appendChild(node);
+          }
+        };
+        if (isGroupBar(row)) {
+          groupBarTpl = row.cloneNode(true);
+          const tb = workingTable.tBodies[0];
+          if (tb && tb.children && tb.children.length > 0) { startNewPage(row); }
+          appendOrNewPage(row);
+          i += 1; continue;
+        }
+        if (isSubHeader(row)) {
+          subHeaderTpl = row.cloneNode(true); subHeaderCode = row.getAttribute('data-subgroup');
+          const pack = [row]; let j = i + 1; let itemsAdded = 0;
+          while (j < rows.length && itemsAdded < 2) {
+            if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
+            else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
+            else if (isSubTotal(rows[j])) { break; } else { break; }
+          }
+          if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === subHeaderCode) { pack.push(rows[j]); j += 1; }
+          pack.forEach((n) => tbody.appendChild(n));
+          if (!fitsInner()) { pack.forEach((n) => { try { tbody.removeChild(n); } catch(_){} }); startNewPage(pack[0]); const tb2 = workingTable.tBodies[0]; pack.forEach((n) => tb2.appendChild(n)); }
+          i = j; continue;
+        }
+        if (isGroupTotal(row)) {
+          appendOrNewPage(row);
+          if (!fitsInner()) {
+            const prev = tbody.lastElementChild; let carry = null;
+            if (prev && (isItem(prev) || isSubTotal(prev))) { try { tbody.removeChild(prev); } catch(_){} carry = prev; }
+            try { tbody.removeChild(row); } catch(_){}
+            startNewPage(row);
+            const tb2 = workingTable.tBodies[0]; if (carry) tb2.appendChild(carry); tb2.appendChild(row);
+            if (!fitsInner()) { try { tb2.removeChild(row); } catch(_){} startNewPage(row); workingTable.tBodies[0].appendChild(row); }
+          }
+          subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null; i += 1; continue;
         }
         appendOrNewPage(row);
-        i += 1; continue;
+        i += 1;
       }
-      if (isSubHeaderRow) {
-        subHeaderTpl = row.cloneNode(true); subHeaderCode = row.getAttribute('data-subgroup');
-        const pack = [row]; let j = i + 1; let itemsAdded = 0;
-        while (j < rows.length && itemsAdded < 2) {
-          if (isItem(rows[j])) { pack.push(rows[j]); itemsAdded += 1; j += 1; }
-          else if (isMarker(rows[j])) { pack.push(rows[j]); j += 1; }
-          else if (isSubTotal(rows[j])) { break; }
-          else { break; }
-        }
-        if (j < rows.length && isSubTotal(rows[j]) && rows[j].getAttribute('data-subgroup-subtotal') === subHeaderCode) { pack.push(rows[j]); j += 1; }
-        pack.forEach((n) => tbody.appendChild(n));
-        if (!fitsInner()) { pack.forEach((n) => { try { tbody.removeChild(n); } catch (_) {} }); startNewPage(pack[0]); const tb2 = workingTable.tBodies[0]; pack.forEach((n) => tb2.appendChild(n)); }
-        i = j; continue;
-      }
-      if (isGroupTotalRow) {
-        appendOrNewPage(row);
-        if (!fitsInner()) {
-          const prev = tbody.lastElementChild; let carry = null;
-          if (prev && (isItem(prev) || isSubTotal(prev))) { try { tbody.removeChild(prev); } catch (_) {} carry = prev; }
-          try { tbody.removeChild(row); } catch (_) {}
-          startNewPage(row);
-          const tb2 = workingTable.tBodies[0]; if (carry) tb2.appendChild(carry); tb2.appendChild(row);
-          if (!fitsInner()) { try { tb2.removeChild(row); } catch (_) {} startNewPage(row); workingTable.tBodies[0].appendChild(row); }
-        }
-        subHeaderTpl = null; subHeaderCode = null; groupBarTpl = null; i += 1; continue;
-      }
-      appendOrNewPage(row);
-      i += 1;
-    }
-    table.setAttribute('data-split-done', '1');
+      table.setAttribute('data-split-done', '1');
+    });
   });
 
   // Reorder pages so that groups appear in the logical order: ATL → PROD → POST
@@ -295,6 +307,22 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
       ordered.forEach((p) => { try { pagesWrap.appendChild(p); } catch (_) {} });
     }
   } catch (_) {}
+
+  // Cleanup: remove any orphan exp-details tables (no body rows) and dedupe multi-THEAD occurrences
+  try {
+    const all = Array.from(pagesWrap.querySelectorAll('table.exp-details'));
+    all.forEach((t) => {
+      // Deduplicate THEADs within a single table
+      const heads = Array.from(t.querySelectorAll('thead'));
+      if (heads.length > 1) {
+        heads.slice(1).forEach((h) => { try { h.parentElement?.removeChild(h); } catch(_){} });
+      }
+      // Drop tables that ended up with an empty TBODY (e.g., overflow occurred before first row)
+      const body = t.tBodies && t.tBodies[0];
+      const hasRows = !!(body && body.children && body.children.length);
+      if (!hasRows) { try { t.parentElement?.removeChild(t); } catch(_) {} }
+    });
+  } catch(_) {}
 
   // If there are still unsplit exp-details tables left in any page, run another pass
   try {
