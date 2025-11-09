@@ -175,6 +175,7 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
 
     const thead = table.querySelector('thead');
     const colTpl = table.querySelector('colgroup');
+    const groupKeyAttr = table.getAttribute('data-group') || '';
     const rows = Array.from(table.querySelectorAll('tbody > tr'));
     if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
 
@@ -182,6 +183,7 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
       const t = document.createElement('table');
       t.className = table.className;
       t.setAttribute('data-editable-table', 'expenses');
+      if (groupKeyAttr) t.setAttribute('data-group', groupKeyAttr);
       if (colTpl) t.appendChild(colTpl.cloneNode(true));
       const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
       t.appendChild(hd);
@@ -276,6 +278,23 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
     }
     table.setAttribute('data-split-done', '1');
   });
+
+  // Reorder pages so that groups appear in the logical order: ATL → PROD → POST
+  try {
+    const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
+    if (pages.length > 1) {
+      const first = pages[0]; // keep top sheet page first
+      const rest = pages.slice(1);
+      const buckets = { atl: [], prod: [], post: [], other: [] };
+      rest.forEach((p) => {
+        const tb = p.querySelector('table.exp-details');
+        const gk = (tb && tb.getAttribute('data-group')) || 'other';
+        if (gk in buckets) buckets[gk].push(p); else buckets.other.push(p);
+      });
+      const ordered = [first, ...buckets.atl, ...buckets.prod, ...buckets.post, ...buckets.other];
+      ordered.forEach((p) => { try { pagesWrap.appendChild(p); } catch (_) {} });
+    }
+  } catch (_) {}
 }
 
 export function trimTrailingEmptyRows(table, keepTail = 0) {
