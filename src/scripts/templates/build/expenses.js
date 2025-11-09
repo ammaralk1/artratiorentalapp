@@ -97,7 +97,7 @@ export function buildExpensesPage(project, reservations, opts = {}) {
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
         // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
-        const commonTxt = { 'data-editable': 'true', contenteditable: 'true', autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false' };
+        const commonTxt = { 'data-editable': 'true', autocapitalize: 'off', autocorrect: 'off', autocomplete: 'off', spellcheck: 'false' };
         const commonNum = { ...commonTxt, 'data-num': '1', inputmode: 'decimal' };
         tr.appendChild(el('td', commonTxt)); // Code
         tr.appendChild(el('td', commonTxt)); // Description
@@ -105,7 +105,8 @@ export function buildExpensesPage(project, reservations, opts = {}) {
         tr.appendChild(el('td', commonNum)); // Qty
         tr.appendChild(el('td', commonNum)); // Days
         tr.appendChild(el('td', commonNum)); // Paid
-        tr.appendChild(el('td', commonNum)); // Total
+        // Total is computed -> keep it non-editable to avoid caret issues
+        tr.appendChild(el('td', { 'data-num': '1' })); // Total (computed)
         tb.appendChild(tr);
       }
       // Subtotal row placeholder

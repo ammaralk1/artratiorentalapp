@@ -1336,8 +1336,11 @@ function renderTemplatesPreview() {
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew table exists even if an old autosave overwrote DOM
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
+  // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
+  try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
   try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  try { ensureEditableWrappers(); } catch(_) {}
   // If لا يوجد Autosave محلي (هاتف/متصفح آخر)، حاول تحميل المسودة المخزنة في الخادم تلقائياً
   try {
     if (type === 'callsheet') {
@@ -1427,6 +1430,38 @@ function renderTemplatesPreview() {
     }
     if (TPL_ZOOM_VALUE_EL) TPL_ZOOM_VALUE_EL.textContent = `${Math.round(TPL_PREVIEW_ZOOM * 100)}%`;
   } catch (_) {}
+}
+
+function ensureEditableWrappers() {
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return;
+  const tds = Array.from(root.querySelectorAll('table.exp-details td'));
+  tds.forEach((td, idx) => {
+    try {
+      const isEditable = td.getAttribute('data-editable') === 'true' || td.getAttribute('contenteditable') === 'true';
+      // Totals column: keep non-editable
+      const isLast = td === td.parentElement?.lastElementChild;
+      if (isLast) { td.removeAttribute('contenteditable'); td.removeAttribute('data-editable'); return; }
+      if (!isEditable) return;
+      // If td itself is contenteditable, move that to inner DIV once
+      if (td.isContentEditable || td.getAttribute('contenteditable') === 'true') {
+        td.removeAttribute('contenteditable');
+      }
+      const hasInner = td.querySelector('[contenteditable="true"]');
+      if (!hasInner) {
+        const inner = document.createElement('div');
+        inner.setAttribute('contenteditable', 'true');
+        inner.setAttribute('data-editable', 'true');
+        inner.setAttribute('autocapitalize', 'off');
+        inner.setAttribute('autocorrect', 'off');
+        inner.setAttribute('autocomplete', 'off');
+        inner.setAttribute('spellcheck', 'false');
+        inner.textContent = td.textContent || '';
+        td.textContent = '';
+        td.appendChild(inner);
+      }
+    } catch(_) {}
+  });
 }
 
 async function printTemplatesPdf() {
