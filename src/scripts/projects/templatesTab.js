@@ -47,13 +47,15 @@ let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
-let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, hostCompStart: null, hostCompEnd: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
 let TPL_RESIZE_OBSERVER = null;
 let TPL_TABLE_UNBIND = null;
 let TPL_SUBTOTAL_TIMER = null;
 let TPL_EXPENSES_UNBIND = null;
+let TPL_IS_COMPOSING = false;
+let TPL_INPUT_TIMER = null;
 
 function destroyTemplatesTab() {
   try {
@@ -65,6 +67,8 @@ function destroyTemplatesTab() {
       try { if (TPL_LISTENERS.hostMouseDown) host.removeEventListener('mousedown', TPL_LISTENERS.hostMouseDown, true); } catch (_) {}
       try { if (TPL_LISTENERS.hostFocusIn) host.removeEventListener('focusin', TPL_LISTENERS.hostFocusIn, true); } catch (_) {}
       try { if (TPL_LISTENERS.hostFocusOut) host.removeEventListener('focusout', TPL_LISTENERS.hostFocusOut, true); } catch (_) {}
+      try { if (TPL_LISTENERS.hostCompStart) host.removeEventListener('compositionstart', TPL_LISTENERS.hostCompStart, true); } catch (_) {}
+      try { if (TPL_LISTENERS.hostCompEnd) host.removeEventListener('compositionend', TPL_LISTENERS.hostCompEnd, true); } catch (_) {}
       try { if (TPL_EXPENSES_UNBIND) { TPL_EXPENSES_UNBIND(); TPL_EXPENSES_UNBIND = null; } } catch (_) {}
       // Detach toolbar selection observer if present
       try {
@@ -3129,17 +3133,32 @@ export function initTemplatesTab() {
     } catch (_) {}
     // Normalize compute path only (do not mutate text) and recompute on edits
     const onHostInput = (e) => {
-      const el = e.target;
-      if ((el instanceof HTMLElement) && el.isContentEditable) {
-        try { markTemplatesEditingActivity(); } catch(_) {}
-        // تحديث سريع للصف الحالي + مجموعاته لتجربة كتابة سلسة
+      const el = e && e.target;
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.isContentEditable) return;
+      if (TPL_IS_COMPOSING) return; // Avoid interfering with Arabic/IME composition
+      try { markTemplatesEditingActivity(); } catch(_) {}
+      // Throttle heavy recompute to keep typing smooth
+      try { clearTimeout(TPL_INPUT_TIMER); } catch (_) {}
+      TPL_INPUT_TIMER = setTimeout(() => {
         try { const td = el.closest('td'); if (td && td.closest('table.exp-details')) recomputeExpensesForCell(td); } catch(_) {}
         // احتياط: أعد الحساب الكامل مؤجلًا لتوحيد الأرقام عبر الجداول
-        recomputeExpensesSubtotalsDebounced(260);
-      }
+        recomputeExpensesSubtotalsDebounced(320);
+      }, 80);
     };
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
+    // Handle IME composition (Arabic, etc.) to prevent keystroke loss
+    const onCompStart = (e) => { TPL_IS_COMPOSING = true; };
+    const onCompEnd = (e) => {
+      TPL_IS_COMPOSING = false;
+      // Run a recompute once composition commits
+      try { onHostInput(e); } catch (_) {}
+    };
+    TPL_LISTENERS.hostCompStart = onCompStart;
+    TPL_LISTENERS.hostCompEnd = onCompEnd;
+    TPL_HOST_EL?.addEventListener('compositionstart', onCompStart, true);
+    TPL_HOST_EL?.addEventListener('compositionend', onCompEnd, true);
     // Add focus styling to avoid centered-caret glitches on Safari and make caret visible
     const onFocusInCell = (e) => {
       const t = e.target;
