@@ -1,40 +1,7 @@
 import { t } from '../../language.js';
+import { el, buildRoot } from '../core.js';
 
-function el(tag, attrs = {}, children = []) {
-  const e = document.createElement(tag);
-  Object.entries(attrs || {}).forEach(([k, v]) => {
-    if (k === 'class') e.className = v;
-    else if (k === 'text') e.textContent = v;
-    else if (k === 'html') e.innerHTML = v;
-    else e.setAttribute(k, v);
-  });
-  (Array.isArray(children) ? children : [children]).filter(Boolean).forEach((c) => e.appendChild(c));
-  return e;
-}
-
-function buildRoot({ landscape = true, headerFooter = false, logoUrl = '' } = {}) {
-  const dir = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang') === 'ar') ? 'ar' : 'en';
-  const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview', dir });
-  const pagesWrap = el('div', { 'data-a4-pages': '' });
-  const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });
-  const inner = el('div', { class: 'a4-inner' });
-  if (headerFooter) {
-    const header = el('div', { class: 'tpl-print-header' }, [
-      el('div', { class: 'brand' }, [
-        el('img', { src: logoUrl, alt: 'Logo', referrerpolicy: 'no-referrer' }),
-        el('div', { class: 'brand-text', text: 'Art Ratio' })
-      ]),
-      el('div', { class: 'meta' }, [ el('div', { text: new Date().toLocaleDateString() }) ])
-    ]);
-    const footer = el('div', { class: 'tpl-print-footer' }, [
-      el('div', { class: 'footer-left', text: 'art-ratio.com' }),
-      el('div', { class: 'page-num', html: `<span data-page-num>1</span> / <span data-page-count>1</span>` })
-    ]);
-    page.appendChild(header); page.appendChild(footer);
-  }
-  page.appendChild(inner); pagesWrap.appendChild(page); root.appendChild(pagesWrap);
-  return { root, inner };
-}
+// el/buildRoot are imported from ../core.js
 
 export function buildShotListPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
@@ -90,4 +57,3 @@ export function buildShotListPage(project, reservations, opts = {}) {
 }
 
 export default { buildShotListPage };
-
