@@ -466,6 +466,15 @@ table.exp-details tbody td:nth-child(2) {
   word-break: normal;
 }
 #templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) { text-align: left; }
+/* Force left alignment for subgroup label with strong specificity and flex for visual left anchoring */
+#templates-a4-root table.exp-details tbody tr[data-subgroup-header] td.label {
+  text-align: left !important;
+  font-weight: 800;
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
 /* Subgroup header label alignment and filler cell highlight */
 /* Subgroup headers: always left */
 #templates-a4-root table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left !important; font-weight:800; padding-left:8px; }
@@ -474,6 +483,13 @@ table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
   background: rgba(37, 99, 235, 0.18) !important;
   background-color: rgba(37, 99, 235, 0.18) !important;
   border-color: #cbd5e1 !important;
+}
+/* Ensure the fill tint is preserved in PDF export */
+#templates-a4-root[data-render-context="export"] table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
+  background: rgba(37, 99, 235, 0.18) !important;
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* Keep actions compact so it doesn't visually dominate */

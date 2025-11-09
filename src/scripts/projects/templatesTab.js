@@ -3003,8 +3003,9 @@ export function initTemplatesTab() {
             } catch (_) {}
           }
         }
-        recomputeExpensesSubtotals();
-        try { shrinkSingleWordCellsExt(td || el.closest('table')); } catch (_) {}
+        // Keep totals responsive but avoid heavy DOM churn while typing
+        recomputeExpensesSubtotalsDebounced(120);
+        // Avoid font shrinking during live typing; it's applied on structural changes instead
       }
     };
     TPL_LISTENERS.hostInput = onHostInput;
