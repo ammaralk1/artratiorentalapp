@@ -33,7 +33,19 @@ export function buildExpensesPage(project, reservations, opts = {}) {
   // Top Sheet (skeleton)
   const topWrap = el('div', { id: 'expenses-top-sheet' });
   const mkTopRow = (code, label) => el('tr', { 'data-top-row': code }, [ el('td', { class: 'code', text: code }), el('td', { class: 'exp-top-label', text: label }), el('td', { 'data-top-count': code, text: '' }), el('td', { 'data-top-total': code, text: '' }) ]);
-  const mkTopTable = (title, rows) => { const tbl = el('table', { class: 'exp-table exp-top-table' }); const cap = el('caption', { class: 'exp-group-cap' }, [ el('div', { class: 'exp-group-bar', text: title }) ]); tbl.appendChild(cap); const thead = el('thead'); const trh = el('tr'); ['CODE','DESCRIPTION','UNITS','TOTAL'].forEach((t,i)=> trh.appendChild(el('th', { class: ['exp-top-col-code','exp-top-col-label','exp-top-col-units','exp-top-col-total'][i], text: L(t, i===1?'الوصف': i===2?'الوحدات':'الإجمالي') }))); thead.appendChild(trh); tbl.appendChild(thead); const tb = el('tbody'); rows.forEach(([c,l])=> tb.appendChild(mkTopRow(c,l))); tbl.appendChild(tb); return tbl; };
+  const mkTopTable = (title, rows) => {
+    // Force LTR column flow so TOTAL stays at the rightmost visually
+    const tbl = el('table', { class: 'exp-table exp-top-table dir-ltr' });
+    const cap = el('caption', { class: 'exp-group-cap' }, [ el('div', { class: 'exp-group-bar', text: title }) ]);
+    tbl.appendChild(cap);
+    const thead = el('thead'); const trh = el('tr');
+    ['CODE','DESCRIPTION','UNITS','TOTAL'].forEach((t,i)=> trh.appendChild(el('th', { class: ['exp-top-col-code','exp-top-col-label','exp-top-col-units','exp-top-col-total'][i], text: L(t, i===1?'الوصف': i===2?'الوحدات':'الإجمالي') })));
+    thead.appendChild(trh); tbl.appendChild(thead);
+    const tb = el('tbody');
+    rows.forEach(([c,l])=> tb.appendChild(mkTopRow(c,l)));
+    tbl.appendChild(tb);
+    return tbl;
+  };
   topWrap.appendChild(mkTopTable(L('ABOVE THE LINE','فوق الخط'), [['01-00','PRODUCERS UNIT'],['02-00','DIRECTOR & STAFF'],['03-00','CAST'] ]));
   topWrap.appendChild(mkTopTable(L('PRODUCTION EXPENSES','مصاريف الإنتاج'), [['04-00','PRODUCTION STAFF'],['05-00','SET DESIGN'],['06-00','SET CONSTRUCTION'] ]));
   topWrap.appendChild(mkTopTable(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [['13-00','FILM EDITING'],['14-00','VOICE OVER'] ]));
@@ -41,7 +53,7 @@ export function buildExpensesPage(project, reservations, opts = {}) {
 
   // Details groups (simplified skeleton that existing totals/pagination can still work with)
   const addGroupPage = (groupKey, groupTitle, subgroups = []) => {
-    const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
+    const table = el('table', { class: 'exp-table exp-details dir-ltr', 'data-editable-table': 'expenses', 'data-group': groupKey });
     // Revert to prior order while we fix layout: Code, Description, Days, Unit, Qty, Price, Tax, Total
     const colgroup = el('colgroup'); ['10%','40%','10%','10%','10%','10%','5%','5%'].forEach((w)=> colgroup.appendChild(el('col',{style:`width:${w}`}))); table.appendChild(colgroup);
     const thead = el('thead'); const trh = el('tr');
