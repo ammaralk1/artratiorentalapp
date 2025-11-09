@@ -47,7 +47,7 @@ let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
-let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
 let TPL_RESIZE_OBSERVER = null;
@@ -63,6 +63,8 @@ function destroyTemplatesTab() {
       try { if (TPL_LISTENERS.hostInput) host.removeEventListener('input', TPL_LISTENERS.hostInput); } catch (_) {}
       try { if (TPL_TABLE_UNBIND) { TPL_TABLE_UNBIND(); TPL_TABLE_UNBIND = null; } } catch (_) {}
       try { if (TPL_LISTENERS.hostMouseDown) host.removeEventListener('mousedown', TPL_LISTENERS.hostMouseDown, true); } catch (_) {}
+      try { if (TPL_LISTENERS.hostFocusIn) host.removeEventListener('focusin', TPL_LISTENERS.hostFocusIn, true); } catch (_) {}
+      try { if (TPL_LISTENERS.hostFocusOut) host.removeEventListener('focusout', TPL_LISTENERS.hostFocusOut, true); } catch (_) {}
       try { if (TPL_EXPENSES_UNBIND) { TPL_EXPENSES_UNBIND(); TPL_EXPENSES_UNBIND = null; } } catch (_) {}
       // Detach toolbar selection observer if present
       try {
@@ -80,7 +82,7 @@ function destroyTemplatesTab() {
     if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
     if (TPL_RESIZE_OBSERVER) { try { TPL_RESIZE_OBSERVER.disconnect(); } catch (_) {} TPL_RESIZE_OBSERVER = null; }
   } finally {
-    TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, hostMouseDown: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+    TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, hostMouseDown: null, hostFocusIn: null, hostFocusOut: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
   }
 }
 
@@ -3065,7 +3067,7 @@ export function initTemplatesTab() {
         },
       });
     } catch (_) {}
-    // Normalize digits to English and recompute on edits
+    // Normalize compute path only (do not mutate text) and recompute on edits
     const onHostInput = (e) => {
       const el = e.target;
       if ((el instanceof HTMLElement) && el.isContentEditable) {
@@ -3078,6 +3080,23 @@ export function initTemplatesTab() {
     };
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
+    // Add focus styling to avoid centered-caret glitches on Safari and make caret visible
+    const onFocusInCell = (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const td = t.closest && t.closest('td[contenteditable]');
+      if (td) { try { td.classList.add('editing'); } catch(_) {} }
+    };
+    const onFocusOutCell = (e) => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const td = t.closest && t.closest('td[contenteditable]');
+      if (td) { try { td.classList.remove('editing'); } catch(_) {} }
+    };
+    TPL_HOST_EL?.addEventListener('focusin', onFocusInCell, true);
+    TPL_HOST_EL?.addEventListener('focusout', onFocusOutCell, true);
+    TPL_LISTENERS.hostFocusIn = onFocusInCell;
+    TPL_LISTENERS.hostFocusOut = onFocusOutCell;
     // Paste/keydown interactions via shared binder
     try {
       TPL_TABLE_UNBIND = bindTableInteractions(TPL_HOST_EL, {

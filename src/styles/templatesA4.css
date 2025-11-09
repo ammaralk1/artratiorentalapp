@@ -145,6 +145,16 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 [data-editable="true"] { outline:none; min-height:16px; }
 [data-editable="true"]:hover { background:#f8fafc; }
 [data-editable="true"]:focus { outline:1px solid #cbd5e1; box-shadow:none; background:#f1f5f9; }
+/* Improve caret visibility and stability under preview scaling (WebKit/Safari) */
+#templates-a4-root[data-render-context="preview"] td[contenteditable="true"] {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+  caret-color: #000;
+  user-select: text;
+}
+/* While editing, force left alignment to avoid centered-caret glitches */
+#templates-a4-root[data-render-context="preview"] table.exp-details td[contenteditable="true"].editing { text-align: left !important; }
 
 .tpl-columns { display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
 .tpl-card { border:1px solid #e5e7eb; border-radius:12px; padding:10px; }
