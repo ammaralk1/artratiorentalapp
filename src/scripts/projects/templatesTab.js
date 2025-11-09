@@ -15,6 +15,7 @@ import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
 import { addRowBelow, moveRow, deleteRow, focusFirstEditableCell, getCellIndex, isSpecialRow } from '../templates/tableTools.js';
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
+import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -1941,7 +1942,7 @@ function renderTemplatesPreview() {
   ensureLogoControls(type);
   let pageRoot = null;
   if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
-  else if (type === 'shotlist') pageRoot = buildShotListPage(project, reservations, hf);
+  else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
   else pageRoot = buildExpensesPage(project, reservations, hf);
   // Diff-like replace to avoid losing event handlers on host
   const newRoot = pageRoot;
