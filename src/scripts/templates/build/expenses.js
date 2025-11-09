@@ -42,9 +42,19 @@ export function buildExpensesPage(project, reservations, opts = {}) {
   // Details groups (simplified skeleton that existing totals/pagination can still work with)
   const addGroupPage = (groupKey, groupTitle, subgroups = []) => {
     const table = el('table', { class: 'exp-table exp-details', 'data-editable-table': 'expenses', 'data-group': groupKey });
-    const colgroup = el('colgroup'); ['10%','40%','10%','10%','10%','10%','5%','5%'].forEach((w)=> colgroup.appendChild(el('col',{style:`width:${w}`}))); table.appendChild(colgroup);
+    // New order: Code, Description, Price, Quantity, Days, Paid, Total, Actions
+    const colgroup = el('colgroup'); ['12%','38%','12%','10%','10%','8%','10%','6%'].forEach((w)=> colgroup.appendChild(el('col',{style:`width:${w}`}))); table.appendChild(colgroup);
     const thead = el('thead'); const trh = el('tr');
-    [ {text:L('CODE','الكود')}, {text:L('DESCRIPTION','الوصف')}, {text:L('DAYS','الأيام')}, {text:L('UNIT','الوحدة')}, {text:L('QTY','الكمية')}, {text:L('RATE','السعر')}, {text:L('TAX','ضريبة')}, {text:L('TOTAL','الإجمالي')} ].forEach((c)=> trh.appendChild(el('th', { text: c.text })));
+    [
+      {text:L('CODE','الكود')},
+      {text:L('DESCRIPTION','الوصف')},
+      {text:L('PRICE','السعر')},
+      {text:L('QTY','الكمية')},
+      {text:L('DAYS','الأيام')},
+      {text:L('PAID','المدفوع')},
+      {text:L('TOTAL','الإجمالي')},
+      {text:''},
+    ].forEach((c)=> trh.appendChild(el('th', { text: c.text })));
     thead.appendChild(trh); table.appendChild(thead);
     const tb = el('tbody');
     tb.appendChild(el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [ el('th', { colspan: '8' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ]) ]));
@@ -57,14 +67,20 @@ export function buildExpensesPage(project, reservations, opts = {}) {
       ]));
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+        // Code, Description, Price, Qty, Days, Paid, Total, Actions
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Code
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Description
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Price
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Qty
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Days
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Paid
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Total
+        tr.appendChild(el('td', {}, [el('div', { class: 'tpl-actions' }, [
+          el('button', { class: 'tpl-action-btn', 'data-action': 'row-up', text: '↑' }),
+          el('button', { class: 'tpl-action-btn', 'data-action': 'row-down', text: '↓' }),
+          el('button', { class: 'tpl-action-btn', 'data-action': 'row-add', text: '+' }),
+          el('button', { class: 'tpl-action-btn', 'data-action': 'row-delete', text: '×' }),
+        ])]));
         tb.appendChild(tr);
       }
       // Subtotal row placeholder
@@ -82,4 +98,3 @@ export function buildExpensesPage(project, reservations, opts = {}) {
 }
 
 export default { buildExpensesPage };
-

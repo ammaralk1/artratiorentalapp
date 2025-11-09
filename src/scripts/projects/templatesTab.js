@@ -2262,13 +2262,14 @@ function recomputeExpensesSubtotals() {
       while (tr && !tr.hasAttribute('data-subgroup-header') && !tr.hasAttribute('data-subgroup-subtotal')) {
         if (tr.getAttribute('data-row') === 'item') {
           const tds = tr.children;
-          const rate = number(tds[2]?.textContent, 0);
-          const amount = number(tds[3]?.textContent, 1);
-          const x = number(tds[4]?.textContent, 1);
-          const total = amount * x * rate;
+          // New order: [0]=Code, [1]=Description, [2]=Price, [3]=Qty, [4]=Days, [5]=Paid, [6]=Total, [7]=Actions
+          const price = number(tds[2]?.textContent, 0);
+          const qty = number(tds[3]?.textContent, 1);
+          const days = number(tds[4]?.textContent, 1);
+          const total = price * qty * days;
           if (tds[6]) tds[6].textContent = formatIntNoDecimals(total);
           subtotal += total;
-          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[2]?.textContent, 0) || number(tds[3]?.textContent, 0);
+          const hasContent = String(tds[1]?.textContent || '').trim().length || number(tds[2]?.textContent, 0) || number(tds[3]?.textContent, 0) || number(tds[4]?.textContent, 0);
           if (hasContent) count += 1;
         }
         tr = tr.nextElementSibling;
