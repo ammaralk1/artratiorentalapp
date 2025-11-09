@@ -51,39 +51,37 @@ export function buildExpensesPage(project, reservations, opts = {}) {
   topWrap.appendChild(mkTopTable(L('POST-PRODUCTION EXPENSES','مصاريف ما بعد الإنتاج'), [['13-00','FILM EDITING'],['14-00','VOICE OVER'] ]));
   inner.appendChild(topWrap);
 
-  // Details groups (simplified skeleton that existing totals/pagination can still work with)
+  // Details groups (new column order): Code, Description, Rate, Qty, Days, Paid, Total
   const addGroupPage = (groupKey, groupTitle, subgroups = []) => {
     const table = el('table', { class: 'exp-table exp-details dir-ltr', 'data-editable-table': 'expenses', 'data-group': groupKey });
-    // Revert to prior order while we fix layout: Code, Description, Days, Unit, Qty, Price, Tax, Total
-    const colgroup = el('colgroup'); ['10%','40%','10%','10%','10%','10%','5%','5%'].forEach((w)=> colgroup.appendChild(el('col',{style:`width:${w}`}))); table.appendChild(colgroup);
+    const colgroup = el('colgroup'); ['12%','38%','12%','10%','10%','8%','10%'].forEach((w)=> colgroup.appendChild(el('col',{style:`width:${w}`}))); table.appendChild(colgroup);
     const thead = el('thead'); const trh = el('tr');
-    [ {text:L('CODE','الكود')}, {text:L('DESCRIPTION','الوصف')}, {text:L('DAYS','الأيام')}, {text:L('UNIT','الوحدة')}, {text:L('QTY','الكمية')}, {text:L('RATE','السعر')}, {text:L('TAX','ضريبة')}, {text:L('TOTAL','الإجمالي')} ]
+    [ {text:L('CODE','الكود')}, {text:L('DESCRIPTION','الوصف')}, {text:L('RATE','السعر')}, {text:L('QTY','الكمية')}, {text:L('DAYS','الأيام')}, {text:L('PAID','المدفوع')}, {text:L('TOTAL','الإجمالي')} ]
       .forEach((c)=> trh.appendChild(el('th', { text: c.text })));
     thead.appendChild(trh); table.appendChild(thead);
     const tb = el('tbody');
-    tb.appendChild(el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [ el('th', { colspan: '8' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ]) ]));
+    tb.appendChild(el('tr', { 'data-group-bar': 'true', 'data-group-title': 'true' }, [ el('th', { colspan: '7' }, [ el('div', { class: `exp-group-bar exp-group-bar--${groupKey}`, text: groupTitle }) ]) ]));
     // One subgroup header + a couple of item rows per subgroup
     subgroups.forEach((sg, idx) => {
       tb.appendChild(el('tr', { 'data-subgroup-header': 'true', 'data-subgroup': sg.code }, [
         el('td', { class: 'code', text: sg.code }),
         el('td', { class: 'label', text: sg.label }),
-        el('td', {}), el('td', {}), el('td', {}), el('td', {}), el('td', {}), el('td', {})
+        el('td', {}), el('td', {}), el('td', {}), el('td', {}), el('td', {})
       ]));
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
-        // 8 editable cells
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+        // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Code
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Description
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Rate
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Qty
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Days
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Paid
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Total
         tb.appendChild(tr);
       }
       // Subtotal row placeholder
-      tb.appendChild(el('tr', { 'data-subgroup-subtotal': 'true' }, [ el('td', { colspan: '8', text: L('SUBTOTAL','المجموع الفرعي') }) ]));
+      tb.appendChild(el('tr', { 'data-subgroup-subtotal': 'true' }, [ el('td', { colspan: '7', text: L('SUBTOTAL','المجموع الفرعي') }) ]));
     });
     table.appendChild(tb);
     inner.appendChild(table);
