@@ -81,7 +81,7 @@ export async function printCallsheetFromHost(host) {
     }
     // Fallback: print iframe
     const head = await buildHeadHtml({ orientation: 'landscape', title: 'Call Sheet' });
-    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.innerHTML}</body></html>`;
+    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.outerHTML}</body></html>`;
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
@@ -145,7 +145,7 @@ export async function printGenericTemplate(host, { orientation = 'portrait', fil
     }
     // Fallback iframe printing
     const head = await buildHeadHtml({ orientation, title: 'Print' });
-    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.innerHTML}</body></html>`;
+    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.outerHTML}</body></html>`;
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
