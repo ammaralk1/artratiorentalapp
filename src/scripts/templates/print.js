@@ -6,6 +6,43 @@ function getPdfMode() {
   try { const v = String(localStorage.getItem('templatesPdf.mode')||'').trim(); return (v === 'html2pdf') ? 'html2pdf' : 'iframe'; } catch(_) { return 'iframe'; }
 }
 
+async function collectInlineCss() {
+  let css = '';
+  try {
+    const sheets = Array.from(document.styleSheets || []);
+    sheets.forEach((ss) => {
+      try {
+        const rules = ss.cssRules; // may throw on cross-origin
+        if (!rules) return;
+        for (let i = 0; i < rules.length; i += 1) {
+          const r = rules[i]; css += (r && r.cssText) ? r.cssText : '';
+        }
+      } catch (_) { /* ignore cross-origin sheets */ }
+    });
+  } catch (_) {}
+  return `<style>${css}</style>`;
+}
+
+function collectLinkStylesHtml() {
+  try {
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+    // Copy as-is; browser will fetch inside iframe
+    return links.map((l) => {
+      const href = l.getAttribute('href');
+      if (!href) return '';
+      return `<link rel="stylesheet" href="${href}">`;
+    }).join('');
+  } catch (_) { return ''; }
+}
+
+async function buildHeadHtml({ orientation = 'portrait', title = 'Print' } = {}) {
+  const inline = await collectInlineCss();
+  const links = collectLinkStylesHtml();
+  // Ensure print-specific baseline
+  const base = `@page{size:A4 ${orientation};margin:0}html,body{margin:0;padding:0;background:#fff}#templates-a4-root{transform:none!important}`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${links}${inline}<style>${base}</style></head>`;
+}
+
 export async function printCallsheetFromHost(host) {
   if (!host) throw new Error('No host');
   let html2pdf = null;
@@ -43,12 +80,18 @@ export async function printCallsheetFromHost(host) {
       return;
     }
     // Fallback: print iframe
-    const html = `<!doctype html><html dir="${scope.getAttribute('dir')||'rtl'}"><head><meta charset="utf-8"><title>Call Sheet</title><style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0;background:#fff}#templates-a4-root{transform:none!important}</style></head><body>${scope.innerHTML}</body></html>`;
+    const head = await buildHeadHtml({ orientation: 'landscape', title: 'Call Sheet' });
+    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.innerHTML}</body></html>`;
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
     const doc = frame.contentWindow?.document;
-    if (doc) { doc.open(); doc.write(html); doc.close(); frame.onload = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); }; }
+    if (doc) {
+      doc.open(); doc.write(html); doc.close();
+      const tryPrint = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); };
+      // Wait a tick for CSS to load
+      setTimeout(tryPrint, 400);
+    }
   } finally { try { wrap.remove(); } catch (_) {} }
 }
 
@@ -101,12 +144,17 @@ export async function printGenericTemplate(host, { orientation = 'portrait', fil
       return;
     }
     // Fallback iframe printing
-    const html = `<!doctype html><html dir="${scope.getAttribute('dir')||'rtl'}"><head><meta charset="utf-8"><title>Print</title><style>@page{size:A4 ${orientation};margin:0}html,body{margin:0;padding:0;background:#fff}#templates-a4-root{transform:none!important}</style></head><body>${scope.innerHTML}</body></html>`;
+    const head = await buildHeadHtml({ orientation, title: 'Print' });
+    const html = `${head}<body dir="${scope.getAttribute('dir')||'rtl'}">${scope.innerHTML}</body></html>`;
     const frame = document.createElement('iframe');
     Object.assign(frame.style, { position:'fixed', right:'0', bottom:'0', width:'1px', height:'1px', border:'0' });
     document.body.appendChild(frame);
     const doc = frame.contentWindow?.document;
-    if (doc) { doc.open(); doc.write(html); doc.close(); frame.onload = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); }; }
+    if (doc) {
+      doc.open(); doc.write(html); doc.close();
+      const tryPrint = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } catch(_) {} setTimeout(()=>frame.remove(), 1200); };
+      setTimeout(tryPrint, 400);
+    }
   } finally { try { wrap.remove(); } catch (_) {} }
 }
 
