@@ -465,6 +465,14 @@ table.exp-details tbody td:nth-child(2) {
 #templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) {
   text-align: left;
 }
+/* Subgroup header label alignment and filler cell highlight */
+table.exp-details tbody tr[data-subgroup-header] td.label { text-align: right; font-weight:800; }
+#templates-a4-root[dir="ltr"] table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left; }
+table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
+  background: rgba(37, 99, 235, 0.18) !important;
+  background-color: rgba(37, 99, 235, 0.18) !important;
+  border-color: #cbd5e1 !important;
+}
 
 /* Keep actions compact so it doesn't visually dominate */
 table.exp-details tbody td:last-child .tpl-actions { gap: 2px; }
@@ -472,8 +480,8 @@ table.exp-details tbody td:last-child .tpl-action-btn { padding: 1px 5px; font-s
 
 /* Row action buttons */
 .tpl-actions { display:flex; gap:4px; align-items:center; justify-content:flex-start; flex-wrap:wrap; }
-.tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; }
-.tpl-action-btn:hover { background:#f8fafc; }
+.tpl-action-btn { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:2px 6px; border-radius:6px; font-size:11px; line-height:1; cursor:pointer; opacity:0.7; }
+.tpl-action-btn:hover { background:#f8fafc; opacity:1; }
 
 /* === Static Highlights (print-safe) === */
 /* Remove zebra under headers per request */
@@ -491,6 +499,10 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
 #templates-a4-root[data-render-context="export"] .tpl-actions,
 #templates-a4-root[data-render-context="export"] th.exp-col-actions { display:none !important; }
 #templates-a4-root[data-render-context="export"] table.exp-table:not(.exp-top-table) td:last-child { display:none !important; padding:0 !important; width:0 !important; }
+/* Grand total row in Top Sheet */
+.exp-grand-total-row td { background:#ffffff !important; font-weight:900; }
+.exp-grand-total-label { text-align:right; }
+#templates-a4-root[dir="ltr"] .exp-grand-total-label { text-align:left; }
 
 /* Allow scrolling to view all pages in preview container */
 #templates-preview-host { max-height: 78vh; overflow: auto; }
