@@ -47,7 +47,7 @@ let TPL_ZOOM_MODE = 'manual'; // 'manual' | 'fit'
 let TPL_ZOOM_FIT_BTN = null;
 let TPL_ZOOM_RESIZE_BOUND = false;
 let TPL_EVENTS_BOUND = false; // avoid duplicate listeners / timers
-let TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+let TPL_LISTENERS = { hostInput: null, hostMouseDown: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
 let TPL_HOST_EL = null;
 let TPL_REPOPULATE_TIMER = null;
 let TPL_RESIZE_OBSERVER = null;
@@ -62,6 +62,7 @@ function destroyTemplatesTab() {
       // click handler bound via bindExpensesRowActions; unbound below
       try { if (TPL_LISTENERS.hostInput) host.removeEventListener('input', TPL_LISTENERS.hostInput); } catch (_) {}
       try { if (TPL_TABLE_UNBIND) { TPL_TABLE_UNBIND(); TPL_TABLE_UNBIND = null; } } catch (_) {}
+      try { if (TPL_LISTENERS.hostMouseDown) host.removeEventListener('mousedown', TPL_LISTENERS.hostMouseDown, true); } catch (_) {}
       try { if (TPL_EXPENSES_UNBIND) { TPL_EXPENSES_UNBIND(); TPL_EXPENSES_UNBIND = null; } } catch (_) {}
       // Detach toolbar selection observer if present
       try {
@@ -79,7 +80,7 @@ function destroyTemplatesTab() {
     if (TPL_REPOPULATE_TIMER) { clearTimeout(TPL_REPOPULATE_TIMER); TPL_REPOPULATE_TIMER = null; }
     if (TPL_RESIZE_OBSERVER) { try { TPL_RESIZE_OBSERVER.disconnect(); } catch (_) {} TPL_RESIZE_OBSERVER = null; }
   } finally {
-    TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
+    TPL_EVENTS_BOUND = false; TPL_HOST_EL = null; TPL_LISTENERS = { hostInput: null, hostMouseDown: null, projChanged: null, resChanged: null, resUpdated: null, tabClick: null };
   }
 }
 
@@ -3020,6 +3021,15 @@ export function initTemplatesTab() {
         onTotalsChange: () => recomputeExpensesSubtotalsDebounced(),
       });
     } catch (_) {}
+    // Ensure clicking a contenteditable cell always focuses caret (helps on Safari/iOS)
+    const onMouseDown = (e) => {
+      const td = e.target && (e.target.closest('[contenteditable]'));
+      if (!td) return;
+      try { setTimeout(() => { if (td && td.focus) td.focus(); }, 0); } catch(_) {}
+    };
+    TPL_HOST_EL?.addEventListener('mousedown', onMouseDown, true);
+    // Store for cleanup
+    TPL_LISTENERS.hostMouseDown = onMouseDown;
     try { ensurePdfTunerUI(); } catch (_) {}
 
   // (Row focus highlight removed per latest request)

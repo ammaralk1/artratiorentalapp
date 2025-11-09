@@ -97,13 +97,13 @@ export function buildExpensesPage(project, reservations, opts = {}) {
       for (let i = 0; i < (sg.rows || 2); i += 1) {
         const tr = el('tr', { 'data-row': 'item' });
         // 7 editable cells: Code, Description, Rate, Qty, Days, Paid, Total
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Code
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); // Description
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Rate
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Qty
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Days
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Paid
-        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', 'data-num': '1' })); // Total
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only' })); // Code
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only' })); // Description
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only', 'data-num': '1', inputmode: 'decimal' })); // Rate
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only', 'data-num': '1', inputmode: 'decimal' })); // Qty
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only', 'data-num': '1', inputmode: 'decimal' })); // Days
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only', 'data-num': '1', inputmode: 'decimal' })); // Paid
+        tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'plaintext-only', 'data-num': '1', inputmode: 'decimal' })); // Total
         tb.appendChild(tr);
       }
       // Subtotal row placeholder

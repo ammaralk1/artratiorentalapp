@@ -13,7 +13,8 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'tpl-cell-toolbar';
-    Object.assign(bar.style, { position: 'absolute', display: 'none', zIndex: 60 });
+    // Use fixed positioning so placement is stable regardless of zoom/scale on the preview root
+    Object.assign(bar.style, { position: 'fixed', display: 'none', zIndex: 9999 });
     bar.innerHTML = `
       <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
         <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
@@ -174,10 +175,12 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
 
     // Place toolbar above the cell
     const rect = cell.getBoundingClientRect();
-    const hostRect = host.getBoundingClientRect();
-    const x = Math.max(0, rect.left - hostRect.left + Math.min(rect.width - 28, 12));
-    const y = Math.max(0, rect.top - hostRect.top - 36);
-    bar.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    const margin = 6;
+    const x = Math.round(rect.left + Math.min(rect.width - 28, 12));
+    const y = Math.round(rect.top - (bar.offsetHeight || 32) - margin);
+    bar.style.transform = 'none';
+    bar.style.left = `${x}px`;
+    bar.style.top = `${Math.max(0, y)}px`;
     bar.style.display = 'block';
     bar.__targetCell = cell;
   };
