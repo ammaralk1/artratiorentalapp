@@ -3144,13 +3144,14 @@ export function initTemplatesTab() {
     const onFocusInCell = (e) => {
       const t = e.target;
       if (!(t instanceof HTMLElement)) return;
-      const td = t.closest && t.closest('td[contenteditable]');
+      // Mark the owning TD as editing even if the contenteditable is a child DIV
+      const td = t.closest && t.closest('td');
       if (td) { try { td.classList.add('editing'); } catch(_) {} }
     };
     const onFocusOutCell = (e) => {
       const t = e.target;
       if (!(t instanceof HTMLElement)) return;
-      const td = t.closest && t.closest('td[contenteditable]');
+      const td = t.closest && t.closest('td');
       if (td) { try { td.classList.remove('editing'); } catch(_) {} }
     };
     TPL_HOST_EL?.addEventListener('focusin', onFocusInCell, true);
