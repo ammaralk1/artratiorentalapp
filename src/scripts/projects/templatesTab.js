@@ -1343,19 +1343,23 @@ function renderTemplatesPreview() {
     if (type === 'callsheet') {
       const ls = localStorage.getItem(getTemplatesContextKey());
       if (!ls) {
-        const id = readRemoteAutosaveId();
-        if (id) {
-          await loadSnapshotById(id);
-          try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-        } else {
-          const items = await fetchSavedTemplatesForCurrent();
-          const draft = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة'));
-          if (draft && draft.id) {
-            writeRemoteAutosaveId(draft.id);
-            await loadSnapshotById(draft.id);
-            try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-          }
-        }
+        (async () => {
+          try {
+            const id = readRemoteAutosaveId();
+            if (id) {
+              await loadSnapshotById(id);
+              try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
+            } else {
+              const items = await fetchSavedTemplatesForCurrent();
+              const draft = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة'));
+              if (draft && draft.id) {
+                writeRemoteAutosaveId(draft.id);
+                await loadSnapshotById(draft.id);
+                try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
+              }
+            }
+          } catch(_) {}
+        })();
       }
     }
   } catch(_) {}
