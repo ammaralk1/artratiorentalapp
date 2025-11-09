@@ -1340,6 +1340,8 @@ function renderTemplatesPreview() {
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew table exists even if an old autosave overwrote DOM
   try { if (type === 'callsheet') ensureCrewTableExists(); } catch(_) {}
+  // Merge any duplicated Crew Call tables into a single table and drop empties
+  try { if (type === 'callsheet') unifyCrewCallTables(); } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
@@ -1393,6 +1395,8 @@ function renderTemplatesPreview() {
   try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
+  // Ensure only one Crew Call table remains after pagination cloning
+  try { if (type === 'callsheet') { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
@@ -2710,6 +2714,59 @@ function ensureCrewTableExists() {
   else callsheet.appendChild(crew);
   // Repaginate and prune empty pages so it flows correctly
   try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
+}
+
+// Keep one Crew Call table only: move filled rows from duplicates to the primary and remove the rest.
+function unifyCrewCallTables() {
+  const root = document.getElementById('templates-a4-root');
+  if (!root) return;
+  const tables = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-crew'));
+  if (tables.length <= 1) return;
+  // Pick the table that has the most filled cells as primary
+  const score = (t) => {
+    try {
+      const tds = Array.from(t.querySelectorAll('tbody td'));
+      return tds.reduce((n, td) => n + (((td.textContent || '').trim().length > 0) ? 1 : 0), 0);
+    } catch (_) { return 0; }
+  };
+  let primary = tables[0];
+  let best = score(primary);
+  tables.slice(1).forEach((t) => { const s = score(t); if (s > best) { primary = t; best = s; } });
+
+  const pBody = primary.tBodies && primary.tBodies[0];
+  if (!pBody) return;
+  // Ensure at least 10 empty rows exist in primary to accept merges
+  const ensureRows = (need) => {
+    for (let i = 0; i < need; i += 1) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < 4; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); }
+      pBody.appendChild(tr);
+    }
+  };
+  // Collect content rows from the other tables
+  const rowsToMerge = [];
+  tables.forEach((t) => {
+    if (t === primary) return;
+    const body = t.tBodies && t.tBodies[0]; if (!body) return;
+    Array.from(body.children).forEach((tr) => {
+      const cells = Array.from(tr.children);
+      const hasAny = cells.some((td) => ((td.textContent || '').trim().length > 0));
+      if (hasAny) rowsToMerge.push(cells.map((td) => td.textContent || ''));
+    });
+  });
+  if (rowsToMerge.length) ensureRows(Math.max(0, rowsToMerge.length - (pBody.children?.length || 0)));
+  // Fill primary with merged rows: append to first empty slots
+  const isEmptyRow = (tr) => Array.from(tr.children).every((td) => !((td.textContent || '').trim().length));
+  let idx = 0;
+  Array.from(pBody.children).forEach((tr) => {
+    if (idx >= rowsToMerge.length) return;
+    if (!isEmptyRow(tr)) return;
+    const values = rowsToMerge[idx++];
+    const tds = Array.from(tr.children);
+    for (let i = 0; i < Math.min(tds.length, values.length); i += 1) { tds[i].textContent = values[i] || ''; }
+  });
+  // Remove all duplicates
+  tables.forEach((t) => { if (t !== primary) { try { t.parentElement?.removeChild(t); } catch (_) {} } });
 }
 
 /* moved to ../templates/tableInteractions.js
