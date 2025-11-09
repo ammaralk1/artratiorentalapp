@@ -287,7 +287,14 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
         appendOrNewPage(row);
         i += 1;
       }
-      table.setAttribute('data-split-done', '1');
+      // Mark original table and all resulting working tables as completed
+      try { table.setAttribute('data-split-done', '1'); } catch(_) {}
+      try {
+        // Any exp-details tables currently in the pages wrapper are considered split after this pass
+        Array.from(pagesWrap.querySelectorAll('table.exp-details')).forEach((t) => {
+          try { t.setAttribute('data-split-done', '1'); } catch(_) {}
+        });
+      } catch(_) {}
     });
   });
 
@@ -328,8 +335,10 @@ export function paginateExpDetailsTables({ headerFooter = false, logoUrl = '' } 
   try {
     const remaining = root.querySelector('table.exp-details:not([data-split-done="1"])');
     if (remaining) {
-      // Defer to next frame to allow DOM to settle
-      requestAnimationFrame(() => { try { paginateExpDetailsTables({ headerFooter, logoUrl }); } catch (_) {} });
+      // Defer to next frame to allow DOM to settle once more, then mark as done to avoid infinite loops
+      requestAnimationFrame(() => {
+        try { paginateExpDetailsTables({ headerFooter, logoUrl }); } catch (_) {}
+      });
     }
   } catch (_) {}
 }
