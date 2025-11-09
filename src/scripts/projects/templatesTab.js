@@ -1166,6 +1166,24 @@ function readRemoteAutosaveId() {
 function writeRemoteAutosaveId(id) {
   try { const key = `remoteAutosaveId:${getTemplatesContextKey()}`; if (id) localStorage.setItem(key, String(id)); } catch(_) {}
 }
+function sanitizeHtmlForExport(html) {
+  try {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = String(html || '');
+    // Remove script tags entirely
+    tmp.querySelectorAll('script').forEach((s) => s.parentElement?.removeChild(s));
+    // Remove inline event handlers (on*) but keep style attributes (needed for transforms)
+    Array.from(tmp.querySelectorAll('*')).forEach((el) => {
+      try {
+        const attrs = Array.from(el.attributes || []);
+        attrs.forEach((a) => {
+          if (/^on/i.test(a.name)) el.removeAttribute(a.name);
+        });
+      } catch (_) {}
+    });
+    return tmp.innerHTML;
+  } catch (_) { return html; }
+}
 async function ensureRemoteAutosaveId() {
   let id = readRemoteAutosaveId();
   if (id) return id;
@@ -1184,7 +1202,7 @@ async function ensureRemoteAutosaveId() {
   const reservationId = reservationSel && reservationSel.value ? Number(reservationSel.value) : null;
   const host = document.querySelector('#templates-preview-host #templates-a4-root');
   if (!host) return null;
-  const payload = { html: host.outerHTML };
+  const payload = { html: sanitizeHtmlForExport(host.outerHTML) };
   try {
     await apiRequest('/project-templates/', {
       method: 'POST',
@@ -1207,7 +1225,7 @@ async function autosaveTemplateToServer() {
   if (!host) return;
   const id = await ensureRemoteAutosaveId();
   if (!id) return;
-  const payload = { html: host.outerHTML };
+  const payload = { html: sanitizeHtmlForExport(host.outerHTML) };
   try { await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`, { method: 'PATCH', body: { data: payload } }); } catch(err) { notifyApiError(err, 'تعذر الحفظ التلقائي'); }
 }
 function autosaveToServerDebounced() {
@@ -3329,7 +3347,7 @@ async function saveTemplateSnapshot({ copy = false } = {}) {
     alert('لا يوجد محتوى للحفظ');
     throw new Error('No template root to save');
   }
-  const payload = { html: root.outerHTML };
+  const payload = { html: sanitizeHtmlForExport(root.outerHTML) };
   const nameInput = document.getElementById('templates-save-title');
   const customTitle = nameInput && nameInput.value ? String(nameInput.value).trim() : '';
   await apiRequest('/project-templates/', {
@@ -3711,7 +3729,8 @@ export function initTemplatesTab() {
   let repopulating = false;
   let repopulateQueued = false;
   // moved to module scope for cleanup: TPL_REPOPULATE_TIMER
-  const REPOPULATE_DEBOUNCE_MS = 250;
+  const REPOPULATE_DEBOUNCE_MS = 420;
+  let lastRepopKey = '';
 
   const doRepopulate = async () => {
     if (repopulating || TPL_EDITING) { repopulateQueued = true; return; }
@@ -3734,7 +3753,14 @@ export function initTemplatesTab() {
       projectSel.value = before;
     }
     populateReservationSelect(projectSel.value || '');
-    renderTemplatesPreview();
+    // Skip redundant rebuilds when target key unchanged
+    const typeSel = document.getElementById('templates-type');
+    const type = typeSel ? typeSel.value : 'expenses';
+    const repKey = `${projectSel.value || ''}|${document.getElementById('templates-reservation')?.value || ''}|${type}`;
+    if (repKey !== lastRepopKey) {
+      lastRepopKey = repKey;
+      renderTemplatesPreview();
+    }
     try { await populateSavedTemplates(); } catch {}
     try { if (isTemplatesDebugEnabled()) console.debug('[templatesTab] repopulate done'); } catch(_) {}
     repopulating = false;
