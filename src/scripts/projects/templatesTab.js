@@ -12,6 +12,7 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
+import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -944,6 +945,11 @@ function buildCallSheetPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
   const res = reservations?.[0] || null;
+  // Preload logos to avoid flicker on first paint
+  try {
+    const logos = [logoUrl || COMPANY_INFO.logoUrl || '', (readSecondaryLogoState()?.url)||''].filter(Boolean);
+    (async () => { try { const { preloadImages } = await import('../templates/assets.js'); await preloadImages(logos); } catch(_) {} })();
+  } catch(_) {}
 
   const wrap = el('div', { class: 'callsheet-v1' });
 
@@ -2024,6 +2030,7 @@ function renderTemplatesPreview() {
     }
   } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
+  try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
   function isTemplatesDebugEnabled() {
@@ -2052,9 +2059,14 @@ function renderTemplatesPreview() {
 
 async function printTemplatesPdf() {
   const host = document.querySelector('#templates-preview-host > #templates-a4-root');
-  if (!host) return;
+  if (!host) { alert('لا يوجد محتوى للطباعة'); return; }
   const type = document.getElementById('templates-type')?.value || 'expenses';
   const landscape = type !== 'expenses';
+  // Route callsheet through dedicated printer for stability
+  if (type === 'callsheet') {
+    try { await (await import('../templates/print.js')).printCallsheetFromHost(host); } catch (_) { alert('تعذر إنشاء PDF'); }
+    return;
+  }
   // Helper: detect if a page contains meaningful content (avoid blank pages)
   const pageHasMeaningfulContent = (pg) => {
     try {
