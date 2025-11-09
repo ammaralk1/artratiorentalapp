@@ -17,6 +17,7 @@ import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
 import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
+import { metaCell as coreMetaCell } from '../templates/core.js';
 import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
@@ -600,16 +601,8 @@ async function ensureAssetsReady(container) {
   await waitForImages(container || document);
 }
 
-function metaCell(label, value = '', editable = true) {
-  const cell = el('div', { class: 'cell' });
-  cell.appendChild(el('span', { class: 'label', text: label }));
-  const val = el('div', { 'data-editable': editable ? 'true' : 'false', contenteditable: editable ? 'true' : 'false' });
-  // Improve readability for mixed AR/EN values in print by letting browser choose text direction
-  try { val.setAttribute('dir', 'auto'); } catch (_) {}
-  val.textContent = value || '';
-  cell.appendChild(val);
-  return cell;
-}
+// Delegate to core metaCell
+function metaCell(label, value = '', editable = true) { return coreMetaCell(label, value, editable); }
 
 function getSelectedProject() {
   const sel = document.getElementById('templates-project');
