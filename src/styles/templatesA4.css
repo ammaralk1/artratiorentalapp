@@ -121,8 +121,8 @@ table.exp-top-table .exp-top-col-label { width: 54%; }
 table.exp-top-table .exp-top-col-count { width: 10%; }
 table.exp-top-table .exp-top-col-total { width: 20%; }
 /* Always left-align Top Sheet labels */
-table.exp-top-table td.exp-top-label { text-align: left; }
-#templates-a4-root[dir="ltr"] table.exp-top-table td.exp-top-label { text-align: left; }
+#templates-a4-root table.exp-top-table td.exp-top-label { text-align: left !important; }
+#templates-a4-root[dir="ltr"] table.exp-top-table td.exp-top-label { text-align: left !important; }
 /* Top sheet header tint */
 table.exp-top-table th { background: rgba(37, 99, 235, 0.30) !important; color:#000; }
 /* Top sheet caption as colored section bar */
@@ -468,8 +468,8 @@ table.exp-details tbody td:nth-child(2) {
 #templates-a4-root[dir="ltr"] table.exp-details tbody td:nth-child(2) { text-align: left; }
 /* Subgroup header label alignment and filler cell highlight */
 /* Subgroup headers: always left */
-table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left; font-weight:800; }
-#templates-a4-root[dir="ltr"] table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left; }
+#templates-a4-root table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left !important; font-weight:800; padding-left:8px; }
+#templates-a4-root[dir="ltr"] table.exp-details tbody tr[data-subgroup-header] td.label { text-align: left !important; }
 table.exp-details tbody tr[data-subgroup-header] td.exp-subheader-fill {
   background: rgba(37, 99, 235, 0.18) !important;
   background-color: rgba(37, 99, 235, 0.18) !important;
@@ -499,8 +499,8 @@ table.exp-table { print-color-adjust: exact; -webkit-print-color-adjust: exact; 
 
 /* Hide actions in export (PDF) and collapse last column for details tables */
 #templates-a4-root[data-render-context="export"] .tpl-actions,
-#templates-a4-root[data-render-context="export"] th.exp-col-actions { display:none !important; }
-#templates-a4-root[data-render-context="export"] table.exp-table:not(.exp-top-table) td:last-child { display:none !important; padding:0 !important; width:0 !important; }
+#templates-a4-root[data-render-context="export"] th.exp-col-actions,
+#templates-a4-root[data-render-context="export"] td.exp-col-actions { display:none !important; }
 /* Ensure totals columns are clearly lined in printed PDF */
 #templates-a4-root[data-render-context="export"] table.exp-details tbody td:nth-child(7) { border:1.5px solid #94a3b8 !important; }
 #templates-a4-root[data-render-context="export"] table.exp-top-table tbody td:nth-child(4) { border:1.5px solid #94a3b8 !important; }

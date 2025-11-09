@@ -2981,6 +2981,7 @@ export function initTemplatesTab() {
     const onHostInput = (e) => {
       const el = e.target;
       if ((el instanceof HTMLElement) && el.isContentEditable) {
+        try { markTemplatesEditingActivity(); } catch(_) {}
         // Only normalize for numeric-like cells to avoid disturbing free text
         const td = el.closest('td');
         const isNumericCell = td?.hasAttribute('data-num') || /^(?:[\d\u0660-\u0669\u06F0-\u06F9.,\s-]+)$/.test(el.textContent || '');
