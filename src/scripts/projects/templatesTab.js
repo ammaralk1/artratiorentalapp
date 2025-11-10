@@ -1402,7 +1402,7 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Ensure technicians are loaded, then auto-fill crew if table is empty
   try {
-    if (type === 'callsheet') {
+    if (type === 'callsheet' || type === 'callsheet2') {
       const selectedRes = getSelectedReservations(project.id)?.[0] || null;
       const fill = () => populateCrewFromReservationIfEmptyExt(selectedRes);
       if (!getTechniciansState()?.length) {
