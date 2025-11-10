@@ -2693,19 +2693,28 @@ function ensureCrewTableExists() {
 function purgeCrewCallTables() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return;
-  // If a standard Crew table exists anywhere, do not purge
-  if (root.querySelector('table.cs-crew')) return;
-  const callsheet = root.querySelector('.callsheet-v1');
-  if (!callsheet) return;
-  // Purge any legacy/old Crew Call layouts (non-standard tables that contain a Crew Call heading)
+  const wrappers = Array.from(root.querySelectorAll('.callsheet-v1'));
+  if (!wrappers.length) return;
   try {
-    const allTables = Array.from(callsheet.getElementsByTagName('table'));
-    allTables.forEach((t) => {
-      if (t.classList && t.classList.contains('cs-crew')) return; // keep standard if present
-      const text = (t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
-      if (text.includes('crew call')) { try { t.parentElement?.removeChild(t); } catch(_) {} }
-    });
-  } catch(_) {}
+    const all = [];
+    wrappers.forEach((w) => { all.push(...Array.from(w.getElementsByTagName('table'))); });
+    const isStandard = (t) => !!(t.classList && t.classList.contains('cs-crew'));
+    const isCrewish = (t) => {
+      try {
+        if (isStandard(t)) return true;
+        const txt = ((t.querySelector('thead')?.textContent || t.textContent || '') + '').toLowerCase();
+        return txt.includes('crew call');
+      } catch (_) { return false; }
+    };
+    const candidates = all.filter(isCrewish);
+    if (!candidates.length) return;
+    // Prefer keeping the last standard instance (freshly built). Otherwise keep the first crewish table.
+    let keep = null;
+    const standards = candidates.filter(isStandard);
+    if (standards.length) keep = standards[standards.length - 1];
+    else keep = candidates[0];
+    candidates.forEach((t) => { if (t !== keep) { try { t.parentElement?.removeChild(t); } catch (_) {} } });
+  } catch (_) {}
 }
 
 // Ensure Crew table lives on the second page, separate from schedule
