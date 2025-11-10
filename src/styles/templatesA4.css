@@ -357,6 +357,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   padding: 6px 4px;            /* tighter padding to fit text */
   max-width: 100%;
   box-sizing: border-box;
+  text-align: center !important;
 }
 /* Targeted tweak: make only Time (Duration) [col 2] and Movement [col 4] a bit tighter */
 .callsheet-v1 .cs-schedule thead th:nth-child(2),
@@ -378,7 +379,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   white-space:normal;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-size: 14px !important; /* bigger header labels and win vs inline */
+  font-size: 18px !important; /* larger headers as requested */
 }
 #templates-a4-root .callsheet-v1 .cs-crew {
   border: 1.5px solid #9ca3af;
@@ -404,7 +405,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
-.callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
+.callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; font-size: 18px !important; }
 .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background: rgba(255, 154, 154, 0.35) !important; font-weight:700; text-align:center; }

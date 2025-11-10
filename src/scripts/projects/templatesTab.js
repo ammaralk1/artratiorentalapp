@@ -1432,6 +1432,8 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
   try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
+  // Re-enforce sizing one last time after all DOM/layout adjustments
+  try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
   function isTemplatesDebugEnabled() {
