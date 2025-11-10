@@ -11,7 +11,9 @@ export function el(tag, attrs = {}, children = []) {
 }
 
 export function buildRoot({ landscape = false, headerFooter = false, logoUrl = '' } = {}) {
-  const dir = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang') === 'ar') ? 'ar' : 'en';
+  // Map stored language to actual direction attributes understood by CSS
+  const isAr = (typeof localStorage !== 'undefined' && localStorage.getItem('templates.lang') === 'ar');
+  const dir = isAr ? 'rtl' : 'ltr';
   const root = el('div', { id: 'templates-a4-root', 'data-render-context': 'preview', dir });
   const pagesWrap = el('div', { 'data-a4-pages': '' });
   const page = el('section', { class: `a4-page${landscape ? ' a4-page--landscape' : ''}${headerFooter ? ' a4-page--with-hf' : ''}` });

@@ -179,6 +179,7 @@ export function populateCrewFromReservationIfEmpty(reservation) {
 export function buildCallSheetPage(project, reservations, opts = {}) {
   const { headerFooter = false, logoUrl = '' } = opts || {};
   const { root, inner } = buildRoot({ landscape: true, headerFooter, logoUrl });
+  try { root.setAttribute('dir', 'ltr'); } catch(_) {}
   const pagesWrap = root.querySelector('[data-a4-pages]');
   const res = reservations?.[0] || null;
 
