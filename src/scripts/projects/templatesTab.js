@@ -1342,8 +1342,8 @@ function autosaveToServerDebounced() {
 function renderTemplatesPreview() {
   const host = document.getElementById('templates-preview-host');
   if (!host) return;
-  // Ensure host is visible during fresh render
-  try { host.style.visibility = ''; } catch(_) {}
+  // Hide preview while constructing to avoid showing placeholder/flicker
+  try { host.style.visibility = 'hidden'; } catch(_) {}
   const project = getSelectedProject();
   const oldRoot = host.querySelector('#templates-a4-root');
   if (!project) {
@@ -1434,6 +1434,8 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Re-enforce sizing one last time after all DOM/layout adjustments
   try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
+  // Reveal preview now that layout is final
+  try { host.style.visibility = ''; } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
   function isTemplatesDebugEnabled() {
