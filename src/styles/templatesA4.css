@@ -319,7 +319,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   white-space:normal;
   overflow:hidden;
   text-overflow:ellipsis;
-  font-size: 13px; /* bigger header labels */
+  font-size: 14px !important; /* bigger header labels and win vs inline */
 }
 #templates-a4-root .callsheet-v1 .cs-crew {
   border: 1.5px solid #9ca3af;
@@ -333,7 +333,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   font-weight:900;
   text-align:center !important;
   vertical-align: middle !important;
-  font-size: 16px; /* bigger main Crew Call title */
+  font-size: 18px !important; /* bigger main Crew Call title and win vs inline */
   display:flex;
   justify-content:center;
   align-items:center;
@@ -404,6 +404,9 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+/* Keep font sizes in export context as well */
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th { font-size: 14px !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { font-size: 18px !important; }
 
 /* Center and enlarge the main callsheet header texts */
 #templates-a4-root .callsheet-v1 .cs-titlebox { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:4px; }
