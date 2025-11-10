@@ -1129,8 +1129,8 @@ function restoreTemplatesAutosaveIfPresent() {
         } catch(_) {}
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
-        // If Crew table is missing in restored HTML (older autosave), inject it then drop legacy shapes
-        try { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
+        // Ensure a single standard Crew Call table if present and drop duplicates
+        try { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -1338,8 +1338,8 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Remove any Crew Call tables entirely (no crew table in Call Sheet)
-  try { if (type === 'callsheet') purgeCrewCallTables(); } catch(_) {}
+  // Ensure a single Crew Call table (drop duplicates/legacy shapes)
+  try { if (type === 'callsheet') unifyCrewCallTables(); } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
@@ -1393,8 +1393,8 @@ function renderTemplatesPreview() {
   try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
-  // Ensure no Crew Call table remains after pagination/clone
-  try { if (type === 'callsheet') { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  // Keep only one standard Crew Call table after pagination/clone
+  try { if (type === 'callsheet') { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
