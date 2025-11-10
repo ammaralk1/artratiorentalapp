@@ -257,6 +257,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .callsheet-v1 .cs-schedule th { font-size: 10px; }
 .callsheet-v1 .cs-schedule td { font-size: 10px; }
+/* Maximize usable width on the schedule page (3rd page) */
+#templates-a4-root .a4-page:nth-child(3) .a4-inner { padding-left: 4mm; padding-right: 4mm; }
 /* Wrap row at end of schedule */
 /* (removed new wrap row styling to keep legacy layout) */
 /* Hard enforce the requested column widths (preview + export) */
@@ -391,9 +393,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
 #templates-a4-root[data-render-context="preview"] table.cs-cast,
-#templates-a4-root[data-render-context="preview"] table.cs-schedule,
 #templates-a4-root[data-render-context="preview"] table.cs-crew { outline: 1.5px solid #9ca3af; outline-offset: -1px; }
-#templates-a4-root[data-render-context="preview"] table.cs-schedule { box-shadow: inset 0 -1.5px 0 #9ca3af; }
+#templates-a4-root[data-render-context="preview"] table.cs-schedule { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-info { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-cast { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-crew { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
