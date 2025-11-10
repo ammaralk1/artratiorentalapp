@@ -1294,12 +1294,15 @@ function autosaveToServerDebounced() {
 function renderTemplatesPreview() {
   const host = document.getElementById('templates-preview-host');
   if (!host) return;
+  // Hide host during restore to prevent any flicker from default builder
+  try { host.style.visibility = 'hidden'; } catch(_) {}
   const project = getSelectedProject();
   const oldRoot = host.querySelector('#templates-a4-root');
   if (!project) {
     host.innerHTML = '';
     const msg = el('div', { class: 'text-muted', text: t('projects.templates.empty', 'اختر مشروعاً لبدء إنشاء القوالب.') });
     host.appendChild(msg);
+    try { host.style.visibility = ''; } catch(_) {}
     return;
   }
   const reservations = getSelectedReservations(project.id);
@@ -1312,20 +1315,54 @@ function renderTemplatesPreview() {
   // brief flicker of the default template then replacing it a moment later.
   try {
     if (type === 'callsheet') {
-      const raw = localStorage.getItem(getTemplatesContextKey());
+      // Prefer exact autosave; else try any autosave for this project/type regardless of reservation
+      const exactKey = getTemplatesContextKey();
+      let raw = localStorage.getItem(exactKey);
+      if (!raw) {
+        try {
+          const pid = project?.id != null ? String(project.id) : '';
+          const prefix = `templates.callsheet.autosave.${pid}.callsheet.`;
+          const anyKey = Object.keys(localStorage).find((k) => k.startsWith(prefix));
+          if (anyKey) raw = localStorage.getItem(anyKey);
+        } catch(_) {}
+      }
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.html) {
-          host.innerHTML = '';
-          const wrap = document.createElement('div');
-          wrap.innerHTML = parsed.html;
-          const root = wrap.firstElementChild;
-          if (root) {
-            host.appendChild(root);
-            pageRoot = root;
-            restoredEarly = true;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.html) {
+            host.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.innerHTML = parsed.html;
+            const root = wrap.firstElementChild;
+            if (root) {
+              host.appendChild(root);
+              pageRoot = root;
+              restoredEarly = true;
+              // Show once we have content
+              try { host.style.visibility = ''; } catch(_) {}
+            }
           }
-        }
+        } catch(_) { /* ignore parse errors */ }
+      } else {
+        // Try remote draft/autosave BEFORE building default (avoid flicker)
+        (async () => {
+          try {
+            const id = readRemoteAutosaveId();
+            if (id) {
+              await loadSnapshotById(id);
+            } else {
+              const items = await fetchSavedTemplatesForCurrent();
+              const pick = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة')) || (items || [])[0];
+              if (pick && pick.id) await loadSnapshotById(pick.id);
+            }
+            // Re-bind minimal tooling after remote restore
+            try { setupTemplatesHistory(host.querySelector('#templates-a4-root'), type); } catch(_) {}
+            try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
+            try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); } catch(_) {}
+          } catch(_) { /* ignore */ }
+          finally { try { host.style.visibility = ''; } catch(_) {} }
+        })();
+        return; // Defer rest of rendering until remote load completes
       }
     }
   } catch (_) { /* ignore and fall back to builder */ }
@@ -1440,6 +1477,8 @@ function renderTemplatesPreview() {
     }
   } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
+  // Reveal host now that content is ready
+  try { host.style.visibility = ''; } catch(_) {}
   try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
