@@ -256,6 +256,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .callsheet-v1 .cs-schedule th { font-size: 10px; }
 .callsheet-v1 .cs-schedule td { font-size: 10px; }
+/* Wrap row at end of schedule */
+.callsheet-v1 .cs-schedule .cs-wrap { text-align: center !important; font-weight: 800; }
 /* Hard enforce the requested column widths (preview + export) */
 /* Updated column ratios (sum=100%) */
 .callsheet-v1 .cs-schedule col:nth-child(1) { width: 5% !important; }
@@ -342,6 +344,10 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   background: #2563EB !important;
   color:#ffffff !important;
 }
+.callsheet-v1 .cs-crew { table-layout: fixed; width: 100%; margin-top:6px; }
+.callsheet-v1 .cs-crew th,
+.callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
+.callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
 .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
 .cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
@@ -390,6 +396,15 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="preview"] table.cs-info { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-cast { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-crew { box-shadow: inset 0 -1.5px 0 #9ca3af; }
+/* Key Contacts table (similar style to Crew Call) */
+.callsheet-v1 table.cs-contacts { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
+.callsheet-v1 table.cs-contacts { border:1.5px solid #9ca3af; }
+.callsheet-v1 table.cs-contacts th,
+.callsheet-v1 table.cs-contacts td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; font-size:10px; }
+#templates-a4-root .callsheet-v1 .cs-contacts-title { background:#2563EB !important; color:#ffffff !important; font-weight:900; text-align:center; }
+#templates-a4-root[data-render-context="preview"] table.cs-contacts { outline: 1.5px solid #9ca3af; outline-offset: -1px; box-shadow: inset 0 -1.5px 0 #9ca3af; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-contacts thead th { font-size: 14px !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-contacts-title { background:#2563EB !important; color:#ffffff !important; }
 /* Ensure bottom outlines are closed on first page tables */
 table.cs-info tbody tr:last-child td,
 table.cs-cast tbody tr:last-child td,

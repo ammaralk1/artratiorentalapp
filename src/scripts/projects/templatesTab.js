@@ -2678,7 +2678,7 @@ function ensureCrewTableExists() {
   if (!callsheet) return;
   const existing = callsheet.querySelector('table.cs-crew');
   if (existing) return;
-  // Build a fresh crew table and append after schedule
+  // Build a fresh crew table and place before schedule (to keep it visible on first page)
   const crew = document.createElement('table');
   crew.className = 'tpl-table cs-crew';
   crew.setAttribute('data-editable-table', 'crew');
@@ -2713,9 +2713,9 @@ function ensureCrewTableExists() {
     tbody.appendChild(tr);
   }
   crew.appendChild(tbody);
-  // Place after schedule if present, else append at end of callsheet
+  // Place before schedule if present, else append at end of callsheet
   const sched = callsheet.querySelector('table.cs-schedule');
-  if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched.nextSibling);
+  if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched);
   else callsheet.appendChild(crew);
   // Repaginate and prune empty pages so it flows correctly
   try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
