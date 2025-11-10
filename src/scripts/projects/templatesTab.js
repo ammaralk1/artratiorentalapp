@@ -1338,8 +1338,8 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Ensure a single Crew Call table (drop duplicates/legacy shapes)
-  try { if (type === 'callsheet') unifyCrewCallTables(); } catch(_) {}
+  // Reset Crew Call table to the new design: purge any old tables then build one fresh
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
@@ -1393,8 +1393,8 @@ function renderTemplatesPreview() {
   try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
-  // Keep only one standard Crew Call table after pagination/clone
-  try { if (type === 'callsheet') { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  // After pagination, ensure nothing recreated extra tables
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
@@ -2688,16 +2688,23 @@ function ensureCrewTableExists() {
   crew.appendChild(cg);
   const thead = document.createElement('thead');
   const titleRow = document.createElement('tr');
-  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call'; titleTh.style.textAlign = 'center'; titleTh.style.display = 'flex'; titleTh.style.alignItems = 'center'; titleTh.style.justifyContent = 'center'; titleTh.style.fontSize = '14px'; titleRow.appendChild(titleTh);
+  const titleTh = document.createElement('th');
+  titleTh.setAttribute('colspan', String(cols.length));
+  titleTh.className = 'cs-crew-title';
+  titleTh.textContent = 'Crew Call';
+  titleRow.appendChild(titleTh);
   thead.appendChild(titleRow);
   const trh = document.createElement('tr');
   ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
-    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); th.style.textAlign = 'center'; th.style.display = 'flex'; th.style.alignItems = 'center'; th.style.justifyContent = 'center'; th.style.fontSize = '12.5px'; trh.appendChild(th);
+    const th = document.createElement('th');
+    th.textContent = label;
+    th.setAttribute('style', `width:${cols[i]}%`);
+    trh.appendChild(th);
   });
   thead.appendChild(trh);
   crew.appendChild(thead);
   const tbody = document.createElement('tbody');
-  for (let i = 0; i < 10; i += 1) {
+  for (let i = 0; i < 18; i += 1) {
     const tr = document.createElement('tr');
     const td1 = document.createElement('td'); td1.setAttribute('data-editable','true'); td1.setAttribute('contenteditable','true'); tr.appendChild(td1);
     const td2 = document.createElement('td'); td2.setAttribute('data-editable','true'); td2.setAttribute('contenteditable','true'); tr.appendChild(td2);
