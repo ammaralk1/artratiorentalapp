@@ -226,7 +226,13 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
 
   const rightTable = el('table', { class: 'cs-times' });
   const rtBody = el('tbody');
-  [['Call Time',''],['Crew Safety Notes','']].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
+  [
+    ['Call Time',''],
+    ['Client',''],
+    ['Ready to shoot',''],
+    ['Lunch',''],
+    ['Est. Wrap','']
+  ].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
   rightTable.appendChild(rtBody);
 
   infoBody.appendChild(makeRow(el('td', {}, [leftTable]), el('td', {}, [centerTable]), el('td', {}, [rightTable])));
