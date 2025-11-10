@@ -1307,24 +1307,53 @@ function renderTemplatesPreview() {
   const hf = readHeaderFooterOptions();
   ensureLogoControls(type);
   let pageRoot = null;
-  if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
-  else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
-  else pageRoot = buildExpensesPageExt(project, reservations, hf);
-  // Diff-like replace to avoid losing event handlers on host
-  const newRoot = pageRoot;
-  if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
-    const oldPages = oldRoot.querySelector('[data-a4-pages]');
-    const newPages = newRoot.querySelector('[data-a4-pages]');
-    if (oldPages && newPages) {
-      try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
-    } else {
-      oldRoot.innerHTML = newRoot.innerHTML;
+  let restoredEarly = false;
+  // If we already have a local autosave with full HTML, restore it FIRST to avoid the
+  // brief flicker of the default template then replacing it a moment later.
+  try {
+    if (type === 'callsheet') {
+      const raw = localStorage.getItem(getTemplatesContextKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.html) {
+          host.innerHTML = '';
+          const wrap = document.createElement('div');
+          wrap.innerHTML = parsed.html;
+          const root = wrap.firstElementChild;
+          if (root) {
+            host.appendChild(root);
+            pageRoot = root;
+            restoredEarly = true;
+          }
+        }
+      }
     }
-    pageRoot = oldRoot;
+  } catch (_) { /* ignore and fall back to builder */ }
+  if (!pageRoot) {
+    if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
+    else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
+    else pageRoot = buildExpensesPageExt(project, reservations, hf);
+  }
+  // Diff-like replace to avoid losing event handlers on host (skip if we already restored autosave)
+  if (!restoredEarly) {
+    const newRoot = pageRoot;
+    if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
+      const oldPages = oldRoot.querySelector('[data-a4-pages]');
+      const newPages = newRoot.querySelector('[data-a4-pages]');
+      if (oldPages && newPages) {
+        try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
+      } else {
+        oldRoot.innerHTML = newRoot.innerHTML;
+      }
+      pageRoot = oldRoot;
+    } else {
+      host.innerHTML = '';
+      host.appendChild(newRoot);
+      pageRoot = newRoot;
+    }
   } else {
-    host.innerHTML = '';
-    host.appendChild(newRoot);
-    pageRoot = newRoot;
+    // Ensure pageRoot points at the restored element
+    pageRoot = host.querySelector('#templates-a4-root') || pageRoot;
   }
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
@@ -1338,12 +1367,12 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Reset Crew Call table to the new design: purge any old tables then build one fresh
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
+  // Reset Crew Call table only when using the default builder (do not mutate user's autosave)
+  try { if (type === 'callsheet' && !restoredEarly) { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
-  // Try to restore user's autosaved draft (if any) without re-rendering
-  try { if (type === 'callsheet') restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  // Try to restore user's autosaved draft if we didn't already restore it early
+  try { if (type === 'callsheet' && !restoredEarly) restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   try { ensureEditableWrappers(); } catch(_) {}
   // If لا يوجد Autosave محلي (هاتف/متصفح آخر)، حاول تحميل المسودة المخزنة في الخادم تلقائياً
   try {
