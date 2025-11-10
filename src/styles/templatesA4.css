@@ -727,10 +727,10 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 
 #templates-a4-root .callsheet-v1 table.cs-schedule,
 #templates-a4-root table.cs-schedule,
-#templates-a4-root .tpl-table.cs-schedule { width: calc(100% + 24mm) !important; margin-left: -12mm !important; margin-right: -12mm !important; max-width:none !important; }
+#templates-a4-root .tpl-table.cs-schedule { width: calc(100% + 40mm) !important; margin-left: -20mm !important; margin-right: -20mm !important; max-width:none !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-schedule,
 #templates-a4-root[data-render-context="export"] table.cs-schedule,
-#templates-a4-root[data-render-context="export"] .tpl-table.cs-schedule { width: calc(100% + 28mm) !important; margin-left: -14mm !important; margin-right: -14mm !important; max-width:none !important; }
+#templates-a4-root[data-render-context="export"] .tpl-table.cs-schedule { width: calc(100% + 44mm) !important; margin-left: -22mm !important; margin-right: -22mm !important; max-width:none !important; }
 #templates-a4-root .a4-page .callsheet-v1 { margin:0 !important; padding:0 !important; }
 #templates-a4-root .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0 !important; padding-right: 0 !important; }
 /* Final: schedule headers centered */
