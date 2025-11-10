@@ -2985,70 +2985,28 @@ async function fetchSavedTemplatesForCurrent() {
   if (!project) return [];
   const typeSel = document.getElementById('templates-type');
   let type = typeSel ? typeSel.value : 'expenses';
-  // Legacy compatibility: try multiple type variants and a final catch-all without type
+  // Legacy compatibility: only query by project_id with a few type variants
   const variants = (() => {
-    if (type === 'callsheet') {
-      return ['callsheet', 'call-sheet', 'callsheet_v1', 'callsheetv1', 'callsheet-v1'];
-    }
-    if (type === 'shotlist') {
-      return ['shotlist', 'shot-list'];
-    }
+    if (type === 'callsheet') return ['callsheet', 'call-sheet', 'callsheet_v1', 'callsheetv1', 'callsheet-v1'];
+    if (type === 'shotlist') return ['shotlist', 'shot-list'];
     return [type];
   })();
   const seen = new Set(); const items = [];
-  const getId = (it) => String(it?.id ?? it?.template_id ?? it?.pk ?? it?._id ?? '');
-  const normalize = (res) => {
-    if (!res) return [];
-    const d = res?.data ?? res?.items ?? res;
-    if (Array.isArray(d)) return d;
-    if (typeof d === 'object') return [d];
-    return [];
-  };
-  async function pull(url) {
+  const normalize = (res) => (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : [])));
+  for (const v of variants) {
     try {
-      const res = await apiRequest(url);
-      const arr = normalize(res);
-      arr.forEach((it) => { const id = getId(it); const key = id || String((it?.title || '').trim() || Math.random()); if (seen.has(key)) return; seen.add(key); items.push(it); });
+      // eslint-disable-next-line no-await-in-loop
+      const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(v)}`);
+      normalize(res).forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
     } catch (_) { /* ignore */ }
   }
-  for (const v of variants) {
-    // eslint-disable-next-line no-await-in-loop
-    await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(v)}`);
-  }
-  // Also try across all projects for these variants
-  for (const v of variants) {
-    // eslint-disable-next-line no-await-in-loop
-    await pull(`/project-templates/?type=${encodeURIComponent(v)}`);
-  }
   if (!items.length) {
-    // eslint-disable-next-line no-await-in-loop
-    await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}`);
+    try {
+      const res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}`);
+      normalize(res).forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
+    } catch (_) { /* ignore */ }
   }
-  if (!items.length) {
-    // final catch-all
-    // eslint-disable-next-line no-await-in-loop
-    await pull(`/project-templates/`);
-  }
-  // If a canonical #1 exists, ensure it's present
-  try {
-    const wantId = '1';
-    if (!seen.has(wantId)) {
-      const one = await apiRequest(`/project-templates/?id=1`);
-      const arr = normalize(one);
-      arr.forEach((it) => { const id = getId(it); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
-    }
-  } catch (_) { /* ignore */ }
-  // Sort unique ascending by numeric id if possible, then title
-  const unique = [];
-  const seen2 = new Set();
-  items.forEach((it) => { const id = getId(it); const key = id || (it?.title || ''); if (seen2.has(key)) return; seen2.add(key); unique.push(it); });
-  unique.sort((a, b) => {
-    const ida = Number(getId(a)); const idb = Number(getId(b));
-    if (Number.isFinite(ida) && Number.isFinite(idb)) return ida - idb;
-    const ta = String(a?.title || ''); const tb = String(b?.title || '');
-    return ta.localeCompare(tb);
-  });
-  return unique;
+  return items;
 }
 
 async function populateSavedTemplates() {
