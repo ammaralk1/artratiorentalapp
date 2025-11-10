@@ -339,7 +339,8 @@ function ensureLogoControls(type = 'expenses') {
     controls?.appendChild(r);
     return r;
   })();
-  if (type !== 'callsheet') { if (existing) existing.remove(); return; }
+  const isCallsheet = (type === 'callsheet' || type === 'callsheet2');
+  if (!isCallsheet) { if (existing) existing.remove(); return; }
   if (existing) return;
   const box = document.createElement('div');
   box.id = 'tpl-logo-controls';
@@ -1311,7 +1312,7 @@ function renderTemplatesPreview() {
   // If we already have a local autosave with full HTML, restore it FIRST to avoid the
   // brief flicker of the default template then replacing it a moment later.
   try {
-    if (type === 'callsheet') {
+    if (type === 'callsheet' || type === 'callsheet2') {
       const raw = localStorage.getItem(getTemplatesContextKey());
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -1330,7 +1331,7 @@ function renderTemplatesPreview() {
     }
   } catch (_) { /* ignore and fall back to builder */ }
   if (!pageRoot) {
-    if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
+    if (type === 'callsheet' || type === 'callsheet2') pageRoot = buildCallSheetPageExt(project, reservations, hf);
     else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
     else pageRoot = buildExpensesPageExt(project, reservations, hf);
   }
@@ -1368,15 +1369,15 @@ function renderTemplatesPreview() {
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Reset Crew Call table only when using the default builder (do not mutate user's autosave)
-  try { if (type === 'callsheet' && !restoredEarly) { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
+  try { if ((type === 'callsheet' || type === 'callsheet2') && !restoredEarly) { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft if we didn't already restore it early
-  try { if (type === 'callsheet' && !restoredEarly) restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  try { if ((type === 'callsheet' || type === 'callsheet2') && !restoredEarly) restoreTemplatesAutosaveIfPresent(); } catch(_) {}
   try { ensureEditableWrappers(); } catch(_) {}
   // If لا يوجد Autosave محلي (هاتف/متصفح آخر)، حاول تحميل المسودة المخزنة في الخادم تلقائياً
   try {
-    if (type === 'callsheet') {
+    if (type === 'callsheet' || type === 'callsheet2') {
       const ls = localStorage.getItem(getTemplatesContextKey());
       if (!ls) {
         (async () => {
@@ -1412,7 +1413,7 @@ function renderTemplatesPreview() {
     }
   } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
-  try { if (type === 'callsheet') populateCrewFromReservationIfEmptyExt(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
+  try { if (type === 'callsheet' || type === 'callsheet2') populateCrewFromReservationIfEmptyExt(getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
   // Prune pages with no visible content (avoid phantom pages)
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
   try { renumberExpenseCodes(); } catch (_) {}
@@ -1423,12 +1424,12 @@ function renderTemplatesPreview() {
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
   // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  try { if (type === 'callsheet' || type === 'callsheet2') { purgeCrewCallTables(); ensureCrewTableExists(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
   try {
-    if (type === 'callsheet') {
+    if (type === 'callsheet' || type === 'callsheet2') {
       const raw = localStorage.getItem(getTemplatesContextKey());
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -1440,7 +1441,7 @@ function renderTemplatesPreview() {
     }
   } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
-  try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
+  try { if ((type === 'callsheet' || type === 'callsheet2') && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
   function isTemplatesDebugEnabled() {
@@ -1515,7 +1516,7 @@ async function printTemplatesPdf() {
   };
   const orientation = resolveOrientationForType(type);
   // Route through template printers
-  if (type === 'callsheet') {
+  if (type === 'callsheet' || type === 'callsheet2') {
     try { await (await import('../templates/print.js')).printCallsheetFromHost(host); } catch (_) { alert('تعذر إنشاء PDF'); }
     return;
   } else {
@@ -1539,7 +1540,7 @@ async function printTemplatesPdf() {
 
   const JsPdfCtor = (window.jspdf && window.jspdf.jsPDF) || (window.jsPDF && window.jsPDF.jsPDF);
   const h2c = window.html2canvas;
-  const preferFallback = (type === 'callsheet');
+  const preferFallback = (type === 'callsheet' || type === 'callsheet2');
   if (preferFallback || !(typeof JsPdfCtor === 'function' && typeof h2c === 'function')) {
     // Fallback through html2pdf: render from an isolated "export" scope
     // to avoid preview gaps/margins pushing content down.
@@ -2917,7 +2918,8 @@ async function fetchSavedTemplatesForCurrent() {
   const project = getSelectedProject();
   if (!project) return [];
   const typeSel = document.getElementById('templates-type');
-  const type = typeSel ? typeSel.value : 'expenses';
+  let type = typeSel ? typeSel.value : 'expenses';
+  // Legacy compatibility: if user selects callsheet (v1), also check older records saved under 'callsheet'
   let res = null; try { res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`); }
   catch(err) { notifyApiError(err, 'تعذر تحميل المحفوظات'); return []; }
   // Backend responds as { ok: true, data: [...] }
@@ -2955,8 +2957,12 @@ async function loadSnapshotById(id) {
       wrap.innerHTML = data.html;
       const root = wrap.firstElementChild;
       if (root) host.appendChild(root);
-      // Normalize: remove any existing Crew Call tables from loaded HTML
-      try { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
+      // Normalize: remove any existing Crew Call tables from loaded HTML only for the new callsheet type
+      try {
+        const typeSel = document.getElementById('templates-type');
+        const type = typeSel ? typeSel.value : 'expenses';
+        if (type === 'callsheet2') { purgeCrewCallTables(); pruneEmptyA4PagesExt(); }
+      } catch(_) {}
     }
   } catch (_) {}
 }
