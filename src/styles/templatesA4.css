@@ -274,6 +274,26 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   margin-right: 0 !important;
 }
 
+/* Autosave tweak: make Crew Call table slightly narrower (visually neat margins) */
+#templates-a4-root[data-restored-autosave="1"] .a4-page:has(.cs-crew) .callsheet-v1 .cs-crew {
+  width: 94% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Autosave tweak: make the last page schedule full-bleed horizontally */
+#templates-a4-root[data-restored-autosave="1"] .a4-page:last-child .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
+#templates-a4-root[data-restored-autosave="1"] .a4-page:last-child .cs-schedule {
+  width: calc(100% + 16mm) !important; /* cancel preview side padding visually */
+  margin-left: -8mm !important;
+  margin-right: -8mm !important;
+}
+#templates-a4-root[data-restored-autosave="1"][data-render-context="export"] .a4-page:last-child .cs-schedule {
+  width: calc(100% + 20mm) !important; /* cancel export side padding */
+  margin-left: -10mm !important;
+  margin-right: -10mm !important;
+}
+
 /* Schedule page: widen regardless of page index */
 #templates-a4-root .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
 #templates-a4-root[data-render-context="export"] .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }

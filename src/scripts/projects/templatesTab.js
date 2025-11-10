@@ -1115,7 +1115,10 @@ function restoreTemplatesAutosaveIfPresent() {
         const wrap = document.createElement('div');
         wrap.innerHTML = parsed.html;
         const root = wrap.firstElementChild;
-        if (root) host.appendChild(root);
+        if (root) {
+          host.appendChild(root);
+          try { root.setAttribute('data-restored-autosave', '1'); } catch(_) {}
+        }
         // Re-apply transforms/shading/text if available to keep in sync with logo state
         if (parsed.snap) applyTemplatesSnapshotInPlace(parsed.snap);
         // Recreate the inline toolbar if it was cleared
@@ -1144,6 +1147,7 @@ function restoreTemplatesAutosaveIfPresent() {
     // Legacy path: only edits/shading/logos snapshot available
     if (parsed && parsed.snap) {
       applyTemplatesSnapshotInPlace(parsed.snap);
+      try { const root = document.getElementById('templates-a4-root'); if (root) root.setAttribute('data-restored-autosave','1'); } catch(_) {}
       try { pushTemplatesHistory(); } catch(_) {}
     }
   } catch(_) {}
