@@ -75,9 +75,9 @@ function enforceCallsheetSizing(scope) {
     const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
     scheds.forEach((t) => {
       try {
-        t.style.setProperty('width', 'calc(100% + 16mm)', 'important');
-        t.style.setProperty('margin-left', '-8mm', 'important');
-        t.style.setProperty('margin-right', '-8mm', 'important');
+        t.style.setProperty('width', 'calc(100% + 24mm)', 'important');
+        t.style.setProperty('margin-left', '-12mm', 'important');
+        t.style.setProperty('margin-right', '-12mm', 'important');
         const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
       } catch(_) {}
     });
@@ -3036,8 +3036,11 @@ async function populateSavedTemplates() {
   const select = document.getElementById('templates-saved');
   if (!select) return;
   const prev = select.value || '';
+  const before = Array.from(select.options).slice(1).map((o) => ({ id: o.value, title: o.textContent }));
   const items = await fetchSavedTemplatesForCurrent();
-  select.innerHTML = '<option value="">— محفوظات —</option>' + items.map((it) => `<option value="${String(it.id)}">${(it.title || `#${it.id}`)}</option>`).join('');
+  // إذا رجع الخادم قائمة فارغة مؤقتاً، احتفظ بالقائمة السابقة لتفادي الوميض
+  const list = (Array.isArray(items) && items.length) ? items : before;
+  select.innerHTML = '<option value="">— محفوظات —</option>' + (list || []).map((it) => `<option value="${String(it.id)}">${(it.title || `#${it.id}`)}</option>`).join('');
   // try to keep previous selection if still present
   if (prev && Array.from(select.options).some(o => o.value === String(prev))) {
     select.value = String(prev);
