@@ -12,8 +12,9 @@ export function pageHasMeaningfulContent(pg) {
         return tds.some((td) => ((td.textContent || '').trim().length > 0));
       } catch (_) { return false; }
     });
-    // Crew table rows considered content
-    const hasCrew = !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
+    // Crew table: consider page meaningful if table exists at all OR has any filled cell
+    const hasCrewTable = !!pg.querySelector('.callsheet-v1 table.cs-crew');
+    const hasCrew = hasCrewTable || !!Array.from(pg.querySelectorAll('.callsheet-v1 table.cs-crew tbody tr')).find((tr) => {
       try { return Array.from(tr.querySelectorAll('td')).some((td)=>((td.textContent||'').trim().length>0)); } catch(_) { return false; }
     });
     // Call sheet non-table blocks also count
@@ -23,4 +24,3 @@ export function pageHasMeaningfulContent(pg) {
 }
 
 export default { pageHasMeaningfulContent };
-
