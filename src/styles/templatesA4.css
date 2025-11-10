@@ -209,11 +209,11 @@ table.cs-info td { border:1.5px solid #9ca3af; vertical-align:top; }
 table.cs-info > tbody > tr > td { width:33.3333%; }
 table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; }
 .cs-roles td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
-.cs-label { background:#ffffff; color:#000; font-weight:700; width:40%; }
+.cs-label { background: rgba(37, 99, 235, 0.18); color:#000; font-weight:700; width:40%; }
 .cs-center td { border:1.5px solid #9ca3af; padding:6px 8px; }
-.cs-notes-h { background:#ffffff; font-weight:700; text-align:center; }
+.cs-notes-h { background: rgba(37, 99, 235, 0.18); font-weight:700; text-align:center; }
 .cs-notes { line-height:1.35; min-height:54px; }
-.cs-section { background:#ffffff; color:#000; text-align:center; font-weight:800; }
+.cs-section { background: rgba(37, 99, 235, 0.18); color:#000; text-align:center; font-weight:800; }
 .cs-locations { height:36px; }
 .cs-times td { border:1.5px solid #9ca3af; padding:6px 8px; height:26px; }
 
@@ -221,7 +221,7 @@ table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; 
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
 table.cs-cast { border:1.5px solid #9ca3af; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
-.cs-cast-title { background:#ffffff; color:#000; font-weight:800; text-align:center; }
+.cs-cast-title { background: rgba(37, 99, 235, 0.18); color:#000; font-weight:800; text-align:center; }
 .cs-weather { text-align:center; font-weight:700; background:#ffffff; }
 .cs-weather .cs-city { font-size:14px; margin-bottom:4px; }
 .cs-weather .cs-temp, .cs-weather .cs-wind, .cs-weather .cs-rain { font-size:12px; margin-top:2px; font-weight:700; }
@@ -232,11 +232,11 @@ table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:cente
 /* Correct display roles to avoid layout artifacts (e.g., dark strip) */
 .cs-schedule thead tr { display: table-row !important; }
 .cs-schedule thead th { display: table-cell !important; }
-/* Hard reset any inherited dark/table header styles */
+/* Hard reset + blue header shading */
 #templates-a4-root .cs-schedule thead,
 #templates-a4-root .cs-schedule thead tr,
 #templates-a4-root .cs-schedule thead th {
-  background:#ffffff !important;
+  background: rgba(37, 99, 235, 0.18) !important;
   border-color:#9ca3af !important;
   box-shadow:none !important;
   outline:none !important;
@@ -351,8 +351,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
 .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-schedule tbody td { white-space: normal !important; word-break: break-word; overflow-wrap: anywhere; }
-.cs-row-note td { background:#ffffff !important; font-weight:700; text-align:center; }
-.cs-row-strong td { background:#ffffff !important; font-weight:800; text-align:center; }
+.cs-row-note td { background: rgba(255, 154, 154, 0.35) !important; font-weight:700; text-align:center; }
+.cs-row-strong td { background: rgba(37, 99, 235, 0.18) !important; font-weight:800; text-align:center; }
 /* Remove any zebra tint entirely */
 .cs-schedule tbody tr:nth-child(odd) td,
 .cs-schedule tbody tr:nth-child(even) td { background:#ffffff !important; }

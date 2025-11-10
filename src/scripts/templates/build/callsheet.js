@@ -246,6 +246,17 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
     ['Lunch',''],
     ['Est. Wrap','']
   ].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
+  // Weather box under Est. Wrap (second cell only)
+  const wRow = el('tr');
+  wRow.appendChild(leftCol(''));
+  const wVal = el('td');
+  const wbox2 = el('div', { class: 'cs-weather' }, [
+    el('div', { class: 'cs-city', 'data-editable': 'true', contenteditable: 'true', text: 'jeddah' }),
+    el('div', { class: 'cs-temp', 'data-editable': 'true', contenteditable: 'true', text: '38°C - 25°C' }),
+    el('div', { class: 'cs-wind', 'data-editable': 'true', contenteditable: 'true', text: 'Wind: 16 km/h' }),
+    el('div', { class: 'cs-rain', 'data-editable': 'true', contenteditable: 'true', text: 'Chance of rain : 0%' }),
+  ]);
+  wVal.appendChild(wbox2); wRow.appendChild(wVal); rtBody.appendChild(wRow);
   rightTable.appendChild(rtBody);
 
   infoBody.appendChild(makeRow(el('td', {}, [leftTable]), el('td', {}, [centerTable]), el('td', {}, [rightTable])));
@@ -256,19 +267,10 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const cb = el('tbody');
   cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls' })));
   const castRow = el('tr');
-  // Build 7 empty cells + weather cell as in screenshot
-  for (let i = 0; i < 7; i += 1) {
+  // Build 8 empty cells (weather moved to right meta block)
+  for (let i = 0; i < 8; i += 1) {
     castRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
   }
-  const weatherCell = el('td', {});
-  const wbox = el('div', { class: 'cs-weather' }, [
-    el('div', { class: 'cs-city', 'data-editable': 'true', contenteditable: 'true', text: 'jeddah' }),
-    el('div', { class: 'cs-temp', 'data-editable': 'true', contenteditable: 'true', text: '38°C - 25°C' }),
-    el('div', { class: 'cs-wind', 'data-editable': 'true', contenteditable: 'true', text: 'Wind: 16 km/h' }),
-    el('div', { class: 'cs-rain', 'data-editable': 'true', contenteditable: 'true', text: 'Chance of rain : 0%' }),
-  ]);
-  weatherCell.appendChild(wbox);
-  castRow.appendChild(weatherCell);
   cb.appendChild(castRow);
   cast.appendChild(cb); wrap.appendChild(cast);
 
