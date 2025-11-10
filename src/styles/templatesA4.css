@@ -267,11 +267,41 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   padding-left: 0mm !important;
   padding-right: 0mm !important;
 }
-/* Safety: guarantee the Crew table spans the full width */
+/* Safety: guarantee the Crew table spans the full width on page 2 */
 #templates-a4-root .a4-page:nth-child(2) .callsheet-v1 .cs-crew {
   width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+/* Call Sheet (all pages): reduce extra padding and use full paper width */
+#templates-a4-root .a4-page:has(.callsheet-v1) .a4-inner {
+  padding-left: 0mm !important;
+  padding-right: 0mm !important;
+  padding-top: 6mm !important;
+  padding-bottom: 6mm !important;
+}
+#templates-a4-root[data-render-context="export"] .a4-page:has(.callsheet-v1) .a4-inner {
+  padding-left: 0mm !important;
+  padding-right: 0mm !important;
+  padding-top: 6mm !important;
+  padding-bottom: 6mm !important;
+}
+/* Inside Call Sheet pages, tables should not overshoot (cancel earlier negative margins) */
+#templates-a4-root .a4-page:has(.callsheet-v1) .cs-crew,
+#templates-a4-root .a4-page:has(.callsheet-v1) .cs-schedule {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+/* Make all Call Sheet tables stretch to page width */
+#templates-a4-root .callsheet-v1 table { width: 100% !important; }
+#templates-a4-root .callsheet-v1 table.cs-cast { width: 100% !important; }
+
+/* Remove vertical borders for any Call Sheet page (preview) */
+#templates-a4-root .a4-page:has(.callsheet-v1) {
+  border-left: none !important;
+  border-right: none !important;
 }
 
 /* Maximize usable width on the schedule page (3rd page) */
