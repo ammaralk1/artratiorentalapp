@@ -62,7 +62,9 @@ function enforceCallsheetSizing(scope) {
   try {
     const root = scope || document.querySelector('#templates-preview-host #templates-a4-root');
     if (!root) return;
-    const crews = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-crew'));
+    // Ensure tables live under a callsheet wrapper for consistent styling
+    try { fixCallsheetStructure(root); } catch(_) {}
+    const crews = Array.from(root.querySelectorAll('table.cs-crew'));
     crews.forEach((t) => {
       try {
         t.style.setProperty('width', '90%', 'important');
@@ -70,7 +72,7 @@ function enforceCallsheetSizing(scope) {
         t.style.setProperty('margin-right', 'auto', 'important');
       } catch(_) {}
     });
-    const scheds = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-schedule'));
+    const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
     scheds.forEach((t) => {
       try {
         t.style.setProperty('width', 'calc(100% + 16mm)', 'important');
@@ -80,6 +82,23 @@ function enforceCallsheetSizing(scope) {
       } catch(_) {}
     });
   } catch(_) {}
+}
+
+// If cs-crew or cs-schedule are orphaned (not under .callsheet-v1), wrap them correctly
+function fixCallsheetStructure(root) {
+  const base = root || document.getElementById('templates-a4-root');
+  if (!base) return;
+  const tables = Array.from(base.querySelectorAll('table.cs-crew, table.cs-schedule'));
+  tables.forEach((t) => {
+    const inner = t.closest('.a4-inner');
+    if (!inner) return;
+    const wrap = t.closest('.callsheet-v1');
+    if (wrap) return;
+    // Create/locate a wrapper under the same .a4-inner and move the table inside it
+    let host = inner.querySelector(':scope > .callsheet-v1');
+    if (!host) { host = document.createElement('div'); host.className = 'callsheet-v1'; inner.insertBefore(host, t); }
+    try { host.appendChild(t); } catch(_) {}
+  });
 }
 
 function destroyTemplatesTab() {

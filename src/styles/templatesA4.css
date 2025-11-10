@@ -704,6 +704,13 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 :is(html.dark-mode, body.dark-mode) #tpl-cell-toolbar button { color: rgba(226,232,240,0.92); border-color: rgba(148,163,184,0.5); }
 
 /* ===== Final overrides (strongest) ===== */
-#templates-a4-root .callsheet-v1 table.cs-crew { width: 90% !important; margin-left: auto !important; margin-right: auto !important; }
-#templates-a4-root .callsheet-v1 table.cs-schedule { width: calc(100% + 16mm) !important; margin-left: -8mm !important; margin-right: -8mm !important; }
-#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-schedule { width: calc(100% + 20mm) !important; margin-left: -10mm !important; margin-right: -10mm !important; }
+#templates-a4-root .callsheet-v1 table.cs-crew,
+#templates-a4-root table.cs-crew,
+#templates-a4-root .tpl-table.cs-crew { width: 90% !important; margin-left: auto !important; margin-right: auto !important; }
+
+#templates-a4-root .callsheet-v1 table.cs-schedule,
+#templates-a4-root table.cs-schedule,
+#templates-a4-root .tpl-table.cs-schedule { width: calc(100% + 16mm) !important; margin-left: -8mm !important; margin-right: -8mm !important; }
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-schedule,
+#templates-a4-root[data-render-context="export"] table.cs-schedule,
+#templates-a4-root[data-render-context="export"] .tpl-table.cs-schedule { width: calc(100% + 20mm) !important; margin-left: -10mm !important; margin-right: -10mm !important; }
