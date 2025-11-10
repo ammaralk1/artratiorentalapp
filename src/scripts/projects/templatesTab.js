@@ -1310,87 +1310,26 @@ function renderTemplatesPreview() {
   const hf = readHeaderFooterOptions();
   ensureLogoControls(type);
   let pageRoot = null;
-  let restoredEarly = false;
-  // If we already have a local autosave with full HTML, restore it FIRST to avoid the
-  // brief flicker of the default template then replacing it a moment later.
-  try {
-    if (type === 'callsheet') {
-      // Prefer exact autosave; else try any autosave for this project/type regardless of reservation
-      const exactKey = getTemplatesContextKey();
-      let raw = localStorage.getItem(exactKey);
-      if (!raw) {
-        try {
-          const pid = project?.id != null ? String(project.id) : '';
-          const prefix = `templates.callsheet.autosave.${pid}.callsheet.`;
-          const anyKey = Object.keys(localStorage).find((k) => k.startsWith(prefix));
-          if (anyKey) raw = localStorage.getItem(anyKey);
-        } catch(_) {}
-      }
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.html) {
-            host.innerHTML = '';
-            const wrap = document.createElement('div');
-            wrap.innerHTML = parsed.html;
-            const root = wrap.firstElementChild;
-            if (root) {
-              host.appendChild(root);
-              pageRoot = root;
-              restoredEarly = true;
-              // Show once we have content
-              try { host.style.visibility = ''; } catch(_) {}
-            }
-          }
-        } catch(_) { /* ignore parse errors */ }
-      } else {
-        // Try remote draft/autosave BEFORE building default (avoid flicker)
-        (async () => {
-          try {
-            const id = readRemoteAutosaveId();
-            if (id) {
-              await loadSnapshotById(id);
-            } else {
-              const items = await fetchSavedTemplatesForCurrent();
-              const pick = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة')) || (items || [])[0];
-              if (pick && pick.id) await loadSnapshotById(pick.id);
-            }
-            // Re-bind minimal tooling after remote restore
-            try { setupTemplatesHistory(host.querySelector('#templates-a4-root'), type); } catch(_) {}
-            try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-            try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); } catch(_) {}
-          } catch(_) { /* ignore */ }
-          finally { try { host.style.visibility = ''; } catch(_) {} }
-        })();
-        return; // Defer rest of rendering until remote load completes
-      }
-    }
-  } catch (_) { /* ignore and fall back to builder */ }
   if (!pageRoot) {
     if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
     else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
     else pageRoot = buildExpensesPageExt(project, reservations, hf);
   }
-  // Diff-like replace to avoid losing event handlers on host (skip if we already restored autosave)
-  if (!restoredEarly) {
-    const newRoot = pageRoot;
-    if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
-      const oldPages = oldRoot.querySelector('[data-a4-pages]');
-      const newPages = newRoot.querySelector('[data-a4-pages]');
-      if (oldPages && newPages) {
-        try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
-      } else {
-        oldRoot.innerHTML = newRoot.innerHTML;
-      }
-      pageRoot = oldRoot;
+  // Diff-like replace to avoid losing event handlers on host
+  const newRoot = pageRoot;
+  if (oldRoot && newRoot && oldRoot.tagName === newRoot.tagName) {
+    const oldPages = oldRoot.querySelector('[data-a4-pages]');
+    const newPages = newRoot.querySelector('[data-a4-pages]');
+    if (oldPages && newPages) {
+      try { oldPages.replaceWith(newPages); } catch (_) { oldRoot.innerHTML = newRoot.innerHTML; }
     } else {
-      host.innerHTML = '';
-      host.appendChild(newRoot);
-      pageRoot = newRoot;
+      oldRoot.innerHTML = newRoot.innerHTML;
     }
+    pageRoot = oldRoot;
   } else {
-    // Ensure pageRoot points at the restored element
-    pageRoot = host.querySelector('#templates-a4-root') || pageRoot;
+    host.innerHTML = '';
+    host.appendChild(newRoot);
+    pageRoot = newRoot;
   }
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
@@ -1408,34 +1347,9 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet' && !restoredEarly) { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
-  // Try to restore user's autosaved draft if we didn't already restore it early
-  try { if (type === 'callsheet' && !restoredEarly) restoreTemplatesAutosaveIfPresent(); } catch(_) {}
+  // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
   try { ensureEditableWrappers(); } catch(_) {}
-  // If لا يوجد Autosave محلي (هاتف/متصفح آخر)، حاول تحميل المسودة المخزنة في الخادم تلقائياً
-  try {
-    if (type === 'callsheet') {
-      const ls = localStorage.getItem(getTemplatesContextKey());
-      if (!ls) {
-        (async () => {
-          try {
-            const id = readRemoteAutosaveId();
-            if (id) {
-              await loadSnapshotById(id);
-              try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-            } else {
-              const items = await fetchSavedTemplatesForCurrent();
-              const draft = (items || []).find((it) => String(it?.title || '').toLowerCase().includes('autosave') || String(it?.title || '').toLowerCase().includes('draft') || String(it?.title || '').includes('مسودة'));
-              if (draft && draft.id) {
-                writeRemoteAutosaveId(draft.id);
-                await loadSnapshotById(draft.id);
-                try { ensureCellToolbarExt({ onAfterChange: () => { try { pushHistoryDebounced(); saveAutosaveDebounced(); markTemplatesEditingActivity(); } catch(_) {} } }); } catch(_) {}
-              }
-            }
-          } catch(_) {}
-        })();
-      }
-    }
-  } catch(_) {}
+  // لا تحميل تلقائي من الخادم؛ يقرر المستخدم من قائمة "محفوظات" أو زر "تحميل المسودة"
   // Ensure technicians are loaded, then auto-fill crew if table is empty
   try {
     if (type === 'callsheet' || type === 'callsheet2') {
@@ -1463,22 +1377,7 @@ function renderTemplatesPreview() {
   try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
-  // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
-  try {
-    if (type === 'callsheet') {
-      const raw = localStorage.getItem(getTemplatesContextKey());
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.snap && parsed.snap.sh) {
-          const root = document.getElementById('templates-a4-root');
-          if (root) applyShadingSnapshot(root, parsed.snap.sh);
-        }
-      }
-    }
-  } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
-  // Reveal host now that content is ready
-  try { host.style.visibility = ''; } catch(_) {}
   try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
 
   // Debug toggle utility for quiet consoles in production
@@ -3097,6 +2996,60 @@ export function initTemplatesTab() {
         btn.textContent = '👁️ معاينة الطباعة';
         btn.style.cssText = 'display:block;width:100%;text-align:right;margin:4px 0;';
         btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); try { showPrintPreviewOverlay(); } catch(_) {} });
+        actionsMenu.insertBefore(btn, actionsMenu.firstChild);
+      }
+    } catch(_) {}
+    // Add "new blank template" action
+    try {
+      if (!document.getElementById('templates-new')) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline';
+        btn.id = 'templates-new';
+        btn.textContent = '🆕 قالب جديد (فارغ)';
+        btn.style.cssText = 'display:block;width:100%;text-align:right;margin:4px 0;';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault(); e.stopPropagation();
+          try {
+            const key = getTemplatesContextKey();
+            localStorage.removeItem(key);
+            const ridKey = `remoteAutosaveId:${key}`;
+            localStorage.removeItem(ridKey);
+          } catch(_) {}
+          try { showToast('تم إنشاء قالب فارغ', 'success', 2000); } catch(_) {}
+          try { renderTemplatesPreview(); } catch(_) {}
+        });
+        actionsMenu.insertBefore(btn, actionsMenu.firstChild);
+      }
+    } catch(_) {}
+    // Add "load last draft" action
+    try {
+      if (!document.getElementById('templates-load-last')) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline';
+        btn.id = 'templates-load-last';
+        btn.textContent = '📥 تحميل آخر مسودة';
+        btn.style.cssText = 'display:block;width:100%;text-align:right;margin:4px 0;';
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault(); e.stopPropagation();
+          try {
+            const id = readRemoteAutosaveId();
+            if (id) {
+              await loadSnapshotById(id);
+            } else {
+              const items = await fetchSavedTemplatesForCurrent();
+              const draft = (items || []).find((it) => {
+                const t = String(it?.title || '').toLowerCase();
+                return t.includes('autosave') || t.includes('draft') || t.includes('مسودة');
+              }) || (items || [])[0];
+              if (draft && draft.id) await loadSnapshotById(draft.id);
+            }
+            try { showToast('تم تحميل المسودة', 'success', 2000); } catch(_) {}
+          } catch(_) {
+            try { showToast('تعذر تحميل المسودة', 'error', 2500); } catch(_) {}
+          }
+        });
         actionsMenu.insertBefore(btn, actionsMenu.firstChild);
       }
     } catch(_) {}
