@@ -274,58 +274,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   margin-right: 0 !important;
 }
 
-/* Call Sheet (all pages): reduce extra padding and use full paper width */
-#templates-a4-root .a4-page:has(.callsheet-v1) .a4-inner {
-  padding-left: 0mm !important;
-  padding-right: 0mm !important;
-  padding-top: 6mm !important;
-  padding-bottom: 6mm !important;
-}
-#templates-a4-root[data-render-context="export"] .a4-page:has(.callsheet-v1) .a4-inner {
-  padding-left: 0mm !important;
-  padding-right: 0mm !important;
-  padding-top: 6mm !important;
-  padding-bottom: 6mm !important;
-}
-/* Inside Call Sheet pages, tables should not overshoot (cancel earlier negative margins) */
-#templates-a4-root .a4-page:has(.callsheet-v1) .cs-crew,
-#templates-a4-root .a4-page:has(.callsheet-v1) .cs-schedule {
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-/* Make all Call Sheet tables stretch to page width */
-#templates-a4-root .callsheet-v1 table { width: 100% !important; }
-#templates-a4-root .callsheet-v1 table.cs-cast { width: 100% !important; }
-
-/* Remove vertical borders for any Call Sheet page (preview) */
-#templates-a4-root .a4-page:has(.callsheet-v1) {
-  border-left: none !important;
-  border-right: none !important;
-}
-
-/* Maximize usable width on the schedule page (3rd page) */
-#templates-a4-root .a4-page:nth-child(3) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
-
-/* Full-bleed width for Call Sheet tables in all versions/drafts */
-#templates-a4-root .cs-crew,
-#templates-a4-root .cs-schedule {
-  width: calc(100% + 16mm) !important;  /* cancel 8mm padding on each side in preview */
-  margin-left: -8mm !important;
-  margin-right: -8mm !important;
-}
-#templates-a4-root[data-render-context="export"] .cs-crew,
-#templates-a4-root[data-render-context="export"] .cs-schedule {
-  width: calc(100% + 20mm) !important;  /* cancel 10mm padding on each side in export */
-  margin-left: -10mm !important;
-  margin-right: -10mm !important;
-}
-/* Remove vertical borders on any page that contains crew/schedule to avoid side clipping in preview */
-#templates-a4-root .a4-page:has(.cs-crew),
-#templates-a4-root .a4-page:has(.cs-schedule) {
-  border-left: none !important;
-  border-right: none !important;
-}
+/* (Reverted) Apply widening only on page 2; keep other pages default */
 /* Wrap row at end of schedule */
 /* (removed new wrap row styling to keep legacy layout) */
 /* Hard enforce the requested column widths (preview + export) */
@@ -491,8 +440,8 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-date { font-size: 13px; font-weight: 700; text-align:center; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 100% !important; margin-top:6px; }
-/* Reduce inner padding on page 2 (Crew) for more width */
-#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 6mm; padding-right: 6mm; }
+/* Page 2 (Crew): zero side padding so table uses full width */
+#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
