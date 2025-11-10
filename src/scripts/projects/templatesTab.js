@@ -2957,14 +2957,33 @@ async function fetchSavedTemplatesForCurrent() {
   if (!project) return [];
   const typeSel = document.getElementById('templates-type');
   let type = typeSel ? typeSel.value : 'expenses';
-  // Legacy compatibility: if user selects callsheet (v1), also check older records saved under 'callsheet'
-  let res = null; try { res = await apiRequest(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(type)}`); }
-  catch(err) { notifyApiError(err, 'تعذر تحميل المحفوظات'); return []; }
-  // Backend responds as { ok: true, data: [...] }
-  if (Array.isArray(res?.data)) return res.data;
-  if (Array.isArray(res)) return res;
-  if (res && Array.isArray(res.items)) return res.items;
-  return [];
+  // Legacy compatibility: try multiple type variants and a final catch-all without type
+  const variants = (() => {
+    if (type === 'callsheet') {
+      return ['callsheet', 'call-sheet', 'callsheet_v1', 'callsheetv1', 'callsheet-v1'];
+    }
+    if (type === 'shotlist') {
+      return ['shotlist', 'shot-list'];
+    }
+    return [type];
+  })();
+  const seen = new Set(); const items = [];
+  async function pull(url) {
+    try {
+      const res = await apiRequest(url);
+      const arr = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []));
+      arr.forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
+    } catch (_) { /* ignore */ }
+  }
+  for (const v of variants) {
+    // eslint-disable-next-line no-await-in-loop
+    await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(v)}`);
+  }
+  if (!items.length) {
+    // eslint-disable-next-line no-await-in-loop
+    await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}`);
+  }
+  return items;
 }
 
 async function populateSavedTemplates() {

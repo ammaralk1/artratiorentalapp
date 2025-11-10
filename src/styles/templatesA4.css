@@ -267,19 +267,16 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   padding-left: 0mm !important;
   padding-right: 0mm !important;
 }
-/* Safety: guarantee the Crew table spans the full width on page 2 */
-#templates-a4-root .a4-page:nth-child(2) .callsheet-v1 .cs-crew {
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-/* Autosave tweak: make Crew Call table slightly narrower (visually neat margins) */
-#templates-a4-root[data-restored-autosave="1"] .a4-page:has(.cs-crew) .callsheet-v1 .cs-crew {
+/* Crew Call table: narrower, centered across all contexts */
+.callsheet-v1 .cs-crew {
   width: 94% !important;
   margin-left: auto !important;
   margin-right: auto !important;
 }
+
+/* Autosave tweak: make Crew Call table slightly narrower (visually neat margins) */
+/* (autosave marker no longer required for crew width; kept for compatibility) */
+#templates-a4-root[data-restored-autosave="1"] .a4-page:has(.cs-crew) .callsheet-v1 .cs-crew { width: 94% !important; margin-left: auto !important; margin-right: auto !important; }
 
 /* Autosave tweak: make the last page schedule full-bleed horizontally */
 #templates-a4-root[data-restored-autosave="1"] .a4-page:last-child .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
@@ -388,7 +385,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   background: #2563EB !important;
   color:#ffffff !important;
 }
-.callsheet-v1 .cs-crew { table-layout: fixed; width: 100% !important; margin-top:6px; margin-left:0; margin-right:0; }
+.callsheet-v1 .cs-crew { table-layout: fixed; width: 94% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
