@@ -2968,11 +2968,19 @@ async function fetchSavedTemplatesForCurrent() {
     return [type];
   })();
   const seen = new Set(); const items = [];
+  const getId = (it) => String(it?.id ?? it?.template_id ?? it?.pk ?? it?._id ?? '');
+  const normalize = (res) => {
+    if (!res) return [];
+    const d = res?.data ?? res?.items ?? res;
+    if (Array.isArray(d)) return d;
+    if (typeof d === 'object') return [d];
+    return [];
+  };
   async function pull(url) {
     try {
       const res = await apiRequest(url);
-      const arr = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : (Array.isArray(res?.items) ? res.items : []));
-      arr.forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
+      const arr = normalize(res);
+      arr.forEach((it) => { const id = getId(it); const key = id || String((it?.title || '').trim() || Math.random()); if (seen.has(key)) return; seen.add(key); items.push(it); });
     } catch (_) { /* ignore */ }
   }
   for (const v of variants) {
@@ -2998,11 +3006,21 @@ async function fetchSavedTemplatesForCurrent() {
     const wantId = '1';
     if (!seen.has(wantId)) {
       const one = await apiRequest(`/project-templates/?id=1`);
-      const arr = Array.isArray(one?.data) ? one.data : (Array.isArray(one) ? one : (Array.isArray(one?.items) ? one.items : (one ? [one] : [])));
-      arr.forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
+      const arr = normalize(one);
+      arr.forEach((it) => { const id = getId(it); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
     }
   } catch (_) { /* ignore */ }
-  return items;
+  // Sort unique ascending by numeric id if possible, then title
+  const unique = [];
+  const seen2 = new Set();
+  items.forEach((it) => { const id = getId(it); const key = id || (it?.title || ''); if (seen2.has(key)) return; seen2.add(key); unique.push(it); });
+  unique.sort((a, b) => {
+    const ida = Number(getId(a)); const idb = Number(getId(b));
+    if (Number.isFinite(ida) && Number.isFinite(idb)) return ida - idb;
+    const ta = String(a?.title || ''); const tb = String(b?.title || '');
+    return ta.localeCompare(tb);
+  });
+  return unique;
 }
 
 async function populateSavedTemplates() {

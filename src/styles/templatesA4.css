@@ -397,7 +397,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   background: #2563EB !important;
   color:#ffffff !important;
 }
-.callsheet-v1 .cs-crew { table-layout: fixed; width: 94% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
+.callsheet-v1 .cs-crew { table-layout: fixed; width: 88% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
