@@ -285,7 +285,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Page 2: Crew Call table only
   const { innerPage: inner2, wrapPage: wrap2 } = newPage();
-  const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew' });
+  const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew', style: 'width:90% !important; margin-left:auto !important; margin-right:auto !important;' });
   const crewCols = [30,34,20,16]; const crewCg = el('colgroup'); crewCols.forEach((w)=>crewCg.appendChild(el('col',{style:`width:${w}%`}))); crew.appendChild(crewCg);
   const crewHead = el('thead'); const crewTitleRow = el('tr'); crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call' })); crewHead.appendChild(crewTitleRow);
   const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label)=>crewHeadRow.appendChild(el('th',{ text: label }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
@@ -294,7 +294,8 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
 
   // Page 3: Schedule table only (with note rows at top)
   const { innerPage: inner3, wrapPage: wrap3 } = newPage();
-  const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
+  try { inner3.style.paddingLeft = '0mm'; inner3.style.paddingRight = '0mm'; } catch(_) {}
+  const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet', style: 'width:calc(100% + 16mm) !important; margin-left:-8mm !important; margin-right:-8mm !important;' });
   const cols = [5, 5, 25, 6, 5, 5, 6, 4, 4, 10, 8, 17];
   const cg = el('colgroup'); cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` }))); sched.appendChild(cg);
   const headerLabels = ['Shot #','Time (Duration)','Description','Movement','Rig','Lens','Location','I/E','D/N','Sound','Cast','Notes / Props'];

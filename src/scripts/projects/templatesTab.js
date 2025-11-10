@@ -57,6 +57,31 @@ let TPL_EXPENSES_UNBIND = null;
 let TPL_IS_COMPOSING = false;
 let TPL_INPUT_TIMER = null;
 
+// Enforce sizing for Call Sheet tables regardless of CSS precedence/caching
+function enforceCallsheetSizing(scope) {
+  try {
+    const root = scope || document.querySelector('#templates-preview-host #templates-a4-root');
+    if (!root) return;
+    const crews = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-crew'));
+    crews.forEach((t) => {
+      try {
+        t.style.setProperty('width', '90%', 'important');
+        t.style.setProperty('margin-left', 'auto', 'important');
+        t.style.setProperty('margin-right', 'auto', 'important');
+      } catch(_) {}
+    });
+    const scheds = Array.from(root.querySelectorAll('.callsheet-v1 table.cs-schedule'));
+    scheds.forEach((t) => {
+      try {
+        t.style.setProperty('width', 'calc(100% + 16mm)', 'important');
+        t.style.setProperty('margin-left', '-8mm', 'important');
+        t.style.setProperty('margin-right', '-8mm', 'important');
+        const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
+      } catch(_) {}
+    });
+  } catch(_) {}
+}
+
 function destroyTemplatesTab() {
   try {
     const host = document.getElementById('templates-preview-host');
@@ -1133,7 +1158,7 @@ function restoreTemplatesAutosaveIfPresent() {
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
         // Ensure a single standard Crew Call table if present and drop duplicates
-        try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); pruneEmptyA4PagesExt(); } catch(_) {}
+        try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); enforceCallsheetSizing(root); pruneEmptyA4PagesExt(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -1335,6 +1360,8 @@ function renderTemplatesPreview() {
     host.appendChild(newRoot);
     pageRoot = newRoot;
   }
+  // Enforce table sizing immediately after DOM placement
+  try { enforceCallsheetSizing(pageRoot); } catch(_) {}
   // Bind history listeners and seed snapshot
   try { setupTemplatesHistory(pageRoot, type); } catch(_) {}
   try {
@@ -1380,9 +1407,10 @@ function renderTemplatesPreview() {
   // Ensure crew remains placed on dedicated second page after any pagination
   try { if (type === 'callsheet') { ensureCrewOnSecondPage(); } } catch(_) {}
   // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); enforceCallsheetSizing(pageRoot); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
+  try { if (type === 'callsheet') enforceCallsheetSizing(pageRoot); } catch(_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
   try { if (type === 'callsheet' && localStorage.getItem('templates.debugOverlay') === '1') showTemplatesDebugOverlay(pageRoot, getSelectedReservations(project.id)?.[0] || null); } catch(_) {}
 
