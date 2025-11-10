@@ -1344,7 +1344,7 @@ function renderTemplatesPreview() {
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew Call table exists for fresh callsheet
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
@@ -1373,8 +1373,10 @@ function renderTemplatesPreview() {
   try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
+  // Ensure crew remains placed on dedicated second page after any pagination
+  try { if (type === 'callsheet') { ensureCrewOnSecondPage(); } } catch(_) {}
   // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
@@ -2641,11 +2643,19 @@ function handleTablePaste(e) {
 function ensureCrewTableExists() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return;
-  const callsheet = root.querySelector('.callsheet-v1');
-  if (!callsheet) return;
-  const existing = callsheet.querySelector('table.cs-crew');
-  if (existing) return;
-  // Build a fresh crew table and append after schedule (legacy placement)
+  const pagesWrap = root.querySelector('[data-a4-pages]');
+  if (!pagesWrap) return;
+  // If any Crew table exists anywhere, do nothing (builder already created it)
+  const existingAnywhere = root.querySelector('table.cs-crew');
+  if (existingAnywhere) return;
+
+  // Build a fresh crew table and place it on its own second page
+  const page = document.createElement('section');
+  page.className = 'a4-page a4-page--landscape';
+  const inner = document.createElement('div'); inner.className = 'a4-inner';
+  const wrap = document.createElement('div'); wrap.className = 'callsheet-v1';
+  page.appendChild(inner); inner.appendChild(wrap);
+
   const crew = document.createElement('table');
   crew.className = 'tpl-table cs-crew';
   crew.setAttribute('data-editable-table', 'crew');
@@ -2655,36 +2665,27 @@ function ensureCrewTableExists() {
   crew.appendChild(cg);
   const thead = document.createElement('thead');
   const titleRow = document.createElement('tr');
-  const titleTh = document.createElement('th');
-  titleTh.setAttribute('colspan', String(cols.length));
-  titleTh.className = 'cs-crew-title';
-  titleTh.textContent = 'Crew Call';
-  titleRow.appendChild(titleTh);
-  thead.appendChild(titleRow);
+  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call';
+  titleRow.appendChild(titleTh); thead.appendChild(titleRow);
   const trh = document.createElement('tr');
   ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
-    const th = document.createElement('th');
-    th.textContent = label;
-    th.setAttribute('style', `width:${cols[i]}%`);
-    trh.appendChild(th);
+    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); trh.appendChild(th);
   });
-  thead.appendChild(trh);
-  crew.appendChild(thead);
+  thead.appendChild(trh); crew.appendChild(thead);
   const tbody = document.createElement('tbody');
   for (let i = 0; i < 18; i += 1) {
     const tr = document.createElement('tr');
-    const td1 = document.createElement('td'); td1.setAttribute('data-editable','true'); td1.setAttribute('contenteditable','true'); tr.appendChild(td1);
-    const td2 = document.createElement('td'); td2.setAttribute('data-editable','true'); td2.setAttribute('contenteditable','true'); tr.appendChild(td2);
-    const td3 = document.createElement('td'); td3.setAttribute('data-editable','true'); td3.setAttribute('contenteditable','true'); td3.setAttribute('dir','ltr'); td3.style.direction = 'ltr'; tr.appendChild(td3);
-    const td4 = document.createElement('td'); td4.setAttribute('data-editable','true'); td4.setAttribute('contenteditable','true'); tr.appendChild(td4);
+    for (let c = 0; c < 4; c += 1) {
+      const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true');
+      if (c === 2) { td.setAttribute('dir','ltr'); td.style.direction = 'ltr'; }
+      tr.appendChild(td);
+    }
     tbody.appendChild(tr);
   }
   crew.appendChild(tbody);
-  // Place after schedule if present, else append at end of callsheet
-  const sched = callsheet.querySelector('table.cs-schedule');
-  if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched.nextSibling);
-  else callsheet.appendChild(crew);
-  // Repaginate and prune empty pages so it flows correctly
+  wrap.appendChild(crew);
+  pagesWrap.insertBefore(page, pagesWrap.children[1] || null);
+
   try { setTimeout(() => { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); pruneEmptyA4PagesExt(); }, 20); } catch(_) {}
 }
 
@@ -2692,19 +2693,46 @@ function ensureCrewTableExists() {
 function purgeCrewCallTables() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return;
+  // If a standard Crew table exists anywhere, do not purge
+  if (root.querySelector('table.cs-crew')) return;
   const callsheet = root.querySelector('.callsheet-v1');
   if (!callsheet) return;
   // Purge any legacy/old Crew Call layouts (non-standard tables that contain a Crew Call heading)
   try {
     const allTables = Array.from(callsheet.getElementsByTagName('table'));
     allTables.forEach((t) => {
-      if (t.classList && t.classList.contains('cs-crew')) return; // keep standard
+      if (t.classList && t.classList.contains('cs-crew')) return; // keep standard if present
       const text = (t.querySelector('thead')?.textContent || t.textContent || '').toLowerCase();
       if (text.includes('crew call')) { try { t.parentElement?.removeChild(t); } catch(_) {} }
     });
   } catch(_) {}
-  // Remove any existing standard Crew Call tables as well (no crew table at all)
-  try { Array.from(callsheet.querySelectorAll('table.cs-crew')).forEach((t) => t.parentElement?.removeChild(t)); } catch(_) {}
+}
+
+// Ensure Crew table lives on the second page, separate from schedule
+function ensureCrewOnSecondPage() {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root) return;
+    const pagesWrap = root.querySelector('[data-a4-pages]');
+    if (!pagesWrap) return;
+    const crew = root.querySelector('table.cs-crew');
+    if (!crew) return;
+    const crewPage = crew.closest('.a4-page');
+    const pages = Array.from(pagesWrap.querySelectorAll('.a4-page'));
+    // Move crew page to index 1 (second page)
+    if (crewPage && pages.indexOf(crewPage) !== 1) {
+      pagesWrap.insertBefore(crewPage, pagesWrap.children[1] || null);
+    }
+    // If schedule ended up on the same page as crew, move schedule to its own page after crew
+    const sched = crewPage ? crewPage.querySelector('table.cs-schedule') : null;
+    if (sched) {
+      const newPage = document.createElement('section'); newPage.className = 'a4-page a4-page--landscape';
+      const inner = document.createElement('div'); inner.className = 'a4-inner';
+      const wrap = document.createElement('div'); wrap.className = 'callsheet-v1';
+      newPage.appendChild(inner); inner.appendChild(wrap); wrap.appendChild(sched);
+      pagesWrap.insertBefore(newPage, pagesWrap.children[2] || null);
+    }
+  } catch (_) {}
 }
 
 // Keep one Crew Call table only: move filled rows from duplicates to the primary and remove the rest.
