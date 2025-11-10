@@ -1130,7 +1130,7 @@ function restoreTemplatesAutosaveIfPresent() {
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
         // Ensure a single standard Crew Call table if present and drop duplicates
-        try { unifyCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
+        try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); pruneEmptyA4PagesExt(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -1344,7 +1344,7 @@ function renderTemplatesPreview() {
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew Call table exists for fresh callsheet
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
@@ -1376,7 +1376,7 @@ function renderTemplatesPreview() {
   // Ensure crew remains placed on dedicated second page after any pagination
   try { if (type === 'callsheet') { ensureCrewOnSecondPage(); } } catch(_) {}
   // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); ensureSingleCrewTableStrict(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
@@ -2809,6 +2809,66 @@ function unifyCrewCallTables() {
   });
   // Remove all duplicates
   tables.forEach((t) => { if (t !== primary) { try { t.parentElement?.removeChild(t); } catch (_) {} } });
+}
+
+// Strict single-crew enforcement: detect any crew-like tables (Arabic/English),
+// keep one canonical table (prefer cs-crew on page 2), merge rows from other
+// standard cs-crew tables, and remove the rest.
+function ensureSingleCrewTableStrict() {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root) return;
+    const pagesWrap = root.querySelector('[data-a4-pages]');
+    const pages = pagesWrap ? Array.from(pagesWrap.querySelectorAll('.a4-page')) : [];
+    const pageIndex = (el) => { const p = el?.closest?.('.a4-page'); return p ? pages.indexOf(p) : -1; };
+    const allTables = Array.from(root.getElementsByTagName('table'));
+    const isStandard = (t) => !!(t.classList && t.classList.contains('cs-crew'));
+    const markers = ['crew call','crewcall','crew','طاقم','طاقم العمل','كرو','كرو كول'];
+    const isCrewish = (t) => {
+      try {
+        if (isStandard(t)) return true;
+        const txt = ((t.querySelector('thead')?.textContent || t.textContent || '') + '').toLowerCase();
+        return markers.some((m) => txt.includes(m));
+      } catch (_) { return false; }
+    };
+    const crewish = allTables.filter(isCrewish);
+    if (crewish.length <= 1) return;
+    // Choose primary: cs-crew on page index 1 if possible, else last cs-crew, else first crewish
+    let primary = null;
+    const standards = crewish.filter(isStandard);
+    primary = standards.find((t) => pageIndex(t) === 1) || standards[standards.length - 1] || crewish[0];
+    // Move rows from other standard cs-crew into primary and delete
+    const pBody = primary.tBodies && primary.tBodies[0];
+    const ensureRows = (need) => { for (let i = 0; i < need; i += 1) { const tr = document.createElement('tr'); for (let c = 0; c < 4; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); } pBody.appendChild(tr); } };
+    crewish.forEach((t) => {
+      if (t === primary) return;
+      if (isStandard(t)) {
+        const body = t.tBodies && t.tBodies[0]; if (!body) { try { t.remove(); } catch(_) {} return; }
+        const rows = Array.from(body.children);
+        const payload = rows.map((tr) => Array.from(tr.children).map((td) => td.textContent || ''))
+                            .filter((arr) => arr.some((v) => (v || '').trim().length > 0));
+        if (payload.length) ensureRows(Math.max(0, payload.length - (pBody?.children?.length || 0)));
+        let idx = 0;
+        Array.from(pBody.children).forEach((tr) => {
+          if (idx >= payload.length) return;
+          const cells = Array.from(tr.children);
+          const isEmpty = cells.every((td) => !((td.textContent || '').trim().length));
+          if (!isEmpty) return;
+          const values = payload[idx++];
+          for (let i = 0; i < Math.min(cells.length, values.length); i += 1) { cells[i].textContent = values[i] || ''; }
+        });
+      }
+      try { t.parentElement?.removeChild(t); } catch(_) {}
+    });
+    // Place the primary on the second page if possible
+    try {
+      const pg = primary.closest('.a4-page');
+      if (pg && pagesWrap) {
+        const current = Array.from(pagesWrap.children).indexOf(pg);
+        if (current !== 1) pagesWrap.insertBefore(pg, pagesWrap.children[1] || null);
+      }
+    } catch(_) {}
+  } catch (_) {}
 }
 
 /* moved to ../templates/tableInteractions.js
