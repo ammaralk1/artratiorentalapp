@@ -257,6 +257,11 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-schedule th, .cs-schedule td { text-align: center !important; vertical-align: middle; }
 .callsheet-v1 .cs-schedule th { font-size: 10px; }
 .callsheet-v1 .cs-schedule td { font-size: 10px; }
+/* Maximize usable width on the Crew Call page (2nd page) */
+#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
+/* Remove only vertical page borders on 2nd page in preview to avoid side clipping */
+#templates-a4-root .a4-page:nth-child(2) { border-left: none !important; border-right: none !important; }
+
 /* Maximize usable width on the schedule page (3rd page) */
 #templates-a4-root .a4-page:nth-child(3) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
 /* Wrap row at end of schedule */
