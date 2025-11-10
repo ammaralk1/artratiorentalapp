@@ -711,8 +711,12 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 
 /* Final: crew headers centered and 18px regardless of wrapper */
 #templates-a4-root table.cs-crew thead th {
-  display:flex !important; align-items:center !important; justify-content:center !important;
-  text-align:center !important; font-size:18px !important; line-height:1.2 !important;
+  display: table-cell !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  padding: 6px 4px !important;
 }
 
 #templates-a4-root .callsheet-v1 table.cs-schedule,
@@ -722,4 +726,8 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 #templates-a4-root[data-render-context="export"] table.cs-schedule,
 #templates-a4-root[data-render-context="export"] .tpl-table.cs-schedule { width: calc(100% + 20mm) !important; margin-left: -10mm !important; margin-right: -10mm !important; }
 /* Final: schedule headers centered */
-#templates-a4-root table.cs-schedule thead th { text-align:center !important; display:flex !important; align-items:center !important; justify-content:center !important; }
+#templates-a4-root table.cs-schedule thead th {
+  display: table-cell !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
