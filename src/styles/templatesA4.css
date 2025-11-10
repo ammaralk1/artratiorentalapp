@@ -274,6 +274,11 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   margin-right: 0 !important;
 }
 
+/* Schedule page: widen regardless of page index */
+#templates-a4-root .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
+#templates-a4-root[data-render-context="export"] .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
+#templates-a4-root .a4-page:has(.cs-schedule) { border-left: none !important; border-right: none !important; }
+
 /* (Reverted) Apply widening only on page 2; keep other pages default */
 /* Wrap row at end of schedule */
 /* (removed new wrap row styling to keep legacy layout) */

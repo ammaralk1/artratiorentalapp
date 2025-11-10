@@ -1344,7 +1344,7 @@ function renderTemplatesPreview() {
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
   // Ensure Crew Call table exists for fresh callsheet
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
@@ -1376,7 +1376,7 @@ function renderTemplatesPreview() {
   // Ensure crew remains placed on dedicated second page after any pagination
   try { if (type === 'callsheet') { ensureCrewOnSecondPage(); } } catch(_) {}
   // After pagination, ensure nothing recreated extra tables
-  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); ensureCrewOnSecondPage(); unifyCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   try { ensurePdfTunerUI(); } catch (_) {}
