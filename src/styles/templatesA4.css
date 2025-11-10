@@ -262,6 +262,18 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Remove only vertical page borders on 2nd page in preview to avoid side clipping */
 #templates-a4-root .a4-page:nth-child(2) { border-left: none !important; border-right: none !important; }
 
+/* Ensure full-width in export as well (override global export padding) */
+#templates-a4-root[data-render-context="export"] .a4-page:nth-child(2) .a4-inner {
+  padding-left: 0mm !important;
+  padding-right: 0mm !important;
+}
+/* Safety: guarantee the Crew table spans the full width */
+#templates-a4-root .a4-page:nth-child(2) .callsheet-v1 .cs-crew {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 /* Maximize usable width on the schedule page (3rd page) */
 #templates-a4-root .a4-page:nth-child(3) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
 /* Wrap row at end of schedule */
