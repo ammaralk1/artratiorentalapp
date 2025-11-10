@@ -1294,8 +1294,8 @@ function autosaveToServerDebounced() {
 function renderTemplatesPreview() {
   const host = document.getElementById('templates-preview-host');
   if (!host) return;
-  // Hide host during restore to prevent any flicker from default builder
-  try { host.style.visibility = 'hidden'; } catch(_) {}
+  // Ensure host is visible during fresh render
+  try { host.style.visibility = ''; } catch(_) {}
   const project = getSelectedProject();
   const oldRoot = host.querySelector('#templates-a4-root');
   if (!project) {
@@ -1343,8 +1343,8 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Reset Crew Call table only when using the default builder (do not mutate user's autosave)
-  try { if (type === 'callsheet' && !restoredEarly) { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
+  // Ensure Crew Call table exists for fresh callsheet
+  try { if (type === 'callsheet') { purgeCrewCallTables(); ensureCrewTableExists(); } } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Do not auto-restore any autosave by default; user can load from "محفوظات" أو زر المسودة
@@ -1352,7 +1352,7 @@ function renderTemplatesPreview() {
   // لا تحميل تلقائي من الخادم؛ يقرر المستخدم من قائمة "محفوظات" أو زر "تحميل المسودة"
   // Ensure technicians are loaded, then auto-fill crew if table is empty
   try {
-    if (type === 'callsheet' || type === 'callsheet2') {
+    if (type === 'callsheet') {
       const selectedRes = getSelectedReservations(project.id)?.[0] || null;
       const fill = () => populateCrewFromReservationIfEmptyExt(selectedRes);
       if (!getTechniciansState()?.length) {
@@ -2894,12 +2894,8 @@ async function loadSnapshotById(id) {
       wrap.innerHTML = data.html;
       const root = wrap.firstElementChild;
       if (root) host.appendChild(root);
-      // Normalize: remove any existing Crew Call tables from loaded HTML only for the new callsheet type
-      try {
-        const typeSel = document.getElementById('templates-type');
-        const type = typeSel ? typeSel.value : 'expenses';
-        if (type === 'callsheet2') { purgeCrewCallTables(); pruneEmptyA4PagesExt(); }
-      } catch(_) {}
+      // Keep loaded HTML as-is when restoring a saved template
+      try { /* no normalization on restore */ } catch(_) {}
     }
   } catch (_) {}
 }
