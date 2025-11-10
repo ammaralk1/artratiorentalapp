@@ -226,18 +226,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
 
   const rightTable = el('table', { class: 'cs-times' });
   const rtBody = el('tbody');
-  [
-    ['Call Time',''],
-    ['Crew Safety Notes',''],
-    ['Weather',''],
-    ['Temp',''],
-    ['Wind',''],
-    ['Rain %',''],
-    ['Sunrise',''],
-    ['Sunset',''],
-    ['Nearest Hospital',''],
-    ['Map Link','']
-  ].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
+  [['Call Time',''],['Crew Safety Notes','']].forEach(([lab, val]) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal(val)); rtBody.appendChild(r); });
   rightTable.appendChild(rtBody);
 
   infoBody.appendChild(makeRow(el('td', {}, [leftTable]), el('td', {}, [centerTable]), el('td', {}, [rightTable])));
@@ -250,32 +239,12 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   cb.appendChild(makeRow(el('td', { 'data-editable': 'true', contenteditable: 'true' })));
   cast.appendChild(cb); wrap.appendChild(cast);
 
-  // Key Contacts block (Role + Contact info)
-  const contacts = el('table', { class: 'tpl-table cs-contacts' });
-  const contactsCols = [30, 70];
-  const contactsCg = el('colgroup'); contactsCols.forEach((w) => contactsCg.appendChild(el('col', { style: `width:${w}%` }))); contacts.appendChild(contactsCg);
-  const contactsHead = el('thead');
-  const contactsTitleRow = el('tr');
-  contactsTitleRow.appendChild(el('th', { colspan: String(contactsCols.length), class: 'cs-contacts-title', text: 'Key Contacts' }));
-  contactsHead.appendChild(contactsTitleRow);
-  const contactsHeadRow = el('tr'); ['Role','Name / Phone / Radio'].forEach((label, i) => contactsHeadRow.appendChild(el('th', { text: label, style: `width:${contactsCols[i]}%` }))); contactsHead.appendChild(contactsHeadRow);
-  contacts.appendChild(contactsHead);
-  const contactsBody = el('tbody');
-  ;['Producer','Director','1st AD','DOP','Gaffer','Sound','Wardrobe','Makeup','PA','Driver'].forEach((role) => {
-    const tr = el('tr');
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: role }));
-    tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true', text: '' }));
-    contactsBody.appendChild(tr);
-  });
-  contacts.appendChild(contactsBody); wrap.appendChild(contacts);
-
-  // Crew Call table (moved above Schedule to ensure visibility on first page)
+  // Crew Call table (legacy placement after schedule)
   const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew' });
   const crewCols = [30,34,20,16]; const crewCg = el('colgroup'); crewCols.forEach((w)=>crewCg.appendChild(el('col',{style:`width:${w}%`}))); crew.appendChild(crewCg);
   const crewHead = el('thead'); const crewTitleRow = el('tr'); crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call' })); crewHead.appendChild(crewTitleRow);
   const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label)=>crewHeadRow.appendChild(el('th',{ text: label }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
   const crewBody = el('tbody'); for (let i=0;i<18;i+=1){ const tr=el('tr'); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true','class':'dir-ltr'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); crewBody.appendChild(tr);} crew.appendChild(crewBody); wrap.appendChild(crew);
-
   // Schedule table
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet' });
   const cols = [5, 5, 25, 6, 5, 5, 6, 4, 4, 10, 8, 17];
@@ -286,10 +255,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
   const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);
   for (let i = 0; i < 16; i += 1) { const tr = el('tr'); for (let c = 0; c < 12; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); sb.appendChild(tr); }
-  // Wrap row at the end of day
-  const rWrap = el('tr'); rWrap.appendChild(el('td', { colspan: '12', class: 'cs-wrap', text: 'WRAP / نهاية اليوم' })); sb.appendChild(rWrap);
   sched.appendChild(sb); wrap.appendChild(sched);
-
   inner.appendChild(wrap);
   try { enablePrimaryLogoInteractions(leftBrandLogo, leftImg); } catch(_) {}
   try { enableSecondaryLogoInteractions(rightLogoWrap, rightImg); } catch(_) {}
