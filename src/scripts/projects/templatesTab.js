@@ -3046,12 +3046,14 @@ async function populateSavedTemplates() {
 
 async function loadSnapshotById(id) {
   if (!id) return;
+  const host = document.getElementById('templates-preview-host');
+  if (!host) return;
+  try { host.style.visibility = 'hidden'; } catch(_) {}
   let res = null; try { res = await apiRequest(`/project-templates/?id=${encodeURIComponent(id)}`); }
   catch(err) { notifyApiError(err, 'تعذر تحميل القالب'); return; }
   const payload = (res && typeof res === 'object' && 'data' in res) ? res.data : res;
   const item = Array.isArray(payload) ? payload[0] : payload;
-  const host = document.getElementById('templates-preview-host');
-  if (!host || !item) return;
+  if (!item) { try { host.style.visibility = ''; } catch(_) {} return; }
   host.innerHTML = '';
   try {
     const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
@@ -3062,8 +3064,15 @@ async function loadSnapshotById(id) {
       if (root) host.appendChild(root);
       // Keep loaded HTML as-is when restoring a saved template
       try { /* no normalization on restore */ } catch(_) {}
+      // Apply structure fixes and enforced sizing for Call Sheet V1
+      try { fixCallsheetStructure(root); } catch(_) {}
+      try { unifyCrewCallTables(); ensureSingleCrewTableStrict(); ensureCrewOnSecondPage(); } catch(_) {}
+      try { enforceCallsheetSizing(root); } catch(_) {}
+      try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
+      try { pruneEmptyA4PagesExt(); } catch(_) {}
     }
   } catch (_) {}
+  try { host.style.visibility = ''; } catch(_) {}
 }
 
 export function initTemplatesTab() {
