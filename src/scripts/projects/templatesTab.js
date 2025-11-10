@@ -2979,10 +2979,29 @@ async function fetchSavedTemplatesForCurrent() {
     // eslint-disable-next-line no-await-in-loop
     await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}&type=${encodeURIComponent(v)}`);
   }
+  // Also try across all projects for these variants
+  for (const v of variants) {
+    // eslint-disable-next-line no-await-in-loop
+    await pull(`/project-templates/?type=${encodeURIComponent(v)}`);
+  }
   if (!items.length) {
     // eslint-disable-next-line no-await-in-loop
     await pull(`/project-templates/?project_id=${encodeURIComponent(project.id)}`);
   }
+  if (!items.length) {
+    // final catch-all
+    // eslint-disable-next-line no-await-in-loop
+    await pull(`/project-templates/`);
+  }
+  // If a canonical #1 exists, ensure it's present
+  try {
+    const wantId = '1';
+    if (!seen.has(wantId)) {
+      const one = await apiRequest(`/project-templates/?id=1`);
+      const arr = Array.isArray(one?.data) ? one.data : (Array.isArray(one) ? one : (Array.isArray(one?.items) ? one.items : (one ? [one] : [])));
+      arr.forEach((it) => { const id = String(it?.id ?? ''); if (!id || seen.has(id)) return; seen.add(id); items.push(it); });
+    }
+  } catch (_) { /* ignore */ }
   return items;
 }
 

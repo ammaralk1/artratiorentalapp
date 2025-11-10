@@ -269,7 +269,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 }
 /* Crew Call table: narrower, centered across all contexts */
 .callsheet-v1 .cs-crew {
-  width: 94% !important;
+  width: 90% !important;
   margin-left: auto !important;
   margin-right: auto !important;
 }
@@ -295,6 +295,18 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
 #templates-a4-root[data-render-context="export"] .a4-page:has(.cs-schedule) .a4-inner { padding-left: 0mm !important; padding-right: 0mm !important; }
 #templates-a4-root .a4-page:has(.cs-schedule) { border-left: none !important; border-right: none !important; }
+
+/* Make schedule truly full-bleed horizontally in all contexts */
+#templates-a4-root .a4-page:has(.cs-schedule) .cs-schedule {
+  width: calc(100% + 16mm) !important;
+  margin-left: -8mm !important;
+  margin-right: -8mm !important;
+}
+#templates-a4-root[data-render-context="export"] .a4-page:has(.cs-schedule) .cs-schedule {
+  width: calc(100% + 20mm) !important;
+  margin-left: -10mm !important;
+  margin-right: -10mm !important;
+}
 
 /* (Reverted) Apply widening only on page 2; keep other pages default */
 /* Wrap row at end of schedule */
