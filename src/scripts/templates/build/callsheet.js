@@ -251,25 +251,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   for (let i = 0; i < 16; i += 1) { const tr = el('tr'); for (let c = 0; c < 12; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); sb.appendChild(tr); }
   sched.appendChild(sb); wrap.appendChild(sched);
 
-  // Crew Call table
-  const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew' });
-  const crewCols = [30,34,20,16]; const crewCg = el('colgroup'); crewCols.forEach((w)=>crewCg.appendChild(el('col',{style:`width:${w}%`}))); crew.appendChild(crewCg);
-  const crewHead = el('thead'); const crewTitleRow = el('tr'); crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call', style:'text-align:center;display:flex;align-items:center;justify-content:center;font-size:14px;' })); crewHead.appendChild(crewTitleRow);
-  const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label,i)=>crewHeadRow.appendChild(el('th',{ text: label, style:`width:${crewCols[i]}%;text-align:center;display:flex;align-items:center;justify-content:center;font-size:12.5px;` }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
-  const crewBody = el('tbody');
-  for (let i=0;i<18;i+=1){
-    const tr=el('tr');
-    tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'}));
-    tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'}));
-    tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true','class':'dir-ltr'}));
-    tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'}));
-    crewBody.appendChild(tr);
-  }
-  crew.appendChild(crewBody);
-  wrap.appendChild(crew);
-
-  // Try auto-populate
-  try { const resSelected = reservations?.[0] || null; if (resSelected) populateCrewFromReservation(crew, resSelected); } catch(_) {}
+  // NOTE: Crew Call table intentionally omitted per latest requirement (no crew table)
 
   inner.appendChild(wrap);
   try { enablePrimaryLogoInteractions(leftBrandLogo, leftImg); } catch(_) {}

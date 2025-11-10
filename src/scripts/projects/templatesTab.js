@@ -1130,7 +1130,7 @@ function restoreTemplatesAutosaveIfPresent() {
         // Re-bind logo gestures so drag/size continues to work after restore
         try { attachCallsheetLogoBehaviors(root); } catch(_) {}
         // If Crew table is missing in restored HTML (older autosave), inject it then drop legacy shapes
-        try { rebuildCrewCallTable(); pruneEmptyA4PagesExt(); } catch(_) {}
+        try { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
         // Re-apply the current zoom to the new root
         try { applyTemplatesPreviewZoom(TPL_PREVIEW_ZOOM); } catch(_) {}
       } catch(_) {
@@ -1338,8 +1338,8 @@ function renderTemplatesPreview() {
   } catch(_) {}
   // Keep schedule header tidy and centered within cells
   try { shrinkScheduleHeaderLabelsExt(); } catch(_) {}
-  // Ensure Crew table exists even if an old autosave overwrote DOM
-  try { if (type === 'callsheet') rebuildCrewCallTable(); } catch(_) {}
+  // Remove any Crew Call tables entirely (no crew table in Call Sheet)
+  try { if (type === 'callsheet') purgeCrewCallTables(); } catch(_) {}
   // Normalize editable cells markup for robust caret behavior: wrap inner contenteditable DIV inside TD
   try { ensureEditableWrappers(); } catch(_) {}
   // Try to restore user's autosaved draft (if any) without re-rendering
@@ -1393,8 +1393,8 @@ function renderTemplatesPreview() {
   try { paginateExpDetailsTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl }); } catch (_) {}
   // Prune again after pagination
   try { Array.from(pageRoot.querySelectorAll('.a4-page')).forEach((pg) => { if (!pageHasMeaningfulContent(pg)) pg.parentElement?.removeChild(pg); }); } catch (_) {}
-  // Enforce a single standard Crew Call table after pagination
-  try { if (type === 'callsheet') { rebuildCrewCallTable(); pruneEmptyA4PagesExt(); } } catch(_) {}
+  // Ensure no Crew Call table remains after pagination/clone
+  try { if (type === 'callsheet') { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } } catch(_) {}
   try { renumberExpenseCodes(); } catch (_) {}
   try { paginateGenericTplTablesExt({ headerFooter: false, logoUrl: COMPANY_INFO.logoUrl, isLandscape: true }); } catch (_) {}
   // After pagination for callsheet, re-apply only shading from autosave so page-2 retains highlights
@@ -2715,12 +2715,12 @@ function ensureCrewTableExists() {
 }
 
 // Forcefully remove all Crew Call tables and rebuild the standard 4-column grid
-function rebuildCrewCallTable() {
+function purgeCrewCallTables() {
   const root = document.getElementById('templates-a4-root');
   if (!root) return;
   const callsheet = root.querySelector('.callsheet-v1');
   if (!callsheet) return;
-  // 1) Purge any legacy/old Crew Call layouts (non-standard tables that contain a Crew Call heading)
+  // Purge any legacy/old Crew Call layouts (non-standard tables that contain a Crew Call heading)
   try {
     const allTables = Array.from(callsheet.getElementsByTagName('table'));
     allTables.forEach((t) => {
@@ -2729,38 +2729,8 @@ function rebuildCrewCallTable() {
       if (text.includes('crew call')) { try { t.parentElement?.removeChild(t); } catch(_) {} }
     });
   } catch(_) {}
-  // 2) Remove any existing standard Crew Call tables to rebuild fresh
+  // Remove any existing standard Crew Call tables as well (no crew table at all)
   try { Array.from(callsheet.querySelectorAll('table.cs-crew')).forEach((t) => t.parentElement?.removeChild(t)); } catch(_) {}
-  // Build a fresh standard table (same as ensureCrewTableExists but always rebuild)
-  const crew = document.createElement('table');
-  crew.className = 'tpl-table cs-crew';
-  crew.setAttribute('data-editable-table', 'crew');
-  const cols = [30, 34, 20, 16];
-  const cg = document.createElement('colgroup');
-  cols.forEach((w) => { const c = document.createElement('col'); c.setAttribute('style', `width:${w}%`); cg.appendChild(c); });
-  crew.appendChild(cg);
-  const thead = document.createElement('thead');
-  const titleRow = document.createElement('tr');
-  const titleTh = document.createElement('th'); titleTh.setAttribute('colspan', String(cols.length)); titleTh.className = 'cs-crew-title'; titleTh.textContent = 'Crew Call'; titleTh.style.textAlign = 'center'; titleTh.style.display = 'flex'; titleTh.style.alignItems = 'center'; titleTh.style.justifyContent = 'center'; titleTh.style.fontSize = '14px'; titleRow.appendChild(titleTh);
-  thead.appendChild(titleRow);
-  const trh = document.createElement('tr');
-  ['Position', 'Name', 'Phone', 'Time'].forEach((label, i) => {
-    const th = document.createElement('th'); th.textContent = label; th.setAttribute('style', `width:${cols[i]}%`); th.style.textAlign = 'center'; th.style.display = 'flex'; th.style.alignItems = 'center'; th.style.justifyContent = 'center'; th.style.fontSize = '12.5px'; trh.appendChild(th);
-  });
-  thead.appendChild(trh);
-  crew.appendChild(thead);
-  const tbody = document.createElement('tbody');
-  for (let i = 0; i < 18; i += 1) {
-    const tr = document.createElement('tr');
-    for (let c = 0; c < 4; c += 1) {
-      const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); if (c === 2) { td.setAttribute('dir', 'ltr'); td.style.direction = 'ltr'; } tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  crew.appendChild(tbody);
-  const sched = callsheet.querySelector('table.cs-schedule');
-  if (sched && sched.parentElement) sched.parentElement.insertBefore(crew, sched.nextSibling);
-  else callsheet.appendChild(crew);
 }
 
 // Keep one Crew Call table only: move filled rows from duplicates to the primary and remove the rest.
@@ -2949,8 +2919,8 @@ async function loadSnapshotById(id) {
       wrap.innerHTML = data.html;
       const root = wrap.firstElementChild;
       if (root) host.appendChild(root);
-      // Normalize crew table after loading saved HTML (remove old layouts)
-      try { rebuildCrewCallTable(); pruneEmptyA4PagesExt(); } catch(_) {}
+      // Normalize: remove any existing Crew Call tables from loaded HTML
+      try { purgeCrewCallTables(); pruneEmptyA4PagesExt(); } catch(_) {}
     }
   } catch (_) {}
 }
