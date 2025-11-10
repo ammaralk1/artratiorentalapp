@@ -303,7 +303,8 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const sb = el('tbody');
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
   const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);
-  for (let i = 0; i < 24; i += 1) { const tr = el('tr'); for (let c = 0; c < 12; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); sb.appendChild(tr); }
+  // Start with only 4 blank rows by default; user can add more from toolbar
+  for (let i = 0; i < 4; i += 1) { const tr = el('tr'); for (let c = 0; c < 12; c += 1) tr.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' })); sb.appendChild(tr); }
   sched.appendChild(sb); wrap3.appendChild(sched);
   inner3.appendChild(wrap3);
 

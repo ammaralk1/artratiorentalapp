@@ -61,6 +61,9 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       const updateAfter = () => {
         try { if (typeof onAfterChange === 'function') onAfterChange(); } catch (_) {}
         try { setTimeout(() => { paginateGenericTplTables(); pruneEmptyA4Pages(); }, 30); } catch(_) {}
+        // Notify host to enforce schedule sizing (Call Sheet v1)
+        try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
+        try { document.dispatchEvent(new CustomEvent('templates:afterRowChange')); } catch(_) {}
       };
       const doRowFull = () => {
         const table = sched || cell.closest('table');

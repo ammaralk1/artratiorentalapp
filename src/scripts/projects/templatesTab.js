@@ -83,6 +83,8 @@ function enforceCallsheetSizing(scope) {
     });
   } catch(_) {}
 }
+// Expose a global hook for toolbar actions to call after row changes
+try { window.__enforceCallsheetSizing = enforceCallsheetSizing; } catch(_) {}
 
 // If cs-crew or cs-schedule are orphaned (not under .callsheet-v1), wrap them correctly
 function fixCallsheetStructure(root) {
