@@ -265,13 +265,20 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   // Cast calls matching legacy look: header bar + single row with weather box at the far right
   const cast = el('table', { class: 'cs-cast' });
   const cb = el('tbody');
-  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls' })));
-  const castRow = el('tr');
-  // Build 8 empty cells (weather moved to right meta block)
+  // Define 8 equal columns
+  const castCg = el('colgroup'); for (let i=0;i<8;i+=1) castCg.appendChild(el('col', { style: 'width:12.5%' }));
+  cast.appendChild(castCg);
+  // Header cell spans all columns
+  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '8' })));
+  // Two data rows
+  const castRow1 = el('tr');
+  const castRow2 = el('tr');
   for (let i = 0; i < 8; i += 1) {
-    castRow.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    castRow1.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
+    castRow2.appendChild(el('td', { 'data-editable': 'true', contenteditable: 'true' }));
   }
-  cb.appendChild(castRow);
+  cb.appendChild(castRow1);
+  cb.appendChild(castRow2);
   cast.appendChild(cb); wrap.appendChild(cast);
 
   inner.appendChild(wrap);

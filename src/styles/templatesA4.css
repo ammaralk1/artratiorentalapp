@@ -396,7 +396,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="preview"] table.cs-schedule { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-info { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-cast { box-shadow: inset 0 -1.5px 0 #9ca3af; }
-#templates-a4-root[data-render-context="preview"] table.cs-crew { box-shadow: inset 0 -1.5px 0 #9ca3af; }
+#templates-a4-root[data-render-context="preview"] table.cs-crew { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
 /* (removed Key Contacts table styles: cs-contacts) */
 /* Ensure bottom outlines are closed on first page tables */
 table.cs-info tbody tr:last-child td,
@@ -422,7 +422,9 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-brand { font-size: 16px; font-weight: 800; text-align:center; }
 #templates-a4-root .callsheet-v1 .cs-date { font-size: 13px; font-weight: 700; text-align:center; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
-.callsheet-v1 .cs-crew { table-layout: fixed; width: 100%; margin-top:6px; }
+.callsheet-v1 .cs-crew { table-layout: fixed; width: 100% !important; margin-top:6px; }
+/* Reduce inner padding on page 2 (Crew) for more width */
+#templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 6mm; padding-right: 6mm; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
