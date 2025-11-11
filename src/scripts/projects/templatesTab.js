@@ -75,9 +75,9 @@ function enforceCallsheetSizing(scope) {
     const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
     scheds.forEach((t) => {
       try {
-        t.style.setProperty('width', 'calc(100% + 40mm)', 'important');
-        t.style.setProperty('margin-left', '-20mm', 'important');
-        t.style.setProperty('margin-right', '-20mm', 'important');
+        t.style.setProperty('width', 'calc(100% + 24mm)', 'important');
+        t.style.setProperty('margin-left', '-12mm', 'important');
+        t.style.setProperty('margin-right', '-12mm', 'important');
         const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
       } catch(_) {}
     });
