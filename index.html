@@ -66,6 +66,15 @@
         .card { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
         p, .note, .brand small { color: #94a3b8; }
       }
+      /* Force dark mode when toggled regardless of system preference */
+      :where(html.dark-mode, body.dark-mode) body { background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.15), transparent 60%),
+                       radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.12), transparent 60%),
+                       linear-gradient(135deg, #0b1220, #0b1025); color: #e2e8f0; }
+      :where(html.dark-mode, body.dark-mode) header { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+      :where(html.dark-mode, body.dark-mode) .language-toggle-btn,
+      :where(html.dark-mode, body.dark-mode) .theme-toggle-btn { background: rgba(2,6,23,.6); color: #e2e8f0; border-color: #334155; }
+      :where(html.dark-mode, body.dark-mode) .card { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+      :where(html.dark-mode, body.dark-mode) p, :where(html.dark-mode, body.dark-mode) .note, :where(html.dark-mode, body.dark-mode) .brand small { color: #94a3b8; }
     </style>
     <script src="/js/page-boot.js"></script>
     <script src="/js/landing-boot.js" defer></script>
@@ -83,7 +92,7 @@
           >
         </div>
         <div class="brand">
-          <small>Art Ratio</small>
+          <small data-i18n-key="brand">Art Ratio</small>
         </div>
       </div>
       <div class="header-end">
@@ -106,17 +115,17 @@
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
           </svg>
-          <span class="sr-only" data-theme-label>تبديل المظهر</span>
+          <span class="sr-only" data-theme-label data-i18n-key="themeToggleLabel">تبديل المظهر</span>
         </label>
-        <a class="btn" href="/dist/src/pages/login.html">تسجيل الدخول</a>
+        <a class="btn" href="/dist/src/pages/login.html" data-i18n-key="login">تسجيل الدخول</a>
       </div>
     </header>
 
     <main role="main" aria-labelledby="welcome-title">
       <section class="card">
-        <h1 id="welcome-title" class="section-title">أهلًا وسهلًا بك في Art Ratio</h1>
-        <p>هذه الصفحة قيد الإنشاء. قريبًا ستصبح معرض أعمال/بورتفوليو خاص بـ Art Ratio. يسعدنا زيارتك، ترقّب التحديثات قريبًا.</p>
-        <p class="note">في حال كنت عضوًا في الفريق وتريد متابعة العمل يمكنك استخدام زر تسجيل الدخول.</p>
+        <h1 id="welcome-title" class="section-title" data-i18n-key="welcomeTitle">أهلًا وسهلًا بك في Art Ratio</h1>
+        <p data-i18n-key="description">هذه الصفحة قيد الإنشاء. قريبًا ستصبح معرض أعمال/بورتفوليو خاص بـ Art Ratio. يسعدنا زيارتك، ترقّب التحديثات قريبًا.</p>
+        <p class="note" data-i18n-key="note">في حال كنت عضوًا في الفريق وتريد متابعة العمل يمكنك استخدام زر تسجيل الدخول.</p>
       </section>
     </main>
   </body>
