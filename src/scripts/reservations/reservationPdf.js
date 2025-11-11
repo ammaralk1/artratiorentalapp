@@ -1641,9 +1641,7 @@ function getTogglePrefsStorageKey(context = 'reservation') {
 
 function clearLegacyQuotePreferences() {
   try {
-    // Remove legacy toggle storage and local sequence to avoid stale behaviour
-    window.localStorage?.removeItem?.('reservations.quote.togglePrefs.v1');
-    window.localStorage?.removeItem?.('projects.quote.togglePrefs.v1');
+    // Keep user toggle preferences; only clear old local sequence persistence
     window.localStorage?.removeItem?.(QUOTE_SEQUENCE_STORAGE_KEY);
   } catch (_) { /* ignore */ }
 }
