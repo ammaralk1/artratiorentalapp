@@ -195,6 +195,8 @@ table.exp-top-table td, table.exp-top-table th { box-shadow: none !important; ou
 .cs-logo--right img { cursor:move; user-select:none; -webkit-user-drag:none; }
 /* Hide secondary logo box entirely if no URL */
 .cs-logo--right[data-empty="1"] { display:none; }
+/* Keep title centered when primary logo is hidden: reserve grid cell but hide visuals */
+.callsheet-v1 .cs-logo--left[data-hidden="1"] { visibility: hidden; }
 /* Optional visual handle if we add resize UI later */
 .cs-logo__resize { position:absolute; right:4px; bottom:4px; width:10px; height:10px; background:#334155; border-radius:2px; cursor:nwse-resize; display:none; }
 .cs-logo--right:hover .cs-logo__resize { display:block; }

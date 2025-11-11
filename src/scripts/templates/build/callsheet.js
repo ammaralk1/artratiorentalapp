@@ -220,7 +220,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
     const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0;
     const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1)));
     leftImg.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
-    if (lstate.h) { try { leftBrandLogo.style.display = 'none'; } catch(_) {} }
+    if (lstate.h) { try { leftBrandLogo.setAttribute('data-hidden', '1'); leftBrandLogo.style.visibility = 'hidden'; } catch(_) {} }
   } catch(_) {}
   leftBrandLogo.appendChild(leftImg); hdr.appendChild(leftBrandLogo);
   const titleBox = el('div', { class: 'cs-titlebox' }, [
