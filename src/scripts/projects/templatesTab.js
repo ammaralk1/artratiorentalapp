@@ -13,6 +13,7 @@ function getReservationsForProjectLocal(projectId) {
     : [];
 }
 import { ensureHtml2Pdf, loadExternalScript } from '../reports/external.js';
+import { ensureXlsxStyled, exportCallsheetToExcel } from '../templates/excelExport.js';
 // Table interactions are handled via templates/tableInteractions.js; no direct tableTools use here
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
@@ -418,6 +419,10 @@ function ensureLogoControls(type = 'expenses') {
       <label class="form-label" style="margin:0 4px 0 0;">لوغو ارت ريشيو</label>
       <input type="range" id="tpl-logo1-size" min="0.3" max="3" step="0.01" title="حجم لوغو ارت ريشيو">
       <button type="button" class="btn btn-outline" id="tpl-logo1-reset" title="إعادة تموضع لوغو ارت ريشيو">↺</button>
+      <label class="form-check-label" style="display:inline-flex;align-items:center;gap:6px;margin:0 0 0 8px;">
+        <input type="checkbox" id="tpl-logo1-hide" class="form-check-input">
+        <span>إخفاء اللوغو</span>
+      </label>
     </div>
     <div class="input-group" style="display:inline-flex;gap:6px;align-items:center;">
       <input type="url" id="tpl-logo2-url" class="form-control" placeholder="🔗 رابط لوغو إضافي" style="min-width:220px;max-width:320px;">
@@ -459,6 +464,8 @@ function ensureLogoControls(type = 'expenses') {
     const st1 = readPrimaryLogoState();
     const szEl1 = document.getElementById('tpl-logo1-size');
     if (szEl1) szEl1.value = String(st1.s || 1);
+    const hideEl = document.getElementById('tpl-logo1-hide');
+    if (hideEl) hideEl.checked = !!st1.h;
   } catch(err) { notifyApiError(err, 'تعذر حفظ القالب'); }
 
   // Bind actions
@@ -496,6 +503,12 @@ function ensureLogoControls(type = 'expenses') {
   });
   document.getElementById('tpl-logo2-reset')?.addEventListener('click', () => {
     writeSecondaryLogoState({ x: 0, y: 0 });
+    try { renderTemplatesPreview(); } catch(_) {}
+  });
+  // Hide/show primary logo
+  document.getElementById('tpl-logo1-hide')?.addEventListener('change', (e) => {
+    const checked = !!e?.target?.checked;
+    try { writePrimaryLogoState({ h: checked }); } catch(_) {}
     try { renderTemplatesPreview(); } catch(_) {}
   });
   // History controls
@@ -940,8 +953,9 @@ function readPrimaryLogoState() {
       s: Number(localStorage.getItem('templates.callsheet.logo1.s') || '1') || 1,
       x: Number(localStorage.getItem('templates.callsheet.logo1.x') || '0') || 0,
       y: Number(localStorage.getItem('templates.callsheet.logo1.y') || '0') || 0,
+      h: localStorage.getItem('templates.callsheet.logo1.h') === '1',
     };
-  } catch(_) { return { s: 1, x: 0, y: 0 }; }
+  } catch(_) { return { s: 1, x: 0, y: 0, h: false }; }
 }
 function writePrimaryLogoState(patch = {}) {
   try {
@@ -950,6 +964,7 @@ function writePrimaryLogoState(patch = {}) {
     if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo1.s', String(nx.s));
     if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo1.x', String(nx.x));
     if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo1.y', String(nx.y));
+    if (typeof nx.h === 'boolean') localStorage.setItem('templates.callsheet.logo1.h', nx.h ? '1' : '0');
   } catch(_) {}
 }
 function enablePrimaryLogoInteractions(wrap, img) {
@@ -3123,6 +3138,7 @@ export function initTemplatesTab() {
   const renameBtn = document.getElementById('templates-rename');
   const deleteBtn = document.getElementById('templates-delete');
   const exportBtn = document.getElementById('templates-export');
+  const exportExcelBtn = document.getElementById('templates-export-excel');
   const importBtn = document.getElementById('templates-import');
   const importFile = document.getElementById('templates-import-file');
   try { console.debug('[templatesTab] init start'); } catch(_) {}
@@ -3409,6 +3425,23 @@ export function initTemplatesTab() {
       URL.revokeObjectURL(url);
     } catch (_) {
       alert('تعذر التصدير');
+    }
+  });
+
+  // Export call sheet to Excel with styles (xlsx-js-style)
+  exportExcelBtn?.addEventListener('click', async (e) => {
+    e?.preventDefault?.(); e?.stopPropagation?.();
+    try {
+      const type = document.getElementById('templates-type')?.value || 'expenses';
+      if (type !== 'callsheet') { alert('التصدير إلى Excel متاح في الكول شيت فقط'); return; }
+      const root = document.querySelector('#templates-preview-host #templates-a4-root');
+      if (!root) { alert('لا توجد معاينة للكول شيت'); return; }
+      // Ensure library then export
+      await ensureXlsxStyled();
+      await exportCallsheetToExcel(root);
+    } catch (err) {
+      console.error('[templates/export-excel] failed', err);
+      alert('تعذر التصدير إلى Excel');
     }
   });
 

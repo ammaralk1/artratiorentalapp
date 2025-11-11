@@ -24,10 +24,22 @@ function enableSecondaryLogoInteractions(wrap, img) {
 }
 
 function readPrimaryLogoState() {
-  try { return { s: Number(localStorage.getItem('templates.callsheet.logo1.s')||'1')||1, x: Number(localStorage.getItem('templates.callsheet.logo1.x')||'0')||0, y: Number(localStorage.getItem('templates.callsheet.logo1.y')||'0')||0 }; } catch(_) { return { s:1, x:0, y:0 }; }
+  try {
+    return {
+      s: Number(localStorage.getItem('templates.callsheet.logo1.s')||'1')||1,
+      x: Number(localStorage.getItem('templates.callsheet.logo1.x')||'0')||0,
+      y: Number(localStorage.getItem('templates.callsheet.logo1.y')||'0')||0,
+      h: localStorage.getItem('templates.callsheet.logo1.h') === '1',
+    };
+  } catch(_) { return { s:1, x:0, y:0, h: false }; }
 }
 function writePrimaryLogoState(nx = {}) {
-  try { if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo1.s', String(nx.s)); if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo1.x', String(nx.x)); if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo1.y', String(nx.y)); } catch(_) {}
+  try {
+    if (Number.isFinite(nx.s)) localStorage.setItem('templates.callsheet.logo1.s', String(nx.s));
+    if (Number.isFinite(nx.x)) localStorage.setItem('templates.callsheet.logo1.x', String(nx.x));
+    if (Number.isFinite(nx.y)) localStorage.setItem('templates.callsheet.logo1.y', String(nx.y));
+    if (typeof nx.h === 'boolean') localStorage.setItem('templates.callsheet.logo1.h', nx.h ? '1' : '0');
+  } catch(_) {}
 }
 function enablePrimaryLogoInteractions(wrap, img) {
   try {
@@ -203,7 +215,13 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const leftBrandLogo = el('div', { class: 'cs-logo cs-logo--left' });
   const leftImg = el('img', { src: (logoUrl || ''), alt: 'Art Ratio Logo', draggable: 'false', referrerpolicy: 'no-referrer', crossorigin: 'anonymous' });
   try { leftImg.style.removeProperty('width'); } catch(_) {}
-  try { const lstate = readPrimaryLogoState(); const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0; const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1))); leftImg.style.transform = `scale(${s}) translate(${x}px, ${y}px)`; } catch(_) {}
+  try {
+    const lstate = readPrimaryLogoState();
+    const x = Number(lstate.x || 0) || 0; const y = Number(lstate.y || 0) || 0;
+    const s = Math.max(0.3, Math.min(3, Number(lstate.s || 1)));
+    leftImg.style.transform = `scale(${s}) translate(${x}px, ${y}px)`;
+    if (lstate.h) { try { leftBrandLogo.style.display = 'none'; } catch(_) {} }
+  } catch(_) {}
   leftBrandLogo.appendChild(leftImg); hdr.appendChild(leftBrandLogo);
   const titleBox = el('div', { class: 'cs-titlebox' }, [
     el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.clientCompany || project?.title || 'WKK.') }),
