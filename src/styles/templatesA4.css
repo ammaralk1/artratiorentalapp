@@ -421,9 +421,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 .cs-wrap-time { font-weight:800; }
 .cs-wrap-label { font-weight:900; }
 
-/* Ensure white backgrounds in export context too */
-#templates-a4-root[data-render-context="export"] .cs-label,
-#templates-a4-root[data-render-context="export"] .cs-section,
+/* Ensure white backgrounds in export context (but keep shaded labels/sections) */
 #templates-a4-root[data-render-context="export"] .cs-cast-title,
 #templates-a4-root[data-render-context="export"] .cs-row-note td,
 #templates-a4-root[data-render-context="export"] .cs-row-strong td,
@@ -465,11 +463,9 @@ table.cs-info tbody tr:last-child td,
 table.cs-cast tbody tr:last-child td,
 .cs-schedule tbody tr:last-child td { border-bottom: 1.5px solid #9ca3af !important; }
 
-/* Force white backgrounds for all Call Sheet tables in preview too */
+/* Force white backgrounds in preview (except shaded labels/sections) */
 #templates-a4-root .callsheet-v1 table th,
 #templates-a4-root .callsheet-v1 table td,
-#templates-a4-root .callsheet-v1 .cs-label,
-#templates-a4-root .callsheet-v1 .cs-section,
 #templates-a4-root .callsheet-v1 .cs-cast-title,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
@@ -493,11 +489,16 @@ table.cs-cast tbody tr:last-child td,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
 
-/* Light blue shading for page-1 labels */
+/* Light blue shading for page-1 labels (preview + export) */
 .callsheet-v1 .cs-roles td.cs-label,
 .callsheet-v1 .cs-times td.cs-label { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
 .callsheet-v1 .cs-center .cs-notes-h,
 .callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+/* Export context too */
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-roles td.cs-label,
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-times td.cs-label,
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-center .cs-notes-h,
+#templates-a4-root[data-render-context="export"] .callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
 
 /* Also enforce Cast Calls title in preview context */
 .callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
