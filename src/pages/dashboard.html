@@ -726,16 +726,16 @@
               </div>
               <div class="form-field">
                 <label for="new-equipment-barcode" class="form-label" data-i18n data-i18n-key="equipment.form.labels.barcode">🏷️ الباركود</label>
-                <input type="text" class="form-control" id="new-equipment-barcode" placeholder="الباركود" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.barcode">
+                <div class="d-flex align-items-center gap-2">
+                  <input type="text" class="form-control" id="new-equipment-barcode" placeholder="الباركود" required data-i18n data-i18n-placeholder-key="equipment.form.placeholders.barcode">
+                  <button type="button" id="generate-equipment-barcode" class="btn btn-outline btn-sm" title="توليد باركود">🎲 توليد</button>
+                </div>
               </div>
               <div class="form-field">
                 <label for="new-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
                 <input type="number" class="form-control" id="new-equipment-price" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.price">
               </div>
-              <div class="form-field">
-                <label for="new-equipment-qty" class="form-label" data-i18n data-i18n-key="equipment.form.labels.quantity">🔢 الكمية</label>
-                <input type="number" class="form-control" id="new-equipment-qty" placeholder="1" min="1" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.quantity">
-              </div>
+
               <div class="form-field">
                 <label for="new-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
                 <input type="text" class="form-control" id="new-equipment-image" placeholder="https://..." data-i18n data-i18n-placeholder-key="equipment.form.placeholders.image">

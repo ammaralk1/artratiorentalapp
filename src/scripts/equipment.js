@@ -121,6 +121,25 @@ function attachEnglishDigitNormalizer(input) {
   input.dataset.englishDigitsAttached = 'true';
 }
 
+function generateUniqueEquipmentBarcode() {
+  const existing = new Set(
+    getAllEquipment().map((item) => normalizeNumbers(String(item.barcode || '')).trim())
+  );
+
+  const makeCandidate = () => {
+    const ts = Date.now().toString(36).toUpperCase();
+    const rand = Math.floor(Math.random() * 0xFFFF).toString(36).toUpperCase().padStart(3, '0');
+    return `EQ-${ts}${rand}`;
+  };
+
+  let candidate = '';
+  for (let i = 0; i < 10; i++) {
+    candidate = makeCandidate();
+    if (!existing.has(candidate)) return candidate;
+  }
+  return candidate || makeCandidate();
+}
+
 function resolveComparableBarcode(item) {
   if (!item) return '';
   const primary = normalizeNumbers(String(item.barcode ?? '')).trim();
@@ -1869,6 +1888,24 @@ function wireUpEquipmentUI() {
   document.getElementById("filter-sub")?.addEventListener("change", handleEquipmentSearch);
   document.getElementById("filter-status")?.addEventListener("change", handleEquipmentSearch);
   document.getElementById("add-equipment-form")?.addEventListener("submit", handleAddEquipmentSubmit);
+
+  // Attach digit normalizer for new barcode input
+  attachEnglishDigitNormalizer(document.getElementById('new-equipment-barcode'));
+
+  // Wire barcode generator button
+  const genButton = document.getElementById('generate-equipment-barcode');
+  if (genButton && !genButton.dataset.listenerAttached) {
+    genButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      const input = document.getElementById('new-equipment-barcode');
+      if (!input) return;
+      const value = generateUniqueEquipmentBarcode();
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    });
+    genButton.dataset.listenerAttached = 'true';
+  }
 
   const clearButton = document.getElementById('equipment-clear-btn');
   if (clearButton && !clearButton.dataset.listenerAttached) {
