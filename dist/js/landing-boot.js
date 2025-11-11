@@ -1,6 +1,24 @@
 // Minimal bootstrap for landing page header (language + theme toggles)
 (function () {
   const THEME_KEY = 'art-ratio:session-theme';
+  const I18N = {
+    ar: {
+      pageTitle: 'Art Ratio — الصفحة الترحيبية',
+      welcomeTitle: 'أهلًا وسهلًا بك في Art Ratio',
+      description: 'هذه الصفحة قيد الإنشاء. قريبًا ستصبح معرض أعمال/بورتفوليو خاص بـ Art Ratio. يسعدنا زيارتك، ترقّب التحديثات قريبًا.',
+      note: 'في حال كنت عضوًا في الفريق وتريد متابعة العمل يمكنك استخدام زر تسجيل الدخول.',
+      login: 'تسجيل الدخول',
+      themeToggleLabel: 'تبديل المظهر'
+    },
+    en: {
+      pageTitle: 'Art Ratio — Welcome Page',
+      welcomeTitle: 'Welcome to Art Ratio',
+      description: 'This page is under construction. Soon it will become Art Ratio’s portfolio/gallery. Thanks for visiting — stay tuned.',
+      note: 'If you are a team member and want to continue working, you can use the login button.',
+      login: 'Log In',
+      themeToggleLabel: 'Toggle theme'
+    }
+  };
 
   function setTheme(theme) {
     const root = document.documentElement;
@@ -19,7 +37,7 @@
       body?.setAttribute?.('data-theme', 'light');
     }
     const label = document.querySelector('[data-theme-label]');
-    if (label) label.textContent = 'تبديل المظهر';
+    if (label) label.textContent = getI18n('themeToggleLabel');
     const checkbox = document.getElementById('theme-toggle');
     if (checkbox) checkbox.checked = isDark;
     document.documentElement.classList.remove('theme-loading');
@@ -68,6 +86,36 @@
     });
     html.classList.remove('language-loading');
     html.classList.add('language-ready');
+
+    // Apply translations
+    applyTranslations(normalized);
+  }
+
+  function getI18nKey(el) {
+    return el?.dataset?.i18nKey || '';
+  }
+
+  function getI18n(key, lang) {
+    const current = (lang || document.documentElement.getAttribute('lang') || 'ar').toLowerCase();
+    const dict = I18N[current] || I18N.ar;
+    return dict[key] ?? '';
+  }
+
+  function applyTranslations(lang) {
+    try {
+      document.title = getI18n('pageTitle', lang);
+    } catch (_) {}
+    document.querySelectorAll('[data-i18n-key]').forEach((el) => {
+      const key = getI18nKey(el);
+      const value = getI18n(key, lang);
+      if (!key) return;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        const placeholder = el.getAttribute('placeholder');
+        if (placeholder !== null) el.setAttribute('placeholder', value);
+      } else {
+        el.textContent = value;
+      }
+    });
   }
 
   function initLanguageToggle() {
