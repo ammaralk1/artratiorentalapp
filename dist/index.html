@@ -41,7 +41,12 @@
       .theme-toggle-btn { border: 1px solid #cbd5e1; background: rgba(255,255,255,.6); color: #0f172a; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
       .theme-toggle-btn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; }
       .theme-toggle-btn svg { width: 18px; height: 18px; }
+      /* Show only one icon depending on current theme */
+      .theme-toggle-btn .swap-on { display: none; }
+      html.dark-mode .theme-toggle-btn .swap-on, body.dark-mode .theme-toggle-btn .swap-on { display: inline; }
+      html.dark-mode .theme-toggle-btn .swap-off, body.dark-mode .theme-toggle-btn .swap-off { display: none; }
       #theme-toggle { position: absolute; opacity: 0; width: 0; height: 0; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
       .btn { appearance: none; border: 1px solid #3b82f6; background: #2563eb; color: white; padding: 10px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; }
       main { flex: 1; display: grid; place-items: center; padding: 20px; }
       .card {
@@ -75,6 +80,15 @@
       :where(html.dark-mode, body.dark-mode) .theme-toggle-btn { background: rgba(2,6,23,.6); color: #e2e8f0; border-color: #334155; }
       :where(html.dark-mode, body.dark-mode) .card { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
       :where(html.dark-mode, body.dark-mode) p, :where(html.dark-mode, body.dark-mode) .note, :where(html.dark-mode, body.dark-mode) .brand small { color: #94a3b8; }
+      /* Force light mode when toggled regardless of system preference */
+      :where(html.light-mode, body.light-mode) body { background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.12), transparent 60%),
+                       radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.10), transparent 60%),
+                       linear-gradient(135deg, #f8fafc, #eef2ff); color: #0f172a; }
+      :where(html.light-mode, body.light-mode) header { background: rgba(255,255,255,.7); border-color: rgba(148,163,184,.25); box-shadow: 0 8px 24px rgba(2,6,23,.06); }
+      :where(html.light-mode, body.light-mode) .language-toggle-btn,
+      :where(html.light-mode, body.light-mode) .theme-toggle-btn { background: rgba(255,255,255,.6); color: #0f172a; border-color: #cbd5e1; }
+      :where(html.light-mode, body.light-mode) .card { background: rgba(255,255,255,.75); border-color: rgba(148,163,184,.25); box-shadow: 0 10px 30px rgba(2,6,23,.08); }
+      :where(html.light-mode, body.light-mode) p, :where(html.light-mode, body.light-mode) .note, :where(html.light-mode, body.light-mode) .brand small { color: #475569; }
     </style>
     <script src="/js/godaddy-monitor.js" defer></script>
     <script src="/js/page-boot.js"></script>
@@ -98,7 +112,7 @@
       </div>
       <div class="header-end">
         <button type="button" class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
-        <label class="theme-toggle-btn" data-theme-toggle role="button" title="تبديل المظهر">
+        <label class="theme-toggle-btn" data-theme-toggle role="button">
           <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
           <svg class="swap-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -116,7 +130,7 @@
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
           </svg>
-          <span class="sr-only" data-theme-label data-i18n-key="themeToggleLabel">تبديل المظهر</span>
+          
         </label>
         <a class="btn" href="/login" data-i18n-key="login">تسجيل الدخول</a>
       </div>
@@ -131,5 +145,3 @@
     </main>
   </body>
 </html>
-      /* Screen reader only utility */
-      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
