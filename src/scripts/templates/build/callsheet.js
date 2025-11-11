@@ -1,4 +1,6 @@
 import { getTechniciansState } from '../../techniciansService.js';
+import { getTechnicianPositionsCache, findPositionByName } from '../../technicianPositions.js';
+import { getCurrentLanguage } from '../../language.js';
 import { el, buildRoot } from '../core.js';
 
 // el/buildRoot are imported from ../core.js
@@ -125,25 +127,7 @@ export function populateCrewFromReservation(crewTable, reservation) {
   assignments.forEach((a, idx) => {
     const tr = rows[idx]; if (!tr) return;
     const cells = Array.from(tr.children);
-    const pos = a.positionLabel
-      || a.positionLabelAr
-      || a.positionLabelEn
-      || a.position_name
-      || a.position_label
-      || a.positionKey
-      || a.position
-      || a.assignedPosition
-      || a.assigned_position
-      || a.reservationPosition
-      || a.reservation_position
-      || a.crewPosition
-      || a.crew_position
-      || a.roleInReservation
-      || a.role_in_reservation
-      || a.technicianRole
-      || a.role
-      || a.specialization
-      || '';
+    const pos = resolvePositionLabelFromAssignment(a);
     const name = a.technicianName || a.name || a.full_name || a.technician_name || '';
     const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
     if (cells[0]) cells[0].textContent = pos || '';
@@ -185,26 +169,7 @@ export function populateCrewFromReservationIfEmpty(reservation) {
         const nameKey = String((cells[1].textContent || '')).trim().toLowerCase();
         const a = byName.get(nameKey);
         if (!a) return;
-        const pos =
-          a.positionLabel
-          || a.positionLabelAr
-          || a.positionLabelEn
-          || a.position_name
-          || a.position_label
-          || a.positionKey
-          || a.position
-          || a.assignedPosition
-          || a.assigned_position
-          || a.reservationPosition
-          || a.reservation_position
-          || a.crewPosition
-          || a.crew_position
-          || a.roleInReservation
-          || a.role_in_reservation
-          || a.technicianRole
-          || a.role
-          || a.specialization
-          || '';
+        const pos = resolvePositionLabelFromAssignment(a);
         const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
         if (cells[0] && !(cells[0].textContent || '').trim()) cells[0].textContent = pos || '';
         if (cells[2] && !(cells[2].textContent || '').trim()) { try { cells[2].removeAttribute('dir'); } catch(_) {} cells[2].classList.add('dir-ltr'); cells[2].textContent = phone || ''; }
@@ -351,3 +316,71 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
 }
 
 export default { buildCallSheetPage, populateCrewFromReservation, populateCrewFromReservationIfEmpty };
+
+// Helper: resolve a human-readable position label from assignment fields + positions cache
+function resolvePositionLabelFromAssignment(a = {}) {
+  try {
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+    const choose = (p) => (lang === 'ar')
+      ? (p.labelAr || p.labelEn || p.name || '')
+      : (p.labelEn || p.labelAr || p.name || '');
+
+    const positions = (typeof getTechnicianPositionsCache === 'function') ? (getTechnicianPositionsCache() || []) : [];
+
+    const direct = a.positionLabel
+      || a.positionLabelAr
+      || a.positionLabelEn
+      || a.position_name
+      || a.position_label
+      || '';
+    if (direct && !/^position[-_]/i.test(String(direct))) return String(direct);
+
+    if (a.positionId != null && positions.length) {
+      const p = positions.find((x) => String(x.id) === String(a.positionId));
+      if (p) return choose(p);
+    }
+
+    const keyCandidates = [
+      a.positionKey,
+      a.position_key,
+      a.positionName,
+      a.position_name,
+      a.position,
+      a.assignedPosition,
+      a.assigned_position,
+      a.reservationPosition,
+      a.reservation_position,
+      a.crewPosition,
+      a.crew_position,
+      a.roleInReservation,
+      a.role_in_reservation,
+      a.technicianRole,
+      a.role,
+      a.specialization,
+    ].map((v) => (v != null ? String(v).trim() : '')).filter(Boolean);
+
+    for (const key of keyCandidates) {
+      let resolved = null;
+      if (typeof findPositionByName === 'function') resolved = findPositionByName(key);
+      if (!resolved && positions.length) {
+        const lower = key.toLowerCase();
+        resolved = positions.find((p) => [p.name, p.labelAr, p.labelEn]
+          .filter(Boolean)
+          .map((v) => String(v).toLowerCase())
+          .includes(lower)) || null;
+      }
+      if (resolved) return choose(resolved);
+      if (!/^position[-_]/i.test(key)) return key; // safe human text
+    }
+  } catch (_) { /* ignore */ }
+  const fallback = a.positionLabel
+    || a.positionLabelAr
+    || a.positionLabelEn
+    || a.position_name
+    || a.position_label
+    || a.technicianRole
+    || a.role
+    || a.specialization
+    || '';
+  return /^position[-_]/i.test(String(fallback)) ? '' : String(fallback);
+}

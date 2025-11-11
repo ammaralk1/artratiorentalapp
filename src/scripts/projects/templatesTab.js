@@ -3,6 +3,7 @@ import { t } from '../language.js';
 import { getProjectsState, refreshProjectsFromApi } from '../projectsService.js';
 import { getReservationsState, refreshReservationsFromApi } from '../reservationsService.js';
 import { getTechniciansState, refreshTechniciansFromApi } from '../techniciansService.js';
+import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
 // Avoid heavy cross-imports from view.js; compute locally
 function getReservationsForProjectLocal(projectId) {
   if (!projectId) return [];
@@ -1428,11 +1429,16 @@ function renderTemplatesPreview() {
     if (type === 'callsheet') {
       const selectedRes = getSelectedReservations(project.id)?.[0] || null;
       const fill = () => populateCrewFromReservationIfEmptyExt(selectedRes);
-      if (!getTechniciansState()?.length) {
-        refreshTechniciansFromApi().then(fill).catch(() => fill());
-      } else {
-        fill();
-      }
+      // Ensure positions cache is loaded to resolve readable position labels
+      Promise.resolve(ensureTechnicianPositionsLoaded())
+        .catch(() => {})
+        .finally(() => {
+          if (!getTechniciansState()?.length) {
+            refreshTechniciansFromApi().then(fill).catch(() => fill());
+          } else {
+            fill();
+          }
+        });
     }
   } catch (_) {}
   // If crew table is still mostly empty, auto-fill from selected reservation
