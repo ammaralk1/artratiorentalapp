@@ -3,6 +3,7 @@
   const THEME_KEY = 'art-ratio:session-theme';
   const I18N = {
     ar: {
+      brand: 'Art Ratio',
       pageTitle: 'Art Ratio — الصفحة الترحيبية',
       welcomeTitle: 'أهلًا وسهلًا بك في Art Ratio',
       description: 'هذه الصفحة قيد الإنشاء. قريبًا ستصبح معرض أعمال/بورتفوليو خاص بـ Art Ratio. يسعدنا زيارتك، ترقّب التحديثات قريبًا.',
@@ -11,6 +12,7 @@
       themeToggleLabel: 'تبديل المظهر'
     },
     en: {
+      brand: 'Art Ratio',
       pageTitle: 'Art Ratio — Welcome Page',
       welcomeTitle: 'Welcome to Art Ratio',
       description: 'This page is under construction. Soon it will become Art Ratio’s portfolio/gallery. Thanks for visiting — stay tuned.',
