@@ -230,6 +230,8 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const ltBody = el('tbody');
   ['Producer', 'Director', 'DOP', 'Production Manager', '1st Assistant Director'].forEach((lab) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal('')); ltBody.appendChild(r); });
   leftTable.appendChild(ltBody);
+  // Attempt to auto-fill key roles from the selected reservation (Crew Assignments)
+  try { if (res) autoFillHeaderRolesFromReservation(leftTable, res); } catch(_) {}
 
   const centerTable = el('table', { class: 'cs-center' });
   const ctBody = el('tbody');
@@ -384,4 +386,101 @@ function resolvePositionLabelFromAssignment(a = {}) {
     || a.specialization
     || '';
   return /^position[-_]/i.test(String(fallback)) ? '' : String(fallback);
+}
+
+// Helper: build a normalized list of crew assignments from reservation
+function buildNormalizedAssignments(reservation) {
+  const techs = getTechniciansState() || [];
+  const byId = new Map(techs.map((t) => [String(t.id), t]));
+  const byName = new Map(techs.map((t) => [String((t.name || t.full_name || '').trim().toLowerCase()), t]));
+  const raw = (() => {
+    if (Array.isArray(reservation?.crewAssignments) && reservation.crewAssignments.length) return reservation.crewAssignments;
+    if (Array.isArray(reservation?.techniciansDetails) && reservation.techniciansDetails.length) return reservation.techniciansDetails;
+    const ids = Array.isArray(reservation?.technicians) ? reservation.technicians : [];
+    if (ids.length) return ids.map((id) => ({ technicianId: id }));
+    return [];
+  })();
+  const out = raw.map((a) => ({ ...a }));
+  out.forEach((a) => {
+    try {
+      if (a && typeof a.technician === 'object') {
+        a.technicianId = a.technicianId ?? a.technician?.id ?? a.technician_id;
+        a.technicianName = a.technicianName ?? a.technician?.name ?? a.technician?.full_name ?? a.name;
+        a.technicianPhone = a.technicianPhone ?? a.technician?.phone ?? a.phone;
+        a.technicianRole = a.technicianRole ?? a.technician?.role ?? a.specialization ?? a.role;
+      }
+      if (a && typeof a.position === 'object') {
+        a.positionLabel = a.positionLabel ?? a.position?.labelAr ?? a.position?.labelEn ?? a.position?.name ?? a.position_name;
+      }
+      a.positionLabel = a.positionLabel ?? a.position_name ?? a.positionName ?? a.position;
+      a.technicianPhone = a.technicianPhone ?? a.phone_number ?? a.phoneNumber ?? a.mobile ?? a.whatsapp;
+      a.technicianName = a.technicianName ?? a.full_name ?? a.technician_name;
+      if (!a.technicianName && a.name) a.technicianName = a.name;
+    } catch (_) {}
+  });
+  out.forEach((a) => {
+    const aid = a.technicianId ?? a.technician_id ?? a.id;
+    const aname = a.technicianName ?? a.name;
+    const t = (aid != null && byId.get(String(aid))) || (aname ? byName.get(String(aname).trim().toLowerCase()) : null);
+    if (t) {
+      if (!a.technicianName && (t.name || t.full_name)) a.technicianName = t.name || t.full_name;
+      if (!a.technicianPhone && t.phone) a.technicianPhone = t.phone;
+      if (!a.technicianRole && (t.role || t.specialization)) a.technicianRole = t.role || t.specialization;
+    }
+  });
+  return out;
+}
+
+// Fill first-page header roles (Producer/Director/DOP/Production Manager/1st AD) from assignments
+function autoFillHeaderRolesFromReservation(leftTable, reservation) {
+  if (!leftTable || !reservation) return;
+  const rows = Array.from(leftTable.querySelectorAll('tbody tr'));
+  const mapLabelToKey = (txt) => {
+    const s = String(txt || '').toLowerCase();
+    if (/\bproducer\b/.test(s) || /منتج/.test(s)) return 'producer';
+    if (/(^|\b)director(?![^\b]*assistant)/.test(s) || /(^|\b)director\b(?!.*assistant)/.test(s) || /مخرج(?!.*مساعد)/.test(s)) return 'director';
+    if (/\bdop\b/.test(s) || /director of photography/i.test(s) || /cinematograph/.test(s) || /مدير تصوير/.test(s)) return 'dop';
+    if (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s)) return 'pm';
+    if (/(1st|first)\s+(assistant\s+)?director/i.test(s) || /\b1\s*ad\b/i.test(s) || /مساعد مخرج\s*(أول|اول)/.test(s)) return 'ad1';
+    return '';
+  };
+  const findRowFor = (key) => rows.find((tr) => mapLabelToKey(tr?.children?.[0]?.textContent) === key) || null;
+
+  const targets = {
+    producer: findRowFor('producer')?.children?.[1] || null,
+    director: findRowFor('director')?.children?.[1] || null,
+    dop: findRowFor('dop')?.children?.[1] || null,
+    pm: findRowFor('pm')?.children?.[1] || null,
+    ad1: findRowFor('ad1')?.children?.[1] || null,
+  };
+
+  const already = new Set();
+  const assignments = buildNormalizedAssignments(reservation);
+  assignments.forEach((a) => {
+    const name = a.technicianName || a.name || a.full_name || a.technician_name || '';
+    if (!name) return;
+    const pos = resolvePositionLabelFromAssignment(a);
+    const s = String(pos || '').trim().toLowerCase();
+    if (!s) return;
+    // First: 1st AD (most specific)
+    if (!already.has('ad1') && targets.ad1 && (/(1st|first)\s+(assistant\s+)?director/i.test(s) || /\b1\s*ad\b/i.test(s) || /مساعد مخرج\s*(أول|اول)/.test(s))) {
+      targets.ad1.textContent = name; already.add('ad1'); return;
+    }
+    // Production Manager
+    if (!already.has('pm') && targets.pm && (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s))) {
+      targets.pm.textContent = name; already.add('pm'); return;
+    }
+    // DOP
+    if (!already.has('dop') && targets.dop && (/\bdop\b/.test(s) || /director of photography/i.test(s) || /cinematograph/.test(s) || /مدير تصوير/.test(s))) {
+      targets.dop.textContent = name; already.add('dop'); return;
+    }
+    // Director (avoid Assistant Director)
+    if (!already.has('director') && targets.director && ((/\bdirector\b/.test(s) && !/assistant/.test(s)) || (/مخرج/.test(s) && !/مساعد/.test(s)))) {
+      targets.director.textContent = name; already.add('director'); return;
+    }
+    // Producer
+    if (!already.has('producer') && targets.producer && (/\bproducer\b/.test(s) || /منتج/.test(s))) {
+      targets.producer.textContent = name; already.add('producer'); return;
+    }
+  });
 }
