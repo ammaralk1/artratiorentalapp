@@ -29,17 +29,19 @@
     try { sessionStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light'); } catch (_) {}
     if (isDark) {
       root.classList.add('dark-mode', 'dark');
+      root.classList.remove('light-mode');
       body?.classList?.add('dark-mode', 'dark');
+      body?.classList?.remove('light-mode');
       root.setAttribute('data-theme', 'dark');
       body?.setAttribute?.('data-theme', 'dark');
     } else {
       root.classList.remove('dark-mode', 'dark');
+      root.classList.add('light-mode');
       body?.classList?.remove('dark-mode', 'dark');
+      body?.classList?.add('light-mode');
       root.setAttribute('data-theme', 'light');
       body?.setAttribute?.('data-theme', 'light');
     }
-    const label = document.querySelector('[data-theme-label]');
-    if (label) label.textContent = getI18n('themeToggleLabel');
     const checkbox = document.getElementById('theme-toggle');
     if (checkbox) checkbox.checked = isDark;
     document.documentElement.classList.remove('theme-loading');
