@@ -672,10 +672,10 @@ function renderPositionList() {
           </div>
         </div>
         <footer class="crew-position-card__footer">
-          <button type="button" class="btn btn-primary crew-position-add-btn" data-position-id="${position.id}">
+          <button type="button" class="btn btn-primary btn-sm crew-position-add-btn" data-position-id="${position.id}">
             ${addButtonLabel}
           </button>
-          <button type="button" class="btn btn-outline crew-position-edit-btn ms-2" data-position-id="${position.id}">
+          <button type="button" class="btn btn-outline btn-sm crew-position-edit-btn ms-2" data-position-id="${position.id}">
             ${t('technicians.picker.actions.editPosition', '✏️ تعديل الأسعار')}
           </button>
         </footer>

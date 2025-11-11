@@ -639,13 +639,16 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-card__footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .crew-position-add-btn {
-  min-width: 160px;
+  min-width: 120px;
   font-weight: 600;
   border-radius: 999px;
-  padding-inline: 1.8rem;
+  padding-inline: 1.2rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -659,6 +662,14 @@ body.no-js .sub-tab-buttons:not(.tabs) .sub-tab-button:first-child:focus-visible
 .crew-position-add-btn:active {
   transform: translateY(0);
   box-shadow: 0 6px 14px rgba(76, 110, 245, 0.22);
+}
+
+/* Smaller edit button to avoid overflow */
+.crew-position-edit-btn {
+  min-width: 120px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding-inline: 1.0rem;
 }
 
 .crew-assignment-column {
