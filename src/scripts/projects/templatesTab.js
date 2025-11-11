@@ -75,12 +75,33 @@ function enforceCallsheetSizing(scope) {
     const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
     scheds.forEach((t) => {
       try {
-        t.style.setProperty('width', 'calc(100% + 24mm)', 'important');
-        t.style.setProperty('margin-left', '-12mm', 'important');
-        t.style.setProperty('margin-right', '-12mm', 'important');
+        // Wider, closer to page edges while staying within bleed
+        t.style.setProperty('width', 'calc(100% + 32mm)', 'important');
+        t.style.setProperty('margin-left', '-16mm', 'important');
+        t.style.setProperty('margin-right', '-16mm', 'important');
         const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
       } catch(_) {}
     });
+
+    // Ensure schedule has at least 4 empty rows by default
+    try {
+      const sched = scheds[0];
+      if (sched) {
+        const tbody = sched.tBodies && sched.tBodies[0];
+        if (tbody) {
+          const rows = Array.from(tbody.children);
+          const isSpecial = (tr) => tr.classList?.contains('cs-row-note') || tr.classList?.contains('cs-row-strong');
+          let editableRows = rows.filter((tr) => !isSpecial(tr));
+          const cols = (() => { const h = sched.querySelector('thead tr'); return (h && h.children && h.children.length) ? h.children.length : 12; })();
+          while (editableRows.length < 4) {
+            const tr = document.createElement('tr');
+            for (let c = 0; c < cols; c += 1) { const td = document.createElement('td'); td.setAttribute('data-editable','true'); td.setAttribute('contenteditable','true'); tr.appendChild(td); }
+            tbody.appendChild(tr);
+            editableRows.push(tr);
+          }
+        }
+      }
+    } catch(_) {}
   } catch(_) {}
 }
 // Expose a global hook for toolbar actions to call after row changes
