@@ -1,4 +1,5 @@
 import { apiRequest, ApiError } from './apiClient.js';
+import { expandPositionQuery } from './positionSynonyms.js';
 import { t } from './language.js';
 
 const POSITIONS_UPDATED_EVENT = 'technicianPositions:updated';
@@ -68,12 +69,26 @@ export function getTechnicianPositionsCache() {
 export function findPositionByName(name) {
   const normalized = String(name ?? '').trim().toLowerCase();
   if (!normalized) return null;
-  return positionsCache.find((item) => {
-    if (item.name && item.name.toLowerCase() === normalized) return true;
-    if (item.labelAr && item.labelAr.toLowerCase() === normalized) return true;
-    if (item.labelEn && item.labelEn.toLowerCase() === normalized) return true;
+  const matchKey = (item, key) => {
+    const k = String(key || '').toLowerCase();
+    if (!k) return false;
+    if (item.name && String(item.name).toLowerCase() === k) return true;
+    if (item.labelAr && String(item.labelAr).toLowerCase() === k) return true;
+    if (item.labelEn && String(item.labelEn).toLowerCase() === k) return true;
     return false;
-  }) || null;
+  };
+  // exact match first
+  let found = positionsCache.find((item) => matchKey(item, normalized)) || null;
+  if (found) return found;
+  // try synonyms/aliases
+  try {
+    const expansions = expandPositionQuery(normalized) || [];
+    for (const alt of expansions) {
+      found = positionsCache.find((item) => matchKey(item, alt)) || null;
+      if (found) return found;
+    }
+  } catch (_) { /* ignore */ }
+  return null;
 }
 
 export async function loadTechnicianPositions({ forceRefresh = false } = {}) {
