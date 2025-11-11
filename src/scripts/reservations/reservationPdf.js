@@ -238,7 +238,6 @@ const QUOTE_FIELD_DEFS = {
   ],
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: true },
     { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ]
 };
@@ -3718,7 +3717,7 @@ function buildQuotationHtml(options) {
     : '';
 
   const crewColumnsBase = QUOTE_CREW_COLUMN_DEFS.filter((column) => isFieldEnabled('crew', column.id));
-  const groupCrew = isFieldEnabled('crew', 'groupByPosition');
+  const groupCrew = true; // Always group crew by position in reservation quotes
   const hasCrewColumns = crewColumnsBase.length > 0;
   const crewSourceRaw = Array.isArray(crewAssignments) ? crewAssignments : [];
   const crewKeyOf = (a) => {
