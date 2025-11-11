@@ -53,11 +53,8 @@
       const stored = sessionStorage.getItem(THEME_KEY);
       if (stored === 'dark' || stored === 'light') return stored;
     } catch (_) {}
-    try {
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } catch (_) {
-      return 'light';
-    }
+    // Default to dark for the landing page when no prior choice exists
+    return 'dark';
   }
 
   function initThemeToggle() {
