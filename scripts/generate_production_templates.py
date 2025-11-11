@@ -33,6 +33,10 @@ def ensure_dir(path: str) -> None:
 
 # ---------- Generic styling helpers ----------
 HEADER_FILL = PatternFill("solid", fgColor="EDF2F7")
+# Light blue section shade used across first-page headings (match UI)
+LIGHT_BLUE_FILL = PatternFill("solid", fgColor="E0ECFF")
+# Solid blue title bar for key section headers (match Crew/Cast headings in UI)
+SOLID_BLUE_FILL = PatternFill("solid", fgColor="2563EB")
 TITLE_FILL = PatternFill("solid", fgColor="1F2937")  # slate-800
 TITLE_FONT = Font(bold=True, color="FFFFFF", size=14)
 HEADER_FONT = Font(bold=True, color="000000")
@@ -60,6 +64,16 @@ def style_headers(ws, row: int, headers: List[str]):
         cell = ws.cell(row=row, column=idx, value=h)
         cell.font = HEADER_FONT
         cell.fill = HEADER_FILL
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border = THIN_BORDER
+
+
+def style_headers_blue(ws, row: int, headers: List[str]):
+    for idx, h in enumerate(headers, start=1):
+        cell = ws.cell(row=row, column=idx, value=h)
+        # Dark text for table headers; keep default header font weight
+        cell.font = HEADER_FONT
+        cell.fill = SOLID_BLUE_FILL
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = THIN_BORDER
 
@@ -267,20 +281,33 @@ def build_callsheet_template(path: str):
     ]
     for start_row, labels in headers:
         for i, lab in enumerate(labels, start=1):
-            ws.cell(row=start_row, column=i, value=lab).font = bold
+            # Label row with light-blue shading
+            lab_cell = ws.cell(row=start_row, column=i, value=lab)
+            lab_cell.font = bold
+            lab_cell.fill = LIGHT_BLUE_FILL
+            # Value row under it
             ws.cell(row=start_row + 1, column=i, value="")
+
+    # Set "Date" (row 3, column 4) to today's date by default
+    try:
+        ws.cell(row=3, column=4, value=date.today().isoformat())
+    except Exception:
+        pass
 
     # Important notes (full width)
     ws.merge_cells("A10:L10")
     ws["A10"].value = "Important Notes / ملاحظات مهمة"
     ws["A10"].font = Font(bold=True)
+    ws["A10"].fill = LIGHT_BLUE_FILL
     ws.merge_cells("A11:L14")
     ws["A11"].alignment = Alignment(wrap_text=True, vertical="top")
 
     # Cast calls table
     ws["A16"].value = "Cast Calls / جدول مواعيد الممثلين"
-    ws["A16"].font = bold
+    ws["A16"].font = Font(bold=True, color="FFFFFF")
+    ws["A16"].fill = SOLID_BLUE_FILL
     cast_headers = ["Name", "Role", "Call", "Makeup", "Wardrobe", "On Set", "Notes"]
+    # Cast table headers (row 17): keep standard header background
     style_headers(ws, 17, cast_headers)
     for r in range(18, 36):  # 18 rows
         for c in range(1, len(cast_headers) + 1):
@@ -289,7 +316,9 @@ def build_callsheet_template(path: str):
     # Key contacts block
     base_r = 16
     col = 9
-    ws.cell(row=base_r, column=col, value="Key Contacts / الأسماء المهمة").font = bold
+    kc = ws.cell(row=base_r, column=col, value="Key Contacts / الأسماء المهمة")
+    kc.font = bold
+    kc.fill = LIGHT_BLUE_FILL
     contacts = ["Producer", "Director", "1st AD", "DOP", "Gaffer", "Sound", "Wardrobe", "Makeup", "PA", "Driver"]
     r = base_r + 1
     for role in contacts:
@@ -340,4 +369,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -189,7 +189,9 @@ export async function exportProjectCallSheetXlsx({ project, reservations = [] } 
   aoa.push([]);
   aoa.push(['Production', 'Project Title', 'Client', 'Date', 'Shoot Days', 'Location City']);
   const shootDays = (start && end) ? `${start} → ${end}` : (start || '');
-  aoa.push(['', title, client, start || '', shootDays, locations]);
+  // Use today's date for the Date field as requested
+  const todayISO = formatDateISO(new Date());
+  aoa.push(['', title, client, todayISO, shootDays, locations]);
   aoa.push([]);
   aoa.push(['Call Time', 'Ready to Shoot', 'Lunch', 'Est. Wrap', 'Sunrise', 'Sunset']);
   aoa.push([start || '', '', '', end || '', '', '']);

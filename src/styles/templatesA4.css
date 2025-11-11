@@ -446,6 +446,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Re-apply Crew Call colors in export despite the generic white override above */
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
+/* Re-apply Cast Calls title color in export as well */
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
 /* Schedule title (dark) and header (light) */
 #templates-a4-root .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; font-size:18px !important; }
 #templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
@@ -472,6 +474,8 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+/* Make Cast Calls header match Crew Call (solid blue title) */
+#templates-a4-root .callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
 /* Keep font sizes in export context as well */
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th { font-size: 14px !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { font-size: 18px !important; }
@@ -494,6 +498,9 @@ table.cs-cast tbody tr:last-child td,
 .callsheet-v1 .cs-times td.cs-label { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
 .callsheet-v1 .cs-center .cs-notes-h,
 .callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+
+/* Also enforce Cast Calls title in preview context */
+.callsheet-v1 table.cs-cast .cs-cast-title { background:#2563EB !important; color:#ffffff !important; }
 
 /* Non-export preview shading for schedule headers */
 .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; }

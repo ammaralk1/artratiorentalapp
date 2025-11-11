@@ -224,8 +224,10 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   } catch(_) {}
   leftBrandLogo.appendChild(leftImg); hdr.appendChild(leftBrandLogo);
   const titleBox = el('div', { class: 'cs-titlebox' }, [
-    el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.clientCompany || project?.title || 'WKK.') }),
-    el('div', { class: 'cs-date', 'data-editable': 'true', contenteditable: 'true', text: (res?.start ? new Date(res.start).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB')) }),
+    // Show project title (not client/company) above the date
+    el('div', { class: 'cs-brand', 'data-editable': 'true', contenteditable: 'true', text: (project?.title || 'WKK.') }),
+    // Always default to today's date when building the call sheet
+    el('div', { class: 'cs-date', 'data-editable': 'true', contenteditable: 'true', text: (new Date().toLocaleDateString('en-GB')) }),
     el('div', { class: 'cs-title', text: 'CALL SHEET' })
   ]);
   hdr.appendChild(titleBox);
@@ -263,7 +265,8 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const rtBody = el('tbody');
   [
     ['Call Time',''],
-    ['Client',''],
+    // Put company/client name into the Client field by default
+    ['Client', (project?.clientCompany || project?.clientName || project?.client || '')],
     ['Ready to shoot',''],
     ['Lunch',''],
     ['Est. Wrap','']
