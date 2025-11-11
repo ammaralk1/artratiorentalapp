@@ -23,7 +23,7 @@ RewriteRule ^favicon_io/(.*)$ dist/favicon_io/$1 [L,NC]
 RewriteRule ^site\.webmanifest$ dist/favicon_io/site.webmanifest [L,NC]
 
 RewriteRule ^(dashboard|home|login|customer|technician|projects|projects-reports|projects-expenses|users|notifications)(?:\.html)?/?$ dist/src/pages/$1.html [L,NC]
-RewriteRule ^$ dist/src/pages/login.html [L]
+RewriteRule ^$ dist/index.html [L]
 
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 Header always set X-Content-Type-Options "nosniff"
