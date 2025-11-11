@@ -78,38 +78,91 @@ function tableToAoa(table) {
   return aoa;
 }
 
+// ---- Unified sheet helpers for single-sheet export ----
+function ensureMeta(ws) { if (!ws['!merges']) ws['!merges'] = []; if (!ws['!cols']) ws['!cols'] = []; }
+function updateRef(ws, r, c) {
+  const XLSX = window.XLSX; const ref = ws['!ref'];
+  if (!ref) { ws['!ref'] = XLSX.utils.encode_range({ s: { r, c }, e: { r, c } }); return; }
+  const range = XLSX.utils.decode_range(ref);
+  if (r > range.e.r) range.e.r = r; if (c > range.e.c) range.e.c = c; if (r < range.s.r) range.s.r = r; if (c < range.s.c) range.s.c = c;
+  ws['!ref'] = XLSX.utils.encode_range(range);
+}
+function writeCell(ws, r, c, v, s) {
+  const XLSX = window.XLSX; const addr = XLSX.utils.encode_cell({ r, c }); const t = typeof v === 'number' ? 'n' : 's';
+  ws[addr] = { v: v == null ? '' : v, t, s: s || {} }; updateRef(ws, r, c);
+}
+function merge(ws, r1, c1, r2, c2) { ensureMeta(ws); ws['!merges'].push({ s: { r: r1, c: c1 }, e: { r: r2, c: c2 } }); }
+function writeAoaAt(ws, aoa, r0, c0, defaultStyle) {
+  let rows = 0; let cols = 0; for (let r = 0; r < aoa.length; r += 1) { const row = aoa[r] || []; cols = Math.max(cols, row.length); for (let c = 0; c < row.length; c += 1) { const cell = row[c]; const v = (cell && typeof cell === 'object' && 'v' in cell) ? cell.v : cell; const s = (cell && typeof cell === 'object' && cell.s) ? cell.s : defaultStyle || {}; writeCell(ws, r0 + r, c0 + c, v, s); } } rows = aoa.length; return { rows, cols }; }
+function setCols(ws, widths = []) { ensureMeta(ws); ws['!cols'] = widths.map((w) => ({ wch: w })); }
+
 export async function exportCallsheetToExcel(root) {
   const XLSX = await ensureXlsxStyled();
   const wb = XLSX.utils.book_new();
+  const ws = {};
+  ensureMeta(ws);
+  // 12-column layout matching schedule grid (approximate widths in characters)
+  const COLS = [6, 8, 26, 8, 8, 6, 10, 6, 6, 10, 10, 24];
+  setCols(ws, COLS);
+
+  const center = { alignment: { horizontal: 'center', vertical: 'center', wrapText: true } };
+  const left = { alignment: { horizontal: 'left', vertical: 'top', wrapText: true } };
+  const borderLight = buildBorder('#CBD5E1');
+  const borderDark = buildBorder('#9CA3AF');
+  const cell = { ...center, border: borderLight };
+  const leftCell = { ...left, border: borderLight };
+  const headBlue = { font: { bold: true, color: { rgb: rgb('#FFFFFF') }, sz: 12 }, fill: { patternType: 'solid', fgColor: { rgb: rgb('#2563EB') } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: borderDark };
 
   const find = (sel) => root && root.querySelector(sel);
+  let row = 0;
 
-  const addTable = (selector, name, widths) => {
-    const table = find(selector);
-    if (!table) return;
-    const aoa = tableToAoa(table);
-    const ws = aoaToSheetStyled(aoa, { cols: (widths || []).map((w) => ({ wch: w })) });
-    XLSX.utils.book_append_sheet(wb, ws, name);
-  };
+  // Header brand/date/title centered across all columns
+  const brand = (find('.callsheet-v1 .cs-brand')?.textContent || '').trim();
+  const dateText = (find('.callsheet-v1 .cs-date')?.textContent || '').trim();
+  const titleText = (find('.callsheet-v1 .cs-title')?.textContent || 'CALL SHEET').trim();
+  writeCell(ws, row, 0, brand || ''); merge(ws, row, 0, row, 11); ws[XLSX.utils.encode_cell({ r: row, c: 0 })].s = { font: { bold: true, sz: 20 }, ...center };
+  row += 1;
+  writeCell(ws, row, 0, dateText || ''); merge(ws, row, 0, row, 11); ws[XLSX.utils.encode_cell({ r: row, c: 0 })].s = { font: { bold: true, sz: 12 }, ...center };
+  row += 1;
+  writeCell(ws, row, 0, titleText); merge(ws, row, 0, row, 11); ws[XLSX.utils.encode_cell({ r: row, c: 0 })].s = { font: { bold: true, sz: 14 }, ...center };
+  row += 2;
 
-  addTable('.callsheet-v1 .cs-roles', 'Roles', [22, 38]);
-  addTable('.callsheet-v1 .cs-times', 'Times', [22, 30]);
-  addTable('.callsheet-v1 .cs-cast', 'Cast Calls', [16, 16, 16, 16, 16, 16, 16, 16]);
-  addTable('.callsheet-v1 .cs-crew', 'Crew Call', [28, 32, 22, 12]);
-  addTable('.callsheet-v1 .cs-schedule', 'Schedule', [6, 8, 26, 8, 8, 6, 10, 6, 6, 10, 10, 24]);
+  // Three-column grid (Roles 1-4, Notes/Locations 5-8, Times 9-12)
+  const rolesRows = [];
+  try { Array.from(find('.callsheet-v1 .cs-roles tbody')?.querySelectorAll('tr') || []).forEach((tr) => { const tds = Array.from(tr.children); const label = (tds[0]?.textContent || '').trim(); const value = (tds[1]?.textContent || '').trim(); rolesRows.push([{ v: label, s: { ...cell, font: { bold: true } } }, { v: value, s: cell }]); }); } catch(_) {}
+  const timesRows = [];
+  try { Array.from(find('.callsheet-v1 .cs-times tbody')?.querySelectorAll('tr') || []).forEach((tr) => { const tds = Array.from(tr.children); timesRows.push([{ v: (tds[0]?.textContent || '').trim(), s: { ...cell, font: { bold: true } } }, { v: (tds[1]?.textContent || '').trim(), s: cell }]); }); } catch(_) {}
+  const centerRows = [];
+  try {
+    const notesH = (find('.callsheet-v1 .cs-notes-h')?.textContent || 'Important Notes').trim();
+    const notes = (find('.callsheet-v1 .cs-notes')?.textContent || '').replace(/\n+/g, '\n').trim();
+    const locH = (find('.callsheet-v1 .cs-section')?.textContent || 'Locations').trim();
+    const locs = (find('.callsheet-v1 .cs-locations')?.textContent || '').trim();
+    centerRows.push([{ v: notesH, s: headBlue }]);
+    centerRows.push([{ v: notes, s: leftCell }]);
+    centerRows.push([{ v: locH, s: headBlue }]);
+    centerRows.push([{ v: locs, s: leftCell }]);
+  } catch(_) {}
+  const r0 = row; const rRoles = writeAoaAt(ws, rolesRows, r0, 0, cell).rows; const rTimes = writeAoaAt(ws, timesRows, r0, 8, cell).rows; for (let i = 0; i < centerRows.length; i += 1) { const rr = r0 + i; const obj = centerRows[i][0]; writeCell(ws, rr, 4, obj.v, obj.s); merge(ws, rr, 4, rr, 7); }
+  const blockH = Math.max(rRoles, centerRows.length, rTimes); row = r0 + blockH + 2;
+
+  // Cast Calls block
+  const castTable = find('.callsheet-v1 .cs-cast');
+  if (castTable) { writeCell(ws, row, 0, 'Cast Calls', headBlue); merge(ws, row, 0, row, 11); row += 1; const aoa = tableToAoa(castTable).slice(1); writeAoaAt(ws, aoa, row, 2, cell); row += aoa.length + 2; }
+
+  // Crew Call block (merged groups to span width)
+  const crewTable = find('.callsheet-v1 .cs-crew');
+  if (crewTable) { writeCell(ws, row, 0, 'Crew Call', headBlue); merge(ws, row, 0, row, 11); row += 1; const groups = [[0,2],[3,7],[8,10],[11,11]]; const headers = ['Position','Name','Phone','Time']; headers.forEach((txt, i) => { const [c1,c2] = groups[i]; writeCell(ws, row, c1, txt, headBlue); if (c2>c1) merge(ws, row, c1, row, c2); }); row += 1; Array.from(crewTable.querySelectorAll('tbody tr')).forEach((tr) => { const tds = Array.from(tr.children); const vals = [0,1,2,3].map((i)=> (tds[i]?.textContent || '').trim()); vals.forEach((txt, i) => { const [c1,c2] = groups[i]; const st = i===1 ? leftCell : cell; writeCell(ws, row, c1, txt, st); if (c2>c1) merge(ws, row, c1, row, c2); }); row += 1; }); row += 2; }
+
+  // Schedule full-width
+  const schedTable = find('.callsheet-v1 .cs-schedule');
+  if (schedTable) { const aoa = tableToAoa(schedTable); writeAoaAt(ws, aoa, row, 0, cell); row += aoa.length + 1; }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Call Sheet');
 
   // File name
-  let filename = 'CallSheet.xlsx';
-  try {
-    const title = (document.querySelector('#templates-save-title')?.value || '').trim();
-    if (title) filename = `${title}-CallSheet.xlsx`;
-  } catch(_) {}
-
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  let filename = 'CallSheet.xlsx'; try { const title = (document.querySelector('#templates-save-title')?.value || '').trim(); if (title) filename = `${title}-CallSheet.xlsx`; } catch(_) {}
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }); const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 }
 
 export default { ensureXlsxStyled, exportCallsheetToExcel };
-
