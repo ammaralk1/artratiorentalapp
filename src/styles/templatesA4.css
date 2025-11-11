@@ -430,7 +430,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="export"] .cs-schedule tbody td,
 #templates-a4-root[data-render-context="export"] .cs-schedule thead th,
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table td:not(.cs-label):not(.cs-notes-h):not(.cs-section),
-#templates-a4-root[data-render-context="export"] .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title),
+#templates-a4-root[data-render-context="export"] .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title):not(.cs-crew-head):not(.cs-schedule-head),
 #templates-a4-root[data-render-context="export"] .cs-wrap,
 #templates-a4-root[data-render-context="export"] .cs-logo { background-color:#ffffff !important; color:#000 !important; }
 /* Export: ensure logos render above any grid, and remove any boxed border around them */
@@ -466,7 +466,7 @@ table.cs-cast tbody tr:last-child td,
 .cs-schedule tbody tr:last-child td { border-bottom: 1.5px solid #9ca3af !important; }
 
 /* Force white backgrounds in preview (except shaded labels/sections) */
-#templates-a4-root .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title),
+#templates-a4-root .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title):not(.cs-crew-head):not(.cs-schedule-head),
 #templates-a4-root .callsheet-v1 table td:not(.cs-label):not(.cs-notes-h):not(.cs-section),
 #templates-a4-root .callsheet-v1 .cs-cast-title,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
@@ -484,6 +484,9 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-brand { font-size: 16px; font-weight: 800; text-align:center; }
 #templates-a4-root .callsheet-v1 .cs-date { font-size: 13px; font-weight: 700; text-align:center; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
+/* Explicit light-blue for crew and shot list column headers (preview + export) */
+#templates-a4-root .callsheet-v1 th.cs-crew-head,
+#templates-a4-root .callsheet-v1 th.cs-schedule-head { background: rgba(37, 99, 235, 0.18) !important; }
 /* Re-apply light-blue shading for column header row of Crew Call after generic white reset */
 #templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }

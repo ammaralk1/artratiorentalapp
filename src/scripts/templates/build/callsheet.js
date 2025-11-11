@@ -313,7 +313,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const crew = el('table', { class: 'tpl-table cs-crew', 'data-editable-table': 'crew', style: 'width:90% !important; margin-left:auto !important; margin-right:auto !important;' });
   const crewCols = [30,34,20,16]; const crewCg = el('colgroup'); crewCols.forEach((w)=>crewCg.appendChild(el('col',{style:`width:${w}%`}))); crew.appendChild(crewCg);
   const crewHead = el('thead'); const crewTitleRow = el('tr'); crewTitleRow.appendChild(el('th', { colspan: String(crewCols.length), class: 'cs-crew-title', text: 'Crew Call' })); crewHead.appendChild(crewTitleRow);
-  const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label)=>crewHeadRow.appendChild(el('th',{ text: label }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
+  const crewHeadRow = el('tr'); ['Position','Name','Phone','Time'].forEach((label)=>crewHeadRow.appendChild(el('th',{ text: label, class: 'cs-crew-head' }))); crewHead.appendChild(crewHeadRow); crew.appendChild(crewHead);
   const crewBody = el('tbody'); for (let i=0;i<18;i+=1){ const tr=el('tr'); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true','class':'dir-ltr'})); tr.appendChild(el('td',{'data-editable':'true',contenteditable:'true'})); crewBody.appendChild(tr);} crew.appendChild(crewBody); wrap2.appendChild(crew);
   inner2.appendChild(wrap2);
 
@@ -331,7 +331,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   trTitle.appendChild(el('th', { colspan: String(cols.length), class: 'cs-schedule-title', text: 'Shot List' }));
   thead.appendChild(trTitle);
   // Column headers row (light blue)
-  const trh = el('tr'); headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, style: `width:${cols[i]}%` }))); thead.appendChild(trh); sched.appendChild(thead);
+  const trh = el('tr'); headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, class: 'cs-schedule-head', style: `width:${cols[i]}%` }))); thead.appendChild(trh); sched.appendChild(thead);
   const sb = el('tbody');
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
   const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);
