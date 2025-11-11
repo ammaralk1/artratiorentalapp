@@ -75,9 +75,9 @@ function enforceCallsheetSizing(scope) {
     const scheds = Array.from(root.querySelectorAll('table.cs-schedule'));
     scheds.forEach((t) => {
       try {
-        // Wider, closer to page edges while staying within bleed
-        t.style.setProperty('width', 'calc(100% + 32mm)', 'important');
-        t.style.setProperty('margin-left', '-16mm', 'important');
+        // Apply requested width and margins from design tweak
+        t.style.setProperty('width', 'calc(82% + 120px)', 'important');
+        t.style.setProperty('margin-left', '11mm', 'important');
         t.style.setProperty('margin-right', '-16mm', 'important');
         const inner = t.closest('.a4-inner'); if (inner) { inner.style.setProperty('padding-left', '0mm', 'important'); inner.style.setProperty('padding-right', '0mm', 'important'); }
       } catch(_) {}
