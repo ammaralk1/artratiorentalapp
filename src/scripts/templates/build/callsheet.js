@@ -125,7 +125,25 @@ export function populateCrewFromReservation(crewTable, reservation) {
   assignments.forEach((a, idx) => {
     const tr = rows[idx]; if (!tr) return;
     const cells = Array.from(tr.children);
-    const pos = a.positionLabel || a.positionLabelAr || a.positionLabelEn || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
+    const pos = a.positionLabel
+      || a.positionLabelAr
+      || a.positionLabelEn
+      || a.position_name
+      || a.position_label
+      || a.positionKey
+      || a.position
+      || a.assignedPosition
+      || a.assigned_position
+      || a.reservationPosition
+      || a.reservation_position
+      || a.crewPosition
+      || a.crew_position
+      || a.roleInReservation
+      || a.role_in_reservation
+      || a.technicianRole
+      || a.role
+      || a.specialization
+      || '';
     const name = a.technicianName || a.name || a.full_name || a.technician_name || '';
     const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
     if (cells[0]) cells[0].textContent = pos || '';
@@ -167,7 +185,26 @@ export function populateCrewFromReservationIfEmpty(reservation) {
         const nameKey = String((cells[1].textContent || '')).trim().toLowerCase();
         const a = byName.get(nameKey);
         if (!a) return;
-        const pos = a.positionLabel || a.position || a.positionName || a.position_name || a.position_label || a.technicianRole || a.role || a.specialization || '';
+        const pos =
+          a.positionLabel
+          || a.positionLabelAr
+          || a.positionLabelEn
+          || a.position_name
+          || a.position_label
+          || a.positionKey
+          || a.position
+          || a.assignedPosition
+          || a.assigned_position
+          || a.reservationPosition
+          || a.reservation_position
+          || a.crewPosition
+          || a.crew_position
+          || a.roleInReservation
+          || a.role_in_reservation
+          || a.technicianRole
+          || a.role
+          || a.specialization
+          || '';
         const phone = a.technicianPhone || a.phone || a.phoneNumber || a.phone_number || a.mobile || a.whatsapp || '';
         if (cells[0] && !(cells[0].textContent || '').trim()) cells[0].textContent = pos || '';
         if (cells[2] && !(cells[2].textContent || '').trim()) { try { cells[2].removeAttribute('dir'); } catch(_) {} cells[2].classList.add('dir-ltr'); cells[2].textContent = phone || ''; }

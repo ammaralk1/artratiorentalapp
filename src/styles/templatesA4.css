@@ -448,11 +448,10 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
 #templates-a4-root[data-render-context="preview"] table.cs-cast,
-#templates-a4-root[data-render-context="preview"] table.cs-crew { outline: 1.5px solid #9ca3af; outline-offset: -1px; }
+#templates-a4-root[data-render-context="preview"] table.cs-crew { outline: 1.5px solid #9ca3af; outline-offset: -1px; box-shadow: none; }
 #templates-a4-root[data-render-context="preview"] table.cs-schedule { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-info { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-cast { box-shadow: inset 0 -1.5px 0 #9ca3af; }
-#templates-a4-root[data-render-context="preview"] table.cs-crew { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
 /* (removed Key Contacts table styles: cs-contacts) */
 /* Ensure bottom outlines are closed on first page tables */
 table.cs-info tbody tr:last-child td,
@@ -713,7 +712,7 @@ table.exp-top-table td[data-top-count], table.exp-top-table td[data-top-total], 
 #templates-a4-root table.cs-crew td,
 #templates-a4-root table.cs-crew th { border: 1.5px solid #9ca3af !important; }
 #templates-a4-root table.cs-crew tbody tr:last-child td { border-bottom: 1.5px solid #9ca3af !important; }
-#templates-a4-root[data-render-context="preview"] table.cs-crew { outline:none !important; box-shadow: inset 0 -1.5px 0 #9ca3af; }
+#templates-a4-root[data-render-context="preview"] table.cs-crew { outline: 1.5px solid #9ca3af !important; outline-offset: -1px !important; box-shadow: none !important; }
 
 /* Final: crew headers centered and 18px regardless of wrapper */
 #templates-a4-root table.cs-crew thead th {
