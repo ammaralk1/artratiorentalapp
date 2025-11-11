@@ -219,8 +219,9 @@ const QUOTE_FIELD_DEFS = {
     { id: 'projectCode', labelKey: 'reservations.details.labels.code', fallback: 'الرمز' }
   ],
   financialSummary: [
-    // Removed: equipmentTotal and crewTotal from summary toggles per request
+    // خيارات الملخص المالي المعروضة في قسم الحجز
     { id: 'discountAmount', labelKey: 'reservations.details.labels.discount', fallback: 'الخصم' },
+    { id: 'subtotalBeforeTax', labelKey: 'reservations.details.labels.subtotalBeforeTax', fallback: 'الإجمالي قبل الضريبة' },
     { id: 'taxAmount', labelKey: 'reservations.details.labels.tax', fallback: 'الضريبة' },
     { id: 'finalTotal', labelKey: 'reservations.details.labels.total', fallback: 'الإجمالي النهائي' }
   ],
@@ -3484,10 +3485,31 @@ function buildQuotationHtml(options) {
     : '';
 
   const financialInlineItems = [];
-  // الترتيب المطلوب: الخصم → الإجمالي قبل الضريبة → الضريبة
-  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.discount', 'قيمة الخصم'), `${totalsDisplay.discountAmount} ${currencyLabel}`));
-  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'), `${totalsDisplay.taxableAmount} ${currencyLabel}`));
-  financialInlineItems.push(renderTotalsItem(t('reservations.details.labels.tax', 'قيمة الضريبة'), `${totalsDisplay.taxAmount} ${currencyLabel}`));
+  // الترتيب المطلوب: الخصم → الإجمالي قبل الضريبة → الضريبة (حسب التoggles)
+  if (isFieldEnabled('financialSummary', 'discountAmount')) {
+    financialInlineItems.push(
+      renderTotalsItem(
+        t('reservations.details.labels.discount', 'قيمة الخصم'),
+        `${totalsDisplay.discountAmount} ${currencyLabel}`
+      )
+    );
+  }
+  if (isFieldEnabled('financialSummary', 'subtotalBeforeTax')) {
+    financialInlineItems.push(
+      renderTotalsItem(
+        t('reservations.details.labels.subtotalBeforeTax', 'الإجمالي قبل الضريبة'),
+        `${totalsDisplay.taxableAmount} ${currencyLabel}`
+      )
+    );
+  }
+  if (isFieldEnabled('financialSummary', 'taxAmount')) {
+    financialInlineItems.push(
+      renderTotalsItem(
+        t('reservations.details.labels.tax', 'قيمة الضريبة'),
+        `${totalsDisplay.taxAmount} ${currencyLabel}`
+      )
+    );
+  }
   const showFinalTotal = isFieldEnabled('financialSummary', 'finalTotal');
   const financialFinalItems = [];
   if (showFinalTotal) {
