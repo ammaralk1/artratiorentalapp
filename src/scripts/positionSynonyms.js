@@ -67,11 +67,11 @@ const GROUPS = {
     'location manager', 'لوكيشن مانجر', 'مدير مواقع', 'مسؤول مواقع', 'مدير اللوكيشن'
   ],
   first_ad: [
-    '1st assistant director', 'first assistant director', '1st ad', '1 ad', 'assistant director',
+    '1st assistant director', 'first assistant director', '1st ad', '1 ad', 'first ad', 'assistant director',
     'مساعد مخرج', 'مساعد مخرج اول', 'مساعد مخرج أول'
   ],
   second_ad: [
-    '2nd assistant director', 'second assistant director', '2nd ad', 'second ad',
+    '2nd assistant director', 'second assistant director', '2nd ad', 'second ad', '2 ad',
     'مساعد مخرج ثاني'
   ],
   production_manager: [
@@ -167,4 +167,3 @@ export function expandPositionQuery(name) {
 }
 
 export default { expandPositionQuery };
-

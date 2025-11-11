@@ -445,13 +445,21 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
   const isAssistantDirectorRole = (value) => {
     const n = norm(value);
     if (!n) return false;
+    // Also consider a condensed form without spaces for robust abbreviation matching (e.g. "a d" -> "ad")
+    const condensed = n.replace(/\s+/g, '');
     const candidates = [
       'assistant director',
       'first assistant director',
+      'second assistant director',
       '1st ad',
       '1 ad',
+      'first ad',
+      '2nd ad',
+      'second ad',
       'asst dir',
       'dir asst',
+      'assistant dir',
+      'dir assistant',
       'ad',
       'مساعد مخرج',
       'مساعد المخرج',
@@ -459,15 +467,20 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
       'مساعد إخراج',
       'مساعد مخرج اول',
       'مساعد مخرج أول',
+      'مساعد مخرج ثاني',
     ].map(norm);
     if (candidates.includes(n)) return true;
     // Containment checks for phrases like "lead assistant director"
     if (n.includes('assistant director')) return true;
     if (n.includes('dir asst')) return true;
     if (n.includes('asst dir')) return true;
-    if (n.includes('مساعد مخرج') || n.includes('مساعد اخراج')) return true;
-    // Safe AD abbreviation (standalone)
-    if (/^ad$/.test(n)) return true;
+    if (n.includes('assistant dir') || n.includes('dir assistant')) return true;
+    if (n.includes('مساعد مخرج') || n.includes('مساعد اخراج') || n.includes('مساعد إخراج')) return true;
+    // Safe AD abbreviation variants
+    if (/^ad$/.test(n)) return true;           // exact "ad"
+    if (/^(1st\s*ad|first\s*ad|ad\s*1)$/i.test(n)) return true; // 1st AD forms
+    if (/^(2nd\s*ad|second\s*ad|ad\s*2)$/i.test(n)) return true; // 2nd AD forms
+    if (/^ad$/.test(condensed)) return true;   // "a d", "a.d" -> "ad"
     return false;
   };
 
