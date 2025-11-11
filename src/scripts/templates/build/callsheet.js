@@ -435,6 +435,42 @@ function buildNormalizedAssignments(reservation) {
 function autoFillHeaderRolesFromReservation(leftTable, reservation) {
   if (!leftTable || !reservation) return;
   const rows = Array.from(leftTable.querySelectorAll('tbody tr'));
+  const norm = (s) => String(s || '')
+    .toLowerCase()
+    .replace(/[\u064B-\u0652]/g, '') // strip Arabic diacritics
+    .replace(/[\.\-_/]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const isAssistantDirectorRole = (value) => {
+    const n = norm(value);
+    if (!n) return false;
+    const candidates = [
+      'assistant director',
+      'first assistant director',
+      '1st ad',
+      '1 ad',
+      'asst dir',
+      'dir asst',
+      'ad',
+      'مساعد مخرج',
+      'مساعد المخرج',
+      'مساعد اخراج',
+      'مساعد إخراج',
+      'مساعد مخرج اول',
+      'مساعد مخرج أول',
+    ].map(norm);
+    if (candidates.includes(n)) return true;
+    // Containment checks for phrases like "lead assistant director"
+    if (n.includes('assistant director')) return true;
+    if (n.includes('dir asst')) return true;
+    if (n.includes('asst dir')) return true;
+    if (n.includes('مساعد مخرج') || n.includes('مساعد اخراج')) return true;
+    // Safe AD abbreviation (standalone)
+    if (/^ad$/.test(n)) return true;
+    return false;
+  };
+
   const mapLabelToKey = (txt) => {
     const s = String(txt || '').toLowerCase();
     if (/\bproducer\b/.test(s) || /منتج/.test(s)) return 'producer';
@@ -442,16 +478,7 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     if (/\bdop\b/.test(s) || /director of photography/i.test(s) || /cinematograph/.test(s) || /مدير تصوير/.test(s)) return 'dop';
     if (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s)) return 'pm';
     // Treat both 1st AD and generic Assistant Director as the same header slot
-    if (
-      /(1st|first)[\s\-_]*(assistant[\s\-_]*)?director/i.test(s)
-      || /\b1[\s\-_]*ad\b/i.test(s)
-      || /assistant[\s\-_]*director/i.test(s)
-      || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
-      || /dir\.?[\s\-_]*(asst|assistant)/i.test(s)
-      || /\bad\b/i.test(s)
-      || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
-      || /مساعد\s*اخراج(?:\s*(?:أول|اول))?/i.test(s)
-    ) return 'ad1';
+    if (isAssistantDirectorRole(s)) return 'ad1';
     return '';
   };
   const findRowFor = (key) => rows.find((tr) => mapLabelToKey(tr?.children?.[0]?.textContent) === key) || null;
@@ -473,16 +500,7 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     const s = String(pos || '').trim().toLowerCase();
     if (!s) return;
     // First: 1st AD / Assistant Director (treat as same role as requested)
-    if (!already.has('ad1') && targets.ad1 && (
-      /(1st|first)[\s\-_]*(assistant[\s\-_]*)?director/i.test(s)
-      || /\b1[\s\-_]*ad\b/i.test(s)
-      || /assistant[\s\-_]*director/i.test(s)
-      || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
-      || /dir\.?[\s\-_]*(asst|assistant)/i.test(s)
-      || /\bad\b/i.test(s)
-      || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
-      || /مساعد\s*اخراج(?:\s*(?:أول|اول))?/i.test(s)
-    )) {
+    if (!already.has('ad1') && targets.ad1 && isAssistantDirectorRole(s)) {
       targets.ad1.textContent = name; already.add('ad1'); return;
     }
     // Production Manager
