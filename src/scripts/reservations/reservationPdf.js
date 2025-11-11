@@ -1622,6 +1622,19 @@ async function reserveNextQuoteSequence(context = 'reservation') {
   }
 }
 
+async function peekServerQuoteSequence(context = 'reservation') {
+  const name = getSequenceNameForContext(context);
+  try {
+    const payload = await apiRequest(`/sequence/?name=${encodeURIComponent(name)}`, { method: 'GET' });
+    const current = Number(payload?.value);
+    const next = Number.isFinite(current) && current >= 0 ? (current + 1) : 1;
+    return { sequence: next, quoteNumber: formatQuoteNumber(next, context) };
+  } catch (error) {
+    console.warn('⚠️ [reservations/pdf] sequence peek failed, falling back to 1', error);
+    return { sequence: 1, quoteNumber: formatQuoteNumber(1, context) };
+  }
+}
+
 function getTogglePrefsStorageKey(context = 'reservation') {
   return QUOTE_TOGGLE_PREFS_STORAGE_KEYS[context] || QUOTE_TOGGLE_PREFS_STORAGE_KEYS.reservation;
 }
@@ -5072,6 +5085,15 @@ async function exportQuoteAsPdf() {
     logPdfDebug('html2pdf ensured');
 
     const context = activeQuoteState.context || 'reservation';
+    // Reserve the next sequence number at export-time to ensure uniqueness
+    try {
+      const { sequence, quoteNumber } = await reserveNextQuoteSequence(context);
+      activeQuoteState.quoteSequence = sequence;
+      activeQuoteState.quoteNumber = quoteNumber;
+      activeQuoteState.sequenceCommitted = true;
+    } catch (seqError) {
+      logPdfWarn('failed to reserve sequence at export time, proceeding with preview number', seqError);
+    }
     const html = buildQuotationHtml({
       context,
       reservation: activeQuoteState.reservation,
@@ -5150,10 +5172,6 @@ async function exportQuoteAsPdf() {
       mobileWindowRef: mobileDownloadWindow
     });
 
-    if (!activeQuoteState.sequenceCommitted) {
-      commitQuoteSequence(activeQuoteState.quoteSequence);
-      activeQuoteState.sequenceCommitted = true;
-    }
   } catch (error) {
     cleanupPdfArtifacts({
       container,
@@ -5201,7 +5219,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { sequence, quoteNumber } = await reserveNextQuoteSequence('reservation');
+  const { sequence, quoteNumber } = await peekServerQuoteSequence('reservation');
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -5226,7 +5244,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
-    sequenceCommitted: true
+    sequenceCommitted: false
   };
 
   applyQuoteTogglePreferences(activeQuoteState);
@@ -5263,7 +5281,7 @@ export async function exportProjectPdf({ project }) {
     console.warn('[reservationPdf] refreshReservationsForProject failed, proceeding with snapshot/state', error);
   }
 
-  const { sequence, quoteNumber } = await reserveNextQuoteSequence('project');
+  const { sequence, quoteNumber } = await peekServerQuoteSequence('project');
   const now = new Date();
   const baseTerms = [...PROJECT_QUOTE_TERMS];
 
@@ -5294,7 +5312,7 @@ export async function exportProjectPdf({ project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
-    sequenceCommitted: true,
+    sequenceCommitted: false,
     paymentSummary: projectData.paymentSummary,
     projectNotes: projectData.notes,
     paymentHistory: projectData.paymentHistory
