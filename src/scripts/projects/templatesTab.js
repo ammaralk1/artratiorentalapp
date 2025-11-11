@@ -57,6 +57,7 @@ let TPL_SUBTOTAL_TIMER = null;
 let TPL_EXPENSES_UNBIND = null;
 let TPL_IS_COMPOSING = false;
 let TPL_INPUT_TIMER = null;
+let TPL_ENFORCE_TIMER = null; // debounce schedule sizing enforcement during typing
 
 // Enforce sizing for Call Sheet tables regardless of CSS precedence/caching
 function enforceCallsheetSizing(scope) {
@@ -3483,6 +3484,11 @@ export function initTemplatesTab() {
       // After brief idle, recompute subgroup/group/grand totals
       try { clearTimeout(TPL_INPUT_TIMER); } catch (_) {}
       TPL_INPUT_TIMER = setTimeout(() => { recomputeExpensesSubtotalsDebounced(420); }, 180);
+      // Also keep Call Sheet schedule sizing stable while editing (debounced)
+      try { clearTimeout(TPL_ENFORCE_TIMER); } catch (_) {}
+      TPL_ENFORCE_TIMER = setTimeout(() => {
+        try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
+      }, 80);
     };
     TPL_LISTENERS.hostInput = onHostInput;
     TPL_HOST_EL?.addEventListener('input', onHostInput);
@@ -3492,6 +3498,8 @@ export function initTemplatesTab() {
       TPL_IS_COMPOSING = false;
       // Run a recompute once composition commits
       try { onHostInput(e); } catch (_) {}
+      // Re-enforce schedule sizing after IME commit
+      try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
     };
     TPL_LISTENERS.hostCompStart = onCompStart;
     TPL_LISTENERS.hostCompEnd = onCompEnd;
@@ -3515,6 +3523,8 @@ export function initTemplatesTab() {
         const table = td && td.closest && td.closest('table.exp-details');
         if (table) recomputeExpensesSubtotalsDebounced(120);
       } catch(_) {}
+      // Keep Call Sheet schedule width enforced after edits
+      try { if (typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch(_) {}
     };
     TPL_HOST_EL?.addEventListener('focusin', onFocusInCell, true);
     TPL_HOST_EL?.addEventListener('focusout', onFocusOutCell, true);
