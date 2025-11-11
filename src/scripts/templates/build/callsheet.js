@@ -441,7 +441,15 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     if (/(^|\b)director(?![^\b]*assistant)/.test(s) || /(^|\b)director\b(?!.*assistant)/.test(s) || /مخرج(?!.*مساعد)/.test(s)) return 'director';
     if (/\bdop\b/.test(s) || /director of photography/i.test(s) || /cinematograph/.test(s) || /مدير تصوير/.test(s)) return 'dop';
     if (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s)) return 'pm';
-    if (/(1st|first)\s+(assistant\s+)?director/i.test(s) || /\b1\s*ad\b/i.test(s) || /مساعد مخرج\s*(أول|اول)/.test(s)) return 'ad1';
+    // Treat both 1st AD and generic Assistant Director as the same header slot
+    if (
+      /(1st|first)\s+(assistant\s+)?director/i.test(s)
+      || /\b1\s*ad\b/i.test(s)
+      || /assistant\s*director/i.test(s)
+      || /(asst|assistant)\s*dir\.?/i.test(s)
+      || /\bad\b/i.test(s)
+      || /مساعد\s*مخرج(?:\s*(?:أول|اول))?/.test(s)
+    ) return 'ad1';
     return '';
   };
   const findRowFor = (key) => rows.find((tr) => mapLabelToKey(tr?.children?.[0]?.textContent) === key) || null;
@@ -466,8 +474,10 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     if (!already.has('ad1') && targets.ad1 && (
       /(1st|first)\s+(assistant\s+)?director/i.test(s)
       || /\b1\s*ad\b/i.test(s)
-      || /assistant\s+director/i.test(s)
-      || /مساعد مخرج(\s*(أول|اول))?/.test(s)
+      || /assistant\s*director/i.test(s)
+      || /(asst|assistant)\s*dir\.?/i.test(s)
+      || /\bad\b/i.test(s)
+      || /مساعد\s*مخرج(?:\s*(?:أول|اول))?/.test(s)
     )) {
       targets.ad1.textContent = name; already.add('ad1'); return;
     }
