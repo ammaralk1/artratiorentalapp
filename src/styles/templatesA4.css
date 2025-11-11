@@ -484,6 +484,8 @@ table.cs-cast tbody tr:last-child td,
 #templates-a4-root .callsheet-v1 .cs-brand { font-size: 16px; font-weight: 800; text-align:center; }
 #templates-a4-root .callsheet-v1 .cs-date { font-size: 13px; font-weight: 700; text-align:center; }
 #templates-a4-root .callsheet-v1 .tpl-table thead th { background:#ffffff !important; }
+/* Re-apply light-blue shading for column header row of Crew Call after generic white reset */
+#templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
 /* Page 2 (Crew): zero side padding so table uses full width */
 #templates-a4-root .a4-page:nth-child(2) .a4-inner { padding-left: 0mm; padding-right: 0mm; }
