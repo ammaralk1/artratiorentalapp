@@ -462,8 +462,13 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     const pos = resolvePositionLabelFromAssignment(a);
     const s = String(pos || '').trim().toLowerCase();
     if (!s) return;
-    // First: 1st AD (most specific)
-    if (!already.has('ad1') && targets.ad1 && (/(1st|first)\s+(assistant\s+)?director/i.test(s) || /\b1\s*ad\b/i.test(s) || /مساعد مخرج\s*(أول|اول)/.test(s))) {
+    // First: 1st AD / Assistant Director (treat as same role as requested)
+    if (!already.has('ad1') && targets.ad1 && (
+      /(1st|first)\s+(assistant\s+)?director/i.test(s)
+      || /\b1\s*ad\b/i.test(s)
+      || /assistant\s+director/i.test(s)
+      || /مساعد مخرج(\s*(أول|اول))?/.test(s)
+    )) {
       targets.ad1.textContent = name; already.add('ad1'); return;
     }
     // Production Manager
