@@ -237,7 +237,7 @@ const QUOTE_FIELD_DEFS = {
   ],
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: false },
+    { id: 'groupByPosition', labelKey: null, fallback: 'تجميع حسب المنصب', default: true },
     { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ]
 };
