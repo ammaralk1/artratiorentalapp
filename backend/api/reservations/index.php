@@ -979,10 +979,6 @@ function updateReservation(PDO $pdo, int $id, array $data): void
         if ($column === 'items' || $column === 'technicians' || $column === 'payments') {
             continue;
         }
-        // Only include columns that actually exist on the reservations table
-        if (!tableColumnExists($pdo, 'reservations', $column)) {
-            continue;
-        }
         $fields[] = sprintf('%s = :%s', $column, $column);
         $params[$column] = $value;
     }
@@ -1045,34 +1041,40 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
         return;
     }
 
-    // Detect available columns at runtime to be compatible with DBs that haven't run migrations yet
-    $hasPositionId = tableColumnExists($pdo, 'reservation_technicians', 'position_id');
-    $hasPositionKey = tableColumnExists($pdo, 'reservation_technicians', 'position_key');
-    $hasPositionName = tableColumnExists($pdo, 'reservation_technicians', 'position_name');
-    $hasPositionLabelAr = tableColumnExists($pdo, 'reservation_technicians', 'position_label_ar');
-    $hasPositionLabelEn = tableColumnExists($pdo, 'reservation_technicians', 'position_label_en');
-    $hasPositionCost = tableColumnExists($pdo, 'reservation_technicians', 'position_cost');
-    $hasPositionClientPrice = tableColumnExists($pdo, 'reservation_technicians', 'position_client_price');
-    $hasAssignmentId = tableColumnExists($pdo, 'reservation_technicians', 'assignment_id');
+    $sql = 'INSERT INTO reservation_technicians (
+        reservation_id,
+        technician_id,
+        role,
+        notes,
+        position_id,
+        position_key,
+        position_name,
+        position_label_ar,
+        position_label_en,
+        position_cost,
+        position_client_price,
+        assignment_id
+    ) VALUES (
+        :reservation_id,
+        :technician_id,
+        :role,
+        :notes,
+        :position_id,
+        :position_key,
+        :position_name,
+        :position_label_ar,
+        :position_label_en,
+        :position_cost,
+        :position_client_price,
+        :assignment_id
+    )';
 
-    $columns = ['reservation_id', 'technician_id', 'role', 'notes'];
-    if ($hasPositionId) $columns[] = 'position_id';
-    if ($hasPositionKey) $columns[] = 'position_key';
-    if ($hasPositionName) $columns[] = 'position_name';
-    if ($hasPositionLabelAr) $columns[] = 'position_label_ar';
-    if ($hasPositionLabelEn) $columns[] = 'position_label_en';
-    if ($hasPositionCost) $columns[] = 'position_cost';
-    if ($hasPositionClientPrice) $columns[] = 'position_client_price';
-    if ($hasAssignmentId) $columns[] = 'assignment_id';
-
-    $placeholders = array_map(fn($c) => ':' . $c, $columns);
-    $sql = 'INSERT INTO reservation_technicians (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $placeholders) . ')';
     $statement = $pdo->prepare($sql);
 
     foreach ($technicians as $technician) {
         if (is_array($technician)) {
             $technicianId = (int) ($technician['id'] ?? $technician['technician_id'] ?? 0);
-            $role = $technician['role'] ?? ($technician['position_name'] ?? ($technician['position_label'] ?? null));
+            $role = $technician['role'] ?? null;
             $notes = $technician['notes'] ?? null;
 
             $positionId = isset($technician['position_id']) ? (int) $technician['position_id']
@@ -1114,32 +1116,25 @@ function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $techn
             $assignmentId = null;
         }
 
-        $params = [
+        $statement->execute([
             'reservation_id' => $reservationId,
             'technician_id' => $technicianId,
             'role' => $role,
             'notes' => $notes,
-        ];
-        if ($hasPositionId) $params['position_id'] = $positionId;
-        if ($hasPositionKey) $params['position_key'] = $positionKey;
-        if ($hasPositionName) $params['position_name'] = $positionName;
-        if ($hasPositionLabelAr) $params['position_label_ar'] = $positionLabelAr;
-        if ($hasPositionLabelEn) $params['position_label_en'] = $positionLabelEn;
-        if ($hasPositionCost) $params['position_cost'] = (float) $positionCost;
-        if ($hasPositionClientPrice) $params['position_client_price'] = (float) $positionClientPrice;
-        if ($hasAssignmentId) $params['assignment_id'] = $assignmentId;
-
-        $statement->execute($params);
+            'position_id' => $positionId,
+            'position_key' => $positionKey,
+            'position_name' => $positionName,
+            'position_label_ar' => $positionLabelAr,
+            'position_label_en' => $positionLabelEn,
+            'position_cost' => (float) $positionCost,
+            'position_client_price' => (float) $positionClientPrice,
+            'assignment_id' => $assignmentId,
+        ]);
     }
 }
 
 function upsertReservationPayments(PDO $pdo, int $reservationId, array $payments): void
 {
-    // If the payments table doesn't exist, skip gracefully
-    if (!tableColumnExists($pdo, 'reservation_payments', 'id')) {
-        return;
-    }
-
     $pdo->prepare('DELETE FROM reservation_payments WHERE reservation_id = :id')->execute(['id' => $reservationId]);
 
     if (!$payments) {
@@ -1297,9 +1292,6 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
 
 function fetchReservationPayments(PDO $pdo, int $reservationId): array
 {
-    if (!tableColumnExists($pdo, 'reservation_payments', 'id')) {
-        return [];
-    }
     $statement = $pdo->prepare(
         'SELECT id, payment_type, value, amount, percentage, note, recorded_at
          FROM reservation_payments
