@@ -101,8 +101,13 @@ export async function exportCallsheetToExcel(root) {
   const wb = XLSX.utils.book_new();
   const ws = {};
   ensureMeta(ws);
-  // 12-column layout matching schedule grid (approximate widths in characters)
-  const COLS = [6, 8, 26, 8, 8, 6, 10, 6, 6, 10, 10, 24];
+  // 12-column layout matching CSS schedule grid percentages
+  // CSS percentages: [5,5,25,6,5,5,6,4,4,10,8,17]
+  // Map to character widths with total ~120 chars for a balanced sheet
+  const PCTS = [5,5,25,6,5,5,6,4,4,10,8,17];
+  const total = PCTS.reduce((a,b)=>a+b,0); // 100
+  const target = 120;
+  const COLS = PCTS.map(p => Math.max(5, Math.round(p/total * target))); // enforce a minimum width
   setCols(ws, COLS);
 
   const center = { alignment: { horizontal: 'center', vertical: 'center', wrapText: true } };
@@ -126,6 +131,11 @@ export async function exportCallsheetToExcel(root) {
   row += 1;
   writeCell(ws, row, 0, titleText); merge(ws, row, 0, row, 11); ws[XLSX.utils.encode_cell({ r: row, c: 0 })].s = { font: { bold: true, sz: 14 }, ...center };
   row += 2;
+  // Header row heights
+  ws['!rows'] = ws['!rows'] || [];
+  ws['!rows'][0] = { hpt: 26 };
+  ws['!rows'][1] = { hpt: 18 };
+  ws['!rows'][2] = { hpt: 20 };
 
   // Three-column grid (Roles 1-4, Notes/Locations 5-8, Times 9-12)
   const rolesRows = [];
@@ -144,19 +154,72 @@ export async function exportCallsheetToExcel(root) {
     centerRows.push([{ v: locs, s: leftCell }]);
   } catch(_) {}
   const r0 = row; const rRoles = writeAoaAt(ws, rolesRows, r0, 0, cell).rows; const rTimes = writeAoaAt(ws, timesRows, r0, 8, cell).rows; for (let i = 0; i < centerRows.length; i += 1) { const rr = r0 + i; const obj = centerRows[i][0]; writeCell(ws, rr, 4, obj.v, obj.s); merge(ws, rr, 4, rr, 7); }
-  const blockH = Math.max(rRoles, centerRows.length, rTimes); row = r0 + blockH + 2;
+  const blockH = Math.max(rRoles, centerRows.length, rTimes);
+  // Outline boxes for Roles, Notes/Locations, Times
+  const outlineBox = (r1,c1,r2,c2) => {
+    // apply medium border around outer cells of the box
+    const medium = 'medium';
+    for (let rr=r1; rr<=r2; rr+=1) {
+      for (let cc=c1; cc<=c2; cc+=1) {
+        const addr = XLSX.utils.encode_cell({ r: rr, c: cc });
+        const cur = ws[addr] || { v: '', t: 's', s: {} };
+        const b = cur.s.border || {}; const col = { rgb: rgb('#9CA3AF') };
+        if (rr===r1) b.top = { style: medium, color: col };
+        if (rr===r2) b.bottom = { style: medium, color: col };
+        if (cc===c1) b.left = { style: medium, color: col };
+        if (cc===c2) b.right = { style: medium, color: col };
+        cur.s.border = { ...cur.s.border, ...b };
+        ws[addr] = cur; updateRef(ws, rr, cc);
+      }
+    }
+  };
+  if (rRoles>0) outlineBox(r0, 0, r0 + rRoles - 1, 3);
+  if (centerRows.length>0) outlineBox(r0, 4, r0 + centerRows.length - 1, 7);
+  if (rTimes>0) outlineBox(r0, 8, r0 + rTimes - 1, 11);
+  row = r0 + blockH + 2;
 
   // Cast Calls block
   const castTable = find('.callsheet-v1 .cs-cast');
-  if (castTable) { writeCell(ws, row, 0, 'Cast Calls', headBlue); merge(ws, row, 0, row, 11); row += 1; const aoa = tableToAoa(castTable).slice(1); writeAoaAt(ws, aoa, row, 2, cell); row += aoa.length + 2; }
+  if (castTable) {
+    const titleRow = row;
+    writeCell(ws, row, 0, 'Cast Calls', headBlue); merge(ws, row, 0, row, 11);
+    row += 1;
+    const aoa = tableToAoa(castTable).slice(1);
+    const placed = writeAoaAt(ws, aoa, row, 2, cell);
+    // Outline around placed table area
+    outlineBox(titleRow, 2, row + placed.rows - 1, 9);
+    // Set header row height
+    ws['!rows'][titleRow] = { hpt: 22 };
+    row += placed.rows + 2;
+  }
 
   // Crew Call block (merged groups to span width)
   const crewTable = find('.callsheet-v1 .cs-crew');
-  if (crewTable) { writeCell(ws, row, 0, 'Crew Call', headBlue); merge(ws, row, 0, row, 11); row += 1; const groups = [[0,2],[3,7],[8,10],[11,11]]; const headers = ['Position','Name','Phone','Time']; headers.forEach((txt, i) => { const [c1,c2] = groups[i]; writeCell(ws, row, c1, txt, headBlue); if (c2>c1) merge(ws, row, c1, row, c2); }); row += 1; Array.from(crewTable.querySelectorAll('tbody tr')).forEach((tr) => { const tds = Array.from(tr.children); const vals = [0,1,2,3].map((i)=> (tds[i]?.textContent || '').trim()); vals.forEach((txt, i) => { const [c1,c2] = groups[i]; const st = i===1 ? leftCell : cell; writeCell(ws, row, c1, txt, st); if (c2>c1) merge(ws, row, c1, row, c2); }); row += 1; }); row += 2; }
+  if (crewTable) {
+    const titleRow = row;
+    writeCell(ws, row, 0, 'Crew Call', headBlue); merge(ws, row, 0, row, 11); ws['!rows'][row] = { hpt: 22 };
+    row += 1;
+    const groups = [[0,2],[3,7],[8,10],[11,11]]; const headers = ['Position','Name','Phone','Time'];
+    headers.forEach((txt, i) => { const [c1,c2] = groups[i]; writeCell(ws, row, c1, txt, headBlue); if (c2>c1) merge(ws, row, c1, row, c2); });
+    ws['!rows'][row] = { hpt: 18 };
+    row += 1;
+    const startBody = row;
+    Array.from(crewTable.querySelectorAll('tbody tr')).forEach((tr) => { const tds = Array.from(tr.children); const vals = [0,1,2,3].map((i)=> (tds[i]?.textContent || '').trim()); vals.forEach((txt, i) => { const [c1,c2] = groups[i]; const st = i===1 ? leftCell : cell; writeCell(ws, row, c1, txt, st); if (c2>c1) merge(ws, row, c1, row, c2); }); row += 1; });
+    outlineBox(titleRow, 0, row - 1, 11);
+    row += 2;
+  }
 
   // Schedule full-width
   const schedTable = find('.callsheet-v1 .cs-schedule');
-  if (schedTable) { const aoa = tableToAoa(schedTable); writeAoaAt(ws, aoa, row, 0, cell); row += aoa.length + 1; }
+  if (schedTable) {
+    const aoa = tableToAoa(schedTable);
+    const placed = writeAoaAt(ws, aoa, row, 0, cell);
+    // Outline schedule (whole range including header inside table)
+    outlineBox(row, 0, row + placed.rows - 1, 11);
+    // Make header row a bit taller
+    ws['!rows'][row] = { hpt: 18 };
+    row += placed.rows + 1;
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, 'Call Sheet');
 
