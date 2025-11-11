@@ -443,12 +443,12 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     if (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s)) return 'pm';
     // Treat both 1st AD and generic Assistant Director as the same header slot
     if (
-      /(1st|first)\s+(assistant\s+)?director/i.test(s)
-      || /\b1\s*ad\b/i.test(s)
-      || /assistant\s*director/i.test(s)
-      || /(asst|assistant)\s*dir\.?/i.test(s)
+      /(1st|first)[\s\-_]*(assistant[\s\-_]*)?director/i.test(s)
+      || /\b1[\s\-_]*ad\b/i.test(s)
+      || /assistant[\s\-_]*director/i.test(s)
+      || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
       || /\bad\b/i.test(s)
-      || /مساعد\s*مخرج(?:\s*(?:أول|اول))?/.test(s)
+      || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
     ) return 'ad1';
     return '';
   };
@@ -472,12 +472,12 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
     if (!s) return;
     // First: 1st AD / Assistant Director (treat as same role as requested)
     if (!already.has('ad1') && targets.ad1 && (
-      /(1st|first)\s+(assistant\s+)?director/i.test(s)
-      || /\b1\s*ad\b/i.test(s)
-      || /assistant\s*director/i.test(s)
-      || /(asst|assistant)\s*dir\.?/i.test(s)
+      /(1st|first)[\s\-_]*(assistant[\s\-_]*)?director/i.test(s)
+      || /\b1[\s\-_]*ad\b/i.test(s)
+      || /assistant[\s\-_]*director/i.test(s)
+      || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
       || /\bad\b/i.test(s)
-      || /مساعد\s*مخرج(?:\s*(?:أول|اول))?/.test(s)
+      || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
     )) {
       targets.ad1.textContent = name; already.add('ad1'); return;
     }
