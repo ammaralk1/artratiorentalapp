@@ -1250,8 +1250,22 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
 
 function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
 {
-    $statement = $pdo->prepare(
-        'SELECT 
+    $hasPositionsTable = tableColumnExists($pdo, 'technician_positions', 'id');
+    $hasRtPositionKey = tableColumnExists($pdo, 'reservation_technicians', 'position_key');
+    $hasRtPositionId = tableColumnExists($pdo, 'reservation_technicians', 'position_id');
+
+    if ($hasPositionsTable && ($hasRtPositionId || $hasRtPositionKey)) {
+        // Prefer joining by id; if missing/null fall back to matching by key/name
+        $joinConditionParts = [];
+        if ($hasRtPositionId) {
+            $joinConditionParts[] = 'tp.id = rt.position_id';
+        }
+        if ($hasRtPositionKey) {
+            $joinConditionParts[] = '(rt.position_id IS NULL AND rt.position_key IS NOT NULL AND tp.name = rt.position_key)';
+        }
+        $joinCondition = implode(' OR ', $joinConditionParts);
+
+        $sql = 'SELECT 
             rt.*,
             t.full_name AS technician_name,
             COALESCE(rt.position_name, tp.label_ar, tp.label_en, tp.name) AS effective_position_name,
@@ -1259,16 +1273,36 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             COALESCE(NULLIF(rt.position_client_price,0), tp.client_price, 0) AS effective_position_client_price
          FROM reservation_technicians rt
          INNER JOIN technicians t ON t.id = rt.technician_id
-         LEFT JOIN technician_positions tp ON tp.id = rt.position_id
-         WHERE rt.reservation_id = :id'
-    );
-    $statement->execute(['id' => $reservationId]);
+         LEFT JOIN technician_positions tp ON (' . $joinCondition . ')
+         WHERE rt.reservation_id = :id';
+        $statement = $pdo->prepare($sql);
+        $statement->execute(['id' => $reservationId]);
+    } else {
+        // Fallback: no positions table or columns — return raw RT data with safe aliases
+        $statement = $pdo->prepare(
+            'SELECT 
+                rt.*,
+                t.full_name AS technician_name,
+                rt.position_name AS effective_position_name,
+                rt.position_cost AS effective_position_cost,
+                rt.position_client_price AS effective_position_client_price
+             FROM reservation_technicians rt
+             INNER JOIN technicians t ON t.id = rt.technician_id
+             WHERE rt.reservation_id = :id'
+        );
+        $statement->execute(['id' => $reservationId]);
+    }
     $techs = [];
     while ($row = $statement->fetch()) {
         // Prefer the assigned/derived position name as the role shown in details, fallback to stored role
         $effectiveRole = $row['effective_position_name'] ?? $row['position_name'] ?? null;
         if ($effectiveRole === null || trim((string) $effectiveRole) === '') {
             $effectiveRole = $row['role'];
+        }
+
+        $label = $row['effective_position_name'] ?? ($row['position_name'] ?? null);
+        if ($label === null || trim((string) $label) === '') {
+            $label = $effectiveRole; // ensure we always have a readable label
         }
 
         $techs[] = [
@@ -1279,7 +1313,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             'name' => $row['technician_name'],
             'position_id' => isset($row['position_id']) ? (int) $row['position_id'] : null,
             'position_key' => $row['position_key'] ?? null,
-            'position_name' => $row['effective_position_name'] ?? ($row['position_name'] ?? null),
+            'position_name' => $label,
             'position_label_ar' => $row['position_label_ar'] ?? null,
             'position_label_en' => $row['position_label_en'] ?? null,
             'position_cost' => isset($row['effective_position_cost']) ? (float) $row['effective_position_cost'] : (isset($row['position_cost']) ? (float) $row['position_cost'] : 0),
