@@ -228,7 +228,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const leftVal = (text = '') => el('td', { 'data-editable': 'true', contenteditable: 'true', text });
   const leftTable = el('table', { class: 'cs-roles' });
   const ltBody = el('tbody');
-  ['Producer', 'Director', 'DOP', 'Production Manager', '1st Assistant Director'].forEach((lab) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal('')); ltBody.appendChild(r); });
+  ['Producer', 'Director', 'DOP', 'Production Manager', 'Assistant Director'].forEach((lab) => { const r = el('tr'); r.appendChild(leftCol(`${lab}:`)); r.appendChild(leftVal('')); ltBody.appendChild(r); });
   leftTable.appendChild(ltBody);
   // Attempt to auto-fill key roles from the selected reservation (Crew Assignments)
   try { if (res) autoFillHeaderRolesFromReservation(leftTable, res); } catch(_) {}
@@ -520,4 +520,18 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
       targets.producer.textContent = name; already.add('producer'); return;
     }
   });
+
+  // Fallback: if AD not set yet, pick first matching assignment explicitly
+  if (targets.ad1 && !already.has('ad1') && (!targets.ad1.textContent || !targets.ad1.textContent.trim())) {
+    const candidate = assignments.find((a) => {
+      const pos = resolvePositionLabelFromAssignment(a) || '';
+      return isAssistantDirectorRole(pos);
+    });
+    if (candidate) {
+      const name = candidate.technicianName || candidate.name || candidate.full_name || candidate.technician_name || '';
+      if (name) {
+        targets.ad1.textContent = name; already.add('ad1');
+      }
+    }
+  }
 }
