@@ -8,6 +8,7 @@ import {
   ensureTechnicianPositionsLoaded,
   getTechnicianPositionsCache,
   findPositionByName,
+  updateTechnicianPosition,
 } from './technicianPositions.js';
 
 const DEFAULT_CURRENCY_LABEL = () => t('reservations.create.summary.currency', 'SR');
@@ -654,9 +655,28 @@ function renderPositionList() {
             <span class="crew-position-card__metric-value">${priceDisplay}</span>
           </div>
         </div>
+        <div class="crew-position-card__edit" hidden>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">${costLabel}</label>
+              <input type="text" class="form-control crew-position-edit-cost" value="${normalizeNumbers(String(position.cost ?? 0))}" inputmode="decimal">
+            </div>
+            <div class="col-6">
+              <label class="form-label">${clientPriceLabel}</label>
+              <input type="text" class="form-control crew-position-edit-client" value="${position.clientPrice == null ? '' : normalizeNumbers(String(position.clientPrice))}" inputmode="decimal" placeholder="${normalizeNumbers('')}"/>
+            </div>
+          </div>
+          <div class="mt-2 d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm crew-position-save-btn" data-position-id="${position.id}">${t('positions.form.actions.update', '💾 حفظ')}</button>
+            <button type="button" class="btn btn-outline btn-sm crew-position-cancel-btn" data-position-id="${position.id}">${t('positions.form.actions.cancel', 'إلغاء')}</button>
+          </div>
+        </div>
         <footer class="crew-position-card__footer">
           <button type="button" class="btn btn-primary crew-position-add-btn" data-position-id="${position.id}">
             ${addButtonLabel}
+          </button>
+          <button type="button" class="btn btn-outline crew-position-edit-btn ms-2" data-position-id="${position.id}">
+            ${t('technicians.picker.actions.editPosition', '✏️ تعديل الأسعار')}
           </button>
         </footer>
       </article>
@@ -676,15 +696,128 @@ function renderPositionList() {
   container.querySelectorAll('.crew-position-card').forEach((card) => {
     if (!card.dataset.cardListenerAttached) {
       card.addEventListener('click', () => {
+        if (card.dataset.editing === 'true') return; // ignore clicks while editing
         addAssignmentByPosition(card.dataset.positionId);
       });
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
+          if (card.dataset.editing === 'true') return;
           addAssignmentByPosition(card.dataset.positionId);
         }
       });
       card.dataset.cardListenerAttached = 'true';
+    }
+  });
+
+  // Edit button wiring
+  container.querySelectorAll('.crew-position-edit-btn').forEach((btn) => {
+    if (!btn.dataset.listenerAttached) {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = btn.closest('.crew-position-card');
+        if (!card) return;
+        const metrics = card.querySelector('.crew-position-card__metrics');
+        const footer = card.querySelector('.crew-position-card__footer');
+        const editor = card.querySelector('.crew-position-card__edit');
+        if (metrics) metrics.classList.add('d-none');
+        if (footer) footer.classList.add('d-none');
+        if (editor) editor.hidden = false;
+        card.dataset.editing = 'true';
+        // Attach simple numeric sanitizers
+        const costInput = card.querySelector('.crew-position-edit-cost');
+        const clientInput = card.querySelector('.crew-position-edit-client');
+        const sanitize = (el) => {
+          el.addEventListener('input', (e) => {
+            const raw = normalizeNumbers(e.target.value);
+            const cleaned = raw.replace(/[^0-9.]/g, '');
+            if (cleaned !== e.target.value) {
+              const pos = e.target.selectionEnd || cleaned.length;
+              e.target.value = cleaned;
+              e.target.setSelectionRange(pos, pos);
+            }
+          }, { once: true });
+        };
+        if (costInput) sanitize(costInput);
+        if (clientInput) sanitize(clientInput);
+      });
+      btn.dataset.listenerAttached = 'true';
+    }
+  });
+
+  // Save/Cancel handlers
+  container.querySelectorAll('.crew-position-save-btn').forEach((btn) => {
+    if (!btn.dataset.listenerAttached) {
+      btn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = btn.closest('.crew-position-card');
+        const id = btn.dataset.positionId;
+        if (!card || !id) return;
+        try {
+          const costEl = card.querySelector('.crew-position-edit-cost');
+          const clientEl = card.querySelector('.crew-position-edit-client');
+          const rawCost = normalizeNumbers(costEl?.value || '').trim();
+          const rawClient = normalizeNumbers(clientEl?.value || '').trim();
+          const cost = rawCost === '' ? 0 : Number.parseFloat(rawCost);
+          const clientPrice = rawClient === '' ? null : Number.parseFloat(rawClient);
+          if (!Number.isFinite(cost) || cost < 0) {
+            showToast(t('positions.toast.invalidCost', '⚠️ أدخل قيمة صحيحة للتكلفة'));
+            costEl?.focus();
+            return;
+          }
+          if (clientPrice != null && (!Number.isFinite(clientPrice) || clientPrice < 0)) {
+            showToast(t('positions.toast.invalidClientPrice', '⚠️ أدخل قيمة صحيحة لسعر العميل'));
+            clientEl?.focus();
+            return;
+          }
+
+          // Fetch latest snapshot to preserve name/labels
+          ensurePositionsCached();
+          const current = cachedPositions.find((p) => String(p.id) === String(id));
+          if (!current) {
+            showToast(t('positions.toast.notFound', '⚠️ تعذر العثور على بيانات المنصب'), 'error');
+            return;
+          }
+          await updateTechnicianPosition(id, {
+            name: current.name,
+            cost: Number(cost.toFixed(2)),
+            clientPrice: clientPrice == null ? null : Number(clientPrice.toFixed(2)),
+            labelAr: current.labelAr,
+            labelEn: current.labelEn,
+          });
+          showToast(t('positions.toast.saveSuccess', '✅ تم حفظ بيانات المنصب'));
+          // Re-render list to reflect updates
+          renderPositionList();
+          // Optionally, keep assignments table visible/up-to-date
+          renderAssignmentsTable();
+        } catch (error) {
+          console.error('❌ [crew-picker] update position failed', error);
+          const message = error?.message || t('positions.toast.saveFailed', '⚠️ تعذر حفظ بيانات المنصب، حاول مرة أخرى');
+          showToast(message, 'error');
+        }
+      });
+      btn.dataset.listenerAttached = 'true';
+    }
+  });
+
+  container.querySelectorAll('.crew-position-cancel-btn').forEach((btn) => {
+    if (!btn.dataset.listenerAttached) {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = btn.closest('.crew-position-card');
+        if (!card) return;
+        const metrics = card.querySelector('.crew-position-card__metrics');
+        const footer = card.querySelector('.crew-position-card__footer');
+        const editor = card.querySelector('.crew-position-card__edit');
+        if (metrics) metrics.classList.remove('d-none');
+        if (footer) footer.classList.remove('d-none');
+        if (editor) editor.hidden = true;
+        delete card.dataset.editing;
+      });
+      btn.dataset.listenerAttached = 'true';
     }
   });
 }
