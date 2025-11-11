@@ -447,8 +447,10 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
       || /\b1[\s\-_]*ad\b/i.test(s)
       || /assistant[\s\-_]*director/i.test(s)
       || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
+      || /dir\.?[\s\-_]*(asst|assistant)/i.test(s)
       || /\bad\b/i.test(s)
       || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
+      || /مساعد\s*اخراج(?:\s*(?:أول|اول))?/i.test(s)
     ) return 'ad1';
     return '';
   };
@@ -476,8 +478,10 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
       || /\b1[\s\-_]*ad\b/i.test(s)
       || /assistant[\s\-_]*director/i.test(s)
       || /(asst|assistant)[\s\-_]*dir\.?/i.test(s)
+      || /dir\.?[\s\-_]*(asst|assistant)/i.test(s)
       || /\bad\b/i.test(s)
       || /مساعد\s*ال?مخرج(?:\s*(?:أول|اول))?/.test(s)
+      || /مساعد\s*اخراج(?:\s*(?:أول|اول))?/i.test(s)
     )) {
       targets.ad1.textContent = name; already.add('ad1'); return;
     }
