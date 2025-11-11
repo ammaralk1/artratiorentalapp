@@ -19,7 +19,7 @@
       body?.setAttribute?.('data-theme', 'light');
     }
     const label = document.querySelector('[data-theme-label]');
-    if (label) label.textContent = isDark ? '☀️ الوضع العادي' : '🌙 الوضع الليلي';
+    if (label) label.textContent = 'تبديل المظهر';
     const checkbox = document.getElementById('theme-toggle');
     if (checkbox) checkbox.checked = isDark;
     document.documentElement.classList.remove('theme-loading');
@@ -89,4 +89,3 @@
     initLanguageToggle();
   }
 })();
-
