@@ -509,7 +509,7 @@ table.cs-cast tbody tr:last-child td,
 
 /* Non-export preview shading for schedule headers */
 .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; }
-.callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
+#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Allow custom shading on cells when requested */
