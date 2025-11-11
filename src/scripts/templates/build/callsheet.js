@@ -322,7 +322,13 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const cols = [5, 5, 21, 6, 7, 5, 8, 4, 4, 10, 8, 17];
   const cg = el('colgroup'); cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` }))); sched.appendChild(cg);
   const headerLabels = ['Shot #','Time (Duration)','Description','Movement','Rig','Lens','Location','I/E','D/N','Sound','Cast','Notes / Props'];
-  const thead = el('thead'); const trh = el('tr'); headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, style: `width:${cols[i]}%` }))); thead.appendChild(trh); sched.appendChild(thead);
+  const thead = el('thead');
+  // Add a dark-blue title row like Crew Call
+  const trTitle = el('tr');
+  trTitle.appendChild(el('th', { colspan: String(cols.length), class: 'cs-schedule-title', text: 'Shot List' }));
+  thead.appendChild(trTitle);
+  // Column headers row (light blue)
+  const trh = el('tr'); headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, style: `width:${cols[i]}%` }))); thead.appendChild(trh); sched.appendChild(thead);
   const sb = el('tbody');
   const r1 = el('tr', { class: 'cs-row-note' }); r1.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'breakfast(30m)' })); sb.appendChild(r1);
   const r2 = el('tr', { class: 'cs-row-strong' }); r2.appendChild(el('td', { colspan: '12', 'data-editable': 'true', contenteditable: 'true', text: 'light, camera and art Prep (1H)' })); sb.appendChild(r2);

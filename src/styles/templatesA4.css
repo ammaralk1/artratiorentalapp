@@ -446,6 +446,9 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 /* Re-apply Crew Call colors in export despite the generic white override above */
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
 #templates-a4-root[data-render-context="export"] .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
+/* Schedule title (dark) and header (light) */
+#templates-a4-root .callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; font-size:18px !important; }
+#templates-a4-root .callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37,99,235,0.18) !important; }
 
 /* Preview-only: make table outlines clearer and visibly closed */
 #templates-a4-root[data-render-context="preview"] table.cs-info,
@@ -485,6 +488,16 @@ table.cs-cast tbody tr:last-child td,
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; }
+
+/* Light blue shading for page-1 labels */
+.callsheet-v1 .cs-roles td.cs-label,
+.callsheet-v1 .cs-times td.cs-label { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+.callsheet-v1 .cs-center .cs-notes-h,
+.callsheet-v1 .cs-center .cs-section { background: rgba(37, 99, 235, 0.12) !important; font-weight: 700; }
+
+/* Non-export preview shading for schedule headers */
+.callsheet-v1 table.cs-schedule thead th.cs-schedule-title { background:#2563EB !important; color:#ffffff !important; }
+.callsheet-v1 table.cs-schedule thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
 .tpl-summary-total { font-weight:800; border-top:1px dashed #e5e7eb; margin-top:4px; padding-top:6px; }
 
 /* Allow custom shading on cells when requested */
