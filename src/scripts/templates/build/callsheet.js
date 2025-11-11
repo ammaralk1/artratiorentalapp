@@ -298,7 +298,8 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const { innerPage: inner3, wrapPage: wrap3 } = newPage();
   try { inner3.style.paddingLeft = '0mm'; inner3.style.paddingRight = '0mm'; } catch(_) {}
   const sched = el('table', { class: 'tpl-table cs-schedule', 'data-editable-table': 'callsheet', style: 'width:calc(100% + 16mm) !important; margin-left:-8mm !important; margin-right:-8mm !important;' });
-  const cols = [5, 5, 25, 6, 5, 5, 6, 4, 4, 10, 8, 17];
+  // Updated widths: -4% from Description, +2% to Rig, +2% to Location
+  const cols = [5, 5, 21, 6, 7, 5, 8, 4, 4, 10, 8, 17];
   const cg = el('colgroup'); cols.forEach((w) => cg.appendChild(el('col', { style: `width:${w}%` }))); sched.appendChild(cg);
   const headerLabels = ['Shot #','Time (Duration)','Description','Movement','Rig','Lens','Location','I/E','D/N','Sound','Cast','Notes / Props'];
   const thead = el('thead'); const trh = el('tr'); headerLabels.forEach((label, i) => trh.appendChild(el('th', { text: label, style: `width:${cols[i]}%` }))); thead.appendChild(trh); sched.appendChild(thead);
