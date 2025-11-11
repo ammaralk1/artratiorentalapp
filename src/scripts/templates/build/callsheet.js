@@ -486,12 +486,14 @@ function autoFillHeaderRolesFromReservation(leftTable, reservation) {
 
   const mapLabelToKey = (txt) => {
     const s = String(txt || '').toLowerCase();
+    // 1) Assistant Director must be checked first to avoid matching the generic Director branch
+    if (isAssistantDirectorRole(s)) return 'ad1';
+    // 2) Other roles
     if (/\bproducer\b/.test(s) || /منتج/.test(s)) return 'producer';
-    if (/(^|\b)director(?![^\b]*assistant)/.test(s) || /(^|\b)director\b(?!.*assistant)/.test(s) || /مخرج(?!.*مساعد)/.test(s)) return 'director';
     if (/\bdop\b/.test(s) || /director of photography/i.test(s) || /cinematograph/.test(s) || /مدير تصوير/.test(s)) return 'dop';
     if (/production manager/i.test(s) || /مدير انتاج/.test(s) || /مدير إنتاج/.test(s)) return 'pm';
-    // Treat both 1st AD and generic Assistant Director as the same header slot
-    if (isAssistantDirectorRole(s)) return 'ad1';
+    // 3) Director (ensure it is not an assistant director in any way)
+    if ((/\bdirector\b/.test(s) && !/assistant/.test(s)) || (/مخرج/.test(s) && !/مساعد/.test(s))) return 'director';
     return '';
   };
   const findRowFor = (key) => rows.find((tr) => mapLabelToKey(tr?.children?.[0]?.textContent) === key) || null;
