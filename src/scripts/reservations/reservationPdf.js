@@ -1600,28 +1600,25 @@ function formatQuoteNumber(sequence, context = 'reservation') {
   return `${prefix}-${String(seq).padStart(4, '0')}`;
 }
 
-function readQuoteSequence() {
-  const stored = window.localStorage?.getItem?.(QUOTE_SEQUENCE_STORAGE_KEY);
-  const parsed = parseInt(stored ?? '', 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+function getSequenceNameForContext(context = 'reservation') {
+  return context === 'project' ? 'quote_project' : 'quote_reservation';
 }
 
-function peekNextQuoteSequence(context = 'reservation') {
-  const last = readQuoteSequence();
-  const sequence = last + 1;
-  return {
-    sequence,
-    quoteNumber: formatQuoteNumber(sequence, context)
-  };
-}
-
-function commitQuoteSequence(sequence) {
+async function reserveNextQuoteSequence(context = 'reservation') {
+  const name = getSequenceNameForContext(context);
   try {
-    const value = Number(sequence);
-    if (!Number.isFinite(value) || value <= 0) return;
-    window.localStorage?.setItem?.(QUOTE_SEQUENCE_STORAGE_KEY, String(value));
+    // Reserve atomically on the server to ensure global uniqueness across users
+    const payload = await apiRequest(`/sequence/?name=${encodeURIComponent(name)}`, { method: 'POST' });
+    const value = Number(payload?.value);
+    const sequence = Number.isFinite(value) && value > 0 ? value : 1;
+    return { sequence, quoteNumber: formatQuoteNumber(sequence, context) };
   } catch (error) {
-    console.warn('⚠️ [reservations/pdf] failed to persist quote sequence', error);
+    // Fallback to local sequence if server is unavailable
+    console.warn('⚠️ [reservations/pdf] sequence reservation failed, falling back to local', error);
+    const stored = window.localStorage?.getItem?.(QUOTE_SEQUENCE_STORAGE_KEY);
+    const last = Number.isFinite(parseInt(stored ?? '', 10)) ? parseInt(stored ?? '', 10) : 0;
+    const sequence = last + 1;
+    return { sequence, quoteNumber: formatQuoteNumber(sequence, context) };
   }
 }
 
@@ -1629,8 +1626,18 @@ function getTogglePrefsStorageKey(context = 'reservation') {
   return QUOTE_TOGGLE_PREFS_STORAGE_KEYS[context] || QUOTE_TOGGLE_PREFS_STORAGE_KEYS.reservation;
 }
 
+function clearLegacyQuotePreferences() {
+  try {
+    // Remove legacy toggle storage and local sequence to avoid stale behaviour
+    window.localStorage?.removeItem?.('reservations.quote.togglePrefs.v1');
+    window.localStorage?.removeItem?.('projects.quote.togglePrefs.v1');
+    window.localStorage?.removeItem?.(QUOTE_SEQUENCE_STORAGE_KEY);
+  } catch (_) { /* ignore */ }
+}
+
 function readQuoteTogglePreferences(context = 'reservation') {
   try {
+    clearLegacyQuotePreferences();
     const storageKey = getTogglePrefsStorageKey(context);
     const stored = window.localStorage?.getItem?.(storageKey);
     if (!stored) return null;
@@ -5194,7 +5201,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { sequence, quoteNumber } = peekNextQuoteSequence('reservation');
+  const { sequence, quoteNumber } = await reserveNextQuoteSequence('reservation');
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -5219,7 +5226,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
-    sequenceCommitted: false
+    sequenceCommitted: true
   };
 
   applyQuoteTogglePreferences(activeQuoteState);
@@ -5256,7 +5263,7 @@ export async function exportProjectPdf({ project }) {
     console.warn('[reservationPdf] refreshReservationsForProject failed, proceeding with snapshot/state', error);
   }
 
-  const { sequence, quoteNumber } = peekNextQuoteSequence('project');
+  const { sequence, quoteNumber } = await reserveNextQuoteSequence('project');
   const now = new Date();
   const baseTerms = [...PROJECT_QUOTE_TERMS];
 
@@ -5287,7 +5294,7 @@ export async function exportProjectPdf({ project }) {
     quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
-    sequenceCommitted: false,
+    sequenceCommitted: true,
     paymentSummary: projectData.paymentSummary,
     projectNotes: projectData.notes,
     paymentHistory: projectData.paymentHistory

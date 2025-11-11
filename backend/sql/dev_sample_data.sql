@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS maintenance_requests;
 DROP TABLE IF EXISTS equipment;
 DROP TABLE IF EXISTS technicians;
 DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS app_sequences;
 SET FOREIGN_KEY_CHECKS=1;
 
 CREATE TABLE customers (
@@ -57,6 +58,13 @@ CREATE TABLE equipment (
   image_url TEXT,
   lessor VARCHAR(255) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- App-wide sequences (e.g., quotation numbers)
+CREATE TABLE app_sequences (
+  name VARCHAR(64) NOT NULL PRIMARY KEY,
+  value BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE projects (
