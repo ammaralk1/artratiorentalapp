@@ -369,19 +369,18 @@ body[dir="rtl"] .reports-filters {
   padding: 6px 16px;
   font-weight: 600;
   transition: var(--reports-transition);
+  border: 1px solid transparent; /* allow active state to show ring using currentColor */
 }
 
 .reports-status-chip.is-active,
 .reports-status-chip.is-active:hover {
-  background-color: var(--reports-accent);
-  border-color: var(--reports-accent);
-  color: #ffffff;
-  box-shadow: 0 12px 28px rgba(var(--reports-accent-rgb, 76, 110, 245), 0.28);
+  /* Keep original timeline colors; just highlight selection with a subtle ring */
+  border-color: currentColor;
+  box-shadow: 0 10px 20px rgba(2, 6, 23, 0.2);
 }
 
 .reports-status-chip:hover {
-  border-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.55);
-  color: var(--reports-accent);
+  border-color: currentColor;
 }
 
 .reports-custom-range {
