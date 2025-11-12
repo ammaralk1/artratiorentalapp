@@ -836,90 +836,58 @@ function renderProjectsRevenueBreakdown(projects) {
 
 function computeProjectsRevenueBreakdown(projects) {
   const projectIds = new Set(projects.map((p) => String(p.id)));
-  const reservations = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
-  const taxedProjectIds = new Set(projects.filter((p) => p.applyTax === true).map((p) => String(p.id)));
+  const reservationsAll = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
 
-  let grossReservations = 0;
+  // Group reservations by project and aggregate equipment/crew
+  const resByProject = new Map();
   let equipmentReservations = 0;
   let crewTotal = 0;
   let crewCostTotal = 0;
-  let companyShareTotal = 0;
-  let taxReservations = 0;
-  let netReservations = 0;
-
-  reservations.forEach((res) => {
+  reservationsAll.forEach((res) => {
     const f = computeReservationFinancials(res);
-    const isProjectTaxed = taxedProjectIds.has(String(res.projectId));
-    const resTax = Number(f.taxAmount || 0);
-    const resFinal = Number(f.finalTotal || 0);
-    const finalForReport = isProjectTaxed ? resFinal : Math.max(0, resFinal - resTax);
-    const taxForReport = isProjectTaxed ? resTax : 0;
-
-    grossReservations += finalForReport;
     equipmentReservations += f.equipmentTotal || 0;
     crewTotal += f.crewTotal || 0;
     crewCostTotal += f.crewCostTotal || 0;
-    companyShareTotal += f.companyShareAmount || 0;
-    taxReservations += taxForReport;
-    // netReservations already excludes tax in computeReservationFinancials; keep as-is
-    netReservations += f.netProfit || 0;
+    const arr = resByProject.get(String(res.projectId)) || [];
+    arr.push(res);
+    resByProject.set(String(res.projectId), arr);
   });
-  // If some reservations belong to projects where VAT is applied at the project level,
-  // those reservations may have zero tax individually. Add the missing VAT portion
-  // based on their net amount so that reports reflect real VAT on the combined total.
-  let missingReservationTax = 0;
-  if (taxedProjectIds.size > 0) {
-    reservations.forEach((res) => {
-      if (!taxedProjectIds.has(String(res.projectId))) return;
-      const f = computeReservationFinancials(res);
-      const resTax = Number(f.taxAmount || 0);
-      if (!(resTax > 0)) {
-        const net = Number(f.finalTotal || 0) - resTax;
-        if (net > 0) missingReservationTax += net * PROJECT_TAX_RATE;
-      }
-    });
-  }
 
-  const projectExpensesTotal = projects.reduce((sum, p) => sum + (Number(p.expensesTotal) || 0), 0);
-  let projectEquipmentEstimateTotal = 0;
+  let grossRevenue = 0;
+  let taxTotal = 0;
+  let companyShareTotal = 0;
+  let projectExpensesTotal = 0;
   let servicesRevenueTotal = 0;
-  let projectCompanyShareTotal = 0;
-  let projectTaxTotal = 0;
-  let projectRevenueExTaxTotal = 0; // baseAfterDiscount + companyShare (without tax)
+  let projectEquipmentEstimateTotal = 0;
 
   projects.forEach((p) => {
-    const equip = Number(p.raw?.equipmentEstimate ?? p.equipmentEstimate ?? 0) || 0;
-    const services = getProjectServicesRevenue(p);
-    const discountVal = Number(p.raw?.discount ?? 0) || 0;
-    const discountType = (p.raw?.discountType === 'amount') ? 'amount' : 'percent';
-    const baseSubtotal = equip + services;
-    let discountAmount = discountType === 'amount' ? discountVal : baseSubtotal * (discountVal / 100);
-    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-    if (discountAmount > baseSubtotal) discountAmount = baseSubtotal;
-    const baseAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
-    const shareEnabled = (p.raw?.companyShareEnabled === true) || String(p.raw?.companyShareEnabled).toLowerCase() === 'true';
-    const sharePercent = shareEnabled ? (Number(p.raw?.companySharePercent) || 0) : 0;
-    const companyShareAmount = sharePercent > 0 ? baseAfterDiscount * (sharePercent / 100) : 0;
-    const applyTax = p.applyTax === true;
-    const projectTax = applyTax ? (baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE : 0;
+    const { subtotal: projectSubtotal, applyTax, companyShareAmount, expensesTotal } = resolveProjectTotals(p);
+    companyShareTotal += companyShareAmount || 0;
+    projectExpensesTotal += Number(expensesTotal || 0);
+    projectEquipmentEstimateTotal += Number(p.raw?.equipmentEstimate ?? p.equipmentEstimate ?? 0) || 0;
+    servicesRevenueTotal += getProjectServicesRevenue(p);
 
-    projectEquipmentEstimateTotal += equip;
-    servicesRevenueTotal += services;
-    projectCompanyShareTotal += companyShareAmount;
-    projectTaxTotal += projectTax;
-    projectRevenueExTaxTotal += (baseAfterDiscount + companyShareAmount);
+    const list = resByProject.get(String(p.id)) || [];
+    const reservationsNet = list.reduce((sum, res) => {
+      const f = computeReservationFinancials(res);
+      const resTax = Number(f.taxAmount || 0);
+      const resFinal = Number(f.finalTotal || 0);
+      return sum + Math.max(0, resFinal - resTax);
+    }, 0);
+
+    const combinedTax = applyTax ? (projectSubtotal + reservationsNet) * PROJECT_TAX_RATE : 0;
+    grossRevenue += projectSubtotal + reservationsNet + combinedTax;
+    taxTotal += combinedTax;
   });
 
-  const grossRevenue = grossReservations + projectRevenueExTaxTotal + projectTaxTotal + missingReservationTax;
   const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
-  const taxTotal = taxReservations + projectTaxTotal + missingReservationTax;
-  const netProfit = netReservations + (servicesRevenueTotal - projectExpensesTotal);
-  const revenueExTax = (grossReservations - taxReservations) + projectRevenueExTaxTotal;
+  const revenueExTax = Math.max(0, grossRevenue - taxTotal);
+  const netProfit = revenueExTax - projectExpensesTotal - crewCostTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {
     grossRevenue,
-    companyShareTotal: companyShareTotal + projectCompanyShareTotal,
+    companyShareTotal,
     taxTotal,
     crewTotal,
     crewCostTotal,
