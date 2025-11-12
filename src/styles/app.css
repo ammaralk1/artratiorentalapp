@@ -3360,9 +3360,15 @@
       flex: 1 1 100%;
     }
 
-    /* Tighten spacing between filters on mobile */
+    /* Mobile: stack filters directly and reduce gaps */
+    .equipment-filters {
+      gap: 10px;
+    }
+
     .equipment-filter-controls {
-      gap: 8px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
     }
 
     .equipment-status-field {
