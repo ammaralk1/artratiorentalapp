@@ -808,42 +808,19 @@ function renderKpis(projects) {
   const totalValue = breakdown.grossRevenue;
   const unpaidValue = breakdown.outstandingTotal || 0;
   const expensesTotal = breakdown.projectExpensesTotal || 0;
+  const netProfit = breakdown.netProfit || 0;
 
   const cards = [
-    {
-      icon: KPI_ICONS.projects,
-      label: t('projects.reports.kpi.totalProjects', 'Total projects'),
-      value: formatNumber(totalCount),
-      meta: t('projects.reports.kpi.totalProjectsMeta', 'After applying the current filters')
-    },
-    {
-      icon: KPI_ICONS.value,
-      label: t('projects.reports.kpi.totalValue', 'Total value'),
-      value: formatCurrency(totalValue),
-      meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects, linked reservations, and VAT')
-    },
-    {
-      icon: KPI_ICONS.outstanding,
-      label: t('projects.reports.kpi.unpaidValue', 'Outstanding value'),
-      value: formatCurrency(unpaidValue),
-      meta: t('projects.reports.kpi.unpaidValueMeta', 'Projects not fully paid yet')
-    },
-    {
-      icon: KPI_ICONS.expenses,
-      label: t('projects.reports.kpi.expenses', 'تكلفة الخدمات الإنتاجية'),
-      value: formatCurrency(expensesTotal),
-      meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة')
-    },
-    {
-      icon: KPI_ICONS.margin,
-      label: t('projects.reports.kpi.margin', 'هامش الربح', 'Profit margin'),
-      value: formatPercent(breakdown.profitMarginPercent),
-      meta: t('projects.reports.kpi.marginMeta', 'صافي الربح ÷ الإيراد بدون الضريبة', 'Net profit / revenue excl. VAT')
-    }
+    { key: 'projects', icon: KPI_ICONS.projects, label: t('projects.reports.kpi.totalProjects', 'Total projects'), value: formatNumber(totalCount), meta: t('projects.reports.kpi.totalProjectsMeta', 'After applying the current filters') },
+    { key: 'totalValue', icon: KPI_ICONS.value, label: t('projects.reports.kpi.totalValue', 'Total value'), value: formatCurrency(totalValue), meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects, linked reservations, and VAT') },
+    { key: 'outstanding', icon: KPI_ICONS.outstanding, label: t('projects.reports.kpi.unpaidValue', 'Outstanding value'), value: formatCurrency(unpaidValue), meta: t('projects.reports.kpi.unpaidValueMeta', 'Projects not fully paid yet') },
+    { key: 'expenses', icon: KPI_ICONS.expenses, label: t('projects.reports.kpi.expenses', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotal), meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة') },
+    { key: 'margin', icon: KPI_ICONS.margin, label: t('projects.reports.kpi.margin', 'هامش الربح', 'Profit margin'), value: formatPercent(breakdown.profitMarginPercent), meta: t('projects.reports.kpi.marginMeta', 'صافي الربح ÷ الإيراد بدون الضريبة', 'Net profit / revenue excl. VAT') },
+    { key: 'netProfit', icon: KPI_ICONS.value, label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(netProfit), meta: t('projects.reports.kpi.netProfitMeta', 'Sum of net profit for selected projects') }
   ];
 
-  dom.kpiGrid.innerHTML = cards.map(({ icon, label, value, meta }, index) => `
-    <div class="reports-kpi-card glass-card" ${index === 1 ? 'data-kpi="totalValue"' : ''}>
+  dom.kpiGrid.innerHTML = cards.map(({ key, icon, label, value, meta }) => `
+    <div class="reports-kpi-card glass-card" data-kpi="${key}">
       <div class="reports-kpi-icon">${icon}</div>
       <div class="reports-kpi-content">
         <p class="reports-kpi-label">${escapeHtml(label)}</p>

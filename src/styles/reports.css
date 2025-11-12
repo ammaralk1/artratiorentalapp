@@ -751,7 +751,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 .reports-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  grid-template-columns: repeat(6, minmax(160px, 1fr));
   gap: 12px;
   justify-items: stretch;
 }
@@ -797,6 +797,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--clr-text);
+  white-space: nowrap;
 }
 
 /* Emphasise total revenue card and make it visually tighter */
@@ -808,9 +809,12 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   height: 46px;
   font-size: 1.4rem;
 }
-.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value {
-  font-size: 2.2rem;
-}
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value { font-size: 1.6rem; color: #4c6ef5; }
+
+/* Color-code KPI numbers */
+.reports-kpi-card[data-kpi="outstanding"] .reports-kpi-value { color: #ef4444; }
+.reports-kpi-card[data-kpi="expenses"] .reports-kpi-value { color: #f59e0b; }
+.reports-kpi-card[data-kpi="netProfit"] .reports-kpi-value { color: #16a34a; }
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-label {
   letter-spacing: 0.1px;
 }
