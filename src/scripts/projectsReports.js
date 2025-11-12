@@ -396,7 +396,6 @@ function buildProjectSnapshot(project, customerMap) {
     reservationsTotal: Number(reservationsTotal.toFixed(2)),
     expensesTotal,
     servicesClientPrice,
-    subtotal,
     taxAmount,
     combinedTaxAmount: taxAmount,
     overallTotal,
