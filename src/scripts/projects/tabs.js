@@ -11,6 +11,7 @@ import {
   updatePreferences
 } from '../preferencesService.js';
 import { renderProjects, renderFocusCards, updateSummary } from './view.js';
+import { refreshProjectsFromApi } from '../projectsService.js';
 
 let unsubscribeProjectPreferences = null;
 
@@ -123,7 +124,7 @@ export function initTabNavigation() {
   }
 }
 
-export function activateProjectSubTab(targetId, triggerButton) {
+export async function activateProjectSubTab(targetId, triggerButton) {
   if (!targetId || !dom.projectSubTabButtons || !dom.projectSubTabPanes) return;
 
   dom.projectSubTabButtons.forEach((btn) => {
@@ -145,6 +146,9 @@ export function activateProjectSubTab(targetId, triggerButton) {
   // When switching to "مشاريعي" (projects list), ensure content renders fresh
   if (targetId === 'projects-list-tab') {
     try {
+      if (!Array.isArray(state.projects) || state.projects.length === 0) {
+        await refreshProjectsFromApi();
+      }
       renderProjects();
       renderFocusCards();
       updateSummary();
@@ -160,12 +164,12 @@ export function initProjectSubTabs() {
   dom.projectSubTabButtons.forEach((button) => {
     if (button.dataset.tabListenerAttached === 'true') return;
 
-    button.addEventListener('click', (event) => {
+    button.addEventListener('click', async (event) => {
       event.preventDefault();
       const targetId = button.dataset.projectSubtabTarget;
       if (!targetId) return;
 
-      activateProjectSubTab(targetId, button);
+      await activateProjectSubTab(targetId, button);
       persistActiveSubTab(targetId);
     });
 
