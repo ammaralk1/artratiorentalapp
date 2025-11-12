@@ -713,7 +713,7 @@ function renderProjectsRevenueBreakdown(projects) {
     const breakdown = computeProjectsRevenueBreakdown(projects);
     const containerId = 'projects-revenue-breakdown';
     let container = document.getElementById(containerId);
-    const rows = [
+  const rows = [
       { label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
       { label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
       { label: t('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), value: formatCurrency(breakdown.taxTotal) },
@@ -723,7 +723,7 @@ function renderProjectsRevenueBreakdown(projects) {
       { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
       { label: t('projects.reports.kpi.revenue.details.servicesRevenue', 'إيرادات الخدمات الإنتاجية', 'Services revenue'), value: `${formatCurrency(breakdown.servicesRevenueTotal)}` },
       { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
-      { label: t('projects.reports.kpi.revenue.details.margin', 'هامش الربح', 'Profit margin'), value: formatPercent(breakdown.profitMarginPercent) },
+      // Note: Margin is already shown as a KPI card; avoid duplication here for cleaner layout
     ];
 
     const detailsHtml = `
