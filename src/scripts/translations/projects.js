@@ -587,6 +587,19 @@ registerTranslations({
     'projects.reports.table.columns.period': 'Period',
     'projects.reports.table.columns.value': 'Value',
     'projects.reports.table.columns.payment': 'Payment',
+    // New: margin filter + column
+    'projects.reports.filters.margin.label': 'هامش الربح',
+    'projects.reports.filters.margin.all': 'هامش: الكل',
+    'projects.reports.filters.margin.loss': 'هامش سلبي',
+    'projects.reports.filters.margin.lt10': 'أقل من 10٪',
+    'projects.reports.filters.margin.10to30': '10٪ – 30٪',
+    'projects.reports.filters.margin.gt30': 'أكثر من 30٪',
+    'projects.reports.table.columns.margin': 'هامش الربح',
+    'projects.reports.actions.exportExcel': 'تصدير Excel',
+    'projects.reports.kpi.margin': 'هامش الربح',
+    'projects.reports.kpi.marginMeta': 'صافي الربح ÷ الإيراد بدون الضريبة',
+    'projects.reports.kpi.revenue.details.servicesRevenue': 'إيرادات الخدمات الإنتاجية',
+    'projects.reports.kpi.revenue.details.margin': 'هامش الربح',
     'projects.reports.table.empty': 'No projects match the current filters.',
     'projects.reports.table.meta': 'Showing {count} of {total} projects',
     'projects.reports.kpi.totalProjects': 'Total projects',
@@ -769,5 +782,24 @@ registerTranslations({
     'projects.quote.sections.financial': 'Financial summary',
     'projects.quote.sections.equipment': 'Equipment',
     'projects.quote.sections.notes': 'Project notes'
+  }
+});
+
+// Provide English strings for the new keys
+registerTranslations({
+  en: {
+    'projects.reports.filters.margin.label': 'Profit margin',
+    'projects.reports.filters.margin.all': 'Margin: All',
+    'projects.reports.filters.margin.loss': 'Negative margin',
+    'projects.reports.filters.margin.lt10': 'Less than 10%'
+    ,
+    'projects.reports.filters.margin.10to30': '10% – 30%',
+    'projects.reports.filters.margin.gt30': 'More than 30%',
+    'projects.reports.table.columns.margin': 'Profit margin',
+    'projects.reports.actions.exportExcel': 'Export Excel',
+    'projects.reports.kpi.margin': 'Profit margin',
+    'projects.reports.kpi.marginMeta': 'Net profit ÷ revenue (excl. VAT)',
+    'projects.reports.kpi.revenue.details.servicesRevenue': 'Services revenue',
+    'projects.reports.kpi.revenue.details.margin': 'Profit margin',
   }
 });

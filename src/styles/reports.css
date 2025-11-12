@@ -88,6 +88,30 @@ body.dark-mode {
   backdrop-filter: blur(12px);
 }
 
+/* Sorting indicators for reports tables */
+.reports-table th.sortable {
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+.reports-table th.sortable::after {
+  content: '⇅';
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  opacity: 0.35;
+}
+.reports-table th.sortable.is-sorted[data-dir="asc"]::after {
+  content: '▲';
+  opacity: 0.85;
+}
+.reports-table th.sortable.is-sorted[data-dir="desc"]::after {
+  content: '▼';
+  opacity: 0.85;
+}
+
 :is(html.dark-mode, body.dark-mode) .reports-surface-card,
 :is(html.dark-mode, body.dark-mode) .reports-kpi-card,
 :is(html.dark-mode, body.dark-mode) .reports-chart-card,

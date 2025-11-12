@@ -557,6 +557,7 @@ function renderAll() {
   renderExpenseChart(filtered);
   renderClientsChart(filtered);
   renderTable(filtered);
+  updateSortIndicators();
 }
 
 function getFilteredProjects() {
@@ -1147,7 +1148,7 @@ async function exportProjectsToExcel(projects) {
   const headers = [
     'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة',
     'تقدير المعدات', 'إيرادات الخدمات', 'تكلفة الخدمات', 'صافي الحجوزات (بدون ضريبة)',
-    'صافي الربح', 'هامش الربح %', 'حالة الدفع'
+    'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %'
   ];
   const rows = projects.map((p) => {
     const m = computeProjectMetrics(p);
@@ -1155,6 +1156,8 @@ async function exportProjectsToExcel(projects) {
     const statusLabel = t(`projects.status.${p.status}`, p.status);
     const paymentLabel = t(`projects.paymentStatus.${p.paymentStatus}`, p.paymentStatus);
     const customerLabel = p.clientCompany ? `${p.clientName} (${p.clientCompany})` : (p.clientName || '');
+    const paidAmount = Number(p.raw?.paidAmount ?? p.paidAmount ?? 0) || 0;
+    const paidPercent = Number(p.raw?.paidPercent ?? p.paidPercent ?? 0) || 0;
     return [
       String(p.projectCode || p.id || ''),
       String(p.title || p.projectCode || ''),
@@ -1169,6 +1172,8 @@ async function exportProjectsToExcel(projects) {
       Math.round(m.netProfit || 0),
       Number((m.marginPercent || 0).toFixed(1)),
       paymentLabel,
+      Math.round(paidAmount || 0),
+      Number((paidPercent || 0).toFixed(1)),
     ];
   });
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -1289,6 +1294,19 @@ function sortProjects(list) {
     }
   };
   return list.sort((a, b) => dirMul * cmp(a, b));
+}
+
+function updateSortIndicators() {
+  if (!dom.tableHead) return;
+  dom.tableHead.querySelectorAll('th.sortable').forEach((th) => {
+    th.classList.remove('is-sorted');
+    th.removeAttribute('data-dir');
+  });
+  const active = dom.tableHead.querySelector(`th.sortable[data-sort-key="${sortState.key}"]`);
+  if (active) {
+    active.classList.add('is-sorted');
+    active.setAttribute('data-dir', sortState.dir);
+  }
 }
 
 function formatProjectPeriod(start, end) {
