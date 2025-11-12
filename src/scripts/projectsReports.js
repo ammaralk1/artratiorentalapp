@@ -1006,7 +1006,8 @@ function computeProjectsRevenueBreakdown(projects) {
 
   const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
   const revenueExTax = Math.max(0, grossRevenue - taxTotal);
-  const netProfit = revenueExTax - projectExpensesTotal - crewCostTotal;
+  // Align with modal: net profit excludes company share and VAT
+  const netProfit = (revenueExTax - companyShareTotal) - projectExpensesTotal - crewCostTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {
