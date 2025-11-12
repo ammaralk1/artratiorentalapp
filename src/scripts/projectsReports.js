@@ -846,16 +846,30 @@ function computeProjectsRevenueBreakdown(projects) {
   const projectIds = new Set(projects.map((p) => String(p.id)));
   const reservationsAll = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
 
-  // Group reservations by project and aggregate equipment/crew
+  // Group reservations by project and aggregate equipment/crew revenue and crew cost
   const resByProject = new Map();
-  let equipmentReservations = 0;
-  let crewTotal = 0;
+  let equipmentRevenueFromReservations = 0;
+  let crewRevenueFromReservations = 0;
   let crewCostTotal = 0;
   reservationsAll.forEach((res) => {
-    const f = computeReservationFinancials(res);
-    equipmentReservations += f.equipmentTotal || 0;
-    crewTotal += f.crewTotal || 0;
-    crewCostTotal += f.crewCostTotal || 0;
+    const items = Array.isArray(res.items) ? res.items : [];
+    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+    const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
+    const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
+    const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techOrAssign : [],
+      crewAssignments: useAssignments ? techOrAssign : [],
+      discount: res.discount ?? 0,
+      discountType: res.discountType || 'percent',
+      applyTax: false,
+      start: res.start,
+      end: res.end,
+    });
+    equipmentRevenueFromReservations += Number(breakdown.equipmentTotal || 0);
+    crewRevenueFromReservations += Number(breakdown.crewTotal || 0);
+    crewCostTotal += Number(breakdown.crewCostTotal || 0);
     const arr = resByProject.get(String(res.projectId)) || [];
     arr.push(res);
     resByProject.set(String(res.projectId), arr);
@@ -866,29 +880,58 @@ function computeProjectsRevenueBreakdown(projects) {
   let companyShareTotal = 0;
   let projectExpensesTotal = 0;
   let servicesRevenueTotal = 0;
-  let projectEquipmentEstimateTotal = 0;
 
   projects.forEach((p) => {
-    const { subtotal: projectSubtotal, applyTax, companyShareAmount, expensesTotal } = resolveProjectTotals(p);
-    companyShareTotal += companyShareAmount || 0;
-    projectExpensesTotal += Number(expensesTotal || 0);
-    projectEquipmentEstimateTotal += Number(p.raw?.equipmentEstimate ?? p.equipmentEstimate ?? 0) || 0;
-    servicesRevenueTotal += getProjectServicesRevenue(p);
-
     const list = resByProject.get(String(p.id)) || [];
-    const reservationsNet = list.reduce((sum, res) => {
-      const f = computeReservationFinancials(res);
-      const resTax = Number(f.taxAmount || 0);
-      const resFinal = Number(f.finalTotal || 0);
-      return sum + Math.max(0, resFinal - resTax);
-    }, 0);
+    // Aggregate equipment/crew revenue for this project
+    const agg = list.reduce((acc, res) => {
+      const items = Array.isArray(res.items) ? res.items : [];
+      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
+      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
+      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
+      const breakdown = calculateDraftFinancialBreakdown({
+        items,
+        technicianIds: useTechnicianIds ? techOrAssign : [],
+        crewAssignments: useAssignments ? techOrAssign : [],
+        discount: res.discount ?? 0,
+        discountType: res.discountType || 'percent',
+        applyTax: false,
+        start: res.start,
+        end: res.end,
+      });
+      acc.equipment += Number(breakdown.equipmentTotal || 0);
+      acc.crew += Number(breakdown.crewTotal || 0);
+      return acc;
+    }, { equipment: 0, crew: 0 });
 
-    const combinedTax = applyTax ? (projectSubtotal + reservationsNet) * PROJECT_TAX_RATE : 0;
-    grossRevenue += projectSubtotal + reservationsNet + combinedTax;
+    const servicesRevenue = getProjectServicesRevenue(p);
+    servicesRevenueTotal += servicesRevenue;
+    projectExpensesTotal += Number(getProjectExpenses(p) || 0);
+
+    // Modal-equivalent flow
+    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
+    const discountVal = Number(p?.discount ?? 0) || 0;
+    const discountType = p?.discountType === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+
+    const shareEnabled = p?.companyShareEnabled === true || p?.companyShareEnabled === 'true';
+    const sharePercent = shareEnabled ? (Number(p?.companySharePercent) || 0) : 0;
+    const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
+    companyShareTotal += companyShareAmount;
+
+    const applyTax = p?.applyTax === true || p?.applyTax === 'true';
+    const combinedTax = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
     taxTotal += combinedTax;
+
+    const finalTotal = baseAfterDiscount + companyShareAmount + combinedTax;
+    grossRevenue += finalTotal;
   });
 
-  const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
+  const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
   const revenueExTax = Math.max(0, grossRevenue - taxTotal);
   const netProfit = revenueExTax - projectExpensesTotal - crewCostTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
@@ -897,7 +940,7 @@ function computeProjectsRevenueBreakdown(projects) {
     grossRevenue,
     companyShareTotal,
     taxTotal,
-    crewTotal,
+    crewTotal: crewRevenueFromReservations,
     crewCostTotal,
     equipmentTotalCombined,
     projectExpensesTotal,
