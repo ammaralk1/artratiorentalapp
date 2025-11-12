@@ -380,6 +380,15 @@ function buildFocusCards() {
     upcomingProjects.forEach((project) => addCard(project, 'upcoming'));
   }
 
+  // Fallback: include undated or invalid-date projects as most recent
+  if (cards.length < MAX_FOCUS_CARDS) {
+    const undated = [...state.projects]
+      .filter((project) => !seen.has(project.id))
+      .filter((project) => !Number.isFinite(getProjectStartTimestamp(project)))
+      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
+    undated.forEach((project) => addCard(project, 'recent'));
+  }
+
   if (cards.length < MAX_FOCUS_CARDS) {
     const fallbackProjects = [...state.projects]
       .filter((project) => !seen.has(project.id))
