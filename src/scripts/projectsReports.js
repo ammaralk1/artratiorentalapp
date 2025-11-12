@@ -749,11 +749,10 @@ function normalizeText(value) {
 function renderKpis(projects) {
   if (!dom.kpiGrid) return;
   const totalCount = projects.length;
-  // Use breakdown.grossRevenue to guarantee VAT is included consistently
-  const totalValue = computeProjectsRevenueBreakdown(projects).grossRevenue;
-  const unpaidValue = projects.reduce((sum, project) => sum + project.unpaidValue, 0);
-  const expensesTotal = projects.reduce((sum, project) => sum + project.expensesTotal, 0);
   const breakdown = computeProjectsRevenueBreakdown(projects);
+  const totalValue = breakdown.grossRevenue;
+  const unpaidValue = breakdown.outstandingTotal || 0;
+  const expensesTotal = breakdown.projectExpensesTotal || 0;
 
   const cards = [
     {
@@ -808,6 +807,7 @@ function renderProjectsRevenueBreakdown(projects) {
     const breakdown = computeProjectsRevenueBreakdown(projects);
     const containerId = 'projects-revenue-breakdown';
     let container = document.getElementById(containerId);
+  const servicesProfit = (breakdown.servicesRevenueTotal || 0) - (breakdown.projectExpensesTotal || 0);
   const rows = [
       { label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
       { label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
@@ -816,7 +816,7 @@ function renderProjectsRevenueBreakdown(projects) {
       { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
       { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
       { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
-      { label: t('projects.reports.kpi.revenue.details.servicesRevenue', 'إيرادات الخدمات الإنتاجية', 'Services revenue'), value: `${formatCurrency(breakdown.servicesRevenueTotal)}` },
+      { label: t('projects.reports.kpi.revenue.details.servicesProfit', 'ربح الخدمات الإنتاجية', 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
       { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
       // Note: Margin is already shown as a KPI card; avoid duplication here for cleaner layout
     ];
