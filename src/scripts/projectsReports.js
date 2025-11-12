@@ -953,8 +953,19 @@ function computeProjectsRevenueBreakdown(projects) {
       if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
       return false;
     })();
-    const shareEnabled = p?.companyShareEnabled === true || p?.companyShareEnabled === 'true';
-    const rawSharePercent = Number(p?.companySharePercent) || 0;
+    const shareEnabled = (() => {
+      const v = (p?.companyShareEnabled !== undefined)
+        ? p.companyShareEnabled
+        : (p?.raw?.company_share_enabled ?? p?.raw?.companyShareEnabled);
+      if (v === true || v === 1 || v === '1') return true;
+      if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
+      return false;
+    })();
+    const rawSharePercent = (() => {
+      const v = (p?.raw?.company_share_percent ?? p?.raw?.companySharePercent ?? p?.companySharePercent ?? p?.company_share_percent ?? 0);
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    })();
     // Couple: if share is set, VAT is effectively ON
     if (shareEnabled && rawSharePercent > 0) applyTax = true;
     const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
