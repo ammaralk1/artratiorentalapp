@@ -771,25 +771,45 @@ function computeProjectsRevenueBreakdown(projects) {
   });
 
   const projectExpensesTotal = projects.reduce((sum, p) => sum + (Number(p.expensesTotal) || 0), 0);
-  const projectEquipmentEstimateTotal = projects.reduce((sum, p) => sum + (Number(p.raw?.equipmentEstimate) || 0), 0);
-  const servicesRevenueTotal = projects.reduce((sum, p) => sum + (Number(p.raw?.servicesClientPrice) || 0), 0);
-  const taxOnProjectSubtotals = projects.reduce((sum, p) => {
-    const applyTax = p.applyTax === true;
-    const base = (Number(p.raw?.equipmentEstimate) || 0) + (Number(p.raw?.servicesClientPrice) || 0);
-    const tax = applyTax ? base * PROJECT_TAX_RATE : 0;
-    return sum + tax;
-  }, 0);
+  let projectEquipmentEstimateTotal = 0;
+  let servicesRevenueTotal = 0;
+  let projectCompanyShareTotal = 0;
+  let projectTaxTotal = 0;
+  let projectRevenueExTaxTotal = 0; // baseAfterDiscount + companyShare (without tax)
 
-  const grossRevenue = grossReservations + projectEquipmentEstimateTotal + servicesRevenueTotal + taxOnProjectSubtotals;
+  projects.forEach((p) => {
+    const equip = Number(p.raw?.equipmentEstimate) || 0;
+    const services = Number(p.raw?.servicesClientPrice) || 0;
+    const discountVal = Number(p.raw?.discount ?? 0) || 0;
+    const discountType = (p.raw?.discountType === 'amount') ? 'amount' : 'percent';
+    const baseSubtotal = equip + services;
+    let discountAmount = discountType === 'amount' ? discountVal : baseSubtotal * (discountVal / 100);
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > baseSubtotal) discountAmount = baseSubtotal;
+    const baseAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+    const shareEnabled = (p.raw?.companyShareEnabled === true) || String(p.raw?.companyShareEnabled).toLowerCase() === 'true';
+    const sharePercent = shareEnabled ? (Number(p.raw?.companySharePercent) || 0) : 0;
+    const companyShareAmount = sharePercent > 0 ? baseAfterDiscount * (sharePercent / 100) : 0;
+    const applyTax = p.applyTax === true;
+    const projectTax = applyTax ? (baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE : 0;
+
+    projectEquipmentEstimateTotal += equip;
+    servicesRevenueTotal += services;
+    projectCompanyShareTotal += companyShareAmount;
+    projectTaxTotal += projectTax;
+    projectRevenueExTaxTotal += (baseAfterDiscount + companyShareAmount);
+  });
+
+  const grossRevenue = grossReservations + projectRevenueExTaxTotal + projectTaxTotal;
   const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
-  const taxTotal = taxReservations + taxOnProjectSubtotals;
+  const taxTotal = taxReservations + projectTaxTotal;
   const netProfit = netReservations + (servicesRevenueTotal - projectExpensesTotal);
-  const revenueExTax = (grossReservations - taxReservations) + projectEquipmentEstimateTotal + servicesRevenueTotal;
+  const revenueExTax = (grossReservations - taxReservations) + projectRevenueExTaxTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {
     grossRevenue,
-    companyShareTotal,
+    companyShareTotal: companyShareTotal + projectCompanyShareTotal,
     taxTotal,
     crewTotal,
     crewCostTotal,
