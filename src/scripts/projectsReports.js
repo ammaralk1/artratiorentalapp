@@ -1148,7 +1148,7 @@ async function exportProjectsToExcel(projects) {
   const headers = [
     'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة',
     'تقدير المعدات', 'إيرادات الخدمات', 'تكلفة الخدمات', 'صافي الحجوزات (بدون ضريبة)',
-    'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %'
+    'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %', 'عدد الدفعات'
   ];
   const rows = projects.map((p) => {
     const m = computeProjectMetrics(p);
@@ -1158,6 +1158,7 @@ async function exportProjectsToExcel(projects) {
     const customerLabel = p.clientCompany ? `${p.clientName} (${p.clientCompany})` : (p.clientName || '');
     const paidAmount = Number(p.raw?.paidAmount ?? p.paidAmount ?? 0) || 0;
     const paidPercent = Number(p.raw?.paidPercent ?? p.paidPercent ?? 0) || 0;
+    const paymentsCount = Array.isArray(p.raw?.paymentHistory) ? p.raw.paymentHistory.length : 0;
     return [
       String(p.projectCode || p.id || ''),
       String(p.title || p.projectCode || ''),
@@ -1174,6 +1175,7 @@ async function exportProjectsToExcel(projects) {
       paymentLabel,
       Math.round(paidAmount || 0),
       Number((paidPercent || 0).toFixed(1)),
+      paymentsCount,
     ];
   });
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -1301,12 +1303,37 @@ function updateSortIndicators() {
   dom.tableHead.querySelectorAll('th.sortable').forEach((th) => {
     th.classList.remove('is-sorted');
     th.removeAttribute('data-dir');
+    const key = th.getAttribute('data-sort-key');
+    if (key) {
+      th.setAttribute('title', buildSortTitle(key, null));
+    }
   });
   const active = dom.tableHead.querySelector(`th.sortable[data-sort-key="${sortState.key}"]`);
   if (active) {
     active.classList.add('is-sorted');
     active.setAttribute('data-dir', sortState.dir);
+    active.setAttribute('title', buildSortTitle(sortState.key, sortState.dir));
   }
+}
+
+function buildSortTitle(key, dir) {
+  const labelKeyMap = {
+    project: 'projects.reports.table.columns.project',
+    client: 'projects.reports.table.columns.client',
+    status: 'projects.reports.table.columns.status',
+    period: 'projects.reports.table.columns.period',
+    value: 'projects.reports.table.columns.value',
+    margin: 'projects.reports.table.columns.margin',
+    payment: 'projects.reports.table.columns.payment',
+  };
+  const colLabel = t(labelKeyMap[key] || '', key);
+  if (!dir) {
+    return `${colLabel} — ${t('projects.reports.table.sortable', 'قابل للفرز')}`;
+  }
+  const dirLabel = dir === 'asc'
+    ? t('projects.reports.table.sort.asc', 'ترتيب تصاعدي')
+    : t('projects.reports.table.sort.desc', 'ترتيب تنازلي');
+  return `${colLabel} — ${dirLabel}`;
 }
 
 function formatProjectPeriod(start, end) {

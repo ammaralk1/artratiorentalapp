@@ -587,6 +587,9 @@ registerTranslations({
     'projects.reports.table.columns.period': 'Period',
     'projects.reports.table.columns.value': 'Value',
     'projects.reports.table.columns.payment': 'Payment',
+    'projects.reports.table.sortable': 'قابل للفرز',
+    'projects.reports.table.sort.asc': 'ترتيب تصاعدي',
+    'projects.reports.table.sort.desc': 'ترتيب تنازلي',
     // New: margin filter + column
     'projects.reports.filters.margin.label': 'هامش الربح',
     'projects.reports.filters.margin.all': 'هامش: الكل',
@@ -801,5 +804,8 @@ registerTranslations({
     'projects.reports.kpi.marginMeta': 'Net profit ÷ revenue (excl. VAT)',
     'projects.reports.kpi.revenue.details.servicesRevenue': 'Services revenue',
     'projects.reports.kpi.revenue.details.margin': 'Profit margin',
+    'projects.reports.table.sortable': 'Sortable',
+    'projects.reports.table.sort.asc': 'Ascending',
+    'projects.reports.table.sort.desc': 'Descending',
   }
 });
