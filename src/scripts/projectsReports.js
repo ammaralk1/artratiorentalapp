@@ -726,7 +726,8 @@ function normalizeText(value) {
 function renderKpis(projects) {
   if (!dom.kpiGrid) return;
   const totalCount = projects.length;
-  const totalValue = projects.reduce((sum, project) => sum + project.overallTotal, 0);
+  // Use breakdown.grossRevenue to guarantee VAT is included consistently
+  const totalValue = computeProjectsRevenueBreakdown(projects).grossRevenue;
   const unpaidValue = projects.reduce((sum, project) => sum + project.unpaidValue, 0);
   const expensesTotal = projects.reduce((sum, project) => sum + project.expensesTotal, 0);
   const breakdown = computeProjectsRevenueBreakdown(projects);
@@ -742,7 +743,7 @@ function renderKpis(projects) {
       icon: KPI_ICONS.value,
       label: t('projects.reports.kpi.totalValue', 'Total value'),
       value: formatCurrency(totalValue),
-      meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects and linked reservations')
+      meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects, linked reservations, and VAT')
     },
     {
       icon: KPI_ICONS.outstanding,
@@ -764,8 +765,8 @@ function renderKpis(projects) {
     }
   ];
 
-  dom.kpiGrid.innerHTML = cards.map(({ icon, label, value, meta }) => `
-    <div class="reports-kpi-card glass-card">
+  dom.kpiGrid.innerHTML = cards.map(({ icon, label, value, meta }, index) => `
+    <div class="reports-kpi-card glass-card" ${index === 1 ? 'data-kpi="totalValue"' : ''}>
       <div class="reports-kpi-icon">${icon}</div>
       <div class="reports-kpi-content">
         <p class="reports-kpi-label">${escapeHtml(label)}</p>

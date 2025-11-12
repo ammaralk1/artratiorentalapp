@@ -783,7 +783,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px; /* closer label to amount */
 }
 
 .reports-kpi-label {
@@ -797,6 +797,22 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--clr-text);
+}
+
+/* Emphasise total revenue card and make it visually tighter */
+.reports-kpi-card[data-kpi="totalValue"] {
+  padding: 14px;
+}
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-icon {
+  width: 46px;
+  height: 46px;
+  font-size: 1.4rem;
+}
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value {
+  font-size: 2.2rem;
+}
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-label {
+  letter-spacing: 0.1px;
 }
 
 .reports-kpi-meta {
