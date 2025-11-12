@@ -337,18 +337,26 @@ function buildProjectSnapshot(project, customerMap) {
   const normalizedPayment = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
   const client = customerMap.get(String(project.clientId));
   const reservations = getReservationsForProject(project.id);
-  const reservationsTotal = reservations.reduce((sum, reservation) => sum + resolveReservationNetTotal(reservation), 0);
+  // Use reservation final totals (include tax/share at reservation level)
+  const reservationsTotal = reservations.reduce((sum, reservation) => sum + resolveReservationFinalTotal(reservation), 0);
 
   const expensesTotal = getProjectExpenses(project);
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
-  // Use services client price (revenue) instead of expenses (cost) when computing displayed totals
   const servicesClientPrice = Number(project?.servicesClientPrice) || 0;
-  const subtotal = Number((equipmentEstimate + servicesClientPrice).toFixed(2));
+  // Apply project-level discount and company share similar to breakdown
+  const discountVal = Number(project?.discount ?? 0) || 0;
+  const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
+  const baseSubtotal = equipmentEstimate + servicesClientPrice;
+  let discountAmount = discountType === 'amount' ? discountVal : baseSubtotal * (discountVal / 100);
+  if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+  if (discountAmount > baseSubtotal) discountAmount = baseSubtotal;
+  const baseAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+  const shareEnabled = project?.companyShareEnabled === true || project?.companyShareEnabled === 'true';
+  const sharePercent = shareEnabled ? (Number(project?.companySharePercent) || 0) : 0;
+  const companyShareAmount = sharePercent > 0 ? baseAfterDiscount * (sharePercent / 100) : 0;
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
-  const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  // Combined tax: apply project tax to project-level revenue (equipment + services client price)
-  const combinedTaxAmount = applyTax ? Number(((subtotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const overallTotal = Number((subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
+  const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+  const overallTotal = Number((reservationsTotal + baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
 
   const status = determineProjectStatus(project);
   const start = project.start ? new Date(project.start) : null;
@@ -375,7 +383,7 @@ function buildProjectSnapshot(project, customerMap) {
     servicesClientPrice,
     subtotal,
     taxAmount,
-    combinedTaxAmount,
+    combinedTaxAmount: taxAmount,
     overallTotal,
     unpaidValue: normalizedPayment === 'paid' ? 0 : overallTotal,
     reservationsCount: reservations.length
@@ -412,6 +420,17 @@ function resolveReservationNetTotal(reservation) {
 
   const storedCost = Number(normalizeNumbers(String(reservation.cost ?? 0)));
   return Number.isFinite(storedCost) ? Math.round(storedCost) : 0;
+}
+
+function resolveReservationFinalTotal(reservation) {
+  if (!reservation) return 0;
+  try {
+    const f = computeReservationFinancials(reservation);
+    const val = Number(f.finalTotal || 0);
+    return Number.isFinite(val) ? val : 0;
+  } catch (_) {
+    return 0;
+  }
 }
 
 function getProjectExpenses(project) {
