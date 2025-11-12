@@ -422,6 +422,8 @@ function buildProjectSnapshot(project, customerMap) {
     start,
     end,
     applyTax,
+    companyShareEnabled: shareEnabled,
+    companySharePercent: sharePercent,
     status,
     reservationsTotal: Number((agg.equipment + agg.crew).toFixed(2)),
     expensesTotal: getProjectExpenses(project),
@@ -880,6 +882,7 @@ function computeProjectsRevenueBreakdown(projects) {
   let companyShareTotal = 0;
   let projectExpensesTotal = 0;
   let servicesRevenueTotal = 0;
+  let outstandingTotal = 0;
 
   projects.forEach((p) => {
     const list = resByProject.get(String(p.id)) || [];
@@ -929,6 +932,24 @@ function computeProjectsRevenueBreakdown(projects) {
 
     const finalTotal = baseAfterDiscount + companyShareAmount + combinedTax;
     grossRevenue += finalTotal;
+
+    // Paid and outstanding: sum payment history (amount/percent) plus paidAmount/paidPercent
+    const raw = p.raw || p; // fallback
+    let paid = 0;
+    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
+    try {
+      const hist = Array.isArray(raw.paymentHistory) ? raw.paymentHistory : [];
+      hist.forEach((e) => {
+        const t = (e?.type || '').toString().toLowerCase();
+        const val = Number(e?.value ?? e?.amount ?? 0) || 0;
+        if (t === 'percent') add((val / 100) * finalTotal);
+        else add(val);
+      });
+    } catch (_) { /* ignore */ }
+    add(raw?.paidAmount);
+    if (Number(raw?.paidPercent) > 0) add((Number(raw.paidPercent) / 100) * finalTotal);
+    if (paid > finalTotal) paid = finalTotal;
+    outstandingTotal += Math.max(0, finalTotal - paid);
   });
 
   const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
@@ -945,6 +966,7 @@ function computeProjectsRevenueBreakdown(projects) {
     equipmentTotalCombined,
     projectExpensesTotal,
     servicesRevenueTotal,
+    outstandingTotal,
     netProfit,
     revenueExTax,
     profitMarginPercent,
