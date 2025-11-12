@@ -468,7 +468,6 @@ table.cs-cast tbody tr:last-child td,
 /* Force white backgrounds in preview (except shaded labels/sections) */
 #templates-a4-root .callsheet-v1 table th:not(.cs-crew-title):not(.cs-schedule-title):not(.cs-cast-title):not(.cs-crew-head):not(.cs-schedule-head),
 #templates-a4-root .callsheet-v1 table td:not(.cs-label):not(.cs-notes-h):not(.cs-section),
-#templates-a4-root .callsheet-v1 .cs-cast-title,
 #templates-a4-root .callsheet-v1 .cs-wrap { background:#ffffff !important; color:#000 !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead th.cs-crew-title { background:#2563EB !important; color:#ffffff !important; }
 #templates-a4-root .callsheet-v1 table.cs-crew thead tr:nth-child(2) th { background: rgba(37, 99, 235, 0.18) !important; }
