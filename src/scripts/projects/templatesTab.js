@@ -435,6 +435,7 @@ function ensureLogoControls(type = 'expenses') {
       <label class="form-label" style="margin:0 4px 0 0;">حجم الخط</label>
       <button type="button" class="btn btn-outline" id="tpl-font-down" title="تصغير الخط">A−</button>
       <button type="button" class="btn btn-outline" id="tpl-font-up" title="تكبير الخط">A+</button>
+      <button type="button" class="btn btn-outline" id="tpl-font-bold" title="تسميك الخط (Bold)"><strong>B</strong></button>
     </div>
     <div class="input-group" id="tpl-shade-controls" style="display:inline-flex;gap:6px;align-items:center;">
       <label class="form-label" style="margin:0 4px 0 0;">تظليل</label>
@@ -520,6 +521,8 @@ function ensureLogoControls(type = 'expenses') {
   const fontUp = document.getElementById('tpl-font-up');
   fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -2 : -1); } catch (_) {} });
   fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +2 : +1); } catch (_) {} });
+  const fontBold = document.getElementById('tpl-font-bold');
+  fontBold?.addEventListener('click', () => { try { toggleSelectionBold(); } catch (_) {} });
 
   // Shading controls
   const shadeApply = document.getElementById('tpl-shade-apply');
@@ -1071,6 +1074,60 @@ function adjustSelectionFont(deltaPx = 0) {
       }
     } else {
       // No selection: apply to entire editable cell
+      applyToEditable(target);
+    }
+
+    try { pushHistoryDebounced(); saveAutosaveDebounced(); } catch (_) {}
+    markTemplatesEditingActivity();
+  } catch (_) {}
+}
+
+// Toggle bold (font-weight) for current selection or editable cell
+function toggleSelectionBold() {
+  try {
+    const root = document.getElementById('templates-a4-root');
+    if (!root) return;
+    const sel = window.getSelection();
+
+    const nearestEditable = () => {
+      let node = (sel && sel.anchorNode) || document.activeElement;
+      if (!node) return null;
+      if (node.nodeType === 3) node = node.parentElement;
+      let el = (node instanceof Element) ? node : null;
+      while (el && el !== document.body) {
+        if (el.hasAttribute && el.hasAttribute('contenteditable')) return el;
+        el = el.parentElement;
+      }
+      return null;
+    };
+
+    const target = nearestEditable();
+    if (!target) return;
+
+    // Determine current bold state from computed style of target
+    const w = Number.parseInt(getComputedStyle(target).fontWeight || '400', 10);
+    const nextBold = !(w >= 600);
+
+    const applyToEditable = (el) => { try { el.style.fontWeight = nextBold ? '700' : '400'; } catch (_) {} };
+
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+      const range = sel.getRangeAt(0);
+      if (target.contains(range.commonAncestorContainer)) {
+        try {
+          const span = document.createElement('span');
+          span.style.fontWeight = nextBold ? '700' : '400';
+          const frag = range.extractContents();
+          span.appendChild(frag);
+          range.insertNode(span);
+          sel.removeAllRanges();
+          const nr = document.createRange();
+          nr.setStartAfter(span); nr.setEndAfter(span);
+          sel.addRange(nr);
+        } catch (_) { applyToEditable(target); }
+      } else {
+        applyToEditable(target);
+      }
+    } else {
       applyToEditable(target);
     }
 
