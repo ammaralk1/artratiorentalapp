@@ -17,7 +17,6 @@ import { ensureXlsxStyled, exportCallsheetToExcel } from '../templates/excelExpo
 // Table interactions are handled via templates/tableInteractions.js; no direct tableTools use here
 import { showTemplatesDebugOverlay } from '../templates/debug.js';
 import { buildCallSheetPage as buildCallSheetPageExt, populateCrewFromReservation as populateCrewFromReservationExt, populateCrewFromReservationIfEmpty as populateCrewFromReservationIfEmptyExt } from '../templates/build/callsheet.js';
-import { buildShotListPage as buildShotListPageExt } from '../templates/build/shotlist.js';
 import { buildExpensesPage as buildExpensesPageExt } from '../templates/build/expenses.js';
 import { el } from '../templates/core.js';
 import { pageHasMeaningfulContent } from '../templates/pageUtils.js';
@@ -334,14 +333,14 @@ function recomputeExpensesForCell(targetTd) {
   } catch(_) { /* fallback is full recompute via debounce */ }
 }
 
-// ===== Persist selected template type (expenses/callsheet/shotlist) =====
+// ===== Persist selected template type (expenses/callsheet) =====
 const TPL_TYPE_PREF_KEY = 'projects.templates.type';
 function readTplPreferredType() {
   try {
     const v = String(localStorage.getItem(TPL_TYPE_PREF_KEY) || '').trim();
     if (!v) return '';
     // Only allow known values
-    return (v === 'expenses' || v === 'callsheet' || v === 'shotlist') ? v : '';
+    return (v === 'expenses' || v === 'callsheet') ? v : '';
   } catch (_) { return ''; }
 }
 function writeTplPreferredType(type) {
@@ -356,7 +355,7 @@ function restoreTplPreferredTypeIfAny(selectEl) {
     requested = params.get('tplType') || params.get('templatesType') || '';
   } catch (_) {}
   const stored = readTplPreferredType();
-  const preferred = (requested && (requested === 'expenses' || requested === 'callsheet' || requested === 'shotlist'))
+  const preferred = (requested && (requested === 'expenses' || requested === 'callsheet'))
     ? requested
     : stored;
   if (!preferred) return;
@@ -1457,7 +1456,6 @@ function renderTemplatesPreview() {
   let pageRoot = null;
   if (!pageRoot) {
     if (type === 'callsheet') pageRoot = buildCallSheetPageExt(project, reservations, hf);
-    else if (type === 'shotlist') pageRoot = buildShotListPageExt(project, reservations, hf);
     else pageRoot = buildExpensesPageExt(project, reservations, hf);
   }
   // Diff-like replace to avoid losing event handlers on host
@@ -1607,7 +1605,7 @@ async function printTemplatesPdf() {
       const v = readPdfPref(key, '');
       if (v === 'portrait' || v === 'landscape') return v;
     } catch (_) {}
-    const DEFAULTS = { expenses: 'portrait', callsheet: 'landscape', shotlist: 'portrait' };
+    const DEFAULTS = { expenses: 'portrait', callsheet: 'landscape' };
     return DEFAULTS[tpl] || 'landscape';
   };
   const orientation = resolveOrientationForType(type);
@@ -3113,7 +3111,6 @@ async function fetchSavedTemplatesForCurrent() {
   // Legacy compatibility: only query by project_id with a few type variants
   const variants = (() => {
     if (type === 'callsheet') return ['callsheet', 'call-sheet', 'callsheet_v1', 'callsheetv1', 'callsheet-v1'];
-    if (type === 'shotlist') return ['shotlist', 'shot-list'];
     return [type];
   })();
   const seen = new Set(); const items = [];
