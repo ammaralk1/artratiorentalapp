@@ -80,7 +80,19 @@ export function initProjectsPage() {
   document.addEventListener('reservations:changed', () => handleReservationsChanged(openProjectDetails));
   document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
     renderProjects();
+    renderFocusCards();
   });
+
+  // Keep projects list/cards in sync with any state updates from the service
+  try {
+    document.addEventListener('projects:changed', () => {
+      loadAllData();
+      renderSelections();
+      renderProjects();
+      updateSummary();
+      renderFocusCards();
+    }, { passive: true });
+  } catch (_) { /* ignore */ }
 }
 
 async function initialiseProjectsData() {
