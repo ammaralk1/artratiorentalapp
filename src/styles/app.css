@@ -3365,7 +3365,8 @@
     .equipment-filters .form-control {
       max-width: 100%;
       width: 100%;
-      flex: 1 1 100%;
+      /* Do not set a flex-basis on column layout to avoid tall items */
+      flex: 0 1 auto;
     }
 
     .equipment-search-row #search-equipment {
@@ -3382,6 +3383,22 @@
       flex-direction: column;
       align-items: stretch;
       gap: 0;
+    }
+
+    /* Critical: override desktop flex-basis 220px which becomes height in column layout */
+    .equipment-filter-controls .form-select,
+    .equipment-filter-controls .enhanced-select,
+    .equipment-filter-controls .enhanced-select__trigger {
+      flex: 0 0 auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    /* Ensure enhanced-select container also stretches on mobile */
+    .equipment-filters .enhanced-select {
+      max-width: 100%;
+      width: 100%;
+      flex: 0 1 auto;
     }
 
     /* Make selects even shorter on mobile for tighter vertical rhythm */
