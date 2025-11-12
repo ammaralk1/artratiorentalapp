@@ -721,7 +721,8 @@ function isStatusAllowed(project, statuses) {
 
 function isPaymentAllowed(project, payment) {
   if (payment === 'all') return true;
-  return project.paymentStatus === payment;
+  const state = resolveProjectPaymentState(project);
+  return state === payment;
 }
 
 function isConfirmedAllowed(project, confirmed) {
@@ -743,6 +744,33 @@ function matchesSearch(project, searchTerm) {
     project.description
   ].filter(Boolean).join(' '));
   return haystack.includes(searchTerm);
+}
+
+// Derive payment state exactly like the table/payment chip and outstanding calc
+function resolveProjectPaymentState(project) {
+  try {
+    const raw = project?.raw || project || {};
+    const finalTotal = Number(project?.overallTotal || 0) || 0;
+    let paid = 0;
+    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
+    const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
+      : (Array.isArray(raw.payments) ? raw.payments : []);
+    histSource.forEach((e) => {
+      const t = (e?.type || '').toString().toLowerCase();
+      const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
+      if (t === 'percent') add((val / 100) * finalTotal); else add(val);
+    });
+    add(raw?.paidAmount ?? raw?.paid_amount);
+    const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
+    if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    if (finalTotal <= 0) {
+      // If total is zero, treat as unpaid unless there are explicit payments
+      return paid > 0 ? 'partial' : 'unpaid';
+    }
+    return (paid >= finalTotal - 0.5) ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
+  } catch (_) {
+    return 'unpaid';
+  }
 }
 
 function isWithinRelativeRange(start, rangeStart, now) {
