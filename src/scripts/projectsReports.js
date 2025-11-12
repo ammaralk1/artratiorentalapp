@@ -926,7 +926,13 @@ function computeProjectsRevenueBreakdown(projects) {
     const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
     companyShareTotal += companyShareAmount;
 
-    const applyTax = p?.applyTax === true || p?.applyTax === 'true';
+    // Robust VAT flag detection (supports true/1/'1'/'true' and raw.apply_tax)
+    const applyTax = (() => {
+      const v = (p?.applyTax !== undefined) ? p.applyTax : (p?.raw?.apply_tax ?? p?.raw?.applyTax);
+      if (v === true || v === 1 || v === '1') return true;
+      if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
+      return false;
+    })();
     const combinedTax = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
     taxTotal += combinedTax;
 
