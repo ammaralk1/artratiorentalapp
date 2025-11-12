@@ -837,6 +837,7 @@ function renderProjectsRevenueBreakdown(projects) {
   const servicesProfit = (breakdown.servicesRevenueTotal || 0) - (breakdown.projectExpensesTotal || 0);
   const rows = [
       { label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
+      { label: t('projects.details.summary.discount', 'الخصم', 'Discount'), value: `−${formatCurrency(breakdown.discountTotal || 0)}` },
       { label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
       { label: t('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), value: formatCurrency(breakdown.taxTotal) },
       { label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
@@ -909,6 +910,7 @@ function computeProjectsRevenueBreakdown(projects) {
   let servicesRevenueTotal = 0;
   let outstandingTotal = 0;
   let netProfitTotal = 0;
+  let discountTotal = 0;
 
   projects.forEach((p) => {
     const list = resByProject.get(String(p.id)) || [];
@@ -948,6 +950,7 @@ function computeProjectsRevenueBreakdown(projects) {
     if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
     if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
     const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+    discountTotal += Number(discountAmount || 0);
 
     // Robust VAT flag detection (supports true/1/'1'/'true', camel/snake cases)
     let applyTax = (() => {
@@ -1023,6 +1026,7 @@ function computeProjectsRevenueBreakdown(projects) {
     netProfit,
     revenueExTax,
     profitMarginPercent,
+    discountTotal,
   };
 }
 
