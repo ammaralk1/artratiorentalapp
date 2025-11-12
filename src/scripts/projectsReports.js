@@ -4,7 +4,7 @@ import { normalizeNumbers, formatDateTime } from './utils.js';
 import { apiRequest } from './apiClient.js';
 import { ensureXlsx } from './reports/external.js';
 import { computeReservationFinancials } from './reports/calculations.js';
-import { calculateReservationTotal } from './reservationsSummary.js';
+import { calculateReservationTotal, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
 import {
   ensureProjectsLoaded,
   getProjectsState,
