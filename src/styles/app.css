@@ -1894,13 +1894,21 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 6px;
+    gap: 0;
     margin-inline: auto;
   }
 
   /* Increase specificity to ensure our gap wins over .management-search-bar */
   .equipment-filter-controls.management-search-bar {
-    gap: 6px;
+    gap: 0;
+  }
+
+  /* Ensure no extra margins on individual controls inside the filter controls */
+  .equipment-filter-controls .form-select,
+  .equipment-filter-controls select.form-select,
+  .equipment-filter-controls .enhanced-select,
+  .equipment-filter-controls .enhanced-select__trigger {
+    margin: 0;
   }
 
   .equipment-selection-banner[hidden] {
@@ -3373,7 +3381,7 @@
     .equipment-filter-controls {
       flex-direction: column;
       align-items: stretch;
-      gap: 4px;
+      gap: 0;
     }
 
     /* Make selects shorter on mobile for tighter vertical rhythm */
