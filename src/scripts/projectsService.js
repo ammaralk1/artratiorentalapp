@@ -6,6 +6,13 @@ const initialProjectsData = loadData() || {};
 let projectsState = (initialProjectsData.projects || []).map(mapLegacyProject);
 let hasFetchedProjects = false;
 
+function toNumber(value) {
+  if (value == null || value === '') return 0;
+  const normalized = normalizeNumbers(String(value)).replace(/[^\d.+-]/g, '');
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function getProjectsState() {
   return projectsState;
 }
@@ -162,10 +169,10 @@ export function buildProjectPayload({
   const normalizedExpenses = Array.isArray(expenses)
     ? expenses
         .map((expense) => {
-          const amount = Number.parseFloat(expense?.amount ?? expense?.value ?? 0) || 0;
+          const amount = toNumber(expense?.amount ?? expense?.value ?? 0);
           const label = (expense?.label ?? expense?.name ?? '').trim();
           if (!label) return null;
-          const sale = Number.parseFloat(expense?.salePrice ?? expense?.sale_price ?? 0) || 0;
+          const sale = toNumber(expense?.salePrice ?? expense?.sale_price ?? 0);
           // Support both note and notes (for compatibility with older/newer backends)
           const rawNote = (expense?.note ?? expense?.notes ?? '')
             .toString()
@@ -194,13 +201,11 @@ export function buildProjectPayload({
     end_datetime: end || null,
     apply_tax: Boolean(applyTax),
     payment_status: paymentStatus ?? 'unpaid',
-    equipment_estimate: Number.parseFloat(equipmentEstimate) || 0,
+    equipment_estimate: toNumber(equipmentEstimate),
     expenses_total: Math.round(expensesTotal * 100) / 100,
-    services_client_price: Number.isFinite(Number(servicesClientPrice))
-      ? Math.round(Number(servicesClientPrice) * 100) / 100
-      : 0,
-    tax_amount: Math.round((Number.parseFloat(taxAmount) || 0) * 100) / 100,
-    total_with_tax: Math.round((Number.parseFloat(totalWithTax) || 0) * 100) / 100,
+    services_client_price: Math.round(toNumber(servicesClientPrice) * 100) / 100,
+    tax_amount: Math.round(toNumber(taxAmount) * 100) / 100,
+    total_with_tax: Math.round(toNumber(totalWithTax) * 100) / 100,
     confirmed: Boolean(confirmed),
     technicians: technicianIds,
     equipment: normalizedEquipment,
@@ -211,24 +216,24 @@ export function buildProjectPayload({
   payload.discount = normalizedDiscount;
   payload.discount_type = discountType === 'amount' ? 'amount' : 'percent';
 
-  const sharePercentValue = Number.parseFloat(companySharePercent);
+  const sharePercentValue = toNumber(companySharePercent);
   const shareEnabled = Boolean(companyShareEnabled) && Number.isFinite(sharePercentValue) && sharePercentValue > 0;
   payload.company_share_enabled = shareEnabled;
   payload.company_share_percent = shareEnabled ? sharePercentValue : 0;
-  payload.company_share_amount = shareEnabled ? Math.max(0, Number.parseFloat(companyShareAmount) || 0) : 0;
+  payload.company_share_amount = shareEnabled ? Math.max(0, toNumber(companyShareAmount)) : 0;
 
-  if (Number.isFinite(Number(paidAmount))) {
-    payload.paid_amount = Math.max(0, Number.parseFloat(paidAmount) || 0);
+  if (paidAmount != null && paidAmount !== '') {
+    payload.paid_amount = Math.max(0, toNumber(paidAmount));
   }
-  if (Number.isFinite(Number(paidPercentage))) {
-    payload.paid_percentage = Math.max(0, Number.parseFloat(paidPercentage) || 0);
+  if (paidPercentage != null && paidPercentage !== '') {
+    payload.paid_percentage = Math.max(0, toNumber(paidPercentage));
   }
 
   if (paymentProgressType === 'amount' || paymentProgressType === 'percent') {
     payload.payment_progress_type = paymentProgressType;
   }
   if (paymentProgressValue != null && paymentProgressValue !== '') {
-    payload.payment_progress_value = Number.parseFloat(paymentProgressValue) || 0;
+    payload.payment_progress_value = toNumber(paymentProgressValue);
   }
 
   if (projectCode) {
@@ -299,13 +304,13 @@ function toInternalProject(raw = {}) {
   const expenses = expensesRaw.map((expense, index) => ({
     id: expense?.id ?? `expense-${idValue ?? 'x'}-${index}`,
     label: expense?.label ?? '',
-    amount: Number.parseFloat(expense?.amount ?? 0) || 0,
-    salePrice: Number.parseFloat(expense?.sale_price ?? expense?.salePrice ?? 0) || 0,
+    amount: toNumber(expense?.amount ?? 0),
+    salePrice: toNumber(expense?.sale_price ?? expense?.salePrice ?? 0),
     // Accept both `note` and `notes` from API payloads
     note: expense?.note ?? expense?.notes ?? '',
   }));
 
-  const rawSharePercent = Number.parseFloat(raw.company_share_percent ?? raw.companySharePercent ?? 0) || 0;
+  const rawSharePercent = toNumber(raw.company_share_percent ?? raw.companySharePercent ?? 0);
   const shareEnabledFlag = raw.company_share_enabled ?? raw.companyShareEnabled;
   const companyShareEnabled = shareEnabledFlag != null
     ? shareEnabledFlag === true
@@ -350,18 +355,18 @@ function toInternalProject(raw = {}) {
     end: raw.end_datetime ?? raw.end ?? null,
     applyTax: Boolean(raw.apply_tax ?? raw.applyTax ?? false),
     paymentStatus: raw.payment_status ?? raw.paymentStatus ?? 'unpaid',
-    equipmentEstimate: Number.parseFloat(raw.equipment_estimate ?? raw.equipmentEstimate ?? 0) || 0,
-    expensesTotal: Number.parseFloat(raw.expenses_total ?? raw.expensesTotal ?? 0) || 0,
-    servicesClientPrice: Number.parseFloat(raw.services_client_price ?? raw.servicesClientPrice ?? 0) || 0,
-    taxAmount: Number.parseFloat(raw.tax_amount ?? raw.taxAmount ?? 0) || 0,
-    totalWithTax: Number.parseFloat(raw.total_with_tax ?? raw.totalWithTax ?? 0) || 0,
-    discount: Number.parseFloat(raw.discount ?? raw.discount_value ?? 0) || 0,
+    equipmentEstimate: toNumber(raw.equipment_estimate ?? raw.equipmentEstimate ?? 0),
+    expensesTotal: toNumber(raw.expenses_total ?? raw.expensesTotal ?? 0),
+    servicesClientPrice: toNumber(raw.services_client_price ?? raw.servicesClientPrice ?? 0),
+    taxAmount: toNumber(raw.tax_amount ?? raw.taxAmount ?? 0),
+    totalWithTax: toNumber(raw.total_with_tax ?? raw.totalWithTax ?? 0),
+    discount: toNumber(raw.discount ?? raw.discount_value ?? 0),
     discountType: raw.discount_type ?? raw.discountType ?? 'percent',
     companyShareEnabled,
     companySharePercent: companyShareEnabled ? rawSharePercent : 0,
-    companyShareAmount: Number.parseFloat(raw.company_share_amount ?? raw.companyShareAmount ?? 0) || 0,
-    paidAmount: Number.parseFloat(raw.paid_amount ?? raw.paidAmount ?? 0) || 0,
-    paidPercent: Number.parseFloat(raw.paid_percentage ?? raw.paidPercent ?? 0) || 0,
+    companyShareAmount: toNumber(raw.company_share_amount ?? raw.companyShareAmount ?? 0),
+    paidAmount: toNumber(raw.paid_amount ?? raw.paidAmount ?? 0),
+    paidPercent: toNumber(raw.paid_percentage ?? raw.paidPercent ?? 0),
     paymentProgressType: raw.payment_progress_type ?? raw.paymentProgressType ?? null,
     paymentProgressValue: raw.payment_progress_value ?? raw.paymentProgressValue ?? null,
     confirmed: Boolean(raw.confirmed ?? false),

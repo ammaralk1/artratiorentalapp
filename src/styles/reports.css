@@ -858,6 +858,24 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   border-color: rgba(93, 133, 255, 0.26);
 }
 
+/* Debug row for projects reports (toggled by ?reportsDebug=1) */
+.reports-debug-row td {
+  background: rgba(76, 110, 245, 0.06);
+  color: #334155;
+  padding: 6px 10px;
+  border-top: 1px dashed rgba(76, 110, 245, 0.25);
+}
+.reports-debug-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  white-space: break-spaces;
+}
+:where(html.dark-mode, body.dark-mode) .reports-debug-row td {
+  background: rgba(93, 133, 255, 0.08);
+  color: rgba(226, 232, 240, 0.92);
+  border-top-color: rgba(93, 133, 255, 0.35);
+}
+
 :is(html.dark-mode, body.dark-mode) .reports-kpi-detail-row {
   color: var(--clr-muted);
 }

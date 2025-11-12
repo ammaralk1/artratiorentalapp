@@ -130,8 +130,23 @@ async function initReports() {
 
   resolveAndApplyTaxRate();
   await ensureChartLibrary();
+  // Enable lightweight debug mode via URL query (?reportsDebug=1)
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    state.__debug = params.get('reportsDebug') === '1' || params.get('debugReports') === '1';
+  } catch (_) { state.__debug = false; }
   try {
     await loadReportsData({ forceProjects: true });
+    // Defensive: if projects still empty, try a direct refresh + reload snapshot
+    if (!Array.isArray(getProjectsState()) || getProjectsState().length === 0) {
+      try {
+        await refreshProjectsFromApi();
+      } catch (_) {}
+      loadAllData();
+    }
+    // Reset search filter to avoid stale text hiding all rows
+    if (dom.search) dom.search.value = '';
+    state.filters.search = '';
     renderStatusChips();
     setupFilters();
     setupTableSorting();
@@ -449,7 +464,14 @@ function getProjectServicesRevenue(project) {
   const expenses = Array.isArray(project?.expenses) ? project.expenses
     : (Array.isArray(project?.raw?.expenses) ? project.raw.expenses : []);
   if (!expenses.length) return 0;
-  return expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price ?? 0) || 0), 0);
+  const parseNum = (v) => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    if (v == null || v === '') return 0;
+    const s = normalizeNumbers(String(v)).replace(/[^\d.+-]/g, '');
+    const n = Number.parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return expenses.reduce((sum, exp) => sum + parseNum(exp?.salePrice ?? exp?.sale_price ?? 0), 0);
 }
 
 function determineProjectStatus(project) {
@@ -1259,7 +1281,7 @@ function renderTable(projects) {
       ? `${escapeHtml(project.clientName)} <small class="text-muted">${escapeHtml(project.clientCompany)}</small>`
       : escapeHtml(project.clientName || t('projects.fallback.unknownClient', 'Unknown client'));
 
-    return `
+    const mainRow = `
       <tr>
         <td>
           <div class="d-flex flex-column gap-1">
@@ -1275,6 +1297,37 @@ function renderTable(projects) {
         <td>${escapeHtml(paymentLabel)}</td>
       </tr>
     `;
+
+    if (!state.__debug) return mainRow;
+
+    // Debug row: show quick financial components to help diagnose zeros
+    const debugBits = [];
+    debugBits.push(`resFinal=${Math.round(metrics.resFinal)}`);
+    debugBits.push(`resTax=${Math.round(metrics.resTax)}`);
+    debugBits.push(`resNet=${Math.round(metrics.resNetRevenue)}`);
+    debugBits.push(`equipEst=${Math.round(metrics.equipmentEstimate)}`);
+    debugBits.push(`services=${Math.round(metrics.servicesRevenue)}`);
+    debugBits.push(`expenses=${Math.round(metrics.projectExpenses)}`);
+    debugBits.push(`netProfit=${Math.round(metrics.netProfit)}`);
+    debugBits.push(`margin=${Number((metrics.marginPercent || 0).toFixed(1))}%`);
+    // project-level inputs
+    const shareEnabled = project?.raw?.companyShareEnabled === true || String(project?.raw?.companyShareEnabled).toLowerCase() === 'true';
+    const sharePercent = shareEnabled ? (Number(project?.raw?.companySharePercent) || 0) : 0;
+    const discountVal = Number(project?.raw?.discount ?? 0) || 0;
+    const discountType = (project?.raw?.discountType === 'amount') ? 'amount' : 'percent';
+    debugBits.push(`share%=${sharePercent}`);
+    debugBits.push(`disc=${discountVal}${discountType === 'amount' ? '' : '%'}`);
+    debugBits.push(`applyTax=${project.applyTax ? 'Y' : 'N'} taxRate=${Number((PROJECT_TAX_RATE * 100).toFixed(2))}%`);
+
+    const debugRow = `
+      <tr class="reports-debug-row">
+        <td colspan="7">
+          <code class="reports-debug-code">${escapeHtml(debugBits.join('  |  '))}</code>
+        </td>
+      </tr>
+    `;
+
+    return `${mainRow}${debugRow}`;
   }).join('');
 
   dom.tableBody.innerHTML = rowsHtml;
