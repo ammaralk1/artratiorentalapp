@@ -342,7 +342,7 @@ function buildProjectSnapshot(project, customerMap) {
 
   const expensesTotal = getProjectExpenses(project);
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
-  const servicesClientPrice = Number(project?.servicesClientPrice) || 0;
+  const servicesClientPrice = getProjectServicesRevenue(project);
   // Apply project-level discount and company share similar to breakdown
   const discountVal = Number(project?.discount ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
@@ -441,6 +441,15 @@ function getProjectExpenses(project) {
     return project.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
   }
   return 0;
+}
+
+function getProjectServicesRevenue(project) {
+  const direct = Number(project?.servicesClientPrice ?? project?.raw?.servicesClientPrice ?? 0) || 0;
+  if (direct > 0) return direct;
+  const expenses = Array.isArray(project?.expenses) ? project.expenses
+    : (Array.isArray(project?.raw?.expenses) ? project.raw.expenses : []);
+  if (!expenses.length) return 0;
+  return expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price ?? 0) || 0), 0);
 }
 
 function determineProjectStatus(project) {
@@ -797,8 +806,8 @@ function computeProjectsRevenueBreakdown(projects) {
   let projectRevenueExTaxTotal = 0; // baseAfterDiscount + companyShare (without tax)
 
   projects.forEach((p) => {
-    const equip = Number(p.raw?.equipmentEstimate) || 0;
-    const services = Number(p.raw?.servicesClientPrice) || 0;
+    const equip = Number(p.raw?.equipmentEstimate ?? p.equipmentEstimate ?? 0) || 0;
+    const services = getProjectServicesRevenue(p);
     const discountVal = Number(p.raw?.discount ?? 0) || 0;
     const discountType = (p.raw?.discountType === 'amount') ? 'amount' : 'percent';
     const baseSubtotal = equip + services;
@@ -845,7 +854,7 @@ function renderStatusChips() {
   if (!dom.statusChips) return;
   const chipsHtml = STATUS_OPTIONS.map((status) => {
     const label = t(`projects.status.${status}`, status);
-    return `<button type="button" class="btn btn-outline-primary reports-status-chip" data-status="${status}">${escapeHtml(label)}</button>`;
+    return `<span class="reports-status-chip timeline-status-badge timeline-status-badge--${status}" data-status="${status}">${escapeHtml(label)}</span>`;
   }).join('');
   dom.statusChips.innerHTML = chipsHtml;
   if (!dom.statusChips.dataset.listenerAttached) {
@@ -1244,6 +1253,7 @@ function renderTable(projects) {
     const metrics = computeProjectMetrics(project);
     const periodLabel = formatProjectPeriod(project.start, project.end);
     const statusLabel = t(`projects.status.${project.status}`, project.status);
+    const statusChip = `<span class=\"timeline-status-badge timeline-status-badge--${project.status}\">${escapeHtml(statusLabel)}</span>`;
     const paymentLabel = t(`projects.paymentStatus.${project.paymentStatus}`, project.paymentStatus);
     const clientLabel = project.clientCompany
       ? `${escapeHtml(project.clientName)} <small class="text-muted">${escapeHtml(project.clientCompany)}</small>`
@@ -1258,7 +1268,7 @@ function renderTable(projects) {
           </div>
         </td>
         <td>${clientLabel}</td>
-        <td>${escapeHtml(statusLabel)}</td>
+        <td>${statusChip}</td>
         <td>${escapeHtml(periodLabel)}</td>
         <td>${escapeHtml(formatCurrency(project.overallTotal))}</td>
         <td>${escapeHtml(formatPercent(metrics.marginPercent))}</td>
