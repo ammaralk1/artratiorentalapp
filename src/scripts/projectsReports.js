@@ -359,7 +359,7 @@ function buildProjectSnapshot(project, customerMap) {
   const normalizedPayment = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
   const client = customerMap.get(String(project.clientId));
   const reservations = getReservationsForProject(project.id);
-  // Use reservation final totals (include tax/share at reservation level)
+  // Use reservation final totals (may or may not include tax depending on reservation flags)
   const reservationsTotal = reservations.reduce((sum, reservation) => sum + resolveReservationFinalTotal(reservation), 0);
 
   const expensesTotal = getProjectExpenses(project);
@@ -378,7 +378,22 @@ function buildProjectSnapshot(project, customerMap) {
   const companyShareAmount = sharePercent > 0 ? baseAfterDiscount * (sharePercent / 100) : 0;
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
   const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const overallTotal = Number((reservationsTotal + baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
+  // If VAT is enabled at the project level, reservations linked to the project
+  // must reflect VAT even when they were saved without reservation-level tax.
+  let reservationsVat = 0;
+  if (applyTax && Array.isArray(reservations) && reservations.length) {
+    reservations.forEach((res) => {
+      try {
+        const f = computeReservationFinancials(res);
+        const resTax = Number(f.taxAmount || 0);
+        if (!(resTax > 0)) {
+          const net = Number(f.finalTotal || 0) - resTax;
+          if (net > 0) reservationsVat += net * PROJECT_TAX_RATE;
+        }
+      } catch (_) { /* ignore */ }
+    });
+  }
+  const overallTotal = Number((reservationsTotal + baseAfterDiscount + companyShareAmount + taxAmount + reservationsVat).toFixed(2));
 
   const status = determineProjectStatus(project);
   const start = project.start ? new Date(project.start) : null;
