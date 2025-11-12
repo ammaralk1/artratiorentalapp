@@ -822,6 +822,7 @@ function renderProjectsRevenueBreakdown(projects) {
 function computeProjectsRevenueBreakdown(projects) {
   const projectIds = new Set(projects.map((p) => String(p.id)));
   const reservations = state.reservations.filter((res) => res.projectId != null && projectIds.has(String(res.projectId)));
+  const taxedProjectIds = new Set(projects.filter((p) => p.applyTax === true).map((p) => String(p.id)));
 
   let grossReservations = 0;
   let equipmentReservations = 0;
@@ -841,6 +842,21 @@ function computeProjectsRevenueBreakdown(projects) {
     taxReservations += f.taxAmount || 0;
     netReservations += f.netProfit || 0;
   });
+  // If some reservations belong to projects where VAT is applied at the project level,
+  // those reservations may have zero tax individually. Add the missing VAT portion
+  // based on their net amount so that reports reflect real VAT on the combined total.
+  let missingReservationTax = 0;
+  if (taxedProjectIds.size > 0) {
+    reservations.forEach((res) => {
+      if (!taxedProjectIds.has(String(res.projectId))) return;
+      const f = computeReservationFinancials(res);
+      const resTax = Number(f.taxAmount || 0);
+      if (!(resTax > 0)) {
+        const net = Number(f.finalTotal || 0) - resTax;
+        if (net > 0) missingReservationTax += net * PROJECT_TAX_RATE;
+      }
+    });
+  }
 
   const projectExpensesTotal = projects.reduce((sum, p) => sum + (Number(p.expensesTotal) || 0), 0);
   let projectEquipmentEstimateTotal = 0;
@@ -872,9 +888,9 @@ function computeProjectsRevenueBreakdown(projects) {
     projectRevenueExTaxTotal += (baseAfterDiscount + companyShareAmount);
   });
 
-  const grossRevenue = grossReservations + projectRevenueExTaxTotal + projectTaxTotal;
+  const grossRevenue = grossReservations + projectRevenueExTaxTotal + projectTaxTotal + missingReservationTax;
   const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
-  const taxTotal = taxReservations + projectTaxTotal;
+  const taxTotal = taxReservations + projectTaxTotal + missingReservationTax;
   const netProfit = netReservations + (servicesRevenueTotal - projectExpensesTotal);
   const revenueExTax = (grossReservations - taxReservations) + projectRevenueExTaxTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
