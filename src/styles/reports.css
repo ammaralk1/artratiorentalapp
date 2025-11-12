@@ -770,12 +770,12 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 }
 
 .reports-kpi-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   background-color: rgba(var(--reports-accent-rgb, 76, 110, 245), 0.16);
   color: var(--reports-accent);
 }
@@ -804,11 +804,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-card[data-kpi="totalValue"] {
   padding: 14px;
 }
-.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-icon {
-  width: 46px;
-  height: 46px;
-  font-size: 1.4rem;
-}
+.reports-kpi-card[data-kpi="totalValue"] .reports-kpi-icon { width: 36px; height: 36px; font-size: 1.1rem; }
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-value { font-size: 1.6rem; color: #4c6ef5; }
 
 /* Color-code KPI numbers */
@@ -839,13 +835,13 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   padding: 10px 12px;
 }
 #projects-revenue-breakdown .reports-kpi-detail-row {
-  padding: 1px 2px;
-  gap: 8px;
+  padding: 2px 2px; /* tighter rows */
+  gap: 6px;
   justify-content: center;
 }
 #projects-revenue-breakdown .reports-kpi-detail-label,
 #projects-revenue-breakdown .reports-kpi-detail-value {
-  font-size: 0.88rem;
+  font-size: 1.02rem; /* larger labels */
   line-height: 1.25;
   text-align: center;
 }
