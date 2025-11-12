@@ -490,7 +490,14 @@ function getProjectExpenses(project) {
 }
 
 function getProjectServicesRevenue(project) {
-  const direct = Number(project?.servicesClientPrice ?? project?.raw?.servicesClientPrice ?? 0) || 0;
+  // Support both camelCase and snake_case sources
+  const direct = Number(
+    project?.servicesClientPrice
+    ?? project?.services_client_price
+    ?? project?.raw?.servicesClientPrice
+    ?? project?.raw?.services_client_price
+    ?? 0
+  ) || 0;
   if (direct > 0) return direct;
   const expenses = Array.isArray(project?.expenses) ? project.expenses
     : (Array.isArray(project?.raw?.expenses) ? project.raw.expenses : []);
@@ -912,7 +919,41 @@ function computeProjectsRevenueBreakdown(projects) {
     servicesRevenueTotal += servicesRevenue;
     projectExpensesTotal += Number(getProjectExpenses(p) || 0);
 
-    // Modal-equivalent flow
+    // If the project has NO linked reservations, mirror the modal's fallback logic exactly
+    if (!list.length) {
+      try {
+        const totals = resolveProjectTotals(p.raw || p);
+        const finalTotal = Number(totals?.totalWithTax || 0) || 0;
+        const taxAmount = Number(totals?.taxAmount || 0) || 0;
+        const shareAmount = Number(totals?.companyShareAmount || 0) || 0;
+        grossRevenue += finalTotal;
+        taxTotal += taxAmount;
+        companyShareTotal += shareAmount;
+
+        // Paid and outstanding: use same paid logic with this finalTotal
+        const raw = p.raw || p;
+        let paid = 0;
+        const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
+        try {
+          const hist = Array.isArray(raw.paymentHistory) ? raw.paymentHistory : [];
+          hist.forEach((e) => {
+            const t = (e?.type || '').toString().toLowerCase();
+            const val = Number(e?.value ?? e?.amount ?? 0) || 0;
+            if (t === 'percent') add((val / 100) * finalTotal);
+            else add(val);
+          });
+        } catch (_) { /* ignore */ }
+        add(raw?.paidAmount);
+        if (Number(raw?.paidPercent) > 0) add((Number(raw.paidPercent) / 100) * finalTotal);
+        if (paid > finalTotal) paid = finalTotal;
+        outstandingTotal += Math.max(0, finalTotal - paid);
+        return; // continue to next project
+      } catch (_) {
+        // Fallback to computed flow below if totals resolution fails
+      }
+    }
+
+    // Modal-equivalent flow when reservations exist (or fallback not available)
     const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
     const discountVal = Number(p?.discount ?? 0) || 0;
     const discountType = p?.discountType === 'amount' ? 'amount' : 'percent';
@@ -926,9 +967,9 @@ function computeProjectsRevenueBreakdown(projects) {
     const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
     companyShareTotal += companyShareAmount;
 
-    // Robust VAT flag detection (supports true/1/'1'/'true' and raw.apply_tax)
+    // Robust VAT flag detection (supports true/1/'1'/'true', camel/snake cases)
     const applyTax = (() => {
-      const v = (p?.applyTax !== undefined) ? p.applyTax : (p?.raw?.apply_tax ?? p?.raw?.applyTax);
+      const v = (p?.applyTax !== undefined) ? p.applyTax : (p?.apply_tax ?? p?.raw?.apply_tax ?? p?.raw?.applyTax);
       if (v === true || v === 1 || v === '1') return true;
       if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
       return false;
