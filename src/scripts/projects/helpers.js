@@ -1,14 +1,28 @@
 import { formatDateTime } from './formatting.js';
 
+function normalizeIsoLike(value) {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString();
+  let s = String(value).trim();
+  if (!s) return '';
+  // Safari-friendly: convert "YYYY-MM-DD HH:mm" to "YYYY-MM-DDTHH:mm"
+  if (s.includes(' ') && !s.includes('T')) {
+    s = s.replace(' ', 'T');
+  }
+  return s;
+}
+
 export function getProjectStartTimestamp(project) {
   if (!project?.start) return Number.NaN;
-  const timestamp = new Date(project.start).getTime();
+  const normalized = normalizeIsoLike(project.start);
+  const timestamp = new Date(normalized).getTime();
   return Number.isFinite(timestamp) ? timestamp : Number.NaN;
 }
 
 export function getProjectCreatedTimestamp(project) {
   if (project?.createdAt) {
-    const created = new Date(project.createdAt).getTime();
+    const normalized = normalizeIsoLike(project.createdAt);
+    const created = new Date(normalized).getTime();
     if (Number.isFinite(created)) return created;
   }
   const startTime = getProjectStartTimestamp(project);

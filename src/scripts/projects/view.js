@@ -389,6 +389,14 @@ function buildFocusCards() {
     undated.forEach((project) => addCard(project, 'recent'));
   }
 
+  // Last-resort fallback: show latest projects by start/created when nothing qualifies
+  if (cards.length === 0) {
+    const latest = [...state.projects]
+      .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a))
+      .slice(0, MAX_FOCUS_CARDS);
+    latest.forEach((project) => addCard(project, 'recent'));
+  }
+
   if (cards.length < MAX_FOCUS_CARDS) {
     const fallbackProjects = [...state.projects]
       .filter((project) => !seen.has(project.id))
