@@ -811,12 +811,12 @@ function renderKpis(projects) {
   const netProfit = breakdown.netProfit || 0;
 
   const cards = [
-    { key: 'projects', icon: KPI_ICONS.projects, label: t('projects.reports.kpi.totalProjects', 'Total projects'), value: formatNumber(totalCount), meta: t('projects.reports.kpi.totalProjectsMeta', 'After applying the current filters') },
-    { key: 'totalValue', icon: KPI_ICONS.value, label: t('projects.reports.kpi.totalValue', 'Total value'), value: formatCurrency(totalValue), meta: t('projects.reports.kpi.totalValueMeta', 'Includes projects, linked reservations, and VAT') },
-    { key: 'outstanding', icon: KPI_ICONS.outstanding, label: t('projects.reports.kpi.unpaidValue', 'Outstanding value'), value: formatCurrency(unpaidValue), meta: t('projects.reports.kpi.unpaidValueMeta', 'Projects not fully paid yet') },
+    { key: 'projects', icon: KPI_ICONS.projects, label: t('projects.reports.kpi.totalProjects', getCurrentLanguage()==='ar' ? 'إجمالي المشاريع' : 'Total projects'), value: formatNumber(totalCount), meta: t('projects.reports.kpi.totalProjectsMeta', getCurrentLanguage()==='ar' ? 'بعد تطبيق الفلاتر الحالية' : 'After applying the current filters') },
+    { key: 'totalValue', icon: KPI_ICONS.value, label: t('projects.reports.kpi.totalValue', getCurrentLanguage()==='ar' ? 'الإيراد الكلي' : 'Total value'), value: formatCurrency(totalValue), meta: t('projects.reports.kpi.totalValueMeta', getCurrentLanguage()==='ar' ? 'يشمل المشاريع والحجوزات والضريبة' : 'Includes projects, linked reservations, and VAT') },
+    { key: 'outstanding', icon: KPI_ICONS.outstanding, label: t('projects.reports.kpi.unpaidValue', getCurrentLanguage()==='ar' ? 'قيمة غير مدفوعة' : 'Outstanding value'), value: formatCurrency(unpaidValue), meta: t('projects.reports.kpi.unpaidValueMeta', getCurrentLanguage()==='ar' ? 'مشاريع لم تُسدّد بالكامل' : 'Projects not fully paid yet') },
     { key: 'expenses', icon: KPI_ICONS.expenses, label: t('projects.reports.kpi.expenses', 'تكلفة الخدمات الإنتاجية'), value: formatCurrency(expensesTotal), meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة') },
-    { key: 'margin', icon: KPI_ICONS.margin, label: t('projects.reports.kpi.margin', 'هامش الربح', 'Profit margin'), value: formatPercent(breakdown.profitMarginPercent), meta: t('projects.reports.kpi.marginMeta', 'صافي الربح ÷ الإيراد بدون الضريبة', 'Net profit / revenue excl. VAT') },
-    { key: 'netProfit', icon: KPI_ICONS.value, label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(netProfit), meta: t('projects.reports.kpi.netProfitMeta', 'Sum of net profit for selected projects') }
+    { key: 'margin', icon: KPI_ICONS.margin, label: t('projects.reports.kpi.margin', 'هامش الربح'), value: formatPercent(breakdown.profitMarginPercent), meta: t('projects.reports.kpi.marginMeta', 'صافي الربح ÷ الإيراد بدون الضريبة') },
+    { key: 'netProfit', icon: KPI_ICONS.value, label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح'), value: formatCurrency(netProfit), meta: t('projects.reports.kpi.netProfitMeta', 'مجموع صافي الربح للمشاريع المحددة') }
   ];
 
   dom.kpiGrid.innerHTML = cards.map(({ key, icon, label, value, meta }) => `
@@ -849,7 +849,7 @@ function renderProjectsRevenueBreakdown(projects) {
       { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
       { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
       { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
-      { label: t('projects.reports.kpi.revenue.details.servicesProfit', 'ربح الخدمات الإنتاجية', 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
+      { label: t('projects.reports.kpi.revenue.details.servicesProfit', getCurrentLanguage()==='ar' ? 'ربح الخدمات الإنتاجية' : 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
       { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
       // Note: Margin is already shown as a KPI card; avoid duplication here for cleaner layout
     ];
