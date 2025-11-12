@@ -1,6 +1,8 @@
 import { loadData } from './storage.js';
 import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers, formatDateTime } from './utils.js';
+import { apiRequest } from './apiClient.js';
+import { ensureXlsx } from './reports/external.js';
 import { computeReservationFinancials } from './reports/calculations.js';
 import { calculateReservationTotal } from './reservationsSummary.js';
 import {
@@ -12,7 +14,7 @@ import {
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 
-const PROJECT_TAX_RATE = 0.15;
+let PROJECT_TAX_RATE = 0.15;
 const charts = {};
 const APEX_CHART_SRC = 'https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js';
 let chartLoadingRequests = 0;
@@ -26,6 +28,7 @@ const state = {
     search: '',
     statuses: ['upcoming', 'ongoing', 'completed'],
     payment: 'all',
+    margin: 'all',
     range: 'all',
     startDate: '',
     endDate: ''
@@ -35,15 +38,18 @@ const state = {
 const dom = {
   search: null,
   payment: null,
+  margin: null,
   dateRange: null,
   customRangeWrapper: null,
   startDate: null,
   endDate: null,
   refreshBtn: null,
+  exportExcelBtn: null,
   kpiGrid: null,
   statusChips: null,
   table: null,
   tableBody: null,
+  tableHead: null,
   tableMeta: null,
   tableEmpty: null,
   chartCards: {},
@@ -101,6 +107,9 @@ const KPI_ICONS = Object.freeze({
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
 
+// Basic sort state for projects table
+const sortState = { key: 'value', dir: 'desc' };
+
 async function loadReportsData({ forceProjects = false } = {}) {
   try {
     await ensureReservationsLoaded({ suppressError: true });
@@ -119,11 +128,14 @@ async function initReports() {
   cacheDom();
   beginChartsLoading();
 
+  resolveAndApplyTaxRate();
   await ensureChartLibrary();
   try {
     await loadReportsData({ forceProjects: true });
     renderStatusChips();
     setupFilters();
+    setupTableSorting();
+    setupExport();
     renderAll();
   } finally {
     endChartsLoading();
@@ -197,14 +209,17 @@ function cacheDom() {
   dom.search = document.getElementById('reports-search');
   dom.statusChips = document.getElementById('reports-status-chips');
   dom.payment = document.getElementById('reports-payment');
+  dom.margin = document.getElementById('reports-margin');
   dom.dateRange = document.getElementById('reports-date-range');
   dom.customRangeWrapper = document.getElementById('reports-custom-range');
   dom.startDate = document.getElementById('reports-start-date');
   dom.endDate = document.getElementById('reports-end-date');
   dom.refreshBtn = document.getElementById('reports-refresh');
+  dom.exportExcelBtn = document.getElementById('projects-export-excel');
   dom.kpiGrid = document.getElementById('reports-kpi-grid');
   dom.table = document.getElementById('reports-table');
   dom.tableBody = dom.table?.querySelector('tbody');
+  dom.tableHead = dom.table?.querySelector('thead');
   dom.tableMeta = document.getElementById('reports-table-meta');
   dom.tableEmpty = document.getElementById('reports-empty');
   dom.chartCards = {};
@@ -260,6 +275,62 @@ function loadAllData() {
     : [];
 
   state.totalProjects = state.projects.length;
+}
+
+function computeProjectMetrics(project) {
+  const reservations = getReservationsForProject(project.id);
+  let resFinal = 0;
+  let resTax = 0;
+  let resNetRevenue = 0;
+  reservations.forEach((res) => {
+    const f = computeReservationFinancials(res);
+    const finalTotal = Number(f.finalTotal || 0);
+    const taxAmount = Number(f.taxAmount || 0);
+    resFinal += finalTotal;
+    resTax += taxAmount;
+    resNetRevenue += (finalTotal - taxAmount);
+  });
+
+  const equipmentEstimate = Number(project?.raw?.equipmentEstimate ?? project?.equipmentEstimate ?? 0) || 0;
+  const servicesRevenue = Number(project?.raw?.servicesClientPrice ?? project?.servicesClientPrice ?? 0) || 0;
+  const projectExpenses = Number(project?.expensesTotal ?? 0) || 0;
+  const revenueExTax = resNetRevenue + equipmentEstimate + servicesRevenue;
+  const netProfit = resNetRevenue + (servicesRevenue - projectExpenses);
+  const marginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
+
+  return {
+    resFinal,
+    resTax,
+    resNetRevenue,
+    equipmentEstimate,
+    servicesRevenue,
+    projectExpenses,
+    netProfit,
+    marginPercent,
+  };
+}
+
+function resolveAndApplyTaxRate() {
+  try {
+    const root = typeof window !== 'undefined' ? window : globalThis;
+    const candidates = [root.APP_VAT_RATE, root.APP_TAX_RATE, root.__APP_SETTINGS__?.vatRate];
+    for (const v of candidates) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0 && n <= 1) { PROJECT_TAX_RATE = n; return; }
+      if (Number.isFinite(n) && n > 1 && n <= 100) { PROJECT_TAX_RATE = n / 100; return; }
+    }
+  } catch (_) {}
+  try {
+    apiRequest('/preferences/').then((payload) => {
+      const raw = payload?.data ?? payload ?? {};
+      const v = raw.vatRate ?? raw.taxRate ?? null;
+      const n = Number(v);
+      if (Number.isFinite(n)) {
+        PROJECT_TAX_RATE = n > 1 ? n / 100 : n;
+        renderAll();
+      }
+    }).catch(() => {});
+  } catch (_) {}
 }
 
 function buildProjectSnapshot(project, customerMap) {
@@ -387,6 +458,14 @@ function setupFilters() {
     });
   }
 
+  if (dom.margin) {
+    dom.margin.value = state.filters.margin || 'all';
+    dom.margin.addEventListener('change', () => {
+      state.filters.margin = dom.margin.value || 'all';
+      renderAll();
+    });
+  }
+
   if (dom.dateRange) {
     dom.dateRange.addEventListener('change', handleDateRangeChange);
     dom.dateRange.value = state.filters.range;
@@ -481,7 +560,7 @@ function renderAll() {
 }
 
 function getFilteredProjects() {
-  const { search, statuses, payment, range, startDate, endDate } = state.filters;
+  const { search, statuses, payment, range, startDate, endDate, margin } = state.filters;
   const searchTerm = normalizeText(search);
   const now = new Date();
   const rangeDays = Number(range);
@@ -494,6 +573,7 @@ function getFilteredProjects() {
       if (!isStatusAllowed(project, statuses)) return false;
       if (!isPaymentAllowed(project, payment)) return false;
       if (!matchesSearch(project, searchTerm)) return false;
+      if (!isMarginAllowed(project, margin)) return false;
       return isWithinCustomRange(project.start, rangeStart, rangeEnd);
     });
   }
@@ -507,6 +587,7 @@ function getFilteredProjects() {
     if (!isStatusAllowed(project, statuses)) return false;
     if (!isPaymentAllowed(project, payment)) return false;
     if (!matchesSearch(project, searchTerm)) return false;
+    if (!isMarginAllowed(project, margin)) return false;
     if (range === 'all') return true;
     return isWithinRelativeRange(project.start, rangeStart, now);
   });
@@ -519,6 +600,18 @@ function isStatusAllowed(project, statuses) {
 function isPaymentAllowed(project, payment) {
   if (payment === 'all') return true;
   return project.paymentStatus === payment;
+}
+
+function isMarginAllowed(project, margin) {
+  if (!margin || margin === 'all') return true;
+  const m = computeProjectMetrics(project).marginPercent;
+  switch (margin) {
+    case 'loss': return m < 0;
+    case 'lt10': return m >= 0 && m < 10;
+    case '10to30': return m >= 10 && m <= 30;
+    case 'gt30': return m > 30;
+    default: return true;
+  }
 }
 
 function matchesSearch(project, searchTerm) {
@@ -1025,6 +1118,67 @@ function renderApexChart(key, element, options = {}) {
   }
 }
 
+// (deduped above)
+
+function setupExport() {
+  if (!dom.exportExcelBtn || dom.exportExcelBtn.dataset.bound === 'true') return;
+  dom.exportExcelBtn.addEventListener('click', async () => {
+    try {
+      const filtered = getFilteredProjects();
+      await exportProjectsToExcel(filtered);
+    } catch (error) {
+      console.error('❌ [projectsReports] Failed to export Excel', error);
+      try { alert('تعذر تصدير البيانات.'); } catch (_) {}
+    }
+  });
+  dom.exportExcelBtn.dataset.bound = 'true';
+}
+
+async function exportProjectsToExcel(projects) {
+  if (!Array.isArray(projects) || projects.length === 0) {
+    try { alert('لا توجد بيانات لتصديرها.'); } catch (_) {}
+    return;
+  }
+  const XLSX = await ensureXlsx();
+  if (!XLSX) {
+    try { alert('مكتبة Excel غير متوفرة.'); } catch (_) {}
+    return;
+  }
+  const headers = [
+    'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة',
+    'تقدير المعدات', 'إيرادات الخدمات', 'تكلفة الخدمات', 'صافي الحجوزات (بدون ضريبة)',
+    'صافي الربح', 'هامش الربح %', 'حالة الدفع'
+  ];
+  const rows = projects.map((p) => {
+    const m = computeProjectMetrics(p);
+    const periodLabel = formatProjectPeriod(p.start, p.end);
+    const statusLabel = t(`projects.status.${p.status}`, p.status);
+    const paymentLabel = t(`projects.paymentStatus.${p.paymentStatus}`, p.paymentStatus);
+    const customerLabel = p.clientCompany ? `${p.clientName} (${p.clientCompany})` : (p.clientName || '');
+    return [
+      String(p.projectCode || p.id || ''),
+      String(p.title || p.projectCode || ''),
+      String(customerLabel),
+      statusLabel,
+      periodLabel,
+      Math.round(p.overallTotal || 0),
+      Math.round(m.equipmentEstimate || 0),
+      Math.round(m.servicesRevenue || 0),
+      Math.round(m.projectExpenses || 0),
+      Math.round(m.resNetRevenue || 0),
+      Math.round(m.netProfit || 0),
+      Number((m.marginPercent || 0).toFixed(1)),
+      paymentLabel,
+    ];
+  });
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, worksheet, 'Projects');
+  const now = new Date();
+  const ts = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  XLSX.writeFile(wb, `projects-report-${ts}.xlsx`);
+}
+
 function renderTable(projects) {
   if (!dom.table || !dom.tableBody || !dom.tableEmpty) return;
 
@@ -1040,7 +1194,8 @@ function renderTable(projects) {
   dom.table.style.display = '';
   dom.tableEmpty.classList.remove('active');
 
-  const rowsHtml = projects.map((project) => {
+  const rowsHtml = sortProjects([...(projects || [])]).map((project) => {
+    const metrics = computeProjectMetrics(project);
     const periodLabel = formatProjectPeriod(project.start, project.end);
     const statusLabel = t(`projects.status.${project.status}`, project.status);
     const paymentLabel = t(`projects.paymentStatus.${project.paymentStatus}`, project.paymentStatus);
@@ -1060,6 +1215,7 @@ function renderTable(projects) {
         <td>${escapeHtml(statusLabel)}</td>
         <td>${escapeHtml(periodLabel)}</td>
         <td>${escapeHtml(formatCurrency(project.overallTotal))}</td>
+        <td>${escapeHtml(formatPercent(metrics.marginPercent))}</td>
         <td>${escapeHtml(paymentLabel)}</td>
       </tr>
     `;
@@ -1072,6 +1228,67 @@ function renderTable(projects) {
       .replace('{count}', formatNumber(projects.length))
       .replace('{total}', formatNumber(state.totalProjects));
   }
+}
+
+function setupTableSorting() {
+  if (!dom.tableHead || dom.tableHead.dataset.sortAttached === 'true') return;
+  dom.tableHead.addEventListener('click', (event) => {
+    const th = event.target.closest('[data-sort-key]');
+    if (!th) return;
+    const key = th.getAttribute('data-sort-key');
+    if (!key) return;
+    if (sortState.key === key) {
+      sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.key = key;
+      sortState.dir = (key === 'project' || key === 'client' || key === 'status') ? 'asc' : 'desc';
+    }
+    renderAll();
+  });
+  dom.tableHead.dataset.sortAttached = 'true';
+}
+
+function sortProjects(list) {
+  const dirMul = sortState.dir === 'asc' ? 1 : -1;
+  const key = sortState.key;
+  const cmp = (a, b) => {
+    switch (key) {
+      case 'project': {
+        const aa = String(a.title || a.projectCode || '').toLowerCase();
+        const bb = String(b.title || b.projectCode || '').toLowerCase();
+        return aa.localeCompare(bb, 'ar');
+      }
+      case 'client': {
+        const aa = String(a.clientName || '').toLowerCase();
+        const bb = String(b.clientName || '').toLowerCase();
+        return aa.localeCompare(bb, 'ar');
+      }
+      case 'status': {
+        const aa = String(a.status || '');
+        const bb = String(b.status || '');
+        return aa.localeCompare(bb, 'ar');
+      }
+      case 'period': {
+        const aa = a.start ? new Date(a.start).getTime() : 0;
+        const bb = b.start ? new Date(b.start).getTime() : 0;
+        return aa - bb;
+      }
+      case 'value':
+        return (a.overallTotal || 0) - (b.overallTotal || 0);
+      case 'margin': {
+        const ma = computeProjectMetrics(a).marginPercent || 0;
+        const mb = computeProjectMetrics(b).marginPercent || 0;
+        return ma - mb;
+      }
+      case 'payment': {
+        const prio = (p) => (p === 'paid' ? 2 : (p === 'partial' ? 1 : 0));
+        return prio(a.paymentStatus) - prio(b.paymentStatus);
+      }
+      default:
+        return (a.overallTotal || 0) - (b.overallTotal || 0);
+    }
+  };
+  return list.sort((a, b) => dirMul * cmp(a, b));
 }
 
 function formatProjectPeriod(start, end) {

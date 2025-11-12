@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.B2AHJtG2.js"></script>
+  <script type="module" crossorigin src="../../assets/projects.RN5Tv46v.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.7eoqimJT.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboard.D2wdj_GM.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService.DNV5m-ci.js">
@@ -34,7 +34,7 @@
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.BLZZT8b9.js">
   <link rel="modulepreload" crossorigin href="../../assets/controller.DeZM86Xe.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/calculations.DS4a91X3.js">
+  <link rel="modulepreload" crossorigin href="../../assets/calculations.CfJetEgJ.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.Dho2brX3.css">
   <link rel="stylesheet" crossorigin href="../../assets/projects.DppCMiKS.css">
 </head>
@@ -591,6 +591,13 @@
                         <option value="partial" data-i18n data-i18n-key="projects.reports.filters.paymentPartial">مدفوع جزئياً</option>
                         <option value="unpaid" data-i18n data-i18n-key="projects.reports.filters.paymentUnpaid">غير مدفوع</option>
                       </select>
+                      <select id="reports-margin" class="form-select">
+                        <option value="all" selected>هامش: الكل</option>
+                        <option value="loss">هامش سلبي</option>
+                        <option value="lt10">أقل من 10%</option>
+                        <option value="10to30">10% – 30%</option>
+                        <option value="gt30">أكثر من 30%</option>
+                      </select>
                       <select id="reports-date-range" class="form-select">
                         <option value="all" selected data-i18n data-i18n-key="projects.reports.filters.range.all">كل الوقت</option>
                         <option value="30" data-i18n data-i18n-key="projects.reports.filters.range.30">آخر 30 يوم</option>
@@ -603,6 +610,7 @@
                         <input type="date" id="reports-end-date" class="form-control" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
                       </div>
                       <button type="button" class="btn btn-outline-primary reports-refresh-btn" id="reports-refresh" data-i18n data-i18n-key="projects.reports.filters.refresh">تحديث</button>
+                      <button type="button" class="btn btn-primary" id="projects-export-excel">⬇️ تصدير Excel</button>
                     </div>
                   </div>
 
@@ -743,12 +751,13 @@
                     <table class="reports-table" id="reports-table">
                       <thead>
                         <tr>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.project">المشروع</th>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.client">العميل</th>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.status">الحالة</th>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.period">الفترة</th>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.value">القيمة</th>
-                          <th data-i18n data-i18n-key="projects.reports.table.columns.payment">الدفع</th>
+                          <th class="sortable" data-sort-key="project" data-i18n data-i18n-key="projects.reports.table.columns.project">المشروع</th>
+                          <th class="sortable" data-sort-key="client" data-i18n data-i18n-key="projects.reports.table.columns.client">العميل</th>
+                          <th class="sortable" data-sort-key="status" data-i18n data-i18n-key="projects.reports.table.columns.status">الحالة</th>
+                          <th class="sortable" data-sort-key="period" data-i18n data-i18n-key="projects.reports.table.columns.period">الفترة</th>
+                          <th class="sortable" data-sort-key="value" data-i18n data-i18n-key="projects.reports.table.columns.value">القيمة</th>
+                          <th class="sortable" data-sort-key="margin">هامش الربح</th>
+                          <th class="sortable" data-sort-key="payment" data-i18n data-i18n-key="projects.reports.table.columns.payment">الدفع</th>
                         </tr>
                       </thead>
                       <tbody></tbody>
