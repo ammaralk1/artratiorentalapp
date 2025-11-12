@@ -1894,7 +1894,7 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     margin-inline: auto;
   }
 
@@ -3358,6 +3358,11 @@
     .equipment-search-row #search-equipment {
       max-width: 100%;
       flex: 1 1 100%;
+    }
+
+    /* Tighten spacing between filters on mobile */
+    .equipment-filter-controls {
+      gap: 8px;
     }
 
     .equipment-status-field {
