@@ -13,6 +13,8 @@ import {
 } from './projectsService.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
+// Reuse the exact project financial rules from the project details/modal
+import { resolveProjectTotals } from './projects/view.js';
 
 let PROJECT_TAX_RATE = 0.15;
 const charts = {};
