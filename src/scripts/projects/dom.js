@@ -80,6 +80,17 @@ export function initProjectDatePickers() {
 
   if (!fp) return;
 
+  // Disable native browser suggestions/autocomplete on date/time inputs
+  ['#project-start-date', '#project-end-date', '#project-start-time', '#project-end-time'].forEach((selector) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      try { el.setAttribute('autocomplete', 'off'); } catch (_) {}
+      try { el.setAttribute('autocapitalize', 'off'); } catch (_) {}
+      try { el.setAttribute('autocorrect', 'off'); } catch (_) {}
+      try { el.setAttribute('spellcheck', 'false'); } catch (_) {}
+    }
+  });
+
   const datePickers = [
     ['#project-start-date', { dateFormat: 'Y-m-d', allowInput: true }],
     ['#project-end-date', { dateFormat: 'Y-m-d', allowInput: true }]
@@ -173,6 +184,35 @@ export function initProjectDatePickers() {
   if (dom.endTime && dom.endTime._flatpickr?.altInput) {
     attachNumericNormalization(dom.endTime._flatpickr.altInput);
   }
+
+  // Commit typed time on blur: if user clicks outside, persist the typed value
+  const commitTimeOnBlur = (inputEl) => {
+    if (!inputEl) return;
+    const inst = inputEl._flatpickr;
+    const commit = () => {
+      try {
+        if (!inst) return;
+        const srcAlt = inst.altInput && typeof inst.altInput.value === 'string' ? inst.altInput.value.trim() : '';
+        const srcBase = typeof inputEl.value === 'string' ? inputEl.value.trim() : '';
+        const src = srcAlt || srcBase;
+        if (!src) return;
+        // Parse using the appropriate format then set to ensure base value updates
+        const fmt = srcAlt ? inst.config.altFormat : inst.config.dateFormat;
+        const dateObj = inst.parseDate(src, fmt) || inst.parseDate(src);
+        if (dateObj) {
+          inst.setDate(dateObj, true);
+        }
+      } catch (_) { /* noop */ }
+    };
+    // Blur on base and alt inputs
+    inputEl.addEventListener('blur', commit);
+    if (inst?.altInput) {
+      inst.altInput.addEventListener('blur', commit);
+    }
+  };
+
+  commitTimeOnBlur(dom.startTime);
+  commitTimeOnBlur(dom.endTime);
 }
 
 export function clearProjectDateInputs() {
