@@ -3374,9 +3374,9 @@
       flex: 1 1 100%;
     }
 
-    /* Mobile: stack filters directly and remove container gap */
+    /* Mobile: add a small space between search row and filters */
     .equipment-filters {
-      gap: 0;
+      gap: 6px;
     }
 
     .equipment-filter-controls {
