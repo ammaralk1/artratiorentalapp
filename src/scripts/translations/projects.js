@@ -219,6 +219,7 @@ registerTranslations({
     'projects.reports.datasets.value': 'القيمة الإجمالية',
     'projects.reports.datasets.expenses': 'تكلفة الخدمات الإنتاجية',
     'projects.reports.kpi.revenue.details.projectExpenses': 'تكلفة الخدمات الإنتاجية',
+    // EN counterpart added below
 
     'projects.expenses.pageTitle': 'مصاريف المشاريع - نظام التأجير',
     'projects.expenses.title': 'إدارة مصاريف المشاريع',
@@ -812,6 +813,7 @@ registerTranslations({
     'projects.reports.kpi.marginMeta': 'Net profit ÷ revenue (excl. VAT)',
     'projects.reports.kpi.revenue.details.servicesRevenue': 'Services revenue',
     'projects.reports.kpi.revenue.details.margin': 'Profit margin',
+    'projects.reports.kpi.revenue.details.projectExpenses': 'Project expenses',
     'projects.reports.table.sortable': 'Sortable',
     'projects.reports.table.sort.asc': 'Ascending',
     'projects.reports.table.sort.desc': 'Descending',
