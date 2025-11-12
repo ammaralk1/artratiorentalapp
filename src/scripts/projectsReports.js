@@ -893,6 +893,7 @@ function computeProjectsRevenueBreakdown(projects) {
   let projectExpensesTotal = 0;
   let servicesRevenueTotal = 0;
   let outstandingTotal = 0;
+  let netProfitTotal = 0;
 
   projects.forEach((p) => {
     const list = resByProject.get(String(p.id)) || [];
@@ -915,8 +916,9 @@ function computeProjectsRevenueBreakdown(projects) {
       });
       acc.equipment += Number(breakdown.equipmentTotal || 0);
       acc.crew += Number(breakdown.crewTotal || 0);
+      acc.crewCost += Number(breakdown.crewCostTotal || 0);
       return acc;
-    }, { equipment: 0, crew: 0 });
+    }, { equipment: 0, crew: 0, crewCost: 0 });
 
     const servicesRevenue = getProjectServicesRevenue(p);
     servicesRevenueTotal += servicesRevenue;
@@ -951,6 +953,11 @@ function computeProjectsRevenueBreakdown(projects) {
     const finalTotal = baseAfterDiscount + companyShareAmount + combinedTax;
     grossRevenue += finalTotal;
 
+    // Per-project net profit (sum of per-project nets): baseAfterDiscount − expenses − crewCost
+    const perProjectExpenses = Number(getProjectExpenses(p) || 0);
+    const perProjectNet = Number(((baseAfterDiscount - perProjectExpenses - (agg.crewCost || 0))).toFixed(2));
+    netProfitTotal += perProjectNet;
+
     // Paid and outstanding: sum payment history (amount/percent) plus paidAmount/paidPercent
     const raw = p.raw || p; // fallback
     let paid = 0;
@@ -972,8 +979,8 @@ function computeProjectsRevenueBreakdown(projects) {
 
   const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
   const revenueExTax = Math.max(0, grossRevenue - taxTotal);
-  // Align with modal: net profit excludes company share and VAT
-  const netProfit = (revenueExTax - companyShareTotal) - projectExpensesTotal - crewCostTotal;
+  // Use sum of per-project net profit to match modal exactly
+  const netProfit = netProfitTotal;
   const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {
