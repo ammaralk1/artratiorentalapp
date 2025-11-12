@@ -340,7 +340,8 @@ function resolveAndApplyTaxRate() {
     const candidates = [root.APP_VAT_RATE, root.APP_TAX_RATE, root.__APP_SETTINGS__?.vatRate];
     for (const v of candidates) {
       const n = Number(v);
-      if (Number.isFinite(n) && n >= 0 && n <= 1) { PROJECT_TAX_RATE = n; return; }
+      // Accept only positive VAT values; ignore 0 to keep default 15%
+      if (Number.isFinite(n) && n > 0 && n <= 1) { PROJECT_TAX_RATE = n; return; }
       if (Number.isFinite(n) && n > 1 && n <= 100) { PROJECT_TAX_RATE = n / 100; return; }
     }
   } catch (_) {}
@@ -349,7 +350,8 @@ function resolveAndApplyTaxRate() {
       const raw = payload?.data ?? payload ?? {};
       const v = raw.vatRate ?? raw.taxRate ?? null;
       const n = Number(v);
-      if (Number.isFinite(n)) {
+      // Only apply if preferences provide a positive VAT
+      if (Number.isFinite(n) && n > 0) {
         PROJECT_TAX_RATE = n > 1 ? n / 100 : n;
         renderAll();
       }
@@ -939,8 +941,9 @@ function computeProjectsRevenueBreakdown(projects) {
 
     // Modal-equivalent flow for all projects (with or without reservations)
     const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
-    const discountVal = Number(p?.discount ?? 0) || 0;
-    const discountType = p?.discountType === 'amount' ? 'amount' : 'percent';
+    // Read discount from raw first to avoid missing values on snapshot
+    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
+    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
     let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
     if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
     if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
