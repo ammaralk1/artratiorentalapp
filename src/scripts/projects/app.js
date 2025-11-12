@@ -7,7 +7,11 @@ import { cacheDom, initProjectDatePickers, bindLogout } from './dom.js';
 import {
   initProjectPreferencesSync,
   initProjectSubTabs,
-  initTabNavigation
+  initTabNavigation,
+  activateProjectSubTab,
+  persistActiveSubTab,
+  getStoredActiveSubTab,
+  getUrlRequestedSubTab
 } from './tabs.js';
 import {
   loadAllData,
@@ -42,6 +46,7 @@ import {
   renderFocusCards,
   updateSummary
 } from './view.js';
+import { state } from './state.js';
 
 export function initProjectsPage() {
   document.addEventListener('DOMContentLoaded', () => {
@@ -95,6 +100,19 @@ async function initialiseProjectsData() {
     updateSummary();
     renderFocusCards();
     openPendingProjectDetailIfReady();
+
+    // Prefer showing "مشاريعي" (projects list) by default when projects exist
+    try {
+      const hasExplicitPreference = Boolean(getStoredActiveSubTab());
+      const hasUrlRequested = Boolean(getUrlRequestedSubTab());
+      const listButton = document.querySelector('.sub-tab-button[data-project-subtab-target="projects-list-tab"]');
+      if (!hasExplicitPreference && !hasUrlRequested && Array.isArray(state.projects) && state.projects.length > 0 && listButton) {
+        await activateProjectSubTab('projects-list-tab', listButton);
+        persistActiveSubTab('projects-list-tab');
+      }
+    } catch (e) {
+      // non-fatal: keep current tab if any issue occurs
+    }
   }
 }
 

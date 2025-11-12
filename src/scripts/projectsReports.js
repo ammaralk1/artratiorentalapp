@@ -110,6 +110,13 @@ const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
 // Basic sort state for projects table
 const sortState = { key: 'value', dir: 'desc' };
 
+// Prevent re-entrant refresh loops when listening to data-change events.
+// Without this, our refresh -> setState -> dispatch('projects:changed')
+// can recursively trigger another refresh, causing continuous network calls.
+let __mutationRefreshInFlight = false;
+let __lastMutationRefreshAt = 0;
+const MUTATION_REFRESH_MIN_INTERVAL_MS = 1500; // throttle a bit when many events fire
+
 async function loadReportsData({ forceProjects = false } = {}) {
   try {
     await ensureReservationsLoaded({ suppressError: true });
@@ -156,17 +163,17 @@ async function initReports() {
     endChartsLoading();
   }
 
-  document.addEventListener('language:changed', handleLanguageChanged);
+  document.addEventListener('language:changed', handleLanguageChanged, { passive: true });
   document.addEventListener('projects:changed', () => {
     handleDataMutation().catch((error) => {
       console.error('❌ [projectsReports] Failed to refresh after projects change', error);
     });
-  });
+  }, { passive: true });
   document.addEventListener('reservations:changed', () => {
     handleDataMutation().catch((error) => {
       console.error('❌ [projectsReports] Failed to refresh after reservations change', error);
     });
-  });
+  }, { passive: true });
   window.addEventListener('storage', handleStorageSync);
 }
 
@@ -567,6 +574,19 @@ function handleDateRangeChange(event) {
 }
 
 async function handleDataMutation() {
+  // Throttle and prevent re-entrancy to avoid request storms
+  const now = Date.now();
+  if (__mutationRefreshInFlight) {
+    return; // already refreshing; next event will render from final state
+  }
+  if (now - __lastMutationRefreshAt < MUTATION_REFRESH_MIN_INTERVAL_MS) {
+    // Too soon since last refresh; just re-render from current cache
+    loadAllData();
+    renderAll();
+    return;
+  }
+
+  __mutationRefreshInFlight = true;
   beginChartsLoading();
   try {
     await Promise.all([
@@ -579,6 +599,8 @@ async function handleDataMutation() {
       console.warn('Projects API error:', error.message);
     }
   } finally {
+    __lastMutationRefreshAt = Date.now();
+    __mutationRefreshInFlight = false;
     loadAllData();
     renderAll();
     endChartsLoading();
