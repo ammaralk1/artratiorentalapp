@@ -834,12 +834,19 @@ function computeProjectsRevenueBreakdown(projects) {
 
   reservations.forEach((res) => {
     const f = computeReservationFinancials(res);
-    grossReservations += f.finalTotal || 0;
+    const isProjectTaxed = taxedProjectIds.has(String(res.projectId));
+    const resTax = Number(f.taxAmount || 0);
+    const resFinal = Number(f.finalTotal || 0);
+    const finalForReport = isProjectTaxed ? resFinal : Math.max(0, resFinal - resTax);
+    const taxForReport = isProjectTaxed ? resTax : 0;
+
+    grossReservations += finalForReport;
     equipmentReservations += f.equipmentTotal || 0;
     crewTotal += f.crewTotal || 0;
     crewCostTotal += f.crewCostTotal || 0;
     companyShareTotal += f.companyShareAmount || 0;
-    taxReservations += f.taxAmount || 0;
+    taxReservations += taxForReport;
+    // netReservations already excludes tax in computeReservationFinancials; keep as-is
     netReservations += f.netProfit || 0;
   });
   // If some reservations belong to projects where VAT is applied at the project level,
