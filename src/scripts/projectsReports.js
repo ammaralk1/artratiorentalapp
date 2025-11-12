@@ -14,7 +14,7 @@ import {
 import { ensureReservationsLoaded } from './reservationsActions.js';
 import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 // Reuse the exact project financial rules from the project details/modal
-import { resolveProjectTotals } from './projects/view.js';
+// (removed) resolveProjectTotals import — unified flow handles all cases
 
 let PROJECT_TAX_RATE = 0.15;
 const charts = {};
@@ -922,41 +922,7 @@ function computeProjectsRevenueBreakdown(projects) {
     servicesRevenueTotal += servicesRevenue;
     projectExpensesTotal += Number(getProjectExpenses(p) || 0);
 
-    // If the project has NO linked reservations, mirror the modal's fallback logic exactly
-    if (!list.length) {
-      try {
-        const totals = resolveProjectTotals(p.raw || p);
-        const finalTotal = Number(totals?.totalWithTax || 0) || 0;
-        const taxAmount = Number(totals?.taxAmount || 0) || 0;
-        const shareAmount = Number(totals?.companyShareAmount || 0) || 0;
-        grossRevenue += finalTotal;
-        taxTotal += taxAmount;
-        companyShareTotal += shareAmount;
-
-        // Paid and outstanding: use same paid logic with this finalTotal
-        const raw = p.raw || p;
-        let paid = 0;
-        const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
-        try {
-          const hist = Array.isArray(raw.paymentHistory) ? raw.paymentHistory : [];
-          hist.forEach((e) => {
-            const t = (e?.type || '').toString().toLowerCase();
-            const val = Number(e?.value ?? e?.amount ?? 0) || 0;
-            if (t === 'percent') add((val / 100) * finalTotal);
-            else add(val);
-          });
-        } catch (_) { /* ignore */ }
-        add(raw?.paidAmount);
-        if (Number(raw?.paidPercent) > 0) add((Number(raw.paidPercent) / 100) * finalTotal);
-        if (paid > finalTotal) paid = finalTotal;
-        outstandingTotal += Math.max(0, finalTotal - paid);
-        return; // continue to next project
-      } catch (_) {
-        // Fallback to computed flow below if totals resolution fails
-      }
-    }
-
-    // Modal-equivalent flow when reservations exist (or fallback not available)
+    // Modal-equivalent flow for all projects (with or without reservations)
     const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
     const discountVal = Number(p?.discount ?? 0) || 0;
     const discountType = p?.discountType === 'amount' ? 'amount' : 'percent';
