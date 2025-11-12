@@ -71,7 +71,17 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
         const tr = cell.closest('tr');
         const tbody = tr?.parentElement;
         if (!tr || !tbody) return;
-        const ncols = (() => { try { const head = table.querySelector('thead tr'); return (head && head.children && head.children.length) ? head.children.length : 12; } catch(_) { return 12; } })();
+        const ncols = (() => {
+          try {
+            // Prefer the last THEAD row (actual column headers), fall back to COLGROUP, then default
+            const headRows = table.querySelectorAll('thead tr');
+            const lastHead = headRows && headRows.length ? headRows[headRows.length - 1] : null;
+            if (lastHead && lastHead.children && lastHead.children.length) return lastHead.children.length;
+            const cols = table.querySelectorAll('colgroup col');
+            if (cols && cols.length) return cols.length;
+            return 12;
+          } catch(_) { return 12; }
+        })();
         const full = document.createElement('tr');
         const td = document.createElement('td');
         td.setAttribute('colspan', String(ncols));
@@ -127,7 +137,16 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       else if (act === 'row-full' && sched) { doRowFull(); updateAfter(); }
       else if (act === 'row-full-del' && sched) {
         const tr = cell.closest('tr');
-        const headCols = (() => { try { const head = sched.querySelector('thead tr'); return (head && head.children && head.children.length) ? head.children.length : 12; } catch(_) { return 12; } })();
+        const headCols = (() => {
+          try {
+            const headRows = sched.querySelectorAll('thead tr');
+            const lastHead = headRows && headRows.length ? headRows[headRows.length - 1] : null;
+            if (lastHead && lastHead.children && lastHead.children.length) return lastHead.children.length;
+            const cols = sched.querySelectorAll('colgroup col');
+            if (cols && cols.length) return cols.length;
+            return 12;
+          } catch(_) { return 12; }
+        })();
         const isFull = tr && tr.children && tr.children.length === 1 && Number(tr.children[0]?.getAttribute('colspan') || '1') >= headCols;
         if (isFull) { tr.parentElement?.removeChild(tr); updateAfter(); }
       }
