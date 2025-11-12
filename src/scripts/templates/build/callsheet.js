@@ -294,7 +294,7 @@ export function buildCallSheetPage(project, reservations, opts = {}) {
   const castCg = el('colgroup'); for (let i=0;i<8;i+=1) castCg.appendChild(el('col', { style: 'width:12.5%' }));
   cast.appendChild(castCg);
   // Header cell spans all columns
-  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '8' })));
+  cb.appendChild(makeRow(el('td', { class: 'cs-cast-title', text: 'Cast Calls', colspan: '8', style: 'background:#2563EB !important;color:#ffffff !important;' })));
   // Two data rows
   const castRow1 = el('tr');
   const castRow2 = el('tr');
