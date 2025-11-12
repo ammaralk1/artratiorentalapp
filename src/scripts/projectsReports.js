@@ -406,7 +406,15 @@ function buildProjectSnapshot(project, customerMap) {
   const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
   const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
 
-  const status = determineProjectStatus(project);
+  const statusBase = determineProjectStatus(project);
+  const isCancelled = (() => {
+    try {
+      if (project?.cancelled === true) return true;
+      const s = String(project?.status || project?.raw?.status || '').toLowerCase();
+      return s === 'cancelled' || s === 'canceled' || s === 'ملغي' || s === 'ملغى';
+    } catch (_) { return false; }
+  })();
+  const status = isCancelled ? 'cancelled' : statusBase;
   const start = project.start ? new Date(project.start) : null;
   const end = project.end ? new Date(project.end) : null;
 
@@ -428,6 +436,7 @@ function buildProjectSnapshot(project, customerMap) {
     companyShareEnabled: shareEnabled,
     companySharePercent: sharePercent,
     status,
+    cancelled: isCancelled,
     reservationsTotal: Number((agg.equipment + agg.crew).toFixed(2)),
     expensesTotal: getProjectExpenses(project),
     servicesClientPrice,
@@ -677,6 +686,8 @@ function getFilteredProjects() {
     rangeStart = startDate ? new Date(startDate) : null;
     const rangeEnd = endDate ? new Date(endDate) : null;
     return state.projects.filter((project) => {
+      // Global rule: exclude cancelled projects everywhere
+      if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
       if (!isStatusAllowed(project, statuses)) return false;
       if (!isPaymentAllowed(project, payment)) return false;
       if (!matchesSearch(project, searchTerm)) return false;
@@ -691,6 +702,8 @@ function getFilteredProjects() {
   }
 
   return state.projects.filter((project) => {
+    // Global rule: exclude cancelled projects everywhere
+    if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
     if (!isStatusAllowed(project, statuses)) return false;
     if (!isPaymentAllowed(project, payment)) return false;
     if (!matchesSearch(project, searchTerm)) return false;
