@@ -568,7 +568,8 @@ function renderFocusCard(project, category) {
     ?? project?.company_share
     ?? 0
   ) || 0;
-  const sharePercent = (shareEnabled && rawShare > 0) ? rawShare : 0;
+  // New rule: company share applies only when VAT is enabled
+  const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
   const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
   const taxAmountAfterShare = applyTax
     ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2))

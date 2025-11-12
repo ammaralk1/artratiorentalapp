@@ -397,7 +397,8 @@ function buildProjectSnapshot(project, customerMap) {
   const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
 
   const shareEnabled = project?.companyShareEnabled === true || project?.companyShareEnabled === 'true';
-  const sharePercent = shareEnabled ? (Number(project?.companySharePercent) || 0) : 0;
+  // New rule: company share applies only when VAT is enabled
+  const sharePercent = (shareEnabled && applyTax) ? (Number(project?.companySharePercent) || 0) : 0;
   const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
 
   const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
@@ -963,7 +964,8 @@ function computeProjectsRevenueBreakdown(projects) {
     const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
 
     const shareEnabled = p?.companyShareEnabled === true || p?.companyShareEnabled === 'true';
-    const sharePercent = shareEnabled ? (Number(p?.companySharePercent) || 0) : 0;
+    // New rule: company share applies only when VAT is enabled
+    const sharePercent = (shareEnabled && applyTax) ? (Number(p?.companySharePercent) || 0) : 0;
     const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
     companyShareTotal += companyShareAmount;
 
