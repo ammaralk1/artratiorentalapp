@@ -766,11 +766,12 @@ function resolveProjectPaymentState(project) {
       const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
       if (paidPct > 0) add((paidPct / 100) * finalTotal);
     }
-    if (finalTotal <= 0) {
-      // If total is zero, treat as unpaid unless there are explicit payments
-      return paid > 0 ? 'partial' : 'unpaid';
-    }
-    return (paid >= finalTotal - 0.5) ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
+    // Derive by outstanding to align with KPI
+    const epsilon = 0.01;
+    if (finalTotal <= 0) return paid > 0 ? 'partial' : 'unpaid';
+    const outstanding = Math.max(0, finalTotal - paid);
+    if (outstanding <= epsilon) return 'paid';
+    return paid > 0 ? 'partial' : 'unpaid';
   } catch (_) {
     return 'unpaid';
   }
@@ -1469,24 +1470,8 @@ function renderTable(projects) {
     const periodLabel = formatProjectPeriod(project.start, project.end);
     const statusLabel = t(`projects.status.${project.status}`, project.status);
     const statusChip = `<span class=\"timeline-status-badge timeline-status-badge--${project.status}\">${escapeHtml(statusLabel)}</span>`;
-    // Payment chip (match project card style and emojis)
-    const raw = project.raw || project;
-    const finalTotal = Number(project.overallTotal || 0) || 0;
-    let paid = 0;
-    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
-    try {
-      const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
-        : (Array.isArray(raw.payments) ? raw.payments : []);
-      histSource.forEach((e) => {
-        const ttype = (e?.type || '').toString().toLowerCase();
-        const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
-        if (ttype === 'percent') add((val / 100) * finalTotal); else add(val);
-      });
-    } catch (_) { /* ignore */ }
-    add(raw?.paidAmount ?? raw?.paid_amount);
-    const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
-    if (paidPct > 0) add((paidPct / 100) * finalTotal);
-    const paymentState = (paid >= finalTotal - 0.5) ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
+    // Payment chip (match project card style and emojis) — use unified resolver
+    const paymentState = resolveProjectPaymentState(project);
     const paymentClass = paymentState === 'paid' ? 'status-paid' : (paymentState === 'partial' ? 'status-partial' : 'status-unpaid');
     const paymentText = paymentState === 'paid'
       ? t('reservations.list.payment.paid', '💳 مدفوع')
