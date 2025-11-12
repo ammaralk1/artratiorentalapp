@@ -87,6 +87,15 @@ const KPI_ICONS = Object.freeze({
       <path d="M21 18h-5"></path>
     </svg>
   `
+  ,
+  margin: `
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M12 3a9 9 0 1 0 9 9"></path>
+      <path d="M12 7v5l3 3"></path>
+      <path d="M16 3l5 5"></path>
+    </svg>
+  `
 });
 
 let ChartLib = null;
@@ -261,12 +270,13 @@ function buildProjectSnapshot(project, customerMap) {
 
   const expensesTotal = getProjectExpenses(project);
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
-  const subtotal = Number((equipmentEstimate + expensesTotal).toFixed(2));
+  // Use services client price (revenue) instead of expenses (cost) when computing displayed totals
+  const servicesClientPrice = Number(project?.servicesClientPrice) || 0;
+  const subtotal = Number((equipmentEstimate + servicesClientPrice).toFixed(2));
   const applyTax = project?.applyTax === true || project?.applyTax === 'true';
   const taxAmount = applyTax ? Number((subtotal * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const combinedTaxAmount = applyTax
-    ? Number(((subtotal + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
-    : 0;
+  // Combined tax: apply project tax to project-level revenue (equipment + services client price)
+  const combinedTaxAmount = applyTax ? Number(((subtotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
   const overallTotal = Number((subtotal + reservationsTotal + combinedTaxAmount).toFixed(2));
 
   const status = determineProjectStatus(project);
@@ -291,6 +301,7 @@ function buildProjectSnapshot(project, customerMap) {
     status,
     reservationsTotal: Number(reservationsTotal.toFixed(2)),
     expensesTotal,
+    servicesClientPrice,
     subtotal,
     taxAmount,
     combinedTaxAmount,
@@ -553,6 +564,7 @@ function renderKpis(projects) {
   const totalValue = projects.reduce((sum, project) => sum + project.overallTotal, 0);
   const unpaidValue = projects.reduce((sum, project) => sum + project.unpaidValue, 0);
   const expensesTotal = projects.reduce((sum, project) => sum + project.expensesTotal, 0);
+  const breakdown = computeProjectsRevenueBreakdown(projects);
 
   const cards = [
     {
@@ -578,6 +590,12 @@ function renderKpis(projects) {
       label: t('projects.reports.kpi.expenses', 'تكلفة الخدمات الإنتاجية'),
       value: formatCurrency(expensesTotal),
       meta: t('projects.reports.kpi.expensesMeta', 'تكلفة الخدمات الإنتاجية للمشاريع المحددة')
+    },
+    {
+      icon: KPI_ICONS.margin,
+      label: t('projects.reports.kpi.margin', 'هامش الربح', 'Profit margin'),
+      value: formatPercent(breakdown.profitMarginPercent),
+      meta: t('projects.reports.kpi.marginMeta', 'صافي الربح ÷ الإيراد بدون الضريبة', 'Net profit / revenue excl. VAT')
     }
   ];
 
@@ -609,7 +627,9 @@ function renderProjectsRevenueBreakdown(projects) {
       { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
       { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
       { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
+      { label: t('projects.reports.kpi.revenue.details.servicesRevenue', 'إيرادات الخدمات الإنتاجية', 'Services revenue'), value: `${formatCurrency(breakdown.servicesRevenueTotal)}` },
       { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
+      { label: t('projects.reports.kpi.revenue.details.margin', 'هامش الربح', 'Profit margin'), value: formatPercent(breakdown.profitMarginPercent) },
     ];
 
     const detailsHtml = `
@@ -658,17 +678,20 @@ function computeProjectsRevenueBreakdown(projects) {
 
   const projectExpensesTotal = projects.reduce((sum, p) => sum + (Number(p.expensesTotal) || 0), 0);
   const projectEquipmentEstimateTotal = projects.reduce((sum, p) => sum + (Number(p.raw?.equipmentEstimate) || 0), 0);
+  const servicesRevenueTotal = projects.reduce((sum, p) => sum + (Number(p.raw?.servicesClientPrice) || 0), 0);
   const taxOnProjectSubtotals = projects.reduce((sum, p) => {
     const applyTax = p.applyTax === true;
-    const base = (Number(p.raw?.equipmentEstimate) || 0) + (Number(p.expensesTotal) || 0);
+    const base = (Number(p.raw?.equipmentEstimate) || 0) + (Number(p.raw?.servicesClientPrice) || 0);
     const tax = applyTax ? base * PROJECT_TAX_RATE : 0;
     return sum + tax;
   }, 0);
 
-  const grossRevenue = grossReservations + projectEquipmentEstimateTotal + taxOnProjectSubtotals;
+  const grossRevenue = grossReservations + projectEquipmentEstimateTotal + servicesRevenueTotal + taxOnProjectSubtotals;
   const equipmentTotalCombined = equipmentReservations + projectEquipmentEstimateTotal;
   const taxTotal = taxReservations + taxOnProjectSubtotals;
-  const netProfit = netReservations - projectExpensesTotal;
+  const netProfit = netReservations + (servicesRevenueTotal - projectExpensesTotal);
+  const revenueExTax = (grossReservations - taxReservations) + projectEquipmentEstimateTotal + servicesRevenueTotal;
+  const profitMarginPercent = revenueExTax > 0 ? (netProfit / revenueExTax) * 100 : 0;
 
   return {
     grossRevenue,
@@ -678,7 +701,10 @@ function computeProjectsRevenueBreakdown(projects) {
     crewCostTotal,
     equipmentTotalCombined,
     projectExpensesTotal,
+    servicesRevenueTotal,
     netProfit,
+    revenueExTax,
+    profitMarginPercent,
   };
 }
 
@@ -1072,6 +1098,17 @@ function formatNumber(value) {
   const lang = getCurrentLanguage();
   const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
   return normalizeNumbers(new Intl.NumberFormat(locale).format(value));
+}
+
+function formatPercent(value) {
+  const lang = getCurrentLanguage();
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
+  const num = Number.isFinite(value) ? value : 0;
+  const formatted = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  }).format(num);
+  return `${normalizeNumbers(formatted)}%`;
 }
 
 function formatCompactNumber(value) {
