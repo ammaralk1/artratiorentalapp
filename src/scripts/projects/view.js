@@ -737,7 +737,7 @@ export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = getProjectExpenses(project);
   const baseSubtotal = equipmentEstimate + expensesTotal;
-  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+  const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
 
   const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
@@ -764,7 +764,9 @@ export function resolveProjectTotals(project) {
       ?? project?.company_share
       ?? 0
   ) || 0;
-  const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
+  // Couple VAT/share: if share is set, VAT is effectively ON
+  const applyTax = applyTaxRaw || (companyShareEnabled && rawSharePercent > 0);
+  const sharePercent = (companyShareEnabled && applyTax && rawSharePercent > 0) ? rawSharePercent : 0;
   const companyShareAmount = sharePercent > 0
     ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))
     : 0;

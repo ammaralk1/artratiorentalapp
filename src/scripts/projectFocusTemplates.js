@@ -462,8 +462,8 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
     if (discountAmount > gross) discountAmount = gross;
 
-    // Company share after discount
-    const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+    // Company share after discount (coupled with VAT)
+    const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
     const shareEnabled = project?.companyShareEnabled === true
       || project?.companyShareEnabled === 'true'
       || project?.company_share_enabled === true
@@ -475,6 +475,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
       ?? project?.company_share
       ?? 0
     ) || 0;
+    const applyTax = applyTaxRaw || (shareEnabled && rawShare > 0);
     const sharePercent = (shareEnabled && applyTax && rawShare > 0) ? rawShare : 0;
     const baseAfterDiscount = Math.max(0, gross - discountAmount);
     const companyShareAmount = Number(((baseAfterDiscount) * (sharePercent / 100)).toFixed(2));
@@ -654,7 +655,7 @@ export function resolveProjectTotals(project) {
   const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
   const expensesTotal = calculateProjectExpenses(project);
   const baseSubtotal = equipmentEstimate + expensesTotal;
-  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+  const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
 
   const discountValue = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
@@ -681,6 +682,8 @@ export function resolveProjectTotals(project) {
       ?? project?.company_share
       ?? 0
   ) || 0;
+  // Couple VAT/share: if share is set, VAT is effectively ON
+  const applyTax = applyTaxRaw || (companyShareEnabled && rawSharePercent > 0);
   const sharePercent = companyShareEnabled && applyTax && rawSharePercent > 0 ? rawSharePercent : 0;
   const companyShareAmount = sharePercent > 0
     ? Number((subtotalAfterDiscount * (sharePercent / 100)).toFixed(2))

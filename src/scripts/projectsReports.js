@@ -388,7 +388,7 @@ function buildProjectSnapshot(project, customerMap) {
   const servicesClientPrice = getProjectServicesRevenue(project);
   const discountVal = Number(project?.discount ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+  const applyTaxRaw = project?.applyTax === true || project?.applyTax === 'true';
 
   const grossBeforeDiscount = agg.equipment + agg.crew + servicesClientPrice;
   let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
@@ -397,8 +397,10 @@ function buildProjectSnapshot(project, customerMap) {
   const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
 
   const shareEnabled = project?.companyShareEnabled === true || project?.companyShareEnabled === 'true';
-  // New rule: company share applies only when VAT is enabled
-  const sharePercent = (shareEnabled && applyTax) ? (Number(project?.companySharePercent) || 0) : 0;
+  const rawSharePercent = Number(project?.companySharePercent) || 0;
+  // Couple VAT and company share: if share is set, VAT is effectively ON
+  const applyTax = applyTaxRaw || (shareEnabled && rawSharePercent > 0);
+  const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
   const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
 
   const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
@@ -963,19 +965,20 @@ function computeProjectsRevenueBreakdown(projects) {
     if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
     const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
 
-    const shareEnabled = p?.companyShareEnabled === true || p?.companyShareEnabled === 'true';
-    // New rule: company share applies only when VAT is enabled
-    const sharePercent = (shareEnabled && applyTax) ? (Number(p?.companySharePercent) || 0) : 0;
-    const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
-    companyShareTotal += companyShareAmount;
-
     // Robust VAT flag detection (supports true/1/'1'/'true', camel/snake cases)
-    const applyTax = (() => {
+    let applyTax = (() => {
       const v = (p?.applyTax !== undefined) ? p.applyTax : (p?.apply_tax ?? p?.raw?.apply_tax ?? p?.raw?.applyTax);
       if (v === true || v === 1 || v === '1') return true;
       if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
       return false;
     })();
+    const shareEnabled = p?.companyShareEnabled === true || p?.companyShareEnabled === 'true';
+    const rawSharePercent = Number(p?.companySharePercent) || 0;
+    // Couple: if share is set, VAT is effectively ON
+    if (shareEnabled && rawSharePercent > 0) applyTax = true;
+    const sharePercent = (shareEnabled && applyTax) ? rawSharePercent : 0;
+    const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
+    companyShareTotal += companyShareAmount;
     const combinedTax = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
     taxTotal += combinedTax;
 
