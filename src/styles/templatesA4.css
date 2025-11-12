@@ -223,7 +223,7 @@ table.cs-info table { width:100%; border-collapse:collapse; table-layout:fixed; 
 
 /* Cast calls */
 table.cs-cast { width:100%; border-collapse:collapse; table-layout:fixed; margin:2mm 0 3mm; }
-table.cs-cast { border:1.5px solid #9ca3af; }
+table.cs-cast { border:2px solid #9ca3af; }
 table.cs-cast td { border:1.5px solid #9ca3af; padding:6px 8px; text-align:center; vertical-align:middle; height:26px; }
 .cs-cast-title { background: rgba(37, 99, 235, 0.18); color:#000; font-weight:800; text-align:center; }
 .cs-weather { text-align:center; font-weight:700; background:#ffffff; }
@@ -386,7 +386,7 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   font-size: 18px !important; /* larger headers as requested */
 }
 #templates-a4-root .callsheet-v1 .cs-crew {
-  border: 1.5px solid #9ca3af;
+  border: 2px solid #9ca3af;
   border-radius: 14px;
   border-collapse: collapse;
   overflow: hidden;
@@ -407,6 +407,8 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
   color:#ffffff !important;
 }
 .callsheet-v1 .cs-crew { table-layout: fixed; width: 90% !important; margin-top:6px; margin-left:auto; margin-right:auto; }
+/* Slightly narrow Cast Calls table and center it */
+#templates-a4-root .callsheet-v1 table.cs-cast { width: 92% !important; margin-left:auto !important; margin-right:auto !important; border-radius: 12px; overflow: hidden; }
 .callsheet-v1 .cs-crew th,
 .callsheet-v1 .cs-crew td { text-align:center !important; vertical-align:middle; font-size:10px; }
 .callsheet-v1 .cs-crew thead th { display:flex; align-items:center; justify-content:center; padding:6px 4px; line-height:1.2; white-space:normal; overflow:hidden; text-overflow:ellipsis; text-align: center !important; font-size: 18px !important; }
@@ -459,6 +461,9 @@ table.cs-schedule { border:1.5px solid #9ca3af; border-collapse: collapse; }
 #templates-a4-root[data-render-context="preview"] table.cs-schedule { outline: none; box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-info { box-shadow: inset 0 -1.5px 0 #9ca3af; }
 #templates-a4-root[data-render-context="preview"] table.cs-cast { box-shadow: inset 0 -1.5px 0 #9ca3af; }
+/* Apply strong outer outlines for Cast & Crew tables (both preview and export) */
+#templates-a4-root .callsheet-v1 table.cs-cast,
+#templates-a4-root .callsheet-v1 .cs-crew { outline: 2px solid #9ca3af; outline-offset: -1px; }
 /* (removed Key Contacts table styles: cs-contacts) */
 /* Ensure bottom outlines are closed on first page tables */
 table.cs-info tbody tr:last-child td,
