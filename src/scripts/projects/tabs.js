@@ -141,6 +141,17 @@ export function activateProjectSubTab(targetId, triggerButton) {
       pane.classList.add('d-none');
     }
   });
+
+  // When switching to "مشاريعي" (projects list), ensure content renders fresh
+  if (targetId === 'projects-list-tab') {
+    try {
+      renderProjects();
+      renderFocusCards();
+      updateSummary();
+    } catch (error) {
+      console.warn('[projects] Failed to render list after sub-tab switch', error);
+    }
+  }
 }
 
 export function initProjectSubTabs() {
