@@ -755,14 +755,17 @@ function resolveProjectPaymentState(project) {
     const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
     const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
       : (Array.isArray(raw.payments) ? raw.payments : []);
-    histSource.forEach((e) => {
-      const t = (e?.type || '').toString().toLowerCase();
-      const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
-      if (t === 'percent') add((val / 100) * finalTotal); else add(val);
-    });
-    add(raw?.paidAmount ?? raw?.paid_amount);
-    const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
-    if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    if (Array.isArray(histSource) && histSource.length) {
+      histSource.forEach((e) => {
+        const t = (e?.type || '').toString().toLowerCase();
+        const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
+        if (t === 'percent' || t === 'percentage') add((val / 100) * finalTotal); else add(val);
+      });
+    } else {
+      add(raw?.paidAmount ?? raw?.paid_amount);
+      const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
+      if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    }
     if (finalTotal <= 0) {
       // If total is zero, treat as unpaid unless there are explicit payments
       return paid > 0 ? 'partial' : 'unpaid';
@@ -1016,19 +1019,25 @@ function computeProjectsRevenueBreakdown(projects) {
     const raw = p.raw || p; // fallback
     let paid = 0;
     const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
+    let usedExplicitHistory = false;
     try {
       const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
         : (Array.isArray(raw.payments) ? raw.payments : []);
-      histSource.forEach((e) => {
-        const t = (e?.type || '').toString().toLowerCase();
-        const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
-        if (t === 'percent') add((val / 100) * finalTotal);
-        else add(val);
-      });
+      if (Array.isArray(histSource) && histSource.length) {
+        usedExplicitHistory = true;
+        histSource.forEach((e) => {
+          const t = (e?.type || '').toString().toLowerCase();
+          const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
+          if (t === 'percent' || t === 'percentage') add((val / 100) * finalTotal);
+          else add(val);
+        });
+      }
     } catch (_) { /* ignore */ }
-    add(raw?.paidAmount ?? raw?.paid_amount);
-    const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
-    if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    if (!usedExplicitHistory) {
+      add(raw?.paidAmount ?? raw?.paid_amount);
+      const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
+      if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    }
     if (paid > finalTotal) paid = finalTotal;
     outstandingTotal += Math.max(0, finalTotal - paid);
   });
