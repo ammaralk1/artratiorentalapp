@@ -30,7 +30,7 @@ const state = {
     search: '',
     statuses: ['upcoming', 'ongoing', 'completed'],
     payment: 'all',
-    margin: 'all',
+    confirmed: 'all',
     range: 'all',
     startDate: '',
     endDate: ''
@@ -40,7 +40,7 @@ const state = {
 const dom = {
   search: null,
   payment: null,
-  margin: null,
+  confirmed: null,
   dateRange: null,
   customRangeWrapper: null,
   startDate: null,
@@ -233,7 +233,7 @@ function cacheDom() {
   dom.search = document.getElementById('reports-search');
   dom.statusChips = document.getElementById('reports-status-chips');
   dom.payment = document.getElementById('reports-payment');
-  dom.margin = document.getElementById('reports-margin');
+  dom.confirmed = document.getElementById('reports-confirmed');
   dom.dateRange = document.getElementById('reports-date-range');
   dom.customRangeWrapper = document.getElementById('reports-custom-range');
   dom.startDate = document.getElementById('reports-start-date');
@@ -560,10 +560,10 @@ function setupFilters() {
     });
   }
 
-  if (dom.margin) {
-    dom.margin.value = state.filters.margin || 'all';
-    dom.margin.addEventListener('change', () => {
-      state.filters.margin = dom.margin.value || 'all';
+  if (dom.confirmed) {
+    dom.confirmed.value = state.filters.confirmed || 'all';
+    dom.confirmed.addEventListener('change', () => {
+      state.filters.confirmed = dom.confirmed.value || 'all';
       renderAll();
     });
   }
@@ -678,7 +678,7 @@ function renderAll() {
 }
 
 function getFilteredProjects() {
-  const { search, statuses, payment, range, startDate, endDate, margin } = state.filters;
+  const { search, statuses, payment, range, startDate, endDate, confirmed } = state.filters;
   const searchTerm = normalizeText(search);
   const now = new Date();
   const rangeDays = Number(range);
@@ -693,7 +693,7 @@ function getFilteredProjects() {
       if (!isStatusAllowed(project, statuses)) return false;
       if (!isPaymentAllowed(project, payment)) return false;
       if (!matchesSearch(project, searchTerm)) return false;
-      if (!isMarginAllowed(project, margin)) return false;
+      if (!isConfirmedAllowed(project, confirmed)) return false;
       return isWithinCustomRange(project.start, rangeStart, rangeEnd);
     });
   }
@@ -709,7 +709,7 @@ function getFilteredProjects() {
     if (!isStatusAllowed(project, statuses)) return false;
     if (!isPaymentAllowed(project, payment)) return false;
     if (!matchesSearch(project, searchTerm)) return false;
-    if (!isMarginAllowed(project, margin)) return false;
+    if (!isConfirmedAllowed(project, confirmed)) return false;
     if (range === 'all') return true;
     return isWithinRelativeRange(project.start, rangeStart, now);
   });
@@ -724,16 +724,12 @@ function isPaymentAllowed(project, payment) {
   return project.paymentStatus === payment;
 }
 
-function isMarginAllowed(project, margin) {
-  if (!margin || margin === 'all') return true;
-  const m = computeProjectMetrics(project).marginPercent;
-  switch (margin) {
-    case 'loss': return m < 0;
-    case 'lt10': return m >= 0 && m < 10;
-    case '10to30': return m >= 10 && m <= 30;
-    case 'gt30': return m > 30;
-    default: return true;
-  }
+function isConfirmedAllowed(project, confirmed) {
+  if (!confirmed || confirmed === 'all') return true;
+  const isConfirmed = project?.confirmed === true;
+  if (confirmed === 'yes') return isConfirmed;
+  if (confirmed === 'no') return !isConfirmed;
+  return true;
 }
 
 function matchesSearch(project, searchTerm) {

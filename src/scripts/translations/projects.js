@@ -599,13 +599,11 @@ registerTranslations({
     'projects.reports.table.sortable': 'قابل للفرز',
     'projects.reports.table.sort.asc': 'ترتيب تصاعدي',
     'projects.reports.table.sort.desc': 'ترتيب تنازلي',
-    // New: margin filter + column
-    'projects.reports.filters.margin.label': 'هامش الربح',
-    'projects.reports.filters.margin.all': 'هامش: الكل',
-    'projects.reports.filters.margin.loss': 'هامش سلبي',
-    'projects.reports.filters.margin.lt10': 'أقل من 10٪',
-    'projects.reports.filters.margin.10to30': '10٪ – 30٪',
-    'projects.reports.filters.margin.gt30': 'أكثر من 30٪',
+    // Replace margin filter with confirmation filter
+    'projects.reports.filters.confirmed.label': 'حالة التأكيد',
+    'projects.reports.filters.confirmed.all': 'حالة التأكيد: الكل',
+    'projects.reports.filters.confirmed.yes': 'مؤكد',
+    'projects.reports.filters.confirmed.no': 'غير مؤكد',
     'projects.reports.table.columns.margin': 'هامش الربح',
     'projects.reports.actions.exportExcel': 'تصدير Excel',
     'projects.reports.kpi.margin': 'هامش الربح',
@@ -800,13 +798,10 @@ registerTranslations({
 // Provide English strings for the new keys
 registerTranslations({
   en: {
-    'projects.reports.filters.margin.label': 'Profit margin',
-    'projects.reports.filters.margin.all': 'Margin: All',
-    'projects.reports.filters.margin.loss': 'Negative margin',
-    'projects.reports.filters.margin.lt10': 'Less than 10%'
-    ,
-    'projects.reports.filters.margin.10to30': '10% – 30%',
-    'projects.reports.filters.margin.gt30': 'More than 30%',
+    'projects.reports.filters.confirmed.label': 'Confirmation',
+    'projects.reports.filters.confirmed.all': 'Confirmation: All',
+    'projects.reports.filters.confirmed.yes': 'Confirmed',
+    'projects.reports.filters.confirmed.no': 'Unconfirmed',
     'projects.reports.table.columns.margin': 'Profit margin',
     'projects.reports.actions.exportExcel': 'Export Excel',
     'projects.reports.kpi.margin': 'Profit margin',
