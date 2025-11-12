@@ -3373,9 +3373,9 @@
       flex: 1 1 100%;
     }
 
-    /* Mobile: stack filters directly and reduce gaps */
+    /* Mobile: stack filters directly and remove container gap */
     .equipment-filters {
-      gap: 6px;
+      gap: 0;
     }
 
     .equipment-filter-controls {
@@ -3384,13 +3384,25 @@
       gap: 0;
     }
 
-    /* Make selects shorter on mobile for tighter vertical rhythm */
+    /* Make selects even shorter on mobile for tighter vertical rhythm */
     .equipment-filters .form-select,
     .equipment-filters .enhanced-select__trigger {
-      min-height: 2.6rem;
-      height: 2.6rem;
-      line-height: 2.6rem;
+      min-height: 2.2rem;
+      height: 2.2rem;
+      line-height: 2.2rem;
       margin: 0;
+      padding-block: 0;
+      font-size: 0.95rem;
+    }
+
+    /* Stronger specificity to ensure zero spacing inside filters stack on phones */
+    .equipment-filters .equipment-filter-controls .form-select,
+    .equipment-filters .equipment-filter-controls .enhanced-select__trigger {
+      min-height: 2.2rem;
+      height: 2.2rem;
+      line-height: 2.2rem;
+      margin: 0;
+      padding-block: 0;
     }
 
     .equipment-status-field {
