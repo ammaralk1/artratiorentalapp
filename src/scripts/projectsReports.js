@@ -361,41 +361,47 @@ function buildProjectSnapshot(project, customerMap) {
   const normalizedPayment = project.paymentStatus === 'paid' ? 'paid' : 'unpaid';
   const client = customerMap.get(String(project.clientId));
   const reservations = getReservationsForProject(project.id);
-  // Use reservation final totals (may or may not include tax depending on reservation flags)
-  const reservationsTotal = reservations.reduce((sum, reservation) => sum + resolveReservationFinalTotal(reservation), 0);
 
-  const expensesTotal = getProjectExpenses(project);
-  const equipmentEstimate = Number(project?.equipmentEstimate) || 0;
+  // Aggregate equipment/crew totals and crew cost (exactly like modal)
+  const agg = reservations.reduce((acc, res) => {
+    const items = Array.isArray(res.items) ? res.items : [];
+    const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+    const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
+    const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
+    const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techOrAssign : [],
+      crewAssignments: useAssignments ? techOrAssign : [],
+      discount: res.discount ?? 0,
+      discountType: res.discountType || 'percent',
+      applyTax: false,
+      start: res.start,
+      end: res.end,
+    });
+    acc.equipment += Number(breakdown.equipmentTotal || 0);
+    acc.crew += Number(breakdown.crewTotal || 0);
+    acc.crewCost += Number(breakdown.crewCostTotal || 0);
+    return acc;
+  }, { equipment: 0, crew: 0, crewCost: 0 });
+
   const servicesClientPrice = getProjectServicesRevenue(project);
-  // Apply project-level discount and company share similar to breakdown
   const discountVal = Number(project?.discount ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
-  const baseSubtotal = equipmentEstimate + servicesClientPrice;
-  let discountAmount = discountType === 'amount' ? discountVal : baseSubtotal * (discountVal / 100);
+  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+
+  const grossBeforeDiscount = agg.equipment + agg.crew + servicesClientPrice;
+  let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
   if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
-  if (discountAmount > baseSubtotal) discountAmount = baseSubtotal;
-  const baseAfterDiscount = Math.max(0, baseSubtotal - discountAmount);
+  if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+  const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+
   const shareEnabled = project?.companyShareEnabled === true || project?.companyShareEnabled === 'true';
   const sharePercent = shareEnabled ? (Number(project?.companySharePercent) || 0) : 0;
-  const companyShareAmount = sharePercent > 0 ? baseAfterDiscount * (sharePercent / 100) : 0;
-  const applyTax = project?.applyTax === true || project?.applyTax === 'true';
+  const companyShareAmount = sharePercent > 0 ? Number((baseAfterDiscount * (sharePercent / 100)).toFixed(2)) : 0;
+
   const taxAmount = applyTax ? Number(((baseAfterDiscount + companyShareAmount) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  // If VAT is enabled at the project level, reservations linked to the project
-  // must reflect VAT even when they were saved without reservation-level tax.
-  let reservationsVat = 0;
-  if (applyTax && Array.isArray(reservations) && reservations.length) {
-    reservations.forEach((res) => {
-      try {
-        const f = computeReservationFinancials(res);
-        const resTax = Number(f.taxAmount || 0);
-        if (!(resTax > 0)) {
-          const net = Number(f.finalTotal || 0) - resTax;
-          if (net > 0) reservationsVat += net * PROJECT_TAX_RATE;
-        }
-      } catch (_) { /* ignore */ }
-    });
-  }
-  const overallTotal = Number((reservationsTotal + baseAfterDiscount + companyShareAmount + taxAmount + reservationsVat).toFixed(2));
+  const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmount).toFixed(2));
 
   const status = determineProjectStatus(project);
   const start = project.start ? new Date(project.start) : null;
@@ -417,13 +423,13 @@ function buildProjectSnapshot(project, customerMap) {
     end,
     applyTax,
     status,
-    reservationsTotal: Number(reservationsTotal.toFixed(2)),
-    expensesTotal,
+    reservationsTotal: Number((agg.equipment + agg.crew).toFixed(2)),
+    expensesTotal: getProjectExpenses(project),
     servicesClientPrice,
     taxAmount,
     combinedTaxAmount: taxAmount,
-    overallTotal,
-    unpaidValue: normalizedPayment === 'paid' ? 0 : overallTotal,
+    overallTotal: finalTotal,
+    unpaidValue: normalizedPayment === 'paid' ? 0 : finalTotal,
     reservationsCount: reservations.length
   };
 }
