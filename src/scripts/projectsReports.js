@@ -1646,7 +1646,8 @@ function formatDateOnly(value) {
   if (Number.isNaN(d.getTime())) return '—';
   const lang = getCurrentLanguage();
   const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
-  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  // Use numeric month instead of month name in the period column
+  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   return normalizeNumbers(fmt.format(d));
 }
 
