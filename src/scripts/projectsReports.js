@@ -1432,7 +1432,31 @@ function renderTable(projects) {
     const periodLabel = formatProjectPeriod(project.start, project.end);
     const statusLabel = t(`projects.status.${project.status}`, project.status);
     const statusChip = `<span class=\"timeline-status-badge timeline-status-badge--${project.status}\">${escapeHtml(statusLabel)}</span>`;
-    const paymentLabel = t(`projects.paymentStatus.${project.paymentStatus}`, project.paymentStatus);
+    // Payment chip (match project card style and emojis)
+    const raw = project.raw || project;
+    const finalTotal = Number(project.overallTotal || 0) || 0;
+    let paid = 0;
+    const add = (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) paid += n; };
+    try {
+      const histSource = Array.isArray(raw.paymentHistory) ? raw.paymentHistory
+        : (Array.isArray(raw.payments) ? raw.payments : []);
+      histSource.forEach((e) => {
+        const ttype = (e?.type || '').toString().toLowerCase();
+        const val = Number(e?.value ?? e?.amount ?? e?.percentage ?? 0) || 0;
+        if (ttype === 'percent') add((val / 100) * finalTotal); else add(val);
+      });
+    } catch (_) { /* ignore */ }
+    add(raw?.paidAmount ?? raw?.paid_amount);
+    const paidPct = Number(raw?.paidPercent ?? raw?.paid_percentage);
+    if (paidPct > 0) add((paidPct / 100) * finalTotal);
+    const paymentState = (paid >= finalTotal - 0.5) ? 'paid' : (paid > 0 ? 'partial' : 'unpaid');
+    const paymentClass = paymentState === 'paid' ? 'status-paid' : (paymentState === 'partial' ? 'status-partial' : 'status-unpaid');
+    const paymentText = paymentState === 'paid'
+      ? t('reservations.list.payment.paid', '💳 مدفوع')
+      : (paymentState === 'partial'
+          ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
+          : t('reservations.list.payment.unpaid', '💳 غير مدفوع'));
+    const paymentChip = `<span class=\"reservation-chip ${paymentClass}\">${escapeHtml(paymentText)}</span>`;
     const clientLabel = project.clientCompany
       ? `${escapeHtml(project.clientName)} <small class="text-muted">${escapeHtml(project.clientCompany)}</small>`
       : escapeHtml(project.clientName || t('projects.fallback.unknownClient', 'Unknown client'));
@@ -1450,7 +1474,7 @@ function renderTable(projects) {
         <td>${escapeHtml(periodLabel)}</td>
         <td>${escapeHtml(formatCurrency(project.overallTotal))}</td>
         <td>${escapeHtml(formatPercent(metrics.marginPercent))}</td>
-        <td>${escapeHtml(paymentLabel)}</td>
+        <td>${paymentChip}</td>
       </tr>
     `;
 
@@ -1594,10 +1618,20 @@ function buildSortTitle(key, dir) {
   return `${colLabel} — ${dirLabel}`;
 }
 
+function formatDateOnly(value) {
+  if (!value) return '—';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const lang = getCurrentLanguage();
+  const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
+  const fmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+  return normalizeNumbers(fmt.format(d));
+}
+
 function formatProjectPeriod(start, end) {
   if (!start && !end) return '—';
-  const startLabel = start ? formatDateTime(start.toISOString()) : '—';
-  const endLabel = end ? formatDateTime(end.toISOString()) : '—';
+  const startLabel = start ? formatDateOnly(start) : '—';
+  const endLabel = end ? formatDateOnly(end) : '—';
   if (!end) return startLabel;
   return `${startLabel} → ${endLabel}`;
 }
