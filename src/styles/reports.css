@@ -522,9 +522,14 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary {
   gap: 6px 0 !important; /* row-gap 6px, column-gap 0 */
   column-gap: 0 !important;
-  /* Constrain width so the 4 fields sit closer together visually */
-  width: min(100%, 920px);
+  /* Constrain width so the 4 fields sit closer مع جعلها أقرب */
+  width: min(100%, 760px);
   margin-inline: auto;
+}
+
+/* قلل المسافة بين عنوان الحقل والمدخل */
+.reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary .reports-filter-field {
+  gap: 2px;
 }
 
 /* Ensure each select/input stretches to fill its grid cell fully */
