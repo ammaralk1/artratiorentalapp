@@ -527,6 +527,11 @@ body[dir="rtl"] .reports-filters {
   margin-inline: auto;
 }
 
+/* Ensure each select/input stretches to fill its grid cell fully */
+.reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary .reports-filter-control {
+  width: 100% !important;
+}
+
 .reports-wrapper--reservations .reports-filters-grid--primary {
   grid-template-columns: repeat(4, minmax(0, 1fr)); /* four equal columns */
 }
