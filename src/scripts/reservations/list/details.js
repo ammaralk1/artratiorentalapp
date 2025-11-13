@@ -294,9 +294,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     ?? 'percent';
   const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
 
-  const applyTaxFlag = projectLinked
-    ? false
-    : Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
+  // Use the reservation's tax flag consistently (even if linked to a project)
+  const applyTaxFlag = Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
 
   const storedCostCandidate = parsePriceValue(reservation.cost ?? reservation.total ?? reservation.finalTotal);
   const hasStoredCost = Number.isFinite(storedCostCandidate);
@@ -343,9 +342,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     : 0;
   const taxAmount = sanitizePriceValue(breakdown.taxAmount);
   const finalTotalComputed = sanitizePriceValue(breakdown.finalTotal);
-  const finalTotal = projectLinked
-    ? finalTotalComputed
-    : (hasStoredCost ? storedCost : finalTotalComputed);
+  // Prefer stored cost when available to keep parity with list tiles
+  const finalTotal = hasStoredCost ? storedCost : finalTotalComputed;
   const netProfitValue = sanitizePriceValue(breakdown.netProfit);
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
