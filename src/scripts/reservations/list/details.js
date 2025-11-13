@@ -700,16 +700,35 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
   const paymentHistoryHtml = paymentHistory.length
     ? `<ul class="reservation-payment-history-list">${paymentHistory.map((entry) => {
-        const entryType = entry?.type === 'amount'
+        const typeRaw = typeof entry?.type === 'string' ? entry.type.toLowerCase() : '';
+        const entryType = typeRaw === 'amount'
           ? t('reservations.paymentHistory.type.amount', 'دفعة مالية')
-          : entry?.type === 'percent'
+          : typeRaw === 'percent'
             ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
             : t('reservations.paymentHistory.type.unknown', 'دفعة');
-        const entryAmount = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
-          ? `${normalizeNumbers(Number(entry.amount).toFixed(2))} ${currencyLabel}`
+
+        const percentVal = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
+          ? Number(entry.percentage)
+          : (Number.isFinite(Number(entry?.value)) && typeRaw === 'percent' ? Number(entry.value) : null);
+
+        // Compute amount from percentage against the same finalTotal used in the summary
+        const computedFromPercent = (percentVal != null && Number.isFinite(Number(finalTotal)) && Number(finalTotal) > 0)
+          ? Math.round((Number(finalTotal) * (percentVal / 100)) * 100) / 100
+          : null;
+
+        // For percent-type entries, always show the computed amount to keep UI consistent
+        const rawAmount = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
+          ? Number(entry.amount)
+          : null;
+        const showAmount = (typeRaw === 'percent' && computedFromPercent != null)
+          ? computedFromPercent
+          : rawAmount;
+        const entryAmount = showAmount != null
+          ? `${normalizeNumbers(showAmount.toFixed(2))} ${currencyLabel}`
           : '—';
-        const entryPercent = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
-          ? `${normalizeNumbers(Number(entry.percentage).toFixed(2))}%`
+
+        const entryPercent = percentVal != null
+          ? `${normalizeNumbers(percentVal.toFixed(2))}%`
           : '—';
         const entryDate = entry?.recordedAt ? normalizeNumbers(formatDateTime(entry.recordedAt)) : '—';
         const noteHtml = entry?.note ? `<div class="payment-history-note">${escapeHtml(normalizeNumbers(entry.note))}</div>` : '';
