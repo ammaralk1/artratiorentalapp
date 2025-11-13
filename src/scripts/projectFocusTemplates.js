@@ -727,35 +727,22 @@ export function resolveReservationNetTotal(reservation) {
   const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
   const discountTypeRaw = reservation?.discountType ?? reservation?.discount_type ?? 'percent';
   const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
-  const applyTax = Boolean(reservation?.applyTax ?? reservation?.apply_tax ?? reservation?.taxApplied);
   const crewAssignments = Array.isArray(reservation?.crewAssignments) ? reservation.crewAssignments : [];
   const technicians = crewAssignments.length
     ? crewAssignments
     : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
-  const rawShare = reservation?.companySharePercent
-    ?? reservation?.company_share_percent
-    ?? reservation?.companyShare
-    ?? reservation?.company_share
-    ?? null;
-  const shareEnabled = reservation?.companyShareEnabled
-    ?? reservation?.company_share_enabled
-    ?? reservation?.companyShareApplied
-    ?? null;
-  const parsedShare = Number.parseFloat(normalizeNumbers(String(rawShare ?? '')));
-  const companySharePercent = (shareEnabled === true || (Number.isFinite(parsedShare) && parsedShare > 0))
-    ? (Number.isFinite(parsedShare) ? parsedShare : 0)
-    : 0;
 
+  // Net total for project-linked display should exclude VAT and company share
   const breakdown = calculateDraftFinancialBreakdown({
     items,
     technicianIds: Array.isArray(technicians) && !technicians.length ? technicians : [],
     crewAssignments: Array.isArray(technicians) && technicians.length && typeof technicians[0] === 'object' ? technicians : [],
     discount: discountValue,
     discountType,
-    applyTax,
+    applyTax: false,
     start: reservation?.start,
     end: reservation?.end,
-    companySharePercent,
+    companySharePercent: 0,
     groupingSource: reservation,
   });
 
