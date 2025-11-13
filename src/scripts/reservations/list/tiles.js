@@ -35,36 +35,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
 
-    // Compute display cost first (used for payment progress)
-
-    const {
-      effectiveConfirmed,
-      projectLinked,
-    } = resolveReservationProjectState(reservation, project);
-
-    const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
-    const paymentClass = paid
-      ? 'status-paid'
-      : isPartial
-        ? 'status-partial'
-        : 'status-unpaid';
-
-    let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
-    const paymentLabel = paid ? paymentPaidText : isPartial ? paymentPartialText : paymentUnpaidText;
-    let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paymentLabel}</span>`;
-
-    let stateClass = paid ? ' tile-paid' : isPartial ? ' tile-partial' : ' tile-unpaid';
-    if (completed) stateClass += ' tile-completed';
-
-    let completedAttr = '';
-
-    if (completed) {
-      statusBadge = `<span class="reservation-chip status-chip status-completed">${statusCompletedText}</span>`;
-      paymentBadge = `<span class="reservation-chip status-chip status-completed">${paymentLabel}</span>`;
-      const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
-      const ribbonTextAttr = ribbonTextRaw.replace(/"/g, '&quot;');
-      completedAttr = ` data-completed-label="${ribbonTextAttr}"`;
-    }
+    // Compute display cost first (used for payment progress), then derive paid/isPartial
 
     let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
       ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
@@ -196,6 +167,27 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     }
     const paid = effectivePaidStatus === 'paid';
     const isPartial = effectivePaidStatus === 'partial';
+
+    // Build chips and state classes now that payment state is known
+    const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservation, project);
+    const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
+    const paymentClass = paid ? 'status-paid' : (isPartial ? 'status-partial' : 'status-unpaid');
+    let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
+    const paymentLabel = paid ? paymentPaidText : (isPartial ? paymentPartialText : paymentUnpaidText);
+    let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paymentLabel}</span>`;
+    let stateClass = paid ? ' tile-paid' : (isPartial ? ' tile-partial' : ' tile-unpaid');
+    if (completed) stateClass += ' tile-completed';
+    let completedAttr = '';
+    if (completed) {
+      statusBadge = `<span class=\"reservation-chip status-chip status-completed\">${statusCompletedText}</span>`;
+      paymentBadge = `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`;
+      const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
+      const ribbonTextAttr = ribbonTextRaw.replace(/\"/g, '&quot;');
+      completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
+    }
+    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
+      ? `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`
+      : '';
     const costNumber = normalizeNumbers(displayCost.toFixed(2));
     const itemsCountDisplay = normalizeNumbers(String(itemsCount));
     const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
