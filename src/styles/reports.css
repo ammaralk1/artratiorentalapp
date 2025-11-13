@@ -316,7 +316,8 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   gap: 6px;
   width: 100%;
   margin-inline: auto;
-  padding: 12px;
+  /* reduce container padding to remove extra "حشو" */
+  padding: 8px 10px;
 }
 
 body[dir="rtl"] .reports-filters {
@@ -511,8 +512,9 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-filters-grid {
   width: 100%;
   margin-inline: auto;
-  column-gap: 6px; /* even closer spacing between fields */
-  row-gap: 6px;    /* reduce vertical gap */
+  /* remove gaps so the 4 fields sit closer */
+  column-gap: 0;
+  row-gap: 6px;
   justify-items: stretch;
 }
 
@@ -529,8 +531,9 @@ body[dir="rtl"] .reports-filters {
 
 .reports-wrapper--reservations .reports-filter-control {
   min-width: 0; /* allow shrink to balance columns */
-  min-height: 52px; /* increase vertical hit area slightly */
-  padding: 10px 16px; /* add a bit more vertical padding */
+  /* slightly smaller to tighten the filter boxes */
+  min-height: 44px;
+  padding: 8px 12px;
   width: 100%;
 }
 
@@ -783,6 +786,15 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   justify-items: stretch;
 }
 
+/* Reservations: center KPI grid and keep medium width */
+.reports-wrapper--reservations .reports-kpi-grid {
+  /* keep cards at a comfortable medium width and centered */
+  width: min(100%, 920px);
+  margin-inline: auto;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  justify-content: center;
+}
+
 @media (max-width: 1280px) {
   .reports-kpi-grid {
     grid-template-columns: repeat(4, minmax(160px, 1fr));
@@ -794,6 +806,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   align-items: center;
   gap: 12px;
   padding: 18px;
+  overflow: hidden; /* keep all KPI content inside the card */
 }
 
 .reports-kpi-icon {
@@ -811,12 +824,15 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   display: flex;
   flex-direction: column;
   gap: 2px; /* closer label to amount */
+  min-width: 0; /* allow text to wrap/truncate inside card */
 }
 
 .reports-kpi-label {
   margin: 0;
   font-weight: 600;
   color: var(--clr-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reports-kpi-value {
@@ -860,6 +876,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-meta {
   font-size: 0.85rem;
   color: var(--clr-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reports-kpi-details {
@@ -1756,13 +1774,13 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
 
 @media (max-width: 1200px) {
   .reports-wrapper--reservations .reports-filters-grid--primary {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 
   .reports-wrapper--reservations .reports-filter-control {
-    min-width: 220px;
-    min-height: 52px;
-    padding: 12px 16px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
   }
 }
 
