@@ -1,6 +1,7 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
+import { calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
 
 export function buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap }) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
@@ -119,7 +120,53 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? ''));
     const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
     const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
-    const costNumber = normalizeNumbers(String(reservation.cost ?? 0));
+    // احسب الإجمالي النهائي ديناميكياً ليتطابق دائماً مع مودال التفاصيل
+    const discountValueRaw = reservation.discount
+      ?? reservation.discountValue
+      ?? reservation.discount_value
+      ?? reservation.discountAmount
+      ?? 0;
+    const discountParsed = Number.parseFloat(normalizeNumbers(String(discountValueRaw)));
+    const discountValue = Number.isFinite(discountParsed) ? discountParsed : 0;
+    const discountTypeRaw = reservation.discountType
+      ?? reservation.discount_type
+      ?? reservation.discountMode
+      ?? 'percent';
+    const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
+    const applyTaxFlag = Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
+    const rawCompanySharePercent = reservation.companySharePercent
+      ?? reservation.company_share_percent
+      ?? reservation.companyShare
+      ?? reservation.company_share;
+    const companyShareEnabledFlag = reservation.companyShareEnabled
+      ?? reservation.company_share_enabled
+      ?? reservation.companyShareApplied;
+    const companyShareParsed = Number.parseFloat(normalizeNumbers(String(rawCompanySharePercent)));
+    const hasCompanyShare = (companyShareEnabledFlag === true) || (Number.isFinite(companyShareParsed) && companyShareParsed > 0);
+    const companySharePercentInput = hasCompanyShare && Number.isFinite(companyShareParsed) ? companyShareParsed : 0;
+
+    let computedFinalTotal = 0;
+    try {
+      const breakdown = calculateDraftFinancialBreakdown({
+        items: reservation.items || [],
+        technicianIds: reservation.technicians || [],
+        crewAssignments: Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [],
+        discount: discountValue,
+        discountType,
+        applyTax: applyTaxFlag,
+        start: reservation.start,
+        end: reservation.end,
+        companySharePercent: companySharePercentInput,
+        groupingSource: reservation,
+      });
+      const num = Number(breakdown?.finalTotal || 0);
+      computedFinalTotal = Number.isFinite(num) ? Number(num.toFixed(2)) : 0;
+    } catch (_e) {
+      computedFinalTotal = 0;
+    }
+    const fallbackCost = Number.parseFloat(normalizeNumbers(String(reservation.cost ?? 0))) || 0;
+    const displayCost = computedFinalTotal > 0 ? computedFinalTotal : fallbackCost;
+    const costNumber = normalizeNumbers(displayCost.toFixed(2));
     const itemsCountDisplay = normalizeNumbers(String(itemsCount));
     const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;
     const itemsCountText = itemsCountTemplate.replace('{count}', itemsCountDisplay);

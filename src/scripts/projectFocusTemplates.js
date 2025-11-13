@@ -723,29 +723,43 @@ export function resolveProjectTotals(project) {
 export function resolveReservationNetTotal(reservation) {
   if (!reservation) return 0;
   const items = Array.isArray(reservation?.items) ? reservation.items : [];
-  const discountRaw = reservation?.discount ?? 0;
+  const discountRaw = reservation?.discount ?? reservation?.discountValue ?? 0;
   const discountValue = Number(normalizeNumbers(String(discountRaw))) || 0;
-  const discountType = reservation?.discountType || 'percent';
+  const discountTypeRaw = reservation?.discountType ?? reservation?.discount_type ?? 'percent';
+  const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
+  const applyTax = Boolean(reservation?.applyTax ?? reservation?.apply_tax ?? reservation?.taxApplied);
   const crewAssignments = Array.isArray(reservation?.crewAssignments) ? reservation.crewAssignments : [];
-  const techniciansOrAssignments = crewAssignments.length
+  const technicians = crewAssignments.length
     ? crewAssignments
     : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
+  const rawShare = reservation?.companySharePercent
+    ?? reservation?.company_share_percent
+    ?? reservation?.companyShare
+    ?? reservation?.company_share
+    ?? null;
+  const shareEnabled = reservation?.companyShareEnabled
+    ?? reservation?.company_share_enabled
+    ?? reservation?.companyShareApplied
+    ?? null;
+  const parsedShare = Number.parseFloat(normalizeNumbers(String(rawShare ?? '')));
+  const companySharePercent = (shareEnabled === true || (Number.isFinite(parsedShare) && parsedShare > 0))
+    ? (Number.isFinite(parsedShare) ? parsedShare : 0)
+    : 0;
 
-  const calculated = calculateReservationTotal(
+  const breakdown = calculateDraftFinancialBreakdown({
     items,
-    discountValue,
+    technicianIds: Array.isArray(technicians) && !technicians.length ? technicians : [],
+    crewAssignments: Array.isArray(technicians) && technicians.length && typeof technicians[0] === 'object' ? technicians : [],
+    discount: discountValue,
     discountType,
-    false,
-    techniciansOrAssignments,
-    { start: reservation?.start, end: reservation?.end }
-  );
+    applyTax,
+    start: reservation?.start,
+    end: reservation?.end,
+    companySharePercent,
+    groupingSource: reservation,
+  });
 
-  if (Number.isFinite(calculated)) {
-    return calculated;
-  }
-
-  const storedCost = Number(normalizeNumbers(String(reservation?.cost ?? reservation?.total ?? 0)));
-  return Number.isFinite(storedCost) ? Math.round(storedCost) : 0;
+  return Number.isFinite(Number(breakdown?.finalTotal)) ? Number(breakdown.finalTotal) : 0;
 }
 
 export function formatDateTimeLocalized(value) {
