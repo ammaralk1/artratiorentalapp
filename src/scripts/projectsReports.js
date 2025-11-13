@@ -138,6 +138,12 @@ async function initReports() {
   beginChartsLoading();
 
   resolveAndApplyTaxRate();
+  // Sync RTL/LTR on wrapper with current document language
+  try {
+    const dir = (document?.documentElement?.getAttribute('dir') || 'rtl');
+    const wrapper = document.querySelector('.reports-wrapper--projects');
+    if (wrapper) wrapper.setAttribute('dir', dir);
+  } catch (_) {}
   await ensureChartLibrary();
   // Enable lightweight debug mode via URL query (?reportsDebug=1)
   try {
@@ -654,6 +660,11 @@ async function handleDataMutation() {
 }
 
 function handleLanguageChanged() {
+  try {
+    const dir = (document?.documentElement?.getAttribute('dir') || 'rtl');
+    const wrapper = document.querySelector('.reports-wrapper--projects');
+    if (wrapper) wrapper.setAttribute('dir', dir);
+  } catch (_) {}
   renderStatusChips();
   renderAll();
 }
@@ -1139,6 +1150,7 @@ function renderTimelineChart(projects) {
   if (!container) return;
 
   const monthBuckets = new Map();
+  // Respect active language for month labels in charts (e.g., Arabic abbreviations)
   const formatter = new Intl.DateTimeFormat(getChartLocale(), { month: 'short', year: 'numeric' });
 
   projects.forEach((project) => {
