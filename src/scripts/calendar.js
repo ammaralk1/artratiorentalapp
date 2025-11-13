@@ -6,7 +6,8 @@ import { loadData } from './storage.js';
 import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 import { buildReservationDetailsHtml } from './reservations/list/details.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
-import { calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
+import { calculatePaymentProgress, determinePaymentStatus, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
+import { normalizeNumbers } from './utils.js';
 import { resolveProjectTotals } from './projects/view.js';
 
 const CALENDAR_FETCH_PARAMS = { limit: 200 };
@@ -360,8 +361,52 @@ function normalizeReservationForEvent(reservation, project = null) {
   if (!start) return null;
 
   const statusValue = String(reservation.status ?? reservation.reservationStatus ?? '').toLowerCase();
-  // Derive payment status (reservation first, then project override if linked)
-  const totalAmount = Number(reservation.totalAmount ?? reservation.cost ?? 0) || 0;
+  // Derive payment status based on the same final total used in details/tiles
+  // Prefer a live recompute from items/crew/discount/tax; fall back to stored total
+  const items = Array.isArray(reservation.items) ? reservation.items : [];
+  const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
+  const techniciansOrAssignments = crewAssignments.length
+    ? crewAssignments
+    : (Array.isArray(reservation.technicians) ? reservation.technicians : []);
+  const useAssignments = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object';
+  const useTechnicianIds = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] !== 'object';
+  const discountRaw = reservation.discount
+    ?? reservation.discountValue
+    ?? reservation.discount_value
+    ?? reservation.discountAmount
+    ?? 0;
+  const discountValue = Number.parseFloat(normalizeNumbers(String(discountRaw))) || 0;
+  const discountTypeRaw = reservation.discountType
+    ?? reservation.discount_type
+    ?? reservation.discountMode
+    ?? 'percent';
+  const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
+  const applyTaxFlag = Boolean(reservation.applyTax ?? reservation.apply_tax ?? reservation.taxApplied);
+  const companySharePercentRaw = reservation.companySharePercent
+    ?? reservation.company_share_percent
+    ?? reservation.companyShare
+    ?? reservation.company_share
+    ?? 0;
+  const companySharePercent = Number.parseFloat(normalizeNumbers(String(companySharePercentRaw))) || 0;
+  let displayTotal = 0;
+  try {
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techniciansOrAssignments : [],
+      crewAssignments: useAssignments ? techniciansOrAssignments : [],
+      discount: discountValue,
+      discountType,
+      applyTax: applyTaxFlag,
+      start: reservation.start,
+      end: reservation.end,
+      companySharePercent: companySharePercent > 0 ? companySharePercent : null,
+      groupingSource: reservation,
+    });
+    displayTotal = Number(breakdown?.finalTotal || 0) || 0;
+  } catch (_) {
+    displayTotal = Number(reservation.totalAmount ?? reservation.cost ?? 0) || 0;
+  }
+  const totalAmount = displayTotal;
   const resHistoryCal = reservation.paymentHistory || reservation.payment_history || [];
   const resProgress = calculatePaymentProgress({
     totalAmount,

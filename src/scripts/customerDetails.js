@@ -30,7 +30,8 @@ import {
 import {
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
-  determinePaymentStatus
+  determinePaymentStatus,
+  calculateDraftFinancialBreakdown
 } from "./reservationsSummary.js";
 import { isReservationCompleted, resolveReservationProjectState } from "./reservationsShared.js";
 
@@ -1196,13 +1197,87 @@ function buildCustomerReservationCard(reservation, project = null) {
     ? 'project-reservation-card__badge--confirmed'
     : 'project-reservation-card__badge--pending';
 
-  const paid = reservation?.paid === true || reservation?.paid === 'paid';
-  const paidLabel = paid
+  // Derive payment status from history + final total (align with list/modals)
+  const discountRaw = reservation?.discount
+    ?? reservation?.discountValue
+    ?? reservation?.discount_value
+    ?? reservation?.discountAmount
+    ?? 0;
+  const discountValue = Number.parseFloat(normalizeNumbers(String(discountRaw))) || 0;
+  const discountTypeRaw = reservation?.discountType
+    ?? reservation?.discount_type
+    ?? reservation?.discountMode
+    ?? 'percent';
+  const discountType = String(discountTypeRaw).toLowerCase() === 'amount' ? 'amount' : 'percent';
+  const applyTaxFlag = Boolean(reservation?.applyTax ?? reservation?.apply_tax ?? reservation?.taxApplied);
+  const companySharePercentRaw = reservation?.companySharePercent
+    ?? reservation?.company_share_percent
+    ?? reservation?.companyShare
+    ?? reservation?.company_share
+    ?? 0;
+  const companySharePercent = Number.parseFloat(normalizeNumbers(String(companySharePercentRaw))) || 0;
+  const items = Array.isArray(reservation?.items) ? reservation.items : [];
+  const crewAssignments = Array.isArray(reservation?.crewAssignments) ? reservation.crewAssignments : [];
+  const techniciansOrAssignments = crewAssignments.length
+    ? crewAssignments
+    : (Array.isArray(reservation?.technicians) ? reservation.technicians : []);
+  const useAssignments = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] === 'object';
+  const useTechnicianIds = Array.isArray(techniciansOrAssignments) && techniciansOrAssignments.length && typeof techniciansOrAssignments[0] !== 'object';
+
+  let finalTotalForStatus = 0;
+  try {
+    const breakdown = calculateDraftFinancialBreakdown({
+      items,
+      technicianIds: useTechnicianIds ? techniciansOrAssignments : [],
+      crewAssignments: useAssignments ? techniciansOrAssignments : [],
+      discount: discountValue,
+      discountType,
+      applyTax: applyTaxFlag,
+      start: reservation?.start,
+      end: reservation?.end,
+      companySharePercent: companySharePercent > 0 ? companySharePercent : null,
+      groupingSource: reservation,
+    });
+    finalTotalForStatus = Number(breakdown?.finalTotal || 0) || 0;
+  } catch (_) {
+    finalTotalForStatus = Number(reservation?.totalAmount ?? reservation?.cost ?? 0) || 0;
+  }
+
+  const projectHistory = Array.isArray(project?.paymentHistory)
+    ? project.paymentHistory
+    : (Array.isArray(project?.payment_history)
+        ? project.payment_history
+        : (Array.isArray(project?.payments)
+            ? project.payments
+            : (Array.isArray(project?.paymentLogs) ? project.paymentLogs : [])));
+  const reservationHistory = Array.isArray(reservation?.paymentHistory)
+    ? reservation.paymentHistory
+    : (Array.isArray(reservation?.payment_history)
+        ? reservation.payment_history
+        : (Array.isArray(reservation?.paymentLogs) ? reservation.paymentLogs : []));
+  const history = (project && projectHistory.length) ? projectHistory : reservationHistory;
+  const basePaidAmount = history.length ? 0 : (Number(reservation?.paidAmount ?? reservation?.paid_amount) || 0);
+  const basePaidPercent = history.length ? 0 : (Number(reservation?.paidPercent ?? reservation?.paid_percentage) || 0);
+  const progress = calculatePaymentProgress({
+    totalAmount: finalTotalForStatus,
+    paidAmount: basePaidAmount,
+    paidPercent: basePaidPercent,
+    history,
+  });
+  const paidStatus = determinePaymentStatus({
+    manualStatus: null,
+    paidAmount: progress.paidAmount,
+    paidPercent: progress.paidPercent,
+    totalAmount: finalTotalForStatus,
+  });
+  const paidLabel = paidStatus === 'paid'
     ? t('reservations.list.payment.paid', '💳 مدفوع')
-    : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
-  const paidClass = paid
+    : paidStatus === 'partial'
+      ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
+      : t('reservations.list.payment.unpaid', '💳 غير مدفوع');
+  const paidClass = paidStatus === 'paid'
     ? 'project-reservation-card__badge--paid'
-    : 'project-reservation-card__badge--unpaid';
+    : (paidStatus === 'partial' ? 'project-reservation-card__badge--partial' : 'project-reservation-card__badge--unpaid');
 
   const completed = isReservationCompleted(reservation);
   const completedBadge = completed
