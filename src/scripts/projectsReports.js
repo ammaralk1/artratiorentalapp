@@ -3,6 +3,7 @@ import { t, getCurrentLanguage } from './language.js';
 import { normalizeNumbers, formatDateTime } from './utils.js';
 import { apiRequest } from './apiClient.js';
 import { ensureXlsx } from './reports/external.js';
+import { ensureXlsxStyled } from './templates/excelExport.js';
 import { computeReservationFinancials } from './reports/calculations.js';
 import { calculateReservationTotal, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
 import {
@@ -1467,13 +1468,14 @@ async function exportProjectsToExcel(projects) {
     try { alert('لا توجد بيانات لتصديرها.'); } catch (_) {}
     return;
   }
-  const XLSX = await ensureXlsx();
-  if (!XLSX) {
-    try { alert('مكتبة Excel غير متوفرة.'); } catch (_) {}
-    return;
-  }
+  // Prefer styled XLSX for nicer formatting; fall back to basic XLSX
+  let XLSX = null;
+  try { XLSX = await ensureXlsxStyled(); } catch (_) { XLSX = null; }
+  if (!XLSX) XLSX = await ensureXlsx();
+  if (!XLSX) { try { alert('مكتبة Excel غير متوفرة.'); } catch (_) {} return; }
+
   const headers = [
-    'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة',
+    'كود المشروع', 'المشروع', 'العميل', 'الحالة', 'الفترة', 'القيمة (مع الضريبة)',
     'تقدير المعدات', 'إيرادات الخدمات', 'تكلفة الخدمات', 'صافي الحجوزات (بدون ضريبة)',
     'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %', 'عدد الدفعات'
   ];
@@ -1544,12 +1546,132 @@ async function exportProjectsToExcel(projects) {
       paymentsCount,
     ];
   });
-  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  // Build a styled summary sheet if possible
+  const bold = { font: { bold: true } };
+  const right = { alignment: { horizontal: 'right' } };
+  const head = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { patternType: 'solid', fgColor: { rgb: '2563EB' } }, alignment: { horizontal: 'center', vertical: 'center' } };
+  const num0 = { z: '#,##0', alignment: { horizontal: 'right' } };
+  const num1 = { z: '#,##0.0', alignment: { horizontal: 'right' } };
+
+  const styledAoa = [
+    headers.map((h) => ({ v: h, t: 's', s: head }))
+  ];
+  rows.forEach((r) => {
+    const row = [];
+    // Columns: 0..5 text/number, then numeric columns
+    row.push({ v: r[0] }); // code
+    row.push({ v: r[1] }); // title
+    row.push({ v: r[2] }); // customer
+    row.push({ v: r[3] }); // status
+    row.push({ v: r[4] }); // period
+    row.push({ v: r[5], t: 'n', s: num0 }); // overall total (with VAT)
+    row.push({ v: r[6], t: 'n', s: num0 }); // equipment estimate
+    row.push({ v: r[7], t: 'n', s: num0 }); // services revenue
+    row.push({ v: r[8], t: 'n', s: num0 }); // project expenses
+    row.push({ v: r[9], t: 'n', s: num0 }); // reservations net (ex tax)
+    row.push({ v: r[10], t: 'n', s: num0 }); // net profit
+    row.push({ v: r[11], t: 'n', s: num1 }); // margin % (as number, not Excel percent)
+    row.push({ v: r[12] }); // payment label
+    row.push({ v: r[13], t: 'n', s: num0 }); // paid amount
+    row.push({ v: r[14], t: 'n', s: num1 }); // paid percent
+    row.push({ v: r[15], t: 'n', s: num0 }); // payments count
+    styledAoa.push(row);
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet(styledAoa);
+  // Column widths for better readability
+  worksheet['!cols'] = [8, 24, 18, 12, 16, 16, 14, 14, 14, 18, 14, 12, 12, 14, 12, 10].map((wch) => ({ wch }));
+  // Auto filter on header row
+  const lastCol = String.fromCharCode('A'.charCodeAt(0) + headers.length - 1);
+  worksheet['!autofilter'] = { ref: `A1:${lastCol}${styledAoa.length}` };
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, worksheet, 'Projects');
+  XLSX.utils.book_append_sheet(wb, worksheet, 'Summary');
+
+  // Build a detailed breakdown sheet
+  const details = buildProjectsBreakdownSheet(XLSX, projects);
+  XLSX.utils.book_append_sheet(wb, details, 'Breakdown');
   const now = new Date();
   const ts = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
   XLSX.writeFile(wb, `projects-report-${ts}.xlsx`);
+}
+
+function buildProjectsBreakdownSheet(XLSX, projects) {
+  const blueHead = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { patternType: 'solid', fgColor: { rgb: '1F2937' } }, alignment: { horizontal: 'center', vertical: 'center' } };
+  const sectionHead = { font: { bold: true, sz: 13 }, alignment: { horizontal: 'left', vertical: 'center' } };
+  const cell = { alignment: { horizontal: 'right' } };
+  const num0 = { z: '#,##0', alignment: { horizontal: 'right' } };
+  const num1 = { z: '#,##0.0', alignment: { horizontal: 'right' } };
+
+  const ws = {};
+  let r = 0;
+  const write = (c, v, s) => { const addr = XLSX.utils.encode_cell({ r, c }); const t = typeof v === 'number' ? 'n' : 's'; ws[addr] = { v, t, s: s || {} }; updateRefRange(); };
+  const updateRefRange = () => { const ref = ws['!ref']; const end = XLSX.utils.encode_cell({ r, c: 5 }); ws['!ref'] = ref ? ref.replace(/:[A-Z]+\d+$/, `:${end}`) : `A1:${end}`; };
+  const nextRow = (n=1) => { r += n; };
+  ws['!cols'] = [22, 36, 16, 16, 16, 16].map((wch) => ({ wch }));
+
+  projects.forEach((p, idx) => {
+    // project header
+    write(0, `${p.title || p.projectCode || ''} — #${p.projectCode || p.id || ''}`, sectionHead);
+    // headers for the small table
+    nextRow();
+    const headers = ['البند', 'القيمة', 'البند', 'القيمة', 'البند', 'القيمة'];
+    headers.forEach((h, i) => write(i, h, blueHead));
+    nextRow();
+
+    // Recompute same as summary for consistency
+    const resList = getReservationsForProject(p.id);
+    const agg = (Array.isArray(resList) ? resList : []).reduce((acc, res) => {
+      const items = Array.isArray(res.items) ? res.items : [];
+      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
+      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
+      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
+      const breakdown = calculateDraftFinancialBreakdown({
+        items,
+        technicianIds: useTechnicianIds ? techOrAssign : [],
+        crewAssignments: useAssignments ? techOrAssign : [],
+        discount: res.discount ?? 0,
+        discountType: res.discountType || 'percent',
+        applyTax: false,
+        start: res.start,
+        end: res.end,
+      });
+      acc.equipment += Number(breakdown.equipmentTotal || 0);
+      acc.crew += Number(breakdown.crewTotal || 0);
+      acc.crewCost += Number(breakdown.crewCostTotal || 0);
+      return acc;
+    }, { equipment: 0, crew: 0, crewCost: 0 });
+    const servicesRevenue = getProjectServicesRevenue(p);
+    const projectExpenses = Number(getProjectExpenses(p) || 0);
+    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
+    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
+    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+    const perProjectNet = Number(((baseAfterDiscount - projectExpenses - (agg.crewCost || 0))).toFixed(2));
+    const marginPercent = baseAfterDiscount > 0 ? (perProjectNet / baseAfterDiscount) * 100 : 0;
+
+    const pairs = [
+      ['إيراد المعدات (حجوزات)', agg.equipment, 'إيراد الطاقم (حجوزات)', agg.crew, 'إيرادات الخدمات', servicesRevenue],
+      ['الخصم', discountAmount, 'بعد الخصم', baseAfterDiscount, 'تكلفة الطاقم', agg.crewCost],
+      ['تكلفة الخدمات الإنتاجية', projectExpenses, 'صافي الربح', perProjectNet, 'هامش الربح %', Number(marginPercent.toFixed(1))],
+    ];
+    pairs.forEach((row) => {
+      row.forEach((v, i) => {
+        const isNum = i % 2 === 1; // every second cell in the pair is numeric
+        write(i, v, isNum ? (typeof v === 'number' && (i===5 ? num1 : num0)) : {});
+      });
+      nextRow();
+    });
+
+    // spacing between projects
+    nextRow();
+  });
+
+  return ws;
 }
 
 function renderTable(projects) {
