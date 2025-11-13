@@ -512,10 +512,16 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations .reports-filters-grid {
   width: 100%;
   margin-inline: auto;
-  /* remove gaps so the 4 fields sit closer */
-  column-gap: 0;
+  /* remove horizontal gaps so the 4 fields sit closer */
+  column-gap: 0 !important;
   row-gap: 6px;
   justify-items: stretch;
+}
+
+/* Stronger rule: for the primary four filters row, remove any gap entirely */
+.reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary {
+  gap: 6px 0 !important; /* row-gap 6px, column-gap 0 */
+  column-gap: 0 !important;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
@@ -1590,8 +1596,8 @@ body[dir="rtl"] .reports-table-card .reports-card-title {
   /* Mobile: make report filters breathe and stack */
   .reports-wrapper--reservations .reports-filters-grid {
     grid-template-columns: 1fr;
-    column-gap: 12px;
-    row-gap: 12px;
+    column-gap: 8px; /* re-introduce a small horizontal gap on wrap */
+    row-gap: 10px;
   }
   /* Avoid cramped/overflowing inputs on small screens */
   .reports-wrapper--reservations .reports-filters .form-control,

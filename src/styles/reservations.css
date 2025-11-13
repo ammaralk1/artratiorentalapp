@@ -4449,6 +4449,11 @@ body[dir="ltr"] .reservation-field textarea {
   }
 }
 
+/* Remove Tailwind gap utility spacing inside generic filters-bar when present */
+.filters-bar {
+  gap: 0 !important; /* override gap-2 etc. when we want inputs closer */
+}
+
 @media (max-width: 576px) {
   body {
     padding: 12px;
