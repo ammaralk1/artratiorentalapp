@@ -425,9 +425,13 @@ function renderFocusCard(project, category) {
   const typeLabel = getProjectTypeLabel(project.type);
   // Derive payment status from combined total (project subtotal + linked reservations + combined VAT)
   const baseTotals = resolveProjectTotals(project) || {};
+  // Match projectDetails.js computePaymentSnapshot: use taxableAmount as the base
+  const projectTaxableBase = Number(baseTotals.taxableAmount || 0);
   const combinedReservationsTotal = (reservationsForProject || []).reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
-  const combinedTax = baseTotals.applyTax ? Number(((Number(baseTotals.subtotal || 0) + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
-  const combinedTotalWithTax = Number((Number(baseTotals.subtotal || 0) + combinedReservationsTotal + combinedTax).toFixed(2));
+  const combinedTax = baseTotals.applyTax
+    ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+    : 0;
+  const combinedTotalWithTax = Number((projectTaxableBase + combinedReservationsTotal + combinedTax).toFixed(2));
   const projProgress = calculatePaymentProgress({
     totalAmount: combinedTotalWithTax,
     paidAmount: project.paidAmount,
