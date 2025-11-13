@@ -333,15 +333,17 @@ export function calculateMetrics(reservations) {
   let completed = 0;
   let cancelled = 0;
   let paidCount = 0;
+  let unpaidCount = 0; // includes unpaid and partially-paid (non-cancelled)
   let revenue = 0;
   let companyShareTotal = 0;
   let taxTotal = 0;
   let crewTotal = 0;
   let crewCostTotal = 0;
   let netProfit = 0;
+  let outstandingTotal = 0;
 
   reservations.forEach((reservation) => {
-    const { statusValue, confirmed: isConfirmed, paid } = computeReportStatus(reservation);
+    const { statusValue, confirmed: isConfirmed, paid, paidStatus } = computeReportStatus(reservation);
     if (statusValue === 'completed') {
       completed += 1;
     }
@@ -354,6 +356,9 @@ export function calculateMetrics(reservations) {
     if (paid && statusValue !== 'cancelled') {
       paidCount += 1;
     }
+    if (statusValue !== 'cancelled' && paidStatus !== 'paid') {
+      unpaidCount += 1;
+    }
 
     // لا تُحسب الحجوزات الملغية ضمن الإيرادات أو الضرائب أو نسب/تكاليف الطاقم
     if (statusValue !== 'cancelled') {
@@ -364,6 +369,11 @@ export function calculateMetrics(reservations) {
       crewTotal += financials.crewTotal;
       crewCostTotal += financials.crewCostTotal ?? 0;
       netProfit += financials.netProfit;
+      // اجمع المبلغ غير المدفوع (المستحق) عند توفره
+      const outstanding = computeOutstandingAmount(reservation);
+      if (Number.isFinite(outstanding) && outstanding > 0) {
+        outstandingTotal += outstanding;
+      }
     }
   });
 
@@ -376,6 +386,8 @@ export function calculateMetrics(reservations) {
     cancelled,
     activeTotal: Math.max(0, total - cancelled),
     paidCount,
+    unpaidCount,
+    outstandingTotal,
     revenue,
     average,
     companyShareTotal,
