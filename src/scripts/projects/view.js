@@ -423,11 +423,13 @@ function renderFocusCard(project, category) {
     ? truncateText(description, 110)
     : t('projects.fallback.noDescription', 'لا يوجد وصف');
   const typeLabel = getProjectTypeLabel(project.type);
-  // Derive payment status from payments/progress to keep tags in sync when entries change
-  const totals = resolveProjectTotals(project);
-  const totalWithTax = Number(totals?.totalWithTax || 0);
+  // Derive payment status from combined total (project subtotal + linked reservations + combined VAT)
+  const baseTotals = resolveProjectTotals(project) || {};
+  const reservationsTotal = (reservationsForProject || []).reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
+  const combinedTax = baseTotals.applyTax ? Number(((Number(baseTotals.subtotal || 0) + reservationsTotal) * PROJECT_TAX_RATE).toFixed(2)) : 0;
+  const combinedTotalWithTax = Number((Number(baseTotals.subtotal || 0) + reservationsTotal + combinedTax).toFixed(2));
   const projProgress = calculatePaymentProgress({
-    totalAmount: totalWithTax,
+    totalAmount: combinedTotalWithTax,
     paidAmount: project.paidAmount,
     paidPercent: project.paidPercent,
     history: project.paymentHistory || project.payments || [],
@@ -436,7 +438,7 @@ function renderFocusCard(project, category) {
     manualStatus: null,
     paidAmount: projProgress.paidAmount,
     paidPercent: projProgress.paidPercent,
-    totalAmount: totalWithTax,
+    totalAmount: combinedTotalWithTax,
   });
   const paymentStatusLabel = t(
     `projects.paymentStatus.${paymentStatus}`,
