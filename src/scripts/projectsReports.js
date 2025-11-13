@@ -852,23 +852,23 @@ function renderProjectsRevenueBreakdown(projects) {
     let container = document.getElementById(containerId);
   const servicesProfit = (breakdown.servicesRevenueTotal || 0) - (breakdown.projectExpensesTotal || 0);
   const rows = [
-      { label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
-      { label: t('projects.details.summary.discount', 'الخصم', 'Discount'), value: `−${formatCurrency(breakdown.discountTotal || 0)}` },
-      { label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
-      { label: t('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), value: formatCurrency(breakdown.taxTotal) },
-      { label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
-      { label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
-      { label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
-      { label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
-      { label: t('projects.reports.kpi.revenue.details.servicesProfit', getCurrentLanguage()==='ar' ? 'ربح الخدمات الإنتاجية' : 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
-      { label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
+      { key: 'gross', label: t('reservations.reports.kpi.revenue.details.gross', 'الإيراد الكلي', 'Gross revenue'), value: formatCurrency(breakdown.grossRevenue) },
+      { key: 'discount', label: t('projects.details.summary.discount', 'الخصم', 'Discount'), value: `−${formatCurrency(breakdown.discountTotal || 0)}` },
+      { key: 'share', label: t('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'), value: formatCurrency(breakdown.companyShareTotal) },
+      { key: 'tax', label: t('reservations.reports.kpi.revenue.details.tax', 'الضريبة', 'Tax'), value: formatCurrency(breakdown.taxTotal) },
+      { key: 'crewGross', label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
+      { key: 'crew', label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: formatCurrency(breakdown.crewCostTotal) },
+      { key: 'equipment', label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
+      { key: 'projectExpenses', label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
+      { key: 'servicesProfit', label: t('projects.reports.kpi.revenue.details.servicesProfit', getCurrentLanguage()==='ar' ? 'ربح الخدمات الإنتاجية' : 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
+      { key: 'net', label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
       // Note: Margin is already shown as a KPI card; avoid duplication here for cleaner layout
     ];
 
     const detailsHtml = `
       <div id="${containerId}" class="reports-kpi-details glass-card" style="margin-top: 12px;">
-        ${rows.map(({ label, value }) => `
-          <div class="reports-kpi-detail-row d-flex justify-content-between">
+        ${rows.map(({ key, label, value }) => `
+          <div class="reports-kpi-detail-row d-flex justify-content-between" data-row="${key}">
             <span class="reports-kpi-detail-label">${escapeHtml(label)}</span>
             <span class="reports-kpi-detail-value">${escapeHtml(value)}</span>
           </div>

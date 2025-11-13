@@ -819,6 +819,10 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-card[data-kpi="netProfit"] .reports-kpi-value { color: #16a34a !important; }
 /* Make profit margin percentage green too (to match net profit visual cue) */
 .reports-kpi-card[data-kpi="margin"] .reports-kpi-value { color: #16a34a !important; }
+.reports-kpi-card[data-kpi="expenses"] .reports-kpi-label {
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-label {
   letter-spacing: 0.1px;
 }
@@ -856,6 +860,11 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   -webkit-font-feature-settings: "tnum" 1;
           font-feature-settings: "tnum" 1;
 }
+/* Keep long expense label in a single line inside the card */
+#projects-revenue-breakdown [data-row="projectExpenses"] .reports-kpi-detail-label {
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
 
 .reports-kpi-details.hidden {
   display: none;
@@ -878,6 +887,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-detail-value {
   font-weight: 600;
   color: var(--clr-text);
+  white-space: nowrap; /* avoid splitting numbers across lines */
 }
 
 :is(html.dark-mode, body.dark-mode) .reports-kpi-details {
