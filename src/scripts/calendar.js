@@ -362,11 +362,12 @@ function normalizeReservationForEvent(reservation, project = null) {
   const statusValue = String(reservation.status ?? reservation.reservationStatus ?? '').toLowerCase();
   // Derive payment status (reservation first, then project override if linked)
   const totalAmount = Number(reservation.totalAmount ?? reservation.cost ?? 0) || 0;
+  const resHistoryCal = reservation.paymentHistory || reservation.payment_history || [];
   const resProgress = calculatePaymentProgress({
     totalAmount,
-    paidAmount: reservation.paidAmount,
-    paidPercent: reservation.paidPercent,
-    history: reservation.paymentHistory || reservation.payment_history || [],
+    paidAmount: resHistoryCal.length ? 0 : reservation.paidAmount,
+    paidPercent: resHistoryCal.length ? 0 : reservation.paidPercent,
+    history: resHistoryCal,
   });
   let paidStatus = determinePaymentStatus({
     manualStatus: null,
@@ -378,11 +379,12 @@ function normalizeReservationForEvent(reservation, project = null) {
     try {
       const totals = resolveProjectTotals(project) || {};
       const totalWithTax = Number(totals.totalWithTax || 0);
+      const projHistoryCal = project.paymentHistory || project.payments || [];
       const projProgress = calculatePaymentProgress({
         totalAmount: totalWithTax,
-        paidAmount: project.paidAmount,
-        paidPercent: project.paidPercent,
-        history: project.paymentHistory || project.payments || [],
+        paidAmount: projHistoryCal.length ? 0 : project.paidAmount,
+        paidPercent: projHistoryCal.length ? 0 : project.paidPercent,
+        history: projHistoryCal,
       });
       const projStatus = determinePaymentStatus({
         manualStatus: null,

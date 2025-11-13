@@ -433,11 +433,13 @@ function renderFocusCard(project, category) {
     ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
     : 0;
   const combinedTotalWithTax = Number((projectTaxableBase + combinedReservationsTotal + combinedTax).toFixed(2));
+  const projHistory = project.paymentHistory || project.payments || [];
   const projProgress = calculatePaymentProgress({
     totalAmount: combinedTotalWithTax,
-    paidAmount: project.paidAmount,
-    paidPercent: project.paidPercent,
-    history: project.paymentHistory || project.payments || [],
+    // إذا كان لدينا سجل دفعات فعلي، لا نمرّر paidAmount/paidPercent حتى لا تتكرر القيم
+    paidAmount: projHistory.length ? 0 : project.paidAmount,
+    paidPercent: projHistory.length ? 0 : project.paidPercent,
+    history: projHistory,
   });
   const paymentStatus = determinePaymentStatus({
     manualStatus: null,

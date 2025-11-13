@@ -112,11 +112,13 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const displayCost = computedFinalTotal > 0 ? computedFinalTotal : fallbackCost;
 
     // Derive reservation payment status from amounts/history AFTER displayCost is known
+    const resHistory = reservation.paymentHistory || reservation.payment_history || [];
     const resProgress = calculatePaymentProgress({
       totalAmount: displayCost,
-      paidAmount: reservation.paidAmount,
-      paidPercent: reservation.paidPercent,
-      history: reservation.paymentHistory || reservation.payment_history || [],
+      // تفادي العد المزدوج: إذا تواجد سجل دفعات، لا نمرّر paidAmount/paidPercent
+      paidAmount: resHistory.length ? 0 : reservation.paidAmount,
+      paidPercent: resHistory.length ? 0 : reservation.paidPercent,
+      history: resHistory,
     });
     const reservationDerivedStatus = determinePaymentStatus({
       manualStatus: null,
@@ -130,11 +132,12 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     if (project) {
       try {
         const { totalWithTax } = resolveProjectTotals(project) || { totalWithTax: 0 };
+        const projHistory = project.paymentHistory || project.payments || [];
         const projProgress = calculatePaymentProgress({
           totalAmount: totalWithTax,
-          paidAmount: project.paidAmount,
-          paidPercent: project.paidPercent,
-          history: project.paymentHistory || project.payments || [],
+          paidAmount: projHistory.length ? 0 : project.paidAmount,
+          paidPercent: projHistory.length ? 0 : project.paidPercent,
+          history: projHistory,
         });
         const projDerived = determinePaymentStatus({
           manualStatus: null,
