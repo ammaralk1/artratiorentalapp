@@ -633,7 +633,27 @@ function handleDateRangeChange(event) {
 
 function ensureCustomRangePickers() {
   try {
-    if (!window.flatpickr) return;
+    // If Flatpickr is not ready, load it and retry shortly.
+    if (!window.flatpickr) {
+      try {
+        const existing = document.querySelector('script[data-flatpickr-loader="true"]')
+          || document.querySelector('script[src*="flatpickr"]');
+        if (!existing) {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/flatpickr';
+          s.async = true;
+          s.dataset.flatpickrLoader = 'true';
+          s.onload = () => { try { ensureCustomRangePickers(); } catch (_) {} };
+          document.head.appendChild(s);
+        } else if (!existing.dataset.boundRetry) {
+          existing.addEventListener('load', () => { try { ensureCustomRangePickers(); } catch (_) {} }, { once: true });
+          existing.dataset.boundRetry = 'true';
+        }
+      } catch (_) {}
+      // Also schedule a small retry in case onload didn't fire due to caching
+      setTimeout(() => { try { ensureCustomRangePickers(); } catch (_) {} }, 150);
+      return;
+    }
     const locale = (() => {
       try {
         const lang = (getCurrentLanguage() || 'ar').toLowerCase();
