@@ -1468,9 +1468,8 @@ function renderTable(projects) {
           ? t('reservations.list.payment.partial', '💳 مدفوع جزئياً')
           : t('reservations.list.payment.unpaid', '💳 غير مدفوع'));
     const paymentChip = `<span class=\"reservation-chip ${paymentClass}\">${escapeHtml(paymentText)}</span>`;
-    const clientLabel = project.clientCompany
-      ? `${escapeHtml(project.clientName)} <small class="text-muted">${escapeHtml(project.clientCompany)}</small>`
-      : escapeHtml(project.clientName || t('projects.fallback.unknownClient', 'Unknown client'));
+    // Show only client name (hide client company for a cleaner table)
+    const clientLabel = escapeHtml(project.clientName || t('projects.fallback.unknownClient', 'Unknown client'));
 
     const mainRow = `
       <tr>

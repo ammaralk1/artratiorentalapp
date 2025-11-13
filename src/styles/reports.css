@@ -323,6 +323,23 @@ body[dir="rtl"] .reports-filters {
   justify-content: flex-end;
 }
 
+/* Make the three selects (payment, confirmed, date-range) more compact so they fit on one row */
+#reports-payment,
+#reports-confirmed,
+#reports-date-range {
+  min-width: 140px;
+  min-height: 42px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+@media (min-width: 1200px) {
+  #reports-payment,
+  #reports-confirmed,
+  #reports-date-range { min-width: 130px; }
+  .reports-filters .filters-search { min-width: 200px; }
+}
+
 .reports-filters .form-control,
 .reports-filters .form-select {
   min-width: 190px;
@@ -336,7 +353,7 @@ body[dir="rtl"] .reports-filters {
 }
 
 .reports-filters .filters-search {
-  min-width: min(260px, 100%);
+  min-width: min(220px, 100%);
 }
 
 /* when focused, ensure the control sits above nearby content */
@@ -819,6 +836,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-kpi-card[data-kpi="netProfit"] .reports-kpi-value { color: #16a34a !important; }
 /* Make profit margin percentage green too (to match net profit visual cue) */
 .reports-kpi-card[data-kpi="margin"] .reports-kpi-value { color: #16a34a !important; }
+/* Color for total projects to match other KPI accents */
+.reports-kpi-card[data-kpi="projects"] .reports-kpi-value { color: #4c6ef5 !important; }
 .reports-kpi-card[data-kpi="expenses"] .reports-kpi-label {
   font-size: 0.92rem;
   white-space: nowrap;

@@ -285,7 +285,8 @@ const PROJECT_EXPENSES_COLUMN_DEFS = [
   {
     id: 'amount',
     labelKey: null,
-    fallback: 'المبلغ',
+    // In project PDF, show sale price column label
+    fallback: 'السعر',
     render: (expense) => escapeHtml(expense?.displayAmount || '—')
   },
   {
@@ -2138,6 +2139,21 @@ function determineProjectStatusFromDates(project) {
 }
 
 function getProjectExpensesTotal(project) {
+  // Prefer per-item sale prices when available so subtotal matches row values.
+  if (Array.isArray(project?.expenses)) {
+    const hasAnySale = project.expenses.some((exp) => Number.isFinite(Number(exp?.salePrice ?? exp?.sale_price)));
+    if (hasAnySale) {
+      return project.expenses.reduce((sum, exp) => sum + (Number(exp?.salePrice ?? exp?.sale_price) || 0), 0);
+    }
+  }
+
+  // Next prefer explicit services client price total if provided by backend/UI
+  const servicesClient = Number(project?.servicesClientPrice ?? project?.services_client_price);
+  if (Number.isFinite(servicesClient) && servicesClient >= 0) {
+    return servicesClient;
+  }
+
+  // Fallbacks: stored expensesTotal or sum of raw amounts (costs)
   if (typeof project?.expensesTotal === 'number') {
     return project.expensesTotal;
   }
@@ -2658,7 +2674,8 @@ function collectProjectQuoteData(project) {
 
   const expenses = Array.isArray(resolvedProject.expenses)
     ? resolvedProject.expenses.map((expense) => {
-        const amount = Number(expense?.amount) || 0;
+        // Use sale price for display (fallback to amount if sale price not present)
+        const amount = Number(expense?.salePrice ?? expense?.sale_price ?? expense?.amount) || 0;
         return {
           label: expense?.label || expense?.name || '-',
           amount,
