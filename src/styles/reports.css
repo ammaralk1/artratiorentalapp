@@ -422,7 +422,7 @@ body[dir="rtl"] .reports-filters {
 }
 
 /* Ensure Flatpickr calendar appears above cards/filters */
-.reports-wrapper .flatpickr-calendar { z-index: 999999 !important; }
+.flatpickr-calendar { z-index: 2147483647 !important; }
 
 .reports-wrapper--reservations .reports-custom-range {
   justify-content: center;

@@ -139,6 +139,8 @@ async function initReports() {
   beginChartsLoading();
 
   resolveAndApplyTaxRate();
+  // Pre-initialize date pickers so inputs respond even before switching to custom
+  try { ensureCustomRangePickers(); } catch (_) {}
   // Sync RTL/LTR on wrapper with current document language
   try {
     const dir = (document?.documentElement?.getAttribute('dir') || 'rtl');
@@ -667,12 +669,13 @@ function ensureCustomRangePickers() {
       allowInput: true,
       clickOpens: true,
       disableMobile: true,
+      appendTo: document.body,
       ...(locale ? { locale } : {}),
       ...handlers,
     });
 
     if (dom.startDate && !dom.startDate._flatpickr) {
-      try { dom.startDate.setAttribute('tabindex', '0'); dom.startDate.style.cursor = 'pointer'; dom.startDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
+      try { dom.startDate.removeAttribute('readonly'); dom.startDate.setAttribute('tabindex', '0'); dom.startDate.style.cursor = 'pointer'; dom.startDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
       window.flatpickr(dom.startDate, baseOptions({
         onChange: (selected, dateStr) => {
           state.filters.startDate = dateStr || '';
@@ -692,7 +695,7 @@ function ensureCustomRangePickers() {
     }
 
     if (dom.endDate && !dom.endDate._flatpickr) {
-      try { dom.endDate.setAttribute('tabindex', '0'); dom.endDate.style.cursor = 'pointer'; dom.endDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
+      try { dom.endDate.removeAttribute('readonly'); dom.endDate.setAttribute('tabindex', '0'); dom.endDate.style.cursor = 'pointer'; dom.endDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
       window.flatpickr(dom.endDate, baseOptions({
         onChange: (selected, dateStr) => {
           state.filters.endDate = dateStr || '';
