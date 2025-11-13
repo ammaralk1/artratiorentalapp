@@ -6,6 +6,8 @@ import { loadData } from './storage.js';
 import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 import { buildReservationDetailsHtml } from './reservations/list/details.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
+import { calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
+import { resolveProjectTotals } from './projects/view.js';
 
 const CALENDAR_FETCH_PARAMS = { limit: 200 };
 
@@ -28,6 +30,7 @@ const CALENDAR_LEGEND_ITEMS = [
   { key: 'confirmed', chipClass: 'reservation-chip status-confirmed' },
   { key: 'pending', chipClass: 'reservation-chip status-pending' },
   { key: 'paid', chipClass: 'reservation-chip status-paid' },
+  { key: 'partial', chipClass: 'reservation-chip status-partial' },
   { key: 'unpaid', chipClass: 'reservation-chip status-unpaid' },
   { key: 'completed', chipClass: 'reservation-chip status-completed' },
   { key: 'cancelled', chipClass: 'reservation-chip status-cancelled' }
@@ -37,6 +40,7 @@ const LEGEND_FALLBACK_AR = {
   confirmed: 'حجز مؤكد',
   pending: 'بانتظار التأكيد',
   paid: 'مدفوع بالكامل',
+  partial: 'مدفوع جزئياً',
   unpaid: 'لم يتم الدفع',
   completed: 'منتهي',
   cancelled: 'ملغي'
@@ -46,6 +50,7 @@ const LEGEND_FALLBACK_EN = {
   confirmed: 'Confirmed reservation',
   pending: 'Awaiting confirmation',
   paid: 'Paid in full',
+  partial: 'Partially paid',
   unpaid: 'Payment pending',
   completed: 'Completed',
   cancelled: 'Cancelled'
@@ -168,7 +173,7 @@ function formatEventTimeRange(startStr, endStr, isAllDay = false) {
   return startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`;
 }
 
-function getEventClassNames({ paid, confirmed, completed, cancelled }) {
+function getEventClassNames({ paidStatus, confirmed, completed, cancelled }) {
   const classNames = ['calendar-event'];
   if (completed === true || completed === 'true') {
     classNames.push('calendar-event--completed');
@@ -181,11 +186,9 @@ function getEventClassNames({ paid, confirmed, completed, cancelled }) {
   } else {
     classNames.push('calendar-event--pending');
   }
-  if (paid === true || paid === 'paid') {
-    classNames.push('calendar-event--paid');
-  } else {
-    classNames.push('calendar-event--unpaid');
-  }
+  if (paidStatus === 'paid') classNames.push('calendar-event--paid');
+  else if (paidStatus === 'partial') classNames.push('calendar-event--partial');
+  else classNames.push('calendar-event--unpaid');
   return classNames;
 }
 
@@ -198,17 +201,23 @@ function buildEventContent(arg) {
     const idLabel = props?.reservationId ? String(props.reservationId) : (event?.id != null ? String(event.id) : '—');
     const customer = props?.customerName || t('calendar.labels.unknownCustomer', 'غير معروف');
     const confirmed = props?.confirmed === true || props?.confirmed === 'true';
-    const paid = props?.paid === true || props?.paid === 'paid';
+    const paidStatus = typeof props?.paidStatus === 'string' ? props.paidStatus : (props?.paid === true || props?.paid === 'paid') ? 'paid' : 'unpaid';
+    const paid = paidStatus === 'paid';
     const completed = props?.completed === true || props?.completed === 'true';
     const chip = (cls, text) => `<span class="calendar-chip ${cls}">${escapeHtml(text)}</span>`;
     const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
-    const paidLabel = paid ? t('calendar.badges.paid', 'مدفوع') : t('calendar.badges.unpaid', 'غير مدفوع');
+    const paidLabel = paidStatus === 'paid'
+      ? t('calendar.badges.paid', 'مدفوع')
+      : paidStatus === 'partial'
+        ? t('calendar.badges.partial', 'مدفوع جزئياً', 'Partially paid')
+        : t('calendar.badges.unpaid', 'غير مدفوع');
     const cancelled = props?.cancelled === true || props?.cancelled === 'true';
     let chips = [];
     if (cancelled) {
       chips = [chip('status-cancelled', t('calendar.badges.cancelled', 'ملغي'))];
     } else {
-      chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paid ? 'status-paid' : 'status-unpaid', paidLabel)];
+      const paidClass = paidStatus === 'paid' ? 'status-paid' : paidStatus === 'partial' ? 'status-partial' : 'status-unpaid';
+      chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paidClass, paidLabel)];
       if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'منتهي')));
     }
     const html = `
@@ -351,10 +360,40 @@ function normalizeReservationForEvent(reservation, project = null) {
   if (!start) return null;
 
   const statusValue = String(reservation.status ?? reservation.reservationStatus ?? '').toLowerCase();
-  const paidStatus = reservation.paidStatus ?? reservation.paid_status ?? null;
-  const paid = reservation.paid != null
-    ? reservation.paid
-    : paidStatus === 'paid';
+  // Derive payment status (reservation first, then project override if linked)
+  const totalAmount = Number(reservation.totalAmount ?? reservation.cost ?? 0) || 0;
+  const resProgress = calculatePaymentProgress({
+    totalAmount,
+    paidAmount: reservation.paidAmount,
+    paidPercent: reservation.paidPercent,
+    history: reservation.paymentHistory || reservation.payment_history || [],
+  });
+  let paidStatus = determinePaymentStatus({
+    manualStatus: reservation.paidStatus ?? reservation.paid_status ?? (reservation.paid ? 'paid' : 'unpaid'),
+    paidAmount: resProgress.paidAmount,
+    paidPercent: resProgress.paidPercent,
+    totalAmount,
+  });
+  if (project) {
+    try {
+      const totals = resolveProjectTotals(project) || {};
+      const totalWithTax = Number(totals.totalWithTax || 0);
+      const projProgress = calculatePaymentProgress({
+        totalAmount: totalWithTax,
+        paidAmount: project.paidAmount,
+        paidPercent: project.paidPercent,
+        history: project.paymentHistory || project.payments || [],
+      });
+      const projStatus = determinePaymentStatus({
+        manualStatus: project.paymentStatus || 'unpaid',
+        paidAmount: projProgress.paidAmount,
+        paidPercent: projProgress.paidPercent,
+        totalAmount: totalWithTax,
+      });
+      if (projStatus) paidStatus = projStatus;
+    } catch (_e) { /* ignore */ }
+  }
+  const paid = paidStatus === 'paid';
   const { effectiveConfirmed: confirmed } = resolveReservationProjectState(reservation, project);
   const reservationIdentifier = reservation.reservationId
     ?? reservation.reservationCode
@@ -376,6 +415,7 @@ function normalizeReservationForEvent(reservation, project = null) {
     start,
     end: endValue || start,
     paid,
+    paidStatus,
     confirmed,
     completed,
     cancelled: statusValue === 'cancelled' || statusValue === 'canceled',
@@ -399,7 +439,7 @@ function buildCalendarEvents(reservations = []) {
       if (!normalized) return null;
 
       const classNames = getEventClassNames({
-        paid: normalized.paid,
+        paidStatus: normalized.paidStatus,
         confirmed: normalized.confirmed,
         completed: normalized.completed,
         cancelled: normalized.cancelled
@@ -419,6 +459,7 @@ function buildCalendarEvents(reservations = []) {
           ...reservation,
           raw: reservation,
           paid: normalized.paid,
+          paidStatus: normalized.paidStatus,
           confirmed: normalized.confirmed,
           completed: normalized.completed,
           cancelled: normalized.cancelled,
@@ -919,7 +960,10 @@ export function renderCalendar() {
       template: {
         time(schedule) {
           // DaisyUI/Tailwind styled card content
-          const paid = schedule?.raw?.paid === true || schedule?.raw?.paid === 'paid';
+          const paidStatus = typeof schedule?.raw?.paidStatus === 'string'
+            ? schedule.raw.paidStatus
+            : (schedule?.raw?.paid === true || schedule?.raw?.paid === 'paid') ? 'paid' : 'unpaid';
+          const paid = paidStatus === 'paid';
           const confirmed = schedule?.raw?.confirmed === true || schedule?.raw?.confirmed === 'true';
           const completed = schedule?.raw?.completed === true || schedule?.raw?.completed === 'true';
           const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
@@ -928,8 +972,13 @@ export function renderCalendar() {
           const customer = schedule?.raw?.customerName || unknownCustomer;
           const chip = (cls, text) => `<span class="badge ${cls} badge-sm">${escapeHtml(text)}</span>`;
           const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');
-          const paidLabel = paid ? t('calendar.badges.paid', 'مدفوع') : t('calendar.badges.unpaid', 'غير مدفوع');
-          const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paid ? 'badge-info' : 'badge-error', paidLabel)];
+          const paidLabel = paidStatus === 'paid'
+            ? t('calendar.badges.paid', 'مدفوع')
+            : paidStatus === 'partial'
+              ? t('calendar.badges.partial', 'مدفوع جزئياً', 'Partially paid')
+              : t('calendar.badges.unpaid', 'غير مدفوع');
+          const paidBadgeClass = paidStatus === 'paid' ? 'badge-info' : paidStatus === 'partial' ? 'badge-warning' : 'badge-error';
+          const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paidBadgeClass, paidLabel)];
           if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'منتهي')));
           return `
             <div class="card bg-base-100/90 border border-base-200 shadow-sm rounded-xl p-2">
@@ -1011,6 +1060,7 @@ function buildCalendarSchedules(reservations = []) {
       raw: {
         ...reservation,
         paid: normalized.paid,
+        paidStatus: normalized.paidStatus,
         confirmed: normalized.confirmed,
         completed: normalized.completed,
         reservationId: normalized.reservationId,
