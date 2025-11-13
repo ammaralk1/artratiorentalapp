@@ -1478,7 +1478,45 @@ async function exportProjectsToExcel(projects) {
     'صافي الربح', 'هامش الربح %', 'حالة الدفع', 'المبالغ المدفوعة', 'نسبة الدفع %', 'عدد الدفعات'
   ];
   const rows = projects.map((p) => {
-    const m = computeProjectMetrics(p);
+    // Recompute per‑project financials using the same logic used in KPIs/charts
+    const resList = getReservationsForProject(p.id);
+    const agg = (Array.isArray(resList) ? resList : []).reduce((acc, res) => {
+      const items = Array.isArray(res.items) ? res.items : [];
+      const crewAssignments = Array.isArray(res.crewAssignments) ? res.crewAssignments : [];
+      const techOrAssign = crewAssignments.length ? crewAssignments : (Array.isArray(res.technicians) ? res.technicians : []);
+      const useAssignments = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] === 'object';
+      const useTechnicianIds = Array.isArray(techOrAssign) && techOrAssign.length && typeof techOrAssign[0] !== 'object';
+      const breakdown = calculateDraftFinancialBreakdown({
+        items,
+        technicianIds: useTechnicianIds ? techOrAssign : [],
+        crewAssignments: useAssignments ? techOrAssign : [],
+        discount: res.discount ?? 0,
+        discountType: res.discountType || 'percent',
+        applyTax: false,
+        start: res.start,
+        end: res.end,
+      });
+      acc.equipment += Number(breakdown.equipmentTotal || 0);
+      acc.crew += Number(breakdown.crewTotal || 0);
+      acc.crewCost += Number(breakdown.crewCostTotal || 0);
+      return acc;
+    }, { equipment: 0, crew: 0, crewCost: 0 });
+
+    const servicesRevenue = getProjectServicesRevenue(p);
+    const projectExpenses = Number(getProjectExpenses(p) || 0);
+    const grossBeforeDiscount = agg.equipment + agg.crew + servicesRevenue;
+    const discountVal = Number(p?.raw?.discount ?? p?.discount ?? 0) || 0;
+    const discountType = (p?.raw?.discount_type ?? p?.discountType) === 'amount' ? 'amount' : 'percent';
+    let discountAmount = discountType === 'amount' ? discountVal : grossBeforeDiscount * (discountVal / 100);
+    if (!Number.isFinite(discountAmount) || discountAmount < 0) discountAmount = 0;
+    if (discountAmount > grossBeforeDiscount) discountAmount = grossBeforeDiscount;
+
+    const baseAfterDiscount = Math.max(0, grossBeforeDiscount - discountAmount);
+    const revenueExTax = baseAfterDiscount; // used for margin denominator
+    const resNetWithoutTax = Math.max(0, (agg.equipment + agg.crew) - discountAmount); // reservations only
+    const perProjectNet = Number(((baseAfterDiscount - projectExpenses - (agg.crewCost || 0))).toFixed(2));
+    const marginPercent = revenueExTax > 0 ? (perProjectNet / revenueExTax) * 100 : 0;
+
     const periodLabel = formatProjectPeriod(p.start, p.end);
     const statusLabel = t(`projects.status.${p.status}`, p.status);
     const paymentLabel = t(`projects.paymentStatus.${p.paymentStatus}`, p.paymentStatus);
@@ -1486,6 +1524,7 @@ async function exportProjectsToExcel(projects) {
     const paidAmount = Number(p.raw?.paidAmount ?? p.paidAmount ?? 0) || 0;
     const paidPercent = Number(p.raw?.paidPercent ?? p.paidPercent ?? 0) || 0;
     const paymentsCount = Array.isArray(p.raw?.paymentHistory) ? p.raw.paymentHistory.length : 0;
+
     return [
       String(p.projectCode || p.id || ''),
       String(p.title || p.projectCode || ''),
@@ -1493,12 +1532,12 @@ async function exportProjectsToExcel(projects) {
       statusLabel,
       periodLabel,
       Math.round(p.overallTotal || 0),
-      Math.round(m.equipmentEstimate || 0),
-      Math.round(m.servicesRevenue || 0),
-      Math.round(m.projectExpenses || 0),
-      Math.round(m.resNetRevenue || 0),
-      Math.round(m.netProfit || 0),
-      Number((m.marginPercent || 0).toFixed(1)),
+      Math.round(Number(p?.raw?.equipmentEstimate ?? p?.equipmentEstimate ?? 0) || 0),
+      Math.round(servicesRevenue || 0),
+      Math.round(projectExpenses || 0),
+      Math.round(resNetWithoutTax || 0),
+      Math.round(perProjectNet || 0),
+      Number(marginPercent.toFixed(1)),
       paymentLabel,
       Math.round(paidAmount || 0),
       Number((paidPercent || 0).toFixed(1)),
