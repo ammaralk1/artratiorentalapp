@@ -5,7 +5,7 @@ import { loadData } from '../../storage.js';
 import { isReservationCompleted, resolveReservationProjectState, buildReservationDisplayGroups, sanitizePriceValue, parsePriceValue, computePackagePricing } from '../../reservationsShared.js';
 import { resolveItemImage } from '../../reservationsEquipment.js';
 import { normalizeBarcodeValue } from '../state.js';
-import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
+import { calculateReservationDays, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../../reservationsSummary.js';
 import { userCanManageDestructiveActions } from '../../auth.js';
 
 const PENDING_PROJECT_DETAIL_KEY = 'pendingProjectDetailId';
@@ -410,19 +410,39 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paymentHistoryEmpty = t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
 
-  // Reflect project payment status when linked to a project
-  const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
-  const paidStatus = (projectLinked && projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw))
-    ? projectPaidRaw
-    : (reservation.paidStatus
-      ?? reservation.paid_status
-      ?? (paid ? 'paid' : 'unpaid'));
+  // Derive payment status using history + calculated finalTotal (ignore manual flags)
+  const projectHistoryForStatus = (() => {
+    if (!projectLinked || !project) return [];
+    if (Array.isArray(project?.paymentHistory)) return project.paymentHistory;
+    if (Array.isArray(project?.payment_history)) return project.payment_history;
+    if (Array.isArray(project?.payments)) return project.payments;
+    if (Array.isArray(project?.paymentLogs)) return project.paymentLogs;
+    return [];
+  })();
+  const reservationHistoryForStatus = (() => {
+    if (Array.isArray(reservation?.paymentHistory)) return reservation.paymentHistory;
+    if (Array.isArray(reservation?.payment_history)) return reservation.payment_history;
+    if (Array.isArray(reservation?.paymentLogs)) return reservation.paymentLogs;
+    return [];
+  })();
+
+  const historyForStatus = projectHistoryForStatus.length ? projectHistoryForStatus : reservationHistoryForStatus;
+  const basePaidAmount = historyForStatus.length ? 0 : (Number(reservation.paidAmount ?? reservation.paid_amount) || 0);
+  const basePaidPercent = historyForStatus.length ? 0 : (Number(reservation.paidPercent ?? reservation.paid_percentage) || 0);
+  const progressForStatus = calculatePaymentProgress({
+    totalAmount: Number.isFinite(Number(finalTotal)) ? Number(finalTotal) : 0,
+    paidAmount: basePaidAmount,
+    paidPercent: basePaidPercent,
+    history: historyForStatus,
+  });
+  const paidStatus = determinePaymentStatus({
+    manualStatus: null,
+    paidAmount: progressForStatus.paidAmount,
+    paidPercent: progressForStatus.paidPercent,
+    totalAmount: Number.isFinite(Number(finalTotal)) ? Number(finalTotal) : 0,
+  });
   const isPartial = paidStatus === 'partial';
-  const paymentStatusText = paidStatus === 'paid'
-    ? paymentPaidText
-    : isPartial
-      ? paymentPartialText
-      : paymentUnpaidText;
+  const paymentStatusText = paidStatus === 'paid' ? paymentPaidText : (isPartial ? paymentPartialText : paymentUnpaidText);
   const clampItemQuantity = (value, { fallback = 1 } = {}) => {
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed <= 0) {
