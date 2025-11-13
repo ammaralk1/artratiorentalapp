@@ -839,6 +839,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  min-height: 110px; /* keep visual heights consistent across KPI row */
 }
 
 .reports-kpi-icon {

@@ -50,15 +50,14 @@ export function updateKpiCards(metrics) {
     if (total === 0) {
       revenueMetaEl.textContent = translate('reservations.reports.progress.empty', 'لا توجد بيانات لعرضها.', 'No data to display.');
     } else {
+      // Lite meta: remove Net and Average to avoid duplication and reduce height
       const template = translate(
-        'reservations.reports.kpi.revenue.meta',
-        'صافي الربح {net} • نسبة الشركة {share} • متوسط الحجز {average}',
-        'Net profit {net} • Company share {share} • Average reservation {average}',
+        'reservations.reports.kpi.revenue.metaLite',
+        'نسبة الشركة {share}',
+        'Company share {share}',
       );
-      revenueMetaEl.textContent = template
-        .replace('{net}', formatCurrency(net))
-        .replace('{share}', formatCurrency(companyShareTotal))
-        .replace('{average}', formatCurrency(avg));
+      const text = template.replace('{share}', formatCurrency(companyShareTotal));
+      revenueMetaEl.textContent = text;
     }
   }
 
