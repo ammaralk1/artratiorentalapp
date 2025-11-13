@@ -2033,9 +2033,10 @@ function buildProjectPaymentHistoryMarkup(paymentHistory = [], { total = null } 
     const computedFromPercent = (percentVal != null && Number.isFinite(Number(total)) && Number(total) > 0)
       ? Math.round((Number(total) * (percentVal / 100)) * 100) / 100
       : null;
-    const amountVal = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
-      ? Number(entry.amount)
-      : (computedFromPercent != null ? computedFromPercent : null);
+    // لدفعات النسبة، نعرض دائماً المبلغ المحسوب من الإجمالي لضمان الاتساق
+    const amountVal = (entry?.type === 'percent' && computedFromPercent != null)
+      ? computedFromPercent
+      : (Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0 ? Number(entry.amount) : null);
     const amountDisplay = amountVal != null
       ? escapeHtml(formatCurrency(amountVal))
       : '—';
@@ -2078,9 +2079,9 @@ function buildProjectEditPaymentHistoryMarkup(payments = [], { total = null } = 
     const computedFromPercent = (percentVal != null && Number.isFinite(Number(total)) && Number(total) > 0)
       ? Math.round((Number(total) * (percentVal / 100)) * 100) / 100
       : null;
-    const amountVal = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
-      ? Number(payment.amount)
-      : (computedFromPercent != null ? computedFromPercent : null);
+    const amountVal = (payment?.type === 'percent' && computedFromPercent != null)
+      ? computedFromPercent
+      : (Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0 ? Number(payment.amount) : null);
     const amountDisplay = amountVal != null
       ? escapeHtml(formatCurrency(amountVal))
       : '—';
