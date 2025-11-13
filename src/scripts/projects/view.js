@@ -464,6 +464,26 @@ function renderFocusCard(project, category) {
   const projectCodeValue = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeDisplay = normalizeNumbers(projectCodeValue);
 
+  // Optional debug hook via ?paymentDebug=1
+  try {
+    const url = new URL(window.location.href);
+    const v = (url.searchParams.get('paymentDebug') || '').toLowerCase();
+    const debug = v === '1' || v === 'true' || v === 'yes';
+    if (debug) {
+      // eslint-disable-next-line no-console
+      console.debug('[PaymentDebug][card]', {
+        projectId: project?.id,
+        projectTaxableBase,
+        combinedReservationsTotal,
+        combinedTax,
+        combinedTotalWithTax,
+        paidAmount: projProgress.paidAmount,
+        paidPercent: projProgress.paidPercent,
+        paymentStatus,
+      });
+    }
+  } catch (_) { /* ignore debug errors */ }
+
   const categoryKeyMap = {
     today: 'projects.focus.today',
     thisWeek: 'projects.focus.thisWeek',

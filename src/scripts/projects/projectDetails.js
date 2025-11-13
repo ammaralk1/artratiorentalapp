@@ -1073,6 +1073,25 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       history: payments,
     });
 
+    // Optional debug hook via ?paymentDebug=1
+    try {
+      const url = new URL(window.location.href);
+      const v = (url.searchParams.get('paymentDebug') || '').toLowerCase();
+      const debug = v === '1' || v === 'true' || v === 'yes';
+      if (debug) {
+        // eslint-disable-next-line no-console
+        console.debug('[PaymentDebug][modal]', {
+          projectId: project?.id,
+          projectTaxableBase,
+          reservationsTotal,
+          combinedTax,
+          combinedTotalWithTax,
+          paidAmount: progress.paidAmount,
+          paidPercent: progress.paidPercent,
+        });
+      }
+    } catch (_) { /* ignore debug errors */ }
+
     return {
       ...context,
       combinedTotalWithTax,

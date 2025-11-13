@@ -188,48 +188,7 @@ export function calculatePaymentProgress({
       }
   });
 }
-
-function calculateCrewDailyTotalsFromAssignments(assignments = []) {
-  if (!Array.isArray(assignments) || assignments.length === 0) {
-    return {
-      costPerDay: 0,
-      totalPerDay: 0
-    };
-  }
-
-  return assignments.reduce((acc, assignment) => {
-    const positionCost = parsePriceValue(
-      assignment?.positionCost
-      ?? assignment?.position_cost
-      ?? assignment?.cost
-      ?? assignment?.dailyWage
-      ?? assignment?.daily_wage
-      ?? 0
-    );
-    const clientPrice = parsePriceValue(
-      assignment?.positionClientPrice
-      ?? assignment?.position_client_price
-      ?? assignment?.clientPrice
-      ?? assignment?.dailyTotal
-      ?? assignment?.daily_total
-      ?? assignment?.total
-      ?? 0
-    );
-
-    const costPerDay = Number.isFinite(positionCost) ? positionCost : 0;
-    const totalPerDay = Number.isFinite(clientPrice) ? clientPrice : 0;
-
-    return {
-      costPerDay: acc.costPerDay + costPerDay,
-      totalPerDay: acc.totalPerDay + totalPerDay,
-    };
-  }, { costPerDay: 0, totalPerDay: 0 });
-}
-
-if (typeof globalThis !== 'undefined' && !globalThis.calculateCrewDailyTotalsFromAssignments) {
-  globalThis.calculateCrewDailyTotalsFromAssignments = calculateCrewDailyTotalsFromAssignments;
-}
-
+ 
   if (normalizedType === 'amount' && value != null) {
     amount = value;
   } else if (normalizedType === 'percent' && value != null) {
