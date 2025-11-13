@@ -37,9 +37,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
 
     // Compute display cost first (used for payment progress), then derive paid/isPartial
 
-    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
-      ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
-      : '';
+    // confirmButtonHtml defined below after cancellation override uses same flags
     // If cancelled, override status badge and tile color
     {
       const raw = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
@@ -54,6 +52,11 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
         }
       }
     }
+
+    // Define confirm button after potential cancellation override
+    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
+      ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
+      : '';
 
     const confirmSectionHtml = confirmButtonHtml
       ? `<div class="tile-actions">${confirmButtonHtml}</div>`
