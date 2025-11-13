@@ -37,30 +37,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
 
     // Compute display cost first (used for payment progress), then derive paid/isPartial
 
-    // confirmButtonHtml defined below after cancellation override uses same flags
-    // If cancelled, override status badge and tile color
-    {
-      const raw = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
-      if (raw === 'cancelled' || raw === 'canceled') {
-        const statusCancelledText = t('reservations.list.status.cancelled', '❌ ملغي');
-        statusBadge = `<span class="reservation-chip status-chip status-cancelled">${statusCancelledText}</span>`;
-        stateClass = ' tile-cancelled';
-        completedAttr = '';
-        // hide confirm button for cancelled reservations
-        if (typeof confirmButtonHtml !== 'undefined') {
-          confirmButtonHtml = '';
-        }
-      }
-    }
-
-    // Define confirm button after potential cancellation override
-    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
-      ? `<button class="tile-confirm" data-reservation-index="${index}" data-action="confirm">${confirmLabel}</button>`
-      : '';
-
-    const confirmSectionHtml = confirmButtonHtml
-      ? `<div class="tile-actions">${confirmButtonHtml}</div>`
-      : '';
+    // Chips and confirm button are defined later, after cancellation override block
 
     const itemsCount = reservation.items?.length || 0;
     const crewAssignments = Array.isArray(reservation.crewAssignments) ? reservation.crewAssignments : [];
@@ -190,6 +167,9 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     }
     let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
       ? `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`
+      : '';
+    const confirmSectionHtml = confirmButtonHtml
+      ? `<div class=\"tile-actions\">${confirmButtonHtml}</div>`
       : '';
     const costNumber = normalizeNumbers(displayCost.toFixed(2));
     const itemsCountDisplay = normalizeNumbers(String(itemsCount));
