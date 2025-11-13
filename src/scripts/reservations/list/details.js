@@ -342,8 +342,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
     : 0;
   const taxAmount = sanitizePriceValue(breakdown.taxAmount);
   const finalTotalComputed = sanitizePriceValue(breakdown.finalTotal);
-  // Prefer stored cost when available to keep parity with list tiles
-  const finalTotal = hasStoredCost ? storedCost : finalTotalComputed;
+  // Always show the computed final total to reflect live breakdown
+  const finalTotal = finalTotalComputed;
   const netProfitValue = sanitizePriceValue(breakdown.netProfit);
 
   const reservationIdDisplay = normalizeNumbers(String(reservation.reservationId ?? reservation.id ?? ''));
