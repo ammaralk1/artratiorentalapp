@@ -577,6 +577,10 @@ function setupFilters() {
   if (dom.dateRange) {
     dom.dateRange.addEventListener('change', handleDateRangeChange);
     dom.dateRange.value = state.filters.range;
+    // If custom is already selected (e.g., via persisted state), ensure pickers are ready
+    if (dom.dateRange.value === 'custom') {
+      ensureCustomRangePickers();
+    }
   }
 
   if (dom.startDate) {
@@ -615,6 +619,7 @@ function handleDateRangeChange(event) {
   state.filters.range = value;
   if (value === 'custom') {
     dom.customRangeWrapper?.classList.add('active');
+    ensureCustomRangePickers();
   } else {
     dom.customRangeWrapper?.classList.remove('active');
     state.filters.startDate = '';
@@ -623,6 +628,74 @@ function handleDateRangeChange(event) {
     if (dom.endDate) dom.endDate.value = '';
     renderAll();
   }
+}
+
+function ensureCustomRangePickers() {
+  try {
+    if (!window.flatpickr) return;
+    const locale = (() => {
+      try {
+        const lang = (getCurrentLanguage() || 'ar').toLowerCase();
+        if (lang.startsWith('ar') && window.flatpickr?.l10ns?.ar) return 'ar';
+      } catch (_) {}
+      return window.flatpickr?.l10ns?.default ? undefined : undefined;
+    })();
+
+    const baseOptions = (handlers) => ({
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      clickOpens: true,
+      disableMobile: true,
+      ...(locale ? { locale } : {}),
+      ...handlers,
+    });
+
+    if (dom.startDate && !dom.startDate._flatpickr) {
+      window.flatpickr(dom.startDate, baseOptions({
+        onChange: (selected, dateStr) => {
+          state.filters.startDate = dateStr || '';
+          if (dom.endDate?._flatpickr && selected?.length) {
+            dom.endDate._flatpickr.set('minDate', selected[0]);
+          }
+          if (state.filters.range === 'custom') renderAll();
+        },
+        onValueUpdate: (_, dateStr) => {
+          state.filters.startDate = dateStr || '';
+          if (state.filters.range === 'custom') renderAll();
+        },
+      }));
+    }
+
+    if (dom.endDate && !dom.endDate._flatpickr) {
+      window.flatpickr(dom.endDate, baseOptions({
+        onChange: (selected, dateStr) => {
+          state.filters.endDate = dateStr || '';
+          if (dom.startDate?._flatpickr && selected?.length) {
+            dom.startDate._flatpickr.set('maxDate', selected[0]);
+          }
+          if (state.filters.range === 'custom') renderAll();
+        },
+        onValueUpdate: (_, dateStr) => {
+          state.filters.endDate = dateStr || '';
+          if (state.filters.range === 'custom') renderAll();
+        },
+      }));
+    }
+
+    // Make the entire field area open the picker
+    const wrap = dom.customRangeWrapper;
+    if (wrap && !wrap.dataset.openBound) {
+      wrap.addEventListener('click', (ev) => {
+        const target = ev.target;
+        if (target === dom.startDate) { dom.startDate?._flatpickr?.open(); return; }
+        if (target === dom.endDate) { dom.endDate?._flatpickr?.open(); return; }
+        // If clicked the wrapper or gap, open start picker by default
+        dom.startDate?._flatpickr?.open();
+      });
+      wrap.dataset.openBound = 'true';
+    }
+
+  } catch (_) { /* ignore */ }
 }
 
 async function handleDataMutation() {
