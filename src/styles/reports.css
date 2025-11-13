@@ -522,6 +522,9 @@ body[dir="rtl"] .reports-filters {
 .reports-wrapper--reservations #reservations-reports-filters .reports-filters-grid--primary {
   gap: 6px 0 !important; /* row-gap 6px, column-gap 0 */
   column-gap: 0 !important;
+  /* Constrain width so the 4 fields sit closer together visually */
+  width: min(100%, 920px);
+  margin-inline: auto;
 }
 
 .reports-wrapper--reservations .reports-filters-grid--primary {
