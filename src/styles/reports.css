@@ -848,6 +848,9 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   font-size: 1.02rem; /* larger labels */
   line-height: 1.25;
   text-align: center;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+          font-feature-settings: "tnum" 1;
 }
 
 .reports-kpi-details.hidden {
