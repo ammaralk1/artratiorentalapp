@@ -163,7 +163,7 @@ export function openProjectDetails(projectId) {
   let paidAmountDisplay;
   let paidPercentDisplay;
   let remainingDisplay;
-  const paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory);
+  const paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory, { total: overallTotal });
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
@@ -1083,7 +1083,8 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
 
   const renderPaymentHistory = () => {
     if (!paymentHistoryContainer) return;
-    paymentHistoryContainer.innerHTML = buildProjectEditPaymentHistoryMarkup(ensurePayments());
+    const { combinedTotalWithTax } = computePaymentSnapshot();
+    paymentHistoryContainer.innerHTML = buildProjectEditPaymentHistoryMarkup(ensurePayments(), { total: combinedTotalWithTax });
   };
 
   const renderPaymentSummary = () => {
@@ -2014,7 +2015,7 @@ function buildProjectEditExpensesMarkup(expenses = []) {
   `;
 }
 
-function buildProjectPaymentHistoryMarkup(paymentHistory = []) {
+function buildProjectPaymentHistoryMarkup(paymentHistory = [], { total = null } = {}) {
   if (!Array.isArray(paymentHistory) || paymentHistory.length === 0) {
     const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
     return `<div class="reservation-payment-history-empty">${emptyText}</div>`;
@@ -2026,8 +2027,17 @@ function buildProjectPaymentHistoryMarkup(paymentHistory = []) {
       : entry?.type === 'amount'
         ? t('reservations.paymentHistory.type.amount', 'دفعة مالية')
         : t('reservations.paymentHistory.type.unknown', 'دفعة');
-    const amountDisplay = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
-      ? escapeHtml(formatCurrency(Number(entry.amount)))
+    const percentVal = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
+      ? Number(entry.percentage)
+      : null;
+    const computedFromPercent = (percentVal != null && Number.isFinite(Number(total)) && Number(total) > 0)
+      ? Math.round((Number(total) * (percentVal / 100)) * 100) / 100
+      : null;
+    const amountVal = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
+      ? Number(entry.amount)
+      : (computedFromPercent != null ? computedFromPercent : null);
+    const amountDisplay = amountVal != null
+      ? escapeHtml(formatCurrency(amountVal))
       : '—';
     const percentDisplay = Number.isFinite(Number(entry?.percentage)) && Number(entry.percentage) > 0
       ? `${normalizeNumbers(Number(entry.percentage).toFixed(2))}%`
@@ -2052,7 +2062,7 @@ function buildProjectPaymentHistoryMarkup(paymentHistory = []) {
   }).join('')}</ul>`;
 }
 
-function buildProjectEditPaymentHistoryMarkup(payments = []) {
+function buildProjectEditPaymentHistoryMarkup(payments = [], { total = null } = {}) {
   if (!Array.isArray(payments) || payments.length === 0) {
     const emptyText = escapeHtml(t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة'));
     return `<div class="reservation-payment-history__empty">${emptyText}</div>`;
@@ -2062,8 +2072,17 @@ function buildProjectEditPaymentHistoryMarkup(payments = []) {
     const typeLabel = payment?.type === 'percent'
       ? t('reservations.paymentHistory.type.percent', 'دفعة نسبة')
       : t('reservations.paymentHistory.type.amount', 'دفعة مالية');
-    const amountDisplay = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
-      ? escapeHtml(formatCurrency(Number(payment.amount)))
+    const percentVal = Number.isFinite(Number(payment?.percentage)) && Number(payment.percentage) > 0
+      ? Number(payment.percentage)
+      : null;
+    const computedFromPercent = (percentVal != null && Number.isFinite(Number(total)) && Number(total) > 0)
+      ? Math.round((Number(total) * (percentVal / 100)) * 100) / 100
+      : null;
+    const amountVal = Number.isFinite(Number(payment?.amount)) && Number(payment.amount) > 0
+      ? Number(payment.amount)
+      : (computedFromPercent != null ? computedFromPercent : null);
+    const amountDisplay = amountVal != null
+      ? escapeHtml(formatCurrency(amountVal))
       : '—';
     const percentDisplay = Number.isFinite(Number(payment?.percentage)) && Number(payment.percentage) > 0
       ? `${normalizeNumbers(Number(payment.percentage).toFixed(2))}%`
