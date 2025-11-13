@@ -425,8 +425,9 @@ function renderFocusCard(project, category) {
   const typeLabel = getProjectTypeLabel(project.type);
   // Derive payment status from combined total (project subtotal + linked reservations + combined VAT)
   const baseTotals = resolveProjectTotals(project) || {};
-  // Match projectDetails.js computePaymentSnapshot: use taxableAmount as the base
-  const projectTaxableBase = Number(baseTotals.taxableAmount || 0);
+  // Use the same taxable base used in modal: (subtotalAfterDiscount + companyShareAmount)
+  // In this module, resolveProjectTotals returns this base as `subtotal`.
+  const projectTaxableBase = Number(baseTotals.subtotal || 0);
   const combinedReservationsTotal = (reservationsForProject || []).reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
   const combinedTax = baseTotals.applyTax
     ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
