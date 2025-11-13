@@ -1,7 +1,7 @@
 import { userCanManageDestructiveActions } from '../auth.js';
 import { t } from '../language.js';
 import { normalizeNumbers, showToast } from '../utils.js';
-import { calculateReservationTotal, calculateDraftFinancialBreakdown } from '../reservationsSummary.js';
+import { calculateReservationTotal, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
 import { state, dom } from './state.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
 import {
@@ -423,8 +423,21 @@ function renderFocusCard(project, category) {
     ? truncateText(description, 110)
     : t('projects.fallback.noDescription', 'لا يوجد وصف');
   const typeLabel = getProjectTypeLabel(project.type);
-  const paymentStatusRaw = typeof project.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : '';
-  const paymentStatus = ['paid', 'partial'].includes(paymentStatusRaw) ? paymentStatusRaw : 'unpaid';
+  // Derive payment status from payments/progress to keep tags in sync when entries change
+  const totals = resolveProjectTotals(project);
+  const totalWithTax = Number(totals?.totalWithTax || 0);
+  const projProgress = calculatePaymentProgress({
+    totalAmount: totalWithTax,
+    paidAmount: project.paidAmount,
+    paidPercent: project.paidPercent,
+    history: project.paymentHistory || project.payments || [],
+  });
+  const paymentStatus = determinePaymentStatus({
+    manualStatus: project.paymentStatus || 'unpaid',
+    paidAmount: projProgress.paidAmount,
+    paidPercent: projProgress.paidPercent,
+    totalAmount: totalWithTax,
+  });
   const paymentStatusLabel = t(
     `projects.paymentStatus.${paymentStatus}`,
     paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'

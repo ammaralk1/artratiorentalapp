@@ -1,7 +1,8 @@
 import { t } from '../../language.js';
 import { normalizeNumbers, formatDateTime } from '../../utils.js';
 import { isReservationCompleted, resolveReservationProjectState } from '../../reservationsShared.js';
-import { calculateDraftFinancialBreakdown } from '../../reservationsSummary.js';
+import { calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../../reservationsSummary.js';
+import { resolveProjectTotals } from '../../projects/view.js';
 
 export function buildReservationTilesHtml({ entries, customersMap, techniciansMap, projectsMap }) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
@@ -33,14 +34,40 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
-    // When linked to a project, reflect the project's payment status on the reservation tile
-    const projectPaidRaw = typeof project?.paymentStatus === 'string' ? project.paymentStatus.toLowerCase() : null;
-    const fallbackPaidStatus = reservation.paidStatus
-      ?? reservation.paid_status
-      ?? (reservation.paid === true || reservation.paid === 'paid' ? 'paid' : 'unpaid');
-    const effectivePaidStatus = projectPaidRaw && ['paid', 'partial', 'unpaid'].includes(projectPaidRaw)
-      ? projectPaidRaw
-      : fallbackPaidStatus;
+    // Derive reservation payment status from amounts/history
+    const resProgress = calculatePaymentProgress({
+      totalAmount: displayCost,
+      paidAmount: reservation.paidAmount,
+      paidPercent: reservation.paidPercent,
+      history: reservation.paymentHistory || reservation.payment_history || [],
+    });
+    const reservationDerivedStatus = determinePaymentStatus({
+      manualStatus: reservation.paidStatus || reservation.paid_status || (reservation.paid ? 'paid' : 'unpaid'),
+      paidAmount: resProgress.paidAmount,
+      paidPercent: resProgress.paidPercent,
+      totalAmount: displayCost,
+    });
+
+    // If linked to a project, derive the project's payment status similarly and use it
+    let effectivePaidStatus = reservationDerivedStatus;
+    if (project) {
+      try {
+        const { totalWithTax } = resolveProjectTotals(project) || { totalWithTax: 0 };
+        const projProgress = calculatePaymentProgress({
+          totalAmount: totalWithTax,
+          paidAmount: project.paidAmount,
+          paidPercent: project.paidPercent,
+          history: project.paymentHistory || project.payments || [],
+        });
+        const projDerived = determinePaymentStatus({
+          manualStatus: project.paymentStatus || 'unpaid',
+          paidAmount: projProgress.paidAmount,
+          paidPercent: projProgress.paidPercent,
+          totalAmount: totalWithTax,
+        });
+        if (projDerived) effectivePaidStatus = projDerived;
+      } catch (_) { /* ignore and fall back to reservationDerivedStatus */ }
+    }
     const paid = effectivePaidStatus === 'paid';
     const isPartial = effectivePaidStatus === 'partial';
 
