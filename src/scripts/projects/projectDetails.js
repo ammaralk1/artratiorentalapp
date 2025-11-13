@@ -163,7 +163,8 @@ export function openProjectDetails(projectId) {
   let paidAmountDisplay;
   let paidPercentDisplay;
   let remainingDisplay;
-  const paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory, { total: overallTotal });
+  // Build history markup after we finalize the effective total used for progress
+  let paymentHistoryMarkup = '';
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
@@ -338,6 +339,13 @@ export function openProjectDetails(projectId) {
   paidAmountDisplay = formatCurrency(paidAmountValue);
   paidPercentDisplay = `${normalizeNumbers(paidPercentValue.toFixed(2))}%`;
   remainingDisplay = formatCurrency(remainingAmountValue);
+
+  // Now that paymentTotalForProgress is known, compute history markup using the same total
+  try {
+    paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory, { total: paymentTotalForProgress });
+  } catch (_) {
+    paymentHistoryMarkup = buildProjectPaymentHistoryMarkup(paymentHistory, { total: overallTotal });
+  }
 
   const summaryDetailsHtml = summaryDetails.map(({ icon, label, value }) => `
     <div class="summary-details-row">
