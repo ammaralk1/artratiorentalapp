@@ -216,9 +216,19 @@ registerTranslations({
     'projects.reports.kpi.unpaidValueMeta': 'مشاريع لم تُسدَّد بالكامل بعد',
     'projects.reports.kpi.expenses': 'تكلفة الخدمات الإنتاجية',
     'projects.reports.kpi.expensesMeta': 'تكلفة الخدمات الإنتاجية للمشاريع المحددة',
+    // Ensure Arabic strings exist so Arabic mode never falls back to English
+    'projects.reports.kpi.margin': 'هامش الربح',
+    'projects.reports.kpi.marginMeta': 'صافي الربح ÷ الإيراد بدون الضريبة',
+    'projects.reports.kpi.netProfitMeta': 'مجموع صافي الربح للمشاريع المحددة',
+    'projects.reports.kpi.revenue.details.servicesProfit': 'ربح الخدمات الإنتاجية',
+    'projects.reports.kpi.revenue.details.margin': 'هامش الربح',
     'projects.reports.datasets.value': 'القيمة الإجمالية',
     'projects.reports.datasets.expenses': 'تكلفة الخدمات الإنتاجية',
     'projects.reports.kpi.revenue.details.projectExpenses': 'تكلفة الخدمات الإنتاجية',
+    // Sort tooltips (Arabic)
+    'projects.reports.table.sortable': 'قابل للفرز',
+    'projects.reports.table.sort.asc': 'ترتيب تصاعدي',
+    'projects.reports.table.sort.desc': 'ترتيب تنازلي',
     // EN counterpart added below
 
     'projects.expenses.pageTitle': 'مصاريف المشاريع - نظام التأجير',
