@@ -369,7 +369,7 @@ function normalizeReservationForEvent(reservation, project = null) {
     history: reservation.paymentHistory || reservation.payment_history || [],
   });
   let paidStatus = determinePaymentStatus({
-    manualStatus: reservation.paidStatus ?? reservation.paid_status ?? (reservation.paid ? 'paid' : 'unpaid'),
+    manualStatus: null,
     paidAmount: resProgress.paidAmount,
     paidPercent: resProgress.paidPercent,
     totalAmount,
@@ -385,7 +385,7 @@ function normalizeReservationForEvent(reservation, project = null) {
         history: project.paymentHistory || project.payments || [],
       });
       const projStatus = determinePaymentStatus({
-        manualStatus: project.paymentStatus || 'unpaid',
+        manualStatus: null,
         paidAmount: projProgress.paidAmount,
         paidPercent: projProgress.paidPercent,
         totalAmount: totalWithTax,

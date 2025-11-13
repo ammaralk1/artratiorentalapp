@@ -34,42 +34,8 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
-    // Derive reservation payment status from amounts/history
-    const resProgress = calculatePaymentProgress({
-      totalAmount: displayCost,
-      paidAmount: reservation.paidAmount,
-      paidPercent: reservation.paidPercent,
-      history: reservation.paymentHistory || reservation.payment_history || [],
-    });
-    const reservationDerivedStatus = determinePaymentStatus({
-      manualStatus: reservation.paidStatus || reservation.paid_status || (reservation.paid ? 'paid' : 'unpaid'),
-      paidAmount: resProgress.paidAmount,
-      paidPercent: resProgress.paidPercent,
-      totalAmount: displayCost,
-    });
 
-    // If linked to a project, derive the project's payment status similarly and use it
-    let effectivePaidStatus = reservationDerivedStatus;
-    if (project) {
-      try {
-        const { totalWithTax } = resolveProjectTotals(project) || { totalWithTax: 0 };
-        const projProgress = calculatePaymentProgress({
-          totalAmount: totalWithTax,
-          paidAmount: project.paidAmount,
-          paidPercent: project.paidPercent,
-          history: project.paymentHistory || project.payments || [],
-        });
-        const projDerived = determinePaymentStatus({
-          manualStatus: project.paymentStatus || 'unpaid',
-          paidAmount: projProgress.paidAmount,
-          paidPercent: projProgress.paidPercent,
-          totalAmount: totalWithTax,
-        });
-        if (projDerived) effectivePaidStatus = projDerived;
-      } catch (_) { /* ignore and fall back to reservationDerivedStatus */ }
-    }
-    const paid = effectivePaidStatus === 'paid';
-    const isPartial = effectivePaidStatus === 'partial';
+    // Compute display cost first (used for payment progress)
 
     const {
       effectiveConfirmed,
@@ -193,6 +159,43 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     }
     const fallbackCost = Number.parseFloat(normalizeNumbers(String(reservation.cost ?? 0))) || 0;
     const displayCost = computedFinalTotal > 0 ? computedFinalTotal : fallbackCost;
+
+    // Derive reservation payment status from amounts/history AFTER displayCost is known
+    const resProgress = calculatePaymentProgress({
+      totalAmount: displayCost,
+      paidAmount: reservation.paidAmount,
+      paidPercent: reservation.paidPercent,
+      history: reservation.paymentHistory || reservation.payment_history || [],
+    });
+    const reservationDerivedStatus = determinePaymentStatus({
+      manualStatus: null,
+      paidAmount: resProgress.paidAmount,
+      paidPercent: resProgress.paidPercent,
+      totalAmount: displayCost,
+    });
+
+    // If linked to a project, derive the project's payment status similarly and use it
+    let effectivePaidStatus = reservationDerivedStatus;
+    if (project) {
+      try {
+        const { totalWithTax } = resolveProjectTotals(project) || { totalWithTax: 0 };
+        const projProgress = calculatePaymentProgress({
+          totalAmount: totalWithTax,
+          paidAmount: project.paidAmount,
+          paidPercent: project.paidPercent,
+          history: project.paymentHistory || project.payments || [],
+        });
+        const projDerived = determinePaymentStatus({
+          manualStatus: null,
+          paidAmount: projProgress.paidAmount,
+          paidPercent: projProgress.paidPercent,
+          totalAmount: totalWithTax,
+        });
+        if (projDerived) effectivePaidStatus = projDerived;
+      } catch (_) { /* ignore and fall back to reservationDerivedStatus */ }
+    }
+    const paid = effectivePaidStatus === 'paid';
+    const isPartial = effectivePaidStatus === 'partial';
     const costNumber = normalizeNumbers(displayCost.toFixed(2));
     const itemsCountDisplay = normalizeNumbers(String(itemsCount));
     const notesDisplay = reservation.notes ? normalizeNumbers(reservation.notes) : notesFallback;

@@ -433,7 +433,7 @@ function renderFocusCard(project, category) {
     history: project.paymentHistory || project.payments || [],
   });
   const paymentStatus = determinePaymentStatus({
-    manualStatus: project.paymentStatus || 'unpaid',
+    manualStatus: null,
     paidAmount: projProgress.paidAmount,
     paidPercent: projProgress.paidPercent,
     totalAmount: totalWithTax,
