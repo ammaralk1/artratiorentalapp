@@ -287,7 +287,12 @@ const PROJECT_EXPENSES_COLUMN_DEFS = [
     labelKey: null,
     // In project PDF, show sale price column label
     fallback: 'السعر',
-    render: (expense) => escapeHtml(expense?.displayAmount || '—')
+    render: (expense) => {
+      const value = Number.isFinite(Number(expense?.salePrice ?? expense?.sale_price))
+        ? Number(expense?.salePrice ?? expense?.sale_price)
+        : Number(expense?.amount ?? 0) || 0;
+      return escapeHtml(formatCurrencyValue(value, t('reservations.create.summary.currency', 'SR')));
+    }
   },
   {
     id: 'note',
