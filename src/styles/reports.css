@@ -421,6 +421,9 @@ body[dir="rtl"] .reports-filters {
   min-width: 180px;
 }
 
+/* Ensure Flatpickr calendar appears above cards/filters */
+.reports-wrapper .flatpickr-calendar { z-index: 999999 !important; }
+
 .reports-wrapper--reservations .reports-custom-range {
   justify-content: center;
   gap: 12px;

@@ -652,6 +652,7 @@ function ensureCustomRangePickers() {
     });
 
     if (dom.startDate && !dom.startDate._flatpickr) {
+      try { dom.startDate.setAttribute('tabindex', '0'); dom.startDate.style.cursor = 'pointer'; dom.startDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
       window.flatpickr(dom.startDate, baseOptions({
         onChange: (selected, dateStr) => {
           state.filters.startDate = dateStr || '';
@@ -665,9 +666,13 @@ function ensureCustomRangePickers() {
           if (state.filters.range === 'custom') renderAll();
         },
       }));
+      // Open on click even if readonly
+      dom.startDate.addEventListener('click', () => dom.startDate?._flatpickr?.open());
+      dom.startDate.addEventListener('focus', () => dom.startDate?._flatpickr?.open());
     }
 
     if (dom.endDate && !dom.endDate._flatpickr) {
+      try { dom.endDate.setAttribute('tabindex', '0'); dom.endDate.style.cursor = 'pointer'; dom.endDate.setAttribute('aria-haspopup', 'dialog'); } catch (_) {}
       window.flatpickr(dom.endDate, baseOptions({
         onChange: (selected, dateStr) => {
           state.filters.endDate = dateStr || '';
@@ -681,6 +686,8 @@ function ensureCustomRangePickers() {
           if (state.filters.range === 'custom') renderAll();
         },
       }));
+      dom.endDate.addEventListener('click', () => dom.endDate?._flatpickr?.open());
+      dom.endDate.addEventListener('focus', () => dom.endDate?._flatpickr?.open());
     }
 
     // Make the entire field area open the picker
