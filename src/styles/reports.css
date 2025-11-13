@@ -807,11 +807,14 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Reservations: center KPI grid and keep medium width */
 .reports-wrapper--reservations .reports-kpi-grid {
-  /* keep cards at a comfortable medium width and centered */
-  width: min(100%, 920px);
+  /* Put KPI cards in a single centered horizontal line */
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: min(100%, 980px);
   margin-inline: auto;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   justify-content: center;
+  align-items: stretch;
 }
 
 @media (max-width: 1280px) {
@@ -826,6 +829,16 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   gap: 12px;
   padding: 18px;
   overflow: hidden; /* keep all KPI content inside the card */
+}
+
+/* Reservations: make each KPI card compact and vertically centered */
+.reports-wrapper--reservations .reports-kpi-card {
+  flex: 0 1 156px;
+  padding: 14px;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
 }
 
 .reports-kpi-icon {
@@ -846,6 +859,12 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   min-width: 0; /* allow text to wrap/truncate inside card */
 }
 
+/* Center KPI content in reservations */
+.reports-wrapper--reservations .reports-kpi-content {
+  align-items: center;
+  text-align: center;
+}
+
 .reports-kpi-label {
   margin: 0;
   font-weight: 600;
@@ -856,7 +875,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 .reports-kpi-value {
   margin: 0;
-  font-size: 1.8rem; /* unify size across all KPI numbers */
+  font-size: 1.45rem; /* smaller numbers inside KPIs */
   font-weight: 700;
   color: var(--clr-text);
   white-space: nowrap;
@@ -864,8 +883,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   font-variant-numeric: tabular-nums; /* align digits height */
   -webkit-font-feature-settings: "tnum" 1;
           font-feature-settings: "tnum" 1;
-  /* Give numbers a consistent visual width so cards line up better */
-  min-width: 8ch;
+  min-width: 0; /* allow tighter packing */
+  text-align: center;
 }
 
 /* Emphasise total revenue card and make it visually tighter */
