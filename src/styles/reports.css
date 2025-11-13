@@ -301,7 +301,7 @@ html[dir="rtl"] .reports-wrapper--reservations .reports-card-title {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--reports-surface-contrast);
   border: 1px solid var(--reports-border);
   border-radius: var(--reports-radius-md);
@@ -327,18 +327,25 @@ body[dir="rtl"] .reports-filters {
 #reports-payment,
 #reports-confirmed,
 #reports-date-range {
-  min-width: 140px;
+  min-width: 120px;
   min-height: 42px;
   padding: 8px 12px;
   font-size: 0.9rem;
+  flex: 0 0 120px;
 }
 
 @media (min-width: 1200px) {
   #reports-payment,
   #reports-confirmed,
-  #reports-date-range { min-width: 130px; }
-  .reports-filters .filters-search { min-width: 200px; }
+  #reports-date-range { min-width: 120px; flex-basis: 120px; }
+  .reports-filters .filters-search { min-width: 180px; }
+  /* Force single-line layout on wide screens */
+  .reports-filters { flex-wrap: nowrap; }
 }
+
+/* Allow status chips area to shrink and scroll so selects stay on the same row */
+.reports-status-filter { flex: 1 1 320px; min-width: 0; overflow: hidden; }
+.reports-status-chips { overflow-x: auto; white-space: nowrap; }
 
 .reports-filters .form-control,
 .reports-filters .form-select {
@@ -839,7 +846,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 /* Color for total projects to match other KPI accents */
 .reports-kpi-card[data-kpi="projects"] .reports-kpi-value { color: #4c6ef5 !important; }
 .reports-kpi-card[data-kpi="expenses"] .reports-kpi-label {
-  font-size: 0.92rem;
+  font-size: 0.86rem; /* shrink a bit more to stay inside card */
+  line-height: 1;
   white-space: nowrap;
 }
 .reports-kpi-card[data-kpi="totalValue"] .reports-kpi-label {
