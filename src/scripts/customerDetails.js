@@ -18,6 +18,7 @@ import {
 } from "./projectFocusTemplates.js";
 import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
 import { getReservationsState } from "./reservationsService.js";
+import { getProjectsState } from "./projectsService.js";
 import { openProjectDetails } from "./projects/projectDetails.js";
 import { dom as projectsDom, state as projectsState } from "./projects/state.js";
 import {
