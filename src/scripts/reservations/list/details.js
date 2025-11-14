@@ -1289,7 +1289,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
       <div class="reservation-modal-actions">
         <button type="button" class="modal-action-btn modal-action-btn--ghost" id="reservation-details-export-btn" data-index="${index}">
-          ${t('reservations.details.actions.exportPdf', '👁️ معاينة PDF')}
+          ${t('reservations.details.actions.exportPdf', 'عرض سعر')}
+        </button>
+        <button type="button" class="modal-action-btn modal-action-btn--ghost" id="reservation-details-checklist-btn" data-index="${index}">
+          ${t('reservations.details.actions.exportChecklist', '📋 لستة معدات وفنيين')}
         </button>
         <button type="button" class="modal-action-btn modal-action-btn--primary" id="reservation-details-edit-btn" data-index="${index}">${editActionLabel}</button>
         ${canDelete ? `<button type="button" class="modal-action-btn modal-action-btn--danger" id="reservation-details-delete-btn" data-index="${index}">${deleteActionLabel}</button>` : ''}

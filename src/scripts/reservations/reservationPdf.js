@@ -32,7 +32,8 @@ import {
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
 const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
   reservation: 'reservations.quote.togglePrefs.v1',
-  project: 'projects.quote.togglePrefs.v1'
+  project: 'projects.quote.togglePrefs.v1',
+  reservationChecklist: 'reservations.checklist.togglePrefs.v1'
 };
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
@@ -392,8 +393,23 @@ function getQuoteConfig(context = 'reservation') {
   if (QUOTE_CONFIG_CACHE.has(context)) {
     return QUOTE_CONFIG_CACHE.get(context);
   }
-  const sectionDefs = context === 'project' ? PROJECT_QUOTE_SECTION_DEFS : QUOTE_SECTION_DEFS;
-  const fieldDefs = context === 'project' ? PROJECT_QUOTE_FIELD_DEFS : QUOTE_FIELD_DEFS;
+  const sectionDefs = (context === 'project')
+    ? PROJECT_QUOTE_SECTION_DEFS
+    : (context === 'reservationChecklist')
+      ? [
+          // Checklist context: only items and crew
+          { id: 'items', labelKey: 'reservations.quote.sections.items', fallback: 'قائمة المعدات', defaultSelected: true },
+          { id: 'crew', labelKey: 'reservations.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true }
+        ]
+      : QUOTE_SECTION_DEFS;
+  const fieldDefs = (context === 'project')
+    ? PROJECT_QUOTE_FIELD_DEFS
+    : (context === 'reservationChecklist')
+      ? {
+          items: QUOTE_FIELD_DEFS.items,
+          crew: QUOTE_FIELD_DEFS.crew
+        }
+      : QUOTE_FIELD_DEFS;
   const sectionIdSet = new Set(sectionDefs.map(({ id }) => id));
   const fieldIdMap = Object.fromEntries(
     Object.entries(fieldDefs).map(([sectionId, fields = []]) => [
@@ -5270,6 +5286,52 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   applyQuoteTogglePreferences(activeQuoteState);
   openQuoteModal();
   // Attach live update listeners once per session
+  try { attachQuoteLiveListeners(); } catch (_) {}
+}
+
+// Open the same preview/export modal but limited to equipment and crew lists
+export async function exportReservationChecklistPdf({ reservation, customer, project }) {
+  if (!reservation) {
+    showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return;
+  }
+
+  await ensurePackagesAvailable();
+
+  const crewAssignments = collectReservationCrewAssignments(reservation);
+  const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
+  const currencyLabel = t('reservations.create.summary.currency', 'SR');
+
+  // In checklist mode, we don't need a unique quote sequence, but keep date/number for consistency
+  const { sequence, quoteNumber } = await peekServerQuoteSequence('reservation');
+  const now = new Date();
+
+  activeQuoteState = {
+    context: 'reservationChecklist',
+    reservation,
+    customer,
+    project,
+    crewAssignments,
+    totals,
+    totalsDisplay,
+    rentalDays,
+    currencyLabel,
+    projectCrew: [],
+    projectExpenses: [],
+    projectEquipment: [],
+    sections: new Set(getQuoteSectionDefs('reservationChecklist').filter((s) => s.defaultSelected).map((s) => s.id)),
+    sectionExpansions: buildDefaultSectionExpansions('reservationChecklist'),
+    fields: buildDefaultFieldSelections('reservationChecklist'),
+    terms: resolveTermsFromForms(),
+    quoteSequence: sequence,
+    quoteNumber,
+    quoteDate: now,
+    quoteDateLabel: formatQuoteDate(now),
+    sequenceCommitted: false
+  };
+
+  applyQuoteTogglePreferences(activeQuoteState);
+  openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
 

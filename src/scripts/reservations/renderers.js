@@ -9,7 +9,7 @@ import {
   buildReservationTilesHtml,
   buildReservationDetailsHtml
 } from './list/index.js';
-import { exportReservationPdf } from './reservationPdf.js';
+import { exportReservationPdf, exportReservationChecklistPdf } from './reservationPdf.js';
 import { ensureTechnicianPositionsLoaded } from '../technicianPositions.js';
 
 export function renderReservationsList({
@@ -169,6 +169,21 @@ export function renderReservationDetails(index, {
           await exportReservationPdf({ reservation, customer, project });
         } catch (error) {
           console.error('❌ [reservations] export to PDF failed', error);
+          showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
+        }
+      };
+    }
+
+    const checklistBtn = document.getElementById('reservation-details-checklist-btn');
+    if (checklistBtn) {
+      checklistBtn.onclick = async (event) => {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        checklistBtn.blur();
+        try {
+          await exportReservationChecklistPdf({ reservation, customer, project });
+        } catch (error) {
+          console.error('❌ [reservations] export checklist PDF failed', error);
           showToast(t('reservations.details.actions.exportFailed', '⚠️ تعذر تصدير الحجز إلى PDF'), 'error');
         }
       };

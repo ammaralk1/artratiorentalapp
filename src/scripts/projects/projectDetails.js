@@ -518,7 +518,7 @@ export function openProjectDetails(projectId) {
         ${escapeHtml(t('projects.details.actions.delete', '🗑️ حذف المشروع'))}
       </button>
       <button type="button" class="modal-action-btn modal-action-btn--ghost" id="project-details-export-btn">
-        ${escapeHtml(t('projects.details.actions.exportPdf', '👁️ معاينة PDF'))}
+        ${escapeHtml(t('projects.details.actions.exportPdf', 'عرض سعر'))}
       </button>
       <button type="button" class="modal-action-btn modal-action-btn--ghost" data-bs-dismiss="modal">
         ${escapeHtml(t('actions.close', 'إغلاق'))}
