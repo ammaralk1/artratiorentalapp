@@ -501,6 +501,19 @@ function updateCustomerProjects() {
       });
     })
     .join('');
+
+  // Attach direct click listeners to cards as a safety in addition to container delegation
+  container.querySelectorAll('.project-focus-card').forEach((card) => {
+    if (card.dataset.customerModalListenerAttached === 'true') return;
+    card.addEventListener('click', (event) => {
+      const ignored = event.target.closest('[data-ignore-project-modal]');
+      if (ignored) return;
+      const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
+      if (!projectId) return;
+      openCustomerProjectDetails(projectId);
+    });
+    card.dataset.customerModalListenerAttached = 'true';
+  });
 }
 
 const statusLabelsFallback = {

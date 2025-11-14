@@ -8,6 +8,7 @@ import {
   formatCurrencyLocalized
 } from './projectsCommon.js';
 import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
+import { formatDateTime } from './projects/formatting.js';
 import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { getReservationsState, updateReservationApi } from './reservationsService.js';
 
@@ -43,8 +44,8 @@ function getReservationIdentifier(reservation) {
 // Match Projects page date/time presentation for cards
 function buildProjectDateTimeRows(start, end) {
   if (!start) return { dateHtml: '—', timeText: '' };
-  const startStr = formatDateTimeLocalized(start);
-  const endStr = end ? formatDateTimeLocalized(end) : '';
+  const startStr = formatDateTime(start);
+  const endStr = end ? formatDateTime(end) : '';
 
   const split = (val) => {
     const parts = String(val).split(' ').filter(Boolean);
