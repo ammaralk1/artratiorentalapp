@@ -21,16 +21,11 @@ const statusLabelsFallback = {
   completed: 'Completed'
 };
 
+// Use the same timeline-style badge classes as Projects page
 const statusBadgeClass = {
-  upcoming: 'bg-info',
-  ongoing: 'bg-warning',
-  completed: 'bg-success'
-};
-
-const statusChipClassMap = {
-  upcoming: 'status-pending',
-  ongoing: 'status-confirmed',
-  completed: 'status-completed'
+  upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
+  ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
+  completed: 'timeline-status-badge timeline-status-badge--completed'
 };
 
 function getReservationIdentifier(reservation) {
@@ -145,10 +140,9 @@ export function buildProjectFocusCard(project, {
     : '';
 
   const typeLabel = getProjectTypeLabel(project?.type);
-  const categoryBadge = typeLabel
-    ? `<span class="badge project-focus-card__badge ${DEFAULT_CATEGORY_CLASS}">${escapeHtml(typeLabel)}</span>`
-    : '';
-  const statusChip = `<span class="project-focus-card__status-chip ${statusClass}">${escapeHtml(statusLabel)}</span>`;
+  // Hide category/type badge on top to match Projects page; type will be shown in rows
+  const categoryBadge = '';
+  const statusChip = `<span class="${statusClass}">${escapeHtml(statusLabel)}</span>`;
   const paymentChip = `<span class="reservation-chip ${paymentChipClass} project-focus-card__payment-chip">${escapeHtml(paymentStatusLabel)}</span>`;
 
   const title = (project?.title || '').trim() || t('projects.fallback.untitled', 'Untitled project');
@@ -246,13 +240,7 @@ export function buildProjectFocusCard(project, {
           value: customerName
         }
       : null,
-    companyName
-      ? {
-          icon: '🏢',
-          label: t('projectCards.meta.company', 'شركة العميل'),
-          value: companyName
-        }
-      : null,
+    // Company row hidden to match Projects page card
     typeLabel
       ? {
           icon: '🏷️',
