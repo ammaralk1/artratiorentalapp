@@ -102,8 +102,20 @@ let packageOptionsCache = [];
 const RESERVATION_FORM_DRAFT_STORAGE_KEY = 'reservations:create:draft';
 
 function getDraftStorage() {
+  // Prefer sessionStorage, but if unavailable, fall back to localStorage
   try {
     if (typeof window !== 'undefined' && window.sessionStorage) return window.sessionStorage;
+  } catch (_) { /* ignore */ }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+function getSecondaryStorage() {
+  // Secondary store to maximize resilience across reloads
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
   } catch (_) { /* ignore */ }
   return null;
 }
@@ -161,11 +173,14 @@ function collectCreateReservationDraft() {
 
 function persistCreateReservationDraft() {
   const storage = getDraftStorage();
-  if (!storage) return;
+  const secondary = getSecondaryStorage();
+  if (!storage && !secondary) return;
   const draft = collectCreateReservationDraft();
   if (!draft) return;
   try {
-    storage.setItem(RESERVATION_FORM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    const payload = JSON.stringify(draft);
+    if (storage) storage.setItem(RESERVATION_FORM_DRAFT_STORAGE_KEY, payload);
+    if (secondary && secondary !== storage) secondary.setItem(RESERVATION_FORM_DRAFT_STORAGE_KEY, payload);
   } catch (error) {
     console.warn('⚠️ [reservations/createForm] Unable to persist create draft', error);
   }
@@ -173,9 +188,11 @@ function persistCreateReservationDraft() {
 
 function clearCreateReservationDraft() {
   const storage = getDraftStorage();
-  if (!storage) return;
+  const secondary = getSecondaryStorage();
+  if (!storage && !secondary) return;
   try {
-    storage.removeItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
+    if (storage) storage.removeItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
+    if (secondary && secondary !== storage) secondary.removeItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
   } catch (error) {
     console.warn('⚠️ [reservations/createForm] Unable to clear create draft', error);
   }
@@ -183,10 +200,13 @@ function clearCreateReservationDraft() {
 
 function restoreCreateReservationDraft() {
   const storage = getDraftStorage();
-  if (!storage) return;
+  const secondary = getSecondaryStorage();
+  if (!storage && !secondary) return;
   let draft = null;
   try {
-    const raw = storage.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
+    const rawPrimary = storage ? storage.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY) : null;
+    const rawSecondary = !rawPrimary && secondary ? secondary.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY) : null;
+    const raw = rawPrimary || rawSecondary;
     draft = raw ? JSON.parse(raw) : null;
   } catch (error) {
     console.warn('⚠️ [reservations/createForm] Unable to read create draft', error);
@@ -2434,7 +2454,14 @@ function setupReservationTimeSync() {
     } else {
       endTimeInput.dataset.syncedWithStart = 'false';
     }
+    try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
   });
+
+  // Persist when time fields change explicitly
+  const persistTime = () => { try { persistCreateReservationDraft(); } catch (_) {} };
+  startTimeInput.addEventListener('input', persistTime);
+  startTimeInput.addEventListener('change', persistTime);
+  endTimeInput.addEventListener('change', persistTime);
 
   if (!endTimeInput.value?.trim()) {
     syncEndTimeWithStart();
