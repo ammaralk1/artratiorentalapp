@@ -5153,7 +5153,18 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 .technician-page .reservation-modal .reservation-modal-items-table,
 .customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table,
 .technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table {
+  /* Neutralize Bootstrap's table background on these modals */
+  --bs-table-bg: transparent;
   --bs-table-hover-bg: rgba(37, 99, 235, 0.18);
   --bs-table-hover-color: var(--clr-text);
   --bs-table-border-color: rgba(37, 55, 88, 0.65);
+  background-color: transparent !important;
+}
+
+/* Ensure Bootstrap cell background rule is neutralized */
+.customer-page .reservation-modal .reservation-modal-items-table > :not(caption) > * > *,
+.technician-page .reservation-modal .reservation-modal-items-table > :not(caption) > * > *,
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table > :not(caption) > * > *,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table > :not(caption) > * > * {
+  background-color: transparent !important;
 }
