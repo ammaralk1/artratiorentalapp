@@ -18,6 +18,8 @@ import {
 } from "./projectFocusTemplates.js";
 import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
 import { getReservationsState } from "./reservationsService.js";
+import { openProjectDetails } from "./projects/projectDetails.js";
+import { dom as projectsDom, state as projectsState } from "./projects/state.js";
 import {
   getReservationUIHandler,
   waitForReservationUIHandler
@@ -570,41 +572,16 @@ function openCustomerProjectDetails(projectId) {
   if (!normalizedId) return;
   if (!ensureProjectDetailsModal()) return;
 
-  const modal = customerProjectsContext.modal;
-  if (!modal?.body) return;
-
-  modal.body.dataset.mode = 'view';
+  // Reuse the Projects page modal/details renderer for a 1:1 match
   const { projects = [], reservations = [], customers = [] } = loadData();
-  const project = findProjectByIdentifier(projects, normalizedId);
-  if (!project) return;
-
-  if (customerProjectsContext.currentId && project.clientId != null) {
-    if (String(project.clientId) !== String(customerProjectsContext.currentId)) {
-      return;
-    }
-  }
-
-  const customer = customers.find((entry) => String(entry.id) === String(project.clientId)) || null;
-  const linkedReservations = reservations.filter((reservation) => {
-    const reservationProjectId = extractReservationProjectId(reservation);
-    return reservationProjectId && reservationProjectId === normalizedId;
-  });
-
-  const detailsHtml = buildProjectDetailsMarkup(project, {
-    customer,
-    reservations: linkedReservations
-  });
-
-  modal.body.innerHTML = detailsHtml;
-  attachCustomerProjectDetailsActions(project);
-  attachProjectReservationViewHandlers(modal.body);
-
-  if (window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(modal.el).show();
-  } else {
-    modal.el.classList.add('show');
-    modal.el.style.display = 'block';
-  }
+  const modal = customerProjectsContext.modal;
+  projectsDom.detailsModalEl = modal.el;
+  projectsDom.detailsBody = modal.body;
+  projectsState.projects = getProjectsState();
+  projectsState.reservations = getReservationsState();
+  projectsState.customers = customers || [];
+  // Delegate to Projects implementation
+  openProjectDetails(normalizedId);
 }
 
 function attachCustomerProjectDetailsActions(project) {

@@ -11,7 +11,6 @@ import {
 } from "./reservations/uiBridge.js";
 import {
   buildProjectFocusCard,
-  buildProjectDetailsMarkup,
   buildProjectEditMarkup,
   buildProjectEditExpensesMarkup,
   syncProjectReservationsPayment,
@@ -20,6 +19,9 @@ import {
   extractReservationProjectId,
   PROJECT_TAX_RATE
 } from "./projectFocusTemplates.js";
+import { openProjectDetails } from "./projects/projectDetails.js";
+import { dom as projectsDom, state as projectsState } from "./projects/state.js";
+import { getProjectsState } from "./projectsService.js";
 import { calculateProjectExpenses } from "./projectsCommon.js";
 import { updateProjectApi, buildProjectPayload } from "./projectsService.js";
 import {
@@ -675,11 +677,6 @@ function openTechnicianProjectDetails(projectId) {
     };
   }
 
-  if (activeTechnicianId && !normalizedTechnicians.includes(activeTechnicianId)) {
-    console.debug('[technician] open details skipped (technician not in project)', { normalizedId, activeTechnicianId, normalizedTechnicians });
-    return;
-  }
-
   project = {
     ...project,
     technicians: normalizedTechnicians
@@ -691,20 +688,13 @@ function openTechnicianProjectDetails(projectId) {
     return reservationProjectId && reservationProjectId === normalizedId;
   });
 
-  modal.body.dataset.mode = 'view';
-  modal.body.innerHTML = buildProjectDetailsMarkup(project, {
-    customer,
-    reservations: linkedReservations
-  });
-  attachTechnicianProjectDetailsActions(project);
-  attachTechnicianReservationViewHandlers(modal.body);
-
-  if (window.bootstrap?.Modal) {
-    window.bootstrap.Modal.getOrCreateInstance(modal.el).show();
-  } else {
-    modal.el.classList.add('show');
-    modal.el.style.display = 'block';
-  }
+  // Reuse Projects page details renderer for exact parity
+  projectsDom.detailsModalEl = technicianProjectsContext.modal.el;
+  projectsDom.detailsBody = technicianProjectsContext.modal.body;
+  projectsState.projects = getProjectsState();
+  projectsState.reservations = getReservationsState();
+  projectsState.customers = customers || [];
+  openProjectDetails(normalizedId);
 }
 
 function attachTechnicianProjectDetailsActions(project) {
