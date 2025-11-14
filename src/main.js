@@ -26,6 +26,55 @@ let pendingReservationEdit = null;
 let pendingReservationEditPromise = null;
 let dashboardMetricsLoadPromise = null;
 
+// Early restore for reservation draft so fields persist across refresh
+function earlyRestoreReservationDraft() {
+  try {
+    const key = 'reservations:create:draft';
+    const read = () => {
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          const raw = window.sessionStorage.getItem(key);
+          if (raw) return JSON.parse(raw);
+        }
+      } catch (_) { /* ignore */ }
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const raw = window.localStorage.getItem(key);
+          if (raw) return JSON.parse(raw);
+        }
+      } catch (_) { /* ignore */ }
+      return null;
+    };
+
+    const draft = read();
+    if (!draft) return;
+
+    const setIfEmpty = (id, value) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (typeof value !== 'string') return;
+      if (!el.value) el.value = value;
+    };
+
+    setIfEmpty('res-start', draft.startDate || '');
+    setIfEmpty('res-end', draft.endDate || '');
+    setIfEmpty('res-start-time', draft.startTime || '');
+    setIfEmpty('res-end-time', draft.endTime || '');
+
+    // Customer label and hidden id
+    try {
+      const customerInput = document.getElementById('res-customer-input');
+      const customerHidden = document.getElementById('res-customer');
+      if (customerInput && typeof draft.customerLabel === 'string' && !customerInput.value) {
+        customerInput.value = draft.customerLabel;
+      }
+      if (customerHidden && typeof draft.customerId === 'string' && !customerHidden.value) {
+        customerHidden.value = draft.customerId;
+      }
+    } catch (_) { /* ignore */ }
+  } catch (_) { /* ignore */ }
+}
+
 function loadDashboardMetricsModule() {
   if (!dashboardMetricsLoadPromise) {
     dashboardMetricsLoadPromise = import('./scripts/dashboardMetrics.js')
@@ -94,6 +143,8 @@ async function initApp() {
     return;
   }
   initDashboardShell();
+  // Restore reservation draft very early so fields are visible even before module init
+  try { earlyRestoreReservationDraft(); } catch (_) {}
   setupTabs();
   initBackToTopForEquipment();
   initCustomers();
