@@ -576,8 +576,16 @@ function openCustomerProjectDetails(projectId) {
   const modal = customerProjectsContext.modal;
   projectsDom.detailsModalEl = modal.el;
   projectsDom.detailsBody = modal.body;
-  projectsState.projects = getProjectsState();
-  projectsState.reservations = getReservationsState();
+  // Ensure Projects module state is populated even if service state is stale
+  const serviceProjects = getProjectsState();
+  const serviceReservations = getReservationsState();
+  const serviceHasProject = Array.isArray(serviceProjects)
+    ? serviceProjects.some((p) => String(p?.id) === normalizedId)
+    : false;
+  projectsState.projects = (Array.isArray(serviceProjects) && serviceProjects.length && serviceHasProject)
+    ? serviceProjects
+    : (projects || []);
+  projectsState.reservations = Array.isArray(serviceReservations) && serviceReservations.length ? serviceReservations : (reservations || []);
   projectsState.customers = customers || [];
   // Delegate to Projects implementation
   openProjectDetails(normalizedId);
