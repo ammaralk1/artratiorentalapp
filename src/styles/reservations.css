@@ -4998,6 +4998,12 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   background-color: transparent;
 }
 
+/* Hide destructive controls inside read-only reservation details modal */
+.reservation-modal .reservation-modal-items-table__cell--actions,
+.reservation-modal .reservation-remove-button {
+  display: none !important;
+}
+
 /* Dark theme alias: apply the same reservation items table styling when `.dark` is used */
 :where(html.dark, body.dark) .reservation-modal-items-table {
   background: rgba(24, 33, 59, 0.92);
