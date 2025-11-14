@@ -100,6 +100,7 @@ let packageOptionsCache = [];
 
 // ===== Draft persistence (keep form on refresh) =====
 const RESERVATION_FORM_DRAFT_STORAGE_KEY = 'reservations:create:draft';
+let __createDraftRestoreInProgress = false;
 
 function getDraftStorage() {
   // Prefer sessionStorage, but if unavailable, fall back to localStorage
@@ -172,6 +173,7 @@ function collectCreateReservationDraft() {
 }
 
 function persistCreateReservationDraft() {
+  if (__createDraftRestoreInProgress) return; // avoid overwriting saved draft during init/restore
   const storage = getDraftStorage();
   const secondary = getSecondaryStorage();
   if (!storage && !secondary) return;
@@ -202,6 +204,7 @@ function restoreCreateReservationDraft() {
   const storage = getDraftStorage();
   const secondary = getSecondaryStorage();
   if (!storage && !secondary) return;
+  __createDraftRestoreInProgress = true;
   let draft = null;
   try {
     const rawPrimary = storage ? storage.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY) : null;
@@ -210,6 +213,7 @@ function restoreCreateReservationDraft() {
     draft = raw ? JSON.parse(raw) : null;
   } catch (error) {
     console.warn('⚠️ [reservations/createForm] Unable to read create draft', error);
+    __createDraftRestoreInProgress = false;
     return;
   }
   if (!draft) return;
@@ -228,11 +232,22 @@ function restoreCreateReservationDraft() {
     // Customer
     if (draft.customerId) {
       ensureCustomerChoices({ selectedValue: String(draft.customerId) });
+      const { input, hidden } = getCustomerElements();
+      if (input) input.dataset.selectedId = String(draft.customerId);
     } else if (draft.customerLabel) {
       ensureCustomerChoices({ selectedValue: '', resetInput: true });
       const { input, hidden } = getCustomerElements();
       if (input) input.value = draft.customerLabel;
       if (hidden) hidden.value = '';
+      // Try to resolve label to an existing customer id
+      try {
+        const entry = resolveCustomerByLabel(draft.customerLabel, { allowPartial: true });
+        if (entry) {
+          hidden.value = String(entry.id);
+          input.value = entry.label;
+          input.dataset.selectedId = String(entry.id);
+        }
+      } catch (_) { /* ignore */ }
     }
 
     // Project
@@ -285,9 +300,22 @@ function restoreCreateReservationDraft() {
     }
 
     updateCreateProjectTaxState();
+    // Fire events to refresh any dependent UI (e.g., crew picker availability)
+    try {
+      ['res-customer','res-customer-input','res-start','res-end','res-start-time','res-end-time']
+        .map((id) => document.getElementById(id))
+        .filter(Boolean)
+        .forEach((el) => {
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    } catch (_) { /* ignore */ }
+
     renderDraftReservationSummary();
   } catch (error) {
     console.warn('⚠️ [reservations/createForm] Failed to restore create draft', error);
+  } finally {
+    __createDraftRestoreInProgress = false;
   }
 }
 
@@ -3070,6 +3098,7 @@ function setupFormSubmit() {
 export function initCreateReservationForm({ onAfterSubmit } = {}) {
   afterSubmitCallback = typeof onAfterSubmit === 'function' ? onAfterSubmit : null;
 
+  __createDraftRestoreInProgress = true; // suppress draft writes during init
   const { customers, projects } = loadData();
   setCachedCustomers(customers || []);
   ensureCustomerChoices();
@@ -3104,6 +3133,8 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
       window.__reservationDraftUnloadBound = true;
     }
   } catch (_) { /* ignore */ }
+
+  __createDraftRestoreInProgress = false;
 }
 
 export function refreshCreateReservationForm() {
