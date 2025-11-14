@@ -1076,13 +1076,10 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             </td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitPrice)}">${unitPriceDisplay}</td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.total)}">${totalPriceDisplay}</td>
-            <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--actions" data-label="${escapeHtml(tableHeaders.actions)}">
-              <button type="button" class="reservation-remove-button" disabled aria-disabled="true" tabindex="-1">🗑️</button>
-            </td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="5" class="text-center">${noItemsText}</td></tr>`;
+    : `<tr><td colspan="4" class="text-center">${noItemsText}</td></tr>`;
 
 
   const itemsTable = `
@@ -1094,7 +1091,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             <th>${tableHeaders.quantity}</th>
             <th>${tableHeaders.unitPrice}</th>
             <th>${tableHeaders.total}</th>
-            <th>${tableHeaders.actions}</th>
           </tr>
         </thead>
         <tbody>${itemsTableBody}</tbody>
