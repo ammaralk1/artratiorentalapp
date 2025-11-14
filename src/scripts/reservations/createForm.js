@@ -969,6 +969,8 @@ function setupProjectSelection() {
       hidden.value = '';
       input.dataset.selectedId = '';
     }
+    // Persist draft continuously while typing
+    try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
   });
 
   input.addEventListener('change', () => commitSelection(true));
@@ -1011,6 +1013,8 @@ function setupCustomerAutocomplete() {
       hidden.value = '';
       input.dataset.selectedId = '';
     }
+    // Persist draft continuously while typing
+    try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
   });
 
   input.addEventListener('change', () => commitSelection(true));
@@ -2376,6 +2380,24 @@ function setupReservationTimeSync() {
     return;
   }
 
+  // Also persist on date changes so drafts survive refresh even if user didn't blur
+  try {
+    const startDateInput = document.getElementById('res-start');
+    const endDateInput = document.getElementById('res-end');
+    if (startDateInput && !startDateInput.dataset.persistAttached) {
+      const persist = () => { try { persistCreateReservationDraft(); } catch (_) {} };
+      startDateInput.addEventListener('input', persist);
+      startDateInput.addEventListener('change', persist);
+      startDateInput.dataset.persistAttached = 'true';
+    }
+    if (endDateInput && !endDateInput.dataset.persistAttached) {
+      const persist = () => { try { persistCreateReservationDraft(); } catch (_) {} };
+      endDateInput.addEventListener('input', persist);
+      endDateInput.addEventListener('change', persist);
+      endDateInput.dataset.persistAttached = 'true';
+    }
+  } catch (_) { /* non-fatal */ }
+
   let suppressEndListener = false;
 
   const syncEndTimeWithStart = () => {
@@ -3046,6 +3068,16 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   applyPendingProjectContext();
   renderDraftReservationSummary();
   renderReservationItems();
+
+  // Ensure we persist on page unload even if inputs are focused
+  try {
+    if (typeof window !== 'undefined' && !window.__reservationDraftUnloadBound) {
+      window.addEventListener('beforeunload', () => {
+        try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
+      });
+      window.__reservationDraftUnloadBound = true;
+    }
+  } catch (_) { /* ignore */ }
 }
 
 export function refreshCreateReservationForm() {
