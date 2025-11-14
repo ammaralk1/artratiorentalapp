@@ -521,10 +521,10 @@ function updateCustomerProjects() {
   container.querySelectorAll('.project-focus-card').forEach((card) => {
     if (card.dataset.customerModalListenerAttached === 'true') return;
     card.addEventListener('click', (event) => {
-      const ignored = event.target.closest('[data-ignore-project-modal]');
-      if (ignored) return;
+      // Always open the project modal on any card click
       const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
       if (!projectId) return;
+      try { console.debug('[customer] project card click', projectId); } catch (_) {}
       openCustomerProjectDetails(projectId);
     });
     card.dataset.customerModalListenerAttached = 'true';
