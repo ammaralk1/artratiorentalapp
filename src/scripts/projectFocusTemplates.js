@@ -332,10 +332,14 @@ export function buildProjectFocusCard(project, {
 
 function buildProjectRow(icon, label, value) {
   const iconHtml = icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : '';
+  const valueStr = String(value ?? '');
+  const trimmed = valueStr.trim();
+  const isSafeHtml = trimmed.startsWith('<');
+  const renderedValue = isSafeHtml ? valueStr : escapeHtml(valueStr);
   return `
     <div class="project-focus-card__row">
       <span class="project-focus-card__row-label">${iconHtml}${escapeHtml(label)}</span>
-      <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
+      <span class="project-focus-card__row-value">${renderedValue}</span>
     </div>
   `;
 }
