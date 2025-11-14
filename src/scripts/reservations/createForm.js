@@ -9,7 +9,7 @@ import {
   isEquipmentUnavailable,
   isEquipmentAvailable
 } from '../reservationsEquipment.js';
-import { getSelectedCrewAssignments, getSelectedTechnicians, resetSelectedTechnicians } from '../reservationsTechnicians.js';
+import { getSelectedCrewAssignments, getSelectedTechnicians, resetSelectedTechnicians, setSelectedTechnicians } from '../reservationsTechnicians.js';
 import {
   calculateReservationTotal,
   renderDraftSummary,
@@ -97,6 +97,179 @@ let isSyncingShareTaxCreate = false;
 let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
+
+// ===== Draft persistence (keep form on refresh) =====
+const RESERVATION_FORM_DRAFT_STORAGE_KEY = 'reservations:create:draft';
+
+function getDraftStorage() {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) return window.sessionStorage;
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+function collectCreateReservationDraft() {
+  if (typeof document === 'undefined') return null;
+  const storage = getDraftStorage();
+  if (!storage) return null;
+
+  try {
+    const { input: customerInput, hidden: customerHidden } = getCustomerElements();
+    const { input: projectInput, hidden: projectHidden } = getProjectElements();
+
+    const startDate = document.getElementById('res-start')?.value || '';
+    const endDate = document.getElementById('res-end')?.value || '';
+    const startTime = document.getElementById('res-start-time')?.value || '';
+    const endTime = document.getElementById('res-end-time')?.value || '';
+    const notes = document.getElementById('res-notes')?.value || '';
+    const discountRaw = document.getElementById('res-discount')?.value || '';
+    const discountType = document.getElementById('res-discount-type')?.value || 'percent';
+    const taxEnabled = Boolean(document.getElementById('res-tax')?.checked);
+    const shareCheckbox = document.getElementById('res-company-share');
+    const companyShareEnabled = Boolean(shareCheckbox?.checked);
+    const companySharePercent = companyShareEnabled ? getCompanySharePercent('res-company-share') : null;
+    const paymentStatus = document.getElementById('res-payment-status')?.value || 'unpaid';
+    const paymentProgressType = document.getElementById('res-payment-progress-type')?.value || 'percent';
+    const paymentProgressValue = document.getElementById('res-payment-progress-value')?.value || '';
+
+    const draft = {
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      customerId: customerHidden?.value || '',
+      customerLabel: customerInput?.value || '',
+      projectId: projectHidden?.value || '',
+      projectLabel: projectInput?.value || '',
+      notes,
+      discount: String(discountRaw || ''),
+      discountType,
+      taxEnabled,
+      companyShareEnabled,
+      companySharePercent,
+      paymentStatus,
+      paymentProgressType,
+      paymentProgressValue: String(paymentProgressValue || ''),
+      items: getSelectedItems() || [],
+      technicianIds: getSelectedTechnicians() || [],
+    };
+    return draft;
+  } catch (_) {
+    return null;
+  }
+}
+
+function persistCreateReservationDraft() {
+  const storage = getDraftStorage();
+  if (!storage) return;
+  const draft = collectCreateReservationDraft();
+  if (!draft) return;
+  try {
+    storage.setItem(RESERVATION_FORM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  } catch (error) {
+    console.warn('⚠️ [reservations/createForm] Unable to persist create draft', error);
+  }
+}
+
+function clearCreateReservationDraft() {
+  const storage = getDraftStorage();
+  if (!storage) return;
+  try {
+    storage.removeItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
+  } catch (error) {
+    console.warn('⚠️ [reservations/createForm] Unable to clear create draft', error);
+  }
+}
+
+function restoreCreateReservationDraft() {
+  const storage = getDraftStorage();
+  if (!storage) return;
+  let draft = null;
+  try {
+    const raw = storage.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY);
+    draft = raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.warn('⚠️ [reservations/createForm] Unable to read create draft', error);
+    return;
+  }
+  if (!draft) return;
+
+  try {
+    // Date/time
+    if (draft.startDate || draft.startTime) {
+      const startIso = combineDateTime(draft.startDate || '', draft.startTime || '');
+      setDateTimeInputs('res-start', 'res-start-time', startIso);
+    }
+    if (draft.endDate || draft.endTime) {
+      const endIso = combineDateTime(draft.endDate || '', draft.endTime || '');
+      setDateTimeInputs('res-end', 'res-end-time', endIso);
+    }
+
+    // Customer
+    if (draft.customerId) {
+      ensureCustomerChoices({ selectedValue: String(draft.customerId) });
+    } else if (draft.customerLabel) {
+      ensureCustomerChoices({ selectedValue: '', resetInput: true });
+      const { input, hidden } = getCustomerElements();
+      if (input) input.value = draft.customerLabel;
+      if (hidden) hidden.value = '';
+    }
+
+    // Project
+    if (draft.projectId) {
+      ensureProjectChoices({ selectedValue: String(draft.projectId) });
+    } else if (draft.projectLabel) {
+      ensureProjectChoices({ selectedValue: '', resetInput: true });
+      const { input, hidden } = getProjectElements();
+      if (input) input.value = draft.projectLabel;
+      if (hidden) hidden.value = '';
+    }
+
+    // Notes / billing / payment
+    if (document.getElementById('res-notes')) document.getElementById('res-notes').value = draft.notes || '';
+    if (document.getElementById('res-discount')) document.getElementById('res-discount').value = draft.discount || '';
+    if (document.getElementById('res-discount-type')) document.getElementById('res-discount-type').value = draft.discountType || 'percent';
+
+    const taxCheckbox = document.getElementById('res-tax');
+    if (taxCheckbox) taxCheckbox.checked = Boolean(draft.taxEnabled);
+
+    const shareCheckbox = document.getElementById('res-company-share');
+    if (shareCheckbox) {
+      shareCheckbox.checked = Boolean(draft.companyShareEnabled);
+      if (draft.companySharePercent != null) {
+        shareCheckbox.dataset.companyShare = String(draft.companySharePercent);
+      }
+    }
+
+    const paymentSelect = document.getElementById('res-payment-status');
+    if (paymentSelect) {
+      paymentSelect.value = draft.paymentStatus || paymentSelect.value || 'unpaid';
+      updatePaymentStatusAppearance(paymentSelect, paymentSelect.value);
+    }
+    if (document.getElementById('res-payment-progress-type')) {
+      document.getElementById('res-payment-progress-type').value = draft.paymentProgressType || 'percent';
+    }
+    if (document.getElementById('res-payment-progress-value')) {
+      document.getElementById('res-payment-progress-value').value = draft.paymentProgressValue || '';
+    }
+
+    // Items
+    if (Array.isArray(draft.items)) {
+      setSelectedItems(draft.items);
+      renderReservationItems();
+    }
+
+    // Technicians
+    if (Array.isArray(draft.technicianIds) && draft.technicianIds.length) {
+      try { setSelectedTechnicians(draft.technicianIds); } catch (_) { /* ignore */ }
+    }
+
+    updateCreateProjectTaxState();
+    renderDraftReservationSummary();
+  } catch (error) {
+    console.warn('⚠️ [reservations/createForm] Failed to restore create draft', error);
+  }
+}
 
 function resolvePackageInfo(normalizedId) {
   if (!normalizedId) return null;
@@ -2098,6 +2271,9 @@ function renderDraftReservationSummary() {
   } else {
     updatePaymentStatusAppearance(paymentSelect, paidStatus);
   }
+
+  // Persist latest draft state after updating summary
+  try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
 }
 
 function setupSummaryEvents() {
@@ -2739,6 +2915,7 @@ function resetForm() {
   renderReservationItems();
   updateCreateProjectTaxState();
   renderDraftReservationSummary();
+  clearCreateReservationDraft();
 }
 
 function setupReservationButtons() {
@@ -2829,6 +3006,17 @@ function setupFormSubmit() {
     });
     btn.dataset.listenerAttached = 'true';
   }
+
+  const clearBtn = document.getElementById('clear-reservation-form-btn');
+  if (clearBtn && !clearBtn.dataset.listenerAttached) {
+    clearBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      resetForm();
+      try { clearCreateReservationDraft(); } catch (_) { /* ignore */ }
+      showToast(t('reservations.toast.formCleared', '🧹 تم مسح الحقول'));
+    });
+    clearBtn.dataset.listenerAttached = 'true';
+  }
 }
 
 export function initCreateReservationForm({ onAfterSubmit } = {}) {
@@ -2853,6 +3041,8 @@ export function initCreateReservationForm({ onAfterSubmit } = {}) {
   setupReservationButtons();
   setupBarcodeInput();
   setupFormSubmit();
+  // Restore saved draft before applying any project context overrides
+  restoreCreateReservationDraft();
   applyPendingProjectContext();
   renderDraftReservationSummary();
   renderReservationItems();
