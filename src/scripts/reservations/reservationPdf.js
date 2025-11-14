@@ -3,7 +3,7 @@ import { getReservationsState, refreshReservationsFromApi } from '../reservation
 import { apiRequest } from '../apiClient.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { getTechnicianPositionsCache, findPositionByName } from '../technicianPositions.js';
-import { t } from '../language.js';
+import { t, setLanguage, getCurrentLanguage } from '../language.js';
 import { normalizeNumbers, formatDateTime, showToast, showToastWithAction } from '../utils.js';
 import {
   calculateReservationDays,
@@ -235,10 +235,13 @@ const QUOTE_FIELD_DEFS = {
   // Items (equipment) section: add subtotal toggle
   items: [
     ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'days', labelKey: null, fallback: 'الأيام' },
     { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
   ],
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
+    { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
+    { id: 'days', labelKey: null, fallback: 'الأيام' },
     { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ]
 };
@@ -3743,19 +3746,23 @@ function buildQuotationHtml(options) {
       }
     });
     const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-    // Always show days column
-    const priceIndex = cols.findIndex((c) => c.id === 'price');
-    const insertionIndex = Math.max(0, priceIndex);
-    cols.splice(insertionIndex, 0, {
-      id: 'days',
-      labelKey: null,
-      fallback: 'الأيام',
-      render: () => escapeHtml(normalizeNumbers(String(days)))
-    });
-    // Reorder tail: unitPrice -> quantity -> days -> price
+    if (isFieldEnabled('items','days')) {
+      const priceIndex = cols.findIndex((c) => c.id === 'price');
+      const insertionIndex = Math.max(0, priceIndex);
+      cols.splice(insertionIndex, 0, {
+        id: 'days',
+        labelKey: null,
+        fallback: 'الأيام',
+        render: () => escapeHtml(normalizeNumbers(String(days)))
+      });
+    }
+    // Reorder tail: unitPrice -> quantity -> (days?) -> price
     const map = new Map(cols.map((c) => [c.id, c]));
     const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
-    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
+    const tailOrder = ['unitPrice','quantity'];
+    if (map.has('days')) tailOrder.push('days');
+    tailOrder.push('price');
+    const tail = tailOrder.map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
@@ -3840,16 +3847,18 @@ function buildQuotationHtml(options) {
             return escapeHtml(normalizeNumbers(String(baseLabel)) + suffix);
           }
         });
-        // Prepare quantity column
-        quantityColumn = {
-          id: 'quantity',
-          labelKey: 'reservations.details.table.headers.quantity',
-          fallback: 'الكمية',
-          render: (assignment) => {
-            const qty = Number(assignment?.__count || 1);
-            return escapeHtml(normalizeNumbers(String(Math.max(1, qty))));
-          }
-        };
+        // Prepare quantity column (optional via toggle)
+        if (isFieldEnabled('crew','quantity')) {
+          quantityColumn = {
+            id: 'quantity',
+            labelKey: 'reservations.details.table.headers.quantity',
+            fallback: 'الكمية',
+            render: (assignment) => {
+              const qty = Number(assignment?.__count || 1);
+              return escapeHtml(normalizeNumbers(String(Math.max(1, qty))));
+            }
+          };
+        }
       } else if (col.id === 'price') {
         // When grouping by position, show client price multiplied by quantity
         if (groupCrew) {
@@ -3894,20 +3903,22 @@ function buildQuotationHtml(options) {
         cols.push(col);
       }
     });
-    // Ensure quantity column is present
+    // Ensure quantity column is present only if allowed
     if (quantityColumn) {
       cols.push(quantityColumn);
     }
-    // Always show days column
-    const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-    const priceIndex = cols.findIndex((c) => c.id === 'price');
-    const insertionIndex = Math.max(0, priceIndex);
-    cols.splice(insertionIndex, 0, {
-      id: 'days',
-      labelKey: null,
-      fallback: 'الأيام',
-      render: () => escapeHtml(normalizeNumbers(String(days)))
-    });
+    // Optional days column via toggle
+    if (isFieldEnabled('crew','days')) {
+      const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+      const priceIndex = cols.findIndex((c) => c.id === 'price');
+      const insertionIndex = Math.max(0, priceIndex);
+      cols.splice(insertionIndex, 0, {
+        id: 'days',
+        labelKey: null,
+        fallback: 'الأيام',
+        render: () => escapeHtml(normalizeNumbers(String(days)))
+      });
+    }
     // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
@@ -4050,13 +4061,15 @@ function buildQuotationHtml(options) {
   const orderedBlocks = [
     ...ensureBlocks(primaryBlocks, 'reservations.quote.placeholder.page1'),
     ...tableBlocks,
-    ...ensureBlocks(summaryBlocks, 'reservations.quote.placeholder.page2'),
+    ...(options?.context === 'reservationChecklist' ? summaryBlocks : ensureBlocks(summaryBlocks, 'reservations.quote.placeholder.page2')),
     ...footerBlocks
   ];
 
   const isChecklist = (options?.context === 'reservationChecklist');
   const checklistTitle = (options?.checklistType === 'crew') ? 'قائمة الفريق الفني' : 'قائمة المعدات';
-  const headerTitle = isChecklist ? checklistTitle : t('reservations.quote.title', 'عرض سعر');
+  const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+  const enChecklistTitle = (options?.checklistType === 'crew') ? 'Crew List' : 'Equipment List';
+  const headerTitle = isChecklist ? (lang === 'en' ? enChecklistTitle : checklistTitle) : t('reservations.quote.title', 'عرض سعر');
   const headerMetaHtml = isChecklist
     ? (
       `<div class="quote-header__meta">
@@ -4079,16 +4092,20 @@ function buildQuotationHtml(options) {
       </div>`
     );
 
+  const showLogo = !isChecklist || !options?.hideLogo;
+  const showCompany = !isChecklist || !options?.hideCompany;
   const headerTemplateHtml = `
     <header class="quote-header" data-quote-header-template>
-      <div class="quote-header__logo">
+      ${showLogo ? `<div class="quote-header__logo">
         <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
-      </div>
+      </div>` : ''}
       <div class="quote-header__title">
         <h1>${escapeHtml(headerTitle)}</h1>
-        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
-        <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
-        <p class="quote-company-license">ترخيص إعلامي: 159460</p>
+        ${showCompany ? `
+          <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+          <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
+          <p class="quote-company-license">ترخيص إعلامي: 159460</p>
+        ` : ''}
       </div>
       ${headerMetaHtml}
     </header>
@@ -4688,6 +4705,8 @@ function renderQuotePreview() {
     terms: activeQuoteState.terms,
     checklistType: activeQuoteState.checklistType,
     checklistNotes: activeQuoteState.checklistNotes,
+    hideLogo: Boolean(activeQuoteState.hideLogo),
+    hideCompany: Boolean(activeQuoteState.hideCompany),
     projectCrew: activeQuoteState.projectCrew,
     projectExpenses: activeQuoteState.projectExpenses,
     projectEquipment: activeQuoteState.projectEquipment,
@@ -5316,6 +5335,19 @@ function openQuoteModal() {
               </label>
             </div>
           </div>
+          <div class="quote-meta-card" style="margin-bottom:10px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="btn btn-sm btn-light" data-checklist-lang>🇬🇧 English</button>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" data-checklist-hide-logo>
+                <span>إخفاء الشعار</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" data-checklist-hide-company>
+                <span>إخفاء اسم الشركة</span>
+              </label>
+            </div>
+          </div>
           <div class="quote-terms-editor" data-checklist-notes>
             <label class="quote-terms-editor__label" for="checklist-notes-input">ملاحظات اللستة (اختياري)</label>
             <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" placeholder="اكتب أي ملاحظات خاصة بهذه اللستة"></textarea>
@@ -5346,6 +5378,48 @@ function openQuoteModal() {
         const notesInput = controls.querySelector('#checklist-notes-input');
         notesInput.addEventListener('input', (e) => {
           activeQuoteState.checklistNotes = String(e.target.value || '');
+          renderQuotePreview();
+        });
+
+        // Language toggle
+        const langBtn = controls.querySelector('[data-checklist-lang]');
+        if (langBtn) {
+          const syncLabel = () => {
+            const lang = getCurrentLanguage?.() || 'ar';
+            langBtn.textContent = lang === 'ar' ? '🇬🇧 English' : '🇸🇦 العربية';
+          };
+          syncLabel();
+          langBtn.addEventListener('click', () => {
+            const lang = getCurrentLanguage?.() || 'ar';
+            const next = lang === 'ar' ? 'en' : 'ar';
+            try { setLanguage?.(next); } catch(_) {}
+            syncLabel();
+            // update title to current language
+            if (titleEl) {
+              const isCrew = activeQuoteState.checklistType === 'crew';
+              const label = (getCurrentLanguage?.() === 'en') ? (isCrew ? 'Crew List' : 'Equipment List') : (isCrew ? 'قائمة الفريق الفني' : 'قائمة المعدات');
+              titleEl.textContent = label;
+            }
+            renderQuoteToggles();
+            updateQuoteMeta();
+            renderQuotePreview();
+          });
+        }
+
+        // Header branding visibility
+        const hideLogoCb = controls.querySelector('[data-checklist-hide-logo]');
+        const hideCompanyCb = controls.querySelector('[data-checklist-hide-company]');
+        const syncBranding = () => {
+          if (hideLogoCb) hideLogoCb.checked = Boolean(activeQuoteState.hideLogo);
+          if (hideCompanyCb) hideCompanyCb.checked = Boolean(activeQuoteState.hideCompany);
+        };
+        syncBranding();
+        hideLogoCb?.addEventListener('change', (e) => {
+          activeQuoteState.hideLogo = Boolean(e.target.checked);
+          renderQuotePreview();
+        });
+        hideCompanyCb?.addEventListener('change', (e) => {
+          activeQuoteState.hideCompany = Boolean(e.target.checked);
           renderQuotePreview();
         });
       }
