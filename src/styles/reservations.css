@@ -4998,6 +4998,22 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
   background-color: transparent;
 }
 
+/* In read-only reservation details modal, hide +/- controls and simplify quantity chip */
+.reservation-modal .reservation-quantity-control {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+.reservation-modal .reservation-quantity-control .reservation-qty-btn {
+  display: none !important;
+}
+.reservation-modal .reservation-quantity-control .reservation-qty-value {
+  min-width: 0 !important;
+  padding: 0 !important;
+  font-weight: 700;
+}
+
 /* Hide destructive controls inside read-only reservation details modal */
 .reservation-modal .reservation-modal-items-table__cell--actions,
 .reservation-modal .reservation-remove-button {
