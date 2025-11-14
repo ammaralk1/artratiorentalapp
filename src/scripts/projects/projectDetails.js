@@ -318,8 +318,11 @@ export function openProjectDetails(projectId) {
     paidPercent: basePaidPercent,
     history: paymentHistory,
   });
+  // When there is a payment history, always derive status from progress
+  // to reflect the actual state (ignore stale manual status).
+  const manualStatusForDetermine = hasPaymentHistory ? 'unpaid' : (paymentStatusRaw || 'unpaid');
   paymentStatusValue = determinePaymentStatus({
-    manualStatus: paymentStatusRaw || 'unpaid',
+    manualStatus: manualStatusForDetermine,
     paidAmount: paymentProgress.paidAmount,
     paidPercent: paymentProgress.paidPercent,
     totalAmount: paymentTotalForProgress,
