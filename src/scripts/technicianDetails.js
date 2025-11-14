@@ -3,6 +3,7 @@ import { showToast, normalizeNumbers } from "./utils.js";
 import { loadData } from "./storage.js";
 import { t } from "./language.js";
 import { ensureReservationsLoaded } from "./reservationsActions.js";
+import { ensureProjectsLoaded } from "./projectsService.js";
 import { getReservationsState } from "./reservationsService.js";
 import {
   getReservationUIHandler,
@@ -106,7 +107,11 @@ export async function renderTechnicianReservations(technicianId) {
 
   if (!technicianReservationsHydrated) {
     try {
-      await ensureReservationsLoaded({ suppressError: false, force: true });
+      // Hydrate both reservations and projects to ensure we can resolve project titles
+      await Promise.all([
+        ensureReservationsLoaded({ suppressError: false, force: true }),
+        ensureProjectsLoaded({ force: true }).catch(() => {})
+      ]);
     } catch (error) {
       console.error('❌ [technician-details] Failed to hydrate reservations list', error);
       container.innerHTML = `<p class="text-danger" data-i18n data-i18n-key="technicianDetails.errors.reservationsLoadFailed">${t('technicianDetails.errors.reservationsLoadFailed', '❌ تعذر تحميل حجوزات هذا العضو حالياً.')}</p>`;
@@ -230,6 +235,18 @@ export async function renderTechnicianReservations(technicianId) {
   window.refreshTechnicianReservationsViews = () => {
     void lazyRenderReservations("technician-reservations", lastTechnicianFilters);
   };
+
+  // Keep technician reservations list in sync when projects change (titles/status)
+  if (!document.__techReservationsProjectListenerAttached) {
+    document.addEventListener('projects:changed', () => {
+      try {
+        if (typeof window.refreshTechnicianReservationsViews === 'function') {
+          window.refreshTechnicianReservationsViews();
+        }
+      } catch (_) { /* noop */ }
+    });
+    document.__techReservationsProjectListenerAttached = true;
+  }
 
   applyFilters();
 }
