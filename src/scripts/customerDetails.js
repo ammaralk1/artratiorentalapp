@@ -583,6 +583,16 @@ function openCustomerProjectDetails(projectId) {
   projectsState.customers = customers || [];
   // Delegate to Projects implementation
   openProjectDetails(normalizedId);
+
+  // Fallback: if Bootstrap Modal is not available on this page, force-show the modal
+  try {
+    if (!(window.bootstrap && window.bootstrap.Modal) && customerProjectsContext.modal?.el) {
+      const el = customerProjectsContext.modal.el;
+      el.classList.add('show');
+      el.style.display = 'block';
+      el.removeAttribute('aria-hidden');
+    }
+  } catch (_) { /* noop */ }
 }
 
 function attachCustomerProjectDetailsActions(project) {

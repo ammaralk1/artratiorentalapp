@@ -695,6 +695,16 @@ function openTechnicianProjectDetails(projectId) {
   projectsState.reservations = getReservationsState();
   projectsState.customers = customers || [];
   openProjectDetails(normalizedId);
+
+  // Fallback: force-show modal if Bootstrap Modal isn't available on this page
+  try {
+    if (!(window.bootstrap && window.bootstrap.Modal) && technicianProjectsContext.modal?.el) {
+      const el = technicianProjectsContext.modal.el;
+      el.classList.add('show');
+      el.style.display = 'block';
+      el.removeAttribute('aria-hidden');
+    }
+  } catch (_) { /* noop */ }
 }
 
 function attachTechnicianProjectDetailsActions(project) {
