@@ -220,6 +220,13 @@ body,
   object-fit: contain;
 }
 
+/* Keep header grid stable if logo hidden: reserve same space */
+.quote-logo--placeholder {
+  width: 90px;
+  height: 90px;
+  display: block;
+}
+
 .quote-section h3 {
   margin-bottom: 10px;
   font-size: 16px;

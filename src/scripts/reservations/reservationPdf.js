@@ -4053,10 +4053,22 @@ function buildQuotationHtml(options) {
     summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
   }
 
-  const footerBlocks = [
-    ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
-    withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
-  ];
+  let footerBlocks = [];
+  if ((options?.context || 'reservation') !== 'reservationChecklist') {
+    footerBlocks = [
+      ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
+      withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
+    ];
+  } else {
+    const userNotes = String(options?.checklistNotes || '').trim();
+    if (userNotes.length > 0) {
+      const checklistNotesSection = `<section class="quote-section">
+        <h3>${escapeHtml(t('reservations.details.labels.notes', 'ملاحظات الحجز'))}</h3>
+        <div class="quote-notes">${escapeHtml(userNotes)}</div>
+      </section>`;
+      footerBlocks = [withBlockAttributes(checklistNotesSection)];
+    }
+  }
 
   const orderedBlocks = [
     ...ensureBlocks(primaryBlocks, 'reservations.quote.placeholder.page1'),
@@ -4096,9 +4108,9 @@ function buildQuotationHtml(options) {
   const showCompany = !isChecklist || !options?.hideCompany;
   const headerTemplateHtml = `
     <header class="quote-header" data-quote-header-template>
-      ${showLogo ? `<div class="quote-header__logo">
-        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
-      </div>` : ''}
+      <div class="quote-header__logo">
+        ${showLogo ? `<img class=\"quote-logo\" src=\"${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}\" alt=\"${escapeHtml(QUOTE_COMPANY_INFO.companyName)}\" crossorigin=\"anonymous\"/>` : `<span class=\"quote-logo quote-logo--placeholder\" aria-hidden=\"true\"></span>`}
+      </div>
       <div class="quote-header__title">
         <h1>${escapeHtml(headerTitle)}</h1>
         ${showCompany ? `
