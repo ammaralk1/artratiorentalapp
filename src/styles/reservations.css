@@ -5109,3 +5109,41 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 .technician-page .reservation-modal .reservation-modal-items-table tbody tr:hover td {
   background: rgba(37, 99, 235, 0.18) !important;
 }
+
+/* Attribute-based dark theming fallback (in case only data-theme is applied) */
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead,
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead tr,
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead th,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead tr,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead th {
+  background: rgba(37, 55, 88, 0.95) !important;
+  color: #f1f5f9 !important;
+}
+
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead th,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table thead th {
+  border-bottom: 1px solid rgba(93, 133, 255, 0.38) !important;
+  border-left: 1px solid rgba(37, 55, 88, 0.65) !important;
+}
+
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody td,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody td {
+  color: var(--clr-text);
+  border-left: 1px solid rgba(37, 55, 88, 0.65);
+}
+
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:nth-child(even) td,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:nth-child(even) td {
+  background: rgba(30, 42, 68, 0.7) !important;
+}
+
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:nth-child(odd) td,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:nth-child(odd) td {
+  background: rgba(21, 29, 51, 0.85) !important;
+}
+
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:hover td,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.18) !important;
+}
