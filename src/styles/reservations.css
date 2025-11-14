@@ -5147,3 +5147,13 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 .technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table tbody tr:hover td {
   background: rgba(37, 99, 235, 0.18) !important;
 }
+
+/* Use Bootstrap table CSS variables to drive hover/background consistently */
+.customer-page .reservation-modal .reservation-modal-items-table,
+.technician-page .reservation-modal .reservation-modal-items-table,
+.customer-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table,
+.technician-page[data-theme="dark"] .reservation-modal .reservation-modal-items-table {
+  --bs-table-hover-bg: rgba(37, 99, 235, 0.18);
+  --bs-table-hover-color: var(--clr-text);
+  --bs-table-border-color: rgba(37, 55, 88, 0.65);
+}
