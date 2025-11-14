@@ -235,7 +235,7 @@ const QUOTE_FIELD_DEFS = {
   // Items (equipment) section: add subtotal toggle
   items: [
     ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
     { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
   ],
   crew: [
@@ -378,13 +378,13 @@ const PROJECT_QUOTE_FIELD_DEFS = {
     // Use reservation-style crew columns (position/unit/price), plus quantity + days, and subtotal toggle
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
-    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
     { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ],
   projectEquipment: [
     // Use reservation-style items columns (code/desc/unit/qty/price), plus days, and subtotal toggle
     ...QUOTE_ITEMS_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
-    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
     { id: 'equipmentSubtotal', labelKey: 'reservations.details.labels.equipmentTotal', fallback: 'إجمالي المعدات' }
   ],
   projectNotes: []
@@ -3073,7 +3073,7 @@ function buildProjectQuotationHtml({
       const insertionIndex = Math.max(0, priceIndex);
       cols.splice(insertionIndex, 0, {
         id: 'days',
-        labelKey: null,
+        labelKey: 'reservations.details.table.headers.days',
         fallback: 'الأيام',
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
@@ -3244,7 +3244,7 @@ function buildProjectQuotationHtml({
       const insertionIndex = Math.max(0, priceIndex);
       cols.splice(insertionIndex, 0, {
         id: 'days',
-        labelKey: null,
+        labelKey: 'reservations.details.table.headers.days',
         fallback: 'الأيام',
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
@@ -3751,7 +3751,7 @@ function buildQuotationHtml(options) {
       const insertionIndex = Math.max(0, priceIndex);
       cols.splice(insertionIndex, 0, {
         id: 'days',
-        labelKey: null,
+        labelKey: 'reservations.details.table.headers.days',
         fallback: 'الأيام',
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
@@ -5322,35 +5322,46 @@ function openQuoteModal() {
       if (!controls) {
         controls = document.createElement('div');
         controls.setAttribute('data-checklist-controls', '');
+        const itemsLabel = escapeHtml(t('reservations.checklist.controls.items', 'قائمة المعدات'));
+        const crewLabel = escapeHtml(t('reservations.checklist.controls.crew', 'قائمة الفريق الفني'));
+        const hideLogoLabel = escapeHtml(t('reservations.checklist.controls.hideLogo', 'إخفاء الشعار'));
+        const hideCompanyLabel = escapeHtml(t('reservations.checklist.controls.hideCompany', 'إخفاء اسم الشركة'));
+        const notesTitle = escapeHtml(t('reservations.checklist.controls.notes.title', 'ملاحظات اللستة (اختياري)'));
+        const notesPlaceholder = escapeHtml(t('reservations.checklist.controls.notes.placeholder', 'اكتب أي ملاحظات خاصة بهذه اللستة'));
+        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+        const langBtnLabel = lang === 'en'
+          ? escapeHtml(t('language.toggle.labelAr', '🇸🇦 العربية'))
+          : escapeHtml(t('language.toggle.labelEn', '🇬🇧 English'));
+
         controls.innerHTML = `
           <div class="quote-meta-card" style="margin-bottom:10px">
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <label style="display:flex;align-items:center;gap:6px">
                 <input type="radio" name="checklist-type" value="items" checked>
-                <span>قائمة المعدات</span>
+                <span data-i18n data-i18n-key="reservations.checklist.controls.items">${itemsLabel}</span>
               </label>
               <label style="display:flex;align-items:center;gap:6px">
                 <input type="radio" name="checklist-type" value="crew">
-                <span>قائمة الفريق الفني</span>
+                <span data-i18n data-i18n-key="reservations.checklist.controls.crew">${crewLabel}</span>
               </label>
             </div>
           </div>
           <div class="quote-meta-card" style="margin-bottom:10px">
             <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button type="button" class="btn btn-sm btn-light" data-checklist-lang>🇬🇧 English</button>
+              <button type="button" class="btn btn-sm btn-light" data-checklist-lang>${langBtnLabel}</button>
               <label style="display:flex;align-items:center;gap:6px">
                 <input type="checkbox" data-checklist-hide-logo>
-                <span>إخفاء الشعار</span>
+                <span data-i18n data-i18n-key="reservations.checklist.controls.hideLogo">${hideLogoLabel}</span>
               </label>
               <label style="display:flex;align-items:center;gap:6px">
                 <input type="checkbox" data-checklist-hide-company>
-                <span>إخفاء اسم الشركة</span>
+                <span data-i18n data-i18n-key="reservations.checklist.controls.hideCompany">${hideCompanyLabel}</span>
               </label>
             </div>
           </div>
           <div class="quote-terms-editor" data-checklist-notes>
-            <label class="quote-terms-editor__label" for="checklist-notes-input">ملاحظات اللستة (اختياري)</label>
-            <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" placeholder="اكتب أي ملاحظات خاصة بهذه اللستة"></textarea>
+            <label class="quote-terms-editor__label" for="checklist-notes-input" data-i18n data-i18n-key="reservations.checklist.controls.notes.title">${notesTitle}</label>
+            <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" data-i18n-placeholder-key="reservations.checklist.controls.notes.placeholder" placeholder="${notesPlaceholder}"></textarea>
           </div>
         `;
         sidebar.prepend(controls);

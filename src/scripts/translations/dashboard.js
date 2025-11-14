@@ -2,6 +2,15 @@ import { registerTranslations } from '../language.js';
 
 registerTranslations({
   ar: {
+    // Checklist controls (sidebar)
+    'reservations.checklist.controls.items': 'قائمة المعدات',
+    'reservations.checklist.controls.crew': 'قائمة الفريق الفني',
+    'reservations.checklist.controls.hideLogo': 'إخفاء الشعار',
+    'reservations.checklist.controls.hideCompany': 'إخفاء اسم الشركة',
+    'reservations.checklist.controls.notes.title': 'ملاحظات اللستة (اختياري)',
+    'reservations.checklist.controls.notes.placeholder': 'اكتب أي ملاحظات خاصة بهذه اللستة',
+    // Shared table headers
+    'reservations.details.table.headers.days': 'الأيام',
     'dashboard.header.greeting': '👋 أهلاً بك في لوحة التحكم',
     'dashboard.header.toggleLabel': 'لوحة التحكم',
     'dashboard.sidebar.title': 'مركز التحكم',
@@ -824,6 +833,15 @@ registerTranslations({
     'positions.defaults.cameraAssistant': 'مساعد كاميرا'
   },
   en: {
+    // Checklist controls (sidebar)
+    'reservations.checklist.controls.items': 'Equipment List',
+    'reservations.checklist.controls.crew': 'Crew List',
+    'reservations.checklist.controls.hideLogo': 'Hide logo',
+    'reservations.checklist.controls.hideCompany': 'Hide company name',
+    'reservations.checklist.controls.notes.title': 'Checklist notes (optional)',
+    'reservations.checklist.controls.notes.placeholder': 'Type any notes specific to this checklist',
+    // Shared table headers
+    'reservations.details.table.headers.days': 'Days',
     'dashboard.header.greeting': '👋 Welcome to the Dashboard',
     'dashboard.header.toggleLabel': 'Dashboard',
     'dashboard.sidebar.title': 'Control Center',
