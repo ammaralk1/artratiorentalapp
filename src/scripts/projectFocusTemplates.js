@@ -7,7 +7,7 @@ import {
   escapeHtml,
   formatCurrencyLocalized
 } from './projectsCommon.js';
-import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown } from './reservationsSummary.js';
+import { calculateReservationTotal, DEFAULT_COMPANY_SHARE_PERCENT, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from './reservationsSummary.js';
 import { isReservationCompleted, resolveReservationProjectState } from './reservationsShared.js';
 import { getReservationsState, updateReservationApi } from './reservationsService.js';
 
@@ -99,13 +99,38 @@ export function buildProjectFocusCard(project, {
   const status = determineProjectStatus(project);
   const statusLabel = t(`projects.status.${status}`, statusLabelsFallback[status]);
   const statusClass = statusBadgeClass[status] || 'bg-secondary';
-
-  const paymentStatus = project?.paymentStatus === 'paid' ? 'paid' : 'unpaid';
+  // Derive payment status exactly like Projects page cards
+  const baseTotals = resolveProjectTotals(project) || {};
+  const projectTaxableBase = Number(baseTotals.subtotal || 0);
+  const combinedReservationsTotal = (reservationList || []).reduce((sum, res) => sum + resolveReservationNetTotal(res), 0);
+  const combinedTax = baseTotals.applyTax
+    ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+    : 0;
+  const combinedTotalWithTax = Number((projectTaxableBase + combinedReservationsTotal + combinedTax).toFixed(2));
+  const projHistory = Array.isArray(project?.paymentHistory)
+    ? project.paymentHistory
+    : (Array.isArray(project?.payments) ? project.payments : []);
+  const projProgress = calculatePaymentProgress({
+    totalAmount: combinedTotalWithTax,
+    paidAmount: projHistory.length ? 0 : project.paidAmount,
+    paidPercent: projHistory.length ? 0 : project.paidPercent,
+    history: projHistory,
+  });
+  const paymentStatus = determinePaymentStatus({
+    manualStatus: null,
+    paidAmount: projProgress.paidAmount,
+    paidPercent: projProgress.paidPercent,
+    totalAmount: combinedTotalWithTax,
+  });
   const paymentStatusLabel = t(
     `projects.paymentStatus.${paymentStatus}`,
-    paymentStatus === 'paid' ? 'Paid' : 'Unpaid'
+    paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'
   );
-  const paymentChipClass = paymentStatus === 'paid' ? 'status-paid' : 'status-unpaid';
+  const paymentChipClass = paymentStatus === 'paid'
+    ? 'status-paid'
+    : paymentStatus === 'partial'
+      ? 'status-partial'
+      : 'status-unpaid';
   const cardStateClasses = [paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid'];
 
   const confirmed = project?.confirmed === true || project?.confirmed === 'true';
