@@ -40,6 +40,40 @@ function getReservationIdentifier(reservation) {
   return identifier != null ? String(identifier) : null;
 }
 
+// Match Projects page date/time presentation for cards
+function buildProjectDateTimeRows(start, end) {
+  if (!start) return { dateHtml: '—', timeText: '' };
+  const startStr = formatDateTimeLocalized(start);
+  const endStr = end ? formatDateTimeLocalized(end) : '';
+
+  const split = (val) => {
+    const parts = String(val).split(' ').filter(Boolean);
+    const date = parts.shift() || '';
+    const time = parts.join(' ');
+    return { date, time };
+  };
+
+  const s = split(startStr);
+  const e = endStr ? split(endStr) : { date: '', time: '' };
+  let dateHtml = '';
+  let timeText = '';
+
+  if (e.date && s.date === e.date) {
+    // same-day project
+    dateHtml = `<div class=\"date-range\"><div class=\"date-line\">${s.date}</div></div>`;
+    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
+  } else {
+    // multi-day project
+    dateHtml = `<div class=\"date-range\">` +
+      `<div class=\"date-line\">${s.date}</div>` +
+      (e.date ? `<div class=\"date-line\">${e.date}</div>` : '') +
+      `</div>`;
+    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
+  }
+
+  return { dateHtml, timeText };
+}
+
 function normalizeProjectReservations(reservations = []) {
   const stateReservations = getReservationsState();
 
@@ -89,6 +123,7 @@ export function buildProjectFocusCard(project, {
 } = {}) {
   const normalizedReservations = normalizeProjectReservations(reservations);
   const reservationList = normalizedReservations.map(({ reservation }) => reservation);
+  const reservationsCount = reservationList.length;
   const projectId = getProjectIdentifier(project);
   const projectIdAttr = projectId ? escapeHtml(projectId) : '';
   const status = determineProjectStatus(project);
@@ -198,8 +233,8 @@ export function buildProjectFocusCard(project, {
 
   const projectTotals = resolveProjectTotals(project);
   // Compute final total (same logic as details):
-  const expensesTotalNumber = Number(projectTotals.expensesTotal || 0);
-  const grossBeforeDiscount = Number((totals.equipment + totals.crew + expensesTotalNumber).toFixed(2));
+  const servicesClientPrice = Number(project?.servicesClientPrice ?? 0);
+  const grossBeforeDiscount = Number((totals.equipment + totals.crew + servicesClientPrice).toFixed(2));
   const discountValueRaw = Number.parseFloat(project?.discount ?? project?.discountValue ?? 0) || 0;
   const discountType = project?.discountType === 'amount' ? 'amount' : 'percent';
   let discountAmount = discountType === 'amount' ? discountValueRaw : (grossBeforeDiscount * (discountValueRaw / 100));
@@ -225,88 +260,45 @@ export function buildProjectFocusCard(project, {
     : 0;
   const finalTotal = Number((baseAfterDiscount + companyShareAmount + taxAmountAfterShare).toFixed(2));
 
+  const { dateHtml: projectDateHtml, timeText: projectTimeText } = buildProjectDateTimeRows(project?.start, project?.end);
   const metaRows = [
-    projectCodeDisplay
-      ? {
-          icon: '🆔',
-          label: t('projectCards.meta.code', 'رقم المشروع'),
-          value: `#${projectCodeDisplay}`
-        }
-      : null,
-    customerName
-      ? {
-          icon: '👤',
-          label: t('projectCards.meta.client', 'العميل'),
-          value: customerName
-        }
-      : null,
+    projectCodeDisplay ? { icon: '🆔', label: t('projectCards.meta.code', 'رقم المشروع'), value: `#${projectCodeDisplay}` } : null,
+    customerName ? { icon: '👤', label: t('projectCards.meta.client', 'العميل'), value: customerName } : null,
     // Company row hidden to match Projects page card
-    typeLabel
-      ? {
-          icon: '🏷️',
-          label: t('projectCards.meta.type', 'نوع المشروع'),
-          value: typeLabel
-        }
-      : null,
-    crewPreview
-      ? {
-          icon: '👥',
-          label: t('projectCards.stats.crewLabel', 'عدد الطاقم'),
-          value: crewPreview
-        }
-      : null,
-    {
-      icon: '📅',
-      label: t('projectCards.meta.startDate', 'تاريخ البداية'),
-      value: formatDateTimeLocalized(project?.start)
-    },
-    {
-      icon: '📅',
-      label: t('projectCards.meta.endDate', 'تاريخ النهاية'),
-      value: project?.end ? formatDateTimeLocalized(project.end) : '—'
-    }
+    typeLabel ? { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: `<span class=\"project-type-chip project-type-chip--${(project.type || 'default')}\">${escapeHtml(typeLabel)}</span>` } : null,
+    { icon: '📅', label: t('projects.focus.summary.range', 'الفترة الزمنية'), value: projectDateHtml },
+    projectTimeText ? { icon: '⏰', label: t('projects.focus.summary.time', 'الوقت'), value: projectTimeText } : null
   ].filter(Boolean);
 
   const reservationStats = [
-    {
-      icon: '📦',
-      label: t('projectCards.stats.equipmentCount', 'عدد المعدات'),
-      value: normalizeNumbers(String(equipmentCountTotal))
-    },
-    {
-      icon: '😎',
-      label: t('projectCards.stats.crewCount', 'عدد أفراد الطاقم'),
-      value: normalizeNumbers(String(crewAssignmentsTotal))
-    },
-    {
-      icon: '💵',
-      label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'),
-      value: formatCurrencyLocalized(reservationsTotal)
-    }
+    { icon: '🔗', label: t('projectCards.stats.reservationsShort', 'الحجوزات'), value: normalizeNumbers(String(reservationsCount)) },
+    { icon: '📦', label: t('projectCards.stats.equipmentCount', 'عدد المعدات'), value: normalizeNumbers(String(equipmentCountTotal)) },
+    { icon: '😎', label: t('projectCards.stats.crewCount', 'عدد أفراد الطاقم'), value: normalizeNumbers(String(crewAssignmentsTotal)) },
+    { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrencyLocalized(reservationsTotal) }
   ];
 
-  const paymentStats = [
-    {
-      icon: '💳',
-      label: t('projectCards.stats.paymentStatus', 'حالة الدفع'),
-      value: paymentStatusLabel
-    },
-    {
-      icon: '💸',
-      label: t('projectCards.stats.expensesTotal', 'خدمات إنتاجية (التكلفة)'),
-      value: formatCurrencyLocalized(projectTotals.expensesTotal)
-    },
-    {
-      icon: '💵',
-      label: t('projects.details.summary.finalTotal', 'الإجمالي النهائي', 'Final Total'),
-      value: formatCurrencyLocalized(finalTotal)
-    }
-  ];
+  const includesTaxLabel = (sharePercent > 0 && projectTotals.applyTax) ? ` ${t('projects.details.chips.vatOn', '(شامل الضريبة)', 'Includes VAT')}` : '';
+  const finalTotalLabel = `${t('projects.details.summary.finalTotal', 'المجموع النهائي', 'Final Total')}${includesTaxLabel}`;
+  const financialRowsHtml = [
+    { icon: '💼', label: t('projectCards.stats.servicesClientPrice', 'الخدمات الإنتاجية'), value: formatCurrencyLocalized(servicesClientPrice) },
+    { icon: '💵', label: finalTotalLabel, value: formatCurrencyLocalized(finalTotal) }
+  ]
+    .map(({ icon, label, value }) => buildProjectRow(icon, label, value))
+    .join('');
+
+  const reservationsRowsHtml = [
+    { icon: '🔗', label: t('projectCards.stats.reservationsShort', 'الحجوزات'), value: normalizeNumbers(String(reservationsCount)) },
+    { icon: '📦', label: t('projectCards.stats.equipmentCount', 'عدد المعدات'), value: normalizeNumbers(String(equipmentCountTotal)) },
+    { icon: '😎', label: t('projectCards.stats.crewCount', 'عدد الطاقم'), value: normalizeNumbers(String(crewAssignmentsTotal)) },
+    { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrencyLocalized(reservationsTotal) }
+  ]
+    .map(({ icon, label, value }) => buildProjectRow(icon, label, value))
+    .join('');
 
   const sectionsHtml = [
-    buildCardSection('projectCards.groups.meta', 'بيانات المشروع', metaRows),
-    buildCardSection('projectCards.groups.reservations', 'موجز الحجز', reservationStats),
-    buildCardSection('projectCards.groups.payment', 'ملخص الدفع', paymentStats)
+    buildFocusSection('projects.focus.summary.project', 'ملخص المشروع', metaRows),
+    buildFocusSectionHtml('projects.focus.summary.reservations', 'الحجوزات المرتبطة', reservationsRowsHtml),
+    buildFocusSectionHtml('projects.focus.summary.payment', 'الملخص المالي', financialRowsHtml)
   ].filter(Boolean).join('');
 
   const confirmedLabel = t('projects.focus.confirmed', '✅ مشروع مؤكد');
@@ -338,25 +330,38 @@ export function buildProjectFocusCard(project, {
   `;
 }
 
-function buildCardSection(titleKey, fallback, rows = []) {
+function buildProjectRow(icon, label, value) {
+  const iconHtml = icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : '';
+  return `
+    <div class="project-focus-card__row">
+      <span class="project-focus-card__row-label">${iconHtml}${escapeHtml(label)}</span>
+      <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
+    </div>
+  `;
+}
+
+function buildFocusSection(titleKey, fallback, rows = []) {
   if (!rows.length) return '';
   const rowsHtml = rows
-    .map(({ icon, label, value }) => {
-      const iconHtml = icon ? `<span class="project-focus-card__row-icon">${escapeHtml(icon)}</span>` : '';
-      return `
-        <div class="project-focus-card__row">
-          <span class="project-focus-card__row-label">${iconHtml}${escapeHtml(label)}</span>
-          <span class="project-focus-card__row-value">${escapeHtml(String(value))}</span>
-        </div>
-      `;
-    })
+    .map(({ icon, label, value }) => buildProjectRow(icon, label, value))
     .join('');
-
   return `
     <div class="project-focus-card__section">
       <span class="project-focus-card__section-title">${escapeHtml(t(titleKey, fallback))}</span>
       <div class="project-focus-card__section-box">
         ${rowsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function buildFocusSectionHtml(titleKey, fallback, innerHtml) {
+  if (!innerHtml) return '';
+  return `
+    <div class="project-focus-card__section">
+      <span class="project-focus-card__section-title">${escapeHtml(t(titleKey, fallback))}</span>
+      <div class="project-focus-card__section-box">
+        ${innerHtml}
       </div>
     </div>
   `;
