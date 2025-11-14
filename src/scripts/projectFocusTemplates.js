@@ -29,6 +29,16 @@ const statusBadgeClass = {
   completed: 'timeline-status-badge timeline-status-badge--completed'
 };
 
+// Also expose a chip class map for places that still expect `statusChipClassMap`
+// (e.g., details markup). Keep it aligned with Projects page timeline styles.
+const statusChipClassMap = {
+  upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
+  ongoing: 'timeline-status-badge timeline-status-badge--ongoing',
+  completed: 'timeline-status-badge timeline-status-badge--completed',
+  conflict: 'timeline-status-badge timeline-status-badge--conflict',
+  cancelled: 'timeline-status-badge timeline-status-badge--cancelled'
+};
+
 function getReservationIdentifier(reservation) {
   if (!reservation) return null;
   const candidates = [
