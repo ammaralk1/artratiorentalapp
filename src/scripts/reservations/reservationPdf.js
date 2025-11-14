@@ -397,7 +397,11 @@ function getQuoteConfig(context = 'reservation') {
     ? PROJECT_QUOTE_SECTION_DEFS
     : (context === 'reservationChecklist')
       ? [
-          // Checklist context: only items and crew
+          // Checklist context: include basic info + either items or crew
+          { id: 'customerInfo', labelKey: 'reservations.quote.sections.customer', fallback: 'بيانات العميل', defaultSelected: true },
+          { id: 'reservationInfo', labelKey: 'reservations.quote.sections.reservation', fallback: 'تفاصيل الحجز', defaultSelected: true },
+          { id: 'projectInfo', labelKey: 'reservations.quote.sections.project', fallback: 'بيانات المشروع', defaultSelected: true },
+          { id: 'notes', labelKey: 'reservations.quote.sections.notes', fallback: 'ملاحظات الحجز', defaultSelected: true },
           { id: 'items', labelKey: 'reservations.quote.sections.items', fallback: 'قائمة المعدات', defaultSelected: true },
           { id: 'crew', labelKey: 'reservations.quote.sections.crew', fallback: 'طاقم العمل', defaultSelected: true }
         ]
@@ -406,6 +410,10 @@ function getQuoteConfig(context = 'reservation') {
     ? PROJECT_QUOTE_FIELD_DEFS
     : (context === 'reservationChecklist')
       ? {
+          customerInfo: QUOTE_FIELD_DEFS.customerInfo,
+          reservationInfo: QUOTE_FIELD_DEFS.reservationInfo,
+          projectInfo: QUOTE_FIELD_DEFS.projectInfo,
+          notes: [],
           items: QUOTE_FIELD_DEFS.items,
           crew: QUOTE_FIELD_DEFS.crew
         }
@@ -3365,10 +3373,23 @@ function buildProjectQuotationHtml({
     summaryBlocks.push(withBlockAttributes(notesSectionMarkup));
   }
 
-  const footerBlocks = [
-    ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
-    withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
-  ];
+  let footerBlocks = [];
+  if (!isChecklist) {
+    footerBlocks = [
+      ...(includeSection('payment') ? [withBlockAttributes(paymentSectionMarkup, { blockType: 'payment' })] : []),
+      withBlockAttributes(termsSectionMarkup, { blockType: 'footer' })
+    ];
+  } else {
+    // Checklist: terms replaced by optional free-text notes from sidebar input
+    const userNotes = String(options?.checklistNotes || '').trim();
+    if (userNotes.length > 0) {
+      const checklistNotesSection = `<section class="quote-section">
+        <h3>ملاحظات</h3>
+        <div class="quote-notes">${escapeHtml(userNotes)}</div>
+      </section>`;
+      footerBlocks = [withBlockAttributes(checklistNotesSection)];
+    }
+  }
 
   const orderedBlocks = [
     ...ensureBlocks(primaryBlocks, 'projects.quote.placeholder.primary'),
@@ -4033,18 +4054,20 @@ function buildQuotationHtml(options) {
     ...footerBlocks
   ];
 
-  const headerTemplateHtml = `
-    <header class="quote-header" data-quote-header-template>
-      <div class="quote-header__logo">
-        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
-      </div>
-      <div class="quote-header__title">
-        <h1>${escapeHtml(t('reservations.quote.title', 'عرض سعر'))}</h1>
-        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
-        <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
-        <p class="quote-company-license">ترخيص إعلامي: 159460</p>
-      </div>
-      <div class="quote-header__meta">
+  const isChecklist = (options?.context === 'reservationChecklist');
+  const checklistTitle = (options?.checklistType === 'crew') ? 'قائمة الفريق الفني' : 'قائمة المعدات';
+  const headerTitle = isChecklist ? checklistTitle : t('reservations.quote.title', 'عرض سعر');
+  const headerMetaHtml = isChecklist
+    ? (
+      `<div class="quote-header__meta">
+        <div class="quote-header__meta-item">
+          <span>التاريخ</span>
+          <strong>${escapeHtml(quoteDate)}</strong>
+        </div>
+      </div>`
+    )
+    : (
+      `<div class="quote-header__meta">
         <div class="quote-header__meta-item">
           <span>رقم العرض</span>
           <strong>${escapeHtml(quoteNumber)}</strong>
@@ -4053,7 +4076,21 @@ function buildQuotationHtml(options) {
           <span>التاريخ</span>
           <strong>${escapeHtml(quoteDate)}</strong>
         </div>
+      </div>`
+    );
+
+  const headerTemplateHtml = `
+    <header class="quote-header" data-quote-header-template>
+      <div class="quote-header__logo">
+        <img class="quote-logo" src="${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}" alt="${escapeHtml(QUOTE_COMPANY_INFO.companyName)}" crossorigin="anonymous"/>
       </div>
+      <div class="quote-header__title">
+        <h1>${escapeHtml(headerTitle)}</h1>
+        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+        <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
+        <p class="quote-company-license">ترخيص إعلامي: 159460</p>
+      </div>
+      ${headerMetaHtml}
     </header>
   `.trim();
 
@@ -4649,6 +4686,8 @@ function renderQuotePreview() {
     quoteNumber: activeQuoteState.quoteNumber,
     quoteDate: activeQuoteState.quoteDateLabel,
     terms: activeQuoteState.terms,
+    checklistType: activeQuoteState.checklistType,
+    checklistNotes: activeQuoteState.checklistNotes,
     projectCrew: activeQuoteState.projectCrew,
     projectExpenses: activeQuoteState.projectExpenses,
     projectEquipment: activeQuoteState.projectEquipment,
@@ -5030,12 +5069,20 @@ function applyPreviewZoom(value) {
 function updateQuoteMeta() {
   if (!quoteModalRefs?.meta || !activeQuoteState) return;
   const { meta } = quoteModalRefs;
-  meta.innerHTML = `
-    <div class="quote-meta-card">
-      <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض سعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
-      <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
-    </div>
-  `;
+  if ((activeQuoteState.context || 'reservation') === 'reservationChecklist') {
+    meta.innerHTML = `
+      <div class="quote-meta-card">
+        <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
+      </div>
+    `;
+  } else {
+    meta.innerHTML = `
+      <div class="quote-meta-card">
+        <div><span>${escapeHtml(t('reservations.quote.labels.number', 'رقم عرض سعر'))}</span><strong>${escapeHtml(activeQuoteState.quoteNumber)}</strong></div>
+        <div><span>${escapeHtml(t('reservations.quote.labels.dateGregorian', 'التاريخ الميلادي'))}</span><strong>${escapeHtml(activeQuoteState.quoteDateLabel)}</strong></div>
+      </div>
+    `;
+  }
 }
 
 function updateQuoteTermsEditor() {
@@ -5121,14 +5168,16 @@ async function exportQuoteAsPdf() {
     logPdfDebug('html2pdf ensured');
 
     const context = activeQuoteState.context || 'reservation';
-    // Reserve the next sequence number at export-time to ensure uniqueness
-    try {
-      const { sequence, quoteNumber } = await reserveNextQuoteSequence(context);
-      activeQuoteState.quoteSequence = sequence;
-      activeQuoteState.quoteNumber = quoteNumber;
-      activeQuoteState.sequenceCommitted = true;
-    } catch (seqError) {
-      logPdfWarn('failed to reserve sequence at export time, proceeding with preview number', seqError);
+    // For checklist, do not reserve a sequence or show a quote number
+    if (context !== 'reservationChecklist') {
+      try {
+        const { sequence, quoteNumber } = await reserveNextQuoteSequence(context);
+        activeQuoteState.quoteSequence = sequence;
+        activeQuoteState.quoteNumber = quoteNumber;
+        activeQuoteState.sequenceCommitted = true;
+      } catch (seqError) {
+        logPdfWarn('failed to reserve sequence at export time, proceeding with preview number', seqError);
+      }
     }
     const html = buildQuotationHtml({
       context,
@@ -5201,7 +5250,13 @@ async function exportQuoteAsPdf() {
     }
     }
 
-    const filename = `quotation-${activeQuoteState.quoteNumber}.pdf`;
+    const filename = (context === 'reservationChecklist')
+      ? (() => {
+          const id = activeQuoteState?.reservation?.reservationCode || activeQuoteState?.reservation?.reservationId || activeQuoteState?.reservation?.id || 'res';
+          const kind = (activeQuoteState?.checklistType === 'crew') ? 'crew' : 'equipment';
+          return `checklist-${String(id)}-${kind}.pdf`;
+        })()
+      : `quotation-${activeQuoteState.quoteNumber}.pdf`;
     await renderQuotePagesAsPdf(pdfRoot, {
       filename,
       safariWindowRef: safariDownloadWindow,
@@ -5235,6 +5290,74 @@ function openQuoteModal() {
   }
   setPreviewZoom(previewZoom, { silent: true });
 
+  // Inject checklist-specific controls and labels when needed
+  if (activeQuoteState?.context === 'reservationChecklist') {
+    try {
+      const titleEl = refs.modal.querySelector('#reservationQuoteModalLabel');
+      const sidebar = refs.modal.querySelector('.quote-preview-sidebar');
+      const termsEditor = refs.modal.querySelector('[data-quote-terms-editor]');
+      if (termsEditor) termsEditor.style.display = 'none';
+
+      // Build controls container once
+      let controls = sidebar.querySelector('[data-checklist-controls]');
+      if (!controls) {
+        controls = document.createElement('div');
+        controls.setAttribute('data-checklist-controls', '');
+        controls.innerHTML = `
+          <div class="quote-meta-card" style="margin-bottom:10px">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="radio" name="checklist-type" value="items" checked>
+                <span>قائمة المعدات</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="radio" name="checklist-type" value="crew">
+                <span>قائمة الفريق الفني</span>
+              </label>
+            </div>
+          </div>
+          <div class="quote-terms-editor" data-checklist-notes>
+            <label class="quote-terms-editor__label" for="checklist-notes-input">ملاحظات اللستة (اختياري)</label>
+            <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" placeholder="اكتب أي ملاحظات خاصة بهذه اللستة"></textarea>
+          </div>
+        `;
+        sidebar.prepend(controls);
+
+        // Events
+        const radios = controls.querySelectorAll('input[name="checklist-type"]');
+        radios.forEach((radio) => {
+          radio.addEventListener('change', () => {
+            const value = controls.querySelector('input[name="checklist-type"]:checked')?.value || 'items';
+            activeQuoteState.checklistType = value === 'crew' ? 'crew' : 'items';
+            // Keep base sections, toggle items/crew
+            const base = new Set(['customerInfo','reservationInfo','projectInfo','notes']);
+            if (activeQuoteState.checklistType === 'crew') base.add('crew'); else base.add('items');
+            activeQuoteState.sections = base;
+            // Update modal title to reflect selection
+            if (titleEl) {
+              titleEl.textContent = activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : 'قائمة المعدات';
+            }
+            renderQuoteToggles();
+            updateQuoteMeta();
+            renderQuotePreview();
+          });
+        });
+
+        const notesInput = controls.querySelector('#checklist-notes-input');
+        notesInput.addEventListener('input', (e) => {
+          activeQuoteState.checklistNotes = String(e.target.value || '');
+          renderQuotePreview();
+        });
+      }
+
+      if (titleEl) {
+        titleEl.textContent = activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : 'قائمة المعدات';
+      }
+      // Update preview frame title for a11y
+      try { refs.previewFrame?.setAttribute('title', 'معاينة اللستة'); } catch(_) {}
+    } catch (_) { /* non-fatal */ }
+  }
+
   renderQuoteToggles();
   updateQuoteMeta();
   updateQuoteTermsEditor();
@@ -5255,7 +5378,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const { sequence, quoteNumber } = await peekServerQuoteSequence('reservation');
+  // No need to peek sequence for checklist (no quote number shown)
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -5276,8 +5399,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sectionExpansions: buildDefaultSectionExpansions('reservation'),
     fields: buildDefaultFieldSelections('reservation'),
     terms: baseTerms,
-    quoteSequence: sequence,
-    quoteNumber,
+    // Checklist: quote number is unused
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
@@ -5303,7 +5425,6 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
 
   // In checklist mode, we don't need a unique quote sequence, but keep date/number for consistency
-  const { sequence, quoteNumber } = await peekServerQuoteSequence('reservation');
   const now = new Date();
 
   activeQuoteState = {
@@ -5316,15 +5437,17 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
     totalsDisplay,
     rentalDays,
     currencyLabel,
+    checklistType: 'items',
+    checklistNotes: '',
     projectCrew: [],
     projectExpenses: [],
     projectEquipment: [],
-    sections: new Set(getQuoteSectionDefs('reservationChecklist').filter((s) => s.defaultSelected).map((s) => s.id)),
+    // Start with info + items only (crew hidden initially)
+    sections: new Set(['customerInfo','reservationInfo','projectInfo','notes','items']),
     sectionExpansions: buildDefaultSectionExpansions('reservationChecklist'),
     fields: buildDefaultFieldSelections('reservationChecklist'),
-    terms: resolveTermsFromForms(),
-    quoteSequence: sequence,
-    quoteNumber,
+    // Checklist: no default terms; controlled by custom notes input instead
+    terms: [],
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
