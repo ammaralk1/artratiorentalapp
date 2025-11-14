@@ -381,12 +381,26 @@ function ensureProjectDetailsModal() {
   const modalEl = document.getElementById('projectDetailsModal');
   const modalBody = document.getElementById('project-details-body');
   if (!modalEl || !modalBody) {
-    return false;
+    // Resilient fallback: create the modal structure if it doesn't exist
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">${t('projects.details.modalTitle', 'تفاصيل المشروع')}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="project-details-body"></div>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(wrapper.firstElementChild);
   }
-  customerProjectsContext.modal = {
-    el: modalEl,
-    body: modalBody
-  };
+  const createdEl = document.getElementById('projectDetailsModal');
+  const createdBody = document.getElementById('project-details-body');
+  if (!createdEl || !createdBody) return false;
+  customerProjectsContext.modal = { el: createdEl, body: createdBody };
   return true;
 }
 
