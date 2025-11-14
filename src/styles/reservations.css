@@ -4997,3 +4997,55 @@ body[dir="rtl"] .reservation-details-wrapper.reservation-details-compact .status
 :is(html.dark-mode, body.dark-mode) .reservation-payment-history__table tbody tr:nth-child(odd) {
   background-color: transparent;
 }
+
+/* Dark theme alias: apply the same reservation items table styling when `.dark` is used */
+:where(html.dark, body.dark) .reservation-modal-items-table {
+  background: rgba(24, 33, 59, 0.92);
+  border: 1px solid rgba(93, 133, 255, 0.22);
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table thead,
+:where(html.dark, body.dark) .reservation-modal-items-table thead tr,
+:where(html.dark, body.dark) .reservation-modal-items-table thead th {
+  background: rgba(37, 55, 88, 0.95) !important;
+  color: #f1f5f9 !important;
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table thead th {
+  border-bottom: 1px solid rgba(93, 133, 255, 0.38);
+  border-left: 1px solid rgba(37, 55, 88, 0.65);
+}
+
+@media (max-width: 768px) {
+  :where(html.dark, body.dark) .reservation-modal-items-table tr {
+    background: rgba(24, 33, 59, 0.92);
+    border-color: rgba(93, 133, 255, 0.22);
+  }
+  :where(html.dark, body.dark) .reservation-modal-items-table td + td {
+    border-top: 1px solid rgba(59, 76, 110, 0.45);
+  }
+  :where(html.dark, body.dark) .reservation-modal-items-table td[data-label]::before {
+    color: rgba(165, 180, 203, 0.85);
+  }
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table td,
+:where(html.dark, body.dark) .reservation-modal-items-table th {
+  border-left: 1px solid rgba(37, 55, 88, 0.65);
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table tbody td {
+  color: var(--clr-text);
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table tbody tr:nth-child(even) td {
+  background: rgba(30, 42, 68, 0.7);
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table tbody tr:nth-child(odd) td {
+  background: rgba(21, 29, 51, 0.85);
+}
+
+:where(html.dark, body.dark) .reservation-modal-items-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.18);
+}
