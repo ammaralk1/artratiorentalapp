@@ -366,8 +366,6 @@ function attachCustomerProjectCardEvents() {
 function handleCustomerProjectCardClick(event) {
   const card = event.target.closest('.project-focus-card');
   if (!card) return;
-  const ignored = event.target.closest('[data-ignore-project-modal]');
-  if (ignored) return;
   const projectId = card.dataset.projectId ? String(card.dataset.projectId) : '';
   if (!projectId) return;
   openCustomerProjectDetails(projectId);
