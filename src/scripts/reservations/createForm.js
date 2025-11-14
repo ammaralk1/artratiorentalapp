@@ -165,6 +165,7 @@ function collectCreateReservationDraft() {
       paymentProgressValue: String(paymentProgressValue || ''),
       items: getSelectedItems() || [],
       technicianIds: getSelectedTechnicians() || [],
+      crewAssignments: getSelectedCrewAssignments() || [],
     };
     return draft;
   } catch (_) {
@@ -315,8 +316,10 @@ function restoreCreateReservationDraft() {
       renderReservationItems();
     }
 
-    // Technicians
-    if (Array.isArray(draft.technicianIds) && draft.technicianIds.length) {
+    // Technicians (prefer full assignments; fallback to ids)
+    if (Array.isArray(draft.crewAssignments) && draft.crewAssignments.length) {
+      try { setSelectedTechnicians(draft.crewAssignments); } catch (_) { /* ignore */ }
+    } else if (Array.isArray(draft.technicianIds) && draft.technicianIds.length) {
       try { setSelectedTechnicians(draft.technicianIds); } catch (_) { /* ignore */ }
     }
 
