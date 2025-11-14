@@ -2928,10 +2928,9 @@ function resetForm() {
     customerInput.dataset.selectedId = '';
   }
   ensureCustomerChoices({ selectedValue: '', resetInput: true });
-  document.getElementById('res-start').value = '';
-  document.getElementById('res-start-time').value = '';
-  document.getElementById('res-end').value = '';
-  document.getElementById('res-end-time').value = '';
+  // Clear date/time using flatpickr-aware helper to ensure both inputs and widgets are reset
+  try { setDateTimeInputs('res-start', 'res-start-time', ''); } catch (_) { /* ignore */ }
+  try { setDateTimeInputs('res-end', 'res-end-time', ''); } catch (_) { /* ignore */ }
   document.getElementById('res-notes').value = '';
   document.getElementById('res-discount').value = '';
   const projectHidden = document.getElementById('res-project');
