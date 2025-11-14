@@ -179,6 +179,27 @@ function persistCreateReservationDraft() {
   if (!storage && !secondary) return;
   const draft = collectCreateReservationDraft();
   if (!draft) return;
+  // Avoid clobbering a richer draft with an empty one triggered by early events
+  try {
+    const readExisting = () => {
+      const rawPrimary = storage ? storage.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY) : null;
+      const rawSecondary = !rawPrimary && secondary ? secondary.getItem(RESERVATION_FORM_DRAFT_STORAGE_KEY) : null;
+      const raw = rawPrimary || rawSecondary;
+      return raw ? JSON.parse(raw) : null;
+    };
+    const existing = readExisting();
+    const isMeaningful = (d) => {
+      if (!d) return false;
+      const hasItems = Array.isArray(d.items) && d.items.length > 0;
+      const hasCrew = Array.isArray(d.technicianIds) && d.technicianIds.length > 0;
+      const hasDates = Boolean(d.startDate || d.endDate || d.startTime || d.endTime);
+      const hasCustomer = Boolean(d.customerId || d.customerLabel);
+      return hasItems || hasCrew || hasDates || hasCustomer;
+    };
+    if (isMeaningful(existing) && !isMeaningful(draft)) {
+      return; // keep existing richer draft
+    }
+  } catch (_) { /* ignore */ }
   try {
     const payload = JSON.stringify(draft);
     if (storage) storage.setItem(RESERVATION_FORM_DRAFT_STORAGE_KEY, payload);
