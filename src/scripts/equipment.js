@@ -1740,14 +1740,8 @@ function openEditEquipmentModal(index) {
   if (!item) return;
 
   activeEquipmentIndex = index;
-
-  const variants = getVariantsForItem(item);
-  const primary = variants[0] || item;
-  const totalQty = variants.reduce((sum, variant) => sum + (Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0), 0);
-  const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
-  const aggregatedStatus = variants
-    .map((variant) => normalizeStatusValue(variant.status))
-    .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || normalizeStatusValue(primary.status);
+  // Use the selected item itself as the primary editable variant
+  const primary = item;
 
   document.getElementById('edit-equipment-index').value = index;
 
@@ -1755,11 +1749,11 @@ function openEditEquipmentModal(index) {
     category: primary.category || '',
     subcategory: primary.sub || '',
     description: primary.desc || primary.description || '',
-    quantity: String(totalQty || primary.qty || 0),
+    quantity: String(primary.qty || 0),
     price: primary.price != null ? String(primary.price) : '0',
     image: getEquipmentImage(primary) || '',
     barcode: primary.barcode || '',
-    status: primary.status || aggregatedStatus,
+    status: primary.status || normalizeStatusValue(primary.status),
     lessor: primary.lessor || '',
   });
 
@@ -1921,30 +1915,23 @@ function refreshVariantsIfNeeded() {
   updateEquipmentLessorBadge(activeItem);
 
   if (!isEquipmentEditMode) {
-    const variants = getVariantsForItem(activeItem);
-    const primary = variants[0] || activeItem;
-    const totalQty = variants.reduce((sum, variant) => sum + (Number.isFinite(Number(variant.qty)) ? Number(variant.qty) : 0), 0);
-    const statusPriority = ['maintenance', 'reserved', 'available', 'retired'];
-    const aggregatedStatus = variants
-      .map((variant) => normalizeStatusValue(variant.status))
-      .sort((a, b) => statusPriority.indexOf(a) - statusPriority.indexOf(b))[0] || normalizeStatusValue(primary.status);
-
+    const primary = activeItem;
     applyEquipmentFormValues({
       category: primary.category || '',
       subcategory: primary.sub || '',
       description: primary.desc || primary.description || '',
-      quantity: String(totalQty || primary.qty || 0),
+      quantity: String(primary.qty || 0),
       price: primary.price != null ? String(primary.price) : '0',
       image: getEquipmentImage(primary) || '',
       barcode: primary.barcode || '',
-      status: primary.status || aggregatedStatus,
+      status: primary.status || normalizeStatusValue(primary.status),
       lessor: primary.lessor || '',
     });
 
     currentEquipmentSnapshot = captureEquipmentFormValues();
   }
 
-  updateEquipmentHeaderMedia(primary);
+  updateEquipmentHeaderMedia(activeItem);
 }
 
 function wireUpEquipmentUI() {
