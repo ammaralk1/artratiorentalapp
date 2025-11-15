@@ -1718,3 +1718,21 @@ registerTranslations({
     'reservations.details.crew.position': 'Position'
   }
 });
+
+// Reservation details modal (packages, actions, crew)
+registerTranslations({
+  ar: {
+    'reservations.create.packages.itemsSummary': 'عرض محتويات الحزمة',
+    'reservations.details.actions.exportPdf': 'عرض سعر',
+    'reservations.details.actions.exportChecklist': '📋 قائمة المعدات والفنيين',
+    'reservations.details.technicians.costLabel': 'التكلفة الداخلية',
+    'technicians.picker.positionCostLabel': 'التكلفة الداخلية'
+  },
+  en: {
+    'reservations.create.packages.itemsSummary': 'Show package contents',
+    'reservations.details.actions.exportPdf': 'Quote',
+    'reservations.details.actions.exportChecklist': 'Equipment & Crew List',
+    'reservations.details.technicians.costLabel': 'Internal cost',
+    'technicians.picker.positionCostLabel': 'Internal cost'
+  }
+});
