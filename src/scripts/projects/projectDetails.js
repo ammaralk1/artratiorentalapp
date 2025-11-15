@@ -593,7 +593,7 @@ function buildProjectViewExpensesMarkup(expenses = []) {
         <td>${label}</td>
         <td>${escapeHtml(amount)}</td>
         <td>${escapeHtml(sale)}</td>
-        <td>${escapeHtml(note || '—')}</td>
+        <td>${escapeHtml(note || t('common.placeholder.empty', '—'))}</td>
       </tr>`;
   }).join('');
 
@@ -1961,7 +1961,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
             <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
           </div>
           <div class="project-edit-expense-label-col">
-            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-note" placeholder="${escapeHtml(t('projects.form.labels.expenseNote', 'ملاحظات'))}">
+            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-note" placeholder="${escapeHtml(t('projects.form.placeholders.expenseNote', 'تفاصيل إضافية'))}">
           </div>
           <div class="project-edit-expense-action-col">
             <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${escapeHtml(t('projects.form.buttons.addExpense', '➕ إضافة خدمة'))}</button>

@@ -668,7 +668,7 @@ function renderExpenseList() {
         <td>${label}</td>
         <td>${escapeHtml(amount)}</td>
         <td>${escapeHtml(sale)}</td>
-        <td>${note || '—'}</td>
+        <td>${note || escapeHtml(t('common.placeholder.empty', '—'))}</td>
         <td>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>
         </td>
