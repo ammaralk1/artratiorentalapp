@@ -1081,9 +1081,12 @@ body,
   text-align: right !important;
   align-items: flex-end !important;
 }
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .quote-section__title {
   text-align: right !important;
+}
+/* Project title stays on the far left in Arabic */
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title {
+  text-align: left !important;
 }
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain {
