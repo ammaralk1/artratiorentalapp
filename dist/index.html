@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark-mode dark" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Ratio — الصفحة الترحيبية</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: 'Tajawal', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.12), transparent 60%),
+                    radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.10), transparent 60%),
+                    linear-gradient(135deg, #f8fafc, #eef2ff);
+        color: #0f172a;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+      }
+      header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 16px 20px; margin: 12px auto 0; width: min(1100px, 94vw);
+        background: rgba(255,255,255,.7); backdrop-filter: blur(10px);
+        border: 1px solid rgba(148,163,184,.25); border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(2,6,23,.06);
+      }
+      .header-start { display: flex; align-items: center; gap: 12px; }
+      .dashboard-hero-logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: rgba(59,130,246,.10); overflow: hidden; }
+      .dashboard-logo-img { width: 36px; height: 36px; object-fit: contain; }
+      .brand { display: flex; flex-direction: column; line-height: 1.15; }
+      .brand small { color: #64748b; }
+      .brand .brand-name { font-size: 28px; font-weight: 800; letter-spacing: 0.2px; }
+      .header-end { display: flex; align-items: center; gap: 10px; }
+      .language-toggle-btn,
+      .theme-toggle-btn { border: 1px solid #cbd5e1; background: rgba(255,255,255,.6); color: #0f172a; padding: 8px 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+      .theme-toggle-btn { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; }
+      .theme-toggle-btn svg { width: 18px; height: 18px; }
+      /* Show only one icon depending on current theme */
+      .theme-toggle-btn .swap-on { display: none; }
+      html.dark-mode .theme-toggle-btn .swap-on, body.dark-mode .theme-toggle-btn .swap-on { display: inline; }
+      html.dark-mode .theme-toggle-btn .swap-off, body.dark-mode .theme-toggle-btn .swap-off { display: none; }
+      #theme-toggle { position: absolute; opacity: 0; width: 0; height: 0; }
+      .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+      .btn { appearance: none; border: 1px solid #3b82f6; background: #2563eb; color: white; padding: 10px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 14px; }
+      main { flex: 1; display: grid; place-items: center; padding: 20px; }
+      .card {
+        width: min(680px, 92vw);
+        background: rgba(255,255,255,.75);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(148,163,184,.25);
+        border-radius: 20px;
+        padding: 28px 24px;
+        box-shadow: 0 10px 30px rgba(2,6,23,.08);
+      }
+      .section-title { margin: 6px 0 0; font-size: 22px; }
+      p { margin: 8px 0; color: #475569; line-height: 1.7; }
+      .note { margin-top: 10px; font-size: 13px; color: #64748b; }
+      @media (prefers-color-scheme: dark) {
+        body { background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.15), transparent 60%),
+                       radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.12), transparent 60%),
+                       linear-gradient(135deg, #0b1220, #0b1025); color: #e2e8f0; }
+        header { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+        .language-toggle-btn,
+        .theme-toggle-btn { background: rgba(2,6,23,.6); color: #e2e8f0; border-color: #334155; }
+        .card { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        p, .note, .brand small { color: #94a3b8; }
+      }
+      /* Force dark mode when toggled regardless of system preference */
+      :where(html.dark-mode, body.dark-mode) body { background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.15), transparent 60%),
+                       radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.12), transparent 60%),
+                       linear-gradient(135deg, #0b1220, #0b1025); color: #e2e8f0; }
+      :where(html.dark-mode, body.dark-mode) header { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+      :where(html.dark-mode, body.dark-mode) .language-toggle-btn,
+      :where(html.dark-mode, body.dark-mode) .theme-toggle-btn { background: rgba(2,6,23,.6); color: #e2e8f0; border-color: #334155; }
+      :where(html.dark-mode, body.dark-mode) .card { background: rgba(2,6,23,.6); border-color: rgba(71,85,105,.45); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+      :where(html.dark-mode, body.dark-mode) p, :where(html.dark-mode, body.dark-mode) .note, :where(html.dark-mode, body.dark-mode) .brand small { color: #94a3b8; }
+      /* Force light mode when toggled regardless of system preference */
+      :where(html.light-mode, body.light-mode) body { background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.12), transparent 60%),
+                       radial-gradient(1000px 500px at 80% 90%, rgba(236,72,153,.10), transparent 60%),
+                       linear-gradient(135deg, #f8fafc, #eef2ff); color: #0f172a; }
+      :where(html.light-mode, body.light-mode) header { background: rgba(255,255,255,.7); border-color: rgba(148,163,184,.25); box-shadow: 0 8px 24px rgba(2,6,23,.06); }
+      :where(html.light-mode, body.light-mode) .language-toggle-btn,
+      :where(html.light-mode, body.light-mode) .theme-toggle-btn { background: rgba(255,255,255,.6); color: #0f172a; border-color: #cbd5e1; }
+      :where(html.light-mode, body.light-mode) .card { background: rgba(255,255,255,.75); border-color: rgba(148,163,184,.25); box-shadow: 0 10px 30px rgba(2,6,23,.08); }
+      :where(html.light-mode, body.light-mode) p, :where(html.light-mode, body.light-mode) .note, :where(html.light-mode, body.light-mode) .brand small { color: #475569; }
+    </style>
+    <script src="/js/godaddy-monitor.js" defer></script>
+    <script src="/js/page-boot.js"></script>
+    <script src="/js/landing-boot.js" defer></script>
+  </head>
+  <body class="theme-loading dark-mode dark" data-theme="dark">
+    <header>
+      <div class="header-start">
+        <div class="dashboard-hero-logo">
+          <img
+            src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png"
+            alt="Art Ratio"
+            class="dashboard-logo-img"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <div class="brand">
+          <span class="brand-name" data-i18n-key="brand">Art Ratio</span>
+        </div>
+      </div>
+      <div class="header-end">
+        <button type="button" class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <label class="theme-toggle-btn" data-theme-toggle role="button">
+          <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+          <svg class="swap-off" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 4v-1"></path>
+            <path d="M12 21v-1"></path>
+            <path d="M4 12h-1"></path>
+            <path d="M21 12h-1"></path>
+            <path d="M5.6 5.6l-.7 -.7"></path>
+            <path d="M18.4 18.4l-.7 -.7"></path>
+            <path d="M5.6 18.4l-.7 .7"></path>
+            <path d="M18.4 5.6l-.7 .7"></path>
+            <path d="M16 12a4 4 0 1 0 -4 4"></path>
+          </svg>
+          <svg class="swap-on" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+          </svg>
+          
+        </label>
+        <a class="btn" href="/login" data-i18n-key="login">تسجيل الدخول</a>
+      </div>
+    </header>
+
+    <main role="main" aria-labelledby="welcome-title">
+      <section class="card">
+        <h1 id="welcome-title" class="section-title" data-i18n-key="welcomeTitle">أهلًا وسهلًا بك في Art Ratio</h1>
+        <p data-i18n-key="description">هذه الصفحة قيد الإنشاء. قريبًا ستصبح معرض أعمال/بورتفوليو خاص بـ Art Ratio. يسعدنا زيارتك، ترقّب التحديثات قريبًا.</p>
+        <p class="note" data-i18n-key="note">في حال كنت عضوًا في الفريق وتريد متابعة العمل يمكنك استخدام زر تسجيل الدخول.</p>
+      </section>
+    </main>
+  </body>
+</html>

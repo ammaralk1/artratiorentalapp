@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+  <title data-i18n data-i18n-key="technicianDetails.pageTitle">معلومات عضو الطاقم</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+
+  <script src="../../js/godaddy-monitor.js" defer></script>
+  <script src="../../js/page-boot.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script type="module" crossorigin src="../../assets/technician.D3q-dqrT.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.BhU3VxC5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/state.BIuh49pZ.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.ZvfW6kI5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/view.Hcy1kvBC.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectFocusTemplates.CFYcpvUf.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.CQ6WwNGq.js">
+  <link rel="modulepreload" crossorigin href="../../assets/uiBridge.BLZZT8b9.js">
+  <link rel="modulepreload" crossorigin href="../../assets/quotePdf.kDBbUcue.js">
+  <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationPdf.Dd3nd6ly.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.DjX4tQ8Y.js">
+  <link rel="modulepreload" crossorigin href="../../assets/equipment.A8dO5HN8.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.C4RhVocq.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.Bg2pD_hO.css">
+</head>
+<body class="page-shell theme-loading technician-page customer-page" data-theme="light">
+  <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+    <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
+      <div class="flex items-center gap-3">
+        <div class="sidebar-brand-logo">
+          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+        </div>
+        <div class="text-start sidebar-brand-text">
+          <p class="text-xs text-base-content/60">Art Ratio</p>
+          <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
+        </div>
+      </div>
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M18 6l-12 12"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sidebar-panel sidebar-panel--stats mt-6">
+      <h3 class="sidebar-heading" data-i18n data-i18n-key="dashboard.sidebar.statsHeading">ملخص اليوم</h3>
+      <div class="sidebar-stats" role="list">
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.projects.label">المشاريع</span>
+          <span id="sidebar-stat-projects" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.reservations.label">الحجوزات</span>
+          <span id="sidebar-stat-reservations" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.equipment.label">المعدات</span>
+          <span id="sidebar-stat-equipment" class="badge-soft">0</span>
+        </div>
+        <div class="sidebar-stats-row" role="listitem">
+          <span data-i18n data-i18n-key="dashboard.metrics.technicians.label">طاقم العمل</span>
+          <span id="sidebar-stat-technicians" class="badge-soft">0</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+      <div class="sidebar-panel sidebar-panel--tabs">
+        <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
+        <div class="tab-buttons tab-buttons-vertical" role="tablist">
+          <a class="tab-button" href="home.html" data-i18n data-i18n-key="dashboard.quickLinks.home">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M5 12l-2 0"></path>
+                <path d="M5 12l2 0"></path>
+                <path d="M5 12v-7a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v7"></path>
+                <path d="M5 12l7 -7l7 7"></path>
+                <path d="M12 12v7"></path>
+                <path d="M9 19h6"></path>
+              </svg>
+              <span data-i18n data-i18n-key="dashboard.quickLinks.home">الصفحة الرئيسية</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#customers-tab" data-close-sidebar data-i18n data-i18n-key="tabs.customers">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1"></path>
+                <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M17 10h2a2 2 0 0 1 2 2v1"></path>
+                <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
+              </svg>
+              <span>👤 العملاء</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M6 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M6 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M6 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M9 3v18"></path>
+                <path d="M15 3v18"></path>
+                <path d="M18 5m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+                <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
+              </svg>
+              <span>📅 الحجوزات</span>
+            </span>
+          </a>
+          <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
+            <span class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"></path>
+                <path d="M6 21v-2a4 4 0 0 1 4 -4h2.5"></path>
+                <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                <path d="M19.001 15.5v1.5"></path>
+                <path d="M19.001 21v1.5"></path>
+                <path d="M22.032 17.25l-1.299 .75"></path>
+                <path d="M17.27 20l-1.3 .75"></path>
+                <path d="M15.97 17.25l1.3 .75"></path>
+                <path d="M20.733 20l1.3 .75"></path>
+              </svg>
+              <span>😎 طاقم العمل</span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="page-grid">
+    <header class="dashboard-header">
+      <div class="dashboard-header-nav">
+        <div class="dashboard-header-start">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+            <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+              <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+            </span>
+          </button>
+          <a href="home.html" class="flex items-center gap-3 dashboard-hero-brand" data-close-sidebar>
+            <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
+              <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="dashboard-logo-img" loading="lazy" decoding="async">
+            </div>
+            <div class="dashboard-hero-brand-text">
+              <h1 class="dashboard-hero-title text-xl font-bold text-base-content" data-i18n data-i18n-key="dashboard.hero.title">Art Ratio</h1>
+            </div>
+          </a>
+        </div>
+        <div class="dashboard-header-center">
+          <section class="dashboard-greeting" data-dashboard-greeting data-state="closed">
+            <button type="button" class="dashboard-greeting-toggle" data-greeting-toggle aria-controls="dashboard-greeting-panel" aria-expanded="false">
+              <span class="dashboard-greeting-toggle-label" data-i18n data-i18n-key="technicianDetails.title">😎 بيانات عضو الطاقم</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="dashboard-greeting-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M6 9l6 6l6 -6"></path>
+              </svg>
+            </button>
+            <div class="glass-card dashboard-greeting-panel" id="dashboard-greeting-panel" data-greeting-panel hidden>
+              <div class="flex flex-col gap-6">
+                <div class="flex flex-wrap items-start gap-4">
+                  <div class="space-y-1 text-start">
+                    <p class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianDetails.hero.subtitle">راجع نشاط عضو الطاقم ومهامه الحالية.</p>
+                    <h2 class="text-2xl font-bold text-base-content" id="dashboard-greeting-technician-name">—</h2>
+                    <p class="text-sm text-base-content/60" id="dashboard-greeting-technician-role">—</p>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
+                    <span class="technician-badge hidden" id="dashboard-greeting-technician-status">—</span>
+                    <span class="technician-badge hidden" id="dashboard-greeting-technician-role-badge">—</span>
+                  </div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" id="technician-financial-stats">
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-primary/10 p-2 text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 3c3.866 0 7 2.91 7 6.5c0 5.25 -5.5 9.5 -7 11c-1.5 -1.5 -7 -5.75 -7 -11c0 -3.59 3.134 -6.5 7 -6.5z"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
+                      <span id="technician-financial-total" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-total-desc">—</p>
+                    </div>
+                  </article>
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-success/10 p-2 text-success">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M11 4h10"></path>
+                        <path d="M11 8h8"></path>
+                        <path d="M11 12h6"></path>
+                        <path d="M11 16h4"></path>
+                        <path d="M3 11l2 -2l2 2l-2 2l-2 -2"></path>
+                        <path d="M3 17l2 -2l2 2l-2 2l-2 -2"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
+                      <span id="technician-financial-paid" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-paid-desc">—</p>
+                    </div>
+                  </article>
+                  <article class="relative overflow-hidden rounded-2xl border border-base-200/70 bg-base-100/80 p-4 shadow-sm">
+                    <span class="absolute right-4 top-4 rounded-xl bg-warning/10 p-2 text-warning">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M12 9v2m0 4v.01"></path>
+                        <path d="M5 19h14"></path>
+                        <path d="M7.002 19.005a5 5 0 1 1 9.99 0"></path>
+                        <path d="M12 5a7 7 0 0 1 7 7v2"></path>
+                        <path d="M5 12a7 7 0 0 1 7 -7"></path>
+                      </svg>
+                    </span>
+                    <div class="space-y-2 pt-12 text-start">
+                      <span class="text-sm font-semibold text-base-content/70" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
+                      <span id="technician-financial-outstanding" class="text-2xl font-bold text-base-content">0</span>
+                      <p class="text-sm text-base-content/60 leading-relaxed" id="technician-financial-outstanding-desc">—</p>
+                    </div>
+                  </article>
+                </div>
+                <div class="flex flex-wrap items-center justify-end">
+                  <button type="button" id="technician-financial-open" class="btn btn-outline btn-primary" data-i18n data-i18n-key="technicianFinancial.actions.viewDetails">📊 عرض التفاصيل</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div class="dashboard-header-end">
+          <button class="language-toggle-btn" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+          <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+            <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+            <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 4v-1"></path>
+              <path d="M12 21v-1"></path>
+              <path d="M4 12h-1"></path>
+              <path d="M21 12h-1"></path>
+              <path d="M5.6 5.6l-.7 -.7"></path>
+              <path d="M18.4 18.4l-.7 -.7"></path>
+              <path d="M5.6 18.4l-.7 .7"></path>
+              <path d="M18.4 5.6l-.7 .7"></path>
+              <path d="M16 12a4 4 0 1 0 -4 4"></path>
+            </svg>
+            <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+            </svg>
+            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+          </label>
+          <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-1 flex-col">
+      <main class="dashboard-main w-full">
+        <div class="dashboard-main-inner space-y-8">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <a
+                href="dashboard.html#reservations-tab"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.reservations"
+              >📅 إدارة الحجوزات</a>
+              <a
+                href="projects.html"
+                class="tab-button customer-primary-nav-link"
+                data-close-sidebar
+                data-i18n
+                data-i18n-key="customerDetails.primaryNav.projects"
+              >📁 إدارة المشاريع</a>
+            </div>
+          </nav>
+
+          <section class="glass-card space-y-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div class="space-y-2">
+                <p class="text-sm font-medium text-base-content/70" data-i18n data-i18n-key="technicianDetails.title">😎 بيانات عضو الطاقم</p>
+                <h2 id="technician-hero-name" class="text-2xl font-bold text-base-content">😎 —</h2>
+                <div class="flex flex-wrap items-center gap-2 text-sm text-base-content/70">
+                  <span id="technician-hero-status" class="technician-badge hidden">—</span>
+                  <span id="technician-hero-role" class="technician-badge hidden">🎯 —</span>
+                  <span id="technician-hero-position" class="technician-badge hidden">🏷️ —</span>
+                </div>
+              </div>
+              <div class="flex items-start justify-end">
+                <button class="btn btn-primary btn-wide" id="technician-edit-primary" type="button" data-technician-edit data-i18n data-i18n-key="technicianDetails.actions.edit">✏️ تعديل عضو الطاقم</button>
+              </div>
+            </div>
+            <div id="technician-details" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+          </section>
+
+          <div class="glass-card dashboard-tabbar customer-tabbar technician-tabbar">
+            <div class="tab-buttons tab-buttons-horizontal" role="tablist">
+              <button type="button" class="tab-button tab-active" data-technician-tab="reservations" data-i18n data-i18n-key="technicianTabs.reservations">📅 حجوزات الفني</button>
+              <button type="button" class="tab-button" data-technician-tab="projects" data-i18n data-i18n-key="technicianTabs.projects">📁 مشاريع الفني</button>
+            </div>
+          </div>
+
+          <section class="glass-card space-y-5 technician-reservations-section" data-technician-tab-panel="reservations">
+            <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianReservations.title">📅 حجوزات الفني</h3>
+              <button type="button" class="btn btn-outline btn-secondary" id="technician-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+            <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
+              <input type="text" id="technician-search-reservation" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم العميل أو رقم الحجز أو المشروع..." data-i18n data-i18n-placeholder-key="technicianDetails.filters.search">
+              <input type="text" id="technician-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="technician-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="technician-reservation-date-range" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+                <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+                <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+              </select>
+              <select id="technician-reservation-status-filter" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+                <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
+                <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
+                <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 مغلقة</option>
+                <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
+              </select>
+            </div>
+            <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
+              <div id="technician-reservations" class="space-y-4"></div>
+            </div>
+          </section>
+
+          <section class="glass-card space-y-5 technician-projects-section hidden" data-technician-tab-panel="projects">
+            <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianProjects.title">📁 مشاريع الفني</h3>
+              <button type="button" class="btn btn-outline btn-secondary" id="technician-projects-clear-filters" data-i18n data-i18n-key="actions.clearFilters">🔄 إعادة التصفية</button>
+            </div>
+            <div class="filters-bar flex flex-wrap items-center gap-2 rounded-2xl border border-base-200 bg-base-100/80 p-3">
+              <input type="text" id="technician-project-search" class="form-control w-auto flex-1 min-w-[14rem]" placeholder="🔍 ابحث باسم المشروع أو الوصف..." data-i18n data-i18n-placeholder-key="projectCards.filters.search">
+              <input type="text" id="technician-project-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+              <input type="text" id="technician-project-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+              <select id="technician-project-date-range" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+                <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+                <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+              </select>
+              <select id="technician-project-status-filter" class="form-select w-auto">
+                <option value="" data-i18n data-i18n-key="projectCards.filters.status.all">⚙️ كل الحالات</option>
+                <option value="upcoming" data-i18n data-i18n-key="projectCards.filters.status.upcoming">📅 مشاريع قادمة</option>
+                <option value="ongoing" data-i18n data-i18n-key="projectCards.filters.status.ongoing">⚙️ مشاريع قيد التنفيذ</option>
+                <option value="completed" data-i18n data-i18n-key="projectCards.filters.status.completed">✅ مشاريع منتهية</option>
+              </select>
+            </div>
+            <div class="rounded-3xl border border-base-200/60 bg-base-100/80 p-4">
+              <div id="technician-projects" class="project-card-grid" data-empty="لا توجد مشاريع مرتبطة بهذا العضو." data-empty-key="technicianProjects.empty"></div>
+            </div>
+          </section>
+        </div>
+        <div id="reservations-list" class="hidden" aria-hidden="true"></div>
+      </main>
+    </div>
+  </div>
+
+  <div id="technician-financial-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title text-xl font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.modal.title">📊 الملخص المالي للفني</h3>
+          <button type="button" class="btn-close" data-financial-modal-close aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body space-y-5">
+          <section class="grid gap-3 rounded-2xl border border-base-200 bg-base-100/90 p-4 sm:grid-cols-3" id="technician-financial-modal-summary">
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.total">💼 إجمالي المستحقات</span>
+              <strong id="technician-financial-modal-total" class="text-lg font-semibold text-base-content">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.paid">💰 المبالغ المدفوعة</span>
+              <strong id="technician-financial-modal-paid" class="text-lg font-semibold text-success">0</strong>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm text-base-content/60" data-i18n data-i18n-key="technicianFinancial.stats.outstanding">🧾 المبلغ المتبقي</span>
+              <strong id="technician-financial-modal-outstanding" class="text-lg font-semibold text-warning">0</strong>
+            </div>
+          </section>
+          <section class="space-y-3">
+            <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.list.title">تفاصيل الحجوزات والمشاريع</h4>
+            <div id="technician-financial-modal-empty" class="hidden rounded-2xl border border-dashed border-base-200 p-4 text-center text-base-content/70" data-i18n data-i18n-key="technicianFinancial.assignments.empty">لا توجد حجوزات أو مشاريع مرتبطة لعرضها.</div>
+            <div class="table-responsive" id="technician-financial-modal-table-wrapper">
+              <table class="table table-sm table-borderless align-middle" id="technician-financial-modal-table">
+                <thead>
+                  <tr>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.reservation">الحجز / المشروع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.period">الفترة</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.due">المستحق</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.status">حالة الدفع</th>
+                    <th data-i18n data-i18n-key="technicianFinancial.list.outstanding">المتبقي</th>
+                  </tr>
+                </thead>
+                <tbody id="technician-financial-modal-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <section class="technician-payouts-section">
+            <div class="space-y-1">
+              <h4 class="text-base font-semibold text-base-content" data-i18n data-i18n-key="technicianFinancial.payouts.title">💸 سجل الدفعات الداخلية</h4>
+              <p class="text-sm text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.helper">سجّل المبالغ التي تم دفعها لهذا العضو من الشركة لضمان تتبع السداد.</p>
+            </div>
+            <form id="technician-payout-form" class="technician-payout-form">
+              <div class="technician-payout-form-grid">
+                <div class="form-field">
+                  <label class="form-label" for="technician-payout-amount" data-i18n data-i18n-key="technicianFinancial.payouts.form.amount">💰 المبلغ</label>
+                  <input type="text" inputmode="decimal" class="form-control" id="technician-payout-amount" placeholder="0.00" required>
+                </div>
+                <div class="form-field">
+                  <label class="form-label" for="technician-payout-date" data-i18n data-i18n-key="technicianFinancial.payouts.form.date">📅 تاريخ الدفع</label>
+                  <input type="date" class="form-control" id="technician-payout-date">
+                </div>
+                <div class="form-field technician-payout-note-field">
+                  <label class="form-label" for="technician-payout-note" data-i18n data-i18n-key="technicianFinancial.payouts.form.note">📝 ملاحظات (اختياري)</label>
+                  <input type="text" class="form-control" id="technician-payout-note" placeholder="مثال: دفعة سريعة أو مرجع التحويل">
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-2">
+                <button type="submit" class="btn btn-primary" data-i18n data-i18n-key="technicianFinancial.payouts.form.submit">💸 تسجيل الدفعة</button>
+              </div>
+            </form>
+            <div id="technician-payouts-empty" class="technician-payouts-empty text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.empty">لا توجد دفعات مسجلة بعد.</div>
+            <ul id="technician-payouts-list" class="technician-payouts-list"></ul>
+          </section>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-financial-modal-close data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="technician-payout-confirm-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="technicianFinancial.payouts.confirmTitle">🗑️ حذف الدفعة</h5>
+          <button type="button" class="btn-close" data-payout-confirm-close aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-base-content/70" data-i18n data-i18n-key="technicianFinancial.payouts.confirmMessage">هل أنت متأكد من حذف هذه الدفعة؟</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" data-payout-confirm-close data-i18n data-i18n-key="technicianFinancial.payouts.confirmCancel">إلغاء</button>
+          <button type="button" class="btn btn-error" id="technician-payout-confirm-yes" data-i18n data-i18n-key="technicianFinancial.payouts.confirmAccept">🗑️ حذف</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.details.modalTitle">📋 تفاصيل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="reservation-details-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-reservation-form" class="row g-3">
+            <input type="hidden" id="edit-res-index">
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
+                  <input type="text" class="form-control" id="edit-res-id" disabled>
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
+                  <input type="text" class="form-control" id="edit-res-customer" disabled>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
+                  <input type="text" class="form-control" id="edit-res-start">
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
+                  <input type="text" class="form-control" id="edit-res-end">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row">
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
+                  <input type="text" class="form-control" id="edit-res-start-time">
+                </div>
+                <div class="edit-reservation-field">
+                  <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
+                  <input type="text" class="form-control" id="edit-res-end-time">
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
+              <select id="edit-res-project" class="form-select">
+                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex flex-wrap align-items-center gap-3 mt-4 mt-md-0">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-tax">
+                  <label class="form-check-label" for="edit-res-tax" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</label>
+                </div>
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-res-confirmed">
+                  <label class="form-check-label" for="edit-res-confirmed" data-i18n data-i18n-key="reservations.edit.labels.confirmed">✅ تم التأكيد</label>
+                </div>
+                <div class="col-12 col-md-6">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
+                    <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
+                <select id="edit-res-discount-type" class="form-select">
+                  <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
+                  <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
+              <select id="edit-res-paid" class="form-select payment-status-select">
+                <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
+                <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <div class="edit-reservation-field-row edit-reservation-field-row--single">
+                <div class="edit-reservation-field edit-reservation-field--wide">
+                  <label class="form-label edit-reservation-notes-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
+                  <textarea class="form-control reservation-notes reservation-notes--short" id="edit-res-notes" rows="2" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div id="edit-res-summary" class="alert alert-info"></div>
+            </div>
+
+            <div class="col-12">
+              <label for="edit-res-equipment-barcode" class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
+              <input type="text" class="form-control mb-2" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.days">الأيام</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-items">
+                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="edit-res-technician" data-i18n data-i18n-key="reservations.edit.labels.technician">😎 إضافة عضو طاقم</label>
+              <div class="input-group">
+                <select id="edit-res-technician" class="form-select"></select>
+                <button type="button" class="btn btn-outline-primary" id="add-technician-reservation" data-i18n data-i18n-key="reservations.edit.labels.addTechnician">➕ إضافة</button>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                  <thead class="table-light">
+                    <tr>
+                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.name">الاسم</th>
+                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.role">الدور</th>
+                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.total">التكلفة الإجمالية</th>
+                      <th data-i18n data-i18n-key="reservations.edit.tech.headers.actions">إجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="edit-res-technicians">
+                    <tr><td colspan="4" class="text-center" data-i18n data-i18n-key="reservations.edit.tech.empty">لا يوجد أعضاء طاقم</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editTechnicianModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="technicianDetails.edit.modalTitle">✏️ تعديل بيانات عضو الطاقم</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="edit-technician-form" class="management-form" novalidate>
+            <input type="hidden" id="edit-technician-id">
+            <input type="hidden" id="edit-technician-status" value="available">
+
+            <div class="management-form-grid">
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-name" data-i18n data-i18n-key="technicians.form.labels.name">😎 اسم العضو</label>
+                <input type="text" class="form-control" id="edit-technician-name" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.name">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-phone" data-i18n data-i18n-key="technicians.form.labels.phone">📞 الجوال</label>
+                <input type="tel" class="form-control" id="edit-technician-phone" inputmode="tel" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.phone">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-email" data-i18n data-i18n-key="technicians.form.labels.email">📧 البريد</label>
+                <input type="email" class="form-control" id="edit-technician-email" dir="ltr" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.email">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-role" data-i18n data-i18n-key="technicians.form.labels.role">👔 الوظيفة</label>
+                <input type="text" class="form-control" id="edit-technician-role" required data-i18n data-i18n-placeholder-key="technicians.form.placeholders.role">
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="edit-technician-department" data-i18n data-i18n-key="technicians.form.labels.department">🧩 القسم</label>
+                <input type="text" class="form-control" id="edit-technician-department" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.department">
+              </div>
+              <div class="form-field" hidden>
+                <label class="form-label" for="edit-technician-wage" data-i18n data-i18n-key="technicians.form.labels.wage">💰 الأجر اليومي</label>
+                <input type="text" class="form-control" id="edit-technician-wage" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.wage">
+              </div>
+              <div class="form-field" hidden>
+                <label class="form-label" for="edit-technician-total" data-i18n data-i18n-key="technicians.form.labels.total">💼 التكلفة الإجمالية</label>
+                <input type="text" class="form-control" id="edit-technician-total" inputmode="decimal" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.total">
+              </div>
+              <div class="form-field form-field-notes">
+                <label class="form-label" for="edit-technician-notes" data-i18n data-i18n-key="technicians.form.labels.notes">📝 ملاحظات</label>
+                <textarea id="edit-technician-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="technicians.form.placeholders.notes"></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="save-technician-changes" data-i18n data-i18n-key="technicians.form.actions.update">💾 حفظ التعديل</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="projectDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="projects.modal.title">تفاصيل المشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body" id="project-details-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+</body>
+</html>

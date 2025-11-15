@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+  <title data-i18n data-i18n-key="login.pageTitle">تسجيل الدخول</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
+
+  <script src="../../js/godaddy-monitor.js" defer></script>
+  <script src="../../js/page-boot.js"></script>
+  <!-- Set skip flag via external script to comply with CSP (no inline scripts) -->
+  <script src="../../js/login-boot.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="../../assets/login.B6szTqtb.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.Bg2pD_hO.css">
+</head>
+<body class="page-shell theme-loading" data-theme="light">
+  <div class="flex min-h-screen flex-col bg-gradient-to-br from-brand-50/70 via-base-200 to-base-100 dark:from-slate-900/80 dark:via-slate-950/90 dark:to-slate-950">
+    <header class="flex items-center justify-between px-6 pt-6">
+      <div class="flex items-center gap-3 text-base-content cursor-default select-none">
+        <div class="dashboard-hero-logo flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary sm:h-12 sm:w-12">
+          <img
+            src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png"
+            alt="Art Ratio"
+            class="dashboard-logo-img"
+            loading="lazy"
+            decoding="async"
+          >
+        </div>
+        <span class="flex flex-col text-start">
+          <span class="text-xs text-base-content/60">Art Ratio</span>
+          <span class="text-lg font-semibold">Rental Hub</span>
+        </span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" class="btn btn-ghost border border-base-300 bg-base-100/60 text-sm font-medium language-toggle-btn transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100" id="language-toggle" data-label-ar="🇸🇦 العربية" data-label-en="🇬🇧 English" aria-pressed="false"></button>
+        <label class="theme-toggle-btn swap swap-rotate" data-theme-toggle role="button">
+          <input id="theme-toggle" type="checkbox" class="sr-only" aria-hidden="true">
+          <svg class="swap-off fill-current text-warning w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 4v-1"></path>
+            <path d="M12 21v-1"></path>
+            <path d="M4 12h-1"></path>
+            <path d="M21 12h-1"></path>
+            <path d="M5.6 5.6l-.7 -.7"></path>
+            <path d="M18.4 18.4l-.7 -.7"></path>
+            <path d="M5.6 18.4l-.7 .7"></path>
+            <path d="M18.4 5.6l-.7 .7"></path>
+            <path d="M16 12a4 4 0 1 0 -4 4"></path>
+          </svg>
+          <svg class="swap-on fill-current text-primary w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
+          </svg>
+          <span class="sr-only" data-theme-label data-i18n data-i18n-key="theme.toggle.toDark">🌙 الوضع الليلي</span>
+        </label>
+      </div>
+    </header>
+
+    <main class="flex flex-1 items-center justify-center px-4 py-12">
+      <section class="glass-card w-full max-w-md space-y-8">
+        <div class="space-y-2 text-center">
+          <h1 class="text-2xl font-bold text-base-content" data-i18n data-i18n-key="login.header.title">🔐 تسجيل الدخول</h1>
+          <p class="text-sm text-base-content/60" data-i18n data-i18n-key="login.header.subtitle">أدخل بيانات الحساب للوصول إلى لوحة التحكم.</p>
+        </div>
+
+        <form id="login-form" class="space-y-5" autocomplete="on" method="post" action="/auth/login">
+          <div class="form-field">
+            <label for="username" class="form-label" data-i18n data-i18n-key="login.form.username">اسم المستخدم</label>
+            <input type="text" class="form-control" id="username" name="username" data-i18n data-i18n-placeholder-key="login.form.username.placeholder" placeholder="أدخل اسم المستخدم" required autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" pattern="[A-Za-z0-9._@\-]{3,100}" minlength="3" maxlength="100">
+          </div>
+          <div class="form-field">
+            <label for="password" class="form-label" data-i18n data-i18n-key="login.form.password">كلمة المرور</label>
+            <div class="password-field">
+              <input type="password" class="form-control" id="password" name="password" data-i18n data-i18n-placeholder-key="login.form.password.placeholder" placeholder="أدخل كلمة المرور" required autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" minlength="8" maxlength="255">
+              <button type="button" class="password-toggle-btn" data-action="toggle-password" aria-pressed="false">
+                <svg class="password-toggle-icon" data-icon="show" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path stroke="none" d="M0 0h24v24H0z"></path>
+                  <path d="M12 5c-4.5 0-7.8 2.7-10 7c2.2 4.3 5.5 7 10 7s7.8-2.7 10-7c-2.2-4.3-5.5-7-10-7z"></path>
+                  <circle cx="12" cy="12" r="2.5"></circle>
+                </svg>
+                <svg class="password-toggle-icon hidden" data-icon="hide" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path stroke="none" d="M0 0h24v24H0z"></path>
+                  <path d="M3 3l18 18"></path>
+                  <path d="M9.88 9.88a2.5 2.5 0 0 0 3.54 3.54"></path>
+                  <path d="M10.58 5.55A8.9 8.9 0 0 1 12 5c4.5 0 7.8 2.7 10 7a15.9 15.9 0 0 1-2.1 2.99"></path>
+                  <path d="M6.12 6.12C4.27 7.38 2.73 9.12 2 12c2.2 4.3 5.5 7 10 7a9.71 9.71 0 0 0 3.4-.61"></path>
+                </svg>
+                <span class="sr-only" data-role="password-toggle-label"></span>
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-full" data-i18n data-i18n-key="login.form.submit">دخول</button>
+          <p id="login-error" class="hidden text-center text-sm text-error" role="alert" aria-live="polite"></p>
+        </form>
+
+        <p class="text-center text-xs text-base-content/50" data-i18n data-i18n-key="login.footer.note">
+          محمي لأعضاء فريق Art Ratio. تواصل معنا إذا واجهت مشكلة في تسجيل الدخول.
+        </p>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>
