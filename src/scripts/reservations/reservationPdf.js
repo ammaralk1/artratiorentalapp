@@ -2887,6 +2887,8 @@ function buildProjectQuotationHtml({
   quoteDate,
   terms = DEFAULT_TERMS
 }) {
+  // Project quotes never use checklist mode; keep explicit boolean to avoid NameError
+  const isChecklist = false;
   const fieldsSelection = cloneFieldSelections(fieldSelections);
   const isFieldEnabled = (sectionId, fieldId) => isFieldEnabledInSelections(fieldsSelection, sectionId, fieldId);
   const includeSection = (id) => sections?.has?.(id);
