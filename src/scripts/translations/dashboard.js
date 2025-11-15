@@ -398,6 +398,10 @@ registerTranslations({
     'reservations.details.labels.itemsCount': 'عدد المعدات',
     'reservations.details.labels.itemsTotal': 'إجمالي المعدات',
     'reservations.details.labels.paymentStatus': 'حالة الدفع',
+    // Checklist: customer/project contact labels
+    'reservations.details.labels.company': 'الشركة',
+    'reservations.details.labels.phone': 'الهاتف',
+    'reservations.details.labels.email': 'البريد الإلكتروني',
     'reservations.details.modalTitle': '📋 تفاصيل الحجز',
     'reservations.calendar.title': '📅 التقويم',
     'reservations.calendar.helper': '🎯 اختر أي حجز للاطلاع على التفاصيل.',
@@ -1240,6 +1244,11 @@ registerTranslations({
     'reservations.details.labels.itemsCount': 'Equipment count',
     'reservations.details.labels.itemsTotal': 'Equipment total',
     'reservations.details.labels.paymentStatus': 'Payment status',
+    // Checklist: customer/project contact labels
+    'reservations.details.labels.company': 'Company',
+    'reservations.details.labels.phone': 'Phone',
+    'reservations.details.labels.email': 'Email',
+    'reservations.details.labels.project': 'Project',
     'reservations.details.modalTitle': '📋 Reservation Details',
     'reservations.calendar.title': '📅 Calendar',
     'reservations.calendar.helper': '🎯 Select any reservation to view its details.',

@@ -3462,6 +3462,7 @@ function buildQuotationHtml(options) {
     terms = DEFAULT_TERMS
   } = options;
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
+  const langCurrent = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
   const customerName = customer?.customerName || customer?.full_name || customer?.name || '-';
@@ -3481,7 +3482,8 @@ function buildQuotationHtml(options) {
   const noFieldsMessage = `<div class="quote-placeholder">${escapeHtml(t('reservations.quote.placeholder.noFields', 'لم يتم اختيار أي معلومات للعرض في هذا القسم.'))}</div>`;
 
   const renderPlainItem = (label, value) => {
-    return `<div class="info-plain__item">${escapeHtml(label)} <span class="info-plain__slash">/</span> <strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
+    const sep = langCurrent === 'en' ? ': ' : ' / ';
+    return `<div class="info-plain__item">${escapeHtml(label)}<span class="info-plain__slash">${sep}</span><strong class="info-plain__value">${escapeHtml(value)}</strong></div>`;
   };
 
   const renderTotalsItem = (label, value, { variant = 'inline' } = {}) => {
