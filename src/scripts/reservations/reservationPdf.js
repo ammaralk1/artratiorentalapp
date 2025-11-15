@@ -5340,8 +5340,9 @@ async function exportQuoteAsPdf() {
     logPdfDebug('html2pdf ensured');
 
     const context = activeQuoteState.context || 'reservation';
-    // For checklist, do not reserve a sequence or show a quote number
-    if (context !== 'reservationChecklist') {
+    // Reserve a server-side quote number only for project context.
+    // For reservations, we keep the quote number equal to the reservation id (digits only).
+    if (context === 'project') {
       try {
         const { sequence, quoteNumber } = await reserveNextQuoteSequence(context);
         activeQuoteState.quoteSequence = sequence;
@@ -5676,16 +5677,23 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  // Peek the next available reservation quote sequence so the preview shows a number
-  let sequence = 1;
-  let quoteNumber = formatQuoteNumber(1, 'reservation');
-  try {
-    const peeked = await peekServerQuoteSequence('reservation');
-    sequence = Number(peeked?.sequence) || 1;
-    quoteNumber = String(peeked?.quoteNumber || formatQuoteNumber(sequence, 'reservation'));
-  } catch (_) {
-    // Fallback handled by defaults above
-  }
+  // Derive quote number from the reservation itself (digits only, no prefixes)
+  const deriveReservationQuoteNumber = (res) => {
+    if (!res) return '1';
+    const codeCandidates = [
+      res.reservationCode,
+      res.reservation_code,
+      res.reservationId,
+      res.reservation_id,
+      res.id
+    ];
+    const first = codeCandidates.find((v) => v != null && String(v).trim() !== '');
+    const normalized = normalizeNumbers(String(first ?? '1'));
+    const digitsOnly = normalized.replace(/\D+/g, '');
+    return digitsOnly || normalized || '1';
+  };
+  const quoteNumber = deriveReservationQuoteNumber(reservation);
+  const sequence = Number.parseInt(quoteNumber, 10) || 1;
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -5706,7 +5714,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sectionExpansions: buildDefaultSectionExpansions('reservation'),
     fields: buildDefaultFieldSelections('reservation'),
     terms: baseTerms,
-    // Show a non-committed quote number in preview; commit occurs on export
+    // Show reservation-based quote number in preview; no server reservation needed
     quoteSequence: sequence,
     quoteNumber,
     quoteDate: now,
