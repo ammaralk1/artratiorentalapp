@@ -259,6 +259,16 @@ body,
 #quotation-pdf-root[data-lang="en"] .payment-row {
   text-align: left !important;
 }
+
+/* English (checklist) tables render left-to-right */
+#quotation-pdf-root[data-lang="en"] .quote-table,
+#quotation-pdf-root[data-lang="en"] .quote-table thead,
+#quotation-pdf-root[data-lang="en"] .quote-table tbody,
+#quotation-pdf-root[data-lang="en"] .quote-table tr,
+#quotation-pdf-root[data-lang="en"] .quote-table th,
+#quotation-pdf-root[data-lang="en"] .quote-table td {
+  direction: ltr !important;
+}
 #quotation-pdf-root[data-lang="en"] .quote-header__meta {
   align-items: flex-start;
   justify-self: start;
@@ -944,6 +954,12 @@ body,
   font-feature-settings: 'liga' 1, 'rlig' 1;
   font-kerning: normal;
   text-align: right;
+}
+
+/* Notes block left-to-right in English */
+#quotation-pdf-root[data-lang="en"] .quote-notes {
+  direction: ltr;
+  text-align: left;
 }
 
 .quote-notes img[data-quote-note-image] {
