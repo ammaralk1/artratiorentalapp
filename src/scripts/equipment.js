@@ -441,17 +441,30 @@ function normalizeDescriptionValue(value) {
   return raw;
 }
 
+function normalizeLessorValue(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+}
+
 function resolveEquipmentGroupKey(item) {
   if (!item) return '';
   const descriptionSource = item.desc || item.description || item.name || '';
-  let key = normalizeDescriptionValue(descriptionSource);
-  if (!key) {
-    key = normalizeDescriptionValue(item.category || '');
+  const normalizedDesc = normalizeDescriptionValue(descriptionSource);
+
+  // Group primarily by (description + lessor). If lessor differs, items should not be grouped together
+  // even if the description matches exactly.
+  if (normalizedDesc) {
+    const normalizedLessor = normalizeLessorValue(item.lessor || '');
+    return `${normalizedDesc}__lessor__${normalizedLessor}`;
   }
-  if (!key) {
-    key = normalizeNumbers(String(item.barcode || '')).trim().toLowerCase();
+
+  // Fallbacks preserve previous behavior when description is missing
+  let fallback = normalizeDescriptionValue(item.category || '');
+  if (!fallback) {
+    fallback = normalizeNumbers(String(item.barcode || '')).trim().toLowerCase();
   }
-  return key;
+  return fallback;
 }
 
 function getVariantsForItem(item) {
