@@ -13,6 +13,7 @@ registerTranslations({
     'equipment.backToTop.ariaLabel': 'العودة إلى أعلى الصفحة',
     'equipment.backToTop.title': '⬆️ للأعلى',
     'calendar.legend.ariaLabel': 'خيارات حالة الحجز',
+    'reservations.create.equipment.groupLabel': 'نوع إضافة المعدات',
     'quote.companyName': 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
     'reservations.quote.labels.cr': 'السجل التجاري',
     // Checklist controls (sidebar)
@@ -1036,6 +1037,7 @@ registerTranslations({
     'equipment.backToTop.ariaLabel': 'Back to top',
     'equipment.backToTop.title': '⬆️ Back to top',
     'calendar.legend.ariaLabel': 'Reservation status legend',
+    'reservations.create.equipment.groupLabel': 'Equipment add mode',
     'quote.companyName': 'Food Art for Advertising and Publicity',
     'reservations.quote.labels.cr': 'Commercial Registration',
     // Checklist controls (sidebar)

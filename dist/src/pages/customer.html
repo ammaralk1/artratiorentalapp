@@ -17,9 +17,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/customer.Bbak-l56.js"></script>
+  <script type="module" crossorigin src="../../assets/customer.MUrBOXjo.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.C3Vmx6k1.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.Drbuq9o-.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService.CQ6WwNGq.js">
   <link rel="modulepreload" crossorigin href="../../assets/state.BIuh49pZ.js">
   <link rel="modulepreload" crossorigin href="../../assets/reservationsService.ZvfW6kI5.js">
@@ -36,7 +36,7 @@
 <body class="page-shell theme-loading customer-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -78,7 +78,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
@@ -93,7 +93,7 @@
                 <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
                 <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
               </svg>
-              <span>👤 العملاء</span>
+              <span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
@@ -103,7 +103,7 @@
                 <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
                 <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
               </svg>
-              <span>🎥 المعدات</span>
+              <span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#maintenance-tab" data-close-sidebar data-i18n data-i18n-key="tabs.maintenance">
@@ -117,7 +117,7 @@
                 <path d="M16 12l5 5l-4 4l-5 -5"></path>
                 <path d="M16 17l-1.5 1.5"></path>
               </svg>
-              <span>🛠️ الصيانة</span>
+              <span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
@@ -134,7 +134,7 @@
                 <path d="M15.97 17.25l1.3 .75"></path>
                 <path d="M20.733 20l1.3 .75"></path>
               </svg>
-              <span>😎 طاقم العمل</span>
+              <span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
@@ -150,7 +150,7 @@
                 <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
                 <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
               </svg>
-              <span>📅 الحجوزات</span>
+              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
             </span>
           </a>
         </div>
@@ -321,7 +321,7 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <nav class="glass-card dashboard-tabbar customer-primary-nav" aria-label="التنقل السريع">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav" aria-label="التنقل السريع" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <a
                 href="dashboard.html#reservations-tab"
