@@ -16,7 +16,7 @@
 <body class="page-shell theme-loading notifications-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -27,7 +27,7 @@
           <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
         </div>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
           <path d="M18 6l-12 12"></path>
@@ -243,19 +243,19 @@
                     <input type="checkbox" id="notif-to-admins" class="checkbox checkbox-error" checked>
                     <span data-i18n data-i18n-key="notifications.compose.toAdmins">الإدمن</span>
                   </label>
-                  <input id="notif-extra-emails" class="input input-bordered" placeholder="إيميلات إضافية (مفصولة بفواصل)">
-                  <input id="notif-extra-chatids" class="input input-bordered" placeholder="معرّفات تليغرام إضافية (مفصولة بفواصل)">
+                  <input id="notif-extra-emails" class="input input-bordered" placeholder="إيميلات إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraEmails.placeholder">
+                  <input id="notif-extra-chatids" class="input input-bordered" placeholder="معرّفات تليغرام إضافية (مفصولة بفواصل)" data-i18n data-i18n-placeholder-key="notifications.compose.extraChatIds.placeholder">
                 </div>
               </div>
               <div class="flex flex-col gap-2">
-                <label class="font-medium text-base-content" for="notif-template">قالب الرسالة (اختياري)</label>
+                <label class="font-medium text-base-content" for="notif-template" data-i18n data-i18n-key="notifications.compose.templateLabel">قالب الرسالة (اختياري)</label>
                 <select id="notif-template" class="select select-bordered w-full">
-                  <option value="">— بدون قالب —</option>
+                  <option value="" data-i18n data-i18n-key="notifications.compose.template.none">— بدون قالب —</option>
                 </select>
                 <label class="font-medium text-base-content" for="notif-subject" data-i18n data-i18n-key="notifications.compose.subject">الموضوع</label>
-                <input id="notif-subject" class="input input-bordered" placeholder="تنبيه إداري">
+                <input id="notif-subject" class="input input-bordered" placeholder="تنبيه إداري" data-i18n data-i18n-placeholder-key="notifications.compose.subject.placeholder">
                 <label class="font-medium text-base-content" for="notif-body" data-i18n data-i18n-key="notifications.compose.body">نص الرسالة</label>
-                <textarea id="notif-body" class="textarea textarea-bordered min-h-[140px]" placeholder="اكتب رسالتك هنا"></textarea>
+                <textarea id="notif-body" class="textarea textarea-bordered min-h-[140px]" placeholder="اكتب رسالتك هنا" data-i18n data-i18n-placeholder-key="notifications.compose.body.placeholder"></textarea>
                 <div class="flex gap-2">
                   <button type="button" class="btn btn-outline btn-sm" id="notif-template-reminder" data-i18n data-i18n-key="notifications.compose.templates.reminder">📌 تذكير</button>
                   <button type="button" class="btn btn-outline btn-sm" id="notif-template-note" data-i18n data-i18n-key="notifications.compose.templates.note">📝 ملاحظة إدارية</button>
@@ -266,8 +266,8 @@
               <div class="flex justify-between items-center gap-2 flex-wrap">
               <div id="notif-preview" class="text-sm text-base-content/70"></div>
               <div class="flex gap-2">
-                <button type="button" class="btn btn-outline" id="notif-preview-btn">👁️ معاينة المستلمين</button>
-                <button type="button" class="btn btn-outline" id="notif-retry-last" hidden>🔁 إعادة إرسال الفاشلة (آخر دفعة)</button>
+                <button type="button" class="btn btn-outline" id="notif-preview-btn" data-i18n data-i18n-key="notifications.compose.preview">👁️ معاينة المستلمين</button>
+                <button type="button" class="btn btn-outline" id="notif-retry-last" hidden data-i18n data-i18n-key="notifications.compose.retryLast">🔁 إعادة إرسال الفاشلة (آخر دفعة)</button>
                 <button type="button" class="btn btn-primary" id="notif-send-btn" data-i18n data-i18n-key="notifications.compose.send">🚀 إرسال</button>
               </div>
             </div>
@@ -299,7 +299,7 @@
                 <input id="log-filter-batch" type="search" class="input input-bordered input-sm" placeholder="batch_id">
                 <input id="log-filter-q" type="search" class="input input-bordered input-sm" placeholder="بحث بالمستلم/الرقم" data-i18n data-i18n-placeholder-key="notifications.logs.filters.q.placeholder">
                 <button type="button" class="btn btn-outline btn-sm" id="log-refresh-btn" data-i18n data-i18n-key="notifications.logs.refresh">🔄 تحديث</button>
-                <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn">🗑️ مسح السجل</button>
+                <button type="button" class="btn btn-outline btn-sm" id="log-clear-btn" data-i18n data-i18n-key="notifications.logs.clear">🗑️ مسح السجل</button>
               </div>
             </header>
               <div class="users-table-wrapper overflow-x-auto">
@@ -309,7 +309,7 @@
                       <th data-i18n data-i18n-key="notifications.logs.headers.time">الوقت</th>
                       <th data-i18n data-i18n-key="notifications.logs.headers.event">الحدث</th>
                       <th data-i18n data-i18n-key="notifications.logs.headers.entity">النوع/المعرف</th>
-                      <th>الاسم</th>
+                      <th data-i18n data-i18n-key="notifications.logs.headers.name">الاسم</th>
                       <th data-i18n data-i18n-key="notifications.logs.headers.recipient">المستلم</th>
                       <th data-i18n data-i18n-key="notifications.logs.headers.channel">القناة</th>
                       <th data-i18n data-i18n-key="notifications.logs.headers.status">الحالة</th>
@@ -328,13 +328,13 @@
           <section class="glass-card space-y-4" id="templates-manager-section">
             <header class="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 class="text-xl font-semibold text-base-content">🧩 إدارة القوالب</h3>
-                <p class="text-sm text-base-content/70">إنشاء/تعديل قوالب الرسائل بمتغيرات.</p>
+                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.templates.title">🧩 إدارة القوالب</h3>
+                <p class="text-sm text-base-content/70" data-i18n data-i18n-key="notifications.templates.subtitle">إنشاء/تعديل قوالب الرسائل بمتغيرات.</p>
               </div>
               <div class="flex gap-2 items-center">
-                <button type="button" class="btn btn-outline" id="tpl-refresh">🔄 تحديث</button>
-                <button type="button" class="btn" id="tpl-new">➕ قالب جديد</button>
-                <button type="button" class="btn btn-outline" id="tpl-vars">🧠 دليل المتغيرات</button>
+                <button type="button" class="btn btn-outline" id="tpl-refresh" data-i18n data-i18n-key="notifications.templates.actions.refresh">🔄 تحديث</button>
+                <button type="button" class="btn" id="tpl-new" data-i18n data-i18n-key="notifications.templates.actions.new">➕ قالب جديد</button>
+                <button type="button" class="btn btn-outline" id="tpl-vars" data-i18n data-i18n-key="notifications.templates.actions.vars">🧠 دليل المتغيرات</button>
               </div>
             </header>
             <div id="tpl-vars-box" class="hidden text-sm bg-base-200/60 rounded p-3">
@@ -388,12 +388,12 @@
             </header>
             <div class="grid gap-3 md:grid-cols-2 items-end">
               <div class="flex flex-col gap-2">
-                <label class="font-medium text-base-content" for="tg-tech-search">بحث الفنيين</label>
-                <input id="tg-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال">
+                <label class="font-medium text-base-content" for="tg-tech-search" data-i18n data-i18n-key="notifications.telegram.techSearch">بحث الفنيين</label>
+                <input id="tg-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
               </div>
               <div class="flex gap-2">
-                <button type="button" class="btn btn-outline" id="tg-tech-search-btn">🔎 بحث</button>
-                <button type="button" class="btn" id="tg-tech-refresh-btn">🔄 تحديث</button>
+                <button type="button" class="btn btn-outline" id="tg-tech-search-btn" data-i18n data-i18n-key="notifications.chat.searchButton">🔎 بحث</button>
+                <button type="button" class="btn" id="tg-tech-refresh-btn" data-i18n data-i18n-key="notifications.chat.refreshButton">🔄 تحديث</button>
               </div>
             </div>
             <div class="users-table-wrapper overflow-x-auto">
@@ -421,8 +421,8 @@
                 <p class="text-sm text-base-content/70">يُستخدم كقناة احتياطية أو أساسية لإرسال التنبيهات إلى الإدمن. الرابط يُستخدم مرة واحدة فقط.</p>
               </div>
               <div class="flex gap-2 items-center">
-                <button type="button" class="btn" id="tg-admin-gen-btn">🔗 توليد رابط إدمن</button>
-                <button type="button" class="btn btn-outline" id="tg-admin-copy-btn" disabled>📋 نسخ الرابط</button>
+                <button type="button" class="btn" id="tg-admin-gen-btn" data-i18n data-i18n-key="notifications.telegram.admin.generate">🔗 توليد رابط إدمن</button>
+                <button type="button" class="btn btn-outline" id="tg-admin-copy-btn" disabled data-i18n data-i18n-key="notifications.telegram.admin.copy">📋 نسخ الرابط</button>
               </div>
             </header>
             <div id="tg-admin-link-box" class="text-sm text-base-content/70 hidden"></div>
@@ -450,7 +450,7 @@
                 <p class="text-sm text-base-content/70">تعرض حالة الربط وتسمح بضبطه تلقائياً.</p>
               </div>
               <div class="flex gap-2 items-center">
-                <button type="button" class="btn btn-outline" id="tg-webhook-refresh">🔄 تحديث</button>
+                <button type="button" class="btn btn-outline" id="tg-webhook-refresh" data-i18n data-i18n-key="notifications.chat.refreshButton">🔄 تحديث</button>
                 <button type="button" class="btn" id="tg-webhook-set">⚙️ ضبط/إصلاح Webhook</button>
               </div>
             </header>
@@ -480,23 +480,23 @@
           <section class="glass-card space-y-4" id="telegram-chat-section">
             <header class="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 class="text-xl font-semibold text-base-content">💬 محادثة تيليغرام (تجريبي)</h3>
+                <h3 class="text-xl font-semibold text-base-content" data-i18n data-i18n-key="notifications.chat.title">💬 محادثة تيليغرام (تجريبي)</h3>
                 <p class="text-sm text-base-content/70">اختر فني لعرض آخر الرسائل والرد عليه.</p>
               </div>
             </header>
             <div class="grid gap-3 md:grid-cols-3">
               <div class="col-span-1">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-sm font-medium">المحادثات الأخيرة</div>
-                  <button type="button" class="btn btn-outline btn-xs" id="tg-chat-list-refresh">تحديث</button>
+                  <div class="text-sm font-medium" data-i18n data-i18n-key="notifications.chat.recent">المحادثات الأخيرة</div>
+                  <button type="button" class="btn btn-outline btn-xs" id="tg-chat-list-refresh" data-i18n data-i18n-key="notifications.chat.refreshButton">تحديث</button>
                 </div>
                 <ul id="tg-chat-list" class="menu bg-base-200 rounded-box max-h-80 overflow-y-auto"></ul>
               </div>
               <div class="col-span-2">
               <div class="grid gap-3 md:grid-cols-3 items-end">
               <div class="flex flex-col gap-2">
-                <label class="font-medium text-base-content" for="tg-chat-tech-search">اختيار فني</label>
-                <input id="tg-chat-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال">
+                <label class="font-medium text-base-content" for="tg-chat-tech-search" data-i18n data-i18n-key="notifications.chat.pickTechnician">اختيار فني</label>
+                <input id="tg-chat-tech-search" type="search" class="input input-bordered" placeholder="ابحث بالاسم أو الجوال" data-i18n data-i18n-placeholder-key="notifications.chat.techSearch.placeholder">
               </div>
               <div class="flex gap-2">
                 <button type="button" class="btn" id="tg-chat-pick-btn" data-i18n data-i18n-key="notifications.chat.searchButton">🔎 بحث</button>

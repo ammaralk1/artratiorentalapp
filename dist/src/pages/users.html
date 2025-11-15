@@ -29,7 +29,7 @@
 <body class="page-shell theme-loading users-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -40,7 +40,7 @@
           <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
         </div>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
           <path d="M18 6l-12 12"></path>
@@ -103,7 +103,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="روابط مساعدة">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="روابط مساعدة" data-i18n data-i18n-aria-label-key="notifications.sidebar.helpLinksAria">
       <div class="sidebar-panel space-y-3">
         <p class="sidebar-heading" data-i18n data-i18n-key="users.table.title">👥 قائمة المستخدمين</p>
         <p class="text-sm text-base-content/70" data-i18n data-i18n-key="users.table.subtitle">استعرض جميع المستخدمين، مع إمكانية التعديل أو حذف الحسابات، والاطلاع على السجلات.</p>
@@ -116,7 +116,7 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
             <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>

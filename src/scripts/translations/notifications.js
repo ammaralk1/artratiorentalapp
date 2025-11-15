@@ -33,6 +33,32 @@ registerTranslations({
     'notifications.chat.send': 'إرسال',
     'notifications.chat.sendPhoto': '📷 صورة',
     'notifications.chat.sendPhotos': '🖼️ صور متعددة',
+    // Compose extras
+    'notifications.compose.extraEmails.placeholder': 'إيميلات إضافية (مفصولة بفواصل)',
+    'notifications.compose.extraChatIds.placeholder': 'معرّفات تليغرام إضافية (مفصولة بفواصل)',
+    'notifications.compose.templateLabel': 'قالب الرسالة (اختياري)',
+    'notifications.compose.template.none': '— بدون قالب —',
+    'notifications.compose.subject.placeholder': 'تنبيه إداري',
+    'notifications.compose.body.placeholder': 'اكتب رسالتك هنا',
+    'notifications.compose.preview': '👁️ معاينة المستلمين',
+    'notifications.compose.retryLast': '🔁 إعادة إرسال الفاشلة (آخر دفعة)',
+    // Logs
+    'notifications.logs.clear': '🗑️ مسح السجل',
+    'notifications.logs.headers.name': 'الاسم',
+    // Templates
+    'notifications.templates.title': '🧩 إدارة القوالب',
+    'notifications.templates.subtitle': 'إنشاء/تعديل قوالب الرسائل بمتغيرات.',
+    'notifications.templates.actions.refresh': '🔄 تحديث',
+    'notifications.templates.actions.new': '➕ قالب جديد',
+    'notifications.templates.actions.vars': '🧠 دليل المتغيرات',
+    // Telegram linking + chat
+    'notifications.telegram.techSearch': 'بحث الفنيين',
+    'notifications.chat.title': '💬 محادثة تيليغرام (تجريبي)',
+    'notifications.chat.recent': 'المحادثات الأخيرة',
+    'notifications.chat.pickTechnician': 'اختيار فني',
+    'notifications.chat.techSearch.placeholder': 'ابحث بالاسم أو الجوال',
+    'notifications.telegram.admin.generate': '🔗 توليد رابط إدمن',
+    'notifications.telegram.admin.copy': '📋 نسخ الرابط',
   },
   en: {
     'notifications.title': 'Notification Center',
@@ -65,5 +91,31 @@ registerTranslations({
     'notifications.chat.send': 'Send',
     'notifications.chat.sendPhoto': '📷 Photo',
     'notifications.chat.sendPhotos': '🖼️ Multiple photos',
+    // Compose extras
+    'notifications.compose.extraEmails.placeholder': 'Additional emails (comma-separated)',
+    'notifications.compose.extraChatIds.placeholder': 'Additional Telegram chat IDs (comma-separated)',
+    'notifications.compose.templateLabel': 'Message template (optional)',
+    'notifications.compose.template.none': '— No template —',
+    'notifications.compose.subject.placeholder': 'Administrative alert',
+    'notifications.compose.body.placeholder': 'Type your message here',
+    'notifications.compose.preview': '👁️ Preview recipients',
+    'notifications.compose.retryLast': '🔁 Retry failed (last batch)',
+    // Logs
+    'notifications.logs.clear': '🗑️ Clear log',
+    'notifications.logs.headers.name': 'Name',
+    // Templates
+    'notifications.templates.title': '🧩 Templates manager',
+    'notifications.templates.subtitle': 'Create/edit message templates with variables.',
+    'notifications.templates.actions.refresh': '🔄 Refresh',
+    'notifications.templates.actions.new': '➕ New template',
+    'notifications.templates.actions.vars': '🧠 Variables guide',
+    // Telegram linking + chat
+    'notifications.telegram.techSearch': 'Technicians search',
+    'notifications.chat.title': '💬 Telegram chat (beta)',
+    'notifications.chat.recent': 'Recent chats',
+    'notifications.chat.pickTechnician': 'Pick a technician',
+    'notifications.chat.techSearch.placeholder': 'Search by name or phone',
+    'notifications.telegram.admin.generate': '🔗 Generate admin link',
+    'notifications.telegram.admin.copy': '📋 Copy link',
   }
 });

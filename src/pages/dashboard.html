@@ -1046,7 +1046,7 @@
                 <h5 class="maintenance-report-modal__title" id="maintenance-report-modal-title" data-i18n data-i18n-key="maintenance.report.modalTitle">📝 تقرير الصيانة</h5>
                 <p class="maintenance-report-modal__subtitle" data-i18n data-i18n-key="maintenance.report.modalSubtitle">تفاصيل التذكرة وتقرير الإصلاح.</p>
               </div>
-              <button type="button" class="btn-close maintenance-report-modal__dismiss" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          <button type="button" class="btn-close maintenance-report-modal__dismiss" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
             </div>
             <div class="modal-body maintenance-report-modal__body">
               <div id="maintenance-report-modal-content" class="maintenance-report-modal__details"></div>
@@ -1890,7 +1890,7 @@
               <span id="equipment-lessor-badge" class="badge-soft" hidden>🏢</span>
             </div>
           </div>
-          <button type="button" class="btn-close equipment-details-header__close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          <button type="button" class="btn-close equipment-details-header__close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
         <div class="modal-body">
           <form id="edit-equipment-form" class="equipment-details-form">
@@ -1976,21 +1976,21 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-        <h5 class="modal-title">✏️ تعديل العميل</h5>
+        <h5 class="modal-title" data-i18n data-i18n-key="customers.form.actions.update">✏️ تعديل العميل</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <!-- ✅ تم توحيد أسماء الحقول -->
         <input type="hidden" id="customer-id">
-        <input class="form-control mb-2" id="customer-name" placeholder="الاسم">
-        <input class="form-control mb-2" id="customer-phone" placeholder="الجوال">
-        <input class="form-control mb-2" id="customer-company" placeholder="الشركة">
-        <input class="form-control mb-2" id="customer-email" placeholder="البريد الإلكتروني">
-        <input class="form-control mb-2" id="customer-address" placeholder="العنوان">
-        <input class="form-control mb-2" id="customer-notes" placeholder="ملاحظات">
+        <input class="form-control mb-2" id="customer-name" placeholder="الاسم" data-i18n data-i18n-placeholder-key="customers.form.placeholders.name">
+        <input class="form-control mb-2" id="customer-phone" placeholder="الجوال" data-i18n data-i18n-placeholder-key="customers.form.placeholders.phone">
+        <input class="form-control mb-2" id="customer-company" placeholder="الشركة" data-i18n data-i18n-placeholder-key="customers.form.placeholders.company">
+        <input class="form-control mb-2" id="customer-email" placeholder="البريد الإلكتروني" data-i18n data-i18n-placeholder-key="customers.form.placeholders.email">
+        <input class="form-control mb-2" id="customer-address" placeholder="العنوان" data-i18n data-i18n-placeholder-key="customers.form.placeholders.address">
+        <input class="form-control mb-2" id="customer-notes" placeholder="ملاحظات" data-i18n data-i18n-placeholder-key="customers.form.placeholders.notes">
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary" id="save-edit-btn">💾 حفظ التعديل</button>
+        <button class="btn btn-primary" id="save-edit-btn" data-i18n data-i18n-key="customers.form.actions.update">💾 حفظ التعديل</button>
       </div>
     </div>
     </div>
@@ -2142,7 +2142,7 @@
 
             <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
               <label class="form-label" for="edit-res-confirmed-btn" data-i18n data-i18n-key="reservations.edit.confirmation.label">✅ حالة التأكيد</label>
-              <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" aria-pressed="false">⏳ بانتظار التأكيد</button>
+              <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" aria-pressed="false" data-i18n data-i18n-key="reservations.edit.confirmation.pendingLabel">⏳ بانتظار التأكيد</button>
               <div class="mt-2">
                 <div class="d-flex gap-2">
                   <button type="button" class="btn btn-warning flex-fill" id="edit-res-close-btn" data-i18n data-i18n-key="reservations.edit.actions.close">🔒 إغلاق الحجز</button>
@@ -2225,7 +2225,7 @@
       <div class="modal-content crew-picker-modal">
         <div class="modal-header crew-picker-modal__header">
           <h5 class="modal-title crew-picker-modal__title" data-i18n data-i18n-key="technicians.picker.modalTitle">😎 اختيار طاقم العمل</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
         </div>
         <div class="modal-body crew-picker-modal__body">
           <div class="row g-3 crew-picker-layout">

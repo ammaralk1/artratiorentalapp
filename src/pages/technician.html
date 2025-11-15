@@ -21,7 +21,7 @@
 <body class="page-shell theme-loading technician-page customer-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -32,7 +32,7 @@
           <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
         </div>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
           <path d="M18 6l-12 12"></path>
@@ -63,7 +63,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
@@ -92,7 +92,7 @@
                 <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
                 <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
               </svg>
-              <span>👤 العملاء</span>
+              <span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
@@ -108,7 +108,7 @@
                 <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
                 <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
               </svg>
-              <span>📅 الحجوزات</span>
+              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
@@ -125,7 +125,7 @@
                 <path d="M15.97 17.25l1.3 .75"></path>
                 <path d="M20.733 20l1.3 .75"></path>
               </svg>
-              <span>😎 طاقم العمل</span>
+              <span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span>
             </span>
           </a>
         </div>
@@ -137,7 +137,7 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
             <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
@@ -262,7 +262,7 @@
     <div class="flex flex-1 flex-col">
       <main class="dashboard-main w-full">
         <div class="dashboard-main-inner space-y-8">
-          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع">
+          <nav class="glass-card dashboard-tabbar customer-primary-nav technician-primary-nav" aria-label="التنقل السريع" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
             <div class="tab-buttons tab-buttons-horizontal" role="tablist">
               <a
                 href="dashboard.html#reservations-tab"
