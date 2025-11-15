@@ -453,6 +453,9 @@ export function openProjectDetails(projectId) {
   const expensesTableTitle = t('projects.details.expenses', 'خدمات إنتاجية ({amount})').replace('{amount}', formatCurrency(expensesTotal));
   const expensesTableMarkup = buildProjectViewExpensesMarkup(Array.isArray(project.expenses) ? project.expenses : []);
 
+  // Ensure reservations section mirrors the freshly computed payment status
+  const projectForReservations = { ...project, paymentStatus: paymentStatusValue };
+
   dom.detailsBody.innerHTML = `
     <section class="project-details-primary">
       <header class="project-details-header">
@@ -509,7 +512,7 @@ export function openProjectDetails(projectId) {
         ${paymentHistoryMarkup}
       </div>
     </section>
-    ${buildProjectReservationsSection(project)}
+    ${buildProjectReservationsSection(projectForReservations)}
     <div class="project-details-footer">
       <button type="button" class="modal-action-btn modal-action-btn--primary" data-action="create-reservation">
         ${escapeHtml(t('projects.details.reservations.create', '➕ إنشاء حجز مرتبط'))}
