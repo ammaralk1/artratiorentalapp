@@ -5676,7 +5676,16 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   const crewAssignments = collectReservationCrewAssignments(reservation);
   const { totalsDisplay, totals, rentalDays } = collectReservationFinancials(reservation, crewAssignments, project);
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  // No need to peek sequence for checklist (no quote number shown)
+  // Peek the next available reservation quote sequence so the preview shows a number
+  let sequence = 1;
+  let quoteNumber = formatQuoteNumber(1, 'reservation');
+  try {
+    const peeked = await peekServerQuoteSequence('reservation');
+    sequence = Number(peeked?.sequence) || 1;
+    quoteNumber = String(peeked?.quoteNumber || formatQuoteNumber(sequence, 'reservation'));
+  } catch (_) {
+    // Fallback handled by defaults above
+  }
   const now = new Date();
   const baseTerms = resolveTermsFromForms();
 
@@ -5697,7 +5706,9 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     sectionExpansions: buildDefaultSectionExpansions('reservation'),
     fields: buildDefaultFieldSelections('reservation'),
     terms: baseTerms,
-    // Checklist: quote number is unused
+    // Show a non-committed quote number in preview; commit occurs on export
+    quoteSequence: sequence,
+    quoteNumber,
     quoteDate: now,
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
