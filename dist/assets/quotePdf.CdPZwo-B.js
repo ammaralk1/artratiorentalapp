@@ -319,17 +319,20 @@ body,
 }
 
 .quote-section--project {
-  text-align: right;
-}
-
-.quote-section--customer {
+  /* Place project block on the far left; align content to the left */
   text-align: left;
   align-items: flex-start;
 }
 
-.quote-section--project .quote-section__title {
+.quote-section--customer {
+  /* Place customer block on the far right; align content to the right */
   text-align: right;
-  width: 50%;
+  align-items: flex-end;
+}
+
+.quote-section--project .quote-section__title {
+  text-align: left;
+  width: 100%;
 }
 
 .quote-section--customer .quote-section__title {
@@ -338,15 +341,16 @@ body,
 
 .quote-section--project .info-plain,
 .quote-section--project .info-plain__item {
-  text-align: right;
-  justify-content: flex-end;
+  text-align: left;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .quote-section--customer .info-plain,
 .quote-section--customer .info-plain__item {
-  text-align: left;
-  align-items: flex-start;
-  justify-content: flex-start;
+  text-align: right;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .quote-section--reservation {
