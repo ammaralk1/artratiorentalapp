@@ -211,8 +211,6 @@ export function renderEditReservationItems(items = []) {
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
   const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');
-  const increaseDaysLabel = t('reservations.equipment.actions.increaseDays', 'زيادة الأيام');
-  const decreaseDaysLabel = t('reservations.equipment.actions.decreaseDays', 'تقليل الأيام');
   const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (!items || items.length === 0) {
@@ -239,15 +237,6 @@ export function renderEditReservationItems(items = []) {
       const parsedUnitPrice = parsePriceValue(group.unitPrice);
       const unitPriceNumber = Number.isFinite(parsedUnitPrice) ? sanitizePriceValue(parsedUnitPrice) : 0;
       const groupDays = (() => {
-        const values = (group?.items || []).map((it) => {
-          const raw = it?.days;
-          const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '')));
-          return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
-        }).filter((v) => v != null);
-        if (values.length) {
-          const max = Math.max(...values);
-          return Math.min(365, Math.max(1, max));
-        }
         try {
           const { start, end } = getEditReservationDateRange();
           const d = (typeof calculateReservationDays === 'function') ? calculateReservationDays(start, end) : 1;
@@ -341,10 +330,6 @@ export function renderEditReservationItems(items = []) {
         ? 'reservation-quantity-control reservation-quantity-control--static'
         : 'reservation-quantity-control';
       const disableQuantityAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
-      const daysControlClass = isPackageGroup
-        ? 'reservation-quantity-control reservation-quantity-control--static'
-        : 'reservation-quantity-control';
-      const disableDaysAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
 
       return `
         <tr data-group-key="${group.key}">
@@ -364,13 +349,7 @@ export function renderEditReservationItems(items = []) {
               <button type="button" class="reservation-qty-btn" data-action="increase-edit-group" data-group-key="${group.key}" aria-label="${increaseLabel}"${disableQuantityAttr}>+</button>
             </div>
           </td>
-          <td>
-            <div class="${daysControlClass}" data-group-key="${group.key}">
-              <button type="button" class="reservation-qty-btn" data-action="decrease-edit-days-group" data-group-key="${group.key}" aria-label="${decreaseDaysLabel}"${disableDaysAttr}>−</button>
-              <span class="reservation-qty-value">${normalizeNumbers(String(groupDays))}</span>
-              <button type="button" class="reservation-qty-btn" data-action="increase-edit-days-group" data-group-key="${group.key}" aria-label="${increaseDaysLabel}"${disableDaysAttr}>+</button>
-            </div>
-          </td>
+          <td><span class="reservation-days-value">${normalizeNumbers(String(groupDays))}</span></td>
           <td>${unitPriceDisplay}</td>
           <td>${totalPriceDisplay}</td>
           <td>
@@ -760,55 +739,7 @@ function increaseEditReservationGroup(groupKey) {
   updateEditReservationSummary();
 }
 
-function resolveGroupDaysForEdit(group) {
-  const values = (group?.items || []).map((it) => {
-    const raw = it?.days;
-    const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '')));
-    return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
-  }).filter((v) => v != null);
-  if (values.length) {
-    const max = Math.max(...values);
-    return Math.min(365, Math.max(1, max));
-  }
-  try {
-    const { start, end } = getEditReservationDateRange();
-    const d = calculateReservationDays(start, end);
-    return Number.isFinite(d) && d > 0 ? d : 1;
-  } catch (_) { return 1; }
-}
-
-function setDaysForEditGroup(groupKey, newDays) {
-  const { index: editingIndex, items } = getEditingState();
-  const clamped = Math.min(365, Math.max(1, Math.round(Number(newDays) || 1)));
-  const nextItems = items.map((it) => {
-    if (resolveReservationItemGroupKey(it) !== groupKey) return it;
-    if (it?.type === 'package') return it;
-    return { ...it, days: clamped };
-  });
-  setEditingState(editingIndex, nextItems);
-}
-
-function increaseEditReservationGroupDays(groupKey) {
-  const { items } = getEditingState();
-  const { groups } = buildReservationDisplayGroups({ items });
-  const target = groups.find((entry) => entry.key === groupKey);
-  if (!target) return;
-  const current = resolveGroupDaysForEdit(target);
-  setDaysForEditGroup(groupKey, current + 1);
-  renderEditReservationItems(getEditingState().items);
-  updateEditReservationSummary();
-}
-
-function decreaseEditReservationGroupDays(groupKey) {
-  const { items } = getEditingState();
-  const { groups } = buildReservationDisplayGroups({ items });
-  const target = groups.find((entry) => entry.key === groupKey);
-  if (!target) return;
-  const current = resolveGroupDaysForEdit(target);
-  setDaysForEditGroup(groupKey, Math.max(1, current - 1));
-  renderEditReservationItems(getEditingState().items);
-  updateEditReservationSummary();
-}
+// days column reflects reservation duration only; no manual controls
 
 function ensureGroupHandler(container) {
   if (!container || container.dataset.groupListenerAttached) {
@@ -830,15 +761,6 @@ function ensureGroupHandler(container) {
       return;
     }
 
-    if (action === 'decrease-edit-days-group' && groupKey) {
-      decreaseEditReservationGroupDays(groupKey);
-      return;
-    }
-
-    if (action === 'increase-edit-days-group' && groupKey) {
-      increaseEditReservationGroupDays(groupKey);
-      return;
-    }
 
     if (action === 'remove-edit-group' && groupKey) {
       removeEditReservationGroup(groupKey);

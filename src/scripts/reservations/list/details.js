@@ -1056,6 +1056,30 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
         const combinedMeta = isPackageGroup ? `${packageItemsMeta || ''}${barcodesMeta || ''}` : barcodesMeta;
 
+        const daysDisplay = normalizeNumbers(String(rentalDays));
+
+        // إجمالي الصف يعتمد على الأيام من التواريخ
+        let rowTotalNumber;
+        if (isPackageGroup) {
+          // اعتبر سعر الحزمة يوميًّا
+          let perDay = unitPriceNumber;
+          if (!Number.isFinite(perDay) || perDay <= 0) {
+            const pkgRef = {
+              package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
+              packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
+            };
+            try {
+              const pricing = computePackagePricing(pkgRef, { packageQuantity: Number.isFinite(quantityValue) ? quantityValue : 1, days: 1 });
+              if (Number.isFinite(Number(pricing.perDayTotal))) perDay = Number(pricing.perDayTotal);
+            } catch (_) { /* ignore */ }
+          }
+          rowTotalNumber = sanitizePriceValue(perDay * rentalDays);
+        } else {
+          rowTotalNumber = sanitizePriceValue(unitPriceNumber * quantityValue * rentalDays);
+        }
+
+        const rowTotalDisplay = `${normalizeNumbers(rowTotalNumber.toFixed(2))} ${currencyLabel}`;
+
         return `
           <tr>
             <td class="reservation-modal-items-table__cell reservation-modal-items-table__cell--item">
@@ -1074,12 +1098,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
                 <button type="button" class="reservation-qty-btn" disabled aria-disabled="true" tabindex="-1">+</button>
               </div>
             </td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(t('reservations.details.table.headers.days', 'الأيام'))}">${daysDisplay}</td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitPrice)}">${unitPriceDisplay}</td>
-            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.total)}">${totalPriceDisplay}</td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.total)}">${rowTotalDisplay}</td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="4" class="text-center">${noItemsText}</td></tr>`;
+    : `<tr><td colspan="5" class="text-center">${noItemsText}</td></tr>`;
 
 
   const itemsTable = `
@@ -1089,6 +1114,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
           <tr>
             <th>${tableHeaders.item}</th>
             <th>${tableHeaders.quantity}</th>
+            <th>${t('reservations.details.table.headers.days', 'الأيام')}</th>
             <th>${tableHeaders.unitPrice}</th>
             <th>${tableHeaders.total}</th>
           </tr>

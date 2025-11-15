@@ -2227,9 +2227,9 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-quantity-control {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   background: rgba(76, 110, 245, 0.08);
   border: 1px solid rgba(59, 89, 208, 0.15);
 }
@@ -2240,8 +2240,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-qty-btn {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: none;
   display: inline-flex;
@@ -2250,7 +2250,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(37, 99, 235, 0.45));
   color: #fff;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -2275,10 +2275,10 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-qty-value {
-  min-width: 32px;
+  min-width: 26px;
   text-align: center;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .reservation-items-table td:first-child,
@@ -2295,6 +2295,15 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-items-table th:nth-child(2) {
   border-left: 1px solid rgba(76, 110, 245, 0.16);
   border-right: 1px solid rgba(76, 110, 245, 0.16);
+}
+
+/* Narrow columns for quantity and days */
+.reservation-items-table th:nth-child(2),
+.reservation-items-table td:nth-child(2),
+.reservation-items-table th:nth-child(3),
+.reservation-items-table td:nth-child(3) {
+  width: 110px;
+  white-space: nowrap;
 }
 
 .reservation-items-table tbody tr + tr td {
@@ -2356,6 +2365,15 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 .reservation-modal-items-table th:nth-child(2),
 .reservation-modal-items-table td:nth-child(2) {
   border-left: 1px solid rgba(76, 110, 245, 0.22);
+}
+
+/* Narrow qty and days in details modal */
+.reservation-modal-items-table th:nth-child(2),
+.reservation-modal-items-table td:nth-child(2),
+.reservation-modal-items-table th:nth-child(3),
+.reservation-modal-items-table td:nth-child(3) {
+  width: 110px;
+  white-space: nowrap;
 }
 
 .reservation-modal-items-table td:first-child,

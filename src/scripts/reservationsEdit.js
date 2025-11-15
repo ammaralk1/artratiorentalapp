@@ -1369,6 +1369,23 @@ export function setupEditReservationModalEvents(context = {}) {
     paymentProgressValueInput.dataset.listenerAttached = 'true';
   }
 
+  // Re-render items and summary when date/time change so days column + totals reflect duration
+  const dateIds = ['edit-res-start', 'edit-res-end'];
+  const timeIds = ['edit-res-start-time', 'edit-res-end-time'];
+  const attachDateTimeListener = (id) => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.editDateListenerAttached === 'true') return;
+    const handler = () => {
+      try { updateEditReservationSummary?.(); } catch (_) {}
+      try { const items = (typeof getEditingState === 'function') ? getEditingState().items : []; renderEditItems?.(items); } catch (_) {}
+    };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+    el.dataset.editDateListenerAttached = 'true';
+  };
+  dateIds.forEach(attachDateTimeListener);
+  timeIds.forEach(attachDateTimeListener);
+
   if (typeof window !== 'undefined' && typeof window.renderEditPaymentHistory === 'function') {
     window.renderEditPaymentHistory();
   }

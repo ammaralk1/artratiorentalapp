@@ -349,18 +349,7 @@ export function calculateDraftFinancialBreakdown({
     const isPackage = String(group?.type || '').toLowerCase() === 'package';
     const inferredFixed = inferGroupIsFixed(group);
 
-    const overrideDays = (() => {
-      const sourceItems = Array.isArray(group?.items) ? group.items : [];
-      const values = sourceItems.map((it) => {
-        const raw = it?.days;
-        const parsed = parseNumericValue(raw);
-        return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
-      }).filter((v) => v != null);
-      if (values.length) return Math.min(365, Math.max(1, Math.max(...values)));
-      return null;
-    })();
-
-    const appliedDays = (overrideNoDays || inferredFixed) ? 1 : (overrideDays ?? rentalDays);
+    const appliedDays = (overrideNoDays || inferredFixed) ? 1 : rentalDays;
 
     if (isPackage) {
       const unitCandidate = Number(group?.unitPrice);
