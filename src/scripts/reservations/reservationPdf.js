@@ -5342,18 +5342,8 @@ async function exportQuoteAsPdf() {
     logPdfDebug('html2pdf ensured');
 
     const context = activeQuoteState.context || 'reservation';
-    // Reserve a server-side quote number only for project context.
-    // For reservations, we keep the quote number equal to the reservation id (digits only).
-    if (context === 'project') {
-      try {
-        const { sequence, quoteNumber } = await reserveNextQuoteSequence(context);
-        activeQuoteState.quoteSequence = sequence;
-        activeQuoteState.quoteNumber = quoteNumber;
-        activeQuoteState.sequenceCommitted = true;
-      } catch (seqError) {
-        logPdfWarn('failed to reserve sequence at export time, proceeding with preview number', seqError);
-      }
-    }
+    // Do not reserve server-side sequences; we use digits-only from reservation/project identifiers for both contexts.
+    // Keeping this block disabled preserves deterministic quote numbers and avoids server dependency.
     const html = buildQuotationHtml({
       context,
       reservation: activeQuoteState.reservation,
@@ -5805,7 +5795,22 @@ export async function exportProjectPdf({ project }) {
     console.warn('[reservationPdf] refreshReservationsForProject failed, proceeding with snapshot/state', error);
   }
 
-  const { sequence, quoteNumber } = await peekServerQuoteSequence('project');
+  // Derive quote number from the project itself (digits only, no prefixes)
+  const deriveProjectQuoteNumber = (proj) => {
+    if (!proj) return '1';
+    const candidates = [
+      proj.projectCode,
+      proj.project_code,
+      proj.code,
+      proj.id
+    ];
+    const first = candidates.find((v) => v != null && String(v).trim() !== '');
+    const normalized = normalizeNumbers(String(first ?? '1'));
+    const digitsOnly = normalized.replace(/\D+/g, '');
+    return digitsOnly || normalized || '1';
+  };
+  const quoteNumber = deriveProjectQuoteNumber(resolvedProject);
+  const sequence = Number.parseInt(quoteNumber, 10) || 1;
   const now = new Date();
   const baseTerms = [...PROJECT_QUOTE_TERMS];
 
