@@ -57,7 +57,7 @@ import{r as Rt,d as Ne,t as n,n as h,x as Dt,l as is,j as x,v as cs,w as ls,u as
         <td>${a}</td>
         <td>${o(i)}</td>
         <td>${o(l)}</td>
-        <td>${p||"—"}</td>
+        <td>${p||o(n("common.placeholder.empty","—"))}</td>
         <td>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${c}" aria-label="${u}">✖</button>
         </td>
@@ -210,7 +210,7 @@ import{r as Rt,d as Ne,t as n,n as h,x as Dt,l as is,j as x,v as cs,w as ls,u as
         <td>${i}</td>
         <td>${o(l)}</td>
         <td>${o(p)}</td>
-        <td>${o(c||"—")}</td>
+        <td>${o(c||n("common.placeholder.empty","—"))}</td>
       </tr>`}).join("");return`
     <div class="table-responsive">
       <table class="table table-sm table-hover align-middle project-services-table">
@@ -293,7 +293,7 @@ import{r as Rt,d as Ne,t as n,n as h,x as Dt,l as is,j as x,v as cs,w as ls,u as
             <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${o(n("projects.form.labels.salePrice","سعر البيع"))}" inputmode="decimal">
           </div>
           <div class="project-edit-expense-label-col">
-            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-note" placeholder="${o(n("projects.form.labels.expenseNote","ملاحظات"))}">
+            <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-note" placeholder="${o(n("projects.form.placeholders.expenseNote","تفاصيل إضافية"))}">
           </div>
           <div class="project-edit-expense-action-col">
             <button type="button" class="modal-action-btn modal-action-btn--warning project-edit-add-btn" data-action="add-expense">${o(n("projects.form.buttons.addExpense","➕ إضافة خدمة"))}</button>
