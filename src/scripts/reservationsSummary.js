@@ -541,7 +541,9 @@ export function buildSummaryHtml({
   const crewTotalLabel = t('reservations.details.labels.crewTotal', '😎 إجمالي الفريق');
   const taxLabelShort = t('reservations.summary.taxLabelShort', '🧾 الضريبة');
   const paymentLabel = t('reservations.summary.paymentLabelShort', '💳 حالة الدفع');
-  const totalLabel = t(totalKey.replace('.total', '.totalLabel'), '💰 التكلفة الإجمالية');
+  // Always use the unified label key to avoid malformed keys like
+  // `reservations.summary.totalLabelAfterEdit`.
+  const totalLabel = t('reservations.summary.totalLabel', '💰 التكلفة الإجمالية');
   const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
   const netProfitValue = Number.isFinite(netProfit) ? Math.max(0, Number(netProfit)) : null;

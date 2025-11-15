@@ -453,7 +453,7 @@ export function buildProjectDetailsMarkup(project, { customer = null, reservatio
     companyName ? { icon: '🏢', label: t('projects.details.company', 'شركة العميل'), value: companyName } : null,
     { icon: '🏷️', label: t('projects.details.type', 'نوع المشروع'), value: getProjectTypeLabel(project?.type) },
     { icon: '🗓️', label: t('projects.details.labels.start', 'تاريخ البداية'), value: formatDateTimeDetailed(project?.start) },
-    { icon: '🗓️', label: t('projects.details.labels.end', 'تاريخ النهاية'), value: project?.end ? formatDateTimeDetailed(project.end) : '—' },
+    { icon: '🗓️', label: t('projects.details.labels.end', 'تاريخ النهاية'), value: project?.end ? formatDateTimeDetailed(project.end) : t('common.placeholder.empty', '—') },
     { icon: '🔗', label: t('projects.details.labels.reservationsCount', 'عدد الحجوزات'), value: normalizeNumbers(String(reservationsCount)) }
   ].filter(Boolean);
 
