@@ -302,15 +302,19 @@ body,
 }
 
 .quote-section-row--primary {
-  /* Use grid to lock columns in place: left = project, right = customer */
+  /* Force a stable two-column layout: project (left), customer (right) */
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: 'left right';
   column-gap: 18px;
   align-items: start;
+  /* Neutralize RTL influence on column indexing; text alignment handled per-section */
+  direction: ltr;
 }
 
-.quote-section-row--primary .quote-section--project { grid-column: 1; }
-.quote-section-row--primary .quote-section--customer { grid-column: 2; }
+/* Explicitly map sections to grid areas to avoid writing-mode quirks */
+.quote-section-row--primary .quote-section--project { grid-area: left; }
+.quote-section-row--primary .quote-section--customer { grid-area: right; }
 
 .quote-section--project,
 .quote-section--customer {
