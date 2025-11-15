@@ -4118,9 +4118,10 @@ function buildQuotationHtml(options) {
     try {
       const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
       const emptySection = '<section class="quote-section quote-section--empty"></section>';
-      const rowHtml = langNow === 'en'
+      // Place Project info on the far right under Customer info for AR as well
+      const rowHtml = (langNow === 'en')
         ? `<div class="quote-section-row">${emptySection}${projectSectionMarkup}</div>`
-        : `<div class="quote-section-row">${projectSectionMarkup}${emptySection}</div>`;
+        : `<div class="quote-section-row">${emptySection}${projectSectionMarkup}</div>`;
       primaryBlocks.push(withBlockAttributes(rowHtml, { blockType: 'group' }));
     } catch (_) {
       primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
