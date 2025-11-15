@@ -3006,12 +3006,18 @@ function buildProjectQuotationHtml({
         cols.push({
           ...col,
           render: (assignment) => {
-            const baseLabel = (
-              assignment?.positionLabel
-                ?? assignment?.position_name
-                ?? assignment?.role
-                ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
-            );
+            const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+            const labelEn = assignment?.positionLabelEn
+              ?? assignment?.position_label_en
+              ?? assignment?.position_name_en
+              ?? assignment?.positionLabelAlt
+              ?? assignment?.position_label_alt
+              ?? assignment?.role;
+            const labelAr = assignment?.positionLabel
+              ?? assignment?.position_name
+              ?? assignment?.role
+              ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+            const baseLabel = (langNow === 'en' && labelEn) ? labelEn : labelAr;
             if (groupProjectCrew) {
               return escapeHtml(normalizeNumbers(String(baseLabel)));
             }
@@ -3849,12 +3855,18 @@ function buildQuotationHtml(options) {
         cols.push({
           ...col,
           render: (assignment) => {
-            const baseLabel = (
-              assignment?.positionLabel
-                ?? assignment?.position_name
-                ?? assignment?.role
-                ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
-            );
+            const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+            const labelEn = assignment?.positionLabelEn
+              ?? assignment?.position_label_en
+              ?? assignment?.position_name_en
+              ?? assignment?.positionLabelAlt
+              ?? assignment?.position_label_alt
+              ?? assignment?.role;
+            const labelAr = assignment?.positionLabel
+              ?? assignment?.position_name
+              ?? assignment?.role
+              ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+            const baseLabel = (langNow === 'en' && labelEn) ? labelEn : labelAr;
             if (groupCrew) {
               return escapeHtml(normalizeNumbers(String(baseLabel)));
             }

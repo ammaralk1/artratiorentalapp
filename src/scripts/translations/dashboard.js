@@ -1697,6 +1697,58 @@ registerTranslations({
   }
 });
 
+// Quote/Checklist preview modal UI (sidebar, actions, statuses)
+registerTranslations({
+  ar: {
+    'reservations.quote.toggleHeading': 'حدد المعلومات المراد تصديرها',
+    'reservations.quote.actions.close': 'إغلاق',
+    'reservations.quote.actions.export': '📄 تنزيل PDF',
+    'reservations.quote.previewTitle': 'معاينة عرض سعر',
+    'reservations.quote.termsEditor.title': 'الشروط العامة (قابلة للتعديل)',
+    'reservations.quote.termsEditor.placeholder': 'اكتب كل شرط في سطر مستقل',
+    'reservations.quote.termsEditor.reset': 'استعادة الشروط الافتراضية',
+    'reservations.quote.zoom.out': 'تصغير',
+    'reservations.quote.zoom.in': 'تكبير',
+    'reservations.quote.zoom.reset': 'إعادة الضبط',
+    'reservations.quote.labels.number': 'رقم عرض سعر',
+    'reservations.quote.labels.dateGregorian': 'التاريخ الميلادي',
+    'reservations.quote.status.exporting': 'جاري تجهيز ملف PDF...',
+    'reservations.quote.status.rendering': 'جاري تحديث المعاينة...',
+    'reservations.quote.status.exportingHint': 'قد يستغرق ذلك بضع ثوانٍ، الرجاء الانتظار...',
+    'reservations.quote.toast.viewGuide': '📘 عرض دليل الحل السريع',
+    'reservations.quote.toast.retry': 'إعادة المحاولة',
+    'reservations.quote.toast.assetsFailed': '⚠️ تعذر تحميل بعض الصور ضمن عرض سعر.',
+    'reservations.quote.sections.financial': 'الملخص المالي',
+    'reservations.quote.sections.items': 'قائمة المعدات',
+    'reservations.quote.sections.crew': 'طاقم العمل',
+    'reservations.quote.sections.notes': 'ملاحظات الحجز'
+  },
+  en: {
+    'reservations.quote.toggleHeading': 'Select information to include',
+    'reservations.quote.actions.close': 'Close',
+    'reservations.quote.actions.export': 'Download PDF',
+    'reservations.quote.previewTitle': 'Preview Quote',
+    'reservations.quote.termsEditor.title': 'General terms (editable)',
+    'reservations.quote.termsEditor.placeholder': 'Write each term on a new line',
+    'reservations.quote.termsEditor.reset': 'Restore default terms',
+    'reservations.quote.zoom.out': 'Zoom out',
+    'reservations.quote.zoom.in': 'Zoom in',
+    'reservations.quote.zoom.reset': 'Reset',
+    'reservations.quote.labels.number': 'Quote number',
+    'reservations.quote.labels.dateGregorian': 'Gregorian date',
+    'reservations.quote.status.exporting': 'Preparing PDF...',
+    'reservations.quote.status.rendering': 'Updating preview...',
+    'reservations.quote.status.exportingHint': 'This may take a few seconds. Please wait...',
+    'reservations.quote.toast.viewGuide': 'Open quick help',
+    'reservations.quote.toast.retry': 'Retry',
+    'reservations.quote.toast.assetsFailed': 'Some images failed to load in the quote.',
+    'reservations.quote.sections.financial': 'Financial summary',
+    'reservations.quote.sections.items': 'Equipment list',
+    'reservations.quote.sections.crew': 'Crew',
+    'reservations.quote.sections.notes': 'Reservation notes'
+  }
+});
+
 // Checklist section headings and labels (reservation PDF)
 registerTranslations({
   ar: {
