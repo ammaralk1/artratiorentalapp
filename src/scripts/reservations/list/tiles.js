@@ -170,10 +170,16 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
     }
     let confirmButtonHtml = '';
-    if (!projectLinked && !effectiveConfirmed) {
-      confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`;
-    } else if (!projectLinked && effectiveConfirmed && !completed) {
-      confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"close\">${closeLabel}</button>`;
+    const statusValue = String(reservation.status || '').toLowerCase();
+    const canReopen = statusValue === 'completed';
+    if (!projectLinked) {
+      if (canReopen) {
+        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"reopen\">${t('reservations.list.actions.reopen', '↩️ إلغاء الإغلاق')}</button>`;
+      } else if (!effectiveConfirmed) {
+        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`;
+      } else if (!completed) {
+        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"close\">${closeLabel}</button>`;
+      }
     }
     const confirmSectionHtml = confirmButtonHtml
       ? `<div class=\"tile-actions\">${confirmButtonHtml}</div>`

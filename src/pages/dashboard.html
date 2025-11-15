@@ -2144,7 +2144,10 @@
               <label class="form-label" for="edit-res-confirmed-btn">✅ حالة التأكيد</label>
               <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" data-pending-label="⏳ بانتظار التأكيد" data-confirm-label="✅ تم التأكيد" aria-pressed="false">⏳ بانتظار التأكيد</button>
               <div class="mt-2">
-                <button type="button" class="btn btn-warning w-100" id="edit-res-close-btn">🔒 إغلاق الحجز</button>
+                <div class="d-flex gap-2">
+                  <button type="button" class="btn btn-warning flex-fill" id="edit-res-close-btn">🔒 إغلاق الحجز</button>
+                  <button type="button" class="btn btn-outline-secondary flex-fill" id="edit-res-reopen-btn">↩️ إلغاء الإغلاق</button>
+                </div>
               </div>
             </div>
             <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">

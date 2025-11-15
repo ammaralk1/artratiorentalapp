@@ -17,7 +17,8 @@ export function renderReservationsList({
   filters = null,
   onShowDetails,
   onConfirmReservation,
-  onCloseReservation
+  onCloseReservation,
+  onReopenReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
   const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
@@ -97,6 +98,17 @@ export function renderReservationsList({
       event.stopPropagation();
       if (typeof onCloseReservation === 'function') {
         onCloseReservation(index, event);
+      }
+    });
+  });
+
+  container.querySelectorAll('button[data-action="reopen"]').forEach((btn) => {
+    const index = Number(btn.dataset.reservationIndex);
+    if (Number.isNaN(index)) return;
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (typeof onReopenReservation === 'function') {
+        onReopenReservation(index, event);
       }
     });
   });

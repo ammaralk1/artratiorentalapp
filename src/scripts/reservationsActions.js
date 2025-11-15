@@ -10,6 +10,7 @@ import {
   closeReservationApi,
   refreshReservationsFromApi,
   isApiError,
+  updateReservationApi,
 } from './reservationsService.js';
 import { resolveReservationProjectState } from './reservationsShared.js';
 
@@ -180,16 +181,12 @@ export async function closeReservation(index, notes = '', { onAfterChange } = {}
   }
 
   try {
-    // If user wrote notes, append to existing notes instead of overwriting
-    let finalNotes = notes || '';
-    const existingNotes = reservation.notes ? String(reservation.notes).trim() : '';
-    if (existingNotes && finalNotes) {
+    // Always prefix closing note when provided for reliable undo
+    let finalNotes = reservation.notes ? String(reservation.notes).trim() : '';
+    const inputNote = (notes || '').trim();
+    if (inputNote) {
       const prefix = t('reservations.closeModal.notePrefix', 'ملاحظة إغلاق');
-      finalNotes = `${existingNotes}\n${prefix}: ${finalNotes}`;
-    } else if (!existingNotes && finalNotes) {
-      // Keep as-is
-    } else {
-      finalNotes = existingNotes; // may be ''
+      finalNotes = finalNotes ? `${finalNotes}\n${prefix}: ${inputNote}` : `${prefix}: ${inputNote}`;
     }
 
     const updated = await closeReservationApi(reservationId, finalNotes);
@@ -202,6 +199,58 @@ export async function closeReservation(index, notes = '', { onAfterChange } = {}
     const message = isApiError(error)
       ? error.message
       : t('reservations.toast.closeFailed', 'تعذر إغلاق الحجز، حاول مرة أخرى');
+    showToast(message, 'error');
+    return false;
+  }
+}
+
+function stripLastClosingNote(originalNotes = '') {
+  const text = String(originalNotes || '');
+  if (!text.trim()) return '';
+  const markers = [
+    'ملاحظة إغلاق',
+    'Close note'
+  ];
+  let lastIdx = -1;
+  let marker = '';
+  for (const m of markers) {
+    const idx = text.lastIndexOf(m);
+    if (idx > lastIdx) { lastIdx = idx; marker = m; }
+  }
+  if (lastIdx === -1) {
+    // No explicit prefix — treat full notes as close-only and clear
+    return '';
+  }
+  // Remove the trailing newline before the marker if present
+  const pre = text.slice(0, lastIdx);
+  return pre.replace(/\n$/, '');
+}
+
+export async function reopenReservation(index, { onAfterChange } = {}) {
+  const reservations = getReservationsState();
+  const reservation = reservations[index];
+  if (!reservation) {
+    showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return false;
+  }
+  const reservationId = reservation.id || reservation.reservationId;
+  if (!reservationId) {
+    showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return false;
+  }
+
+  try {
+    const cleanedNotes = stripLastClosingNote(reservation.notes || '');
+    const updated = await updateReservationApi(reservationId, { status: 'confirmed', confirmed: true, notes: cleanedNotes });
+    runSharedRefresh();
+    onAfterChange?.({ type: 'reopened', reservation: updated });
+    showToast(t('reservations.toast.reopened', '↩️ تم إلغاء الإغلاق')); 
+    return true;
+  } catch (error) {
+    console.error('❌ [reservationsActions] reopenReservation failed', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('reservations.toast.reopenFailed', 'تعذر إلغاء الإغلاق، حاول مرة أخرى');
     showToast(message, 'error');
     return false;
   }

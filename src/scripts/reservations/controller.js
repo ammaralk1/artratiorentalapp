@@ -14,7 +14,8 @@ import {
 import {
   confirmReservation as confirmReservationAction,
   deleteReservation as deleteReservationAction,
-  closeReservation as closeReservationAction
+  closeReservation as closeReservationAction,
+  reopenReservation as reopenReservationAction
 } from '../reservationsActions.js';
 import {
   editReservation,
@@ -105,7 +106,8 @@ export function renderReservations(containerId = 'reservations-list', filters = 
     filters,
     onShowDetails: showReservationDetails,
     onConfirmReservation: confirmReservation,
-    onCloseReservation: openCloseReservationModal
+    onCloseReservation: openCloseReservationModal,
+    onReopenReservation: reopenReservation
   });
 }
 
@@ -134,6 +136,10 @@ export function deleteReservation(index) {
 
 export function confirmReservation(index) {
   return confirmReservationAction(index, { onAfterChange: handleReservationsMutation });
+}
+
+export function reopenReservation(index) {
+  return reopenReservationAction(index, { onAfterChange: handleReservationsMutation });
 }
 
 let pendingCloseIndex = null;
@@ -242,6 +248,7 @@ export function registerReservationGlobals() {
     deleteReservation,
     confirmReservation,
     openReservationEditor,
+    reopenReservation,
   });
   // Ensure close modal listeners are ready in dashboard context
   try { bindCloseReservationModalOnce(); } catch (_) {}

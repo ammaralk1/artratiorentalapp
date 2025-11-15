@@ -967,6 +967,7 @@ function renderEquipmentVariantsSection(baseItem) {
   }
 
   const currentBadgeLabel = t('equipment.modal.variants.current', 'الحالي');
+  const selectLabel = t('equipment.modal.variants.select', 'اختيار');
   const qtyLabel = t('equipment.form.labels.quantity', 'الكمية');
 
   const allItems = getAllEquipment();
@@ -986,6 +987,7 @@ function renderEquipmentVariantsSection(baseItem) {
       const deleteLabel = escapeHtml(t('equipment.item.actions.delete', '🗑️ حذف'));
       const actions = variantIndex >= 0
         ? `<div class="table-action-buttons equipment-variant-actions">
+            ${!isCurrent ? `<button type="button" class="btn btn-sm btn-secondary equipment-variant-action" data-variant-action="focus" data-variant-index="${variantIndex}">✏️ ${escapeHtml(selectLabel)}</button>` : ''}
             <button type="button" class="btn btn-sm btn-error equipment-variant-action equipment-variant-action--danger" data-variant-action="delete" data-variant-index="${variantIndex}">${deleteLabel}</button>
           </div>`
         : '';
@@ -1119,6 +1121,11 @@ function renderEquipmentItem({ item, index }) {
       </div>`
     : "";
 
+  const lessorValue = (item.lessor || '').trim();
+  const lessorTagHtml = lessorValue
+    ? `<div class="equipment-card__lessor"><span class="equipment-tag" title="${escapeHtml(t('equipment.modal.labels.lessor', '🏢 المؤجر'))}">🏢 ${escapeHtml(lessorValue)}</span></div>`
+    : '';
+
   const descriptionHtml = `
     <div class="equipment-card__description">
       <span class="equipment-card__label">${labels.description}</span>
@@ -1234,6 +1241,7 @@ function renderEquipmentItem({ item, index }) {
         </div>
       </div>
       <div class="equipment-card__body">
+        ${lessorTagHtml}
         ${categoriesHtml}
         ${aliasHtml}
       </div>
@@ -1852,6 +1860,15 @@ function handleEquipmentListKeyDown(event) {
 }
 
 function handleVariantTableClick(event) {
+  const focusButton = event.target.closest('[data-variant-action="focus"]');
+  if (focusButton) {
+    const variantIndex = Number(focusButton.dataset.variantIndex);
+    if (!Number.isNaN(variantIndex)) {
+      // Switch the active item in the modal to this variant
+      openEditEquipmentModal(variantIndex);
+    }
+    return;
+  }
   const deleteButton = event.target.closest('[data-variant-action="delete"]');
   if (deleteButton) {
     const variantIndex = Number(deleteButton.dataset.variantIndex);

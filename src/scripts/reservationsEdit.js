@@ -28,7 +28,7 @@ import {
   refreshReservationsFromApi,
   isApiError,
 } from './reservationsService.js';
-import { closeReservation as closeReservationAction } from './reservationsActions.js';
+import { closeReservation as closeReservationAction, reopenReservation as reopenReservationAction } from './reservationsActions.js';
 import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
 import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 import { getCachedReservationCrew } from './reservationsService.js';
@@ -766,7 +766,9 @@ export async function editReservation(index, {
 
   updateConfirmedControls(initialConfirmed, { disable: projectLinked });
   const closeBtnInit = document.getElementById('edit-res-close-btn');
-  if (closeBtnInit) closeBtnInit.disabled = !(initialConfirmed && !projectLinked);
+  const reopenBtnInit = document.getElementById('edit-res-reopen-btn');
+  if (closeBtnInit) closeBtnInit.disabled = !(initialConfirmed && !projectLinked) || String(reservation.status || '').toLowerCase() === 'completed';
+  if (reopenBtnInit) reopenBtnInit.disabled = String(reservation.status || '').toLowerCase() !== 'completed';
 
   const paidSelect = document.getElementById('edit-res-paid');
   const initialPaidStatus = reservation.paidStatus
@@ -1494,6 +1496,22 @@ export function setupEditReservationModalEvents(context = {}) {
       }
     });
     editCloseBtn.dataset.listenerAttached = 'true';
+  }
+
+  const editReopenBtn = document.getElementById('edit-res-reopen-btn');
+  if (editReopenBtn && !editReopenBtn.dataset.listenerAttached) {
+    editReopenBtn.addEventListener('click', async () => {
+      try {
+        const { index } = getEditingState();
+        await reopenReservationAction(index, { onAfterChange: modalEventsContext?.handleReservationsMutation });
+        // Reflect state in UI
+        try { document.getElementById('edit-res-close-btn').disabled = false; } catch (_) {}
+        try { editReopenBtn.disabled = true; } catch (_) {}
+      } catch (e) {
+        console.warn('[reservationsEdit] failed to reopen reservation', e);
+      }
+    });
+    editReopenBtn.dataset.listenerAttached = 'true';
   }
 
   const barcodeInput = document.getElementById('edit-res-equipment-barcode');

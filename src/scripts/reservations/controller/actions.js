@@ -3,7 +3,8 @@ import { userCanManageDestructiveActions, notifyPermissionDenied } from '../../a
 import {
   confirmReservation as confirmReservationAction,
   deleteReservation as deleteReservationAction,
-  closeReservation as closeReservationAction
+  closeReservation as closeReservationAction,
+  reopenReservation as reopenReservationAction
 } from '../../reservationsActions.js';
 import { updatePreferences } from '../../preferencesService.js';
 import { editReservation } from '../../reservationsEdit.js';
@@ -33,7 +34,8 @@ export function renderReservations(containerId = 'reservations-list', filters = 
     filters,
     onShowDetails: showReservationDetails,
     onConfirmReservation: confirmReservation,
-    onCloseReservation: openCloseReservationModal
+    onCloseReservation: openCloseReservationModal,
+    onReopenReservation: reopenReservation
   });
 }
 
@@ -167,6 +169,7 @@ export function registerReservationGlobals() {
     deleteReservation,
     confirmReservation,
     openReservationEditor,
+    reopenReservation,
   });
   try { bindCloseReservationModalOnce(); } catch (_) {}
 }
@@ -175,3 +178,6 @@ configureEditContextHooks({
   renderReservations,
   handleReservationsMutation,
 });
+export function reopenReservation(index) {
+  return reopenReservationAction(index, { onAfterChange: handleReservationsMutation });
+}
