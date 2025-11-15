@@ -302,12 +302,15 @@ body,
 }
 
 .quote-section-row--primary {
-  display: flex;
-  flex-direction: row-reverse;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
+  /* Use grid to lock columns in place: left = project, right = customer */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px;
+  align-items: start;
 }
+
+.quote-section-row--primary .quote-section--project { grid-column: 1; }
+.quote-section-row--primary .quote-section--customer { grid-column: 2; }
 
 .quote-section--project,
 .quote-section--customer {
