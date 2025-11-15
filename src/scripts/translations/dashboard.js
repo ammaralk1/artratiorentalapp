@@ -26,6 +26,8 @@ registerTranslations({
     'reservations.checklist.controls.notes.titleLabel': 'عنوان الملاحظات',
     'reservations.checklist.controls.notes.sectionTitleDefault': 'ملاحظات',
     'reservations.checklist.controls.notes.placeholder': 'اكتب أي ملاحظات خاصة بهذه اللستة',
+    // Packages
+    'reservations.packages.selectOption': '📦 اختر الحزمة',
     // Shared table headers
     'reservations.details.table.headers.days': 'الأيام',
     'reservations.quote.columns.unitPrice': 'لكل يوم',
@@ -52,6 +54,10 @@ registerTranslations({
     'dashboard.metrics.equipment.caption': 'الأصول المتاحة حالياً',
     'dashboard.metrics.technicians.label': 'طاقم العمل',
     'dashboard.metrics.technicians.caption': 'أعضاء جاهزون للتكليف',
+    // Local redirect helper page
+    'dashboard.local.title': 'لوحة التحكم (نسخة محلية بدون تسجيل)',
+    'dashboard.local.redirect.body': 'جاري تحويلك إلى نسخة لوحة التحكم المحلية…',
+    'dashboard.local.redirect.link': 'اضغط هنا إن لم يتم التحويل تلقائيًا',
     'dashboard.quickLinks.home': 'الصفحة الرئيسية',
     'dashboard.quickLinks.projects': 'إدارة المشاريع',
     'dashboard.quickLinks.reports': 'تقارير المشاريع',
@@ -1050,6 +1056,8 @@ registerTranslations({
     'reservations.checklist.controls.notes.titleLabel': 'Notes title',
     'reservations.checklist.controls.notes.sectionTitleDefault': 'Notes',
     'reservations.checklist.controls.notes.placeholder': 'Type any notes specific to this checklist',
+    // Packages
+    'reservations.packages.selectOption': '📦 Select a package',
     // Shared table headers
     'reservations.details.table.headers.days': 'Days',
     'reservations.quote.columns.unitPrice': 'Per day',
@@ -1076,6 +1084,10 @@ registerTranslations({
     'dashboard.metrics.equipment.caption': 'Assets available right now',
     'dashboard.metrics.technicians.label': 'Crew Members',
     'dashboard.metrics.technicians.caption': 'Team ready for assignments',
+    // Local redirect helper page
+    'dashboard.local.title': 'Dashboard (local copy without login)',
+    'dashboard.local.redirect.body': 'Redirecting you to the local dashboard…',
+    'dashboard.local.redirect.link': 'Click here if you are not redirected automatically',
     'dashboard.quickLinks.home': 'Home',
     'dashboard.quickLinks.projects': 'Projects workspace',
     'dashboard.quickLinks.reports': 'Project reports',

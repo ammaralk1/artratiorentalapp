@@ -118,6 +118,12 @@ registerTranslations({
     'projects.focus.edit': 'تعديل',
     'projects.focus.actions.confirm': '✔️ تأكيد المشروع',
     'projects.focus.confirmed': '✅ مشروع مؤكد',
+    // Focus card summary labels
+    'projects.focus.summary.project': 'ملخص المشروع',
+    'projects.focus.summary.reservations': 'الحجوزات المرتبطة',
+    'projects.focus.summary.payment': 'الملخص المالي',
+    'projects.focus.summary.range': 'الفترة الزمنية',
+    'projects.focus.summary.time': 'الوقت',
     'projects.focus.toastNotFound': '⚠️ تعذّر العثور على المشروع في القائمة',
 
     'projects.toast.linkReservationFailed': '⚠️ تعذّر ربط بعض الحجوزات بالمشروع، يرجى التحقق يدويًا',
@@ -312,6 +318,8 @@ registerTranslations({
     'projects.status.cancelled': 'ملغي',
     'projects.form.labels.cancelled': 'إلغاء المشروع',
     'projects.form.hints.cancelled': 'سيتم وسم المشروع كملغي وتحديث حالة جميع الحجوزات المرتبطة إلى ملغي.',
+    // Close note label used when closing a project
+    'projects.close.noteLabel': 'ملاحظة إغلاق',
 
     'projectCards.filters.search': '🔍 ابحث باسم المشروع أو الوصف...',
     'projectCards.filters.status.all': '⚙️ كل الحالات',
@@ -534,6 +542,12 @@ registerTranslations({
     'projects.focus.edit': 'Edit',
     'projects.focus.actions.confirm': '✔️ Confirm project',
     'projects.focus.confirmed': '✅ Project confirmed',
+    // Focus card summary labels
+    'projects.focus.summary.project': 'Project summary',
+    'projects.focus.summary.reservations': 'Linked reservations',
+    'projects.focus.summary.payment': 'Financial summary',
+    'projects.focus.summary.range': 'Date range',
+    'projects.focus.summary.time': 'Time',
     'projects.focus.toastNotFound': '⚠️ Could not find this project in the list',
 
     'projects.toast.linkReservationFailed': '⚠️ Unable to link some reservations to the project. Please review them manually.',
@@ -735,6 +749,8 @@ registerTranslations({
     'projects.status.cancelled': 'Cancelled',
     'projects.form.labels.cancelled': 'Cancel project',
     'projects.form.hints.cancelled': 'Marks the project as cancelled and updates all linked reservations to cancelled.',
+    // Close note label used when closing a project
+    'projects.close.noteLabel': 'Close note',
 
     'projectCards.filters.search': '🔍 Search by project name or description...',
     'projectCards.filters.status.all': '⚙️ All statuses',

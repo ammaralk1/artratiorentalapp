@@ -58,7 +58,10 @@ registerTranslations({
     'home.summary.projectsActive': 'مشاريع نشطة',
     'home.summary.equipmentMaintenance': 'معدات قيد الصيانة',
     'home.summary.maintenanceHigh': 'بلاغات صيانة عاجلة',
-    'home.summary.techniciansBusy': 'أعضاء طاقم مشغولون'
+    'home.summary.techniciansBusy': 'أعضاء طاقم مشغولون',
+    // Generic range labels
+    'common.range.from': 'من',
+    'common.range.to': 'إلى'
   },
   en: {
     'actions.logout': '🚪 Log Out',
@@ -117,7 +120,10 @@ registerTranslations({
     'home.summary.projectsActive': 'Active Projects',
     'home.summary.equipmentMaintenance': 'Equipment in Maintenance',
     'home.summary.maintenanceHigh': 'Urgent Maintenance Tickets',
-    'home.summary.techniciansBusy': 'Crew Members Busy'
+    'home.summary.techniciansBusy': 'Crew Members Busy',
+    // Generic range labels
+    'common.range.from': 'From',
+    'common.range.to': 'to'
   }
 });
 // Additional equipment selection labels

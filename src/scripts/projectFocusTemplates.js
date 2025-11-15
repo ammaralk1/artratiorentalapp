@@ -69,17 +69,20 @@ function buildProjectDateTimeRows(start, end) {
   let dateHtml = '';
   let timeText = '';
 
+  const fromLabel = t('common.range.from', 'من');
+  const toLabel = t('common.range.to', 'إلى');
+
   if (e.date && s.date === e.date) {
     // same-day project
     dateHtml = `<div class=\"date-range\"><div class=\"date-line\">${s.date}</div></div>`;
-    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
+    timeText = `${fromLabel} ${s.time || '—:—'} ${toLabel} ${e.time || '—:—'}`;
   } else {
     // multi-day project
     dateHtml = `<div class=\"date-range\">` +
       `<div class=\"date-line\">${s.date}</div>` +
       (e.date ? `<div class=\"date-line\">${e.date}</div>` : '') +
       `</div>`;
-    timeText = `من ${s.time || '—:—'} إلى ${e.time || '—:—'}`;
+    timeText = `${fromLabel} ${s.time || '—:—'} ${toLabel} ${e.time || '—:—'}`;
   }
 
   return { dateHtml, timeText };

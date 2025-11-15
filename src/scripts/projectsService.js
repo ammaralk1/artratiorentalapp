@@ -1,4 +1,5 @@
 import { loadData, saveData } from './storage.js';
+import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { normalizeNumbers } from './utils.js';
 
@@ -110,8 +111,8 @@ function appendClosingNoteToDescription(description = '', note = '') {
   const base = String(description || '').trim();
   const input = String(note || '').trim();
   if (!input) return base;
-  const prefixAr = 'ملاحظة إغلاق';
-  const entry = `${prefixAr}: ${input}`;
+  const label = t('projects.close.noteLabel', 'ملاحظة إغلاق');
+  const entry = `${label}: ${input}`;
   return base ? `${base}\n${entry}` : entry;
 }
 
