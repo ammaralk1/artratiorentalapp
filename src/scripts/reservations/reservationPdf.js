@@ -171,7 +171,10 @@ const QUOTE_CREW_COLUMN_DEFS = [
     fallback: 'المنصب',
     render: (assignment) => {
       const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
-      const labelEn = assignment?.positionLabelAlt
+      const labelEn = assignment?.positionLabelEn
+        ?? assignment?.position_label_en
+        ?? assignment?.position_name_en
+        ?? assignment?.positionLabelAlt
         ?? assignment?.position_label_alt
         ?? assignment?.role;
       const labelAr = assignment?.positionLabel
@@ -3928,7 +3931,7 @@ function buildQuotationHtml(options) {
       const insertionIndex = Math.max(0, priceIndex);
       cols.splice(insertionIndex, 0, {
         id: 'days',
-        labelKey: null,
+        labelKey: 'reservations.details.table.headers.days',
         fallback: 'الأيام',
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
