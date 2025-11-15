@@ -18,7 +18,7 @@
 <body class="page-shell theme-loading" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
@@ -89,7 +89,7 @@
                 <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
                 <path d="M3 13v-1a2 2 0 0 1 2 -2h2"></path>
               </svg>
-             <span>👤 العملاء</span>
+             <span data-i18n data-i18n-key="tabs.customers">👤 العملاء</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#equipment-tab" data-close-sidebar data-i18n data-i18n-key="tabs.equipment">
@@ -99,7 +99,7 @@
                 <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"></path>
                 <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
               </svg>
-             <span>🎥 المعدات</span>
+             <span data-i18n data-i18n-key="tabs.equipment">🎥 المعدات</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#maintenance-tab" data-close-sidebar data-i18n data-i18n-key="tabs.maintenance">
@@ -113,7 +113,7 @@
                 <path d="M16 12l5 5l-4 4l-5 -5"></path>
                 <path d="M16 17l-1.5 1.5"></path>
               </svg>
-             <span>🛠️ الصيانة</span>
+             <span data-i18n data-i18n-key="tabs.maintenance">🛠️ الصيانة</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#technicians-tab" data-close-sidebar data-i18n data-i18n-key="tabs.technicians">
@@ -130,7 +130,7 @@
                 <path d="M15.97 17.25l1.3 .75"></path>
                 <path d="M20.733 20l1.3 .75"></path>
               </svg>
-             <span>😎 طاقم العمل</span>
+             <span data-i18n data-i18n-key="tabs.technicians">😎 طاقم العمل</span>
             </span>
           </a>
           <a class="tab-button" href="dashboard.html#reservations-tab" data-close-sidebar data-i18n data-i18n-key="tabs.reservations">
@@ -146,7 +146,7 @@
                 <path d="M18 9m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
                 <path d="M18 13m0 1a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1v1a1 1 0 0 1 -1 1h-1a1 1 0 0 1 -1 -1z"></path>
               </svg>
-              <span>📅 الحجوزات</span>
+              <span data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</span>
             </span>
           </a>
         </div>
@@ -158,7 +158,7 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
             <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
@@ -219,7 +219,7 @@
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
             </svg>
-            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+          <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
           </label>
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
@@ -247,7 +247,7 @@
 
           <div class="glass-card dashboard-tabbar p-3 lg:hidden home-main-tabbar">
             <div class="tab-scroll" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
                 <span aria-hidden="true">‹</span>
               </button>
               <div class="tab-scroll-track" data-tab-scroll-track>
@@ -258,7 +258,7 @@
                   <a class="tab-button hidden" href="users.html" data-admin-card data-i18n data-i18n-key="home.users.title">🛡️ إدارة المستخدمين</a>
                 </div>
               </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
                 <span aria-hidden="true">›</span>
               </button>
             </div>
