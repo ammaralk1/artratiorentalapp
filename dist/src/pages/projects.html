@@ -17,10 +17,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.BBQBuCk9.js"></script>
+  <script type="module" crossorigin src="../../assets/projects.BvnukK_B.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.DvywhnHx.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService.D2N_jgUz.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.CwJkPkZr.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.CQ6WwNGq.js">
   <link rel="modulepreload" crossorigin href="../../assets/state.BIuh49pZ.js">
   <link rel="modulepreload" crossorigin href="../../assets/reservationsService.ZvfW6kI5.js">
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.BLZZT8b9.js">
@@ -28,12 +28,12 @@
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.kyiDh9Ae.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
   <link rel="modulepreload" crossorigin href="../../assets/reservationPdf.BdNBbCdk.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.DnDthLHV.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.C2xQuJo6.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.CARPDr8G.js">
   <link rel="modulepreload" crossorigin href="../../assets/details.C8V43Kjr.js">
   <link rel="modulepreload" crossorigin href="../../assets/equipment.DqBAWFES.js">
   <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.C55b0-dk.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.DvQGYR5m.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.DPXkNCY6.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="modulepreload" crossorigin href="../../assets/calculations.DHGq5E2q.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.Bg2pD_hO.css">
@@ -1041,6 +1041,27 @@
         <div class="modal-body" id="reservation-details-body"></div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال إغلاق المشروع -->
+  <div class="modal fade" id="closeProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="projects.closeModal.title">🔒 إغلاق المشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted" data-i18n data-i18n-key="projects.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
+          <label class="form-label" for="close-project-notes" data-i18n data-i18n-key="projects.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
+          <textarea id="close-project-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="projects.closeModal.notePlaceholder" placeholder="مثال: تم إنهاء المشروع بنجاح..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="close-project-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="projects.closeModal.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="close-project-submit" data-i18n data-i18n-key="projects.closeModal.confirm">🔒 إغلاق المشروع</button>
         </div>
       </div>
     </div>
