@@ -7,6 +7,7 @@ import {
   getReservationsState,
   deleteReservationApi,
   confirmReservationApi,
+  closeReservationApi,
   refreshReservationsFromApi,
   isApiError,
 } from './reservationsService.js';
@@ -152,6 +153,55 @@ export async function confirmReservation(index, { onAfterChange } = {}) {
     const message = isApiError(error)
       ? error.message
       : t('reservations.toast.confirmFailed', 'تعذر تأكيد الحجز، حاول مرة أخرى');
+    showToast(message, 'error');
+    return false;
+  }
+}
+
+export async function closeReservation(index, notes = '', { onAfterChange } = {}) {
+  const reservations = getReservationsState();
+  const reservation = reservations[index];
+  if (!reservation) {
+    showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return false;
+  }
+
+  const reservationId = reservation.id || reservation.reservationId;
+  if (!reservationId) {
+    showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
+    return false;
+  }
+
+  // If already closed/completed by status, give a helpful toast
+  const status = String(reservation.status || '').toLowerCase();
+  if (status === 'completed') {
+    showToast(t('reservations.toast.alreadyClosed', '✅ هذا الحجز مغلق مسبقاً'));
+    return false;
+  }
+
+  try {
+    // If user wrote notes, append to existing notes instead of overwriting
+    let finalNotes = notes || '';
+    const existingNotes = reservation.notes ? String(reservation.notes).trim() : '';
+    if (existingNotes && finalNotes) {
+      const prefix = t('reservations.closeModal.notePrefix', 'ملاحظة إغلاق');
+      finalNotes = `${existingNotes}\n${prefix}: ${finalNotes}`;
+    } else if (!existingNotes && finalNotes) {
+      // Keep as-is
+    } else {
+      finalNotes = existingNotes; // may be ''
+    }
+
+    const updated = await closeReservationApi(reservationId, finalNotes);
+    runSharedRefresh();
+    onAfterChange?.({ type: 'closed', reservation: updated });
+    showToast(t('reservations.toast.closed', '✅ تم إغلاق الحجز'));
+    return true;
+  } catch (error) {
+    console.error('❌ [reservationsActions] closeReservation failed', error);
+    const message = isApiError(error)
+      ? error.message
+      : t('reservations.toast.closeFailed', 'تعذر إغلاق الحجز، حاول مرة أخرى');
     showToast(message, 'error');
     return false;
   }

@@ -43,7 +43,7 @@ const LEGEND_FALLBACK_AR = {
   paid: 'مدفوع بالكامل',
   partial: 'مدفوع جزئياً',
   unpaid: 'لم يتم الدفع',
-  completed: 'منتهي',
+  completed: 'مغلق',
   cancelled: 'ملغي'
 };
 
@@ -53,7 +53,7 @@ const LEGEND_FALLBACK_EN = {
   paid: 'Paid in full',
   partial: 'Partially paid',
   unpaid: 'Payment pending',
-  completed: 'Completed',
+  completed: 'Closed',
   cancelled: 'Cancelled'
 };
 
@@ -219,7 +219,7 @@ function buildEventContent(arg) {
     } else {
       const paidClass = paidStatus === 'paid' ? 'status-paid' : paidStatus === 'partial' ? 'status-partial' : 'status-unpaid';
       chips = [chip(confirmed ? 'status-confirmed' : 'status-pending', confirmedLabel), chip(paidClass, paidLabel)];
-      if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'منتهي')));
+      if (completed) chips.push(chip('status-completed', t('calendar.badges.completed', 'مغلق')));
     }
     const html = `
       <div class="calendar-event-wrapper">
@@ -1026,7 +1026,7 @@ export function renderCalendar() {
               : t('calendar.badges.unpaid', 'غير مدفوع');
           const paidBadgeClass = paidStatus === 'paid' ? 'badge-info' : paidStatus === 'partial' ? 'badge-warning' : 'badge-error';
           const chips = [chip(confirmed ? 'badge-success' : 'badge-warning', confirmedLabel), chip(paidBadgeClass, paidLabel)];
-          if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'منتهي')));
+          if (completed) chips.push(chip('badge-neutral', t('calendar.badges.completed', 'مغلق')));
           return `
             <div class="card bg-base-100/90 border border-base-200 shadow-sm rounded-xl p-2">
               <div class="flex items-baseline justify-between text-[0.8rem]">

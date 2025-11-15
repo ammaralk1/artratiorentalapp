@@ -383,7 +383,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
-  const completedText = t('reservations.list.status.completed', '📁 منتهي');
+  const completedText = t('reservations.list.status.completed', '📁 مغلق');
   const reservationIdLabel = t('reservations.details.labels.id', '🆔 رقم الحجز');
   const bookingSectionTitle = t('reservations.details.section.bookingInfo', 'بيانات الحجز');
   const paymentSummaryTitle = t('reservations.details.section.paymentSummary', 'ملخص الدفع');

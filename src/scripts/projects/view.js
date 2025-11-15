@@ -956,7 +956,7 @@ export function buildProjectReservationCard(reservation, index, project = null) 
       ? 'project-reservation-card__badge--partial'
       : 'project-reservation-card__badge--unpaid';
   const completed = reservation.completed === true || reservation.completed === 'true';
-  const completedLabel = t('reservations.details.completed', 'مكتمل');
+  const completedLabel = t('reservations.details.completed', 'مغلق');
   const completedBadge = completed
     ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(completedLabel)}</span>`
     : '';

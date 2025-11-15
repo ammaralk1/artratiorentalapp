@@ -13,11 +13,12 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   const crewSeparator = t('reservations.list.crew.separator', '، ');
   const statusConfirmedText = t('reservations.list.status.confirmed', '✅ مؤكد');
   const statusPendingText = t('reservations.list.status.pending', '⏳ غير مؤكد');
-  const statusCompletedText = t('reservations.list.status.completed', '📁 منتهي');
+  const statusCompletedText = t('reservations.list.status.completed', '📁 مغلق');
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
   const confirmLabel = t('reservations.list.actions.confirm', '✔️ تأكيد');
+  const closeLabel = t('reservations.list.actions.close', '🔒 إغلاق الحجز');
   const projectUnlinkedText = t('reservations.list.project.unlinked', 'غير مرتبط بمشروع');
   const projectMissingText = t('reservations.edit.project.missing', '⚠️ المشروع غير متوفر (تم حذفه)');
   const labels = {
@@ -164,13 +165,16 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     if (completed) {
       statusBadge = `<span class=\"reservation-chip status-chip status-completed\">${statusCompletedText}</span>`;
       paymentBadge = `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`;
-      const ribbonTextRaw = t('reservations.list.ribbon.completed', 'منتهي');
+      const ribbonTextRaw = t('reservations.list.ribbon.completed', 'مغلق');
       const ribbonTextAttr = ribbonTextRaw.replace(/\"/g, '&quot;');
       completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
     }
-    let confirmButtonHtml = (!projectLinked && !effectiveConfirmed)
-      ? `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`
-      : '';
+    let confirmButtonHtml = '';
+    if (!projectLinked && !effectiveConfirmed) {
+      confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`;
+    } else if (!projectLinked && effectiveConfirmed && !completed) {
+      confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"close\">${closeLabel}</button>`;
+    }
     const confirmSectionHtml = confirmButtonHtml
       ? `<div class=\"tile-actions\">${confirmButtonHtml}</div>`
       : '';

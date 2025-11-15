@@ -1302,7 +1302,7 @@ function buildCustomerReservationCard(reservation, project = null) {
 
   const completed = isReservationCompleted(reservation);
   const completedBadge = completed
-    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(t('reservations.list.status.completed', '📁 منتهي'))}</span>`
+    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(t('reservations.list.status.completed', '📁 مغلق'))}</span>`
     : '';
 
   return `

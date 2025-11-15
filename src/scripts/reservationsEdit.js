@@ -28,6 +28,7 @@ import {
   refreshReservationsFromApi,
   isApiError,
 } from './reservationsService.js';
+import { closeReservation as closeReservationAction } from './reservationsActions.js';
 import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
 import { ensureTechnicianPositionsLoaded } from './technicianPositions.js';
 import { getCachedReservationCrew } from './reservationsService.js';
@@ -764,6 +765,8 @@ export async function editReservation(index, {
   }
 
   updateConfirmedControls(initialConfirmed, { disable: projectLinked });
+  const closeBtnInit = document.getElementById('edit-res-close-btn');
+  if (closeBtnInit) closeBtnInit.disabled = !(initialConfirmed && !projectLinked);
 
   const paidSelect = document.getElementById('edit-res-paid');
   const initialPaidStatus = reservation.paidStatus
@@ -1419,6 +1422,8 @@ export function setupEditReservationModalEvents(context = {}) {
       if (confirmedToggleBtn.disabled) return;
       const nextValue = !isReservationConfirmed();
       updateConfirmedControls(nextValue);
+      const closeBtn = document.getElementById('edit-res-close-btn');
+      if (closeBtn) closeBtn.disabled = !nextValue;
       updateEditReservationSummary?.();
     });
     confirmedToggleBtn.dataset.listenerAttached = 'true';
@@ -1432,6 +1437,8 @@ export function setupEditReservationModalEvents(context = {}) {
       if (btn) {
         updateConfirmedControls(isReservationConfirmed(), { disable: cancelledCheckbox.checked });
       }
+      const closeBtn = document.getElementById('edit-res-close-btn');
+      if (closeBtn) closeBtn.disabled = cancelledCheckbox.checked || !isReservationConfirmed();
       updateEditReservationSummary?.();
     });
     cancelledCheckbox.dataset.listenerAttached = 'true';
@@ -1445,6 +1452,48 @@ export function setupEditReservationModalEvents(context = {}) {
       });
     });
     saveBtn.dataset.listenerAttached = 'true';
+  }
+
+  const editCloseBtn = document.getElementById('edit-res-close-btn');
+  if (editCloseBtn && !editCloseBtn.dataset.listenerAttached) {
+    editCloseBtn.addEventListener('click', () => {
+      // Open the shared close modal and prepare a one-off submit for this editing index
+      try {
+        const { index } = getEditingState();
+        const modal = document.getElementById('closeReservationModal');
+        const notesArea = document.getElementById('close-reservation-notes');
+        const submit = document.getElementById('close-reservation-submit');
+        const currentNotes = document.getElementById('edit-res-notes')?.value || '';
+        if (notesArea) notesArea.value = currentNotes;
+        // Remove previous temporary listener if any
+        if (submit && submit.__tmpCloseListener) {
+          submit.removeEventListener('click', submit.__tmpCloseListener);
+          submit.__tmpCloseListener = null;
+        }
+        if (submit) {
+          const handler = async () => {
+            const notes = notesArea?.value || '';
+            try {
+              await closeReservationAction(index, notes, { onAfterChange: modalEventsContext?.handleReservationsMutation });
+            } finally {
+              try {
+                const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
+                inst?.hide?.();
+              } catch (_) { /* ignore */ }
+            }
+          };
+          submit.__tmpCloseListener = handler;
+          submit.addEventListener('click', handler, { once: true });
+        }
+        if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+          const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
+          inst.show();
+        }
+      } catch (e) {
+        console.warn('[reservationsEdit] failed to open close modal', e);
+      }
+    });
+    editCloseBtn.dataset.listenerAttached = 'true';
   }
 
   const barcodeInput = document.getElementById('edit-res-equipment-barcode');

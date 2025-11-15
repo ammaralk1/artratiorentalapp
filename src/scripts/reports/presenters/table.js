@@ -261,7 +261,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
 function getReservationStatusLabel(statusValue) {
   switch (statusValue) {
     case 'completed':
-      return stripLeadingSymbols(translate('reservations.list.status.completed', '📁 منتهي', 'Completed'));
+      return stripLeadingSymbols(translate('reservations.list.status.completed', '📁 مغلق', 'Closed'));
     case 'confirmed':
       return stripLeadingSymbols(translate('reservations.list.status.confirmed', '✅ مؤكد', 'Confirmed'));
     case 'pending':

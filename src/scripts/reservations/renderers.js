@@ -16,7 +16,8 @@ export function renderReservationsList({
   containerId = 'reservations-list',
   filters = null,
   onShowDetails,
-  onConfirmReservation
+  onConfirmReservation,
+  onCloseReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
   const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
@@ -85,6 +86,17 @@ export function renderReservationsList({
       event.stopPropagation();
       if (typeof onConfirmReservation === 'function') {
         onConfirmReservation(index, event);
+      }
+    });
+  });
+
+  container.querySelectorAll('button[data-action="close"]').forEach((btn) => {
+    const index = Number(btn.dataset.reservationIndex);
+    if (Number.isNaN(index)) return;
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (typeof onCloseReservation === 'function') {
+        onCloseReservation(index, event);
       }
     });
   });

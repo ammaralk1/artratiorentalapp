@@ -723,6 +723,14 @@ function toPriceNumber(entry = {}) {
 }
 
 export function isReservationCompleted(reservation) {
+  // Treat explicit completed/closed status as completed regardless of time
+  const rawStatus = reservation?.status ?? reservation?.reservationStatus ?? null;
+  if (rawStatus) {
+    const s = String(rawStatus).trim().toLowerCase();
+    if (s === 'completed' || s === 'closed' || s === 'مغلق' || s === 'مكتمل' || s === 'منتهي' || s === 'منتهية') {
+      return true;
+    }
+  }
   if (!reservation?.end) return false;
   const end = new Date(reservation.end);
   if (Number.isNaN(end.getTime())) return false;

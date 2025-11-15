@@ -36,7 +36,7 @@ export function updateKpiCards(metrics) {
 
   if (totalEl) totalEl.textContent = formatNumber(total);
   if (totalMetaEl) {
-    const completedText = translate('reservations.reports.kpi.total.dynamicMeta', 'منها {count} منتهية', 'Includes {count} completed')
+    const completedText = translate('reservations.reports.kpi.total.dynamicMeta', 'منها {count} مغلقة', 'Includes {count} closed')
       .replace('{count}', formatNumber(metrics.completed || 0));
     const cancelledPart = cancelled > 0
       ? ' ' + translate('reservations.reports.kpi.total.cancelledPart', '• {count} ملغاة', '• {count} cancelled')

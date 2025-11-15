@@ -13,7 +13,8 @@ import {
 } from './renderers.js';
 import {
   confirmReservation as confirmReservationAction,
-  deleteReservation as deleteReservationAction
+  deleteReservation as deleteReservationAction,
+  closeReservation as closeReservationAction
 } from '../reservationsActions.js';
 import {
   editReservation,
@@ -103,7 +104,8 @@ export function renderReservations(containerId = 'reservations-list', filters = 
     containerId,
     filters,
     onShowDetails: showReservationDetails,
-    onConfirmReservation: confirmReservation
+    onConfirmReservation: confirmReservation,
+    onCloseReservation: openCloseReservationModal
   });
 }
 
@@ -132,6 +134,50 @@ export function deleteReservation(index) {
 
 export function confirmReservation(index) {
   return confirmReservationAction(index, { onAfterChange: handleReservationsMutation });
+}
+
+let pendingCloseIndex = null;
+
+function getCloseModalElements() {
+  const modal = document.getElementById('closeReservationModal');
+  const note = document.getElementById('close-reservation-notes');
+  const submit = document.getElementById('close-reservation-submit');
+  const cancel = document.getElementById('close-reservation-cancel');
+  return { modal, note, submit, cancel };
+}
+
+export function openCloseReservationModal(index) {
+  pendingCloseIndex = index;
+  const { modal, note } = getCloseModalElements();
+  if (note) note.value = '';
+  if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+    const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
+    inst.show();
+  }
+}
+
+function bindCloseReservationModalOnce() {
+  const { modal, note, submit, cancel } = getCloseModalElements();
+  if (!modal) return;
+  if (submit && !submit.dataset.listenerAttached) {
+    submit.addEventListener('click', async () => {
+      const notes = note?.value || '';
+      try {
+        await closeReservationAction(pendingCloseIndex, notes, { onAfterChange: handleReservationsMutation });
+      } finally {
+        try {
+          const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
+          inst?.hide?.();
+        } catch (_) { /* ignore */ }
+        pendingCloseIndex = null;
+      }
+    });
+    submit.dataset.listenerAttached = 'true';
+  }
+  if (cancel && !cancel.dataset.listenerAttached) {
+    cancel.addEventListener('click', () => { pendingCloseIndex = null; });
+    cancel.dataset.listenerAttached = 'true';
+  }
 }
 
 export function openReservationEditor(index, reservation = null) {
@@ -197,6 +243,8 @@ export function registerReservationGlobals() {
     confirmReservation,
     openReservationEditor,
   });
+  // Ensure close modal listeners are ready in dashboard context
+  try { bindCloseReservationModalOnce(); } catch (_) {}
 }
 
 export {

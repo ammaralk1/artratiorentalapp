@@ -1,4 +1,4 @@
-import{r as T,t as L}from"./calculations.CVfmGye7.js";import{buildA4ReportPages as $,exportA4ReportPdf as _}from"./a4Unified.C4MkqgHt.js";import"./reservationsService.D6s6Lve0.js";import"./auth.BqwfmscP.js";import"./state.BUFhj3Lf.js";function H(){const l=document.createElement("div");return l.className="modal fade quote-preview-modal",l.setAttribute("tabindex","-1"),l.setAttribute("aria-hidden","true"),l.innerHTML=`
+import{r as T,t as L}from"./calculations.CQEyJKtw.js";import{buildA4ReportPages as $,exportA4ReportPdf as _}from"./a4Unified.7d7sWdD-.js";import"./reservationsService.DC1_tqLc.js";import"./auth.BqwfmscP.js";import"./state.BUFhj3Lf.js";function H(){const l=document.createElement("div");return l.className="modal fade quote-preview-modal",l.setAttribute("tabindex","-1"),l.setAttribute("aria-hidden","true"),l.innerHTML=`
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
@@ -57,7 +57,7 @@ import{r as T,t as L}from"./calculations.CVfmGye7.js";import{buildA4ReportPages 
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-unpaid checked><span>غير مدفوعة</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-confirmed checked><span>مؤكدة</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-pending checked><span>قيد التأكيد</span></label>
-                          <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-completed checked><span>منتهية</span></label>
+                      <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-completed checked><span>مغلقة</span></label>
                           <label style="display:flex; gap:6px; align-items:center; padding:2px 0;"><input type="checkbox" data-filter-cancelled checked><span>ملغاة</span></label>
                         </div>
                       </div>

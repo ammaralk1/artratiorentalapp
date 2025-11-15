@@ -687,6 +687,14 @@ export async function confirmReservationApi(id) {
   return updateReservationApi(id, { status: 'confirmed', confirmed: true });
 }
 
+export async function closeReservationApi(id, notes = null) {
+  const payload = { status: 'completed', confirmed: true };
+  if (typeof notes === 'string') {
+    payload.notes = notes;
+  }
+  return updateReservationApi(id, payload);
+}
+
 export function mapReservationFromApi(raw = {}) {
   return toInternalReservation({
     id: raw.id,
@@ -900,6 +908,8 @@ export function toInternalReservation(raw = {}) {
   });
   const paid = paidStatus === 'paid';
 
+  const normalizedStatus = normalizeStatusValue(raw.status ?? (confirmed ? 'confirmed' : 'pending'));
+
   return {
     id: idValue != null ? String(idValue) : '',
     reservationId: reservationCode ?? (idValue != null ? String(idValue) : ''),
@@ -909,7 +919,8 @@ export function toInternalReservation(raw = {}) {
     title: raw.title ?? raw.name ?? '',
     start,
     end,
-    status: normalizeStatusValue(raw.status ?? (confirmed ? 'confirmed' : 'pending')),
+    status: normalizedStatus,
+    completed: normalizedStatus === 'completed',
     confirmed,
     location: raw.location ?? '',
     notes: raw.notes ?? '',

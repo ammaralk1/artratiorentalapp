@@ -237,7 +237,7 @@ function buildExportRowsFromState() {
       const statusText = (() => {
         switch (statusInfo.statusValue) {
           case 'completed':
-            return String(translate('reservations.list.status.completed', 'منتهي', 'Completed')).replace(/^\W+/, '');
+            return String(translate('reservations.list.status.completed', 'مغلق', 'Closed')).replace(/^\W+/, '');
           case 'confirmed':
             return String(translate('reservations.list.status.confirmed', 'مؤكد', 'Confirmed')).replace(/^\W+/, '');
           case 'pending':

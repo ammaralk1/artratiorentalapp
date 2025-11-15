@@ -644,7 +644,7 @@ export function buildProjectReservationCard(reservation, index = -1, project = n
 
   const completed = isReservationCompleted(reservation);
   const completedBadge = completed
-    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(t('reservations.list.status.completed', '📁 منتهي'))}</span>`
+    ? `<span class="project-reservation-card__badge project-reservation-card__badge--completed">${escapeHtml(t('reservations.list.status.completed', '📁 مغلق'))}</span>`
     : '';
 
   const indexAttr = Number.isInteger(index) && index >= 0 ? ` data-index="${index}"` : '';

@@ -17,6 +17,8 @@ const STATUS_MAP = new Map([
   ['completed', 'completed'],
   ['منتهي', 'completed'],
   ['منتهية', 'completed'],
+  ['مغلق', 'completed'],
+  ['مغلقة', 'completed'],
   ['done', 'completed'],
   ['finished', 'completed'],
   ['cancelled', 'cancelled'],
@@ -732,7 +734,7 @@ export function calculateStatusBreakdown(reservations) {
       filterKey: 'pending',
     },
     {
-      label: translate('reservations.reports.status.completedLabel', 'منتهية', 'Completed'),
+      label: translate('reservations.reports.status.completedLabel', 'مغلقة', 'Closed'),
       value: completed,
       percent: Math.round((completed / total) * 100) || 0,
       rawCount: completed,

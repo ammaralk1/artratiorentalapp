@@ -1367,7 +1367,7 @@
               <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
               <option value="confirmed" data-i18n data-i18n-key="reservations.list.filters.status.confirmed">✅ مؤكدة</option>
               <option value="pending" data-i18n data-i18n-key="reservations.list.filters.status.pending">⏳ غير مؤكدة</option>
-              <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 منتهية</option>
+              <option value="completed" data-i18n data-i18n-key="reservations.list.filters.status.completed">📁 مغلقة</option>
               <option value="cancelled" data-i18n data-i18n-key="reservations.list.filters.status.cancelled">❌ ملغاة</option>
             </select>
           </div>
@@ -1412,7 +1412,7 @@
                       <option value="all" data-i18n data-i18n-key="reservations.reports.filters.status.all">كل الحالات</option>
                       <option value="confirmed" data-i18n data-i18n-key="reservations.reports.filters.status.confirmed">مؤكدة</option>
                       <option value="pending" data-i18n data-i18n-key="reservations.reports.filters.status.pending">قيد التأكيد</option>
-                      <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">منتهية</option>
+                      <option value="completed" data-i18n data-i18n-key="reservations.reports.filters.status.completed">مغلقة</option>
                       <option value="cancelled" data-i18n data-i18n-key="reservations.reports.filters.status.cancelled">ملغاة</option>
                     </select>
                   </label>
@@ -1598,7 +1598,7 @@
                     </span>
                     <div class="reports-card-text">
                       <h4 data-i18n data-i18n-key="reservations.reports.chart.status.title">توزيع الحالات</h4>
-                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمنتهية</span>
+                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.chart.status.hint">نسبة الحجوزات المؤكدة، قيد التأكيد، والمغلقة</span>
                     </div>
                   </div>
                 </div>
@@ -2143,6 +2143,9 @@
             <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
               <label class="form-label" for="edit-res-confirmed-btn">✅ حالة التأكيد</label>
               <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" data-pending-label="⏳ بانتظار التأكيد" data-confirm-label="✅ تم التأكيد" aria-pressed="false">⏳ بانتظار التأكيد</button>
+              <div class="mt-2">
+                <button type="button" class="btn btn-warning w-100" id="edit-res-close-btn">🔒 إغلاق الحجز</button>
+              </div>
             </div>
             <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">
               <label class="form-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
@@ -2285,6 +2288,27 @@
         <div class="modal-body" id="reservation-details-body"></div>
         <div class="modal-footer">
           <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.close">إغلاق</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ مودال إغلاق الحجز -->
+  <div class="modal fade" id="closeReservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="reservations.closeModal.title">🔒 إغلاق الحجز</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted" data-i18n data-i18n-key="reservations.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
+          <label class="form-label" for="close-reservation-notes" data-i18n data-i18n-key="reservations.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
+          <textarea id="close-reservation-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="reservations.closeModal.notePlaceholder" placeholder="مثال: تم إعادة المعدات مبكراً..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="close-reservation-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="reservations.closeModal.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="close-reservation-submit" data-i18n data-i18n-key="reservations.closeModal.confirm">🔒 إغلاق الحجز</button>
         </div>
       </div>
     </div>

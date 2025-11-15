@@ -61,7 +61,14 @@ function toInternalEquipment(raw = {}) {
   const status = normalizeStatusValue(raw.status ?? raw.state ?? raw.status_label ?? raw.statusLabel ?? "available");
   const imageUrl = raw.image_url ?? raw.imageUrl ?? raw.image ?? "";
   const name = raw.name ?? raw.item_name ?? description;
-  const lessor = raw.lessor ?? raw.owner ?? "";
+  const lessor =
+    raw.lessor ??
+    raw.owner ??
+    raw.lessor_name ??
+    raw.lessorName ??
+    raw.owner_name ??
+    raw.ownerName ??
+    "";
 
   return {
     id: hasValue(idValue) ? String(idValue) : "",
