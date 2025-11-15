@@ -1096,7 +1096,15 @@ body,
 }
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain__item,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain__item {
-  /* In RTL, flex-start anchors children on the right → label then value */
-  justify-content: flex-start !important;
+  /* Ensure items render: [label][separator][value] starting from the right */
+  direction: rtl !important;
+  justify-content: flex-start !important; /* start = right in RTL */
+}
+
+/* Explicit item ordering to avoid UA differences */
+#quotation-pdf-root:not([data-lang="en"]) .info-plain__label { order: 1; }
+#quotation-pdf-root:not([data-lang="en"]) .info-plain__separator,
+#quotation-pdf-root:not([data-lang="en"]) .info-plain__slash { order: 2; }
+#quotation-pdf-root:not([data-lang="en"]) .info-plain__value { order: 3; }
 }
 `;export{n as q};
