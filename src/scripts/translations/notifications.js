@@ -141,11 +141,11 @@ registerTranslations({
     'notifications.table.headers.customer': 'Customer',
     'notifications.table.headers.actions': 'Actions',
     'notifications.table.loading': '⏳ Type to search…',
-    'notifications.compose.title': '✉️ Compose message',
-    'notifications.logs.title': '📜 Notifications log',
+    'notifications.compose.title': '✉️ Compose Message',
+    'notifications.logs.title': '📜 Notifications Log',
     // Sidebar help section
-    'notifications.sidebar.helpLinksHeading': 'Helpful links',
-    'notifications.sidebar.helpLinksAria': 'Helpful links',
+    'notifications.sidebar.helpLinksHeading': 'Helpful Links',
+    'notifications.sidebar.helpLinksAria': 'Helpful Links',
     // Chat controls
     'notifications.chat.searchButton': '🔎 Search',
     'notifications.chat.refreshButton': '🔄 Refresh',
@@ -170,7 +170,7 @@ registerTranslations({
     'notifications.logs.clear': '🗑️ Clear log',
     'notifications.logs.headers.name': 'Name',
     // Templates
-    'notifications.templates.title': '🧩 Templates manager',
+    'notifications.templates.title': '🧩 Templates Manager',
     'notifications.templates.subtitle': 'Create/edit message templates with variables.',
     'notifications.templates.actions.refresh': '🔄 Refresh',
     'notifications.templates.actions.new': '➕ New template',
