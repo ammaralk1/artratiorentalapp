@@ -850,7 +850,7 @@ registerTranslations({
     'positions.defaults.cameraAssistant': 'مساعد كاميرا'
   },
   en: {
-    'quote.companyName': 'Food Art Advertising Co. (Single Person Company)',
+    'quote.companyName': 'Food Art for Advertising and Publicity',
     'reservations.quote.labels.cr': 'Commercial Registration',
     // Checklist controls (sidebar)
     'reservations.checklist.controls.items': 'Equipment List',

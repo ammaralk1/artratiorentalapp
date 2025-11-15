@@ -187,7 +187,7 @@ const QUOTE_CREW_COLUMN_DEFS = [
   },
   {
     id: 'unitPrice',
-    labelKey: null,
+    labelKey: 'reservations.quote.columns.unitPrice',
     fallback: 'لكل يوم',
     render: (assignment) => {
       const value = Number.isFinite(Number(assignment?.positionClientPrice))
@@ -198,7 +198,7 @@ const QUOTE_CREW_COLUMN_DEFS = [
   },
   {
     id: 'price',
-    labelKey: null,
+    labelKey: 'reservations.quote.columns.total',
     fallback: 'المجموع',
     render: (assignment) => {
       const value = Number.isFinite(Number(assignment?.positionClientPrice))
@@ -4055,7 +4055,16 @@ function buildQuotationHtml(options) {
   }
 
   if (projectSectionMarkup) {
-    primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+    try {
+      const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+      const emptySection = '<section class="quote-section quote-section--empty"></section>';
+      const rowHtml = langNow === 'en'
+        ? `<div class="quote-section-row">${emptySection}${projectSectionMarkup}</div>`
+        : `<div class="quote-section-row">${projectSectionMarkup}${emptySection}</div>`;
+      primaryBlocks.push(withBlockAttributes(rowHtml, { blockType: 'group' }));
+    } catch (_) {
+      primaryBlocks.push(withBlockAttributes(projectSectionMarkup));
+    }
   }
 
   const tableBlocks = [];
