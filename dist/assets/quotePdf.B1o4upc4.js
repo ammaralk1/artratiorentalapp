@@ -344,6 +344,9 @@ body,
   text-align: left;
   align-items: flex-start;
   justify-content: flex-start;
+  align-self: flex-start;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .quote-section--customer .info-plain,
@@ -351,6 +354,9 @@ body,
   text-align: right;
   align-items: flex-end;
   justify-content: flex-end;
+  align-self: flex-end;
+  margin-right: 0;
+  margin-left: 0;
 }
 
 .quote-section--reservation {
