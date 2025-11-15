@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/x-icon" href="../../favicon.ico">
-  <title>إدارة المشاريع - نظام التأجير</title>
+  <title data-i18n data-i18n-key="projects.pageTitle">إدارة المشاريع - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
 
@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.Q9jJB89c.js"></script>
+  <script type="module" crossorigin src="../../assets/projects.DkOEnDgj.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboard.C3Vmx6k1.js">
   <link rel="modulepreload" crossorigin href="../../assets/projectsService.CQ6WwNGq.js">
@@ -28,7 +28,7 @@
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.kDBbUcue.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
   <link rel="modulepreload" crossorigin href="../../assets/reservationPdf.Dd3nd6ly.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.DjX4tQ8Y.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.CwMIKkHu.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.CARPDr8G.js">
   <link rel="modulepreload" crossorigin href="../../assets/details.C8V43Kjr.js">
   <link rel="modulepreload" crossorigin href="../../assets/equipment.A8dO5HN8.js">
@@ -42,7 +42,7 @@
 <body class="page-shell theme-loading projects-page" data-theme="light">
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
     <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
@@ -53,7 +53,7 @@
           <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
         </div>
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
           <path d="M18 6l-12 12"></path>
@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">أقسام المشاريع</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist">
@@ -171,7 +171,7 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
             <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
@@ -276,7 +276,7 @@
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
             </svg>
-            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+            <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
           </label>
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
@@ -300,7 +300,7 @@
 
           <div class="glass-card dashboard-tabbar p-3 lg:hidden">
             <div class="tab-scroll" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
                 <span aria-hidden="true">‹</span>
               </button>
               <div class="tab-scroll-track" data-tab-scroll-track>
@@ -310,7 +310,7 @@
                   <button type="button" class="tab-button" data-tab-target="technicians-section" data-i18n data-i18n-key="projects.nav.technicians">طاقم العمل</button>
                 </div>
               </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
                 <span aria-hidden="true">›</span>
               </button>
             </div>
@@ -320,7 +320,7 @@
             <section id="projects-section" class="tab-pane active space-y-6" data-tab-pane="projects-section">
               <div class="glass-card subtab-scroll-card dashboard-subtabbar">
                 <div class="tab-scroll tab-scroll--subtabs" data-tab-scroll>
-                  <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
                     <span aria-hidden="true">‹</span>
                   </button>
                   <div class="tab-scroll-track" data-tab-scroll-track>
@@ -332,7 +332,7 @@
                       <button type="button" class="sub-tab-button tab" data-project-subtab-target="projects-templates-tab" role="tab" aria-selected="false" aria-controls="projects-templates-tab" data-i18n data-i18n-key="projects.subtabs.templates">القوالب</button>
                     </div>
                   </div>
-                  <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
                     <span aria-hidden="true">›</span>
                   </button>
                 </div>
@@ -424,12 +424,12 @@
                         <input type="text" id="project-expense-amount" class="form-control input input-bordered w-full" inputmode="decimal" placeholder="0">
                       </div>
                       <div class="col-12 col-lg-3">
-                        <label class="form-label" for="project-services-client-price">سعر البيع (SR)</label>
+                        <label class="form-label" for="project-services-client-price" data-i18n data-i18n-key="projects.form.labels.salePrice">سعر البيع</label>
                         <input type="text" id="project-services-client-price" class="form-control" inputmode="decimal" placeholder="0">
                       </div>
                       <div class="col-12 col-lg-8">
-                        <label class="form-label" for="project-expense-note">ملاحظات</label>
-                        <input type="text" id="project-expense-note" class="form-control" placeholder="تفاصيل إضافية لهذه الخدمة/المصروف">
+                        <label class="form-label" for="project-expense-note" data-i18n data-i18n-key="projects.form.labels.expenseNote">ملاحظات</label>
+                        <input type="text" id="project-expense-note" class="form-control" placeholder="تفاصيل إضافية لهذه الخدمة/المصروف" data-i18n data-i18n-placeholder-key="projects.form.placeholders.expenseNote">
                       </div>
                       <div class="col-12 col-lg-2 project-expense-action-col">
                         <button type="button" id="add-expense-btn" class="btn btn-primary project-expense-add-btn" data-i18n data-i18n-key="projects.form.buttons.addExpense">➕ إضافة خدمة</button>
@@ -801,7 +801,7 @@
                       </div>
                       
                       <div class="ms-auto d-flex gap-2" id="templates-actions">
-                        <input type="text" id="templates-save-title" class="form-control" placeholder="اسم النسخة" style="min-width:160px;">
+                        <input type="text" id="templates-save-title" class="form-control" placeholder="اسم النسخة" style="min-width:160px;" data-i18n data-i18n-placeholder-key="projects.templates.placeholders.saveTitle">
                         <select id="templates-saved" class="form-select"></select>
                         <div id="templates-actions-dd" class="position-relative" style="position:relative;">
                           <button type="button" class="btn btn-outline" id="templates-actions-toggle">⋯ الإجراءات</button>
@@ -1138,7 +1138,7 @@
             <div class="col-12 col-xl-8">
               <div class="reservation-payment-card">
                 <div class="reservation-payment-card__header">
-                  <span class="reservation-payment-card__title">💰 تفاصيل الدفع</span>
+                  <span class="reservation-payment-card__title" data-i18n data-i18n-key="reservations.edit.paymentCard.title">💰 تفاصيل الدفع</span>
                 </div>
                 <div class="reservation-payment-card__body">
                   <div class="reservation-payment-card__toggles">
