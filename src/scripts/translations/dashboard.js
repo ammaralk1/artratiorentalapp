@@ -1084,6 +1084,7 @@ registerTranslations({
     'dashboard.metrics.equipment.caption': 'Assets available right now',
     'dashboard.metrics.technicians.label': 'Crew Members',
     'dashboard.metrics.technicians.caption': 'Team ready for assignments',
+    'home.notifications.title': '🔔 Notifications Management',
     // Local redirect helper page
     'dashboard.local.title': 'Dashboard (local copy without login)',
     'dashboard.local.redirect.body': 'Redirecting you to the local dashboard…',
