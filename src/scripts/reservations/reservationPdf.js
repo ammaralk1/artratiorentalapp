@@ -3007,12 +3007,36 @@ function buildProjectQuotationHtml({
           ...col,
           render: (assignment) => {
             const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
-            const labelEn = assignment?.positionLabelEn
+            let labelEn = assignment?.positionLabelEn
               ?? assignment?.position_label_en
               ?? assignment?.position_name_en
               ?? assignment?.positionLabelAlt
               ?? assignment?.position_label_alt
               ?? assignment?.role;
+            if (!labelEn && langNow === 'en') {
+              try {
+                const positions = (typeof getTechnicianPositionsCache === 'function') ? getTechnicianPositionsCache() : [];
+                let resolved = null;
+                if (assignment?.positionId != null) {
+                  resolved = positions.find((p) => String(p.id) === String(assignment.positionId)) || null;
+                }
+                if (!resolved) {
+                  const key = assignment?.positionKey
+                    ?? assignment?.position_key
+                    ?? assignment?.positionName
+                    ?? assignment?.position_name
+                    ?? assignment?.position
+                    ?? '';
+                  if (key) {
+                    const lk = String(key).toLowerCase();
+                    resolved = positions.find((p) => String(p.name).toLowerCase() === lk) || null;
+                  }
+                }
+                if (resolved) {
+                  labelEn = resolved.labelEn ?? resolved.label_en ?? resolved.name_en ?? labelEn;
+                }
+              } catch (_) { /* non-fatal */ }
+            }
             const labelAr = assignment?.positionLabel
               ?? assignment?.position_name
               ?? assignment?.role
@@ -3856,12 +3880,36 @@ function buildQuotationHtml(options) {
           ...col,
           render: (assignment) => {
             const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
-            const labelEn = assignment?.positionLabelEn
+            let labelEn = assignment?.positionLabelEn
               ?? assignment?.position_label_en
               ?? assignment?.position_name_en
               ?? assignment?.positionLabelAlt
               ?? assignment?.position_label_alt
               ?? assignment?.role;
+            if (!labelEn && langNow === 'en') {
+              try {
+                const positions = (typeof getTechnicianPositionsCache === 'function') ? getTechnicianPositionsCache() : [];
+                let resolved = null;
+                if (assignment?.positionId != null) {
+                  resolved = positions.find((p) => String(p.id) === String(assignment.positionId)) || null;
+                }
+                if (!resolved) {
+                  const key = assignment?.positionKey
+                    ?? assignment?.position_key
+                    ?? assignment?.positionName
+                    ?? assignment?.position_name
+                    ?? assignment?.position
+                    ?? '';
+                  if (key) {
+                    const lk = String(key).toLowerCase();
+                    resolved = positions.find((p) => String(p.name).toLowerCase() === lk) || null;
+                  }
+                }
+                if (resolved) {
+                  labelEn = resolved.labelEn ?? resolved.label_en ?? resolved.name_en ?? labelEn;
+                }
+              } catch (_) { /* non-fatal */ }
+            }
             const labelAr = assignment?.positionLabel
               ?? assignment?.position_name
               ?? assignment?.role
