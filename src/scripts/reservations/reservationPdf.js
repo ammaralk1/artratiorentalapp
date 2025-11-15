@@ -5480,6 +5480,24 @@ function openQuoteModal() {
 
         const notesInput = controls.querySelector('#checklist-notes-input');
         const notesTitleInput = controls.querySelector('#checklist-notes-title-input');
+        const syncNotesDirection = () => {
+          try {
+            const langNow = getCurrentLanguage?.() || 'ar';
+            const dir = langNow === 'en' ? 'ltr' : 'rtl';
+            const align = langNow === 'en' ? 'left' : 'right';
+            if (notesInput) { notesInput.setAttribute('dir', dir); notesInput.style.textAlign = align; }
+            if (notesTitleInput) { notesTitleInput.setAttribute('dir', dir); notesTitleInput.style.textAlign = align; }
+          } catch(_) {}
+        };
+        // Initial sync
+        syncNotesDirection();
+        // Also respond to global language changes (outside the quick toggle)
+        try {
+          const onLangChanged = () => syncNotesDirection();
+          document.addEventListener('language:changed', onLangChanged);
+          // Store to remove later if needed
+          controls._onLangChanged = onLangChanged;
+        } catch(_) {}
         notesInput.addEventListener('input', (e) => {
           activeQuoteState.checklistNotes = String(e.target.value || '');
           renderQuotePreview();
@@ -5502,6 +5520,8 @@ function openQuoteModal() {
             const next = lang === 'ar' ? 'en' : 'ar';
             try { setLanguage?.(next); } catch(_) {}
             syncLabel();
+            // Ensure notes input direction matches chosen language
+            syncNotesDirection();
             // update title to current language
             if (titleEl) {
               const langNow = getCurrentLanguage?.() || 'ar';
