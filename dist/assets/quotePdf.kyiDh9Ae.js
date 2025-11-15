@@ -743,6 +743,11 @@ body,
   font-weight: 700;
 }
 
+/* Light blue highlight for table headers (equipment + crew) */
+.quote-table thead th {
+  background: rgba(56, 189, 248, 0.14) !important; /* sky-400 at ~14% */
+}
+
 .quote-table th,
 .quote-table td {
   border: 1px solid rgba(148, 163, 184, 0.5);
