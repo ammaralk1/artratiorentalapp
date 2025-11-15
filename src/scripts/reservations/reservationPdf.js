@@ -3401,6 +3401,8 @@ function buildProjectQuotationHtml({
     ...footerBlocks
   ];
 
+  const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+
   const headerTemplateHtml = `
     <header class="quote-header" data-quote-header-template>
       <div class="quote-header__logo">
@@ -3426,8 +3428,8 @@ function buildProjectQuotationHtml({
   `.trim();
 
   return `
-    <div id="quotation-pdf-root" dir="rtl">
-        <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
+    <div id="quotation-pdf-root" dir="rtl" data-lang="${escapeHtml(lang)}">
+      <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>
         <div class="quote-content-source" data-quote-source>
@@ -3521,10 +3523,12 @@ function buildQuotationHtml(options) {
   }
 
   const customerSectionMarkup = includeSection('customerInfo')
-    ? `<section class="quote-section quote-section--plain quote-section--customer">
-        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-        ${customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage}
-      </section>`
+    ? (customerFieldItems.length
+        ? `<section class="quote-section quote-section--plain quote-section--customer">
+            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
+            <div class="info-plain">${customerFieldItems.join('')}</div>
+          </section>`
+        : '')
     : '';
 
   const reservationFieldItems = [];
@@ -3542,10 +3546,12 @@ function buildQuotationHtml(options) {
   }
 
   const reservationSectionMarkup = includeSection('reservationInfo')
-    ? `<section class="quote-section quote-section--plain quote-section--reservation">
-        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-        ${reservationFieldItems.length ? `<div class="info-plain">${reservationFieldItems.join('')}</div>` : noFieldsMessage}
-      </section>`
+    ? (reservationFieldItems.length
+        ? `<section class="quote-section quote-section--plain quote-section--reservation">
+            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
+            <div class="info-plain">${reservationFieldItems.join('')}</div>
+          </section>`
+        : '')
     : '';
 
   const projectFieldItems = [];
@@ -3557,10 +3563,12 @@ function buildQuotationHtml(options) {
   }
 
   const projectSectionMarkup = includeSection('projectInfo')
-    ? `<section class="quote-section quote-section--plain">
-        <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
-        ${projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage}
-      </section>`
+    ? (projectFieldItems.length
+        ? `<section class="quote-section quote-section--plain">
+            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
+            <div class="info-plain">${projectFieldItems.join('')}</div>
+          </section>`
+        : '')
     : '';
 
   const financialInlineItems = [];
@@ -4112,7 +4120,7 @@ function buildQuotationHtml(options) {
   const showLogo = !isChecklist || !options?.hideLogo;
   const showCompany = !isChecklist || !options?.hideCompany;
   const headerTemplateHtml = `
-    <header class="quote-header" data-quote-header-template>
+    <header class="quote-header" data-quote-header-template style="${Number.isFinite(Number(options?.headerOffset)) ? `margin-top:${Number(options.headerOffset)}px;` : ''}">
       <div class="quote-header__logo">
         ${showLogo ? `<img class=\"quote-logo\" src=\"${escapeHtml(QUOTE_COMPANY_INFO.logoUrl)}\" alt=\"${escapeHtml(QUOTE_COMPANY_INFO.companyName)}\" crossorigin=\"anonymous\"/>` : `<span class=\"quote-logo quote-logo--placeholder\" aria-hidden=\"true\"></span>`}
       </div>
@@ -4129,7 +4137,7 @@ function buildQuotationHtml(options) {
   `.trim();
 
   return `
-    <div id="quotation-pdf-root" dir="rtl">
+    <div id="quotation-pdf-root" dir="rtl" data-lang="${escapeHtml(lang)}">
       <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>
@@ -4722,8 +4730,10 @@ function renderQuotePreview() {
     terms: activeQuoteState.terms,
     checklistType: activeQuoteState.checklistType,
     checklistNotes: activeQuoteState.checklistNotes,
+    checklistNotesTitle: activeQuoteState.checklistNotesTitle,
     hideLogo: Boolean(activeQuoteState.hideLogo),
     hideCompany: Boolean(activeQuoteState.hideCompany),
+    headerOffset: Number(activeQuoteState.headerOffset || 0),
     projectCrew: activeQuoteState.projectCrew,
     projectExpenses: activeQuoteState.projectExpenses,
     projectEquipment: activeQuoteState.projectEquipment,
@@ -4760,6 +4770,48 @@ function renderQuotePreview() {
         console.error('[reservations/pdf] failed to layout preview document', error);
       }
       const pages = Array.from(doc?.querySelectorAll?.('.quote-page') || []);
+
+      // Enable dragging the header down when hideCompany is active in checklist mode (preview only)
+      try {
+        const isChecklist = (activeQuoteState?.context === 'reservationChecklist');
+        if (isChecklist && activeQuoteState?.hideCompany) {
+          const header = doc.querySelector('.quote-header');
+          if (header && !header.dataset.dragReady) {
+            header.style.cursor = 'grab';
+            let dragging = false;
+            let startY = 0;
+            let startOffset = Number(activeQuoteState.headerOffset || 0);
+            const onDown = (e) => {
+              dragging = true;
+              startY = e.clientY || e.touches?.[0]?.clientY || 0;
+              startOffset = Number(activeQuoteState.headerOffset || 0);
+              header.style.cursor = 'grabbing';
+              doc.addEventListener('mousemove', onMove);
+              doc.addEventListener('mouseup', onUp, { once: true });
+              doc.addEventListener('touchmove', onMove, { passive: false });
+              doc.addEventListener('touchend', onUp, { once: true });
+            };
+            const onMove = (e) => {
+              if (!dragging) return;
+              const y = e.clientY || e.touches?.[0]?.clientY || 0;
+              const delta = y - startY;
+              const next = Math.max(0, Math.min(240, startOffset + delta));
+              header.style.marginTop = `${next}px`;
+              activeQuoteState.headerOffset = next;
+              e.preventDefault?.();
+            };
+            const onUp = () => {
+              dragging = false;
+              header.style.cursor = 'grab';
+              doc.removeEventListener('mousemove', onMove);
+              doc.removeEventListener('touchmove', onMove);
+            };
+            header.addEventListener('mousedown', onDown);
+            header.addEventListener('touchstart', onDown, { passive: true });
+            header.dataset.dragReady = 'true';
+          }
+        }
+      } catch (_) { /* non-fatal */ }
       const pagesContainer = doc?.querySelector('.quote-preview-pages');
       const baseWidth = A4_WIDTH_PX;
 
@@ -5230,6 +5282,12 @@ async function exportQuoteAsPdf() {
       quoteNumber: activeQuoteState.quoteNumber,
       quoteDate: activeQuoteState.quoteDateLabel,
       terms: activeQuoteState.terms,
+      checklistType: activeQuoteState.checklistType,
+      checklistNotes: activeQuoteState.checklistNotes,
+      checklistNotesTitle: activeQuoteState.checklistNotesTitle,
+      hideLogo: Boolean(activeQuoteState.hideLogo),
+      hideCompany: Boolean(activeQuoteState.hideCompany),
+      headerOffset: Number(activeQuoteState.headerOffset || 0),
       projectCrew: activeQuoteState.projectCrew,
       projectExpenses: activeQuoteState.projectExpenses,
       projectEquipment: activeQuoteState.projectEquipment,
