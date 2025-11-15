@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/x-icon" href="../../favicon.ico">
-  <title>لوحة التحكم - نظام التأجير</title>
+  <title data-i18n data-i18n-key="dashboard.pageTitle">لوحة التحكم - نظام التأجير</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' https://cdn.jsdelivr.net https://img1.wsimg.com; connect-src 'self' http://127.0.0.1:8000 http://localhost:8000 https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://csp.secureserver.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://art-ratio.com https://*.art-ratio.com https://cdn.jsdelivr.net https://img1.wsimg.com https://*.sirv.com; font-src 'self' https://fonts.gstatic.com data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'self' https://art-ratio.sirv.com https://*.sirv.com; worker-src 'self' blob:; upgrade-insecure-requests;">
@@ -29,9 +29,9 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard.DMyK1PQW.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard.DsvhJrHv.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.BWV7S1pl.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.DlXd6vi3.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.C3Vmx6k1.js">
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.BLZZT8b9.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.CARPDr8G.js">
   <link rel="modulepreload" crossorigin href="../../assets/state.BIuh49pZ.js">
@@ -68,7 +68,7 @@
 
   <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
-  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي">
+  <aside id="dashboard-sidebar" class="sidebar-shell sidebar-drawer" aria-label="التنقل الجانبي" data-i18n data-i18n-aria-label-key="dashboard.nav.sidebar">
       <div class="flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand">
         <div class="flex items-center gap-3">
           <div class="sidebar-brand-logo">
@@ -79,7 +79,7 @@
             <p class="text-lg font-semibold text-base-content" data-i18n data-i18n-key="dashboard.sidebar.title">مركز التحكم</p>
           </div>
         </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.closeMenu">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
           <path d="M18 6l-12 12"></path>
@@ -110,7 +110,7 @@
       </div>
     </div>
 
-    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم">
+    <nav class="sidebar-menu mt-6 space-y-6" aria-label="التنقل بين أقسام لوحة التحكم" data-i18n data-i18n-aria-label-key="dashboard.nav.sections">
       <div class="sidebar-panel sidebar-panel--tabs">
         <p class="sidebar-heading mb-2" data-i18n data-i18n-key="dashboard.sidebar.tabsHeading">التبويبات</p>
         <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical">
@@ -235,7 +235,7 @@
     <header class="dashboard-header">
       <div class="dashboard-header-nav">
         <div class="dashboard-header-start">
-          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة">
+          <button type="button" id="sidebar-open" class="mobile-sidebar-toggle" aria-label="فتح القائمة" data-i18n data-i18n-aria-label-key="dashboard.nav.openMenu">
             <span class="mobile-sidebar-toggle__icon" aria-hidden="true">
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
               <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
@@ -363,7 +363,7 @@
               <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
               <path d="M12 3c.132 0 .263 0 .393 .007a7.5 7.5 0 0 0 7.098 12.675a9 9 0 1 1 -7.491 -12.682z"></path>
             </svg>
-            <span class="sr-only" data-theme-label>🌙 الوضع الليلي</span>
+            <span class="sr-only" data-theme-label data-i18n data-i18n-key="actions.toggleTheme">🌙 الوضع الليلي</span>
           </label>
           <button class="btn btn-error btn-sm rounded-full text-error-content" id="logout-btn" data-i18n data-i18n-key="actions.logout">🚪 تسجيل الخروج</button>
         </div>
@@ -386,7 +386,7 @@
 
           <div class="glass-card dashboard-tabbar p-3 lg:hidden">
             <div class="tab-scroll" data-tab-scroll>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--prev" data-tab-scroll-prev aria-label="انتقال إلى اليسار" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.prev" hidden>
                 <span aria-hidden="true">‹</span>
               </button>
               <div class="tab-scroll-track" data-tab-scroll-track>
@@ -398,7 +398,7 @@
                 <button class="tab-button" role="tab" id="tab-trigger-reservations-tab-tertiary" aria-controls="reservations-tab" data-tab="reservations-tab" data-i18n data-i18n-key="tabs.reservations">📅 الحجوزات</button>
               </div>
               </div>
-              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" hidden>
+              <button type="button" class="tab-scroll-btn tab-scroll-btn--next" data-tab-scroll-next aria-label="انتقال إلى اليمين" data-i18n data-i18n-aria-label-key="dashboard.tabScroll.next" hidden>
                 <span aria-hidden="true">›</span>
               </button>
             </div>
@@ -702,7 +702,7 @@
       <!-- ✅ تبويب: المعدات -->
       <div class="tab" id="equipment-tab" role="tabpanel" aria-labelledby="tab-trigger-equipment-tab" tabindex="0">
         <!-- زر العودة للأعلى (يظهر فقط عند السحب لأسفل داخل تبويب المعدات) -->
-        <button id="equipment-back-to-top" class="back-to-top-btn" type="button" aria-label="العودة إلى أعلى الصفحة" title="⬆️ للأعلى" style="display:none">
+        <button id="equipment-back-to-top" class="back-to-top-btn" type="button" aria-label="العودة إلى أعلى الصفحة" title="⬆️ للأعلى" data-i18n data-i18n-aria-label-key="equipment.backToTop.ariaLabel" data-i18n-title-key="equipment.backToTop.title" style="display:none">
           ⬆️
         </button>
         <div class="tab-section-header">
