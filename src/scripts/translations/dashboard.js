@@ -545,6 +545,11 @@ registerTranslations({
     'reservations.reports.filters.share.without': 'بدون نسبة الشركة',
     'reservations.reports.filters.searchLabel': 'البحث',
     'reservations.reports.filters.searchPlaceholder': 'ابحث باسم العميل، رقم الحجز، أو المعدة...',
+    // Reports presets controls
+    'reservations.reports.presets.label': 'القوالب',
+    'reservations.reports.presets.save': 'حفظ',
+    'reservations.reports.presets.delete': 'حذف',
+    'reservations.reports.presets.share': 'نسخ الرابط',
     'reservations.reports.actions.refresh': 'تحديث',
     'reservations.reports.actions.print': 'طباعة',
     'reservations.reports.actions.customizeColumns': 'تخصيص الأعمدة',
@@ -1529,6 +1534,11 @@ registerTranslations({
     'reservations.reports.filters.share.without': 'Without company share',
     'reservations.reports.filters.searchLabel': 'Search',
     'reservations.reports.filters.searchPlaceholder': 'Search by customer, reservation number, or equipment...',
+    // Reports presets controls
+    'reservations.reports.presets.label': 'Presets',
+    'reservations.reports.presets.save': 'Save',
+    'reservations.reports.presets.delete': 'Delete',
+    'reservations.reports.presets.share': 'Copy link',
     'reservations.reports.actions.refresh': 'Refresh',
     'reservations.reports.actions.print': 'Print',
     'reservations.reports.actions.customizeColumns': 'Customize columns',
