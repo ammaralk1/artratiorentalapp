@@ -1096,6 +1096,7 @@ body,
 }
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain__item,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain__item {
-  justify-content: flex-end !important;
+  /* In RTL, flex-start anchors children on the right → label then value */
+  justify-content: flex-start !important;
 }
 `;export{n as q};
