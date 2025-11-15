@@ -2,6 +2,12 @@ import { registerTranslations } from '../language.js';
 
 registerTranslations({
   ar: {
+    'projects.pageTitle': 'إدارة المشاريع - نظام التأجير',
+    // Expense notes/placeholder
+    'projects.form.labels.expenseNote': 'ملاحظات',
+    'projects.form.placeholders.expenseNote': 'تفاصيل إضافية لهذه الخدمة/المصروف',
+    // Templates save title placeholder
+    'projects.templates.placeholders.saveTitle': 'اسم النسخة',
     'projects.nav.brand': 'نظام التأجير',
     'projects.nav.projects': 'المشاريع',
     'projects.nav.customers': 'العملاء',
@@ -403,6 +409,12 @@ registerTranslations({
     'projects.quote.sections.notes': 'ملاحظات المشروع'
   },
   en: {
+    'projects.pageTitle': 'Project Management - Rental System',
+    // Expense notes/placeholder
+    'projects.form.labels.expenseNote': 'Notes',
+    'projects.form.placeholders.expenseNote': 'Additional details for this service/expense',
+    // Templates save title placeholder
+    'projects.templates.placeholders.saveTitle': 'Template name',
     'projects.nav.brand': 'Rental System',
     'projects.nav.projects': 'Projects',
     'projects.nav.customers': 'Clients',
