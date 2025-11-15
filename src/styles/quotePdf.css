@@ -249,7 +249,6 @@ body,
 }
 
 /* When language is English, align text to the left while keeping document RTL */
-#quotation-pdf-root[data-lang="en"] .quote-header__title,
 #quotation-pdf-root[data-lang="en"] .quote-header__meta,
 #quotation-pdf-root[data-lang="en"] .quote-section h3,
 #quotation-pdf-root[data-lang="en"] .quote-section__title,
@@ -260,8 +259,6 @@ body,
 #quotation-pdf-root[data-lang="en"] .payment-row {
   text-align: left !important;
 }
-
-#quotation-pdf-root[data-lang="en"] .quote-header__title,
 #quotation-pdf-root[data-lang="en"] .quote-header__meta {
   align-items: flex-start;
   justify-self: start;

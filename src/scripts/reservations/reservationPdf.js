@@ -3410,7 +3410,7 @@ function buildProjectQuotationHtml({
       </div>
       <div class="quote-header__title">
         <h1>${escapeHtml(t('projects.quote.title', 'عرض سعر'))}</h1>
-        <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+        <p class="quote-company-name">${escapeHtml(t('quote.companyName', QUOTE_COMPANY_INFO.companyName))}</p>
         <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
         <p class="quote-company-license">${escapeHtml(t('reservations.quote.labels.mediaLicense', 'ترخيص إعلامي'))}: 159460</p>
       </div>
@@ -4080,7 +4080,7 @@ function buildQuotationHtml(options) {
   }
 
   const orderedBlocks = [
-    ...ensureBlocks(primaryBlocks, 'reservations.quote.placeholder.page1'),
+    ...(options?.context === 'reservationChecklist' ? primaryBlocks : ensureBlocks(primaryBlocks, 'reservations.quote.placeholder.page1')),
     ...tableBlocks,
     ...(options?.context === 'reservationChecklist' ? summaryBlocks : ensureBlocks(summaryBlocks, 'reservations.quote.placeholder.page2')),
     ...footerBlocks
@@ -4127,7 +4127,7 @@ function buildQuotationHtml(options) {
       <div class="quote-header__title">
         <h1>${escapeHtml(headerTitle)}</h1>
         ${showCompany ? `
-          <p class="quote-company-name">${escapeHtml(QUOTE_COMPANY_INFO.companyName)}</p>
+          <p class="quote-company-name">${escapeHtml(t('quote.companyName', QUOTE_COMPANY_INFO.companyName))}</p>
           <p class="quote-company-cr">${escapeHtml(t('reservations.quote.labels.cr', 'السجل التجاري'))}: ${escapeHtml(QUOTE_COMPANY_INFO.commercialRegistry)}</p>
           <p class="quote-company-license">${escapeHtml(t('reservations.quote.labels.mediaLicense', 'ترخيص إعلامي'))}: 159460</p>
         ` : ''}
@@ -4136,8 +4136,9 @@ function buildQuotationHtml(options) {
     </header>
   `.trim();
 
+  const rootDir = (isChecklist && lang === 'en') ? 'ltr' : 'rtl';
   return `
-    <div id="quotation-pdf-root" dir="rtl" data-lang="${escapeHtml(lang)}">
+    <div id="quotation-pdf-root" dir="${escapeHtml(rootDir)}" data-lang="${escapeHtml(lang)}">
       <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>

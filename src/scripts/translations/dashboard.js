@@ -2,6 +2,8 @@ import { registerTranslations } from '../language.js';
 
 registerTranslations({
   ar: {
+    'quote.companyName': 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
+    'reservations.quote.labels.cr': 'السجل التجاري',
     // Checklist controls (sidebar)
     'reservations.checklist.controls.items': 'قائمة المعدات',
     'reservations.checklist.controls.crew': 'قائمة الفريق الفني',
@@ -844,6 +846,8 @@ registerTranslations({
     'positions.defaults.cameraAssistant': 'مساعد كاميرا'
   },
   en: {
+    'quote.companyName': 'Food Art Advertising Co. (Single Person Company)',
+    'reservations.quote.labels.cr': 'Commercial Registration',
     // Checklist controls (sidebar)
     'reservations.checklist.controls.items': 'Equipment List',
     'reservations.checklist.controls.crew': 'Crew List',
