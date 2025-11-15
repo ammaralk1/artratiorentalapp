@@ -146,13 +146,13 @@ const QUOTE_ITEMS_COLUMN_DEFS = [
   },
   {
     id: 'unitPrice',
-    labelKey: null,
+    labelKey: 'reservations.quote.columns.unitPrice',
     fallback: 'لكل يوم',
     render: (item) => escapeHtml(normalizeNumbers((Number(item?.unitPriceValue || 0)).toFixed(2)))
   },
   {
     id: 'price',
-    labelKey: null,
+    labelKey: 'reservations.quote.columns.total',
     fallback: 'المجموع',
     render: (item) => escapeHtml(normalizeNumbers((Number(item?.price || 0)).toFixed(2)))
   }
@@ -4061,9 +4061,10 @@ function buildQuotationHtml(options) {
     ];
   } else {
     const userNotes = String(options?.checklistNotes || '').trim();
+    const notesTitle = String(options?.checklistNotesTitle || '').trim() || t('reservations.checklist.controls.notes.sectionTitleDefault', 'ملاحظات');
     if (userNotes.length > 0) {
       const checklistNotesSection = `<section class="quote-section">
-        <h3>${escapeHtml(t('reservations.details.labels.notes', 'ملاحظات الحجز'))}</h3>
+        <h3>${escapeHtml(notesTitle)}</h3>
         <div class="quote-notes">${escapeHtml(userNotes)}</div>
       </section>`;
       footerBlocks = [withBlockAttributes(checklistNotesSection)];
@@ -4078,15 +4079,19 @@ function buildQuotationHtml(options) {
   ];
 
   const isChecklist = (options?.context === 'reservationChecklist');
-  const checklistTitle = (options?.checklistType === 'crew') ? 'قائمة الفريق الفني' : 'قائمة المعدات';
+  const checklistTitle = (options?.checklistType === 'crew')
+    ? 'قائمة الفريق الفني'
+    : (options?.checklistType === 'both' ? 'قائمة المعدات والطاقم الفني' : 'قائمة المعدات');
   const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
-  const enChecklistTitle = (options?.checklistType === 'crew') ? 'Crew List' : 'Equipment List';
+  const enChecklistTitle = (options?.checklistType === 'crew')
+    ? 'Crew List'
+    : (options?.checklistType === 'both' ? 'Equipment & Crew List' : 'Equipment List');
   const headerTitle = isChecklist ? (lang === 'en' ? enChecklistTitle : checklistTitle) : t('reservations.quote.title', 'عرض سعر');
   const headerMetaHtml = isChecklist
     ? (
       `<div class="quote-header__meta">
         <div class="quote-header__meta-item">
-          <span>التاريخ</span>
+          <span>${escapeHtml(t('reservations.quote.labels.date', 'التاريخ'))}</span>
           <strong>${escapeHtml(quoteDate)}</strong>
         </div>
       </div>`
@@ -5284,7 +5289,7 @@ async function exportQuoteAsPdf() {
     const filename = (context === 'reservationChecklist')
       ? (() => {
           const id = activeQuoteState?.reservation?.reservationCode || activeQuoteState?.reservation?.reservationId || activeQuoteState?.reservation?.id || 'res';
-          const kind = (activeQuoteState?.checklistType === 'crew') ? 'crew' : 'equipment';
+          const kind = (activeQuoteState?.checklistType === 'crew') ? 'crew' : (activeQuoteState?.checklistType === 'both' ? 'equipment-crew' : 'equipment');
           return `checklist-${String(id)}-${kind}.pdf`;
         })()
       : `quotation-${activeQuoteState.quoteNumber}.pdf`;
@@ -5336,6 +5341,7 @@ function openQuoteModal() {
         controls.setAttribute('data-checklist-controls', '');
         const itemsLabel = escapeHtml(t('reservations.checklist.controls.items', 'قائمة المعدات'));
         const crewLabel = escapeHtml(t('reservations.checklist.controls.crew', 'قائمة الفريق الفني'));
+        const bothLabel = escapeHtml(t('reservations.checklist.controls.both', 'قائمة المعدات والطاقم الفني'));
         const hideLogoLabel = escapeHtml(t('reservations.checklist.controls.hideLogo', 'إخفاء الشعار'));
         const hideCompanyLabel = escapeHtml(t('reservations.checklist.controls.hideCompany', 'إخفاء اسم الشركة'));
         const notesTitle = escapeHtml(t('reservations.checklist.controls.notes.title', 'ملاحظات اللستة (اختياري)'));
@@ -5356,6 +5362,10 @@ function openQuoteModal() {
                 <input type="radio" name="checklist-type" value="crew">
                 <span data-i18n data-i18n-key="reservations.checklist.controls.crew">${crewLabel}</span>
               </label>
+              <label style="display:flex;align-items:center;gap:6px">
+                <input type="radio" name="checklist-type" value="both">
+                <span data-i18n data-i18n-key="reservations.checklist.controls.both">${bothLabel}</span>
+              </label>
             </div>
           </div>
           <div class="quote-meta-card" style="margin-bottom:10px">
@@ -5372,6 +5382,8 @@ function openQuoteModal() {
             </div>
           </div>
           <div class="quote-terms-editor" data-checklist-notes>
+            <label class="quote-terms-editor__label" for="checklist-notes-title-input" data-i18n data-i18n-key="reservations.checklist.controls.notes.titleLabel">${escapeHtml(t('reservations.checklist.controls.notes.titleLabel', 'عنوان الملاحظات'))}</label>
+            <input id="checklist-notes-title-input" class="quote-terms-editor__input" type="text" value="${escapeHtml(t('reservations.checklist.controls.notes.sectionTitleDefault', 'ملاحظات'))}" data-i18n-value-key="reservations.checklist.controls.notes.sectionTitleDefault">
             <label class="quote-terms-editor__label" for="checklist-notes-input" data-i18n data-i18n-key="reservations.checklist.controls.notes.title">${notesTitle}</label>
             <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" data-i18n-placeholder-key="reservations.checklist.controls.notes.placeholder" placeholder="${notesPlaceholder}"></textarea>
           </div>
@@ -5383,14 +5395,23 @@ function openQuoteModal() {
         radios.forEach((radio) => {
           radio.addEventListener('change', () => {
             const value = controls.querySelector('input[name="checklist-type"]:checked')?.value || 'items';
-            activeQuoteState.checklistType = value === 'crew' ? 'crew' : 'items';
-            // Keep base sections, toggle items/crew
+            activeQuoteState.checklistType = (value === 'crew' || value === 'both') ? value : 'items';
+            // Keep base sections, toggle items/crew based on selection
             const base = new Set(['customerInfo','reservationInfo','projectInfo','notes']);
-            if (activeQuoteState.checklistType === 'crew') base.add('crew'); else base.add('items');
+            if (activeQuoteState.checklistType === 'crew') {
+              base.add('crew');
+            } else if (activeQuoteState.checklistType === 'both') {
+              base.add('items'); base.add('crew');
+            } else {
+              base.add('items');
+            }
             activeQuoteState.sections = base;
             // Update modal title to reflect selection
             if (titleEl) {
-              titleEl.textContent = activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : 'قائمة المعدات';
+              const langNow = getCurrentLanguage?.() || 'ar';
+              const labelAr = activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : (activeQuoteState.checklistType === 'both' ? 'قائمة المعدات والطاقم الفني' : 'قائمة المعدات');
+              const labelEn = activeQuoteState.checklistType === 'crew' ? 'Crew List' : (activeQuoteState.checklistType === 'both' ? 'Equipment & Crew List' : 'Equipment List');
+              titleEl.textContent = langNow === 'en' ? labelEn : labelAr;
             }
             renderQuoteToggles();
             updateQuoteMeta();
@@ -5399,8 +5420,13 @@ function openQuoteModal() {
         });
 
         const notesInput = controls.querySelector('#checklist-notes-input');
+        const notesTitleInput = controls.querySelector('#checklist-notes-title-input');
         notesInput.addEventListener('input', (e) => {
           activeQuoteState.checklistNotes = String(e.target.value || '');
+          renderQuotePreview();
+        });
+        notesTitleInput.addEventListener('input', (e) => {
+          activeQuoteState.checklistNotesTitle = String(e.target.value || '');
           renderQuotePreview();
         });
 
@@ -5419,9 +5445,11 @@ function openQuoteModal() {
             syncLabel();
             // update title to current language
             if (titleEl) {
-              const isCrew = activeQuoteState.checklistType === 'crew';
-              const label = (getCurrentLanguage?.() === 'en') ? (isCrew ? 'Crew List' : 'Equipment List') : (isCrew ? 'قائمة الفريق الفني' : 'قائمة المعدات');
-              titleEl.textContent = label;
+              const langNow = getCurrentLanguage?.() || 'ar';
+              const type = activeQuoteState.checklistType;
+              const labelAr = type === 'crew' ? 'قائمة الفريق الفني' : (type === 'both' ? 'قائمة المعدات والطاقم الفني' : 'قائمة المعدات');
+              const labelEn = type === 'crew' ? 'Crew List' : (type === 'both' ? 'Equipment & Crew List' : 'Equipment List');
+              titleEl.textContent = langNow === 'en' ? labelEn : labelAr;
             }
             renderQuoteToggles();
             updateQuoteMeta();
