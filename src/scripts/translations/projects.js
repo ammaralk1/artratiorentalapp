@@ -38,6 +38,7 @@ registerTranslations({
     'projects.expenses.table.headers.service': 'الخدمة',
     'projects.expenses.table.headers.cost': 'التكلفة (SR)',
     'projects.expenses.table.headers.sale': 'سعر البيع (SR)',
+    'projects.expenses.table.headers.note': 'ملاحظات',
     'projects.expenses.table.headers.actions': 'الإجراءات',
 
     'projects.form.placeholders.title': 'مثال: تصوير منتج جديد',
@@ -462,6 +463,7 @@ registerTranslations({
     'projects.expenses.table.headers.service': 'Service',
     'projects.expenses.table.headers.cost': 'Cost (SR)',
     'projects.expenses.table.headers.sale': 'Sale price (SR)',
+    'projects.expenses.table.headers.note': 'Notes',
     'projects.expenses.table.headers.actions': 'Actions',
 
     'projects.form.placeholders.title': 'Example: New product shoot',
