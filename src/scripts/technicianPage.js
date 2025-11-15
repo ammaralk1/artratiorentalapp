@@ -181,10 +181,10 @@ function formatCurrency(value) {
 }
 
 function formatDateLocalized(value) {
-  if (!value) return '—';
+  if (!value) return t('common.placeholder.empty', '—');
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return '—';
+    return t('common.placeholder.empty', '—');
   }
   const lang = getActiveLanguage();
   const locale = lang === 'ar' ? 'ar-SA-u-ca-gregory-nu-latn' : 'en-US';
@@ -252,12 +252,12 @@ function renderFinancialSummary(state) {
   const outstandingTemplate = t('technicianFinancial.stats.outstandingDesc', 'المتبقي {amount}');
   const outstandingText = totals.outstanding > 0
     ? outstandingTemplate.replace('{amount}', formatCurrency(totals.outstanding))
-    : '—';
+    : t('common.placeholder.empty', '—');
 
   if (financialSummaryEls.total) financialSummaryEls.total.textContent = formatCurrency(totals.total);
-  if (financialSummaryEls.totalDesc) financialSummaryEls.totalDesc.textContent = assignmentsCount > 0 ? assignmentsText : '—';
+  if (financialSummaryEls.totalDesc) financialSummaryEls.totalDesc.textContent = assignmentsCount > 0 ? assignmentsText : t('common.placeholder.empty', '—');
   if (financialSummaryEls.paid) financialSummaryEls.paid.textContent = formatCurrency(totals.paid);
-  if (financialSummaryEls.paidDesc) financialSummaryEls.paidDesc.textContent = payoutsCount > 0 ? paidText : '—';
+  if (financialSummaryEls.paidDesc) financialSummaryEls.paidDesc.textContent = payoutsCount > 0 ? paidText : t('common.placeholder.empty', '—');
   if (financialSummaryEls.outstanding) financialSummaryEls.outstanding.textContent = formatCurrency(totals.outstanding);
   if (financialSummaryEls.outstandingDesc) financialSummaryEls.outstandingDesc.textContent = outstandingText;
 }
@@ -679,7 +679,7 @@ function setHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
   if (!element) return;
   const stringValue = value == null ? '' : String(value).trim();
   const hasValue = stringValue.length > 0;
-  element.textContent = hasValue ? `${icon} ${stringValue}` : `${icon} —`;
+  element.textContent = hasValue ? `${icon} ${stringValue}` : `${icon} ${t('common.placeholder.empty', '—')}`;
   if (hideWhenEmpty) {
     element.classList.toggle('hidden', !hasValue);
   } else if (!hasValue) {
@@ -698,7 +698,7 @@ function setStatusBadge(status) {
   if (!normalized) {
     targets.forEach((element) => {
       element.className = 'technician-badge hidden';
-      element.textContent = '—';
+      element.textContent = t('common.placeholder.empty', '—');
     });
     return;
   }
@@ -780,19 +780,19 @@ function getCurrentPositionLabelForTechnician(id) {
 
 function setHeroData(technician) {
   if (!technician) {
-    setHeroBadge(heroNameEl, '😎', '—');
+    setHeroBadge(heroNameEl, '😎', t('common.placeholder.empty', '—'));
   setHeroBadge(heroRoleEl, '🎯', '', { hideWhenEmpty: true });
-    if (greetingNameEl) greetingNameEl.textContent = '—';
-    if (greetingRoleEl) greetingRoleEl.textContent = '—';
+    if (greetingNameEl) greetingNameEl.textContent = t('common.placeholder.empty', '—');
+    if (greetingRoleEl) greetingRoleEl.textContent = t('common.placeholder.empty', '—');
     setHeroBadge(greetingRoleBadgeEl, '🎯', '', { hideWhenEmpty: true });
     setStatusBadge(null);
     return;
   }
 
-  setHeroBadge(heroNameEl, '😎', technician.name || '—');
+  setHeroBadge(heroNameEl, '😎', technician.name || t('common.placeholder.empty', '—'));
   setHeroBadge(heroRoleEl, '🎯', technician.role || '', { hideWhenEmpty: true });
   if (greetingNameEl) {
-    greetingNameEl.textContent = technician.name || '—';
+    greetingNameEl.textContent = technician.name || t('common.placeholder.empty', '—');
   }
   if (greetingRoleEl) {
     const roleText = technician.role ? technician.role : '';

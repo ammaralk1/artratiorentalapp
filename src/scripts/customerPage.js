@@ -209,7 +209,7 @@ function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
   if (!element) return;
   const stringValue = value == null ? '' : String(value).trim();
   const hasValue = stringValue.length > 0;
-  const displayValue = hasValue ? stringValue : '—';
+  const displayValue = hasValue ? stringValue : t('common.placeholder.empty', '—');
   element.textContent = `${icon} ${displayValue}`;
   if (hideWhenEmpty) {
     element.classList.toggle('hidden', !hasValue);
@@ -220,7 +220,8 @@ function updateHeroBadge(element, icon, value, { hideWhenEmpty = false } = {}) {
 
 function setHeroData(customer) {
   const fallbackSummary = t('customerDetails.pageTitle', 'معلومات العميل');
-  const displayName = customer?.customerName || '—';
+  const emptyDash = t('common.placeholder.empty', '—');
+  const displayName = customer?.customerName || emptyDash;
   const phoneValue = customer?.phone ? normalizeNumbers(customer.phone) : '';
   const companyValue = customer?.companyName || '';
   const emailValue = customer?.email || '';
@@ -230,7 +231,7 @@ function setHeroData(customer) {
     heroNameEl.textContent = displayName;
   }
   if (heroSummaryEl) {
-    heroSummaryEl.textContent = displayName !== '—' ? displayName : fallbackSummary;
+    heroSummaryEl.textContent = displayName !== emptyDash ? displayName : fallbackSummary;
   }
 
   updateHeroBadge(heroPhoneEl, '📞', phoneValue, { hideWhenEmpty: false });
