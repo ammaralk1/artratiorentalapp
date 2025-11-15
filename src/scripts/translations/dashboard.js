@@ -277,7 +277,7 @@ registerTranslations({
     'reservations.create.notes.hint': 'أضف تفاصيل إضافية لتنسيق الفريق والمعدات.',
     'reservations.create.terms.title': '📄 الشروط العامة لعرض السعر',
     'reservations.create.terms.hint': 'يمكنك تعديل بنود عرض السعر قبل إرسالها للعميل. اكتب كل شرط في سطر مستقل.',
-    'reservations.create.terms.placeholder': 'اكتب الشروط هنا...'
+    'reservations.create.terms.placeholder': 'اكتب الشروط هنا...',
     'reservations.create.equipment.title': '🎥 أضف المعدات',
     'reservations.create.equipment.placeholders.barcode': '🔍 امسح أو أدخل الباركود ثم اضغط Enter',
     'reservations.create.equipment.placeholders.description': '🎥 اكتب اسم المعدة ثم اضغط Enter',
@@ -1261,7 +1261,7 @@ registerTranslations({
     'reservations.create.notes.hint': 'Add extra details to coordinate crew and equipment.',
     'reservations.create.terms.title': '📄 Quote Terms',
     'reservations.create.terms.hint': 'You can edit the quote terms before sending to the client. Enter one term per line.',
-    'reservations.create.terms.placeholder': 'Enter terms here...'
+    'reservations.create.terms.placeholder': 'Enter terms here...',
     'reservations.create.equipment.title': '🎥 Add Equipment',
     'reservations.create.equipment.placeholders.barcode': '🔍 Scan or enter a barcode then press Enter',
     'reservations.create.equipment.placeholders.description': '🎥 Type the equipment name then press Enter',
