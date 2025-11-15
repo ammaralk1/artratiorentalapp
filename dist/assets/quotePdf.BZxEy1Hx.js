@@ -1066,4 +1066,33 @@ body,
 #quotation-pdf-root[data-lang="en"] .quote-section--project .info-plain {
   text-align: right !important;
 }
+
+/* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project {
+  text-align: left !important;
+  align-items: flex-start !important;
+}
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title {
+  text-align: left !important;
+}
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain {
+  width: 100% !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+}
+
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer {
+  text-align: right !important;
+  align-items: flex-end !important;
+}
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .quote-section__title {
+  text-align: right !important;
+}
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain {
+  width: 100% !important;
+  text-align: right !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+}
 `;export{n as q};
