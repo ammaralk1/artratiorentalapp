@@ -1687,3 +1687,25 @@ registerTranslations({
     'positions.defaults.cameraAssistant': 'Camera assistant'
   }
 });
+
+// Checklist section headings and labels (reservation PDF)
+registerTranslations({
+  ar: {
+    'reservations.quote.sections.customer': 'بيانات العميل',
+    'reservations.quote.sections.reservation': 'تفاصيل الحجز',
+    'reservations.quote.sections.project': 'بيانات المشروع',
+    'reservations.details.labels.reservationId': 'رقم الحجز',
+    'reservations.details.labels.duration': 'عدد الأيام',
+    'reservations.details.labels.code': 'الرمز',
+    'reservations.details.crew.position': 'المنصب'
+  },
+  en: {
+    'reservations.quote.sections.customer': 'Customer info',
+    'reservations.quote.sections.reservation': 'Reservation details',
+    'reservations.quote.sections.project': 'Project info',
+    'reservations.details.labels.reservationId': 'Reservation ID',
+    'reservations.details.labels.duration': 'Days count',
+    'reservations.details.labels.code': 'Code',
+    'reservations.details.crew.position': 'Position'
+  }
+});
