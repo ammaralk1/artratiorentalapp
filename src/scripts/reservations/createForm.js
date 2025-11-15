@@ -16,6 +16,7 @@ import {
   DEFAULT_COMPANY_SHARE_PERCENT,
   calculatePaymentProgress,
   determinePaymentStatus,
+  calculateReservationDays,
 } from '../reservationsSummary.js';
 import { normalizeText, groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
 import {
@@ -2112,10 +2113,12 @@ function renderReservationItems(containerId = 'reservation-items') {
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
   const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');
+  const increaseDaysLabel = t('reservations.equipment.actions.increaseDays', 'زيادة الأيام');
+  const decreaseDaysLabel = t('reservations.equipment.actions.decreaseDays', 'تقليل الأيام');
   const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (items.length === 0) {
-    container.innerHTML = `<tr><td colspan="5" class="text-center">${noItemsMessage}</td></tr>`;
+    container.innerHTML = `<tr><td colspan="6" class="text-center">${noItemsMessage}</td></tr>`;
     return;
   }
 
@@ -2130,7 +2133,24 @@ function renderReservationItems(containerId = 'reservation-items') {
         : '<div class="reservation-item-thumb reservation-item-thumb--placeholder" aria-hidden="true">🎥</div>';
       const quantityDisplay = normalizeNumbers(String(group.count));
       const unitPriceNumber = Number.isFinite(Number(group.unitPrice)) ? Number(group.unitPrice) : 0;
-      const totalPriceNumber = Number.isFinite(Number(group.totalPrice)) ? Number(group.totalPrice) : unitPriceNumber * group.count;
+      const groupDays = (() => {
+        const values = (group?.items || []).map((it) => {
+          const raw = it?.days;
+          const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '')));
+          return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+        }).filter((v) => v != null);
+        if (values.length) {
+          const max = Math.max(...values);
+          return Math.min(365, Math.max(1, max));
+        }
+        try {
+          const { start, end } = getCreateReservationDateRange();
+          const d = calculateReservationDays(start, end);
+          return Number.isFinite(d) && d > 0 ? d : 1;
+        } catch (_) { return 1; }
+      })();
+      const daysDisplay = normalizeNumbers(String(groupDays));
+      const totalPriceNumber = unitPriceNumber * group.count * groupDays;
       const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
 
@@ -2192,6 +2212,11 @@ function renderReservationItems(containerId = 'reservation-items') {
         }
       }
 
+      const daysControlClass = isPackageGroup
+        ? 'reservation-quantity-control reservation-quantity-control--static'
+        : 'reservation-quantity-control';
+      const disableDaysAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
+
       return `
         <tr data-group-key="${group.key}">
           <td>
@@ -2208,6 +2233,13 @@ function renderReservationItems(containerId = 'reservation-items') {
               <button type="button" class="reservation-qty-btn" data-action="decrease-group" data-group-key="${group.key}" aria-label="${decreaseLabel}" ${isPackageGroup ? 'disabled' : ''}>−</button>
               <span class="reservation-qty-value">${quantityDisplay}</span>
               <button type="button" class="reservation-qty-btn" data-action="increase-group" data-group-key="${group.key}" aria-label="${increaseLabel}" ${isPackageGroup ? 'disabled' : ''}>+</button>
+            </div>
+          </td>
+          <td>
+            <div class="${daysControlClass}" data-group-key="${group.key}">
+              <button type="button" class="reservation-qty-btn" data-action="decrease-days-group" data-group-key="${group.key}" aria-label="${decreaseDaysLabel}"${disableDaysAttr}>−</button>
+              <span class="reservation-qty-value">${daysDisplay}</span>
+              <button type="button" class="reservation-qty-btn" data-action="increase-days-group" data-group-key="${group.key}" aria-label="${increaseDaysLabel}"${disableDaysAttr}>+</button>
             </div>
           </td>
           <td>${unitPriceDisplay}</td>
@@ -3037,6 +3069,16 @@ function setupReservationButtons() {
       return;
     }
 
+    if (action === 'decrease-days-group' && groupKey) {
+      decreaseReservationGroupDays(groupKey);
+      return;
+    }
+
+    if (action === 'increase-days-group' && groupKey) {
+      increaseReservationGroupDays(groupKey);
+      return;
+    }
+
     if (action === 'remove-group' && groupKey) {
       removeReservationGroup(groupKey);
       return;
@@ -3044,6 +3086,58 @@ function setupReservationButtons() {
   });
 
   container.dataset.listenerAttached = 'true';
+}
+
+// ===== Days control helpers (per equipment group) =====
+function resolveGroupDaysForCreate(group) {
+  const values = (group?.items || []).map((it) => {
+    const raw = it?.days;
+    const parsed = Number.parseFloat(normalizeNumbers(String(raw ?? '')));
+    return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+  }).filter((v) => v != null);
+  if (values.length) {
+    const max = Math.max(...values);
+    return Math.min(365, Math.max(1, max));
+  }
+  try {
+    const { start, end } = getCreateReservationDateRange();
+    const d = calculateReservationDays(start, end);
+    return Number.isFinite(d) && d > 0 ? d : 1;
+  } catch (_) { return 1; }
+}
+
+function setDaysForGroupOnSelectedItems(groupKey, newDays) {
+  const items = getSelectedItems();
+  const clamped = Math.min(365, Math.max(1, Math.round(Number(newDays) || 1)));
+  const next = items.map((it) => {
+    if (resolveReservationItemGroupKey(it) !== groupKey) return it;
+    if (it?.type === 'package') return it;
+    return { ...it, days: clamped };
+  });
+  setSelectedItems(next);
+}
+
+function increaseReservationGroupDays(groupKey) {
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+  const current = resolveGroupDaysForCreate(target);
+  setDaysForGroupOnSelectedItems(groupKey, current + 1);
+  renderReservationItems();
+  renderDraftReservationSummary();
+}
+
+function decreaseReservationGroupDays(groupKey) {
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target) return;
+  const current = resolveGroupDaysForCreate(target);
+  const next = Math.max(1, current - 1);
+  setDaysForGroupOnSelectedItems(groupKey, next);
+  renderReservationItems();
+  renderDraftReservationSummary();
 }
 
 function setupBarcodeInput() {

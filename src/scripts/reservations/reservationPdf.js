@@ -5407,6 +5407,8 @@ async function exportQuoteAsPdf() {
         const rootDir = (isChecklist && langNow === 'en') ? 'ltr' : 'rtl';
         pdfRoot.setAttribute('dir', rootDir);
         pdfRoot.style.direction = rootDir;
+        // Ensure CSS language-specific rules (e.g., table LTR) apply during export
+        pdfRoot.setAttribute('data-lang', langNow);
         // Let CSS handle text alignment per language; avoid forcing it here
         pdfRoot.style.textAlign = '';
       } catch (_) {

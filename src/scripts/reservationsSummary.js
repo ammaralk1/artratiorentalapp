@@ -342,38 +342,44 @@ export function calculateDraftFinancialBreakdown({
     if (allHaveUnitPrice && !anyDailySignals) return true;
     return false;
   };
-  let equipmentDailyTotal = 0; // مجموع يومي يُضرب بعدد الأيام
-  let equipmentFixedTotal = 0; // مجموع ثابت لا يتأثر بعدد الأيام (للحِزم)
+  let equipmentTotalRaw = 0;
   (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
     const isPackage = String(group?.type || '').toLowerCase() === 'package';
     const inferredFixed = inferGroupIsFixed(group);
-    if (overrideNoDays) {
-      equipmentFixedTotal += (qty * unit);
-    } else if (isPackage) {
-      // Prefer the package's stored price per day when available to avoid
-      // overcounting from child item quantities. Fall back to deriving from
-      // child lines only when unit price is missing.
+
+    const overrideDays = (() => {
+      const sourceItems = Array.isArray(group?.items) ? group.items : [];
+      const values = sourceItems.map((it) => {
+        const raw = it?.days;
+        const parsed = parseNumericValue(raw);
+        return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+      }).filter((v) => v != null);
+      if (values.length) return Math.min(365, Math.max(1, Math.max(...values)));
+      return null;
+    })();
+
+    const appliedDays = (overrideNoDays || inferredFixed) ? 1 : (overrideDays ?? rentalDays);
+
+    if (isPackage) {
       const unitCandidate = Number(group?.unitPrice);
       if (Number.isFinite(unitCandidate) && unitCandidate > 0) {
-        equipmentDailyTotal += (qty * unitCandidate);
+        equipmentTotalRaw += (qty * unitCandidate * appliedDays);
       } else {
         const pkgRef = {
           package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
           packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
         };
-        const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: 1 });
-        equipmentDailyTotal += Number.isFinite(Number(pricing.perDayTotal)) ? pricing.perDayTotal : (qty * unit);
+        const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: appliedDays });
+        const contrib = Number.isFinite(Number(pricing.total)) ? Number(pricing.total) : (qty * unit * appliedDays);
+        equipmentTotalRaw += contrib;
       }
-    } else if (inferredFixed) {
-      // DB-loaded reservation items remain fixed (not multiplied by days)
-      equipmentFixedTotal += (qty * unit);
     } else {
-      equipmentDailyTotal += (qty * unit);
+      equipmentTotalRaw += (qty * unit * appliedDays);
     }
   });
-  const equipmentTotal = sanitizePriceValue((equipmentDailyTotal * rentalDays) + equipmentFixedTotal);
+  const equipmentTotal = sanitizePriceValue(equipmentTotalRaw);
   const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
   const normalizedTechnicianIds = assignments.length
     ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
