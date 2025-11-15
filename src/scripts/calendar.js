@@ -199,7 +199,7 @@ function buildEventContent(arg) {
     const { event } = arg || {};
     const props = event?.extendedProps || {};
     const timeLabel = formatEventTimeRange(event?.startStr, event?.endStr, event?.allDay);
-    const idLabel = props?.reservationId ? String(props.reservationId) : (event?.id != null ? String(event.id) : '—');
+    const idLabel = props?.reservationId ? String(props.reservationId) : (event?.id != null ? String(event.id) : t('common.placeholder.empty', '—'));
     const customer = props?.customerName || t('calendar.labels.unknownCustomer', 'غير معروف');
     const confirmed = props?.confirmed === true || props?.confirmed === 'true';
     const paidStatus = typeof props?.paidStatus === 'string' ? props.paidStatus : (props?.paid === true || props?.paid === 'paid') ? 'paid' : 'unpaid';
@@ -1015,7 +1015,7 @@ export function renderCalendar() {
           const completed = schedule?.raw?.completed === true || schedule?.raw?.completed === 'true';
           const unknownCustomer = t('calendar.labels.unknownCustomer', 'غير معروف');
           const timeLabel = formatEventTimeRange(schedule.start?.toString?.() || schedule.start, schedule.end?.toString?.() || schedule.end, schedule.isAllDay);
-          const idLabel = schedule?.raw?.reservationId ? String(schedule.raw.reservationId) : '—';
+          const idLabel = schedule?.raw?.reservationId ? String(schedule.raw.reservationId) : t('common.placeholder.empty', '—');
           const customer = schedule?.raw?.customerName || unknownCustomer;
           const chip = (cls, text) => `<span class="badge ${cls} badge-sm">${escapeHtml(text)}</span>`;
           const confirmedLabel = confirmed ? t('calendar.badges.confirmed', 'مؤكد') : t('calendar.badges.pending', 'غير مؤكد');

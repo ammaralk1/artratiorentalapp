@@ -953,7 +953,7 @@ function renderTable(tickets) {
         : '';
       const createdDisplay = ticket.createdAt
         ? normalizeNumbers(formatDateDDMMYY(ticket.createdAt) || formatDateTime(ticket.createdAt))
-        : '—';
+        : t('common.placeholder.empty', '—');
 
       return `
         <tr class="${rowStatusClass}">

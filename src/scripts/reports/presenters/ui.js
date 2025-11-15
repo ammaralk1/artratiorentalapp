@@ -108,7 +108,7 @@ export function renderActiveFilters({ onClear } = {}) {
       case 'thisMonth': label = translate('reservations.reports.filters.range.thisMonth', 'هذا الشهر', 'This month'); break;
       case 'thisQuarter': label = translate('reservations.reports.filters.range.thisQuarter', 'هذا الربع', 'This quarter'); break;
       case 'thisYear': label = translate('reservations.reports.filters.range.thisYear', 'هذا العام', 'This year'); break;
-      case 'custom': label = `${translate('reservations.reports.filters.range.custom', 'مخصص', 'Custom')} (${filters.start || '—'} → ${filters.end || '—'})`; break;
+      case 'custom': label = `${translate('reservations.reports.filters.range.custom', 'مخصص', 'Custom')} (${filters.start || translate('common.placeholder.empty', '—', '—')} → ${filters.end || translate('common.placeholder.empty', '—', '—')})`; break;
       default: label = filters.range;
     }
     pushChip('range', label, 'all');

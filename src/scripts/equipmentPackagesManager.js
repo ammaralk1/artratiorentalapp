@@ -291,8 +291,8 @@ function renderPackagesTable() {
 
     return `
       <tr data-package-id="${pkg.id}">
-        <td>${pkg.name || '—'}</td>
-        <td>${pkg.package_code || '—'}</td>
+        <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
+        <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
         <td>${priceDisplay}</td>
         <td>
           <details>

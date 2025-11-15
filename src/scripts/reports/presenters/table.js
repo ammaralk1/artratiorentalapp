@@ -212,7 +212,7 @@ function renderPagination(totalItems) {
 }
 
 function formatReservationRow(reservation, customerMap, technicianMap) {
-  const rawCode = reservation?.reservationId || reservation?.id || '—';
+  const rawCode = reservation?.reservationId || reservation?.id || translate('common.placeholder.empty', '—', '—');
   const codeText = normalizeNumbers(String(rawCode));
   const customer = customerMap.get(String(reservation?.customerId));
   const customerName = customer?.customerName
@@ -269,7 +269,7 @@ function getReservationStatusLabel(statusValue) {
     case 'cancelled':
       return stripLeadingSymbols(translate('reservations.list.status.cancelled', '❌ ملغي', 'Cancelled'));
     default:
-      return normalizeNumbers(statusValue || '—');
+      return normalizeNumbers(statusValue || translate('common.placeholder.empty', '—', '—'));
   }
 }
 
@@ -289,7 +289,7 @@ function createPaymentChip(paymentStatus, history = []) {
 
   if (Array.isArray(history) && history.length) {
     tooltip = history.map((entry) => {
-      const date = entry?.recordedAt ? formatDateInput(entry.recordedAt) : '—';
+      const date = entry?.recordedAt ? formatDateInput(entry.recordedAt) : translate('common.placeholder.empty', '—', '—');
       const amount = Number.isFinite(Number(entry?.amount)) && Number(entry.amount) > 0
         ? `${normalizeNumbers(Number(entry.amount).toFixed(2))} ${currencyLabel}`
         : '';
@@ -308,5 +308,5 @@ function createPaymentChip(paymentStatus, history = []) {
 }
 
 function stripLeadingSymbols(label) {
-  return normalizeNumbers(String(label ?? '')).replace(/^[^A-Za-z0-9\u0600-\u06FF]+/, '').trim() || '—';
+  return normalizeNumbers(String(label ?? '')).replace(/^[^A-Za-z0-9\u0600-\u06FF]+/, '').trim() || translate('common.placeholder.empty', '—', '—');
 }

@@ -825,7 +825,7 @@ export function renderCustomers(customersOverride, options = {}) {
       <td><a href="customer.html?id=${customer.id}" class="text-decoration-none">${customer.full_name}</a></td>
       <td>${normalizeNumbers(customer.phone)}</td>
       <td>${customer.company || ""}</td>
-      <td class="table-notes-cell">${customer.notes || "—"}</td>
+      <td class="table-notes-cell">${customer.notes || t('common.placeholder.empty', '—')}</td>
       <td class="table-actions-cell">
         <div class="table-action-buttons">
           ${actionButtons.join('')}

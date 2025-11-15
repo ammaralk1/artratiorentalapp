@@ -1074,7 +1074,7 @@ function renderEquipmentItem({ item, index }) {
 
   const availabilityHtml = `<span class="equipment-card__availability equipment-card__availability--${availabilityClassModifier}">${availabilityText}</span>`;
   const statusHtml = '';
-  const title = item.desc || item.name || "—";
+  const title = item.desc || item.name || t('common.placeholder.empty', '—');
   const aliasValue = item.name && item.name !== item.desc ? item.name : "";
 
   const metricItems = [

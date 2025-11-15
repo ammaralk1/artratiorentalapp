@@ -228,7 +228,7 @@ function buildExportRowsFromState() {
       exportHeaders.net,
     ];
     const rows = sorted.map((res) => {
-      const rawCode = res?.reservationId || res?.id || '—';
+      const rawCode = res?.reservationId || res?.id || translate('common.placeholder.empty', '—', '—');
       const codeText = normalizeNumbers(String(rawCode));
       const customer = customers.get(String(res?.customerId));
       const customerName = customer?.customerName || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
@@ -243,7 +243,7 @@ function buildExportRowsFromState() {
           case 'pending':
             return String(translate('reservations.list.status.pending', 'غير مؤكد', 'Pending')).replace(/^\W+/, '');
           default:
-            return normalizeNumbers(String(statusInfo.statusValue || '—'));
+            return normalizeNumbers(String(statusInfo.statusValue || translate('common.placeholder.empty', '—', '—')));
         }
       })();
       const paymentText = paymentLabelText(statusInfo.paidStatus);

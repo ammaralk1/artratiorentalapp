@@ -100,7 +100,7 @@ function buildKpis({ context = 'preview' } = {}) {
   const card = (label, value) => {
     const d = document.createElement('div');
     d.className = 'rpt-kpi';
-    d.innerHTML = `<div class="label">${label}</div><div class="value">${value ?? '—'}</div>`;
+    d.innerHTML = `<div class="label">${label}</div><div class="value">${value ?? translate('common.placeholder.empty', '—', '—')}</div>`;
     return d;
   };
   // تنسيق مضبوط: رقم صحيح للحجوزات، عملات بدقتين عشرية (تقريب .5 للأعلى)

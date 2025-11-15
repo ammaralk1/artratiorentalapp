@@ -726,9 +726,9 @@ function renderTechniciansTable() {
       <tr${rowClass}>
         <td><a href="technician.html?id=${tech.id}" class="text-decoration-none">${tech.name}</a></td>
         <td>${tech.role || ""}</td>
-        <td>${tech.department || "—"}</td>
+        <td>${tech.department || t('common.placeholder.empty', '—')}</td>
         <td><span class="${statusInfo.className}"><span class="technician-status-badge__text">${statusInfo.label}</span></span></td>
-        <td class="table-notes-cell">${tech.notes || "—"}</td>
+        <td class="table-notes-cell">${tech.notes || t('common.placeholder.empty', '—')}</td>
         <td class="table-actions-cell">
           <div class="table-action-buttons">
             ${actionButtons.join('')}

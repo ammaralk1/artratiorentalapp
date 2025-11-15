@@ -67,9 +67,9 @@ export function formatDateInput(value) {
 }
 
 export function formatDateTime(value) {
-  if (!value) return '—';
+  if (!value) return t('common.placeholder.empty', '—');
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) return t('common.placeholder.empty', '—');
   const formatter = new Intl.DateTimeFormat(getActiveLocale(), {
     day: '2-digit',
     month: 'short',

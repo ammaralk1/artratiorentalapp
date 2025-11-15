@@ -2,9 +2,9 @@ import{d as C,n as B,h as it,b as P,A as ce,a as st,m as ot,c as rt,i as ct,l as
       <tr${d?' class="technician-table-row-editing"':""}>
         <td><a href="technician.html?id=${c.id}" class="text-decoration-none">${c.name}</a></td>
         <td>${c.role||""}</td>
-        <td>${c.department||"—"}</td>
+        <td>${c.department||u("common.placeholder.empty","—")}</td>
         <td><span class="${h.className}"><span class="technician-status-badge__text">${h.label}</span></span></td>
-        <td class="table-notes-cell">${c.notes||"—"}</td>
+        <td class="table-notes-cell">${c.notes||u("common.placeholder.empty","—")}</td>
         <td class="table-actions-cell">
           <div class="table-action-buttons">
             ${S.join("")}

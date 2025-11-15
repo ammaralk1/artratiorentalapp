@@ -2,7 +2,7 @@ import{d as C,q as w,t as a,v as Q,n as R,b as B,A as M,j as d,w as tt,h as et}f
       <td><a href="customer.html?id=${c.id}" class="text-decoration-none">${c.full_name}</a></td>
       <td>${R(c.phone)}</td>
       <td>${c.company||""}</td>
-      <td class="table-notes-cell">${c.notes||"—"}</td>
+      <td class="table-notes-cell">${c.notes||a("common.placeholder.empty","—")}</td>
       <td class="table-actions-cell">
         <div class="table-action-buttons">
           ${I.join("")}
