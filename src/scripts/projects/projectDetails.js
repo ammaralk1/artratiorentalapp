@@ -60,8 +60,11 @@ import {
   updateLinkedReservationsConfirmation,
   removeProject,
   updateLinkedReservationsCancelled,
-  updateLinkedReservationsSchedule
+  updateLinkedReservationsSchedule,
+  updateLinkedReservationsClosed,
+  updateLinkedReservationsReopened
 } from './actions.js';
+import { closeProjectApi, reopenProjectApi } from '../projectsService.js';
 
 export function openProjectDetails(projectId) {
   const project = state.projects.find((p) => String(p.id) === String(projectId));
@@ -1301,6 +1304,83 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   renderExpenses();
   refreshPaymentUi();
 
+  // Close/Reopen project actions
+  const closeBtn = form.querySelector('#project-edit-close-btn');
+  const reopenBtn = form.querySelector('#project-edit-reopen-btn');
+  const isClosed = String(project?.status || '').toLowerCase() === 'completed';
+  if (closeBtn) closeBtn.disabled = isClosed;
+  if (reopenBtn) reopenBtn.disabled = !isClosed;
+
+  const openCloseProjectModal = () => {
+    const modal = document.getElementById('closeProjectModal');
+    const notesArea = document.getElementById('close-project-notes');
+    const submit = document.getElementById('close-project-submit');
+    if (notesArea) notesArea.value = '';
+    if (submit && submit.__tmpCloseProjectListener) {
+      submit.removeEventListener('click', submit.__tmpCloseProjectListener);
+      submit.__tmpCloseProjectListener = null;
+    }
+    if (submit) {
+      const handler = async () => {
+        const note = notesArea?.value || '';
+        try {
+          const updated = await closeProjectApi(project.projectId ?? project.id, note);
+          await updateLinkedReservationsClosed(updated?.projectId ?? updated?.id ?? project.id);
+          state.projects = getProjectsState();
+          state.reservations = getReservationsState();
+          showToast(t('projects.toast.closed', '✅ تم إغلاق المشروع'));
+          renderProjects();
+          renderFocusCards();
+          updateSummary();
+          openProjectDetails(updated?.id ?? project.id);
+        } catch (e) {
+          console.error('❌ [projects] closeProject failed', e);
+          showToast(t('projects.toast.closeFailed', 'تعذر إغلاق المشروع'), 'error');
+        } finally {
+          try {
+            const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
+            inst?.hide?.();
+          } catch (_) {}
+        }
+      };
+      submit.__tmpCloseProjectListener = handler;
+      submit.addEventListener('click', handler, { once: true });
+    }
+    if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+      const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
+      inst.show();
+    }
+  };
+
+  if (closeBtn && !closeBtn.dataset.listenerAttached) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openCloseProjectModal();
+    });
+    closeBtn.dataset.listenerAttached = 'true';
+  }
+
+  if (reopenBtn && !reopenBtn.dataset.listenerAttached) {
+    reopenBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        const updated = await reopenProjectApi(project.projectId ?? project.id);
+        await updateLinkedReservationsReopened(updated?.projectId ?? updated?.id ?? project.id);
+        state.projects = getProjectsState();
+        state.reservations = getReservationsState();
+        showToast(t('projects.toast.reopened', '↩️ تم إلغاء إغلاق المشروع'));
+        renderProjects();
+        renderFocusCards();
+        updateSummary();
+        openProjectDetails(updated?.id ?? project.id);
+      } catch (e2) {
+        console.error('❌ [projects] reopenProject failed', e2);
+        showToast(t('projects.toast.reopenFailed', 'تعذر إلغاء الإغلاق'), 'error');
+      }
+    });
+    reopenBtn.dataset.listenerAttached = 'true';
+  }
+
   if (discountInput && !discountInput.dataset.listenerAttached) {
     discountInput.addEventListener('input', (event) => {
       const input = event.target;
@@ -1941,8 +2021,14 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
 
 
       <div class="project-edit-actions mt-4 d-flex justify-content-between">
-        <button type="submit" class="btn btn-primary">${escapeHtml(t('projects.form.buttons.update', 'تحديث المشروع'))}</button>
-        <button type="button" class="btn btn-outline-secondary" data-action="cancel-edit">${escapeHtml(t('actions.cancel', 'إلغاء'))}</button>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-warning" id="project-edit-close-btn">${escapeHtml(t('projects.actions.close', '🔒 إغلاق المشروع'))}</button>
+          <button type="button" class="btn btn-outline-secondary" id="project-edit-reopen-btn">${escapeHtml(t('projects.actions.reopen', '↩️ إلغاء الإغلاق'))}</button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">${escapeHtml(t('projects.form.buttons.update', 'تحديث المشروع'))}</button>
+          <button type="button" class="btn btn-outline-secondary" data-action="cancel-edit">${escapeHtml(t('actions.cancel', 'إلغاء'))}</button>
+        </div>
       </div>
     </form>
   `;

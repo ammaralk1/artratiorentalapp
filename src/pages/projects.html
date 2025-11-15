@@ -1027,6 +1027,27 @@
     </div>
   </div>
 
+  <!-- ✅ مودال إغلاق المشروع -->
+  <div class="modal fade" id="closeProjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n data-i18n-key="projects.closeModal.title">🔒 إغلاق المشروع</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted" data-i18n data-i18n-key="projects.closeModal.subtitle">يرجى كتابة ملاحظة الإغلاق (اختياري).</p>
+          <label class="form-label" for="close-project-notes" data-i18n data-i18n-key="projects.closeModal.noteLabel">📝 ملاحظات الإغلاق</label>
+          <textarea id="close-project-notes" class="form-control" rows="3" data-i18n data-i18n-placeholder-key="projects.closeModal.notePlaceholder" placeholder="مثال: تم إنهاء المشروع بنجاح..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="close-project-cancel" data-bs-dismiss="modal" data-i18n data-i18n-key="projects.closeModal.cancel">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="close-project-submit" data-i18n data-i18n-key="projects.closeModal.confirm">🔒 إغلاق المشروع</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ✅ مودال تعديل الحجز (مطلوب لفتح التعديل مباشرة من تفاصيل المشروع) -->
   <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">

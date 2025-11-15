@@ -227,3 +227,52 @@ export async function updateLinkedReservationsCancelled(projectId) {
   }
   return changed;
 }
+
+export async function updateLinkedReservationsClosed(projectId) {
+  if (!projectId) return false;
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  if (!targets.length) return false;
+  let changed = false;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    try {
+      await updateReservationApi(reservationId, { status: 'completed', confirmed: true });
+      changed = true;
+    } catch (e) {
+      console.warn('[projects] failed to close linked reservation', reservationId, e);
+    }
+  }
+  if (changed) {
+    state.reservations = getReservationsState();
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return changed;
+}
+
+export async function updateLinkedReservationsReopened(projectId) {
+  if (!projectId) return false;
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+  if (!targets.length) return false;
+  let changed = false;
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    try {
+      // Reopen to confirmed (unless cancelled), do not override schedule
+      const statusRaw = String(reservation.status || '').toLowerCase();
+      if (statusRaw === 'cancelled' || statusRaw === 'canceled') continue;
+      await updateReservationApi(reservationId, { status: 'confirmed', confirmed: true });
+      changed = true;
+    } catch (e) {
+      console.warn('[projects] failed to reopen linked reservation', reservationId, e);
+    }
+  }
+  if (changed) {
+    state.reservations = getReservationsState();
+    document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return changed;
+}

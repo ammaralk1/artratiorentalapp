@@ -106,6 +106,48 @@ export async function updateProjectApi(id, payload) {
   return updated;
 }
 
+function appendClosingNoteToDescription(description = '', note = '') {
+  const base = String(description || '').trim();
+  const input = String(note || '').trim();
+  if (!input) return base;
+  const prefixAr = 'ملاحظة إغلاق';
+  const entry = `${prefixAr}: ${input}`;
+  return base ? `${base}\n${entry}` : entry;
+}
+
+function stripLastClosingNoteFromDescription(description = '') {
+  const text = String(description || '');
+  if (!text.trim()) return '';
+  const markers = [
+    'ملاحظة إغلاق',
+    'Close note'
+  ];
+  let lastIdx = -1;
+  for (const m of markers) {
+    const idx = text.lastIndexOf(m);
+    if (idx > lastIdx) lastIdx = idx;
+  }
+  if (lastIdx === -1) {
+    return text; // no explicit note marker; keep as-is
+  }
+  const pre = text.slice(0, lastIdx);
+  return pre.replace(/\n$/, '');
+}
+
+export async function closeProjectApi(id, note = '') {
+  // Fetch current project state from cache to read description
+  const current = projectsState.find((p) => String(p.id) === String(id));
+  const desc = appendClosingNoteToDescription(current?.description || '', note || '');
+  return updateProjectApi(id, { status: 'completed', confirmed: true, description: desc });
+}
+
+export async function reopenProjectApi(id) {
+  const current = projectsState.find((p) => String(p.id) === String(id));
+  const cleaned = stripLastClosingNoteFromDescription(current?.description || '');
+  // Default to ongoing when reopening
+  return updateProjectApi(id, { status: 'ongoing', confirmed: true, description: cleaned });
+}
+
 export async function deleteProjectApi(id) {
   await apiRequest(`/projects/?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
