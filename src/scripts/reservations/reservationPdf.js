@@ -3385,9 +3385,10 @@ function buildProjectQuotationHtml({
     const projectEntry = primarySections.find((entry) => entry.key === 'project');
     const customerEntry = primarySections.find((entry) => entry.key === 'customer');
     const ordered = [];
-    // For RTL with row-reverse, render Customer first so Project lands on the far left
-    if (customerEntry?.html) ordered.push(customerEntry.html);
+    // In RTL context with row-reverse, the first child appears on the far left.
+    // Place Project first (left) and Customer second (right).
     if (projectEntry?.html) ordered.push(projectEntry.html);
+    if (customerEntry?.html) ordered.push(customerEntry.html);
 
     primaryBlocks.push(withBlockAttributes(
       `<div class="quote-section-row quote-section-row--primary">${ordered.join('')}</div>`,
