@@ -241,7 +241,7 @@ const QUOTE_FIELD_DEFS = {
   crew: [
     ...QUOTE_CREW_COLUMN_DEFS.map(({ id, labelKey, fallback }) => ({ id, labelKey, fallback })),
     { id: 'quantity', labelKey: 'reservations.details.table.headers.quantity', fallback: 'الكمية' },
-    { id: 'days', labelKey: null, fallback: 'الأيام' },
+    { id: 'days', labelKey: 'reservations.details.table.headers.days', fallback: 'الأيام' },
     { id: 'crewSubtotal', labelKey: 'reservations.details.labels.crewTotal', fallback: 'إجمالي الفريق' }
   ]
 };
@@ -4099,7 +4099,7 @@ function buildQuotationHtml(options) {
   const headerTitle = isChecklist ? (lang === 'en' ? enChecklistTitle : checklistTitle) : t('reservations.quote.title', 'عرض سعر');
   const headerMetaHtml = isChecklist
     ? (
-      `<div class="quote-header__meta">
+      `<div class="quote-header__meta" ${lang === 'en' ? 'dir="ltr"' : ''}>
         <div class="quote-header__meta-item">
           <span>${escapeHtml(t('reservations.quote.labels.date', 'التاريخ'))}</span>
           <strong>${escapeHtml(quoteDate)}</strong>

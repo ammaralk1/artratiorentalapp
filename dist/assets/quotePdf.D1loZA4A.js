@@ -1021,4 +1021,6 @@ body,
     box-shadow: none;
   }
 }
+#quotation-pdf-root[data-lang="en"] .info-plain__item { direction: ltr; }
+.info-plain__label, .info-plain__value, .info-plain__slash { unicode-bidi: isolate; }
 `;export{n as q};
