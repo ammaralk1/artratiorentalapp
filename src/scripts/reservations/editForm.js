@@ -88,7 +88,7 @@ function populateEditPackageSelect() {
   const snapshot = buildPackageOptionsSnapshot();
 
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
-  const placeholderOption = `<option value="" disabled selected>${t('reservations.create.packages.placeholder', 'اختر الحزمة')}</option>`;
+  const placeholderOption = `<option value="" disabled selected>${t('reservations.edit.packages.placeholder', 'اختر الحزمة')}</option>`;
   const optionMarkup = snapshot
     .map((entry) => {
       const price = Number.isFinite(Number(entry.price)) ? Number(entry.price) : 0;
@@ -114,7 +114,7 @@ function populateEditPackageSelect() {
 
   if (hint) {
     if (hasPackages) {
-      hint.textContent = t('reservations.create.packages.hint', 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.');
+      hint.textContent = t('reservations.edit.packages.hint', 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.');
       hint.dataset.state = 'ready';
     } else {
       hint.textContent = t('reservations.create.packages.empty', 'لا توجد حزم معرفة حالياً. يمكنك إضافتها لاحقاً من لوحة التحكم.');
@@ -181,6 +181,12 @@ function handleEditPackageAdd() {
 
 function setupEditPackageControls() {
   const { addButton, select } = getEditPackageElements();
+  // Rebuild options and hint on language change so placeholders translate
+  if (select && !select.dataset.langRefreshAttached) {
+    document.addEventListener('language:changed', populateEditPackageSelect);
+    document.addEventListener('language:translationsReady', populateEditPackageSelect);
+    select.dataset.langRefreshAttached = 'true';
+  }
 
   if (addButton && !addButton.dataset.listenerAttached) {
     addButton.addEventListener('click', () => {

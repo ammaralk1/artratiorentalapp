@@ -2126,3 +2126,13 @@ registerTranslations({
     'reservations.quote.emptyNotes': 'No additional notes.'
   }
 });
+    // Edit reservation: packages block
+    'reservations.create.equipment.subtitle.package': '📦 إضافة حزمة معدات',
+    'reservations.create.packages.addButton': '➕ إضافة الحزمة',
+    'reservations.edit.packages.placeholder': '📦 اختر الحزمة',
+    'reservations.edit.packages.hint': 'حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.',
+    // Edit reservation: packages block
+    'reservations.create.equipment.subtitle.package': '📦 Add equipment package',
+    'reservations.create.packages.addButton': '➕ Add package',
+    'reservations.edit.packages.placeholder': '📦 Select a package',
+    'reservations.edit.packages.hint': 'Choose the package, then press the button to add it to the reservation.',
