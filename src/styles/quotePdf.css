@@ -253,7 +253,6 @@ body,
 #quotation-pdf-root[data-lang="en"] .quote-section h3,
 #quotation-pdf-root[data-lang="en"] .quote-section__title,
 #quotation-pdf-root[data-lang="en"] .info-plain,
-#quotation-pdf-root[data-lang="en"] .quote-table th,
 #quotation-pdf-root[data-lang="en"] .quote-table td,
 #quotation-pdf-root[data-lang="en"] .totals-inline__item,
 #quotation-pdf-root[data-lang="en"] .payment-row {
@@ -1023,3 +1022,17 @@ body,
 }
 #quotation-pdf-root[data-lang="en"] .info-plain__item { direction: ltr; }
 .info-plain__label, .info-plain__value, .info-plain__slash { unicode-bidi: isolate; }
+
+/* Keep table headers centered in both languages */
+#quotation-pdf-root .quote-table th { text-align: center !important; }
+
+/* In EN, align Customer/Project info blocks to the right side so content sits under the section title placed on the right column */
+#quotation-pdf-root[data-lang="en"] .quote-section--customer,
+#quotation-pdf-root[data-lang="en"] .quote-section--project {
+  text-align: right !important;
+  align-items: flex-end !important;
+}
+#quotation-pdf-root[data-lang="en"] .quote-section--customer .info-plain,
+#quotation-pdf-root[data-lang="en"] .quote-section--project .info-plain {
+  text-align: right !important;
+}
