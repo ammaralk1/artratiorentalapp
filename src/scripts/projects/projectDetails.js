@@ -1958,7 +1958,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
             <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-amount" placeholder="${escapeHtml(t('projects.form.placeholders.expenseAmount', 'المبلغ'))}" inputmode="decimal">
           </div>
           <div class="project-edit-expense-amount-col">
-            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.labels.salePrice', 'سعر البيع'))}" inputmode="decimal">
+            <input type="text" class="form-control project-edit-input-xs" id="project-edit-expense-sale" placeholder="${escapeHtml(t('projects.form.placeholders.salePrice', 'سعر البيع'))}" inputmode="decimal">
           </div>
           <div class="project-edit-expense-label-col">
             <input type="text" class="form-control project-edit-input-wide" id="project-edit-expense-note" placeholder="${escapeHtml(t('projects.form.placeholders.expenseNote', 'تفاصيل إضافية'))}">
