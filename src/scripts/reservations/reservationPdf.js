@@ -169,14 +169,18 @@ const QUOTE_CREW_COLUMN_DEFS = [
     id: 'position',
     labelKey: 'reservations.details.crew.position',
     fallback: 'المنصب',
-    render: (assignment) => escapeHtml(
-      normalizeNumbers(
-        assignment?.positionLabel
-          ?? assignment?.position_name
-          ?? assignment?.role
-          ?? t('reservations.crew.positionFallback', 'منصب بدون اسم')
-      )
-    )
+    render: (assignment) => {
+      const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+      const labelEn = assignment?.positionLabelAlt
+        ?? assignment?.position_label_alt
+        ?? assignment?.role;
+      const labelAr = assignment?.positionLabel
+        ?? assignment?.position_name
+        ?? assignment?.role
+        ?? t('reservations.crew.positionFallback', 'منصب بدون اسم');
+      const chosen = langNow === 'en' && labelEn ? labelEn : labelAr;
+      return escapeHtml(normalizeNumbers(String(chosen)));
+    }
   },
   {
     id: 'unitPrice',
@@ -3566,7 +3570,7 @@ function buildQuotationHtml(options) {
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? (projectFieldItems.length
-        ? `<section class="quote-section quote-section--plain">
+        ? `<section class="quote-section quote-section--plain quote-section--project">
             <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
             <div class="info-plain">${projectFieldItems.join('')}</div>
           </section>`
@@ -4030,8 +4034,12 @@ function buildQuotationHtml(options) {
   const primaryBlocks = [];
 
   if (customerSectionMarkup && reservationSectionMarkup) {
+    const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
+    const leftFirst = langNow === 'en'
+      ? `${reservationSectionMarkup}${customerSectionMarkup}`
+      : `${customerSectionMarkup}${reservationSectionMarkup}`;
     primaryBlocks.push(withBlockAttributes(
-      `<div class="quote-section-row">${customerSectionMarkup}${reservationSectionMarkup}</div>`,
+      `<div class="quote-section-row">${leftFirst}</div>`,
       { blockType: 'group' }
     ));
   } else {
