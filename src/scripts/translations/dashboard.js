@@ -1788,3 +1788,13 @@ registerTranslations({
     'technicians.picker.positionCostLabel': 'Internal cost'
   }
 });
+
+// Notes placeholder used when no reservation notes are provided
+registerTranslations({
+  ar: {
+    'reservations.quote.emptyNotes': 'لا توجد ملاحظات إضافية.'
+  },
+  en: {
+    'reservations.quote.emptyNotes': 'No additional notes.'
+  }
+});

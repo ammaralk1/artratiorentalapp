@@ -259,6 +259,14 @@ body,
   text-align: left !important;
 }
 
+/* Ensure LTR flow for English inline info values (Code, Customer, etc.) */
+#quotation-pdf-root[data-lang="en"] .info-plain,
+#quotation-pdf-root[data-lang="en"] .info-plain__item,
+#quotation-pdf-root[data-lang="en"] .info-plain__value {
+  direction: ltr !important;
+  unicode-bidi: plaintext;
+}
+
 /* English (checklist) tables render left-to-right */
 #quotation-pdf-root[data-lang="en"] .quote-table,
 #quotation-pdf-root[data-lang="en"] .quote-table thead,
@@ -283,6 +291,14 @@ body,
 .quote-section-row .quote-section {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Empty spacer section used to push sibling to an edge */
+.quote-section--empty {
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .quote-section-row--primary {
