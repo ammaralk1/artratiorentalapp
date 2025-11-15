@@ -2112,6 +2112,31 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   color: var(--clr-text);
 }
 
+/* Tighter quantity controls inside Edit Reservation modal */
+#editReservationModal .reservation-quantity-control {
+  gap: 6px;
+  padding: 2px 8px;
+}
+
+#editReservationModal .reservation-qty-btn {
+  width: 17px;
+  height: 17px;
+  font-size: 0.75rem;
+}
+
+#editReservationModal .reservation-qty-value {
+  min-width: 20px;
+  font-size: 0.85rem;
+}
+
+/* Narrower qty/days columns inside Edit Reservation modal specifically */
+#editReservationModal .reservation-items-table th:nth-child(2),
+#editReservationModal .reservation-items-table td:nth-child(2),
+#editReservationModal .reservation-items-table th:nth-child(3),
+#editReservationModal .reservation-items-table td:nth-child(3) {
+  width: 96px;
+}
+
 .reservation-items-table img,
 .reservation-item-thumb {
   width: 64px;
