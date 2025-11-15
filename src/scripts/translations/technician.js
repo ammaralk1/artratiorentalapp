@@ -38,6 +38,7 @@ registerTranslations({
     'technicianFinancial.payouts.form.amount': '💰 المبلغ',
     'technicianFinancial.payouts.form.date': '📅 تاريخ الدفع',
     'technicianFinancial.payouts.form.note': '📝 ملاحظات (اختياري)',
+    'technicianFinancial.payouts.form.notePlaceholder': 'مثال: دفعة سريعة أو مرجع التحويل',
     'technicianFinancial.payouts.form.submit': '💸 تسجيل الدفعة',
     'technicianFinancial.payouts.confirmDelete': '❌ هل تريد حذف هذه الدفعة؟',
     'technicianFinancial.payouts.confirmTitle': '🗑️ حذف الدفعة',
