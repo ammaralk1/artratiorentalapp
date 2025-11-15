@@ -451,6 +451,18 @@ registerTranslations({
     'reservations.edit.placeholders.description': '🎥 اكتب اسم المعدة ثم اضغط Enter',
     'reservations.edit.table.empty': 'لا توجد معدات',
     'reservations.edit.actions.save': '💾 حفظ التعديلات',
+    // Edit terms in modal
+    'reservations.edit.terms.title': '📄 الشروط العامة لعرض السعر',
+    'reservations.edit.terms.hint': 'يمكنك تعديل البنود قبل إرسال عرض السعر. اكتب كل شرط في سطر مستقل.',
+    'reservations.edit.terms.placeholder': 'اكتب الشروط هنا...',
+    // Edit confirmation & payment card
+    'reservations.edit.confirmation.label': '✅ حالة التأكيد',
+    'reservations.edit.confirmation.pendingLabel': '⏳ بانتظار التأكيد',
+    'reservations.edit.confirmation.confirmLabel': '✅ تم التأكيد',
+    'reservations.edit.paymentCard.title': '💰 تفاصيل الدفع',
+    // Edit modal actions
+    'reservations.edit.actions.close': '🔒 إغلاق الحجز',
+    'reservations.edit.actions.reopen': '↩️ إلغاء الإغلاق',
     'reservations.edit.tech.headers.name': 'الاسم',
     'reservations.edit.tech.headers.role': 'الدور',
     'reservations.edit.tech.headers.total': 'التكلفة الإجمالية',
@@ -1440,6 +1452,18 @@ registerTranslations({
     'reservations.edit.placeholders.description': '🎥 Type the equipment name then press Enter',
     'reservations.edit.table.empty': 'No equipment',
     'reservations.edit.actions.save': '💾 Save changes',
+    // Edit terms in modal
+    'reservations.edit.terms.title': '📄 Quote Terms',
+    'reservations.edit.terms.hint': 'You can adjust the terms before sending the quote. Enter one term per line.',
+    'reservations.edit.terms.placeholder': 'Enter terms here...',
+    // Edit confirmation & payment card
+    'reservations.edit.confirmation.label': '✅ Confirmation status',
+    'reservations.edit.confirmation.pendingLabel': '⏳ Awaiting confirmation',
+    'reservations.edit.confirmation.confirmLabel': '✅ Confirmed',
+    'reservations.edit.paymentCard.title': '💰 Payment details',
+    // Edit modal actions
+    'reservations.edit.actions.close': '🔒 Close reservation',
+    'reservations.edit.actions.reopen': '↩️ Reopen',
     'reservations.edit.tech.headers.name': 'Name',
     'reservations.edit.tech.headers.role': 'Role',
     'reservations.edit.tech.headers.total': 'Total charge',

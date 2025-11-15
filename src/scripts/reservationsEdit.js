@@ -102,8 +102,9 @@ function updateConfirmedControls(value, { disable = false } = {}) {
   }
 
   if (toggleBtn) {
-    const confirmLabel = toggleBtn.dataset.confirmLabel || '✅ تم التأكيد';
-    const pendingLabel = toggleBtn.dataset.pendingLabel || '⏳ بانتظار التأكيد';
+    // Use i18n labels for the toggle text in both languages
+    const confirmLabel = t('reservations.edit.confirmation.confirmLabel', '✅ تم التأكيد');
+    const pendingLabel = t('reservations.edit.confirmation.pendingLabel', '⏳ بانتظار التأكيد');
     toggleBtn.innerHTML = isConfirmed ? confirmLabel : pendingLabel;
     toggleBtn.dataset.state = isConfirmed ? 'confirmed' : 'pending';
     toggleBtn.classList.toggle('btn-success', isConfirmed && !disable);
