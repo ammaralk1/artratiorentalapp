@@ -29,13 +29,13 @@
   <!-- Flatpickr JS -->
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module" crossorigin src="../../assets/dashboard.BoG3hK2B.js"></script>
+  <script type="module" crossorigin src="../../assets/dashboard.CUhm8Zi9.js"></script>
   <link rel="modulepreload" crossorigin href="../../assets/auth.TVJ8X2CT.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboard.xFxdXlih.js">
   <link rel="modulepreload" crossorigin href="../../assets/uiBridge.BLZZT8b9.js">
   <link rel="modulepreload" crossorigin href="../../assets/customers.xHtc6COB.js">
   <link rel="modulepreload" crossorigin href="../../assets/state.BcSvKqfh.js">
-  <link rel="modulepreload" crossorigin href="../../assets/equipment.s3mi8kik.js">
+  <link rel="modulepreload" crossorigin href="../../assets/equipment.XGjk1pcx.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
   <link rel="stylesheet" crossorigin href="../../assets/auth.BbS386zB.css">
 </head>
@@ -751,15 +751,18 @@
               </div>
               <div class="form-field">
                 <label for="new-equipment-category" class="form-label" data-i18n data-i18n-key="equipment.form.labels.category">📂 القسم</label>
-                <input type="text" class="form-control" id="new-equipment-category" placeholder="القسم" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.category">
+                <input type="text" class="form-control" id="new-equipment-category" placeholder="القسم" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.category" list="new-equipment-category-list">
+                <datalist id="new-equipment-category-list"></datalist>
               </div>
               <div class="form-field">
                 <label for="new-equipment-sub" class="form-label" data-i18n data-i18n-key="equipment.form.labels.subcategory">📑 القسم الثانوي</label>
-                <input type="text" class="form-control" id="new-equipment-sub" placeholder="القسم الثانوي" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.subcategory">
+                <input type="text" class="form-control" id="new-equipment-sub" placeholder="القسم الثانوي" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.subcategory" list="new-equipment-sub-list">
+                <datalist id="new-equipment-sub-list"></datalist>
               </div>
               <div class="form-field">
                 <label for="new-equipment-lessor" class="form-label" data-i18n data-i18n-key="equipment.form.labels.lessor">🏢 المؤجر</label>
-                <input type="text" class="form-control" id="new-equipment-lessor" placeholder="اسم المؤجر" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.lessor">
+                <input type="text" class="form-control" id="new-equipment-lessor" placeholder="اسم المؤجر" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.lessor" list="new-equipment-lessor-list">
+                <datalist id="new-equipment-lessor-list"></datalist>
               </div>
             </div>
             <div class="management-form-actions equipment-form-actions">

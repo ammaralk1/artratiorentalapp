@@ -1230,7 +1230,8 @@ function renderEquipmentItem({ item, index }) {
 
 function populateFilters(data) {
   const categories = [...new Set(data.map((i) => i.category).filter(Boolean))];
-  const subs = [...new Set(data.map((i) => i.sub).filter(Boolean))];
+  const subs = [...new Set(data.map((i) => i.sub).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'ar', { sensitivity: 'base' }));
 
   const categorySelect = document.getElementById("filter-category");
   const subSelect = document.getElementById("filter-sub");
@@ -1273,6 +1274,33 @@ function populateFilters(data) {
   if (statusSelect) {
     refreshEnhancedSelect(statusSelect);
   }
+}
+
+function populateAddEquipmentDatalists() {
+  if (typeof document === 'undefined') return;
+  const items = getAllEquipment();
+
+  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'ar', { sensitivity: 'base' }));
+  const subs = [...new Set(items.map((i) => i.sub).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'ar', { sensitivity: 'base' }));
+  const lessors = [...new Set(items.map((i) => i.lessor).filter(Boolean))]
+    .sort((a, b) => String(a).localeCompare(String(b), 'ar', { sensitivity: 'base' }));
+
+  const setOptions = (datalistId, values) => {
+    const list = document.getElementById(datalistId);
+    if (!list) return;
+    while (list.firstChild) list.removeChild(list.firstChild);
+    values.forEach((val) => {
+      const opt = document.createElement('option');
+      opt.value = String(val);
+      list.appendChild(opt);
+    });
+  };
+
+  setOptions('new-equipment-category-list', categories);
+  setOptions('new-equipment-sub-list', subs);
+  setOptions('new-equipment-lessor-list', lessors);
 }
 
 export function syncEquipmentStatuses() {
@@ -1892,6 +1920,9 @@ function wireUpEquipmentUI() {
   // Attach digit normalizer for new barcode input
   attachEnglishDigitNormalizer(document.getElementById('new-equipment-barcode'));
 
+  // Populate autocomplete lists for add form
+  populateAddEquipmentDatalists();
+
   // Wire barcode generator button
   const genButton = document.getElementById('generate-equipment-barcode');
   if (genButton && !genButton.dataset.listenerAttached) {
@@ -2045,6 +2076,7 @@ document.addEventListener(AUTH_EVENTS.USER_UPDATED, () => {
 
 document.addEventListener('equipment:changed', () => {
   refreshVariantsIfNeeded();
+  populateAddEquipmentDatalists();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
