@@ -320,7 +320,6 @@ body,
 
 .quote-section--project {
   text-align: right;
-  align-items: flex-end;
 }
 
 .quote-section--customer {
