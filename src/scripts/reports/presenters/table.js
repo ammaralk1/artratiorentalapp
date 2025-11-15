@@ -74,6 +74,12 @@ export function renderReservationsTable(reservations, customers, technicians) {
         [exportHeaders.shareAmount]: formatCurrency(financials.companyShareAmount ?? 0),
         [exportHeaders.net]: formatted.net.text,
       };
+      // Normalize empty string cells to common placeholder for exports
+      const empty = translate('common.placeholder.empty', '—', '—');
+      Object.keys(exportRow).forEach((k) => {
+        const v = String(exportRow[k] ?? '').trim();
+        if (v === '') exportRow[k] = empty;
+      });
       return { formatted, exportRow };
     });
 
