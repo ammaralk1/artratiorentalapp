@@ -5400,9 +5400,18 @@ async function exportQuoteAsPdf() {
     const pdfRoot = container.firstElementChild;
 
     if (pdfRoot) {
-      pdfRoot.setAttribute('dir', 'rtl');
-      pdfRoot.style.direction = 'rtl';
-      pdfRoot.style.textAlign = 'right';
+      // Respect language-specific direction for export as in preview
+      try {
+        const langNow = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : (pdfRoot.getAttribute('data-lang') || 'ar');
+        const isChecklist = (activeQuoteState?.context === 'reservationChecklist');
+        const rootDir = (isChecklist && langNow === 'en') ? 'ltr' : 'rtl';
+        pdfRoot.setAttribute('dir', rootDir);
+        pdfRoot.style.direction = rootDir;
+        // Let CSS handle text alignment per language; avoid forcing it here
+        pdfRoot.style.textAlign = '';
+      } catch (_) {
+        /* fallback: do not override direction */
+      }
       pdfRoot.setAttribute('data-theme', 'light');
       pdfRoot.classList.remove('dark', 'dark-mode');
       pdfRoot.style.margin = '0';
