@@ -2,6 +2,17 @@ import { registerTranslations } from '../language.js';
 
 registerTranslations({
   ar: {
+    // Page/head and navigation ARIA labels
+    'dashboard.pageTitle': 'لوحة التحكم - نظام التأجير',
+    'dashboard.nav.sidebar': 'التنقل الجانبي',
+    'dashboard.nav.sections': 'التنقل بين أقسام لوحة التحكم',
+    'dashboard.nav.openMenu': 'فتح القائمة',
+    'dashboard.nav.closeMenu': 'إغلاق القائمة',
+    'dashboard.tabScroll.prev': 'انتقال إلى اليسار',
+    'dashboard.tabScroll.next': 'انتقال إلى اليمين',
+    'equipment.backToTop.ariaLabel': 'العودة إلى أعلى الصفحة',
+    'equipment.backToTop.title': '⬆️ للأعلى',
+    'calendar.legend.ariaLabel': 'خيارات حالة الحجز',
     'quote.companyName': 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
     'reservations.quote.labels.cr': 'السجل التجاري',
     // Checklist controls (sidebar)
@@ -1014,6 +1025,17 @@ registerTranslations({
     'positions.defaults.cameraAssistant': 'مساعد كاميرا'
   },
   en: {
+    // Page/head and navigation ARIA labels
+    'dashboard.pageTitle': 'Dashboard - Rental System',
+    'dashboard.nav.sidebar': 'Side navigation',
+    'dashboard.nav.sections': 'Navigate dashboard sections',
+    'dashboard.nav.openMenu': 'Open menu',
+    'dashboard.nav.closeMenu': 'Close menu',
+    'dashboard.tabScroll.prev': 'Scroll left',
+    'dashboard.tabScroll.next': 'Scroll right',
+    'equipment.backToTop.ariaLabel': 'Back to top',
+    'equipment.backToTop.title': '⬆️ Back to top',
+    'calendar.legend.ariaLabel': 'Reservation status legend',
     'quote.companyName': 'Food Art for Advertising and Publicity',
     'reservations.quote.labels.cr': 'Commercial Registration',
     // Checklist controls (sidebar)
@@ -2022,6 +2044,16 @@ registerTranslations({
     'positions.defaults.dop': 'Director of Photography',
     'positions.defaults.lightingAssistant': 'Lighting assistant',
     'positions.defaults.cameraAssistant': 'Camera assistant'
+  }
+});
+
+// Customers quick-edit modal (title only; fields reuse standard placeholders)
+registerTranslations({
+  ar: {
+    'customers.quickEdit.title': '✏️ تعديل العميل',
+  },
+  en: {
+    'customers.quickEdit.title': '✏️ Edit Customer',
   }
 });
 
