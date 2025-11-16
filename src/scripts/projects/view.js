@@ -673,15 +673,22 @@ function renderFocusCard(project, category) {
     { icon: '💵', label: t('projectCards.stats.reservationValue', 'إجمالي الحجوزات'), value: formatCurrency(reservationsTotal) }
   ].map(({ icon, label, value }) => buildRow(icon, label, value)).join('');
 
-  const confirmationControl = statusKey === 'cancelled'
-    ? `<span class="reservation-chip status-cancelled project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.cancelled', 'مشروع ملغي', 'Cancelled project'))}</span>`
-    : (isConfirmed
-      ? `<span class="reservation-chip status-confirmed project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.confirmed', '✅ مشروع مؤكد'))}</span>`
-      : `<button class="btn btn-sm btn-success project-focus-card__confirm-btn" data-action="confirm-project" data-id="${projectIdAttr}">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`);
+  let confirmationControl = '';
+  if (statusKey === 'cancelled') {
+    confirmationControl = `<span class="reservation-chip status-cancelled project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.cancelled', 'مشروع ملغي', 'Cancelled project'))}</span>`;
+  } else if (!isConfirmed) {
+    confirmationControl = `<button class=\"btn btn-sm btn-success project-focus-card__confirm-btn\" data-action=\"confirm-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
+  } else if (statusKey !== 'completed') {
+    // After confirming, show a Close Project button until it is closed
+    confirmationControl = `<button class=\"btn btn-sm btn-warning project-focus-card__confirm-btn\" data-action=\"close-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.actions.close', '🔒 إغلاق المشروع'))}</button>`;
+  } else {
+    // Closed: show an indicator
+    confirmationControl = `<span class=\"reservation-chip status-completed project-focus-card__confirm-indicator\">${escapeHtml(t('projects.status.completed', 'مكتمل'))}</span>`;
+  }
 
   return `
     <div class="project-card-grid__item">
-      <article class="project-focus-card ${cardStateClasses.filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+      <article class="project-focus-card ${[...cardStateClasses, (statusKey === 'completed' ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
           ${projectCodeBadge}

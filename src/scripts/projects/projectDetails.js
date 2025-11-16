@@ -632,6 +632,53 @@ export function bindFocusCards({ onOpenProject }) {
         confirmProject(id);
         return;
       }
+      if (action === 'close-project') {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          // Open close modal and bind one-off submit for card context
+          const modal = document.getElementById('closeProjectModal');
+          const notesArea = document.getElementById('close-project-notes');
+          const submit = document.getElementById('close-project-submit');
+          if (notesArea) notesArea.value = '';
+          if (submit && submit.__tmpCloseProjectListener) {
+            submit.removeEventListener('click', submit.__tmpCloseProjectListener);
+            submit.__tmpCloseProjectListener = null;
+          }
+          if (submit) {
+            const handler = async () => {
+              const note = notesArea?.value || '';
+              try {
+                const updated = await closeProjectApi(id, note);
+                await updateLinkedReservationsClosed(updated?.projectId ?? updated?.id ?? id);
+                state.projects = getProjectsState();
+                state.reservations = getReservationsState();
+                renderProjects();
+                renderFocusCards();
+                updateSummary();
+                showToast(t('projects.toast.closed', '✅ تم إغلاق المشروع'));
+              } catch (e) {
+                console.error('❌ [projects] close-project (card) failed', e);
+                showToast(t('projects.toast.closeFailed', 'تعذر إغلاق المشروع'), 'error');
+              } finally {
+                try {
+                  const inst = (window.bootstrap?.Modal || bootstrap?.Modal)?.getInstance?.(modal) || (window.bootstrap?.Modal || bootstrap?.Modal)?.getOrCreateInstance?.(modal);
+                  inst?.hide?.();
+                } catch (_) {}
+              }
+            };
+            submit.__tmpCloseProjectListener = handler;
+            submit.addEventListener('click', handler, { once: true });
+          }
+          if (modal && (window.bootstrap?.Modal || (typeof bootstrap !== 'undefined' && bootstrap?.Modal))) {
+            const inst = (window.bootstrap?.Modal || bootstrap.Modal).getOrCreateInstance(modal);
+            inst.show();
+          }
+        } catch (e) {
+          console.warn('⚠️ [projects] unable to open close modal from card', e);
+        }
+        return;
+      }
       if (action === 'view') {
         onOpenProject?.(id);
       } else if (action === 'highlight') {
