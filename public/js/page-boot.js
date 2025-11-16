@@ -177,10 +177,8 @@ function initializeSidebarFallback() {
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
 function refreshSidebarCountersFallback() {
-  // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
   const body = document.body || document.documentElement;
   const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
-  if (isDetailPage) return;
 
   const ids = {
     projects: 'sidebar-stat-projects',
@@ -189,6 +187,18 @@ function refreshSidebarCountersFallback() {
     technicians: 'sidebar-stat-technicians'
   };
   ensureSidebarStructure();
+
+  if (isDetailPage) {
+    const currentValues = Object.values(ids).map((id) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const txt = (el.textContent || '').trim();
+      return txt === '' ? null : txt;
+    });
+    const hasNonZero = currentValues.some((v) => v && v !== '0' && v !== '٠' && v !== '۰');
+    // إذا كانت العدّادات المفلترة موجودة (غير صفرية) لا نكتب فوقها
+    if (hasNonZero) return;
+  }
 
   const format = (n) => {
     try {
