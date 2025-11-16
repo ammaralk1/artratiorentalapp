@@ -101,17 +101,18 @@
     } catch (_) {}
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      // Give modules a moment; then force visibility
-      setTimeout(removeLoadingSafely, 1500);
-      try { initializeSidebarFallback(); } catch (_) {}
-      try { refreshSidebarCountersFallback(); } catch (_) {}
-    }, { once: true });
-  } else {
+  const onReady = () => {
+    // Give modules a moment; then force visibility
     setTimeout(removeLoadingSafely, 1500);
+    try { ensureSidebarStructure(); } catch (_) {}
     try { initializeSidebarFallback(); } catch (_) {}
     try { refreshSidebarCountersFallback(); } catch (_) {}
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady, { once: true });
+  } else {
+    onReady();
   }
 
   // Configure API base fallback early (before modules load)
@@ -133,7 +134,7 @@
 
 // Minimal sidebar functionality for legacy pages (Arabic/English)
 function initializeSidebarFallback() {
-  const sidebar = document.getElementById('dashboard-sidebar');
+  const sidebar = ensureSidebarStructure();
   const backdrop = document.getElementById('sidebar-backdrop');
   const openBtn  = document.getElementById('sidebar-open');
   const closeBtn = document.getElementById('sidebar-close');
@@ -182,7 +183,9 @@ function refreshSidebarCountersFallback() {
     technicians: 'sidebar-stat-technicians'
   };
   const exists = Object.values(ids).some((id) => document.getElementById(id));
-  if (!exists) return; // nothing to hydrate
+  if (!exists) {
+    ensureSidebarStructure();
+  }
 
   const format = (n) => {
     try {
@@ -249,4 +252,99 @@ function refreshSidebarCountersFallback() {
     .then((r) => r.ok ? r.json() : Promise.reject(new Error('summary failed')))
     .then((json) => apply(json?.data || null))
     .catch(() => { /* silent fallback */ });
+}
+
+// Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
+function ensureSidebarStructure() {
+  // Backdrop
+  if (!document.getElementById('sidebar-backdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'sidebar-backdrop';
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+    (document.body || document.documentElement).prepend(backdrop);
+  }
+
+  // Sidebar shell
+  let sidebar = document.getElementById('dashboard-sidebar');
+  if (!sidebar) {
+    sidebar = document.createElement('aside');
+    sidebar.id = 'dashboard-sidebar';
+    sidebar.className = 'sidebar-shell sidebar-drawer open';
+    sidebar.setAttribute('aria-label', 'التنقل الجانبي');
+    sidebar.setAttribute('aria-hidden', 'false');
+    (document.body || document.documentElement).prepend(sidebar);
+  }
+
+  // Brand header (only if missing)
+  if (!sidebar.querySelector('.sidebar-brand')) {
+    const brand = document.createElement('div');
+    brand.className = 'flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand';
+    brand.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="sidebar-brand-logo">
+          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+        </div>
+        <div class="text-start sidebar-brand-text">
+          <p class="text-xs text-base-content/60">Art Ratio</p>
+          <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
+        </div>
+      </div>
+    `;
+    sidebar.prepend(brand);
+  }
+
+  // Sidebar menu container
+  let menu = sidebar.querySelector('.sidebar-menu');
+  if (!menu) {
+    menu = document.createElement('nav');
+    menu.className = 'sidebar-menu mt-6 space-y-6';
+    sidebar.appendChild(menu);
+  }
+
+  // Stats panel
+  let statsPanel = sidebar.querySelector('.sidebar-panel--stats');
+  if (!statsPanel) {
+    statsPanel = document.createElement('div');
+    statsPanel.className = 'sidebar-panel sidebar-panel--stats';
+    statsPanel.innerHTML = `
+      <h3 class="sidebar-heading">ملخص اليوم</h3>
+      <div class="sidebar-stats" role="list"></div>
+    `;
+    menu.prepend(statsPanel);
+  }
+
+  // Tabs panel
+  let tabsPanel = sidebar.querySelector('.sidebar-panel--tabs');
+  if (!tabsPanel) {
+    tabsPanel = document.createElement('div');
+    tabsPanel.className = 'sidebar-panel sidebar-panel--tabs';
+    tabsPanel.innerHTML = `
+      <p class="sidebar-heading mb-2">التبويبات</p>
+      <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical"></div>
+    `;
+    menu.appendChild(tabsPanel);
+    const buttons = tabsPanel.querySelector('.tab-buttons');
+    const links = [
+      { href: 'home.html', label: 'الصفحة الرئيسية' },
+      { href: 'dashboard.html#customers-tab', label: 'العملاء' },
+      { href: 'dashboard.html#equipment-tab', label: 'المعدات' },
+      { href: 'dashboard.html#maintenance-tab', label: 'الصيانة' },
+      { href: 'dashboard.html#technicians-tab', label: 'طاقم العمل' },
+      { href: 'dashboard.html#reservations-tab', label: 'الحجوزات' },
+      { href: 'projects.html', label: 'لوحة المشاريع' }
+    ];
+    if (buttons) {
+      links.forEach((item) => {
+        const a = document.createElement('a');
+        a.className = 'tab-button';
+        a.href = item.href;
+        a.textContent = item.label;
+        a.setAttribute('data-close-sidebar', '');
+        buttons.appendChild(a);
+      });
+    }
+  }
+
+  return sidebar;
 }
