@@ -1044,13 +1044,41 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
     renderDetails();
 
     await ensureTechniciansLoaded();
-    await Promise.all([
+    const [reservationsFetched, projectsFetched] = await Promise.all([
       fetchCustomerReservationsData(mappedCustomer.id),
       fetchCustomerProjectsData(mappedCustomer.id),
     ]);
 
     renderCustomerReservations(mappedCustomer.id);
     renderCustomerProjects(mappedCustomer.id);
+    // عدّادات السايدبار المفلترة مباشرة من البيانات المجلوبة
+    try {
+      const filteredReservations = Array.isArray(reservationsFetched) ? reservationsFetched : (customerReservationsCache || []);
+      const filteredProjects = Array.isArray(projectsFetched) ? projectsFetched : (customerProjectsCache || []);
+      const totalEquipment = filteredReservations.reduce((sum, res) => {
+        if (Array.isArray(res?.items)) return sum + res.items.length;
+        return sum;
+      }, 0);
+      const technicianSet = new Set();
+      filteredReservations.forEach((res) => {
+        if (Array.isArray(res?.technicians)) {
+          res.technicians.forEach((t) => { if (t != null) technicianSet.add(String(t)); });
+        }
+        if (Array.isArray(res?.techniciansDetails)) {
+          res.techniciansDetails.forEach((t) => {
+            const id = t?.id ?? t?.technician_id ?? t?.technicianId;
+            if (id != null) technicianSet.add(String(id));
+          });
+        }
+      });
+      updateSidebarStats({
+        projects: filteredProjects.length,
+        reservations: filteredReservations.length,
+        equipment: totalEquipment,
+        technicians: technicianSet.size,
+      });
+    } catch (_) {}
+
     updateHeroStats();
   } catch (error) {
     isCustomerLoading = false;
