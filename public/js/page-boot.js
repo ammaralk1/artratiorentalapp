@@ -313,6 +313,8 @@ function ensureSidebarStructure() {
 
   if (hasNativeTabs) {
     try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
+    ensureBurgerToggle();
+    return sidebar;
   }
 
   // صفحات التفاصيل (عميل/فني): لا ننشئ سايدبار جديداً ولا نمسّ المحتوى الأصلي.
