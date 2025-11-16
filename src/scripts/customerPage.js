@@ -7,8 +7,8 @@ import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
-import { mapReservationFromApi, refreshReservationsFromApi } from './reservationsService.js';
-import { mapProjectFromApi, refreshProjectsFromApi } from './projectsService.js';
+import { mapReservationFromApi, refreshReservationsFromApi, getReservationsState } from './reservationsService.js';
+import { mapProjectFromApi, refreshProjectsFromApi, getProjectsState } from './projectsService.js';
 import { mapTechnicianFromApi, refreshTechniciansFromApi } from './techniciansService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { formatCurrencyLocalized } from './projectsCommon.js';
@@ -92,6 +92,8 @@ let currentCustomer = null;
 let isCustomerLoading = false;
 let customerLoadError = '';
 let activeCustomerTab = 'reservations';
+let customerReservationsCache = null;
+let customerProjectsCache = null;
 
 function escapeHtml(value = '') {
   const div = document.createElement('div');
@@ -608,8 +610,10 @@ function updateHeroStats() {
     return;
   }
 
-  const snapshot = loadData();
-  const reservations = Array.isArray(snapshot.reservations) ? snapshot.reservations : [];
+  const reservationsSource = Array.isArray(customerReservationsCache)
+    ? customerReservationsCache
+    : getReservationsState();
+  const reservations = Array.isArray(reservationsSource) ? reservationsSource : [];
   const relevantReservations = reservations.filter((reservation) => {
     if (!reservation) return false;
     const idCandidates = [
@@ -636,7 +640,10 @@ function updateHeroStats() {
     .filter((date) => !Number.isNaN(date.getTime()))
     .sort((a, b) => a - b)[0] || null;
 
-  const projects = Array.isArray(snapshot.projects) ? snapshot.projects : [];
+  const projectsSource = Array.isArray(customerProjectsCache)
+    ? customerProjectsCache
+    : getProjectsState();
+  const projects = Array.isArray(projectsSource) ? projectsSource : [];
   const relevantProjects = projects.filter((project) => {
     if (!project) return false;
     const idCandidates = [project.clientId, project.client_id, project.customer_id];
@@ -980,7 +987,7 @@ async function fetchCustomerReservationsData(id) {
       ? response.data.map(mapReservationFromApi)
       : [];
 
-    saveData({ reservations: records });
+    customerReservationsCache = records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer reservations', error);
   }
@@ -998,7 +1005,7 @@ async function fetchCustomerProjectsData(id) {
       ? response.data.map(mapProjectFromApi)
       : [];
 
-    saveData({ projects: records });
+    customerProjectsCache = records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer projects', error);
   }
@@ -1008,6 +1015,9 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
   if (!id) {
     return;
   }
+
+  customerReservationsCache = null;
+  customerProjectsCache = null;
 
   if (showSpinner) {
     isCustomerLoading = true;
