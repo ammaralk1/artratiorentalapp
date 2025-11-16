@@ -192,10 +192,44 @@ function refreshSidebarCountersFallback() {
   };
 
   const apply = (data) => {
-    try { const el = document.getElementById(ids.projects); if (el) el.textContent = format(data?.projects?.total || 0); } catch {}
-    try { const el = document.getElementById(ids.reservations); if (el) el.textContent = format(data?.reservations?.total || 0); } catch {}
-    try { const el = document.getElementById(ids.equipment); if (el) el.textContent = format(data?.equipment?.total || 0); } catch {}
-    try { const el = document.getElementById(ids.technicians); if (el) el.textContent = format(data?.technicians?.total || 0); } catch {}
+    try { const el = ensureStat('projects'); if (el) el.textContent = format(data?.projects?.total || 0); } catch {}
+    try { const el = ensureStat('reservations'); if (el) el.textContent = format(data?.reservations?.total || 0); } catch {}
+    try { const el = ensureStat('equipment'); if (el) el.textContent = format(data?.equipment?.total || 0); } catch {}
+    try { const el = ensureStat('technicians'); if (el) el.textContent = format(data?.technicians?.total || 0); } catch {}
+  };
+
+  const ensureStat = (key) => {
+    const id = ids[key]; if (!id) return null;
+    let el = document.getElementById(id);
+    if (el) return el;
+    // If stats section is missing (legacy Arabic pages), create a minimal one.
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const menu = sidebar?.querySelector('.sidebar-menu') || sidebar;
+    if (!menu || !sidebar) return null;
+
+    let panel = sidebar.querySelector('.sidebar-panel--stats');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'sidebar-panel sidebar-panel--stats mt-6';
+      panel.innerHTML = '<h3 class="sidebar-heading">ملخص اليوم</h3><div class="sidebar-stats" role="list"></div>';
+      menu.prepend(panel);
+    }
+    const list = panel.querySelector('.sidebar-stats');
+    if (!list) return null;
+
+    const row = document.createElement('div');
+    row.className = 'sidebar-stats-row';
+    row.setAttribute('role', 'listitem');
+    const labelMap = {
+      projects: 'المشاريع',
+      reservations: 'الحجوزات',
+      equipment: 'المعدات',
+      technicians: 'طاقم العمل'
+    };
+    row.innerHTML = `<span>${labelMap[key] || key}</span><span id="${id}" class="badge-soft">0</span>`;
+    list.appendChild(row);
+    el = row.querySelector(`#${id}`);
+    return el;
   };
 
   // If modules later update, they will overwrite these values.
