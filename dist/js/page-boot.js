@@ -295,6 +295,15 @@ function refreshSidebarCountersFallback() {
 
 // Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
 function ensureSidebarStructure() {
+  const path = (window.location?.pathname || '').toLowerCase();
+  const isLikelyDetailPath = path.includes('customer') || path.includes('technician');
+  if (isLikelyDetailPath && document.readyState === 'loading') {
+    // انتظر تَشكُّل الـ DOM حتى لا ننشئ سايدبار بديل فوق السايدبار الأصلي
+    try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
+    document.addEventListener('DOMContentLoaded', () => ensureSidebarStructure(), { once: true });
+    return null;
+  }
+
   // Backdrop
   if (!document.getElementById('sidebar-backdrop')) {
     const backdrop = document.createElement('div');
@@ -306,7 +315,6 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
-  const path = (window.location?.pathname || '').toLowerCase();
   const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
   const isDetailPage = (
     body?.classList?.contains('technician-page')
