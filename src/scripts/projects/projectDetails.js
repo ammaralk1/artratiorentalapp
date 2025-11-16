@@ -138,7 +138,12 @@ export function openProjectDetails(projectId) {
     } catch (_) { return false; }
   })();
   const statusKey = (hasConflict && (status === 'upcoming' || status === 'ongoing')) ? 'conflict' : status;
-  const statusTextMap = { upcoming: 'قادم', ongoing: 'قيد التنفيذ', completed: 'مكتمل', conflict: 'تعارض' };
+  const statusTextMap = {
+    upcoming: t('projects.status.upcoming', 'قادم'),
+    ongoing: t('projects.status.ongoing', 'قيد التنفيذ'),
+    completed: t('projects.status.completed', 'مكتمل'),
+    conflict: t('projects.status.conflict', 'تعارض')
+  };
   const statusDisplay = statusTextMap[statusKey] || statusLabel;
   const statusChipClassMap = {
     upcoming: 'timeline-status-badge timeline-status-badge--upcoming',
@@ -2095,7 +2100,7 @@ function buildProjectEditExpensesMarkup(expenses = []) {
           <input type="text" class="form-control form-control-sm" value="${escapeHtml(String(saleVal))}" data-expense-id="${id}" data-expense-field="salePrice" inputmode="decimal" placeholder="0">
         </td>
         <td>
-          <input type="text" class="form-control form-control-sm" value="${note}" data-expense-id="${id}" data-expense-field="note" placeholder="${escapeHtml(t('projects.form.labels.expenseNote', 'ملاحظات'))}">
+          <input type="text" class="form-control form-control-sm" value="${note}" data-expense-id="${id}" data-expense-field="note" placeholder="${escapeHtml(t('projects.form.placeholders.expenseNote', 'تفاصيل إضافية'))}">
         </td>
         <td>
           <button type="button" class="btn btn-sm btn-link text-danger" data-action="remove-expense" data-id="${id}" aria-label="${removeLabel}">✖</button>

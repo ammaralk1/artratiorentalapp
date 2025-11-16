@@ -43,6 +43,7 @@ registerTranslations({
     'projects.expenses.table.headers.sale': 'سعر البيع (SR)',
     'projects.expenses.table.headers.note': 'ملاحظات',
     'projects.expenses.table.headers.actions': 'الإجراءات',
+    'projects.expenses.table.totalSale': 'مجموع سعر البيع',
 
     'projects.form.placeholders.title': 'مثال: تصوير منتج جديد',
     'projects.form.placeholders.description': 'ملخص عن المشروع والمتطلبات',
@@ -362,6 +363,10 @@ registerTranslations({
     'projects.details.type': 'نوع المشروع',
     'projects.details.company': 'شركة العميل',
     'projects.details.client': 'العميل',
+    'projects.details.labels.clientPhone': 'رقم العميل',
+    'projects.details.labels.clientEmail': 'البريد الإلكتروني',
+    'projects.details.client.noPhone': 'لا يوجد رقم متاح',
+    'projects.details.client.noEmail': 'لا يوجد بريد متاح',
     'projects.details.crew': 'الطاقم الفني ({count})',
     'projects.details.equipment': 'المعدات ({count})',
     'projects.details.expenses': 'خدمات إنتاجية ({amount})',
@@ -378,6 +383,9 @@ registerTranslations({
     'projects.details.summary.combinedTax': 'إجمالي الضريبة الكلية (15٪)',
     'projects.details.summary.reservationsCount': '{count} حجوزات مرتبطة',
     'projects.details.summary.overallTotal': 'الإجمالي الكلي',
+    // Additional labels used in details modals
+    'projects.details.expensesTotal': 'تكلفة الخدمات الإنتاجية',
+    'projects.details.reservationsTotal': 'إجمالي الحجوزات',
     // Extended financial summary rows
     'projects.details.summary.equipmentTotal': 'إجمالي المعدات',
     'projects.details.summary.crewTotal': 'إجمالي الفريق',
@@ -393,6 +401,13 @@ registerTranslations({
     'projects.details.summary.finalTotal': 'المجموع النهائي',
     'projects.details.labels.start': 'تاريخ البداية',
     'projects.details.labels.end': 'تاريخ النهاية',
+    // Close project modal (HTML wired)
+    'projects.closeModal.title': '🔒 إغلاق المشروع',
+    'projects.closeModal.subtitle': 'يرجى كتابة ملاحظة الإغلاق (اختياري).',
+    'projects.closeModal.noteLabel': '📝 ملاحظات الإغلاق',
+    'projects.closeModal.notePlaceholder': 'مثال: تم إنهاء المشروع بنجاح...',
+    'projects.closeModal.cancel': 'إلغاء',
+    'projects.closeModal.confirm': '🔒 إغلاق المشروع',
     'projects.details.labels.days': 'عدد الأيام',
     'projects.details.labels.crewCount': 'عدد الطاقم',
     'projects.details.labels.equipmentCount': 'عدد المعدات',
@@ -473,6 +488,7 @@ registerTranslations({
     'projects.expenses.table.headers.sale': 'Sale price (SR)',
     'projects.expenses.table.headers.note': 'Notes',
     'projects.expenses.table.headers.actions': 'Actions',
+    'projects.expenses.table.totalSale': 'Sales total',
 
     'projects.form.placeholders.title': 'Example: New product shoot',
     'projects.form.placeholders.description': 'Project brief and requirements',
@@ -623,6 +639,10 @@ registerTranslations({
 
     'projects.modal.title': 'Project Details',
     'projects.details.overview.heading': 'Project Information',
+    'projects.details.labels.clientPhone': 'Client phone',
+    'projects.details.labels.clientEmail': 'Email',
+    'projects.details.client.noPhone': 'No phone available',
+    'projects.details.client.noEmail': 'No email available',
 
     'projects.reports.pageTitle': 'Project Reports - Rental System',
     'projects.reports.title': 'Project Reporting Dashboard',
@@ -815,6 +835,9 @@ registerTranslations({
     'projects.details.summary.combinedTax': 'Total VAT on combined amount (15%)',
     'projects.details.summary.reservationsCount': '{count} linked reservations',
     'projects.details.summary.overallTotal': 'Overall total',
+    // Additional labels used in details modals
+    'projects.details.expensesTotal': 'Production services cost',
+    'projects.details.reservationsTotal': 'Total reservations',
     // Extended financial summary rows
     'projects.details.summary.equipmentTotal': 'Equipment total',
     'projects.details.summary.crewTotal': 'Crew total',
@@ -830,6 +853,13 @@ registerTranslations({
     'projects.details.summary.finalTotal': 'Final total',
     'projects.details.labels.start': 'Start date',
     'projects.details.labels.end': 'End date',
+    // Close project modal (HTML wired)
+    'projects.closeModal.title': '🔒 Close Project',
+    'projects.closeModal.subtitle': 'Please add a closing note (optional).',
+    'projects.closeModal.noteLabel': '📝 Closing notes',
+    'projects.closeModal.notePlaceholder': 'e.g., Project successfully completed...',
+    'projects.closeModal.cancel': 'Cancel',
+    'projects.closeModal.confirm': '🔒 Close Project',
     'projects.details.labels.days': 'Days',
     'projects.details.labels.crewCount': 'Crew count',
     'projects.details.labels.equipmentCount': 'Equipment quantity',
