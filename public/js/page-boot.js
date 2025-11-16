@@ -302,67 +302,6 @@ function ensureSidebarStructure() {
     (document.body || document.documentElement).prepend(sidebar);
   }
 
-  // صفحات التفاصيل (عميل/فني) لديها سايدبار مخصّص في الـ HTML؛ لا نعيد البناء حتى لا نخسر التبويبات أو التنسيق.
-  if (isDetailPage) {
-    ensureBurgerToggle();
-    return sidebar;
-  }
-
-  // Rebuild فقط إذا لم يكن هناك محتوى مسبقاً أو ليست صفحة تفاصيل (حتى لا نمسح العدادات المفلترة)
-  const hasExistingStats = sidebar.querySelector('.sidebar-panel--stats .sidebar-stats');
-  if (isDetailPage && hasExistingStats) {
-    return sidebar;
-  }
-  sidebar.innerHTML = '';
-
-  // Brand header
-  const brand = document.createElement('div');
-  brand.className = 'flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand';
-  brand.innerHTML = `
-    <div class="flex items-center gap-3">
-      <div class="sidebar-brand-logo">
-        <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-      </div>
-      <div class="text-start sidebar-brand-text">
-        <p class="text-xs text-base-content/60">Art Ratio</p>
-        <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
-      </div>
-    </div>
-    <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-        <path d="M18 6l-12 12"></path>
-        <path d="M6 6l12 12"></path>
-      </svg>
-    </button>
-  `;
-  sidebar.appendChild(brand);
-
-  // Sidebar menu container
-  const menu = document.createElement('nav');
-  menu.className = 'sidebar-menu mt-6 space-y-6';
-  sidebar.appendChild(menu);
-
-  ensureBurgerToggle();
-
-  // Stats panel
-  const statsPanel = document.createElement('div');
-  statsPanel.className = 'sidebar-panel sidebar-panel--stats';
-  statsPanel.innerHTML = `
-    <h3 class="sidebar-heading">ملخص اليوم</h3>
-    <div class="sidebar-stats" role="list"></div>
-  `;
-  menu.appendChild(statsPanel);
-
-  // Tabs panel
-  const tabsPanel = document.createElement('div');
-  tabsPanel.className = 'sidebar-panel sidebar-panel--tabs';
-  tabsPanel.innerHTML = `
-    <p class="sidebar-heading mb-2">التبويبات</p>
-    <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical"></div>
-  `;
-  menu.appendChild(tabsPanel);
-  const buttons = tabsPanel.querySelector('.tab-buttons');
   const links = [
     { href: 'home.html', label: 'الصفحة الرئيسية' },
     { href: 'dashboard.html#customers-tab', label: 'العملاء' },
@@ -372,17 +311,119 @@ function ensureSidebarStructure() {
     { href: 'dashboard.html#reservations-tab', label: 'الحجوزات' },
     { href: 'projects.html', label: 'لوحة المشاريع' }
   ];
-  if (buttons) {
-    links.forEach((item) => {
-      const a = document.createElement('a');
-      a.className = 'tab-button';
-      a.href = item.href;
-      a.textContent = item.label;
-      a.setAttribute('data-close-sidebar', '');
-      buttons.appendChild(a);
-    });
+
+  const ensureBrand = () => {
+    let brand = sidebar.querySelector('.sidebar-brand');
+    if (brand) return brand;
+    brand = document.createElement('div');
+    brand.className = 'flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand';
+    brand.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="sidebar-brand-logo">
+          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+        </div>
+        <div class="text-start sidebar-brand-text">
+          <p class="text-xs text-base-content/60">Art Ratio</p>
+          <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
+        </div>
+      </div>
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M18 6l-12 12"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+      </button>
+    `;
+    sidebar.prepend(brand);
+    return brand;
+  };
+
+  const ensureMenu = () => {
+    let menu = sidebar.querySelector('.sidebar-menu');
+    if (!menu) {
+      menu = document.createElement('nav');
+      sidebar.appendChild(menu);
+    }
+    menu.classList.add('sidebar-menu', 'mt-6');
+    if (!menu.classList.contains('space-y-6')) {
+      menu.classList.add('space-y-6');
+    }
+    return menu;
+  };
+
+  const ensureStatsPanel = (menu) => {
+    let panel = menu.querySelector('.sidebar-panel--stats');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'sidebar-panel sidebar-panel--stats';
+      panel.innerHTML = `
+        <h3 class="sidebar-heading">ملخص اليوم</h3>
+        <div class="sidebar-stats" role="list"></div>
+      `;
+      menu.prepend(panel);
+    }
+    let list = panel.querySelector('.sidebar-stats');
+    if (!list) {
+      list = document.createElement('div');
+      list.className = 'sidebar-stats';
+      list.setAttribute('role', 'list');
+      panel.appendChild(list);
+    }
+    return panel;
+  };
+
+  const ensureTabsPanel = (menu) => {
+    let panel = menu.querySelector('.sidebar-panel--tabs');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'sidebar-panel sidebar-panel--tabs';
+      panel.innerHTML = `
+        <p class="sidebar-heading mb-2">التبويبات</p>
+        <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical"></div>
+      `;
+      menu.appendChild(panel);
+    }
+    let buttons = panel.querySelector('.tab-buttons');
+    if (!buttons) {
+      buttons = document.createElement('div');
+      buttons.className = 'tab-buttons tab-buttons-vertical';
+      buttons.setAttribute('role', 'tablist');
+      buttons.setAttribute('aria-orientation', 'vertical');
+      panel.appendChild(buttons);
+    }
+    if (!buttons.querySelector('.tab-button')) {
+      links.forEach((item) => {
+        const a = document.createElement('a');
+        a.className = 'tab-button';
+        a.href = item.href;
+        a.textContent = item.label;
+        a.setAttribute('data-close-sidebar', '');
+        buttons.appendChild(a);
+      });
+    }
+    return panel;
+  };
+
+  const buildFullSidebar = (resetContent = false) => {
+    if (resetContent) {
+      sidebar.innerHTML = '';
+    }
+    ensureBrand();
+    const menu = ensureMenu();
+    ensureStatsPanel(menu);
+    ensureTabsPanel(menu);
+  };
+
+  // صفحات التفاصيل تحتاج تحسين بنيوي فقط إذا كان هناك نقص (علامة أو تبويبات)
+  if (isDetailPage) {
+    buildFullSidebar(false);
+    ensureBurgerToggle();
+    return sidebar;
   }
 
+  // الصفحات الأخرى: أعد بناء الهيكل بالكامل لضمان التوافق
+  buildFullSidebar(true);
   ensureBurgerToggle();
 
   return sidebar;
