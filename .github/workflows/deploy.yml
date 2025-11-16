@@ -24,8 +24,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Install rclone
-        run: curl -fsSL https://rclone.org/install.sh | sudo bash
+      - name: Setup rclone
+        uses: rclone/rclone-action@v2
 
       - name: Sync project to FTP server
         env:
@@ -41,8 +41,8 @@ jobs:
             port 21 \
             tls false
           rclone sync ./ site:/ \
-            --transfers 6 \
-            --checkers 8 \
+            --transfers 8 \
+            --checkers 10 \
             --ftp-concurrency 4 \
             --exclude "/.git/**" \
             --exclude "/.github/**" \
