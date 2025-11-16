@@ -5098,6 +5098,58 @@
     color: #f8fafc !important;
   }
 
+  /* Quick action bar (above details) */
+  .primary-nav-quick .tab-buttons {
+    width: fit-content;
+    margin: 0 auto;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    border: 1px solid rgba(76, 110, 245, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 16px 34px rgba(12, 20, 45, 0.38);
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    gap: clamp(0.6rem, 2vw, 0.9rem);
+  }
+
+  .primary-nav-quick .tab-button {
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.88), rgba(99, 143, 255, 0.9));
+    border: 1px solid rgba(76, 110, 245, 0.46);
+    color: #f8fafc;
+    padding-inline: clamp(1rem, 3vw, 1.35rem);
+    min-height: 2.6rem;
+    font-weight: 700;
+    box-shadow: 0 16px 30px rgba(76, 110, 245, 0.28);
+    text-decoration: none;
+  }
+
+  .primary-nav-quick .tab-button:hover,
+  .primary-nav-quick .tab-button:focus-visible {
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.92), rgba(99, 143, 255, 0.96));
+    box-shadow: 0 18px 36px rgba(76, 110, 245, 0.32);
+    color: #fff;
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  :where(html.dark, body.dark) .primary-nav-quick .tab-buttons {
+    background: linear-gradient(135deg, rgba(17, 26, 46, 0.82), rgba(14, 22, 38, 0.78));
+    border-color: rgba(122, 163, 255, 0.32);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 18px 40px rgba(5, 12, 28, 0.6);
+  }
+
+  :where(html.dark, body.dark) .primary-nav-quick .tab-button {
+    background: linear-gradient(135deg, rgba(63, 93, 245, 0.9), rgba(36, 56, 97, 0.96));
+    border-color: rgba(148, 197, 255, 0.38);
+    box-shadow: 0 18px 42px rgba(10, 24, 54, 0.58);
+    color: #f8fafc;
+  }
+
+  :where(html.dark, body.dark) .primary-nav-quick .tab-button:hover,
+  :where(html.dark, body.dark) .primary-nav-quick .tab-button:focus-visible {
+    background: linear-gradient(135deg, rgba(76, 110, 245, 0.95), rgba(99, 143, 255, 0.98));
+    box-shadow: 0 20px 46px rgba(10, 24, 54, 0.64);
+  }
+
   .customer-primary-nav .tab-button,
   .customer-page .customer-primary-nav .tab-button {
     display: inline-flex;
