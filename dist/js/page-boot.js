@@ -299,6 +299,16 @@ function ensureSidebarStructure() {
     || hasDetailMarker
   );
   let sidebar = document.getElementById('dashboard-sidebar');
+
+  // صفحات التفاصيل (عميل/فني): لا ننشئ سايدبار جديداً ولا نمسّ المحتوى الأصلي.
+  if (isDetailPage) {
+    if (sidebar) {
+      sidebar.dataset.preserveNative = '1';
+    }
+    ensureBurgerToggle();
+    return sidebar || null;
+  }
+
   if (!sidebar) {
     sidebar = document.createElement('aside');
     sidebar.id = 'dashboard-sidebar';
@@ -306,13 +316,6 @@ function ensureSidebarStructure() {
     sidebar.setAttribute('aria-label', 'التنقل الجانبي');
     sidebar.setAttribute('aria-hidden', 'true');
     (document.body || document.documentElement).prepend(sidebar);
-  }
-
-  // صفحات التفاصيل (عميل/فني) لديها سايدبار مخصّص في الـ HTML؛ لا نعيد البناء حتى لا نخسر التبويبات أو التنسيق.
-  if (isDetailPage) {
-    sidebar.dataset.preserveNative = '1';
-    ensureBurgerToggle();
-    return sidebar;
   }
 
   // Rebuild فقط إذا لم يكن هناك محتوى مسبقاً أو ليست صفحة تفاصيل (حتى لا نمسح العدادات المفلترة)
