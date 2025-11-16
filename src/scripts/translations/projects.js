@@ -318,7 +318,7 @@ registerTranslations({
 
     'projects.status.upcoming': 'قادم',
     'projects.status.ongoing': 'قيد التنفيذ',
-    'projects.status.completed': 'مغلق',
+    'projects.status.completed': 'مكتمل',
     'projects.status.conflict': 'تعارض',
     'projects.status.cancelled': 'ملغي',
     'projects.form.labels.cancelled': 'إلغاء المشروع',
@@ -782,7 +782,7 @@ registerTranslations({
 
     'projects.status.upcoming': 'Upcoming',
     'projects.status.ongoing': 'In Progress',
-    'projects.status.completed': 'Closed',
+    'projects.status.completed': 'Completed',
     'projects.status.conflict': 'Conflict',
     'projects.status.cancelled': 'Cancelled',
     'projects.form.labels.cancelled': 'Cancel project',
