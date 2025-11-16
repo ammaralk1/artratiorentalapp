@@ -622,7 +622,7 @@ function buildProjectViewExpensesMarkup(expenses = []) {
 export function bindFocusCards({ onOpenProject }) {
   if (!dom.focusCards || dom.focusCards.dataset.listenerAttached === 'true') return;
 
-  dom.focusCards.addEventListener('click', (event) => {
+  dom.focusCards.addEventListener('click', async (event) => {
     const actionButton = event.target.closest('[data-action]');
     if (actionButton) {
       const { action, id } = actionButton.dataset;
