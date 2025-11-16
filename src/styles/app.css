@@ -4345,6 +4345,34 @@
     @apply block;
   }
 
+  /* Desktop: keep sidebar visible and offset page content */
+  @screen lg {
+    /* Hide the hamburger on large screens */
+    .mobile-sidebar-toggle {
+      display: none;
+    }
+
+    /* Ensure the drawer is visible by default on desktop */
+    .sidebar-drawer {
+      /* Cancel the translate used to hide the drawer on mobile */
+      @apply translate-x-0;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    /* Reserve space for the fixed sidebar so content doesn't sit underneath */
+    .page-grid {
+      /* match .sidebar-drawer width at lg (20rem) */
+      margin-inline-start: 20rem;
+    }
+
+    /* Backdrop is only for mobile overlay */
+    .sidebar-backdrop {
+      display: none !important;
+    }
+  }
+
   .language-toggle-btn,
   .theme-toggle-btn {
     @apply btn btn-xs sm:btn-sm md:btn-md font-semibold;
