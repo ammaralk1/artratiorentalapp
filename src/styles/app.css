@@ -791,7 +791,7 @@
   }
 
   .primary-actions-card {
-    @apply mx-auto max-w-3xl text-center;
+    @apply mx-auto max-w-3xl text-center mt-4;
   }
 
   .primary-actions-buttons {
@@ -821,6 +821,13 @@
 
   :where(html.dark, body.dark) .primary-action-btn:hover {
     box-shadow: 0 26px 52px hsl(var(--p) / 0.45), 0 0 0 1px hsl(var(--p) / 0.32);
+  }
+
+  @media (max-width: 768px) {
+    .primary-actions-card {
+      margin-top: 1.25rem;
+      padding: 1.5rem;
+    }
   }
 
   .box {
