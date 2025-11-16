@@ -190,6 +190,31 @@ function updateSidebarStats(overrides = {}) {
   try { window.__TECHNICIAN_STATS__ = { ...stats }; } catch (_) {}
 }
 
+function resolveTechnicianScopedReservations() {
+  if (!technicianId) return [];
+  const reservations = getReservationsState();
+  const normalizedId = String(technicianId);
+  if (!Array.isArray(reservations)) return [];
+  return reservations.filter((reservation) => {
+    if (!reservation) return false;
+    const rawStatus = String(reservation.status || '').toLowerCase();
+    if (rawStatus === 'cancelled' || rawStatus === 'canceled' || rawStatus === 'ملغي' || rawStatus === 'ملغى' || rawStatus === 'ملغية') {
+      return false;
+    }
+    const technicianIds = Array.isArray(reservation.technicians)
+      ? reservation.technicians.map((id) => String(id))
+      : [];
+    return technicianIds.includes(normalizedId);
+  });
+}
+
+function applyTechnicianSidebarStats() {
+  const relevantReservations = resolveTechnicianScopedReservations();
+  const sidebarStats = computeTechnicianSidebarStats(relevantReservations, technicianId ? String(technicianId) : null);
+  updateSidebarStats(sidebarStats);
+  return sidebarStats;
+}
+
 function resolveReservationItemQuantity(item) {
   if (!item || typeof item !== 'object') return 0;
   const candidates = [item.quantity, item.qty, item.count];
@@ -1258,7 +1283,13 @@ syncTechniciansStatuses();
 loadTechnicianDetails();
 
 ['projects:changed', 'reservations:changed', 'equipment:changed', 'technicians:changed'].forEach((eventName) => {
-  document.addEventListener(eventName, () => updateSidebarStats(), { passive: true });
+  document.addEventListener(eventName, () => {
+    if (technicianId) {
+      applyTechnicianSidebarStats();
+    } else {
+      updateSidebarStats();
+    }
+  }, { passive: true });
 });
 
 initDashboardMetrics();

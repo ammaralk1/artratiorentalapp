@@ -47,6 +47,23 @@
       // Use absolute dist path since some hosts don’t expose /css
       link.setAttribute('href', '/dist/css/sidebar.css');
       head.appendChild(link);
+
+      // Inline fallback for critical sidebar/burger styles if the CSS fails to load (MIME/CDN issues)
+      if (!document.getElementById('sidebar-inline-fallback')) {
+        const style = document.createElement('style');
+        style.id = 'sidebar-inline-fallback';
+        style.textContent = `
+          .mobile-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:2.85rem;height:2.85rem;min-height:2.85rem;padding:0;border-radius:.95rem;border:1px solid rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(22,32,54,.95),rgba(16,24,42,.9));color:#f8fafc;box-shadow:0 14px 32px rgba(15,23,42,.28);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;cursor:pointer;position:relative}
+          .mobile-sidebar-toggle__icon{position:relative;display:block;width:1.2rem;height:.85rem}
+          .mobile-sidebar-toggle__line{position:absolute;inset-inline:0;height:1.5px;border-radius:999px;background:rgba(248,250,255,.92);transition:background-color .2s ease}
+          .mobile-sidebar-toggle__line--top{top:0}
+          .mobile-sidebar-toggle__line--middle{top:50%;transform:translateY(-50%)}
+          .mobile-sidebar-toggle__line--bottom{bottom:0}
+          .sidebar-panel--stats .sidebar-stats{display:flex;flex-direction:column;gap:.75rem}
+          .sidebar-panel--stats .sidebar-stats-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border:1px solid rgba(148,163,184,.35);border-radius:1rem;padding:.75rem 1rem;font-size:.875rem;font-weight:700;color:hsl(var(--bc,220 13% 18%));background:linear-gradient(135deg,rgba(248,250,255,.96),rgba(238,242,255,.9))}
+        `;
+        head.appendChild(style);
+      }
     } catch (_) {
       // ignore
     }
