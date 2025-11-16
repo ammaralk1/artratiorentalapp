@@ -177,22 +177,25 @@ function initializeSidebarFallback() {
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
 function refreshSidebarCountersFallback() {
-  // Skip general fallback on technician/customer detail pages to allow their page scripts
-  // to set filtered stats (per technician/customer) instead of global totals.
-  const body = document.body || document.documentElement;
-  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
-  if (isDetailPage) return;
-
   const ids = {
     projects: 'sidebar-stat-projects',
     reservations: 'sidebar-stat-reservations',
     equipment: 'sidebar-stat-equipment',
     technicians: 'sidebar-stat-technicians'
   };
-  const exists = Object.values(ids).some((id) => document.getElementById(id));
-  if (!exists) {
-    ensureSidebarStructure();
-  }
+  ensureSidebarStructure();
+
+  // If detail pages already filled filtered stats, don't overwrite them unless empty/zero.
+  const body = document.body || document.documentElement;
+  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
+  const currentValues = Object.values(ids).map((id) => {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const txt = (el.textContent || '').trim();
+    return txt === '' ? null : txt;
+  });
+  const hasNonZero = currentValues.some((v) => v && v !== '0' && v !== '٠' && v !== '۰');
+  if (isDetailPage && hasNonZero) return;
 
   const format = (n) => {
     try {
