@@ -678,12 +678,12 @@ function renderFocusCard(project, category) {
     confirmationControl = `<span class="reservation-chip status-cancelled project-focus-card__confirm-indicator">${escapeHtml(t('projects.focus.cancelled', 'مشروع ملغي', 'Cancelled project'))}</span>`;
   } else if (!isConfirmed) {
     confirmationControl = `<button class=\"btn btn-sm btn-success project-focus-card__confirm-btn\" data-action=\"confirm-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}</button>`;
-  } else if (statusKey !== 'completed') {
+  } else if (statusKey === 'completed') {
+    // If closed, allow reopening directly from the card
+    confirmationControl = `<button class=\"btn btn-sm btn-outline-secondary project-focus-card__confirm-btn\" data-action=\"reopen-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.actions.reopen', '↩️ إلغاء الإغلاق'))}</button>`;
+  } else {
     // After confirming, show a Close Project button until it is closed
     confirmationControl = `<button class=\"btn btn-sm btn-warning project-focus-card__confirm-btn\" data-action=\"close-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.actions.close', '🔒 إغلاق المشروع'))}</button>`;
-  } else {
-    // Closed: show an indicator
-    confirmationControl = `<span class=\"reservation-chip status-completed project-focus-card__confirm-indicator\">${escapeHtml(t('projects.status.completed', 'مكتمل'))}</span>`;
   }
 
   return `
