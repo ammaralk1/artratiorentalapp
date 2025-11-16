@@ -16,7 +16,6 @@ import { resolveProjectTotals, resolveReservationNetTotal, PROJECT_TAX_RATE } fr
 import { calculatePaymentProgress } from './reservationsSummary.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
-import { apiRequest } from './apiClient.js';
 
 applyStoredTheme();
 checkAuth();
