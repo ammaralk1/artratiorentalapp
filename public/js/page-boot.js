@@ -414,6 +414,19 @@ function ensureSidebarStructure() {
     const menu = ensureMenu();
     ensureStatsPanel(menu);
     ensureTabsPanel(menu);
+    // أزل أي عقد إضافية متبقية (نصوص خام أو عناصر غير متوقعة) حتى لا يظهر ملخص مكرر بلا تنسيق
+    Array.from(sidebar.childNodes).forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (!node.textContent?.trim()) node.remove();
+        return;
+      }
+      const el = node instanceof Element ? node : null;
+      if (!el) return;
+      const isAllowed = el.classList.contains('sidebar-brand')
+        || el.classList.contains('sidebar-panel--stats')
+        || el.matches('nav.sidebar-menu');
+      if (!isAllowed) el.remove();
+    });
   };
 
   // صفحات التفاصيل تحتاج تحسين بنيوي فقط إذا كان هناك نقص (علامة أو تبويبات)
