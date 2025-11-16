@@ -679,24 +679,7 @@ export function bindFocusCards({ onOpenProject }) {
         }
         return;
       }
-      if (action === 'reopen-project') {
-        event.preventDefault();
-        event.stopPropagation();
-        try {
-          const updated = await reopenProjectApi(id);
-          await updateLinkedReservationsReopened(updated?.projectId ?? updated?.id ?? id);
-          state.projects = getProjectsState();
-          state.reservations = getReservationsState();
-          renderProjects();
-          renderFocusCards();
-          updateSummary();
-          showToast(t('projects.toast.reopened', '↩️ تم إلغاء إغلاق المشروع'));
-        } catch (e) {
-          console.error('❌ [projects] reopen-project (card) failed', e);
-          showToast(t('projects.toast.reopenFailed', 'تعذر إلغاء الإغلاق'), 'error');
-        }
-        return;
-      }
+      // no reopen-project on card; reopening is available from edit modal only
       if (action === 'view') {
         onOpenProject?.(id);
       } else if (action === 'highlight') {
