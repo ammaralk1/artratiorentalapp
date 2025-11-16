@@ -387,21 +387,37 @@ export function setupTabs() {
     });
   });
 
+  const resolveHashTarget = () => {
+    try {
+      const rawHash = (typeof window !== 'undefined' && window.location && typeof window.location.hash === 'string')
+        ? window.location.hash.replace(/^#/, '')
+        : '';
+      if (!rawHash) return null;
+      // Support formats:
+      //  - "reservations-tab"
+      //  - "tab=reservations-tab"
+      //  - "reservations-tab?sub=create-tab"
+      let target = null;
+      if (TAB_ID_PATTERN.test(rawHash) && document.getElementById(rawHash)) {
+        target = rawHash;
+      } else {
+        const params = new URLSearchParams(rawHash);
+        const tabFromParam = params.get('tab');
+        if (tabFromParam && TAB_ID_PATTERN.test(tabFromParam) && document.getElementById(tabFromParam)) {
+          target = tabFromParam;
+        }
+      }
+      return target;
+    } catch (_) { return null; }
+  };
+
   const applyInitialTabs = (prefs) => {
     const defaultTabButton = document.querySelector('[data-tab].active');
     const localStoredTab = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
     const fallbackTab = tabButtons[0]?.getAttribute('data-tab') || null;
 
-    // Support deep-linking via URL hash (e.g., dashboard.html#reservations-tab)
-    let hashTarget = null;
-    try {
-      const rawHash = (typeof window !== 'undefined' && window.location && typeof window.location.hash === 'string')
-        ? window.location.hash.replace(/^#/, '')
-        : '';
-      if (rawHash && TAB_ID_PATTERN.test(rawHash) && document.getElementById(rawHash)) {
-        hashTarget = rawHash;
-      }
-    } catch (_) {}
+    // Support deep-linking via URL hash (e.g., #reservations-tab or #tab=reservations-tab)
+    const hashTarget = resolveHashTarget();
 
     const candidateTabs = [
       hashTarget,
@@ -440,6 +456,16 @@ export function setupTabs() {
       document.body?.classList.remove('tabs-loading');
       document.body?.classList.remove('no-js');
       tabsInitialised = true;
+      // React to future hash changes to keep deep-links working when language toggles
+      try {
+        window.addEventListener('hashchange', () => {
+          const next = resolveHashTarget();
+          if (!next || next === currentMainTab || typeof activateTabRef !== 'function') return;
+          if (document.getElementById(next)) {
+            activateTabRef(next, { skipStore: true });
+          }
+        });
+      } catch (_) {}
     }
   };
 
