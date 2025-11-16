@@ -7,13 +7,15 @@ import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
-import { mapReservationFromApi } from './reservationsService.js';
-import { mapProjectFromApi } from './projectsService.js';
-import { mapTechnicianFromApi } from './techniciansService.js';
+import { mapReservationFromApi, refreshReservationsFromApi } from './reservationsService.js';
+import { mapProjectFromApi, refreshProjectsFromApi } from './projectsService.js';
+import { mapTechnicianFromApi, refreshTechniciansFromApi } from './techniciansService.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { formatCurrencyLocalized } from './projectsCommon.js';
 import { resolveProjectTotals, resolveReservationNetTotal, PROJECT_TAX_RATE } from './projectFocusTemplates.js';
 import { calculatePaymentProgress } from './reservationsSummary.js';
+import { refreshEquipmentFromApi } from './equipment.js';
+import { initDashboardMetrics } from './dashboardMetrics.js';
 
 applyStoredTheme();
 checkAuth();
@@ -543,12 +545,30 @@ function escapeAttribute(value = '') {
     .replace(/</g, '&lt;');
 }
 
-function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, technicians = 0 } = {}) {
-  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(projects);
-  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(reservations);
-  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(equipment);
-  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(technicians);
-  try { window.__CUSTOMER_STATS__ = { projects, reservations, equipment, technicians }; } catch (_) {}
+function getGlobalSidebarStats() {
+  const snapshot = loadData();
+  return {
+    projects: Array.isArray(snapshot.projects) ? snapshot.projects.length : 0,
+    reservations: Array.isArray(snapshot.reservations) ? snapshot.reservations.length : 0,
+    equipment: Array.isArray(snapshot.equipment) ? snapshot.equipment.length : 0,
+    technicians: Array.isArray(snapshot.technicians) ? snapshot.technicians.length : 0,
+  };
+}
+
+function updateSidebarStats(overrides = {}) {
+  const base = getGlobalSidebarStats();
+  const stats = {
+    projects: overrides.projects ?? base.projects,
+    reservations: overrides.reservations ?? base.reservations,
+    equipment: overrides.equipment ?? base.equipment,
+    technicians: overrides.technicians ?? base.technicians,
+  };
+
+  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(stats.projects);
+  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(stats.reservations);
+  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(stats.equipment);
+  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(stats.technicians);
+  try { window.__CUSTOMER_STATS__ = { ...stats }; } catch (_) {}
 }
 
 function updateHeroStats() {
@@ -570,7 +590,7 @@ function updateHeroStats() {
     if (heroStatActivityDescEl) heroStatActivityDescEl.textContent = t('customerDetails.stats.activityEmpty', 'لا يوجد نشاط حديث');
     if (heroStatComplianceEl) heroStatComplianceEl.textContent = '0%';
     if (heroStatComplianceDescEl) heroStatComplianceDescEl.textContent = t('customerDetails.stats.complianceEmpty', 'لا توجد بيانات دفع كافية');
-    updateSidebarStats({ projects: 0, reservations: 0, equipment: 0, technicians: 0 });
+    updateSidebarStats();
     return;
   }
 
@@ -1037,6 +1057,20 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
   }
 }
 
+async function hydrateSidebarSummary() {
+  try {
+    await Promise.allSettled([
+      refreshProjectsFromApi(),
+      refreshReservationsFromApi(),
+      refreshTechniciansFromApi(),
+      refreshEquipmentFromApi({ showToastOnError: false }),
+    ]);
+  } catch (_) {
+    // Silent failure: sidebar will stay at fallback values
+  }
+  updateSidebarStats();
+}
+
 function renderDetails() {
   if (!container) {
     return;
@@ -1280,3 +1314,10 @@ document.addEventListener('language:changed', () => {
     updateHeroStats();
   }
 });
+
+['projects:changed', 'reservations:changed', 'equipment:changed', 'technicians:changed'].forEach((eventName) => {
+  document.addEventListener(eventName, () => updateSidebarStats(), { passive: true });
+});
+
+initDashboardMetrics();
+hydrateSidebarSummary();

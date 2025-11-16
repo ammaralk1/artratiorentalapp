@@ -9,9 +9,13 @@ import { checkAuth, logout } from './auth.js';
 import { t } from './language.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { ensureReservationsLoaded } from './reservationsActions.js';
-import { getReservationsState } from './reservationsService.js';
+import { getReservationsState, refreshReservationsFromApi } from './reservationsService.js';
 import { calculateReservationDays } from './reservationsSummary.js';
 import { listTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout } from './technicianPayoutsService.js';
+import { loadData } from './storage.js';
+import { refreshProjectsFromApi } from './projectsService.js';
+import { refreshEquipmentFromApi } from './equipment.js';
+import { initDashboardMetrics } from './dashboardMetrics.js';
 
 applyStoredTheme();
 checkAuth();
@@ -97,11 +101,29 @@ function formatNumberLocalized(value) {
   }
 }
 
-function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, technicians = 0 } = {}) {
-  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(projects);
-  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(reservations);
-  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(equipment);
-  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(technicians);
+function getGlobalSidebarStats() {
+  const snapshot = loadData();
+  return {
+    projects: Array.isArray(snapshot.projects) ? snapshot.projects.length : 0,
+    reservations: Array.isArray(snapshot.reservations) ? snapshot.reservations.length : 0,
+    equipment: Array.isArray(snapshot.equipment) ? snapshot.equipment.length : 0,
+    technicians: Array.isArray(snapshot.technicians) ? snapshot.technicians.length : 0,
+  };
+}
+
+function updateSidebarStats(overrides = {}) {
+  const base = getGlobalSidebarStats();
+  const stats = {
+    projects: overrides.projects ?? base.projects,
+    reservations: overrides.reservations ?? base.reservations,
+    equipment: overrides.equipment ?? base.equipment,
+    technicians: overrides.technicians ?? base.technicians,
+  };
+
+  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(stats.projects);
+  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(stats.reservations);
+  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(stats.equipment);
+  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(stats.technicians);
 }
 
 function resolveReservationItemQuantity(item) {
@@ -160,6 +182,20 @@ function computeTechnicianSidebarStats(reservations, technicianId) {
     equipment: equipmentCount,
     technicians: collaboratorIds.size || (technicianId ? 1 : 0)
   };
+}
+
+async function hydrateSidebarSummary() {
+  try {
+    await Promise.allSettled([
+      refreshProjectsFromApi(),
+      refreshReservationsFromApi(),
+      refreshTechniciansFromApi(),
+      refreshEquipmentFromApi({ showToastOnError: false }),
+    ]);
+  } catch (_) {
+    // Soft-fail; sidebar will keep existing numbers
+  }
+  updateSidebarStats();
 }
 
 function formatCurrency(value) {
@@ -552,7 +588,7 @@ async function refreshTechnicianFinancialSummary(technician) {
   });
 
   const sidebarStats = computeTechnicianSidebarStats(relevantReservations, normalizedId);
-  updateSidebarStats(sidebarStats);
+  updateSidebarStats();
   // Persist filtered stats for other scripts (fallbacks) to reuse if needed
   try {
     window.__TECHNICIAN_STATS__ = sidebarStats;
@@ -1149,6 +1185,13 @@ async function loadTechnicianDetails() {
 
 syncTechniciansStatuses();
 loadTechnicianDetails();
+
+['projects:changed', 'reservations:changed', 'equipment:changed', 'technicians:changed'].forEach((eventName) => {
+  document.addEventListener(eventName, () => updateSidebarStats(), { passive: true });
+});
+
+initDashboardMetrics();
+hydrateSidebarSummary();
 
 const handleTechniciansUpdated = async () => {
   if (!technicianId) return;
