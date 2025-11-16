@@ -53,7 +53,7 @@
         const style = document.createElement('style');
         style.id = 'sidebar-inline-fallback';
         style.textContent = `
-          .mobile-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:2.85rem;height:2.85rem;min-height:2.85rem;padding:0;border-radius:.95rem;border:1px solid rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(22,32,54,.95),rgba(16,24,42,.9));color:#f8fafc;box-shadow:0 14px 32px rgba(15,23,42,.28);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;cursor:pointer;position:relative}
+          .mobile-sidebar-toggle{display:inline-flex;align-items:center;justify-content:center;width:2.85rem;height:2.85rem;min-height:2.85rem;padding:0;border-radius:.95rem;border:1px solid rgba(148,163,184,.35);background:linear-gradient(180deg,rgba(22,32,54,.95),rgba(16,24,42,.9));color:#f8fafc;box-shadow:0 14px 32px rgba(15,23,42,.28);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease,background .2s ease;cursor:pointer;position:relative;z-index:60}
           .mobile-sidebar-toggle__icon{position:relative;display:block;width:1.2rem;height:.85rem}
           .mobile-sidebar-toggle__line{position:absolute;inset-inline:0;height:1.5px;border-radius:999px;background:rgba(248,250,255,.92);transition:background-color .2s ease}
           .mobile-sidebar-toggle__line--top{top:0}
@@ -296,6 +296,12 @@ function ensureSidebarStructure() {
     sidebar.setAttribute('aria-label', 'التنقل الجانبي');
     sidebar.setAttribute('aria-hidden', 'true');
     (document.body || document.documentElement).prepend(sidebar);
+  }
+
+  // صفحات التفاصيل (عميل/فني) لديها سايدبار مخصّص في الـ HTML؛ لا نعيد البناء حتى لا نخسر التبويبات أو التنسيق.
+  if (isDetailPage) {
+    ensureBurgerToggle();
+    return sidebar;
   }
 
   // Rebuild فقط إذا لم يكن هناك محتوى مسبقاً أو ليست صفحة تفاصيل (حتى لا نمسح العدادات المفلترة)
