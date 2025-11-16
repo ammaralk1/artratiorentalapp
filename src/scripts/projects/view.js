@@ -757,6 +757,17 @@ function isProjectThisWeek(project) {
 }
 
 export function determineProjectStatus(project) {
+  // Prefer explicit status if provided by backend/UI updates
+  try {
+    const raw = typeof project?.status === 'string' ? project.status.toLowerCase().trim() : null;
+    if (raw) {
+      if (raw === 'cancelled' || raw === 'canceled' || raw === 'ملغي' || raw === 'ملغى') return 'cancelled';
+      if (raw === 'completed' || raw === 'مكتمل' || raw === 'مغلق') return 'completed';
+      if (raw === 'ongoing' || raw === 'in_progress' || raw === 'in-progress' || raw === 'جاري' || raw === 'قيد التنفيذ') return 'ongoing';
+      if (raw === 'upcoming' || raw === 'قادم') return 'upcoming';
+    }
+  } catch (_) { /* ignore and fall back to time-based */ }
+
   const now = new Date();
   const start = project.start ? new Date(project.start) : null;
   const end = project.end ? new Date(project.end) : null;
