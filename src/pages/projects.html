@@ -485,38 +485,12 @@
               </div>
 
               <div class="tab-pane d-none space-y-6" id="projects-list-tab" data-project-subtab="projects-list-tab">
-                <div class="box project-focus-wrapper">
-                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                    <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
-                    <div class="project-focus-legend text-muted small">
-                      <span data-i18n data-i18n-key="projects.focus.legend">اختر بطاقة للاطلاع على التفاصيل أو التعديل السريع.</span>
-                    </div>
-                  </div>
-                  <div class="project-card-grid" id="project-focus-cards" data-empty="لا توجد مشاريع لليوم أو هذا الأسبوع." data-empty-key="projects.focus.empty"></div>
-                </div>
-
-                <div class="box p-4 project-timeline-box">
-                  <div class="d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center gap-2 mb-3">
-                    <h5 class="mb-0" data-i18n data-i18n-key="projects.timeline.title">الجدول الزمني للمشاريع</h5>
-                    <div class="project-timeline-legend text-muted small">
-                      <span data-i18n data-i18n-key="projects.timeline.legend">يُظهر الشريط مواعيد البداية والنهاية، والألوان تُمثّل حالة المشروع.</span>
-                      <div class="project-timeline-legend__statuses d-flex flex-wrap gap-2 mt-2">
-                        <span class="badge timeline-status-badge timeline-status-badge--upcoming" data-i18n data-i18n-key="projects.timeline.legend.upcoming">قادم</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--ongoing" data-i18n data-i18n-key="projects.timeline.legend.ongoing">قيد التنفيذ</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--completed" data-i18n data-i18n-key="projects.timeline.legend.completed">مكتمل</span>
-                        <span class="badge timeline-status-badge timeline-status-badge--conflict" data-i18n data-i18n-key="projects.timeline.legend.conflict">تعارض</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="project-timeline" id="project-timeline" data-empty="لا توجد مشاريع ببيانات زمنية صالحة." data-empty-key="projects.timeline.empty"></div>
-                </div>
-
-                <div class="box p-4">
+                <div class="box p-4 project-filters-compact">
                   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                     <h5 class="mb-0" data-i18n data-i18n-key="projects.search.title">بحث سريع</h5>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="project-filter-reset">♻️ إعادة الضبط</button>
                   </div>
-                  <div class="filters-bar d-flex flex-wrap align-items-center gap-2">
+                  <div class="filters-bar d-flex flex-wrap align-items-center gap-2 filters-bar--inline">
                     <input type="search" id="project-search" class="form-control filters-search" placeholder="ابحث عن مشروع بالاسم أو العميل" data-i18n data-i18n-placeholder-key="projects.search.placeholder">
                     <select id="project-filter-status" class="form-select">
                       <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
@@ -554,6 +528,32 @@
                     <input type="date" id="project-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
                     <input type="date" id="project-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
                   </div>
+                </div>
+
+                <div class="box project-focus-wrapper">
+                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="mb-0" data-i18n data-i18n-key="projects.focus.title">📌 نظرة سريعة على المشاريع</h5>
+                    <div class="project-focus-legend text-muted small">
+                      <span data-i18n data-i18n-key="projects.focus.legend">اختر بطاقة للاطلاع على التفاصيل أو التعديل السريع.</span>
+                    </div>
+                  </div>
+                  <div class="project-card-grid" id="project-focus-cards" data-empty="لا توجد مشاريع لليوم أو هذا الأسبوع." data-empty-key="projects.focus.empty"></div>
+                </div>
+
+                <div class="box p-4 project-timeline-box">
+                  <div class="d-flex flex-column flex-lg-row justify-content-lg-between align-items-lg-center gap-2 mb-3">
+                    <h5 class="mb-0" data-i18n data-i18n-key="projects.timeline.title">الجدول الزمني للمشاريع</h5>
+                    <div class="project-timeline-legend text-muted small">
+                      <span data-i18n data-i18n-key="projects.timeline.legend">يُظهر الشريط مواعيد البداية والنهاية، والألوان تُمثّل حالة المشروع.</span>
+                      <div class="project-timeline-legend__statuses d-flex flex-wrap gap-2 mt-2">
+                        <span class="badge timeline-status-badge timeline-status-badge--upcoming" data-i18n data-i18n-key="projects.timeline.legend.upcoming">قادم</span>
+                        <span class="badge timeline-status-badge timeline-status-badge--ongoing" data-i18n data-i18n-key="projects.timeline.legend.ongoing">قيد التنفيذ</span>
+                        <span class="badge timeline-status-badge timeline-status-badge--completed" data-i18n data-i18n-key="projects.timeline.legend.completed">مكتمل</span>
+                        <span class="badge timeline-status-badge timeline-status-badge--conflict" data-i18n data-i18n-key="projects.timeline.legend.conflict">تعارض</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="project-timeline" id="project-timeline" data-empty="لا توجد مشاريع ببيانات زمنية صالحة." data-empty-key="projects.timeline.empty"></div>
                 </div>
 
                 <div class="box p-4 projects-table">

@@ -245,6 +245,20 @@ html.dark-mode .projects-hero-text {
   background-color: rgba(76, 110, 245, 0.08);
 }
 
+.project-filters-compact .filters-bar--inline > * {
+  flex: 1 1 22%;
+  min-width: 180px;
+}
+
+.project-filters-compact .filters-bar--inline .filters-search {
+  flex: 2 1 30%;
+  min-width: 240px;
+}
+
+.project-filters-compact .filters-bar--inline input[type="date"] {
+  min-width: 150px;
+}
+
 
 .project-focus-wrapper {
   padding: 24px;
