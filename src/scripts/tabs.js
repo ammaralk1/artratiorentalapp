@@ -466,12 +466,14 @@ export function setupTabs() {
           }
         });
         // Also re-assert active tab after language changes (text nodes get updated)
-        document.addEventListener('language:changed', () => {
+        const reassert = () => {
           const target = currentMainTab || resolveHashTarget() || (document.querySelector('[data-tab].active')?.getAttribute('data-tab')) || tabButtons[0]?.getAttribute('data-tab');
           if (target && typeof activateTabRef === 'function') {
             activateTabRef(target, { skipStore: true, skipRender: true });
           }
-        });
+        };
+        document.addEventListener('language:changed', reassert);
+        document.addEventListener('language:translationsReady', reassert);
       } catch (_) {}
     }
   };
