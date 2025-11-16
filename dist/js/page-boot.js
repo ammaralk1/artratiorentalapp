@@ -299,6 +299,8 @@ function ensureSidebarStructure() {
   menu.className = 'sidebar-menu mt-6 space-y-6';
   sidebar.appendChild(menu);
 
+  ensureBurgerToggle();
+
   // Stats panel
   const statsPanel = document.createElement('div');
   statsPanel.className = 'sidebar-panel sidebar-panel--stats';
@@ -337,25 +339,30 @@ function ensureSidebarStructure() {
     });
   }
 
-  // Create a floating open button if missing anywhere else
-  if (!document.getElementById('sidebar-open')) {
-    const openBtn = document.createElement('button');
+  ensureBurgerToggle();
+
+  return sidebar;
+}
+
+// Ensure burger button exists and has the three-line icon
+function ensureBurgerToggle() {
+  let openBtn = document.getElementById('sidebar-open');
+  if (!openBtn) {
+    openBtn = document.createElement('button');
     openBtn.id = 'sidebar-open';
     openBtn.type = 'button';
-    openBtn.className = 'mobile-sidebar-toggle';
-    openBtn.setAttribute('aria-label', 'فتح القائمة');
-    openBtn.innerHTML = `
-      <span class="mobile-sidebar-toggle__icon">
-        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-      </span>`;
     openBtn.style.position = 'fixed';
     openBtn.style.top = '16px';
     openBtn.style.insetInlineStart = '16px';
     openBtn.style.zIndex = '60';
     (document.body || document.documentElement).appendChild(openBtn);
   }
-
-  return sidebar;
+  openBtn.classList.add('mobile-sidebar-toggle');
+  openBtn.setAttribute('aria-label', 'فتح القائمة');
+  openBtn.innerHTML = `
+    <span class="mobile-sidebar-toggle__icon">
+      <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+      <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+      <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+    </span>`;
 }
