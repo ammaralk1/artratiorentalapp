@@ -115,6 +115,15 @@
     onReady();
   }
 
+  // Re-apply sidebar/burger/metrics after تغيير اللغة بدون إعادة تحميل
+  try {
+    document.addEventListener('language:changed', () => {
+      try { ensureSidebarStructure(); } catch (_) {}
+      try { initializeSidebarFallback(); } catch (_) {}
+      try { refreshSidebarCountersFallback(); } catch (_) {}
+    }, { passive: true });
+  } catch (_) {}
+
   // Configure API base fallback early (before modules load)
   try {
     if (typeof window !== 'undefined' && !window.APP_API_BASE) {
