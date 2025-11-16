@@ -417,7 +417,7 @@ function ensureSidebarStructure() {
     // أزل أي عقد إضافية متبقية (نصوص خام أو عناصر غير متوقعة) حتى لا يظهر ملخص مكرر بلا تنسيق
     Array.from(sidebar.childNodes).forEach((node) => {
       if (node.nodeType === Node.TEXT_NODE) {
-        if (!node.textContent?.trim()) node.remove();
+        node.remove(); // احذف أي نص حر داخل الـ sidebar لتفادي التكرار
         return;
       }
       const el = node instanceof Element ? node : null;
