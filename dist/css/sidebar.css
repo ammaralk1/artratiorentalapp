@@ -45,3 +45,63 @@ html.dark .badge-soft,body.dark .badge-soft,html.dark-mode .badge-soft,body.dark
 @media (min-width:1024px){html:not(.dark) .mobile-sidebar-toggle,body:not(.dark) .mobile-sidebar-toggle{background:linear-gradient(180deg,rgba(30,42,68,.95),rgba(22,34,58,.9));border-color:rgba(148,163,184,.4);color:#f8fafc}}
 html.dark .mobile-sidebar-toggle,body.dark .mobile-sidebar-toggle,html.dark-mode .mobile-sidebar-toggle,body.dark-mode .mobile-sidebar-toggle{background:linear-gradient(180deg,rgba(12,21,40,.95),rgba(8,15,32,.9));border-color:rgba(129,140,248,.45);color:rgba(248,250,252,.98);box-shadow:0 18px 40px rgba(5,12,30,.55)}
 html.dark .mobile-sidebar-toggle:hover,body.dark .mobile-sidebar-toggle:hover,html.dark-mode .mobile-sidebar-toggle:hover,body.dark-mode .mobile-sidebar-toggle:hover{border-color:rgba(148,163,255,.62);background:linear-gradient(180deg,rgba(16,28,52,.98),rgba(11,20,38,.94))}
+
+/*
+  Sidebar tabs: ensure identical look in Arabic and English.
+  These rules purposely duplicate the key bits from app.css so
+  pages that only include sidebar.css (like home.html) still render
+  the tab buttons correctly in both light and dark themes.
+*/
+.sidebar-panel--tabs .tab-buttons{
+  display:flex;flex-direction:column;gap:.75rem;padding:0;border:0;background:transparent;box-shadow:none;border-radius:0
+}
+.sidebar-panel--tabs .tab-button{
+  position:relative;display:flex;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;border:1px solid rgba(148,163,184,.35);border-radius:1rem;padding:1rem 1.25rem;font-size:.95rem;font-weight:600;text-align:center;color:hsl(var(--bc));text-decoration:none;background:linear-gradient(135deg,rgba(248,250,255,.96),rgba(234,240,255,.94));box-shadow:0 14px 28px rgba(15,23,42,.08);transition:transform .2s ease,box-shadow .2s ease,background .2s ease,color .2s ease,border-color .2s ease
+}
+.sidebar-panel--tabs .tab-button__content{display:flex;width:100%;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;line-height:1.35;text-align:center}
+.sidebar-panel--tabs .tab-button svg{width:1.75rem;height:1.75rem;color:rgba(15,23,42,.55);transition:color .2s ease,transform .2s ease}
+.sidebar-panel--tabs .tab-button:hover{transform:translateY(-2px);box-shadow:0 22px 42px rgba(15,23,42,.16);background:linear-gradient(135deg,rgba(234,240,255,.98),rgba(221,232,255,.95));border-color:rgba(76,110,245,.45);color:#2940b9}
+.sidebar-panel--tabs .tab-button:hover svg{color:#3149c6;transform:scale(1.05)}
+.sidebar-panel--tabs .tab-button.active{background:linear-gradient(135deg,rgba(76,110,245,.95),rgba(90,141,255,.92));border-color:rgba(76,110,245,.42);box-shadow:0 22px 42px rgba(76,110,245,.22);color:#fff}
+.sidebar-panel--tabs .tab-button.active svg{color:#fff}
+
+/* Dark theme parity for tab buttons */
+html.dark .sidebar-panel--tabs .tab-button,
+body.dark .sidebar-panel--tabs .tab-button,
+html.dark-mode .sidebar-panel--tabs .tab-button,
+body.dark-mode .sidebar-panel--tabs .tab-button{
+  background:linear-gradient(135deg,rgba(24,33,59,.95),rgba(18,28,52,.9));
+  border-color:rgba(63,93,245,.35);
+  box-shadow:0 18px 38px rgba(3,8,26,.62);
+  color:rgba(226,232,240,.92)
+}
+html.dark .sidebar-panel--tabs .tab-button svg,
+body.dark .sidebar-panel--tabs .tab-button svg,
+html.dark-mode .sidebar-panel--tabs .tab-button svg,
+body.dark-mode .sidebar-panel--tabs .tab-button svg{color:rgba(148,197,255,.78)}
+html.dark .sidebar-panel--tabs .tab-button:hover,
+body.dark .sidebar-panel--tabs .tab-button:hover,
+html.dark-mode .sidebar-panel--tabs .tab-button:hover,
+body.dark-mode .sidebar-panel--tabs .tab-button:hover{
+  background:linear-gradient(135deg,rgba(47,71,120,.95),rgba(37,58,102,.88));
+  box-shadow:0 24px 46px rgba(3,8,26,.8);
+  border-color:rgba(129,140,248,.55);
+  color:#f8fafc
+}
+html.dark .sidebar-panel--tabs .tab-button:hover svg,
+body.dark .sidebar-panel--tabs .tab-button:hover svg,
+html.dark-mode .sidebar-panel--tabs .tab-button:hover svg,
+body.dark-mode .sidebar-panel--tabs .tab-button:hover svg{color:#f8fafc}
+html.dark .sidebar-panel--tabs .tab-button.active,
+body.dark .sidebar-panel--tabs .tab-button.active,
+html.dark-mode .sidebar-panel--tabs .tab-button.active,
+body.dark-mode .sidebar-panel--tabs .tab-button.active{
+  background:linear-gradient(135deg,rgba(59,130,246,.95),rgba(99,102,241,.88));
+  border-color:rgba(99,102,241,.45);
+  box-shadow:0 26px 52px rgba(37,99,235,.35);
+  color:#f8fafc
+}
+html.dark .sidebar-panel--tabs .tab-button.active svg,
+body.dark .sidebar-panel--tabs .tab-button.active svg,
+html.dark-mode .sidebar-panel--tabs .tab-button.active svg,
+body.dark-mode .sidebar-panel--tabs .tab-button.active svg{color:#f8fafc}
