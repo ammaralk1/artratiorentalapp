@@ -105,9 +105,11 @@
     document.addEventListener('DOMContentLoaded', () => {
       // Give modules a moment; then force visibility
       setTimeout(removeLoadingSafely, 1500);
+      try { initializeSidebarFallback(); } catch (_) {}
     }, { once: true });
   } else {
     setTimeout(removeLoadingSafely, 1500);
+    try { initializeSidebarFallback(); } catch (_) {}
   }
 
   // Configure API base fallback early (before modules load)
@@ -126,3 +128,45 @@
     // ignore
   }
 })();
+
+// Minimal sidebar functionality for legacy pages (Arabic/English)
+function initializeSidebarFallback() {
+  const sidebar = document.getElementById('dashboard-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  const openBtn  = document.getElementById('sidebar-open');
+  const closeBtn = document.getElementById('sidebar-close');
+  if (!sidebar) return; // no sidebar on this page
+
+  const addOpen = () => {
+    try { sidebar.classList.add('open'); } catch {}
+    try { sidebar.setAttribute('aria-hidden', 'false'); } catch {}
+    try { backdrop?.classList?.add('open'); } catch {}
+  };
+  const removeOpen = () => {
+    try { sidebar.classList.remove('open'); } catch {}
+    try { sidebar.setAttribute('aria-hidden', 'true'); } catch {}
+    try { backdrop?.classList?.remove('open'); } catch {}
+  };
+
+  // Start closed on small viewports; pinned open on >= 1024px
+  const syncToViewport = () => {
+    const isWide = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
+    if (isWide) addOpen(); else removeOpen();
+  };
+
+  // Initial state and listeners
+  try { sidebar.setAttribute('aria-hidden', 'true'); } catch {}
+  syncToViewport();
+  try { window.addEventListener('resize', () => { try { syncToViewport(); } catch {} }, { passive: true }); } catch {}
+
+  openBtn?.addEventListener('click', (e) => { try { e.preventDefault(); } catch {} addOpen(); });
+  closeBtn?.addEventListener('click', (e) => { try { e.preventDefault(); } catch {} removeOpen(); });
+  backdrop?.addEventListener('click', () => removeOpen());
+  sidebar.addEventListener('click', (event) => {
+    const t = event.target;
+    if (!(t instanceof Element)) return;
+    if (t.hasAttribute('data-close-sidebar') || t.closest('[data-close-sidebar]') || t.closest('.tab-button,[data-tab]')) {
+      removeOpen();
+    }
+  });
+}
