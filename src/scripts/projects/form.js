@@ -48,6 +48,16 @@ const DEFAULT_LINKED_RESERVATION_RETURN_URL = 'projects.html#projects-section';
 
 let isProjectShareTaxSyncing = false;
 let createProjectPaymentHistory = [];
+const resetProjectFilters = () => {
+  state.filters.search = '';
+  state.filters.status = '';
+  state.filters.payment = '';
+  state.filters.type = '';
+  state.filters.confirmed = '';
+  state.filters.range = '';
+  state.filters.startDate = '';
+  state.filters.endDate = '';
+};
 
 function resolveShareElement(target) {
   if (!target) return null;
@@ -211,8 +221,114 @@ export function bindFormEvents() {
     dom.search.addEventListener('input', () => {
       state.filters.search = normalizeNumbers(dom.search.value || '').trim().toLowerCase();
       renderProjects();
+      renderFocusCards();
     });
     dom.search.dataset.listenerAttached = 'true';
+  }
+
+  const refreshViews = () => {
+    renderProjects();
+    renderFocusCards();
+  };
+
+  const formatDateInput = (date) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear());
+    return `${year}-${month}-${day}`;
+  };
+
+  const applyQuickRange = (value) => {
+    const today = new Date();
+    let startVal = '';
+    let endVal = '';
+
+    if (value === 'today') {
+      startVal = formatDateInput(today);
+      endVal = startVal;
+    } else if (value === 'week') {
+      const startOfWeek = new Date(today);
+      const day = startOfWeek.getDay(); // Sunday=0
+      const diff = day === 0 ? 6 : day - 1; // make Monday start
+      startOfWeek.setDate(startOfWeek.getDate() - diff);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      startVal = formatDateInput(startOfWeek);
+      endVal = formatDateInput(endOfWeek);
+    } else if (value === 'month') {
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      startVal = formatDateInput(startOfMonth);
+      endVal = formatDateInput(endOfMonth);
+    } else if (value === '') {
+      startVal = '';
+      endVal = '';
+    } else if (value === 'custom') {
+      startVal = dom.filterStart?.value || state.filters.startDate || '';
+      endVal = dom.filterEnd?.value || state.filters.endDate || '';
+    }
+
+    if (dom.filterStart) dom.filterStart.value = startVal;
+    if (dom.filterEnd) dom.filterEnd.value = endVal;
+    state.filters.range = value;
+    state.filters.startDate = normalizeNumbers(startVal);
+    state.filters.endDate = normalizeNumbers(endVal);
+    refreshViews();
+  };
+
+  const attachSelect = (el, key) => {
+    if (!el || el.dataset.listenerAttached) return;
+    el.addEventListener('change', () => {
+      state.filters[key] = normalizeNumbers(el.value || '').trim().toLowerCase();
+      refreshViews();
+    });
+    el.dataset.listenerAttached = 'true';
+  };
+
+  attachSelect(dom.filterStatus, 'status');
+  attachSelect(dom.filterPayment, 'payment');
+  attachSelect(dom.filterType, 'type');
+  attachSelect(dom.filterConfirmed, 'confirmed');
+
+  if (dom.filterRange && !dom.filterRange.dataset.listenerAttached) {
+    dom.filterRange.addEventListener('change', () => applyQuickRange(dom.filterRange.value || ''));
+    dom.filterRange.dataset.listenerAttached = 'true';
+  }
+
+  const attachDateInput = (el, key) => {
+    if (!el || el.dataset.listenerAttached) return;
+    const handler = () => {
+      const value = normalizeNumbers(el.value || '').trim();
+      state.filters[key] = value;
+      if (value) {
+        state.filters.range = 'custom';
+        if (dom.filterRange) dom.filterRange.value = 'custom';
+      }
+      refreshViews();
+    };
+    el.addEventListener('change', handler);
+    el.addEventListener('input', handler);
+    el.dataset.listenerAttached = 'true';
+  };
+
+  attachDateInput(dom.filterStart, 'startDate');
+  attachDateInput(dom.filterEnd, 'endDate');
+
+  if (dom.filterReset && !dom.filterReset.dataset.listenerAttached) {
+    dom.filterReset.addEventListener('click', () => {
+      resetProjectFilters();
+      if (dom.search) dom.search.value = '';
+      if (dom.filterStatus) dom.filterStatus.value = '';
+      if (dom.filterPayment) dom.filterPayment.value = '';
+      if (dom.filterType) dom.filterType.value = '';
+      if (dom.filterConfirmed) dom.filterConfirmed.value = '';
+      if (dom.filterRange) dom.filterRange.value = '';
+      if (dom.filterStart) dom.filterStart.value = '';
+      if (dom.filterEnd) dom.filterEnd.value = '';
+      refreshViews();
+    });
+    dom.filterReset.dataset.listenerAttached = 'true';
   }
 }
 

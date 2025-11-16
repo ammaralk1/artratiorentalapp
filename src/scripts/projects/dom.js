@@ -56,6 +56,14 @@ export function cacheDom() {
   dom.projectsBudget = document.getElementById('projects-budget');
   dom.tableCount = document.getElementById('project-table-count');
   dom.search = document.getElementById('project-search');
+  dom.filterStatus = document.getElementById('project-filter-status');
+  dom.filterPayment = document.getElementById('project-filter-payment');
+  dom.filterType = document.getElementById('project-filter-type');
+  dom.filterConfirmed = document.getElementById('project-filter-confirmed');
+  dom.filterRange = document.getElementById('project-filter-range');
+  dom.filterStart = document.getElementById('project-filter-start-date');
+  dom.filterEnd = document.getElementById('project-filter-end-date');
+  dom.filterReset = document.getElementById('project-filter-reset');
   dom.detailsModalEl = document.getElementById('projectDetailsModal');
   dom.detailsBody = document.getElementById('project-details-body');
   dom.tabButtons = Array.from(document.querySelectorAll('.tab-button[data-tab-target]'));

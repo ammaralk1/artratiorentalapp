@@ -512,8 +512,47 @@
                 </div>
 
                 <div class="box p-4">
-                  <h5 class="mb-3" data-i18n data-i18n-key="projects.search.title">بحث سريع</h5>
-                  <input type="text" id="project-search" class="form-control input input-bordered" placeholder="ابحث عن مشروع بالاسم أو العميل" data-i18n data-i18n-placeholder-key="projects.search.placeholder">
+                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="mb-0" data-i18n data-i18n-key="projects.search.title">بحث سريع</h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="project-filter-reset">♻️ إعادة الضبط</button>
+                  </div>
+                  <div class="filters-bar d-flex flex-wrap align-items-center gap-2">
+                    <input type="search" id="project-search" class="form-control filters-search" placeholder="ابحث عن مشروع بالاسم أو العميل" data-i18n data-i18n-placeholder-key="projects.search.placeholder">
+                    <select id="project-filter-status" class="form-select">
+                      <option value="" data-i18n data-i18n-key="reservations.list.filters.status.all">⚙️ كل الحالات</option>
+                      <option value="upcoming" data-i18n data-i18n-key="projects.status.upcoming">📅 قادم</option>
+                      <option value="ongoing" data-i18n data-i18n-key="projects.status.ongoing">⚙️ قيد التنفيذ</option>
+                      <option value="completed" data-i18n data-i18n-key="projects.status.completed">✅ مكتمل</option>
+                      <option value="cancelled" data-i18n data-i18n-key="projects.status.cancelled">❌ ملغي</option>
+                    </select>
+                    <select id="project-filter-payment" class="form-select">
+                      <option value="" data-i18n data-i18n-key="projects.reports.filters.paymentAll">💰 كل المدفوعات</option>
+                      <option value="paid" data-i18n data-i18n-key="projects.form.paymentStatus.paid">مدفوع</option>
+                      <option value="partial" data-i18n data-i18n-key="projects.form.paymentStatus.partial">مدفوع جزئياً</option>
+                      <option value="unpaid" data-i18n data-i18n-key="projects.form.paymentStatus.unpaid">غير مدفوع</option>
+                    </select>
+                    <select id="project-filter-type" class="form-select">
+                      <option value="">🏷️ كل الأنواع</option>
+                      <option value="commercial" data-i18n data-i18n-key="projects.form.types.commercial">تجاري</option>
+                      <option value="coverage" data-i18n data-i18n-key="projects.form.types.coverage">تغطية</option>
+                      <option value="photography" data-i18n data-i18n-key="projects.form.types.photography">تصوير</option>
+                      <option value="social" data-i18n data-i18n-key="projects.form.types.social">سوشال</option>
+                    </select>
+                    <select id="project-filter-confirmed" class="form-select">
+                      <option value="">🪪 كل حالات التأكيد</option>
+                      <option value="yes" data-i18n data-i18n-key="projects.focus.confirmed">مؤكد</option>
+                      <option value="no" data-i18n data-i18n-key="projects.focus.pending">غير مؤكد</option>
+                    </select>
+                    <select id="project-filter-range" class="form-select">
+                      <option value="" data-i18n data-i18n-key="reservations.list.filters.range.all">⏱️ كل التواريخ</option>
+                      <option value="today" data-i18n data-i18n-key="reservations.list.filters.range.today">📅 اليوم</option>
+                      <option value="week" data-i18n data-i18n-key="reservations.list.filters.range.week">📆 هذا الأسبوع</option>
+                      <option value="month" data-i18n data-i18n-key="reservations.list.filters.range.month">🗓️ هذا الشهر</option>
+                      <option value="custom" data-i18n data-i18n-key="projects.reports.filters.range.custom">📅 تاريخ مخصص</option>
+                    </select>
+                    <input type="date" id="project-filter-start-date" class="form-control w-auto" placeholder="📅 من تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.start">
+                    <input type="date" id="project-filter-end-date" class="form-control w-auto" placeholder="📅 إلى تاريخ" data-i18n data-i18n-placeholder-key="reservations.list.filters.end">
+                  </div>
                 </div>
 
                 <div class="box p-4 projects-table">

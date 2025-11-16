@@ -10,7 +10,14 @@ export const state = {
   // Running total of per-item "سعر البيع" added via the create form
   servicesClientPriceTotal: 0,
   filters: {
-    search: ''
+    search: '',
+    status: '',
+    payment: '',
+    type: '',
+    confirmed: '',
+    range: '',
+    startDate: '',
+    endDate: ''
   },
   visibleProjects: [],
   editingProjectId: null,

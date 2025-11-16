@@ -1,6 +1,6 @@
 import { userCanManageDestructiveActions } from '../auth.js';
 import { t } from '../language.js';
-import { normalizeNumbers, showToast } from '../utils.js';
+import { normalizeNumbers } from '../utils.js';
 import { calculateReservationTotal, calculateDraftFinancialBreakdown, calculatePaymentProgress, determinePaymentStatus } from '../reservationsSummary.js';
 import { state, dom } from './state.js';
 import { resolveReservationProjectState, buildReservationDisplayGroups } from '../reservationsShared.js';
@@ -36,23 +36,101 @@ function getProjectTypeLabel(type) {
   return t(key, type);
 }
 
+function normalizeProjectText(value) {
+  return normalizeNumbers(String(value || '')).toLowerCase().trim();
+}
+
+function parseFilterDate(value, endOfDay = false) {
+  if (!value) return null;
+  const date = new Date(`${value}T${endOfDay ? '23:59:59' : '00:00:00'}`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getProjectPaymentStatus(project) {
+  try {
+    const reservationsForProject = getReservationsForProject(project.id);
+    const baseTotals = resolveProjectTotals(project) || {};
+    const projectTaxableBase = Number(baseTotals.subtotal || 0);
+    const combinedReservationsTotal = (reservationsForProject || []).reduce((sum, res) => sum + (Number(res?.totalAmount) || resolveReservationNetTotal(res) || 0), 0);
+    const combinedTax = baseTotals.applyTax
+      ? Number(((projectTaxableBase + combinedReservationsTotal) * PROJECT_TAX_RATE).toFixed(2))
+      : 0;
+    const combinedTotalWithTax = Number((projectTaxableBase + combinedReservationsTotal + combinedTax).toFixed(2));
+    const history = project.paymentHistory || project.payments || [];
+    const progress = calculatePaymentProgress({
+      totalAmount: combinedTotalWithTax,
+      paidAmount: history.length ? 0 : project.paidAmount,
+      paidPercent: history.length ? 0 : project.paidPercent,
+      history
+    });
+    return determinePaymentStatus({
+      manualStatus: null,
+      paidAmount: progress.paidAmount,
+      paidPercent: progress.paidPercent,
+      totalAmount: combinedTotalWithTax
+    });
+  } catch (_) {
+    return null;
+  }
+}
+
+function projectMatchesFilters(project) {
+  const client = state.customers.find((c) => String(c.id) === String(project.clientId));
+  const searchTerm = normalizeProjectText(state.filters.search);
+  const haystack = normalizeProjectText([
+    project.title,
+    project.description,
+    client?.customerName,
+    project.clientCompany,
+    getProjectTypeLabel(project.type),
+    project.id,
+    project.projectCode
+  ].filter(Boolean).join(' '));
+  if (searchTerm && !haystack.includes(searchTerm)) {
+    return false;
+  }
+
+  const filterType = normalizeProjectText(state.filters.type);
+  if (filterType && normalizeProjectText(project.type) !== filterType) {
+    return false;
+  }
+
+  const statusBase = determineProjectStatus(project);
+  const status = (project?.cancelled === true || project?.status === 'cancelled' || project?.status === 'canceled') ? 'cancelled' : statusBase;
+  if (state.filters.status && state.filters.status !== status) {
+    return false;
+  }
+
+  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
+  if (state.filters.confirmed === 'yes' && !isConfirmed) return false;
+  if (state.filters.confirmed === 'no' && isConfirmed) return false;
+
+  const paymentStatus = getProjectPaymentStatus(project);
+  if (state.filters.payment) {
+    if (!paymentStatus) return false;
+    if (state.filters.payment !== paymentStatus) return false;
+  }
+
+  const filterStart = parseFilterDate(state.filters.startDate);
+  const filterEnd = parseFilterDate(state.filters.endDate, true);
+  if (filterStart || filterEnd) {
+    const projectStart = project.start ? new Date(project.start) : null;
+    if (!projectStart || Number.isNaN(projectStart.getTime())) return false;
+    if (filterStart && projectStart < filterStart) return false;
+    if (filterEnd && projectStart > filterEnd) return false;
+  }
+
+  return true;
+}
+
+function getFilteredProjects() {
+  const projects = Array.isArray(state.projects) ? state.projects : [];
+  return projects.filter((project) => projectMatchesFilters(project));
+}
+
 export function renderProjects() {
   if (!dom.projectsTableBody) return;
-  const search = state.filters.search;
-  const filtered = state.projects.filter((project) => {
-    if (!search) return true;
-    const client = state.customers.find((c) => String(c.id) === String(project.clientId));
-    const haystack = normalizeNumbers([
-      project.title,
-      project.description,
-      client?.customerName,
-      project.clientCompany,
-      getProjectTypeLabel(project.type),
-      project.id,
-      project.projectCode
-    ].filter(Boolean).join(' ')).toLowerCase();
-    return haystack.includes(search);
-  });
+  const filtered = getFilteredProjects();
 
   if (!filtered.length) {
     const emptyKey = state.projects.length === 0 ? 'projects.table.emptyInitial' : 'projects.table.emptyFiltered';
@@ -318,7 +396,8 @@ function detectTimelineConflicts(items) {
 export function renderFocusCards() {
   if (!dom.focusCards) return;
 
-  const cards = buildFocusCards();
+  const sourceProjects = state.visibleProjects.length ? state.visibleProjects : getFilteredProjects();
+  const cards = buildFocusCards(sourceProjects);
   if (!cards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
     dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
@@ -330,11 +409,12 @@ export function renderFocusCards() {
   // Sections are always visible; no toggle required
 }
 
-function buildFocusCards() {
-  if (!Array.isArray(state.projects) || !state.projects.length) return [];
+function buildFocusCards(projectsPool = []) {
+  const source = Array.isArray(projectsPool) && projectsPool.length ? projectsPool : state.projects;
+  if (!Array.isArray(source) || !source.length) return [];
 
-  const today = state.projects.filter(isProjectToday);
-  const thisWeek = state.projects.filter((project) => !isProjectToday(project) && isProjectThisWeek(project));
+  const today = source.filter(isProjectToday);
+  const thisWeek = source.filter((project) => !isProjectToday(project) && isProjectThisWeek(project));
 
   const cards = [];
   const seen = new Set();
@@ -355,7 +435,7 @@ function buildFocusCards() {
 
   if (cards.length < MAX_FOCUS_CARDS) {
     const now = Date.now();
-    const upcomingProjects = [...state.projects]
+    const upcomingProjects = [...source]
       .filter((project) => !seen.has(project.id))
       .filter((project) => {
         const startTime = getProjectStartTimestamp(project);
@@ -368,7 +448,7 @@ function buildFocusCards() {
 
   // Fallback: include undated or invalid-date projects as most recent
   if (cards.length < MAX_FOCUS_CARDS) {
-    const undated = [...state.projects]
+    const undated = [...source]
       .filter((project) => !seen.has(project.id))
       .filter((project) => !Number.isFinite(getProjectStartTimestamp(project)))
       .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
@@ -377,14 +457,14 @@ function buildFocusCards() {
 
   // Last-resort fallback: show latest projects by start/created when nothing qualifies
   if (cards.length === 0) {
-    const latest = [...state.projects]
+    const latest = [...source]
       .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a))
       .slice(0, MAX_FOCUS_CARDS);
     latest.forEach((project) => addCard(project, 'recent'));
   }
 
   if (cards.length < MAX_FOCUS_CARDS) {
-    const fallbackProjects = [...state.projects]
+    const fallbackProjects = [...source]
       .filter((project) => !seen.has(project.id))
       .sort((a, b) => getProjectCreatedTimestamp(b) - getProjectCreatedTimestamp(a));
 
