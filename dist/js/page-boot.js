@@ -177,6 +177,12 @@ function initializeSidebarFallback() {
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
 function refreshSidebarCountersFallback() {
+  // Skip general fallback on technician/customer detail pages to allow their page scripts
+  // to set filtered stats (per technician/customer) instead of global totals.
+  const body = document.body || document.documentElement;
+  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
+  if (isDetailPage) return;
+
   const ids = {
     projects: 'sidebar-stat-projects',
     reservations: 'sidebar-stat-reservations',
