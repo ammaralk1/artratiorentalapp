@@ -150,17 +150,9 @@ function initializeSidebarFallback() {
     try { sidebar.setAttribute('aria-hidden', 'true'); } catch {}
     try { backdrop?.classList?.remove('open'); } catch {}
   };
-
-  // Start closed on small viewports; pinned open on >= 1024px
-  const syncToViewport = () => {
-    const isWide = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
-    if (isWide) addOpen(); else removeOpen();
-  };
-
-  // Initial state and listeners
+  // Start مغلق دائماً؛ لا يُفتح إلا بزر القائمة
   try { sidebar.setAttribute('aria-hidden', 'true'); } catch {}
-  syncToViewport();
-  try { window.addEventListener('resize', () => { try { syncToViewport(); } catch {} }, { passive: true }); } catch {}
+  removeOpen();
 
   openBtn?.addEventListener('click', (e) => { try { e.preventDefault(); } catch {} addOpen(); });
   closeBtn?.addEventListener('click', (e) => { try { e.preventDefault(); } catch {} removeOpen(); });
@@ -270,9 +262,9 @@ function ensureSidebarStructure() {
   if (!sidebar) {
     sidebar = document.createElement('aside');
     sidebar.id = 'dashboard-sidebar';
-    sidebar.className = 'sidebar-shell sidebar-drawer open';
+    sidebar.className = 'sidebar-shell sidebar-drawer';
     sidebar.setAttribute('aria-label', 'التنقل الجانبي');
-    sidebar.setAttribute('aria-hidden', 'false');
+    sidebar.setAttribute('aria-hidden', 'true');
     (document.body || document.documentElement).prepend(sidebar);
   }
 
@@ -290,6 +282,13 @@ function ensureSidebarStructure() {
           <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
         </div>
       </div>
+      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+          <path d="M18 6l-12 12"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+      </button>
     `;
     sidebar.prepend(brand);
   }
@@ -300,6 +299,25 @@ function ensureSidebarStructure() {
     menu = document.createElement('nav');
     menu.className = 'sidebar-menu mt-6 space-y-6';
     sidebar.appendChild(menu);
+    // Create a floating open button if missing anywhere else
+    if (!document.getElementById('sidebar-open')) {
+      const openBtn = document.createElement('button');
+      openBtn.id = 'sidebar-open';
+      openBtn.type = 'button';
+      openBtn.className = 'mobile-sidebar-toggle';
+      openBtn.setAttribute('aria-label', 'فتح القائمة');
+      openBtn.innerHTML = `
+        <span class="mobile-sidebar-toggle__icon">
+          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+        </span>`;
+      openBtn.style.position = 'fixed';
+      openBtn.style.top = '16px';
+      openBtn.style.insetInlineStart = '16px';
+      openBtn.style.zIndex = '60';
+      (document.body || document.documentElement).appendChild(openBtn);
+    }
   }
 
   // Stats panel
