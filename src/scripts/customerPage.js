@@ -1029,6 +1029,7 @@ async function fetchCustomerReservationsData(id) {
       : [];
 
     customerReservationsCache = records;
+    saveData({ reservations: records });
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer reservations', error);
@@ -1049,11 +1050,18 @@ async function fetchCustomerProjectsData(id) {
       : [];
 
     customerProjectsCache = records;
+    saveData({ projects: records });
     return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer projects', error);
     return [];
   }
+}
+
+function applyCustomerSidebarStats(overrides = null) {
+  const stats = overrides || computeCustomerSidebarStats();
+  updateSidebarStats(stats);
+  return stats;
 }
 
 async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
@@ -1102,8 +1110,7 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
       const filteredProjects = Array.isArray(projectsFetched) ? projectsFetched : resolveCustomerScopedProjects();
       customerReservationsCache = filteredReservations;
       customerProjectsCache = filteredProjects;
-      const sidebarStats = computeCustomerSidebarStats();
-      updateSidebarStats(sidebarStats);
+      applyCustomerSidebarStats();
     } catch (_) {}
 
     updateHeroStats();
@@ -1138,6 +1145,7 @@ async function hydrateSidebarSummary() {
     const summary = normalizeSidebarSummary(response?.data ?? null);
     if (summary) {
       updateSidebarStats(summary);
+      try { window.__CUSTOMER_STATS__ = { ...summary }; } catch (_) {}
       return;
     }
   } catch (_) {
@@ -1155,6 +1163,7 @@ async function hydrateSidebarSummary() {
     // Silent failure: sidebar will stay at fallback values
   }
   updateSidebarStats();
+  try { window.__CUSTOMER_STATS__ = { ...getGlobalSidebarStats() }; } catch (_) {}
 }
 
 function renderDetails() {
@@ -1375,6 +1384,7 @@ async function initializeCustomerPage() {
     renderCustomerReservations(customerId);
     renderCustomerProjects(customerId);
     updateHeroStats();
+    applyCustomerSidebarStats();
   }
 
   await loadCustomerFromApi(customerId, { showSpinner: !currentCustomer });
@@ -1394,7 +1404,7 @@ document.addEventListener('projects:changed', maybeUpdateStats);
 
 const refreshCustomerSidebar = () => {
   if (customerId && currentCustomer) {
-    updateSidebarStats(computeCustomerSidebarStats());
+    applyCustomerSidebarStats();
   } else {
     updateSidebarStats();
   }
