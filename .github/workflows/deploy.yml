@@ -41,9 +41,9 @@ jobs:
             port 21 \
             tls false
           rclone sync ./ site:/ \
-            --transfers 2 \
-            --checkers 2 \
-            --ftp-concurrency 2 \
+            --transfers 6 \
+            --checkers 8 \
+            --ftp-concurrency 4 \
             --exclude "/.git/**" \
             --exclude "/.github/**" \
             --exclude "/node_modules/**" \
@@ -100,4 +100,3 @@ jobs:
             CURL_ARGS+=( --insecure )
           fi
           curl "${CURL_ARGS[@]}"
-
