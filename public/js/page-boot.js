@@ -269,6 +269,8 @@ function ensureSidebarStructure() {
   }
 
   // Sidebar shell
+  const body = document.body || document.documentElement;
+  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
   let sidebar = document.getElementById('dashboard-sidebar');
   if (!sidebar) {
     sidebar = document.createElement('aside');
@@ -279,7 +281,11 @@ function ensureSidebarStructure() {
     (document.body || document.documentElement).prepend(sidebar);
   }
 
-  // Rebuild inner content fresh to avoid legacy clutter/extra text
+  // Rebuild فقط إذا لم يكن هناك محتوى مسبقاً أو ليست صفحة تفاصيل (حتى لا نمسح العدادات المفلترة)
+  const hasExistingStats = sidebar.querySelector('.sidebar-panel--stats .sidebar-stats');
+  if (isDetailPage && hasExistingStats) {
+    return sidebar;
+  }
   sidebar.innerHTML = '';
 
   // Brand header
