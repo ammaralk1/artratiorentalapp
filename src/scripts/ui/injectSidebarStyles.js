@@ -56,6 +56,20 @@ html.dark .sidebar-link:hover, body.dark .sidebar-link:hover { background: linea
 @media (min-width: 1024px) { html:not(.dark) .mobile-sidebar-toggle, body:not(.dark) .mobile-sidebar-toggle { background: linear-gradient(180deg, rgba(30, 42, 68, 0.95), rgba(22, 34, 58, 0.9)); border-color: rgba(148, 163, 184, 0.4); color: #f8fafc; } }
 html.dark .mobile-sidebar-toggle, body.dark .mobile-sidebar-toggle { background: linear-gradient(180deg, rgba(12, 21, 40, 0.95), rgba(8, 15, 32, 0.9)); border-color: rgba(129, 140, 248, 0.45); color: rgba(248, 250, 252, 0.98); box-shadow: 0 18px 40px rgba(5, 12, 30, 0.55); }
 html.dark .mobile-sidebar-toggle:hover, body.dark .mobile-sidebar-toggle:hover { border-color: rgba(148, 163, 255, 0.62); background: linear-gradient(180deg, rgba(16, 28, 52, 0.98), rgba(11, 20, 38, 0.94)); }
+
+/* Minimal fallback styles for primary-nav buttons on Customer/Technician pages */
+.dashboard-tabbar .tab-buttons { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: center; }
+.dashboard-tabbar .tab-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .55rem 1rem; border-radius: 999px; border: 1px solid rgba(148,163,184,.35); font-weight: 700; text-decoration: none; cursor: pointer; transition: box-shadow .2s ease, transform .2s ease, background .2s ease, color .2s ease; }
+.dashboard-tabbar .tab-button:hover, .dashboard-tabbar .tab-button:focus-visible { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(15,23,42,.12); outline: none; }
+html.dark .dashboard-tabbar .tab-button, body.dark .dashboard-tabbar .tab-button { border-color: rgba(63, 93, 245, 0.28); }
+
+/* Customer primary nav pills */
+.customer-page .customer-primary-nav .tab-button { background: linear-gradient(135deg, rgba(248, 250, 255, 0.96), rgba(238, 242, 255, 0.9)); color: hsl(var(--bc)); }
+html.dark .customer-page .customer-primary-nav .tab-button, body.dark .customer-page .customer-primary-nav .tab-button { background: linear-gradient(135deg, rgba(24, 33, 59, 0.95), rgba(18, 28, 52, 0.88)); color: rgba(226, 232, 240, 0.92); }
+
+/* Ensure RTL/LTR spacing remains consistent */
+body[dir='rtl'] .dashboard-tabbar .tab-buttons { direction: rtl; }
+body[dir='ltr'] .dashboard-tabbar .tab-buttons { direction: ltr; }
 `;
     const style = document.createElement('style');
     style.id = 'sidebar-inline-styles';
@@ -68,4 +82,3 @@ html.dark .mobile-sidebar-toggle:hover, body.dark .mobile-sidebar-toggle:hover {
 
 // Auto-run on import for convenience
 ensureSidebarStyles();
-
