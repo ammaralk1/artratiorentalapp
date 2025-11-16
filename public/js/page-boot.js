@@ -106,10 +106,12 @@
       // Give modules a moment; then force visibility
       setTimeout(removeLoadingSafely, 1500);
       try { initializeSidebarFallback(); } catch (_) {}
+      try { refreshSidebarCountersFallback(); } catch (_) {}
     }, { once: true });
   } else {
     setTimeout(removeLoadingSafely, 1500);
     try { initializeSidebarFallback(); } catch (_) {}
+    try { refreshSidebarCountersFallback(); } catch (_) {}
   }
 
   // Configure API base fallback early (before modules load)
@@ -169,4 +171,36 @@ function initializeSidebarFallback() {
       removeOpen();
     }
   });
+}
+
+// Fallback: hydrate sidebar counters from /backend/api/summary/
+function refreshSidebarCountersFallback() {
+  const ids = {
+    projects: 'sidebar-stat-projects',
+    reservations: 'sidebar-stat-reservations',
+    equipment: 'sidebar-stat-equipment',
+    technicians: 'sidebar-stat-technicians'
+  };
+  const exists = Object.values(ids).some((id) => document.getElementById(id));
+  if (!exists) return; // nothing to hydrate
+
+  const format = (n) => {
+    try {
+      const lang = document.documentElement.getAttribute('lang') || 'ar';
+      return new Intl.NumberFormat(lang === 'ar' ? 'ar' : 'en', { maximumFractionDigits: 0 }).format(Number(n || 0));
+    } catch { return String(n || 0); }
+  };
+
+  const apply = (data) => {
+    try { const el = document.getElementById(ids.projects); if (el) el.textContent = format(data?.projects?.total || 0); } catch {}
+    try { const el = document.getElementById(ids.reservations); if (el) el.textContent = format(data?.reservations?.total || 0); } catch {}
+    try { const el = document.getElementById(ids.equipment); if (el) el.textContent = format(data?.equipment?.total || 0); } catch {}
+    try { const el = document.getElementById(ids.technicians); if (el) el.textContent = format(data?.technicians?.total || 0); } catch {}
+  };
+
+  // If modules later update, they will overwrite these values.
+  fetch('/backend/api/summary/', { credentials: 'include' })
+    .then((r) => r.ok ? r.json() : Promise.reject(new Error('summary failed')))
+    .then((json) => apply(json?.data || null))
+    .catch(() => { /* silent fallback */ });
 }
