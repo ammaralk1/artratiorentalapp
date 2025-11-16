@@ -321,6 +321,7 @@ registerTranslations({
     'projects.status.completed': 'مكتمل',
     'projects.status.conflict': 'تعارض',
     'projects.status.cancelled': 'ملغي',
+    'projects.tag.closed': 'مغلق',
     'projects.form.labels.cancelled': 'إلغاء المشروع',
     'projects.form.hints.cancelled': 'سيتم وسم المشروع كملغي وتحديث حالة جميع الحجوزات المرتبطة إلى ملغي.',
     // Close note label used when closing a project
@@ -785,6 +786,7 @@ registerTranslations({
     'projects.status.completed': 'Completed',
     'projects.status.conflict': 'Conflict',
     'projects.status.cancelled': 'Cancelled',
+    'projects.tag.closed': 'Closed',
     'projects.form.labels.cancelled': 'Cancel project',
     'projects.form.hints.cancelled': 'Marks the project as cancelled and updates all linked reservations to cancelled.',
     // Close note label used when closing a project

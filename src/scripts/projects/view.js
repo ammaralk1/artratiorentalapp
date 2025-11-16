@@ -682,8 +682,8 @@ function renderFocusCard(project, category) {
     // After confirming, show a Close Project button until it is closed
     confirmationControl = `<button class=\"btn btn-sm btn-warning project-focus-card__confirm-btn\" data-action=\"close-project\" data-id=\"${projectIdAttr}\">${escapeHtml(t('projects.actions.close', '🔒 إغلاق المشروع'))}</button>`;
   } else {
-    // Closed: show indicator only (reopen from edit modal)
-    confirmationControl = `<span class=\"reservation-chip status-completed project-focus-card__confirm-indicator\">${escapeHtml(t('projects.status.completed', 'مغلق'))}</span>`;
+    // Closed: show indicator only (reopen from edit modal) — use "مغلق/Closed" to differentiate from top tag "مكتمل/Completed"
+    confirmationControl = `<span class=\"reservation-chip status-completed project-focus-card__confirm-indicator\">${escapeHtml(t('projects.tag.closed', 'مغلق'))}</span>`;
   }
 
   return `
