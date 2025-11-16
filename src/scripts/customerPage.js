@@ -757,6 +757,13 @@ function updateHeroStats() {
       });
     }
   });
+  // Sidebar stats (filtered للعميل الحالي)
+  updateSidebarStats({
+    projects: totalProjects,
+    reservations: totalReservations,
+    equipment: totalEquipment,
+    technicians: technicianSet.size,
+  });
 
   if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
   if (heroStatProjectsDescEl) {
