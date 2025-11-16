@@ -553,6 +553,10 @@ async function refreshTechnicianFinancialSummary(technician) {
 
   const sidebarStats = computeTechnicianSidebarStats(relevantReservations, normalizedId);
   updateSidebarStats(sidebarStats);
+  // Persist filtered stats for other scripts (fallbacks) to reuse if needed
+  try {
+    window.__TECHNICIAN_STATS__ = sidebarStats;
+  } catch (_) {}
 
   const breakdown = relevantReservations.map((reservation, index) => {
     const detailsEntry = Array.isArray(reservation.techniciansDetails)

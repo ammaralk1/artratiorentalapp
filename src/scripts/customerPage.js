@@ -548,6 +548,7 @@ function updateSidebarStats({ projects = 0, reservations = 0, equipment = 0, tec
   if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(reservations);
   if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(equipment);
   if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(technicians);
+  try { window.__CUSTOMER_STATS__ = { projects, reservations, equipment, technicians }; } catch (_) {}
 }
 
 function updateHeroStats() {
