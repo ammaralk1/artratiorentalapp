@@ -401,6 +401,14 @@ registerTranslations({
     'projects.details.summary.finalTotal': 'المجموع النهائي',
     'projects.details.labels.start': 'تاريخ البداية',
     'projects.details.labels.end': 'تاريخ النهاية',
+    // Details modal section titles
+    'projects.details.summary.title': 'الملخص المالي',
+    'projects.details.description': 'وصف المشروع',
+    // Payment overview (details modal)
+    'projects.details.paymentOverview.total': 'الإجمالي الكلي',
+    'projects.details.paymentOverview.paid': 'المدفوع',
+    'projects.details.paymentOverview.percent': 'نسبة المدفوع',
+    'projects.details.paymentOverview.remaining': 'المتبقي',
     // Close project modal (HTML wired)
     'projects.closeModal.title': '🔒 إغلاق المشروع',
     'projects.closeModal.subtitle': 'يرجى كتابة ملاحظة الإغلاق (اختياري).',
@@ -853,6 +861,14 @@ registerTranslations({
     'projects.details.summary.finalTotal': 'Final total',
     'projects.details.labels.start': 'Start date',
     'projects.details.labels.end': 'End date',
+    // Details modal section titles
+    'projects.details.summary.title': 'Financial summary',
+    'projects.details.description': 'Project description',
+    // Payment overview (details modal)
+    'projects.details.paymentOverview.total': 'Overall total',
+    'projects.details.paymentOverview.paid': 'Paid',
+    'projects.details.paymentOverview.percent': 'Paid %',
+    'projects.details.paymentOverview.remaining': 'Remaining',
     // Close project modal (HTML wired)
     'projects.closeModal.title': '🔒 Close Project',
     'projects.closeModal.subtitle': 'Please add a closing note (optional).',
