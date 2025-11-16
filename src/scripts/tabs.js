@@ -392,7 +392,19 @@ export function setupTabs() {
     const localStoredTab = readStoredTab(DASHBOARD_TAB_STORAGE_KEY);
     const fallbackTab = tabButtons[0]?.getAttribute('data-tab') || null;
 
+    // Support deep-linking via URL hash (e.g., dashboard.html#reservations-tab)
+    let hashTarget = null;
+    try {
+      const rawHash = (typeof window !== 'undefined' && window.location && typeof window.location.hash === 'string')
+        ? window.location.hash.replace(/^#/, '')
+        : '';
+      if (rawHash && TAB_ID_PATTERN.test(rawHash) && document.getElementById(rawHash)) {
+        hashTarget = rawHash;
+      }
+    } catch (_) {}
+
     const candidateTabs = [
+      hashTarget,
       prefs?.dashboardTab,
       localStoredTab,
       currentMainTab,
