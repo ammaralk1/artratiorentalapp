@@ -203,9 +203,21 @@ function refreshSidebarCountersFallback() {
     let el = document.getElementById(id);
     if (el) return el;
     // If stats section is missing (legacy Arabic pages), create a minimal one.
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const menu = sidebar?.querySelector('.sidebar-menu') || sidebar;
-    if (!menu || !sidebar) return null;
+    let sidebar = document.getElementById('dashboard-sidebar');
+    if (!sidebar) {
+      sidebar = document.createElement('aside');
+      sidebar.id = 'dashboard-sidebar';
+      sidebar.className = 'sidebar-shell sidebar-drawer open';
+      sidebar.setAttribute('aria-hidden', 'false');
+      (document.body || document.documentElement).appendChild(sidebar);
+    }
+
+    let menu = sidebar.querySelector('.sidebar-menu');
+    if (!menu) {
+      menu = document.createElement('nav');
+      menu.className = 'sidebar-menu mt-6';
+      sidebar.appendChild(menu);
+    }
 
     let panel = sidebar.querySelector('.sidebar-panel--stats');
     if (!panel) {
