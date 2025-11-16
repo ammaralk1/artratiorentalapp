@@ -353,7 +353,8 @@ function ensureSidebarStructure() {
   };
 
   const ensureStatsPanel = (menu) => {
-    let panel = menu.querySelector('.sidebar-panel--stats');
+    // لوحة الإحصاءات قد تكون خارج الـ menu في صفحات التفاصيل؛ استخدم الموجودة إن وُجدت
+    let panel = sidebar.querySelector('.sidebar-panel--stats') || menu.querySelector('.sidebar-panel--stats');
     if (!panel) {
       panel = document.createElement('div');
       panel.className = 'sidebar-panel sidebar-panel--stats';
