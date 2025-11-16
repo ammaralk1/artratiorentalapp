@@ -16,6 +16,7 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # Serve clean URLs for the built static assets and pages.
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L,NC]
 RewriteRule ^js/(.*)$ dist/js/$1 [L,NC]
+RewriteRule ^css/(.*)$ dist/css/$1 [L,NC]
 
 # Serve favicon and related PWA assets from the built folder
 RewriteRule ^favicon\.ico$ dist/favicon.ico [L,NC]
