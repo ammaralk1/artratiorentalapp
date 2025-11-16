@@ -268,100 +268,93 @@ function ensureSidebarStructure() {
     (document.body || document.documentElement).prepend(sidebar);
   }
 
-  // Brand header (only if missing)
-  if (!sidebar.querySelector('.sidebar-brand')) {
-    const brand = document.createElement('div');
-    brand.className = 'flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand';
-    brand.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="sidebar-brand-logo">
-          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
-        </div>
-        <div class="text-start sidebar-brand-text">
-          <p class="text-xs text-base-content/60">Art Ratio</p>
-          <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
-        </div>
+  // Rebuild inner content fresh to avoid legacy clutter/extra text
+  sidebar.innerHTML = '';
+
+  // Brand header
+  const brand = document.createElement('div');
+  brand.className = 'flex items-center justify-between gap-3 border-b border-base-200/70 pb-4 sidebar-brand';
+  brand.innerHTML = `
+    <div class="flex items-center gap-3">
+      <div class="sidebar-brand-logo">
+        <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
       </div>
-      <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path d="M18 6l-12 12"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-      </button>
-    `;
-    sidebar.prepend(brand);
-  }
+      <div class="text-start sidebar-brand-text">
+        <p class="text-xs text-base-content/60">Art Ratio</p>
+        <p class="text-lg font-semibold text-base-content">مركز التحكم</p>
+      </div>
+    </div>
+    <button type="button" id="sidebar-close" class="btn btn-circle btn-ghost lg:hidden" aria-label="إغلاق القائمة">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+        <path d="M18 6l-12 12"></path>
+        <path d="M6 6l12 12"></path>
+      </svg>
+    </button>
+  `;
+  sidebar.appendChild(brand);
 
   // Sidebar menu container
-  let menu = sidebar.querySelector('.sidebar-menu');
-  if (!menu) {
-    menu = document.createElement('nav');
-    menu.className = 'sidebar-menu mt-6 space-y-6';
-    sidebar.appendChild(menu);
-    // Create a floating open button if missing anywhere else
-    if (!document.getElementById('sidebar-open')) {
-      const openBtn = document.createElement('button');
-      openBtn.id = 'sidebar-open';
-      openBtn.type = 'button';
-      openBtn.className = 'mobile-sidebar-toggle';
-      openBtn.setAttribute('aria-label', 'فتح القائمة');
-      openBtn.innerHTML = `
-        <span class="mobile-sidebar-toggle__icon">
-          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
-          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
-          <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
-        </span>`;
-      openBtn.style.position = 'fixed';
-      openBtn.style.top = '16px';
-      openBtn.style.insetInlineStart = '16px';
-      openBtn.style.zIndex = '60';
-      (document.body || document.documentElement).appendChild(openBtn);
-    }
-  }
+  const menu = document.createElement('nav');
+  menu.className = 'sidebar-menu mt-6 space-y-6';
+  sidebar.appendChild(menu);
 
   // Stats panel
-  let statsPanel = sidebar.querySelector('.sidebar-panel--stats');
-  if (!statsPanel) {
-    statsPanel = document.createElement('div');
-    statsPanel.className = 'sidebar-panel sidebar-panel--stats';
-    statsPanel.innerHTML = `
-      <h3 class="sidebar-heading">ملخص اليوم</h3>
-      <div class="sidebar-stats" role="list"></div>
-    `;
-    menu.prepend(statsPanel);
-  }
+  const statsPanel = document.createElement('div');
+  statsPanel.className = 'sidebar-panel sidebar-panel--stats';
+  statsPanel.innerHTML = `
+    <h3 class="sidebar-heading">ملخص اليوم</h3>
+    <div class="sidebar-stats" role="list"></div>
+  `;
+  menu.appendChild(statsPanel);
 
   // Tabs panel
-  let tabsPanel = sidebar.querySelector('.sidebar-panel--tabs');
-  if (!tabsPanel) {
-    tabsPanel = document.createElement('div');
-    tabsPanel.className = 'sidebar-panel sidebar-panel--tabs';
-    tabsPanel.innerHTML = `
-      <p class="sidebar-heading mb-2">التبويبات</p>
-      <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical"></div>
-    `;
-    menu.appendChild(tabsPanel);
-    const buttons = tabsPanel.querySelector('.tab-buttons');
-    const links = [
-      { href: 'home.html', label: 'الصفحة الرئيسية' },
-      { href: 'dashboard.html#customers-tab', label: 'العملاء' },
-      { href: 'dashboard.html#equipment-tab', label: 'المعدات' },
-      { href: 'dashboard.html#maintenance-tab', label: 'الصيانة' },
-      { href: 'dashboard.html#technicians-tab', label: 'طاقم العمل' },
-      { href: 'dashboard.html#reservations-tab', label: 'الحجوزات' },
-      { href: 'projects.html', label: 'لوحة المشاريع' }
-    ];
-    if (buttons) {
-      links.forEach((item) => {
-        const a = document.createElement('a');
-        a.className = 'tab-button';
-        a.href = item.href;
-        a.textContent = item.label;
-        a.setAttribute('data-close-sidebar', '');
-        buttons.appendChild(a);
-      });
-    }
+  const tabsPanel = document.createElement('div');
+  tabsPanel.className = 'sidebar-panel sidebar-panel--tabs';
+  tabsPanel.innerHTML = `
+    <p class="sidebar-heading mb-2">التبويبات</p>
+    <div class="tab-buttons tab-buttons-vertical" role="tablist" aria-orientation="vertical"></div>
+  `;
+  menu.appendChild(tabsPanel);
+  const buttons = tabsPanel.querySelector('.tab-buttons');
+  const links = [
+    { href: 'home.html', label: 'الصفحة الرئيسية' },
+    { href: 'dashboard.html#customers-tab', label: 'العملاء' },
+    { href: 'dashboard.html#equipment-tab', label: 'المعدات' },
+    { href: 'dashboard.html#maintenance-tab', label: 'الصيانة' },
+    { href: 'dashboard.html#technicians-tab', label: 'طاقم العمل' },
+    { href: 'dashboard.html#reservations-tab', label: 'الحجوزات' },
+    { href: 'projects.html', label: 'لوحة المشاريع' }
+  ];
+  if (buttons) {
+    links.forEach((item) => {
+      const a = document.createElement('a');
+      a.className = 'tab-button';
+      a.href = item.href;
+      a.textContent = item.label;
+      a.setAttribute('data-close-sidebar', '');
+      buttons.appendChild(a);
+    });
+  }
+
+  // Create a floating open button if missing anywhere else
+  if (!document.getElementById('sidebar-open')) {
+    const openBtn = document.createElement('button');
+    openBtn.id = 'sidebar-open';
+    openBtn.type = 'button';
+    openBtn.className = 'mobile-sidebar-toggle';
+    openBtn.setAttribute('aria-label', 'فتح القائمة');
+    openBtn.innerHTML = `
+      <span class="mobile-sidebar-toggle__icon">
+        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--top"></span>
+        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--middle"></span>
+        <span class="mobile-sidebar-toggle__line mobile-sidebar-toggle__line--bottom"></span>
+      </span>`;
+    openBtn.style.position = 'fixed';
+    openBtn.style.top = '16px';
+    openBtn.style.insetInlineStart = '16px';
+    openBtn.style.zIndex = '60';
+    (document.body || document.documentElement).appendChild(openBtn);
   }
 
   return sidebar;
