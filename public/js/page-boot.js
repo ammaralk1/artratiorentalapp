@@ -196,7 +196,13 @@ function initializeSidebarFallback() {
 function refreshSidebarCountersFallback() {
   // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
   const body = document.body || document.documentElement;
-  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
+  const path = (window.location?.pathname || '').toLowerCase();
+  const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
+  const isDetailPage = body?.classList?.contains('technician-page')
+    || body?.classList?.contains('customer-page')
+    || hasDetailMarker
+    || path.includes('customer')
+    || path.includes('technician');
   if (isDetailPage) return;
 
   const ids = {
@@ -223,8 +229,13 @@ function refreshSidebarCountersFallback() {
 
   const ensureStat = (key) => {
     const body = document.body || document.documentElement;
+    const path = (window.location?.pathname || '').toLowerCase();
     const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
-    const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page') || hasDetailMarker;
+    const isDetailPage = body?.classList?.contains('technician-page')
+      || body?.classList?.contains('customer-page')
+      || hasDetailMarker
+      || path.includes('customer')
+      || path.includes('technician');
     if (isDetailPage) return null;
     const id = ids[key]; if (!id) return null;
     let el = document.getElementById(id);
@@ -291,11 +302,13 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
+  const path = (window.location?.pathname || '').toLowerCase();
   const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
   const isDetailPage = (
     body?.classList?.contains('technician-page')
     || body?.classList?.contains('customer-page')
-    || /\/(technician|customer)\.html/i.test(window.location?.pathname || '')
+    || path.includes('customer')
+    || path.includes('technician')
     || hasDetailMarker
   );
   let sidebar = document.getElementById('dashboard-sidebar');
