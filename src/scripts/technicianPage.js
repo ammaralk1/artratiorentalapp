@@ -126,6 +126,47 @@ function getGlobalSidebarStats() {
   };
 }
 
+function ensureSidebarStatElement(id, labelKey, labelFallback) {
+  let el = document.getElementById(id);
+  if (el) return el;
+
+  let sidebar = document.getElementById('dashboard-sidebar');
+  if (!sidebar) {
+    sidebar = document.createElement('aside');
+    sidebar.id = 'dashboard-sidebar';
+    sidebar.className = 'sidebar-shell sidebar-drawer';
+    (document.body || document.documentElement).prepend(sidebar);
+  }
+
+  let statsPanel = sidebar.querySelector('.sidebar-panel--stats');
+  if (!statsPanel) {
+    statsPanel = document.createElement('div');
+    statsPanel.className = 'sidebar-panel sidebar-panel--stats';
+    statsPanel.innerHTML = `
+      <h3 class="sidebar-heading">${t?.('dashboard.sidebar.statsHeading', 'ملخص اليوم')}</h3>
+      <div class="sidebar-stats" role="list"></div>
+    `;
+    sidebar.prepend(statsPanel);
+  }
+
+  let list = statsPanel.querySelector('.sidebar-stats');
+  if (!list) {
+    list = document.createElement('div');
+    list.className = 'sidebar-stats';
+    list.setAttribute('role', 'list');
+    statsPanel.appendChild(list);
+  }
+
+  const row = document.createElement('div');
+  row.className = 'sidebar-stats-row';
+  row.setAttribute('role', 'listitem');
+  const label = t?.(labelKey, labelFallback) ?? labelFallback ?? '';
+  row.innerHTML = `<span>${label}</span><span id="${id}" class="badge-soft">0</span>`;
+  list.appendChild(row);
+  el = row.querySelector(`#${id}`);
+  return el;
+}
+
 function updateSidebarStats(overrides = {}) {
   const base = getGlobalSidebarStats();
   const stats = {
@@ -135,10 +176,17 @@ function updateSidebarStats(overrides = {}) {
     technicians: overrides.technicians ?? base.technicians,
   };
 
-  if (sidebarProjectsEl) sidebarProjectsEl.textContent = formatNumberLocalized(stats.projects);
-  if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(stats.reservations);
-  if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(stats.equipment);
-  if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(stats.technicians);
+  const statNodes = {
+    projects: sidebarProjectsEl || ensureSidebarStatElement('sidebar-stat-projects', 'dashboard.metrics.projects.label', 'المشاريع'),
+    reservations: sidebarReservationsEl || ensureSidebarStatElement('sidebar-stat-reservations', 'dashboard.metrics.reservations.label', 'الحجوزات'),
+    equipment: sidebarEquipmentEl || ensureSidebarStatElement('sidebar-stat-equipment', 'dashboard.metrics.equipment.label', 'المعدات'),
+    technicians: sidebarTechniciansEl || ensureSidebarStatElement('sidebar-stat-technicians', 'dashboard.metrics.technicians.label', 'طاقم العمل'),
+  };
+
+  if (statNodes.projects) statNodes.projects.textContent = formatNumberLocalized(stats.projects);
+  if (statNodes.reservations) statNodes.reservations.textContent = formatNumberLocalized(stats.reservations);
+  if (statNodes.equipment) statNodes.equipment.textContent = formatNumberLocalized(stats.equipment);
+  if (statNodes.technicians) statNodes.technicians.textContent = formatNumberLocalized(stats.technicians);
   try { window.__TECHNICIAN_STATS__ = { ...stats }; } catch (_) {}
 }
 
