@@ -102,16 +102,7 @@ export function renderReservationsList({
     });
   });
 
-  container.querySelectorAll('button[data-action="reopen"]').forEach((btn) => {
-    const index = Number(btn.dataset.reservationIndex);
-    if (Number.isNaN(index)) return;
-    btn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      if (typeof onReopenReservation === 'function') {
-        onReopenReservation(index, event);
-      }
-    });
-  });
+  // Reopen is handled only inside the edit modal; no button on tiles.
 }
 
 export function renderReservationDetails(index, {
