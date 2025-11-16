@@ -222,6 +222,10 @@ function refreshSidebarCountersFallback() {
   };
 
   const ensureStat = (key) => {
+    const body = document.body || document.documentElement;
+    const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
+    const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page') || hasDetailMarker;
+    if (isDetailPage) return null;
     const id = ids[key]; if (!id) return null;
     let el = document.getElementById(id);
     if (el) return el;
@@ -287,10 +291,12 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
+  const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
   const isDetailPage = (
     body?.classList?.contains('technician-page')
     || body?.classList?.contains('customer-page')
     || /\/(technician|customer)\.html/i.test(window.location?.pathname || '')
+    || hasDetailMarker
   );
   let sidebar = document.getElementById('dashboard-sidebar');
   if (!sidebar) {
@@ -304,6 +310,7 @@ function ensureSidebarStructure() {
 
   // صفحات التفاصيل (عميل/فني) لديها سايدبار مخصّص في الـ HTML؛ لا نعيد البناء حتى لا نخسر التبويبات أو التنسيق.
   if (isDetailPage) {
+    sidebar.dataset.preserveNative = '1';
     ensureBurgerToggle();
     return sidebar;
   }
