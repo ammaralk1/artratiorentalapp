@@ -154,6 +154,7 @@ export function renderProjects() {
     setTableCount(0);
     state.visibleProjects = [];
     renderTimeline([]);
+    renderFocusCards();
     return;
   }
 
