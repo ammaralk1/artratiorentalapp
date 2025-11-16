@@ -16,6 +16,7 @@ import { loadData } from './storage.js';
 import { refreshProjectsFromApi } from './projectsService.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
+import { apiRequest } from './apiClient.js';
 
 applyStoredTheme();
 checkAuth();
@@ -99,6 +100,20 @@ function formatNumberLocalized(value) {
   } catch (error) {
     return normalizeNumbers(String(number)) || '0';
   }
+}
+
+function normalizeSidebarSummary(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const toInt = (value) => {
+    const parsed = Number.parseInt(String(value ?? '0'), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  return {
+    projects: toInt(raw?.projects?.total),
+    reservations: toInt(raw?.reservations?.total),
+    equipment: toInt(raw?.equipment?.total),
+    technicians: toInt(raw?.technicians?.total),
+  };
 }
 
 function getGlobalSidebarStats() {
@@ -185,6 +200,17 @@ function computeTechnicianSidebarStats(reservations, technicianId) {
 }
 
 async function hydrateSidebarSummary() {
+  try {
+    const response = await apiRequest('/summary/');
+    const summary = normalizeSidebarSummary(response?.data ?? null);
+    if (summary) {
+      updateSidebarStats(summary);
+      return;
+    }
+  } catch (_) {
+    // ignore and fallback to full fetch
+  }
+
   try {
     await Promise.allSettled([
       refreshProjectsFromApi(),

@@ -16,6 +16,7 @@ import { resolveProjectTotals, resolveReservationNetTotal, PROJECT_TAX_RATE } fr
 import { calculatePaymentProgress } from './reservationsSummary.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
+import { apiRequest } from './apiClient.js';
 
 applyStoredTheme();
 checkAuth();
@@ -545,6 +546,20 @@ function escapeAttribute(value = '') {
     .replace(/</g, '&lt;');
 }
 
+function normalizeSidebarSummary(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const toInt = (value) => {
+    const parsed = Number.parseInt(String(value ?? '0'), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  return {
+    projects: toInt(raw?.projects?.total),
+    reservations: toInt(raw?.reservations?.total),
+    equipment: toInt(raw?.equipment?.total),
+    technicians: toInt(raw?.technicians?.total),
+  };
+}
+
 function getGlobalSidebarStats() {
   const snapshot = loadData();
   return {
@@ -777,13 +792,8 @@ function updateHeroStats() {
       });
     }
   });
-  // Sidebar stats (filtered للعميل الحالي)
-  updateSidebarStats({
-    projects: totalProjects,
-    reservations: totalReservations,
-    equipment: totalEquipment,
-    technicians: technicianSet.size,
-  });
+  // Sidebar stats تعرض الأرقام العامة (يتم تحديثها من الملخص/التحميل الخلفي)
+  updateSidebarStats();
 
   if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
   if (heroStatProjectsDescEl) {
@@ -1058,6 +1068,18 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
 }
 
 async function hydrateSidebarSummary() {
+  // Try fast summary endpoint first; fallback to fetching individual datasets.
+  try {
+    const response = await apiRequest('/summary/');
+    const summary = normalizeSidebarSummary(response?.data ?? null);
+    if (summary) {
+      updateSidebarStats(summary);
+      return;
+    }
+  } catch (_) {
+    // ignore and fallback
+  }
+
   try {
     await Promise.allSettled([
       refreshProjectsFromApi(),
