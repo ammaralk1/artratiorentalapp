@@ -47,6 +47,7 @@ import {
   updateSummary
 } from './view.js';
 import { state } from './state.js';
+import { autoCloseExpiredProjects } from './actions.js';
 
 export function initProjectsPage() {
   document.addEventListener('DOMContentLoaded', () => {
@@ -99,6 +100,8 @@ async function initialiseProjectsData() {
   try {
     await ensureReservationsLoaded({ suppressError: true });
     await refreshProjectsFromApi();
+    // Auto-close projects whose time has ended
+    try { await autoCloseExpiredProjects(); } catch (_) {}
   } catch (error) {
     console.error('❌ [projects] Failed to initialise projects data', error);
     const message = error?.message || t('projects.toast.fetchFailed', 'تعذر تحميل بيانات المشاريع، حاول لاحقًا');
