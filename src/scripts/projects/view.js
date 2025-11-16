@@ -688,7 +688,7 @@ function renderFocusCard(project, category) {
 
   return `
     <div class="project-card-grid__item">
-      <article class="project-focus-card ${[...cardStateClasses, (statusKey === 'completed' ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+      <article class="project-focus-card ${[...cardStateClasses, ((typeof project?.status === 'string' && ['completed','closed','مكتمل','مغلق'].includes(project.status.trim().toLowerCase())) ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
           ${projectCodeBadge}
@@ -757,29 +757,30 @@ function isProjectThisWeek(project) {
 }
 
 export function determineProjectStatus(project) {
-  // Prefer explicit status if provided by backend/UI updates
-  try {
-    const raw = typeof project?.status === 'string' ? project.status.toLowerCase().trim() : null;
-    if (raw) {
-      if (raw === 'cancelled' || raw === 'canceled' || raw === 'ملغي' || raw === 'ملغى') return 'cancelled';
-      if (raw === 'completed' || raw === 'مكتمل' || raw === 'مغلق') return 'completed';
-      if (raw === 'ongoing' || raw === 'in_progress' || raw === 'in-progress' || raw === 'جاري' || raw === 'قيد التنفيذ') return 'ongoing';
-      if (raw === 'upcoming' || raw === 'قادم') return 'upcoming';
-    }
-  } catch (_) { /* ignore and fall back to time-based */ }
-
+  const raw = (typeof project?.status === 'string') ? project.status.trim().toLowerCase() : null;
   const now = new Date();
   const start = project.start ? new Date(project.start) : null;
   const end = project.end ? new Date(project.end) : null;
 
-  if (start && !Number.isNaN(start.getTime()) && start > now) {
-    return 'upcoming';
+  // 1) الملغى دائماً يأخذ أولوية
+  if (raw && (raw === 'cancelled' || raw === 'canceled' || raw === 'ملغي' || raw === 'ملغى')) {
+    return 'cancelled';
   }
 
+  // 2) إذا انتهى الوقت نعتبره مكتمل حتى لو الحالة الصريحة "ongoing"
   if (end && !Number.isNaN(end.getTime()) && end < now) {
     return 'completed';
   }
 
+  // 3) حالات صريحة أخرى (قبل الحساب الزمني)
+  if (raw) {
+    if (raw === 'completed' || raw === 'مكتمل' || raw === 'مغلق') return 'completed';
+    if (raw === 'ongoing' || raw === 'in_progress' || raw === 'in-progress' || raw === 'جاري' || raw === 'قيد التنفيذ') return 'ongoing';
+    if (raw === 'upcoming' || raw === 'قادم') return 'upcoming';
+  }
+
+  // 4) الحساب الزمني الافتراضي
+  if (start && !Number.isNaN(start.getTime()) && start > now) return 'upcoming';
   return 'ongoing';
 }
 
