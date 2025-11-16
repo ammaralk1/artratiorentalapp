@@ -38,12 +38,9 @@
           const href = (l.getAttribute('href') || l.href || '').toLowerCase();
           return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css');
         });
-
-      // Only inject when a sidebar exists to avoid extra requests on other pages
-      const needsSidebar = !hasSidebarCss && (
-        document.querySelector('.sidebar-shell, .sidebar-drawer, .sidebar-panel--tabs, [aria-label*="sidebar" i]') != null
-      );
-      if (!needsSidebar) return;
+      // Inject unconditionally when missing (the script runs very early,
+      // before body is parsed on some pages — gating on DOM presence would miss it).
+      if (hasSidebarCss) return;
 
       const link = document.createElement('link');
       link.setAttribute('rel', 'stylesheet');
