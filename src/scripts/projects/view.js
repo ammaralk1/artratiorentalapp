@@ -40,6 +40,19 @@ function normalizeProjectText(value) {
   return normalizeNumbers(String(value || '')).toLowerCase().trim();
 }
 
+function hasProjectFilters() {
+  const filters = state.filters || {};
+  return Boolean(
+    (filters.search || '').trim()
+    || filters.status
+    || filters.payment
+    || filters.type
+    || filters.confirmed
+    || filters.startDate
+    || filters.endDate
+  );
+}
+
 function parseFilterDate(value, endOfDay = false) {
   if (!value) return null;
   const date = new Date(`${value}T${endOfDay ? '23:59:59' : '00:00:00'}`);
@@ -104,6 +117,7 @@ function projectMatchesFilters(project) {
   const isConfirmed = project.confirmed === true || project.confirmed === 'true';
   if (state.filters.confirmed === 'yes' && !isConfirmed) return false;
   if (state.filters.confirmed === 'no' && isConfirmed) return false;
+  if (state.filters.confirmed === 'closed' && status !== 'completed') return false;
 
   const paymentStatus = getProjectPaymentStatus(project);
   if (state.filters.payment) {
@@ -397,7 +411,7 @@ export function renderFocusCards() {
   if (!dom.focusCards) return;
 
   const sourceProjects = state.visibleProjects.length ? state.visibleProjects : getFilteredProjects();
-  const cards = buildFocusCards(sourceProjects);
+  const cards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters() });
   if (!cards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
     dom.focusCards.innerHTML = `<div class="project-card-grid__item project-card-grid__item--full"><div class="alert alert-info mb-0 text-center">${emptyMessage}</div></div>`;
@@ -409,8 +423,10 @@ export function renderFocusCards() {
   // Sections are always visible; no toggle required
 }
 
-function buildFocusCards(projectsPool = []) {
-  const source = Array.isArray(projectsPool) && projectsPool.length ? projectsPool : state.projects;
+function buildFocusCards(projectsPool = [], options = {}) {
+  const allowFallback = options.allowFallback !== false;
+  const initial = Array.isArray(projectsPool) ? projectsPool : [];
+  const source = initial.length ? initial : (allowFallback ? state.projects : []);
   if (!Array.isArray(source) || !source.length) return [];
 
   const today = source.filter(isProjectToday);

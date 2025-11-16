@@ -104,6 +104,23 @@ export function initProjectDatePickers() {
     ['#project-end-date', { dateFormat: 'Y-m-d', allowInput: true }]
   ];
 
+  const filterDatePickers = [
+    ['#project-filter-start-date', {
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      altInput: true,
+      altFormat: 'd/m/Y',
+      disableMobile: true
+    }],
+    ['#project-filter-end-date', {
+      dateFormat: 'Y-m-d',
+      allowInput: true,
+      altInput: true,
+      altFormat: 'd/m/Y',
+      disableMobile: true
+    }]
+  ];
+
   const timePickers = [
     ['#project-start-time', {
       enableTime: true,
@@ -136,6 +153,13 @@ export function initProjectDatePickers() {
   ];
 
   [...datePickers, ...timePickers].forEach(([selector, config]) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      fp(el, config);
+    }
+  });
+
+  filterDatePickers.forEach(([selector, config]) => {
     const el = document.querySelector(selector);
     if (el) {
       fp(el, config);
