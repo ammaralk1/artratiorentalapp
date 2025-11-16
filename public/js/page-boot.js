@@ -193,17 +193,21 @@ function initializeSidebarFallback() {
 }
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
-function refreshSidebarCountersFallback() {
-  // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
+function isDetailPageContext() {
   const body = document.body || document.documentElement;
   const path = (window.location?.pathname || '').toLowerCase();
   const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
-  const isDetailPage = body?.classList?.contains('technician-page')
+  const pathIsDetail = /\/(customer|technician)\.html($|\?)/.test(path);
+  return body?.classList?.contains('technician-page')
     || body?.classList?.contains('customer-page')
     || hasDetailMarker
-    || path.includes('customer')
-    || path.includes('technician');
-  if (isDetailPage) return;
+    || pathIsDetail
+    || window.__PRESERVE_NATIVE_SIDEBAR__;
+}
+
+function refreshSidebarCountersFallback() {
+  // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
+  if (isDetailPageContext()) return;
 
   const ids = {
     projects: 'sidebar-stat-projects',
@@ -228,19 +232,9 @@ function refreshSidebarCountersFallback() {
   };
 
   const ensureStat = (key) => {
-    const body = document.body || document.documentElement;
-    const path = (window.location?.pathname || '').toLowerCase();
-    const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
     const sidebar = document.getElementById('dashboard-sidebar');
     const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
-    const isDetailPage = body?.classList?.contains('technician-page')
-      || body?.classList?.contains('customer-page')
-      || hasDetailMarker
-      || path.includes('customer')
-      || path.includes('technician')
-      || hasNativeTabs
-      || window.__PRESERVE_NATIVE_SIDEBAR__;
-    if (isDetailPage) return null;
+    if (hasNativeTabs || isDetailPageContext()) return null;
     const id = ids[key]; if (!id) return null;
     let el = document.getElementById(id);
     if (el) return el;
@@ -295,9 +289,7 @@ function refreshSidebarCountersFallback() {
 
 // Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
 function ensureSidebarStructure() {
-  const path = (window.location?.pathname || '').toLowerCase();
-  const isLikelyDetailPath = path.includes('customer') || path.includes('technician');
-  if (isLikelyDetailPath && document.readyState === 'loading') {
+  if (isDetailPageContext() && document.readyState === 'loading') {
     // انتظر تَشكُّل الـ DOM حتى لا ننشئ سايدبار بديل فوق السايدبار الأصلي
     try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
     document.addEventListener('DOMContentLoaded', () => ensureSidebarStructure(), { once: true });
@@ -315,14 +307,7 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
-  const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
-  const isDetailPage = (
-    body?.classList?.contains('technician-page')
-    || body?.classList?.contains('customer-page')
-    || path.includes('customer')
-    || path.includes('technician')
-    || hasDetailMarker
-  );
+  const isDetailPage = isDetailPageContext();
   let sidebar = document.getElementById('dashboard-sidebar');
   const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
 
