@@ -58,9 +58,15 @@ html.dark .mobile-sidebar-toggle, body.dark .mobile-sidebar-toggle { background:
 html.dark .mobile-sidebar-toggle:hover, body.dark .mobile-sidebar-toggle:hover { border-color: rgba(148, 163, 255, 0.62); background: linear-gradient(180deg, rgba(16, 28, 52, 0.98), rgba(11, 20, 38, 0.94)); }
 
 /* Minimal fallback styles for primary-nav buttons on Customer/Technician pages */
-.dashboard-tabbar .tab-buttons { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: center; }
+/* Outer container – soft card look */
+.dashboard-tabbar { max-width: min(100%, 72rem); width: min(100%, 96vw); padding: .75rem 1rem; border-radius: 2rem; border: 1px solid rgba(76,110,245,.18); background: linear-gradient(135deg, rgba(248,250,255,.9), rgba(232,240,255,.82)); box-shadow: 0 22px 48px rgba(15,23,42,.12); margin-inline: auto; }
+/* Inner rounded bar */
+.dashboard-tabbar .tab-buttons { display: flex; flex-wrap: nowrap; gap: .6rem; align-items: center; justify-content: center; padding: .35rem .8rem; border-radius: 999px; border: 1px solid rgba(76,110,245,.12); background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(236,243,255,.82)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 12px 24px rgba(76,110,245,.08); overflow-x: auto; scrollbar-width: none; }
+.dashboard-tabbar .tab-buttons::-webkit-scrollbar { display: none; }
 .dashboard-tabbar .tab-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .55rem 1rem; border-radius: 999px; border: 1px solid rgba(148,163,184,.35); font-weight: 700; text-decoration: none; cursor: pointer; transition: box-shadow .2s ease, transform .2s ease, background .2s ease, color .2s ease; }
 .dashboard-tabbar .tab-button:hover, .dashboard-tabbar .tab-button:focus-visible { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(15,23,42,.12); outline: none; }
+html.dark .dashboard-tabbar { background: linear-gradient(135deg, rgba(26,35,62,.92), rgba(18,28,52,.88)); border-color: rgba(63,93,245,.32); box-shadow: 0 26px 52px rgba(3,8,26,.58); }
+html.dark .dashboard-tabbar .tab-buttons { background: linear-gradient(135deg, rgba(32,47,82,.88), rgba(26,39,70,.82)); border-color: rgba(99,102,241,.22); box-shadow: inset 0 0 0 1px rgba(59,130,246,.18), 0 14px 28px rgba(3,8,26,.6); }
 html.dark .dashboard-tabbar .tab-button, body.dark .dashboard-tabbar .tab-button { border-color: rgba(63, 93, 245, 0.28); }
 
 /* Customer primary nav pills */
