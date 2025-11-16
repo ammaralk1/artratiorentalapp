@@ -58,7 +58,7 @@ export function renderProjects() {
     const emptyKey = state.projects.length === 0 ? 'projects.table.emptyInitial' : 'projects.table.emptyFiltered';
     const emptyFallback = state.projects.length === 0 ? 'لم يتم إنشاء مشاريع بعد.' : 'لا توجد مشاريع مطابقة.';
     const emptyText = escapeHtml(t(emptyKey, emptyFallback));
-    dom.projectsTableBody.innerHTML = `<tr class="projects-table-empty-row"><td colspan="8" class="text-center text-muted">${emptyText}</td></tr>`;
+    dom.projectsTableBody.innerHTML = `<tr class="projects-table-empty-row"><td colspan="6" class="text-center text-muted">${emptyText}</td></tr>`;
     setTableCount(0);
     state.visibleProjects = [];
     renderTimeline([]);
@@ -95,19 +95,10 @@ export function renderProjects() {
 function renderProjectRow(project) {
   const client = state.customers.find((c) => String(c.id) === String(project.clientId));
   const clientName = client?.customerName || t('projects.fallback.unknownClient', 'عميل غير معروف');
-  const companyName = (project.clientCompany || client?.companyName || '').trim();
-  const crewCount = project.technicians?.length || 0;
-  const equipmentCount = (project.equipment || []).reduce((sum, item) => sum + (item.qty || 0), 0);
+  const typeClass = ['commercial', 'coverage', 'photography', 'social'].includes(project.type) ? project.type : 'default';
   const { expensesTotal, totalWithTax } = resolveProjectTotals(project);
-  const reservationsForProject = getReservationsForProject(project.id);
-  const reservationsCount = reservationsForProject.length;
-  const reservationsLabelTemplate = t('projects.table.reservationsCount', '{count} حجوزات');
-  const reservationsLabel = reservationsLabelTemplate.replace('{count}', normalizeNumbers(String(reservationsCount)));
-  const reservationsBadge = reservationsCount
-    ? `<span class="badge rounded-pill project-reservations-chip">${escapeHtml(reservationsLabel)}</span>`
-    : '';
   const typeLabel = escapeHtml(getProjectTypeLabel(project.type));
-  const typeBadge = `<span class="badge project-type-badge">${typeLabel}</span>`;
+  const typeBadge = `<span class="project-type-chip project-type-chip--${typeClass}">${typeLabel}</span>`;
   const projectCodeDisplay = project.projectCode || `PRJ-${normalizeNumbers(String(project.id))}`;
   const projectCodeBadge = `<span class="project-code-badge">#${escapeHtml(projectCodeDisplay)}</span>`;
   const canDelete = userCanManageDestructiveActions();
@@ -125,16 +116,11 @@ function renderProjectRow(project) {
             ${typeBadge}
           </div>
         </div>
-        ${reservationsBadge}
       </td>
       <td>
-        ${companyName
-          ? `<div class="d-flex flex-column"><span>${escapeHtml(clientName)}</span><small class="text-muted">${escapeHtml(companyName)}</small></div>`
-          : escapeHtml(clientName)}
+        ${escapeHtml(clientName)}
       </td>
       <td>${combineProjectDateRange(project.start, project.end)}</td>
-      <td>${normalizeNumbers(String(crewCount))}</td>
-      <td>${normalizeNumbers(String(equipmentCount))}</td>
       <td>${formatCurrency(totalWithTax)}</td>
       <td>${formatCurrency(expensesTotal)}</td>
       <td class="text-end">

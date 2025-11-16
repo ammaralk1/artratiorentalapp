@@ -1065,41 +1065,41 @@ html.dark-mode .projects-hero-text {
   outline-color: rgba(248, 113, 113, 0.85);
 }
 
-html.dark-mode .projects-table table {
+:is(html.dark-mode, body.dark-mode) .projects-table table {
   color: var(--clr-text);
   background-color: transparent;
 }
 
-html.dark-mode .projects-table .table-light {
-  background-color: rgba(59, 130, 246, 0.18) !important;
-  color: var(--clr-text) !important;
-  border-color: rgba(148, 163, 184, 0.22) !important;
+:is(html.dark-mode, body.dark-mode) .projects-table .table-light {
+  background-color: rgba(24, 33, 59, 0.9) !important;
+  color: rgba(226, 232, 240, 0.95) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
 }
 
-html.dark-mode .projects-table thead th {
-  background-color: rgba(59, 130, 246, 0.18);
-  border-bottom-color: rgba(148, 163, 184, 0.28);
+:is(html.dark-mode, body.dark-mode) .projects-table thead th {
+  background-color: rgba(24, 33, 59, 0.9);
+  border-bottom-color: rgba(148, 163, 184, 0.32);
   color: rgba(226, 232, 240, 0.92);
 }
 
-html.dark-mode .projects-table tbody tr {
+:is(html.dark-mode, body.dark-mode) .projects-table tbody tr {
   background-color: rgba(24, 33, 59, 0.86);
   border-color: rgba(59, 130, 246, 0.18);
   box-shadow: inset 0 -1px 0 rgba(59, 130, 246, 0.12);
 }
 
-html.dark-mode .projects-table tbody tr:hover {
+:is(html.dark-mode, body.dark-mode) .projects-table tbody tr:hover {
   background-color: rgba(59, 130, 246, 0.22);
 }
 
-html.dark-mode .projects-table td,
-html.dark-mode .projects-table th {
+:is(html.dark-mode, body.dark-mode) .projects-table td,
+:is(html.dark-mode, body.dark-mode) .projects-table th {
   border-color: rgba(59, 130, 246, 0.16);
 }
 
-html.dark-mode .projects-table td small,
-html.dark-mode .projects-table td span,
-html.dark-mode .projects-table td strong {
+:is(html.dark-mode, body.dark-mode) .projects-table td small,
+:is(html.dark-mode, body.dark-mode) .projects-table td span,
+:is(html.dark-mode, body.dark-mode) .projects-table td strong {
   color: rgba(226, 232, 240, 0.88);
 }
 
@@ -1114,7 +1114,7 @@ html.dark-mode .project-row-highlight {
   font-weight: 500;
 }
 
-html.dark-mode .projects-table-empty-row td {
+:is(html.dark-mode, body.dark-mode) .projects-table-empty-row td {
   background-color: rgba(24, 33, 59, 0.82);
   color: rgba(226, 232, 240, 0.86) !important;
   border: 1px dashed rgba(59, 130, 246, 0.4);
@@ -2103,7 +2103,7 @@ body[dir="rtl"] .project-details-list li {
   box-shadow: 0 12px 28px rgba(3, 10, 32, 0.5);
 }
 
-html.dark-mode .projects-table .badge {
+:is(html.dark-mode, body.dark-mode) .projects-table .badge {
   filter: saturate(1.1);
 }
 
