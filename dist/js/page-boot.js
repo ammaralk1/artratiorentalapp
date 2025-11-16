@@ -287,7 +287,11 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
-  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
+  const isDetailPage = (
+    body?.classList?.contains('technician-page')
+    || body?.classList?.contains('customer-page')
+    || /\/(technician|customer)\.html/i.test(window.location?.pathname || '')
+  );
   let sidebar = document.getElementById('dashboard-sidebar');
   if (!sidebar) {
     sidebar = document.createElement('aside');
