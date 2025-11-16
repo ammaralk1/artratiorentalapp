@@ -688,7 +688,7 @@ function renderFocusCard(project, category) {
 
   return `
     <div class="project-card-grid__item">
-      <article class="project-focus-card ${[...cardStateClasses, ((typeof project?.status === 'string' && ['completed','closed','مكتمل','مغلق'].includes(project.status.trim().toLowerCase())) ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
+      <article class="project-focus-card ${[...cardStateClasses, (statusKey === 'completed' ? 'project-focus-card--completed' : '')].filter(Boolean).join(' ')}" data-project-id="${projectIdAttr}">
         <div class="project-focus-card__accent"></div>
         <div class="project-focus-card__top">
           ${projectCodeBadge}
