@@ -231,33 +231,37 @@ function refreshSidebarCountersFallback() {
     const body = document.body || document.documentElement;
     const path = (window.location?.pathname || '').toLowerCase();
     const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
     const isDetailPage = body?.classList?.contains('technician-page')
       || body?.classList?.contains('customer-page')
       || hasDetailMarker
       || path.includes('customer')
-      || path.includes('technician');
+      || path.includes('technician')
+      || hasNativeTabs
+      || window.__PRESERVE_NATIVE_SIDEBAR__;
     if (isDetailPage) return null;
     const id = ids[key]; if (!id) return null;
     let el = document.getElementById(id);
     if (el) return el;
     // If stats section is missing (legacy Arabic pages), create a minimal one.
-    let sidebar = document.getElementById('dashboard-sidebar');
-    if (!sidebar) {
-      sidebar = document.createElement('aside');
-      sidebar.id = 'dashboard-sidebar';
-      sidebar.className = 'sidebar-shell sidebar-drawer open';
-      sidebar.setAttribute('aria-hidden', 'false');
-      (document.body || document.documentElement).appendChild(sidebar);
+    let workingSidebar = sidebar;
+    if (!workingSidebar) {
+      workingSidebar = document.createElement('aside');
+      workingSidebar.id = 'dashboard-sidebar';
+      workingSidebar.className = 'sidebar-shell sidebar-drawer open';
+      workingSidebar.setAttribute('aria-hidden', 'false');
+      (document.body || document.documentElement).appendChild(workingSidebar);
     }
 
-    let menu = sidebar.querySelector('.sidebar-menu');
+    let menu = workingSidebar.querySelector('.sidebar-menu');
     if (!menu) {
       menu = document.createElement('nav');
       menu.className = 'sidebar-menu mt-6';
-      sidebar.appendChild(menu);
+      workingSidebar.appendChild(menu);
     }
 
-    let panel = sidebar.querySelector('.sidebar-panel--stats');
+    let panel = workingSidebar.querySelector('.sidebar-panel--stats');
     if (!panel) {
       panel = document.createElement('div');
       panel.className = 'sidebar-panel sidebar-panel--stats mt-6';
@@ -312,9 +316,14 @@ function ensureSidebarStructure() {
     || hasDetailMarker
   );
   let sidebar = document.getElementById('dashboard-sidebar');
+  const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
+
+  if (hasNativeTabs) {
+    try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
+  }
 
   // صفحات التفاصيل (عميل/فني): لا ننشئ سايدبار جديداً ولا نمسّ المحتوى الأصلي.
-  if (isDetailPage) {
+  if (isDetailPage || hasNativeTabs) {
     if (sidebar) {
       sidebar.dataset.preserveNative = '1';
     }
