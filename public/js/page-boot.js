@@ -193,21 +193,11 @@ function initializeSidebarFallback() {
 }
 
 // Fallback: hydrate sidebar counters from /backend/api/summary/
-function isDetailPageContext() {
-  const body = document.body || document.documentElement;
-  const path = (window.location?.pathname || '').toLowerCase();
-  const hasDetailMarker = !!document.querySelector('#customer-details, #technician-details');
-  const pathIsDetail = /\/(customer|technician)\.html($|\?)/.test(path);
-  return body?.classList?.contains('technician-page')
-    || body?.classList?.contains('customer-page')
-    || hasDetailMarker
-    || pathIsDetail
-    || window.__PRESERVE_NATIVE_SIDEBAR__;
-}
-
 function refreshSidebarCountersFallback() {
   // Do not override detail pages; صفحات الفني/العميل تعتمد على التصفية الخاصة بها
-  if (isDetailPageContext()) return;
+  const body = document.body || document.documentElement;
+  const isDetailPage = body?.classList?.contains('technician-page') || body?.classList?.contains('customer-page');
+  if (isDetailPage) return;
 
   const ids = {
     projects: 'sidebar-stat-projects',
@@ -232,30 +222,27 @@ function refreshSidebarCountersFallback() {
   };
 
   const ensureStat = (key) => {
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
-    if (hasNativeTabs || isDetailPageContext()) return null;
     const id = ids[key]; if (!id) return null;
     let el = document.getElementById(id);
     if (el) return el;
     // If stats section is missing (legacy Arabic pages), create a minimal one.
-    let workingSidebar = sidebar;
-    if (!workingSidebar) {
-      workingSidebar = document.createElement('aside');
-      workingSidebar.id = 'dashboard-sidebar';
-      workingSidebar.className = 'sidebar-shell sidebar-drawer open';
-      workingSidebar.setAttribute('aria-hidden', 'false');
-      (document.body || document.documentElement).appendChild(workingSidebar);
+    let sidebar = document.getElementById('dashboard-sidebar');
+    if (!sidebar) {
+      sidebar = document.createElement('aside');
+      sidebar.id = 'dashboard-sidebar';
+      sidebar.className = 'sidebar-shell sidebar-drawer open';
+      sidebar.setAttribute('aria-hidden', 'false');
+      (document.body || document.documentElement).appendChild(sidebar);
     }
 
-    let menu = workingSidebar.querySelector('.sidebar-menu');
+    let menu = sidebar.querySelector('.sidebar-menu');
     if (!menu) {
       menu = document.createElement('nav');
       menu.className = 'sidebar-menu mt-6';
-      workingSidebar.appendChild(menu);
+      sidebar.appendChild(menu);
     }
 
-    let panel = workingSidebar.querySelector('.sidebar-panel--stats');
+    let panel = sidebar.querySelector('.sidebar-panel--stats');
     if (!panel) {
       panel = document.createElement('div');
       panel.className = 'sidebar-panel sidebar-panel--stats mt-6';
@@ -289,13 +276,6 @@ function refreshSidebarCountersFallback() {
 
 // Ensure sidebar shell, menu, stats panel, and quick tabs exist for legacy pages
 function ensureSidebarStructure() {
-  if (isDetailPageContext() && document.readyState === 'loading') {
-    // انتظر تَشكُّل الـ DOM حتى لا ننشئ سايدبار بديل فوق السايدبار الأصلي
-    try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
-    document.addEventListener('DOMContentLoaded', () => ensureSidebarStructure(), { once: true });
-    return null;
-  }
-
   // Backdrop
   if (!document.getElementById('sidebar-backdrop')) {
     const backdrop = document.createElement('div');
@@ -307,25 +287,12 @@ function ensureSidebarStructure() {
 
   // Sidebar shell
   const body = document.body || document.documentElement;
-  const isDetailPage = isDetailPageContext();
+  const isDetailPage = (
+    body?.classList?.contains('technician-page')
+    || body?.classList?.contains('customer-page')
+    || /\/(technician|customer)\.html/i.test(window.location?.pathname || '')
+  );
   let sidebar = document.getElementById('dashboard-sidebar');
-  const hasNativeTabs = !!sidebar?.querySelector('.sidebar-panel--tabs');
-
-  if (hasNativeTabs) {
-    try { window.__PRESERVE_NATIVE_SIDEBAR__ = true; } catch (_) {}
-    ensureBurgerToggle();
-    return sidebar;
-  }
-
-  // صفحات التفاصيل (عميل/فني): لا ننشئ سايدبار جديداً ولا نمسّ المحتوى الأصلي.
-  if (isDetailPage || hasNativeTabs) {
-    if (sidebar) {
-      sidebar.dataset.preserveNative = '1';
-    }
-    ensureBurgerToggle();
-    return sidebar || null;
-  }
-
   if (!sidebar) {
     sidebar = document.createElement('aside');
     sidebar.id = 'dashboard-sidebar';
@@ -333,6 +300,12 @@ function ensureSidebarStructure() {
     sidebar.setAttribute('aria-label', 'التنقل الجانبي');
     sidebar.setAttribute('aria-hidden', 'true');
     (document.body || document.documentElement).prepend(sidebar);
+  }
+
+  // صفحات التفاصيل (عميل/فني) لديها سايدبار مخصّص في الـ HTML؛ لا نعيد البناء حتى لا نخسر التبويبات أو التنسيق.
+  if (isDetailPage) {
+    ensureBurgerToggle();
+    return sidebar;
   }
 
   // Rebuild فقط إذا لم يكن هناك محتوى مسبقاً أو ليست صفحة تفاصيل (حتى لا نمسح العدادات المفلترة)
