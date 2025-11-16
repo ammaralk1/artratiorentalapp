@@ -28,6 +28,33 @@
     return;
   }
 
+  // Ensure sidebar CSS is present even on legacy pages
+  (function ensureSidebarStyles() {
+    try {
+      const head = document.head;
+      if (!head) return;
+      const hasSidebarCss = Array.from(head.querySelectorAll('link[rel="stylesheet"], link'))
+        .some((l) => {
+          const href = (l.getAttribute('href') || l.href || '').toLowerCase();
+          return href.includes('/css/sidebar.css') || href.includes('/dist/css/sidebar.css');
+        });
+
+      // Only inject when a sidebar exists to avoid extra requests on other pages
+      const needsSidebar = !hasSidebarCss && (
+        document.querySelector('.sidebar-shell, .sidebar-drawer, .sidebar-panel--tabs, [aria-label*="sidebar" i]') != null
+      );
+      if (!needsSidebar) return;
+
+      const link = document.createElement('link');
+      link.setAttribute('rel', 'stylesheet');
+      // Use absolute dist path since some hosts don’t expose /css
+      link.setAttribute('href', '/dist/css/sidebar.css');
+      head.appendChild(link);
+    } catch (_) {
+      // ignore
+    }
+  })();
+
   root.classList.add('language-loading');
   root.classList.add('theme-loading');
 
