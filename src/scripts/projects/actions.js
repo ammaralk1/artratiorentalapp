@@ -5,7 +5,8 @@ import {
   deleteProjectApi,
   getProjectsState,
   isApiError as isProjectApiError,
-  refreshProjectsFromApi
+  refreshProjectsFromApi,
+  closeProjectApi
 } from '../projectsService.js';
 import {
   getReservationsState,
@@ -273,6 +274,53 @@ export async function updateLinkedReservationsReopened(projectId) {
   if (changed) {
     state.reservations = getReservationsState();
     document.dispatchEvent(new CustomEvent('reservations:changed'));
+  }
+  return changed;
+}
+
+/**
+ * Auto-close projects whose end time has passed and are not yet marked completed/cancelled.
+ * Adds an auto-close note and mirrors the close to linked reservations.
+ */
+export async function autoCloseExpiredProjects() {
+  const projects = getProjectsState();
+  if (!Array.isArray(projects) || projects.length === 0) return false;
+
+  const now = new Date();
+  let changed = false;
+  let closedCount = 0;
+
+  for (const project of projects) {
+    try {
+      const statusRaw = String(project?.status || '').toLowerCase();
+      if (statusRaw === 'completed' || statusRaw === 'closed' || statusRaw === 'cancelled' || statusRaw === 'canceled') {
+        continue;
+      }
+      const end = project?.end ? new Date(project.end) : null;
+      if (!end || Number.isNaN(end.getTime())) continue;
+      if (end >= now) continue;
+
+      // Close project and mirror to reservations
+      const note = t('projects.autoClose.note', 'إغلاق تلقائي لانتهاء وقت المشروع');
+      const updated = await closeProjectApi(project.projectId ?? project.id, note);
+      const pid = updated?.projectId ?? updated?.id ?? project.id;
+      await updateLinkedReservationsClosed(pid);
+      changed = true;
+      closedCount += 1;
+    } catch (e) {
+      console.warn('[projects] autoCloseExpiredProjects failed for', project?.id, e);
+    }
+  }
+
+  if (changed) {
+    try { await refreshProjectsFromApi(); } catch (_) {}
+    try { await refreshReservationsFromApi(); } catch (_) {}
+    try { document.dispatchEvent(new CustomEvent('projects:changed')); } catch (_) {}
+    try { document.dispatchEvent(new CustomEvent('reservations:changed')); } catch (_) {}
+    try {
+      const msg = t('projects.toast.autoClosed', 'تم إغلاق {count} مشروع لانتهاء الوقت').replace('{count}', String(closedCount));
+      showToast(msg);
+    } catch (_) { /* optional toast */ }
   }
   return changed;
 }

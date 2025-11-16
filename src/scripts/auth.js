@@ -1,5 +1,6 @@
 // Ensure core app styles are bundled for every page that touches auth
 import '../styles/app.css';
+import './ui/injectSidebarStyles.js';
 import { showToast } from './utils.js';
 import { apiRequest, ApiError } from './apiClient.js';
 import { updatePreferences, clearSkipRemotePreferencesFlag } from './preferencesService.js';
