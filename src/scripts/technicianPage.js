@@ -139,6 +139,7 @@ function updateSidebarStats(overrides = {}) {
   if (sidebarReservationsEl) sidebarReservationsEl.textContent = formatNumberLocalized(stats.reservations);
   if (sidebarEquipmentEl) sidebarEquipmentEl.textContent = formatNumberLocalized(stats.equipment);
   if (sidebarTechniciansEl) sidebarTechniciansEl.textContent = formatNumberLocalized(stats.technicians);
+  try { window.__TECHNICIAN_STATS__ = { ...stats }; } catch (_) {}
 }
 
 function resolveReservationItemQuantity(item) {
@@ -614,11 +615,7 @@ async function refreshTechnicianFinancialSummary(technician) {
   });
 
   const sidebarStats = computeTechnicianSidebarStats(relevantReservations, normalizedId);
-  updateSidebarStats();
-  // Persist filtered stats for other scripts (fallbacks) to reuse if needed
-  try {
-    window.__TECHNICIAN_STATS__ = sidebarStats;
-  } catch (_) {}
+  updateSidebarStats(sidebarStats);
 
   const breakdown = relevantReservations.map((reservation, index) => {
     const detailsEntry = Array.isArray(reservation.techniciansDetails)

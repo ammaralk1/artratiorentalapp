@@ -587,6 +587,69 @@ function updateSidebarStats(overrides = {}) {
   try { window.__CUSTOMER_STATS__ = { ...stats }; } catch (_) {}
 }
 
+function resolveCustomerScopedReservations() {
+  const id = customerId ?? currentCustomer?.id;
+  if (id == null) return [];
+  const reservationsSource = Array.isArray(customerReservationsCache)
+    ? customerReservationsCache
+    : getReservationsState();
+  const reservations = Array.isArray(reservationsSource) ? reservationsSource : [];
+  return reservations.filter((reservation) => {
+    if (!reservation) return false;
+    const idCandidates = [
+      reservation.customerId,
+      reservation.customer_id,
+      reservation.customer?.id,
+    ];
+    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(id));
+  });
+}
+
+function resolveCustomerScopedProjects() {
+  const id = customerId ?? currentCustomer?.id;
+  if (id == null) return [];
+  const projectsSource = Array.isArray(customerProjectsCache)
+    ? customerProjectsCache
+    : getProjectsState();
+  const projects = Array.isArray(projectsSource) ? projectsSource : [];
+  return projects.filter((project) => {
+    if (!project) return false;
+    const idCandidates = [project.clientId, project.client_id, project.customer_id];
+    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(id));
+  });
+}
+
+function computeCustomerSidebarStats() {
+  const relevantReservations = resolveCustomerScopedReservations();
+  const relevantProjects = resolveCustomerScopedProjects();
+  const totalEquipment = relevantReservations.reduce((sum, reservation) => {
+    if (Array.isArray(reservation?.items)) {
+      return sum + reservation.items.length;
+    }
+    return sum;
+  }, 0);
+  const technicianSet = new Set();
+  relevantReservations.forEach((reservation) => {
+    if (Array.isArray(reservation?.technicians)) {
+      reservation.technicians.forEach((tech) => {
+        if (tech != null) technicianSet.add(String(tech));
+      });
+    }
+    if (Array.isArray(reservation?.techniciansDetails)) {
+      reservation.techniciansDetails.forEach((tech) => {
+        const id = tech?.id ?? tech?.technician_id ?? tech?.technicianId;
+        if (id != null) technicianSet.add(String(id));
+      });
+    }
+  });
+  return {
+    projects: relevantProjects.length,
+    reservations: relevantReservations.length,
+    equipment: totalEquipment,
+    technicians: technicianSet.size,
+  };
+}
+
 function updateHeroStats() {
   if (!currentCustomer || !customerId) {
     const emptyCurrency = formatCurrencyLocalized(0);
@@ -610,19 +673,7 @@ function updateHeroStats() {
     return;
   }
 
-  const reservationsSource = Array.isArray(customerReservationsCache)
-    ? customerReservationsCache
-    : getReservationsState();
-  const reservations = Array.isArray(reservationsSource) ? reservationsSource : [];
-  const relevantReservations = reservations.filter((reservation) => {
-    if (!reservation) return false;
-    const idCandidates = [
-      reservation.customerId,
-      reservation.customer_id,
-      reservation.customer?.id,
-    ];
-    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(customerId));
-  });
+  const relevantReservations = resolveCustomerScopedReservations();
 
   const totalReservations = relevantReservations.length;
   const now = Date.now();
@@ -640,15 +691,7 @@ function updateHeroStats() {
     .filter((date) => !Number.isNaN(date.getTime()))
     .sort((a, b) => a - b)[0] || null;
 
-  const projectsSource = Array.isArray(customerProjectsCache)
-    ? customerProjectsCache
-    : getProjectsState();
-  const projects = Array.isArray(projectsSource) ? projectsSource : [];
-  const relevantProjects = projects.filter((project) => {
-    if (!project) return false;
-    const idCandidates = [project.clientId, project.client_id, project.customer_id];
-    return idCandidates.some((candidate) => candidate != null && String(candidate) === String(customerId));
-  });
+  const relevantProjects = resolveCustomerScopedProjects();
   const totalProjects = relevantProjects.length;
 
   // Exclude cancelled reservations from financial/compliance calculations
@@ -798,8 +841,6 @@ function updateHeroStats() {
       });
     }
   });
-  // Sidebar stats تعرض الأرقام العامة (يتم تحديثها من الملخص/التحميل الخلفي)
-  updateSidebarStats();
 
   if (heroStatProjectsEl) heroStatProjectsEl.textContent = formatNumberLocalized(totalProjects);
   if (heroStatProjectsDescEl) {
@@ -977,7 +1018,7 @@ async function ensureTechniciansLoaded() {
 
 async function fetchCustomerReservationsData(id) {
   if (!id) {
-    return;
+    return [];
   }
 
   try {
@@ -988,14 +1029,16 @@ async function fetchCustomerReservationsData(id) {
       : [];
 
     customerReservationsCache = records;
+    return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer reservations', error);
+    return [];
   }
 }
 
 async function fetchCustomerProjectsData(id) {
   if (!id) {
-    return;
+    return [];
   }
 
   try {
@@ -1006,8 +1049,10 @@ async function fetchCustomerProjectsData(id) {
       : [];
 
     customerProjectsCache = records;
+    return records;
   } catch (error) {
     console.warn('⚠️ Failed to load customer projects', error);
+    return [];
   }
 }
 
@@ -1053,30 +1098,12 @@ async function loadCustomerFromApi(id, { showSpinner = false } = {}) {
     renderCustomerProjects(mappedCustomer.id);
     // عدّادات السايدبار المفلترة مباشرة من البيانات المجلوبة
     try {
-      const filteredReservations = Array.isArray(reservationsFetched) ? reservationsFetched : (customerReservationsCache || []);
-      const filteredProjects = Array.isArray(projectsFetched) ? projectsFetched : (customerProjectsCache || []);
-      const totalEquipment = filteredReservations.reduce((sum, res) => {
-        if (Array.isArray(res?.items)) return sum + res.items.length;
-        return sum;
-      }, 0);
-      const technicianSet = new Set();
-      filteredReservations.forEach((res) => {
-        if (Array.isArray(res?.technicians)) {
-          res.technicians.forEach((t) => { if (t != null) technicianSet.add(String(t)); });
-        }
-        if (Array.isArray(res?.techniciansDetails)) {
-          res.techniciansDetails.forEach((t) => {
-            const id = t?.id ?? t?.technician_id ?? t?.technicianId;
-            if (id != null) technicianSet.add(String(id));
-          });
-        }
-      });
-      updateSidebarStats({
-        projects: filteredProjects.length,
-        reservations: filteredReservations.length,
-        equipment: totalEquipment,
-        technicians: technicianSet.size,
-      });
+      const filteredReservations = Array.isArray(reservationsFetched) ? reservationsFetched : resolveCustomerScopedReservations();
+      const filteredProjects = Array.isArray(projectsFetched) ? projectsFetched : resolveCustomerScopedProjects();
+      customerReservationsCache = filteredReservations;
+      customerProjectsCache = filteredProjects;
+      const sidebarStats = computeCustomerSidebarStats();
+      updateSidebarStats(sidebarStats);
     } catch (_) {}
 
     updateHeroStats();
@@ -1365,6 +1392,14 @@ const maybeUpdateStats = () => {
 document.addEventListener('reservations:changed', maybeUpdateStats);
 document.addEventListener('projects:changed', maybeUpdateStats);
 
+const refreshCustomerSidebar = () => {
+  if (customerId && currentCustomer) {
+    updateSidebarStats(computeCustomerSidebarStats());
+  } else {
+    updateSidebarStats();
+  }
+};
+
 document.addEventListener('language:changed', () => {
   renderDetails();
   if (customerId && currentCustomer) {
@@ -1375,7 +1410,7 @@ document.addEventListener('language:changed', () => {
 });
 
 ['projects:changed', 'reservations:changed', 'equipment:changed', 'technicians:changed'].forEach((eventName) => {
-  document.addEventListener(eventName, () => updateSidebarStats(), { passive: true });
+  document.addEventListener(eventName, refreshCustomerSidebar, { passive: true });
 });
 
 initDashboardMetrics();
