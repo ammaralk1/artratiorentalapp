@@ -161,9 +161,7 @@ function handleLanguageChange() {
 }
 
 function renderIfCustomRange() {
-  if (filters.range === 'custom') {
-    renderReports();
-  }
+  renderReports();
 }
 
 function setupCustomRangePickers(startInput, endInput) {
@@ -182,6 +180,7 @@ function setupCustomRangePickers(startInput, endInput) {
       dateFormat: 'Y-m-d',
       allowInput: true,
       disableMobile: true,
+      altInput: false,
       ...handlers,
     };
     if (localeOption) {
@@ -203,6 +202,11 @@ function setupCustomRangePickers(startInput, endInput) {
     reportsState.startDatePicker = window.flatpickr(startEl, baseOptions({
       onChange(selectedDates, dateStr) {
         filters.start = dateStr || null;
+        if (filters.start || filters.end) {
+          filters.range = 'custom';
+        } else if (!filters.end && filters.range === 'custom') {
+          filters.range = 'all';
+        }
         if (reportsState.endDatePicker) {
           if (selectedDates?.length) {
             reportsState.endDatePicker.set('minDate', selectedDates[0]);
@@ -214,6 +218,11 @@ function setupCustomRangePickers(startInput, endInput) {
       },
       onValueUpdate(_, dateStr) {
         filters.start = dateStr || null;
+        if (filters.start || filters.end) {
+          filters.range = 'custom';
+        } else if (!filters.end && filters.range === 'custom') {
+          filters.range = 'all';
+        }
         renderIfCustomRange();
       },
     }));
@@ -223,6 +232,11 @@ function setupCustomRangePickers(startInput, endInput) {
     reportsState.endDatePicker = window.flatpickr(endEl, baseOptions({
       onChange(selectedDates, dateStr) {
         filters.end = dateStr || null;
+        if (filters.start || filters.end) {
+          filters.range = 'custom';
+        } else if (!filters.start && filters.range === 'custom') {
+          filters.range = 'all';
+        }
         if (reportsState.startDatePicker) {
           if (selectedDates?.length) {
             reportsState.startDatePicker.set('maxDate', selectedDates[0]);
@@ -234,6 +248,11 @@ function setupCustomRangePickers(startInput, endInput) {
       },
       onValueUpdate(_, dateStr) {
         filters.end = dateStr || null;
+        if (filters.start || filters.end) {
+          filters.range = 'custom';
+        } else if (!filters.start && filters.range === 'custom') {
+          filters.range = 'all';
+        }
         renderIfCustomRange();
       },
     }));
@@ -269,8 +288,8 @@ function resolveFlatpickrLocaleOption() {
 
 function toggleCustomRange(wrapper, isActive) {
   if (!wrapper) return;
-  wrapper.classList.toggle('active', Boolean(isActive));
-  wrapper.classList.toggle('hidden', !isActive);
+  wrapper.classList.add('active');
+  wrapper.classList.remove('hidden');
 }
 
 function syncFilterControls() {
@@ -305,7 +324,7 @@ function syncFilterControls() {
     endInput.value = filters.end || '';
   }
 
-  toggleCustomRange(customRangeWrapper, filters.range === 'custom');
+  toggleCustomRange(customRangeWrapper, true);
 }
 
 function readFiltersFromUrl() {
@@ -320,10 +339,8 @@ function readFiltersFromUrl() {
     filters.search = get('search') || '';
     filters.start = v(get('start'));
     filters.end = v(get('end'));
-    // Normalize if range not custom
-    if (filters.range !== 'custom') {
-      filters.start = null;
-      filters.end = null;
+    if (filters.start || filters.end) {
+      filters.range = 'custom';
     }
   } catch (_) {
     // ignore URL parse errors
@@ -344,10 +361,8 @@ function scheduleUrlUpdate() {
       setIf('payment', filters.payment, 'all');
       setIf('share', filters.share, 'all');
       setIf('search', filters.search, '');
-      if (filters.range === 'custom') {
-        setIf('start', filters.start, null);
-        setIf('end', filters.end, null);
-      }
+      setIf('start', filters.start, null);
+      setIf('end', filters.end, null);
       const qs = params.toString();
       const url = qs ? `${location.pathname}?${qs}` : location.pathname;
       window.history.replaceState({}, '', url);
@@ -550,10 +565,12 @@ export function initReports() {
 
   rangeSelect.addEventListener('change', () => {
     filters.range = rangeSelect.value;
-    toggleCustomRange(customRangeWrapper, filters.range === 'custom');
-    if (filters.range !== 'custom') {
+    toggleCustomRange(customRangeWrapper, true);
+    if (filters.range !== 'custom' && !filters.start && !filters.end) {
       filters.start = null;
       filters.end = null;
+    } else if (filters.range !== 'custom' && (filters.start || filters.end)) {
+      filters.range = 'custom';
     }
     scheduleUrlUpdate();
     renderReports();
@@ -590,6 +607,9 @@ export function initReports() {
 
   startInput?.addEventListener('change', () => {
     filters.start = startInput.value || null;
+    if (filters.start || filters.end) {
+      filters.range = 'custom';
+    }
     scheduleUrlUpdate();
     renderIfCustomRange();
     if (filters.range === 'custom') {
@@ -599,6 +619,9 @@ export function initReports() {
 
   endInput?.addEventListener('change', () => {
     filters.end = endInput.value || null;
+    if (filters.start || filters.end) {
+      filters.range = 'custom';
+    }
     scheduleUrlUpdate();
     renderIfCustomRange();
     if (filters.range === 'custom') {
@@ -611,7 +634,7 @@ export function initReports() {
   // تمت إزالة زر الطباعة من التبويب لتفادي التكرار مع تصدير PDF
 
   setupCustomRangePickers(startInput, endInput);
-  toggleCustomRange(customRangeWrapper, filters.range === 'custom');
+  toggleCustomRange(customRangeWrapper, true);
   initPresetsUI();
 
   if (!reportsState.languageListenerAttached) {

@@ -404,7 +404,8 @@ export function resolveRange({ range, start, end }) {
   const now = new Date();
   now.setHours(23, 59, 59, 999);
 
-  if (range === 'custom') {
+  // Treat explicit start/end as custom range even if dropdown is elsewhere
+  if (range === 'custom' || start || end) {
     const startDate = start ? new Date(`${start}T00:00:00`) : null;
     const endDate = end ? new Date(`${end}T23:59:59`) : null;
     return {
@@ -417,11 +418,6 @@ export function resolveRange({ range, start, end }) {
   let startDate = null;
 
   switch (range) {
-    case 'last30': {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 29);
-      break;
-    }
     case 'thisWeek': {
       const startOfWeek = new Date(now);
       const day = startOfWeek.getDay();

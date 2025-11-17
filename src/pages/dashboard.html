@@ -1399,12 +1399,11 @@
                   <label class="reports-filter-field">
                     <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.filters.rangeLabel">الفترة</span>
                     <select id="reports-range" class="form-select reports-filter-control">
-                      <option value="last30" data-i18n data-i18n-key="reservations.reports.filters.range.last30">آخر 30 يوم</option>
+                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.range.all">كل الوقت</option>
                       <option value="thisWeek" data-i18n data-i18n-key="reservations.reports.filters.range.thisWeek">هذا الأسبوع</option>
                       <option value="thisMonth" data-i18n data-i18n-key="reservations.reports.filters.range.thisMonth">هذا الشهر</option>
                       <option value="thisQuarter" data-i18n data-i18n-key="reservations.reports.filters.range.thisQuarter">هذا الربع</option>
                       <option value="thisYear" data-i18n data-i18n-key="reservations.reports.filters.range.thisYear">هذا العام</option>
-                      <option value="all" data-i18n data-i18n-key="reservations.reports.filters.range.all">كل الوقت</option>
                       <option value="custom" data-i18n data-i18n-key="reservations.reports.filters.range.custom">مخصص</option>
                     </select>
                   </label>
@@ -1442,14 +1441,14 @@
                     <input type="text" id="reports-search" class="form-control reports-filter-control" placeholder="🔍 ابحث باسم العميل، رقم الحجز، أو المعدة" data-i18n data-i18n-placeholder-key="reservations.reports.filters.searchPlaceholder">
                   </label>
                 </div>
-                <div class="reports-custom-range hidden" id="reports-custom-range">
+                <div class="reports-custom-range" id="reports-custom-range">
                   <label class="reports-filter-field">
                     <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.filters.startLabel">من</span>
-                    <input type="date" id="reports-start" class="form-control reports-filter-control" placeholder="yyyy-mm-dd">
+                    <input type="text" id="reports-start" class="form-control reports-filter-control" placeholder="yyyy-mm-dd">
                   </label>
                   <label class="reports-filter-field">
                     <span class="reports-filter-label" data-i18n data-i18n-key="reservations.reports.filters.endLabel">إلى</span>
-                    <input type="date" id="reports-end" class="form-control reports-filter-control" placeholder="yyyy-mm-dd">
+                    <input type="text" id="reports-end" class="form-control reports-filter-control" placeholder="yyyy-mm-dd">
                   </label>
                 </div>
                 <div id="reservations-active-filters" class="reports-active-filters"></div>
