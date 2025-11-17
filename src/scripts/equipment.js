@@ -869,6 +869,10 @@ function buildEquipmentPayload({
     quantity: parseInteger(quantity),
     unit_price: parseFloatSafe(unit_price),
     unit_cost: parseFloatSafe(unit_cost),
+    // Send cost aliases to maximize compatibility with backend field names
+    cost: parseFloatSafe(unit_cost),
+    purchase_price: parseFloatSafe(unit_cost),
+    rental_cost: parseFloatSafe(unit_cost),
     barcode: cleanedBarcode,
     status: normalizedStatus,
     image_url: image_url?.trim() || null,
