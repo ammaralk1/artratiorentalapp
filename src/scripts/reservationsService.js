@@ -539,7 +539,7 @@ export async function refreshReservationsFromApi(params = {}) {
     }
   }
 
-  const data = rawItems.map(mapReservationFromApi);
+  const data = rawItems.map(mapReservationFromApi).map(mergeItemCostsFromExisting);
   return setReservationsState(data);
 }
 
