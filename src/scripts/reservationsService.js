@@ -1707,7 +1707,15 @@ function buildReservationItemsPayload(items) {
         const childQuantity = toPositiveInt(packageItem?.qty ?? packageItem?.quantity ?? 1);
         const effectiveQuantity = packageQuantity * childQuantity;
 
-      const unitCost = toNumber(packageItem?.cost ?? packageItem?.unit_cost ?? packageItem?.rental_cost ?? 0);
+      const unitCost = toNumber(
+        packageItem?.cost
+        ?? packageItem?.unit_cost
+        ?? packageItem?.rental_cost
+        ?? packageItem?.internal_cost
+        ?? packageItem?.purchase_price
+        ?? packageItem?.equipment_cost
+        ?? 0
+      );
       normalized.push({
         equipment_id: resolveEquipmentIdValue(equipmentId),
         quantity: effectiveQuantity,
@@ -1716,6 +1724,8 @@ function buildReservationItemsPayload(items) {
         cost: unitCost,
         rental_cost: unitCost,
         purchase_price: unitCost,
+        internal_cost: unitCost,
+        equipment_cost: unitCost,
         notes: packageItem?.notes ?? null,
       });
     });
@@ -1728,7 +1738,15 @@ function buildReservationItemsPayload(items) {
       return;
     }
 
-  const unitCost = toNumber(item.cost ?? item.unit_cost ?? item.rental_cost ?? 0);
+  const unitCost = toNumber(
+    item.cost
+    ?? item.unit_cost
+    ?? item.rental_cost
+    ?? item.internal_cost
+    ?? item.purchase_price
+    ?? item.equipment_cost
+    ?? 0
+  );
   normalized.push({
     equipment_id: resolveEquipmentIdValue(equipmentId),
     quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
@@ -1737,6 +1755,8 @@ function buildReservationItemsPayload(items) {
     cost: unitCost,
     rental_cost: unitCost,
     purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
     notes: item.notes ?? null,
   });
 });
@@ -1772,7 +1792,15 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             if (childId == null) {
               return null;
             }
-            const unitCost = toNumber(child?.cost ?? child?.unit_cost ?? child?.rental_cost ?? 0);
+            const unitCost = toNumber(
+              child?.cost
+              ?? child?.unit_cost
+              ?? child?.rental_cost
+              ?? child?.internal_cost
+              ?? child?.purchase_price
+              ?? child?.equipment_cost
+              ?? 0
+            );
             return {
               equipment_id: resolveEquipmentIdValue(childId),
               quantity: toPositiveInt(
@@ -1793,12 +1821,22 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
               cost: unitCost,
               rental_cost: unitCost,
               purchase_price: unitCost,
+              internal_cost: unitCost,
+              equipment_cost: unitCost,
             };
           })
           .filter(Boolean)
       : [];
 
-  const unitCost = toNumber(item.cost ?? item.unit_cost ?? item.rental_cost ?? 0);
+  const unitCost = toNumber(
+    item.cost
+    ?? item.unit_cost
+    ?? item.rental_cost
+    ?? item.internal_cost
+    ?? item.purchase_price
+    ?? item.equipment_cost
+    ?? 0
+  );
   packages.push({
     package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
     name: item.desc ?? item.name ?? '',
@@ -1808,6 +1846,8 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
     cost: unitCost,
     rental_cost: unitCost,
     purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
     items: packageItems,
   });
 });
