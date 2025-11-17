@@ -1041,15 +1041,19 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
             ? (float) $item['unit_cost']
             : (isset($item['cost']) ? (float) $item['cost'] : 0);
 
-        $statement->execute([
+        $params = [
             'reservation_id' => $reservationId,
             'equipment_id' => (int) $item['equipment_id'],
             'quantity' => isset($item['quantity']) ? (int) $item['quantity'] : 1,
             'unit_price' => isset($item['unit_price']) ? (float) $item['unit_price'] : 0,
-            // When the column is missing (unlikely after ensure), PDO will ignore the extra param.
-            'unit_cost' => $unitCost,
             'notes' => $item['notes'] ?? null,
-        ]);
+        ];
+
+        if ($hasUnitCostColumn) {
+            $params['unit_cost'] = $unitCost;
+        }
+
+        $statement->execute($params);
     }
 }
 
