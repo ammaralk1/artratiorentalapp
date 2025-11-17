@@ -152,8 +152,8 @@ function handleEquipmentCreate(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url, lessor) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url, :lessor)';
+    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, unit_cost, barcode, status, image_url, lessor) 
+        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :unit_cost, :barcode, :status, :image_url, :lessor)';
 
     $statement = $pdo->prepare($sql);
     $statement->execute($data);
@@ -307,8 +307,8 @@ function handleEquipmentBulkCreate(PDO $pdo, array $items): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, barcode, status, image_url, lessor) 
-        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :barcode, :status, :image_url, :lessor)';
+    $sql = 'INSERT INTO equipment (category, subcategory, name, description, quantity, unit_price, unit_cost, barcode, status, image_url, lessor) 
+        VALUES (:category, :subcategory, :name, :description, :quantity, :unit_price, :unit_cost, :barcode, :status, :image_url, :lessor)';
 
     $insertedIds = [];
 
@@ -535,6 +535,13 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
     $description = isset($payload['description']) ? trim((string) $payload['description']) : null;
     $quantity = isset($payload['quantity']) ? $payload['quantity'] : null;
     $unitPrice = isset($payload['unit_price']) ? $payload['unit_price'] : null;
+    $unitCost = isset($payload['unit_cost'])
+        ? $payload['unit_cost']
+        : (isset($payload['cost'])
+            ? $payload['cost']
+            : (isset($payload['purchase_price'])
+                ? $payload['purchase_price']
+                : (isset($payload['rental_cost']) ? $payload['rental_cost'] : null)));
     $barcode = isset($payload['barcode']) ? trim((string) $payload['barcode']) : null;
     $status = isset($payload['status']) ? trim((string) $payload['status']) : null;
     $imageUrl = isset($payload['image_url']) ? trim((string) $payload['image_url']) : null;
@@ -595,6 +602,17 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
         }
     }
 
+    if ($unitCost !== null) {
+        if (!is_numeric($unitCost)) {
+            $errors['unit_cost'] = 'Unit cost must be numeric';
+        } else {
+            $unitCost = (float) $unitCost;
+            if ($unitCost < 0) {
+                $errors['unit_cost'] = 'Unit cost must be zero or greater';
+            }
+        }
+    }
+
     $normalizedStatus = null;
     if ($status !== null && $status !== '') {
         $normalizedStatus = normalizeStatus($status);
@@ -639,6 +657,10 @@ function validateEquipmentPayload(array $payload, bool $isUpdate, PDO $pdo, ?int
 
     if (!$isUpdate || array_key_exists('unit_price', $payload)) {
         $data['unit_price'] = $unitPrice !== null ? (float) $unitPrice : 0;
+    }
+
+    if (!$isUpdate || array_key_exists('unit_cost', $payload) || array_key_exists('cost', $payload) || array_key_exists('purchase_price', $payload) || array_key_exists('rental_cost', $payload)) {
+        $data['unit_cost'] = $unitCost !== null ? (float) $unitCost : 0;
     }
 
     if (!$isUpdate || array_key_exists('barcode', $payload)) {
