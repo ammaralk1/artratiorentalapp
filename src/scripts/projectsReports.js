@@ -964,6 +964,7 @@ function renderProjectsRevenueBreakdown(projects) {
       // Show crew cost as a subtractive item for visual consistency with other costs
       { key: 'crew', label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: `−${formatCurrency(breakdown.crewCostTotal)}` },
       { key: 'equipment', label: t('reservations.reports.kpi.revenue.details.equipmentGross', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
+      { key: 'equipmentCost', label: t('reservations.reports.kpi.revenue.details.equipment', 'تكلفة المعدات', 'Equipment cost'), value: `−${formatCurrency(breakdown.equipmentCostTotalCombined || 0)}` },
       { key: 'projectExpenses', label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
       { key: 'servicesProfit', label: t('projects.reports.kpi.revenue.details.servicesProfit', getCurrentLanguage()==='ar' ? 'ربح الخدمات الإنتاجية' : 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
       { key: 'net', label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },
@@ -998,6 +999,7 @@ function computeProjectsRevenueBreakdown(projects) {
   // Group reservations by project and aggregate equipment/crew revenue and crew cost
   const resByProject = new Map();
   let equipmentRevenueFromReservations = 0;
+  let equipmentCostFromReservations = 0;
   let crewRevenueFromReservations = 0;
   let crewCostTotal = 0;
   reservationsAll.forEach((res) => {
@@ -1017,6 +1019,7 @@ function computeProjectsRevenueBreakdown(projects) {
       end: res.end,
     });
     equipmentRevenueFromReservations += Number(breakdown.equipmentTotal || 0);
+    equipmentCostFromReservations += Number(breakdown.equipmentCostTotal || 0);
     crewRevenueFromReservations += Number(breakdown.crewTotal || 0);
     crewCostTotal += Number(breakdown.crewCostTotal || 0);
     const arr = resByProject.get(String(res.projectId)) || [];
@@ -1053,10 +1056,11 @@ function computeProjectsRevenueBreakdown(projects) {
         end: res.end,
       });
       acc.equipment += Number(breakdown.equipmentTotal || 0);
+      acc.equipmentCost += Number(breakdown.equipmentCostTotal || 0);
       acc.crew += Number(breakdown.crewTotal || 0);
       acc.crewCost += Number(breakdown.crewCostTotal || 0);
       return acc;
-    }, { equipment: 0, crew: 0, crewCost: 0 });
+    }, { equipment: 0, equipmentCost: 0, crew: 0, crewCost: 0 });
 
     const servicesRevenue = getProjectServicesRevenue(p);
     servicesRevenueTotal += servicesRevenue;
@@ -1104,9 +1108,9 @@ function computeProjectsRevenueBreakdown(projects) {
     const finalTotal = baseAfterDiscount + companyShareAmount + combinedTax;
     grossRevenue += finalTotal;
 
-    // Per-project net profit (sum of per-project nets): baseAfterDiscount − expenses − crewCost
+    // Per-project net profit (sum of per-project nets): baseAfterDiscount − expenses − crewCost − equipmentCost
     const perProjectExpenses = Number(getProjectExpenses(p) || 0);
-    const perProjectNet = Number(((baseAfterDiscount - perProjectExpenses - (agg.crewCost || 0))).toFixed(2));
+    const perProjectNet = Number(((baseAfterDiscount - perProjectExpenses - (agg.crewCost || 0) - (agg.equipmentCost || 0))).toFixed(2));
     netProfitTotal += perProjectNet;
 
     // Paid and outstanding: sum payment history (amount/percent) plus paidAmount/paidPercent
@@ -1137,6 +1141,7 @@ function computeProjectsRevenueBreakdown(projects) {
   });
 
   const equipmentTotalCombined = equipmentRevenueFromReservations; // revenue side
+  const equipmentCostTotalCombined = equipmentCostFromReservations; // cost side
   const revenueExTax = Math.max(0, grossRevenue - taxTotal);
   // Use sum of per-project net profit to match modal exactly
   const netProfit = netProfitTotal;
@@ -1149,6 +1154,7 @@ function computeProjectsRevenueBreakdown(projects) {
     crewTotal: crewRevenueFromReservations,
     crewCostTotal,
     equipmentTotalCombined,
+    equipmentCostTotalCombined,
     projectExpensesTotal,
     servicesRevenueTotal,
     outstandingTotal,
