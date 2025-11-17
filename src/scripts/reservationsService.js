@@ -539,7 +539,7 @@ export async function refreshReservationsFromApi(params = {}) {
     }
   }
 
-  const data = rawItems.map(mapReservationFromApi).map(mergeItemCostsFromExisting);
+  const data = rawItems.map(mapReservationFromApi).map(mergeItemCostsFromExistingSafe);
   return setReservationsState(data);
 }
 
@@ -742,6 +742,78 @@ function mergeItemCostsFromPayload(items, payloadItems) {
   });
 }
 
+function mergeItemCostsFromExistingSafe(reservation) {
+  try {
+    return mergeItemCostsFromExisting(reservation);
+  } catch (error) {
+    console.warn('[reservationsService] mergeItemCostsFromExisting failed', error);
+    return reservation;
+  }
+}
+
+function mergeItemCostsFromExisting(reservation) {
+  if (!reservation || typeof reservation !== 'object') return reservation;
+  if (!Array.isArray(reservation.items) || reservation.items.length === 0) return reservation;
+
+  const idCandidates = [
+    reservation.id,
+    reservation.reservationId,
+    reservation.reservation_code,
+  ].map((v) => (v != null ? String(v) : '')).filter(Boolean);
+  if (!idCandidates.length) return reservation;
+
+  const existing = reservationsState.find((r) => {
+    if (!r) return false;
+    const rid = r.id != null ? String(r.id) : '';
+    const rc = r.reservationId != null ? String(r.reservationId) : '';
+    const rcode = r.reservation_code != null ? String(r.reservation_code) : '';
+    return (rid && idCandidates.includes(rid))
+      || (rc && idCandidates.includes(rc))
+      || (rcode && idCandidates.includes(rcode));
+  });
+  if (!existing || !Array.isArray(existing.items)) return reservation;
+
+  const existingItemsIndex = new Map();
+  existing.items.forEach((item, idx) => {
+    const equipmentId = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
+    const barcode = normalizeNumbers(String(item?.barcode ?? '')).trim();
+    const key = equipmentId != null ? `id:${equipmentId}` : (barcode ? `bc:${barcode}` : `idx:${idx}`);
+    existingItemsIndex.set(key, item);
+  });
+
+  const mergedItems = reservation.items.map((item, idx) => {
+    const equipmentId = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
+    const barcode = normalizeNumbers(String(item?.barcode ?? '')).trim();
+    const keys = [
+      equipmentId != null ? `id:${equipmentId}` : null,
+      barcode ? `bc:${barcode}` : null,
+      `idx:${idx}`,
+    ].filter(Boolean);
+    let existingItem = null;
+    for (const key of keys) {
+      if (existingItemsIndex.has(key)) {
+        existingItem = existingItemsIndex.get(key);
+        break;
+      }
+    }
+    if (!existingItem) return item;
+    const merged = { ...item };
+    const existingCost = Number(existingItem.cost);
+    const existingPrice = Number(existingItem.price);
+    if (Number.isFinite(existingCost) && existingCost > 0) {
+      merged.cost = existingCost;
+      merged.unit_cost = existingCost;
+    }
+    if (Number.isFinite(existingPrice) && existingPrice > 0) {
+      merged.price = existingPrice;
+      merged.unit_price = existingPrice;
+    }
+    return merged;
+  });
+
+  return { ...reservation, items: mergedItems };
+}
+
 export async function deleteReservationApi(id) {
   await apiRequest(`/reservations/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
   const next = reservationsState.filter((reservation) => String(reservation.id) !== String(id));
@@ -793,7 +865,7 @@ export function mapReservationFromApi(raw = {}) {
     payment_history: raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
     paymentHistory: raw.paymentHistory ?? raw.payment_history ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
   });
-  return mergeItemCostsFromExisting(mapped);
+  return mergeItemCostsFromExistingSafe(mapped);
 }
 
 export function mapLegacyReservation(raw = {}) {
