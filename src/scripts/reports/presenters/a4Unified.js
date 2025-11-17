@@ -146,6 +146,8 @@ function buildRevenueDetails({ context = 'preview' } = {}) {
   // عرض تفاصيل الطاقم (إجمالي للعميل وتكلفة على الشركة) إن توفرت
   add(translate('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), fmt2(m.crewTotal));
   add(translate('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), fmt2(m.crewCostTotal));
+  add(translate('reservations.reports.kpi.revenue.details.equipmentGross', 'إجمالي المعدات', 'Equipment total'), fmt2(m.equipmentTotal));
+  add(translate('reservations.reports.kpi.revenue.details.equipment', 'تكلفة المعدات', 'Equipment cost'), fmt2(m.equipmentCostTotal));
   // مصاريف الصيانة إن وُجدت ضمن snapshot
   if (Number.isFinite(Number(m.maintenanceExpense))) {
     add(translate('reservations.reports.kpi.revenue.details.maintenance', 'مصاريف الصيانة', 'Maintenance'), fmt2(m.maintenanceExpense));

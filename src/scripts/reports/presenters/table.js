@@ -29,6 +29,7 @@ export function renderReservationsTable(reservations, customers, technicians) {
     equipment: translate('reservations.reports.results.headers.equipment', 'إجمالي المعدات', 'Equipment'),
     crewGross: translate('reservations.reports.results.headers.crewGross', 'إجمالي الطاقم', 'Crew total'),
     crewCost: translate('reservations.reports.results.headers.crewCost', 'تكلفة الطاقم', 'Crew cost'),
+    equipmentCost: translate('reservations.reports.results.headers.equipmentCost', 'تكلفة المعدات', 'Equipment cost'),
     discount: translate('reservations.reports.results.headers.discount', 'الخصم', 'Discount'),
     tax: translate('reservations.reports.results.headers.tax', 'الضريبة', 'Tax'),
     total: translate('reservations.reports.results.headers.total', 'الإجمالي', 'Total'),
@@ -66,6 +67,7 @@ export function renderReservationsTable(reservations, customers, technicians) {
         [exportHeaders.equipment]: formatCurrency(financials.equipmentTotal),
         [exportHeaders.crewGross]: formatCurrency(financials.crewTotal),
         [exportHeaders.crewCost]: formatCurrency(financials.crewCostTotal ?? 0),
+        [exportHeaders.equipmentCost]: formatCurrency(financials.equipmentCostTotal ?? 0),
         [exportHeaders.discount]: formatCurrency(financials.discountAmount ?? 0),
         [exportHeaders.tax]: formatCurrency(financials.taxAmount ?? 0),
         [exportHeaders.total]: formatted.total.text,
@@ -93,6 +95,7 @@ export function renderReservationsTable(reservations, customers, technicians) {
         <td data-report-column="payment">${formatted.payment.html}</td>
         <td data-report-column="total">${formatted.total.html}</td>
         <td data-report-column="share">${formatted.share.html}</td>
+        <td data-report-column="equipmentCost">${formatted.equipmentCost.html}</td>
         <td data-report-column="net">${formatted.net.html}</td>
       </tr>
     `)
@@ -151,6 +154,11 @@ function compareByKey(a, b, key) {
     case 'share': {
       const finA = computeReservationFinancials(a)?.companyShareAmount || 0;
       const finB = computeReservationFinancials(b)?.companyShareAmount || 0;
+      return finA - finB;
+    }
+    case 'equipmentCost': {
+      const finA = computeReservationFinancials(a)?.equipmentCostTotal || 0;
+      const finB = computeReservationFinancials(b)?.equipmentCostTotal || 0;
       return finA - finB;
     }
     case 'net': {
@@ -249,6 +257,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     ? `${formatNumber(financials.companySharePercent)}% (${formatCurrency(financials.companyShareAmount)})`
     : translate('reservations.reports.results.share.none', 'بدون نسبة الشركة', 'No company share');
   const netLabel = formatCurrency(financials.netProfit);
+  const equipmentCostLabel = formatCurrency(financials.equipmentCostTotal ?? 0);
 
   const customerHtml = escapeHtml(customerName);
 
@@ -261,6 +270,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
     total: { html: escapeHtml(totalLabel), text: totalLabel },
     share: { html: escapeHtml(shareLabel), text: shareLabel },
     net: { html: escapeHtml(netLabel), text: netLabel },
+    equipmentCost: { html: escapeHtml(equipmentCostLabel), text: equipmentCostLabel },
   };
 }
 

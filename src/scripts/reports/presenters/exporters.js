@@ -227,6 +227,28 @@ export function renderTopEquipment(rows) {
     .join('');
 }
 
+export function renderEquipmentCosts(rows) {
+  const tbody = document.getElementById('reports-equipment-costs');
+  if (!tbody) return;
+
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows
+    .map((row) => `
+      <tr class="hover:bg-base-200">
+        <td>${escapeHtml(row.name)}</td>
+        <td>${formatNumber(row.quantity)}</td>
+        <td>${formatCurrency(row.billable)}</td>
+        <td>${formatCurrency(row.cost)}</td>
+        <td>${formatCurrency(row.net)}</td>
+      </tr>
+    `)
+    .join('');
+}
+
 export function renderCrewWork(rows) {
   const tbody = document.getElementById('reports-crew-work');
   if (!tbody) return;

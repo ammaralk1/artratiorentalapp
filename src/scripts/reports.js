@@ -22,6 +22,7 @@ import {
   calculateTopEquipment,
   calculateTopOutstanding,
   calculateCrewWorkReport,
+  calculateEquipmentCostReport,
   calculatePaymentForecast,
 } from './reports/calculations.js';
 import { renderTrendChart, renderStatusChart, renderPaymentChart, renderStatusStackedMonthly } from './reports/presenters/charts.js';
@@ -31,6 +32,7 @@ import {
   exportReport,
   renderTopCustomers,
   renderTopEquipment,
+  renderEquipmentCosts,
   renderTopOutstanding,
   renderCrewWork,
   renderMaintenanceExpenses,
@@ -525,6 +527,7 @@ export function renderReports() {
   const topCustomers = calculateTopCustomers(filtered, customers);
   const topEquipment = calculateTopEquipment(filtered, equipment);
   const crewWork = calculateCrewWorkReport(filtered, technicians);
+  const equipmentCosts = calculateEquipmentCostReport(filtered);
   const forecast = calculatePaymentForecast(filtered);
   const topOutstanding = calculateTopOutstanding(filtered, customers, 5);
 
@@ -536,6 +539,7 @@ export function renderReports() {
   renderQuickChips(statusBreakdown, paymentBreakdown);
   renderTopCustomers(topCustomers);
   renderTopEquipment(topEquipment);
+  renderEquipmentCosts(equipmentCosts);
   renderTopOutstanding(topOutstanding);
   renderCrewWork(crewWork);
   renderMaintenanceExpenses(maintenanceSummary, maintenance);
@@ -553,6 +557,7 @@ export function renderReports() {
   reportsState.lastSnapshot.maintenance = maintenanceSummary;
   reportsState.lastSnapshot.outstanding = topOutstanding;
   reportsState.lastSnapshot.crewWork = crewWork;
+  reportsState.lastSnapshot.equipmentCosts = equipmentCosts;
   reportsState.lastSnapshot.paymentForecast = forecast;
 }
 

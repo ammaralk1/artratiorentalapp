@@ -53,6 +53,7 @@ const __memo = {
   payment: new Map(),
   topCustomers: new Map(),
   topEquipment: new Map(),
+  equipmentCost: new Map(),
 };
 
 function listSignature(list) {
@@ -343,6 +344,8 @@ export function calculateMetrics(reservations) {
   let taxTotal = 0;
   let crewTotal = 0;
   let crewCostTotal = 0;
+  let equipmentTotal = 0;
+  let equipmentCostTotal = 0;
   let netProfit = 0;
   let outstandingTotal = 0;
 
@@ -372,6 +375,8 @@ export function calculateMetrics(reservations) {
       taxTotal += financials.taxAmount;
       crewTotal += financials.crewTotal;
       crewCostTotal += financials.crewCostTotal ?? 0;
+      equipmentTotal += financials.equipmentTotal ?? 0;
+      equipmentCostTotal += financials.equipmentCostTotal ?? 0;
       netProfit += financials.netProfit;
       // اجمع المبلغ غير المدفوع (المستحق) عند توفره
       const outstanding = computeOutstandingAmount(reservation);
@@ -398,6 +403,8 @@ export function calculateMetrics(reservations) {
     taxTotal,
     crewTotal,
     crewCostTotal,
+    equipmentTotal,
+    equipmentCostTotal,
     netProfit,
   };
 }
@@ -867,6 +874,53 @@ export function calculateTopEquipment(reservations, equipment) {
     })
     .slice(0, 5);
   return memoSet(__memo.topEquipment, key, out);
+}
+
+export function calculateEquipmentCostReport(reservations) {
+  const key = `equipmentCost:${listSignature(reservations)}`;
+  const cached = memoGet(__memo.equipmentCost, key);
+  if (cached) return cached;
+
+  const totals = new Map();
+  const fallbackName = translate('reservations.reports.topEquipment.unknown', 'معدة بدون اسم', 'Unnamed equipment');
+
+  (reservations || []).forEach((res) => {
+    const { statusValue } = computeReportStatus(res);
+    if (statusValue === 'cancelled') return;
+    const days = Math.max(1, calculateReservationDaysForReports(res?.start, res?.end));
+    const items = Array.isArray(res?.items) ? res.items : [];
+    items.forEach((item) => {
+      const rawName = item?.desc || item?.description || item?.name || '';
+      const name = rawName && rawName.trim() ? rawName : fallbackName;
+      const keyName = normalizeText(name) || name;
+      const qty = Number(item?.qty ?? item?.quantity ?? 1) || 1;
+      const unitPrice = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice ?? 0);
+      const unitCost = parsePriceValue(item?.unitCost ?? item?.unit_cost ?? item?.cost ?? 0);
+      const billable = sanitizePriceValue(qty * unitPrice * days);
+      const cost = sanitizePriceValue(qty * unitCost * days);
+
+      const entry = totals.get(keyName) || { name, quantity: 0, billable: 0, cost: 0 };
+      entry.name = name;
+      entry.quantity += qty;
+      entry.billable += billable;
+      entry.cost += cost;
+      totals.set(keyName, entry);
+    });
+  });
+
+  const rows = Array.from(totals.values())
+    .map((row) => ({
+      ...row,
+      net: sanitizePriceValue(row.billable - row.cost),
+    }))
+    .sort((a, b) => {
+      if (b.cost !== a.cost) return b.cost - a.cost;
+      if (b.billable !== a.billable) return b.billable - a.billable;
+      return (b.quantity || 0) - (a.quantity || 0);
+    })
+    .slice(0, 10);
+
+  return memoSet(__memo.equipmentCost, key, rows);
 }
 
 // Allow other modules to clear memo when data/language changes

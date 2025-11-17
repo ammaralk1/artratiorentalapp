@@ -963,7 +963,7 @@ function renderProjectsRevenueBreakdown(projects) {
       { key: 'crewGross', label: t('reservations.reports.kpi.revenue.details.crewGross', 'إجمالي الطاقم', 'Crew total'), value: formatCurrency(breakdown.crewTotal) },
       // Show crew cost as a subtractive item for visual consistency with other costs
       { key: 'crew', label: t('reservations.reports.kpi.revenue.details.crew', 'تكلفة الطاقم', 'Crew cost'), value: `−${formatCurrency(breakdown.crewCostTotal)}` },
-      { key: 'equipment', label: t('reservations.reports.kpi.revenue.details.equipment', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
+      { key: 'equipment', label: t('reservations.reports.kpi.revenue.details.equipmentGross', 'إجمالي المعدات', 'Equipment total'), value: formatCurrency(breakdown.equipmentTotalCombined) },
       { key: 'projectExpenses', label: t('projects.reports.kpi.revenue.details.projectExpenses', 'تكلفة الخدمات الإنتاجية', 'Project expenses'), value: `−${formatCurrency(breakdown.projectExpensesTotal)}` },
       { key: 'servicesProfit', label: t('projects.reports.kpi.revenue.details.servicesProfit', getCurrentLanguage()==='ar' ? 'ربح الخدمات الإنتاجية' : 'Services profit'), value: `${formatCurrency(servicesProfit)}` },
       { key: 'net', label: t('reservations.reports.kpi.revenue.details.net', 'صافي الربح', 'Net profit'), value: formatCurrency(breakdown.netProfit) },

@@ -12,6 +12,8 @@ export function updateKpiCards(metrics) {
   const outstandingMetaEl = document.getElementById('reports-kpi-outstanding-meta');
   const crewCostEl = document.getElementById('reports-kpi-crew-cost');
   const crewCostMetaEl = document.getElementById('reports-kpi-crew-cost-meta');
+  const equipmentCostEl = document.getElementById('reports-kpi-equipment-cost');
+  const equipmentCostMetaEl = document.getElementById('reports-kpi-equipment-cost-meta');
   const marginEl = document.getElementById('reports-kpi-margin');
   const marginMetaEl = document.getElementById('reports-kpi-margin-meta');
   const netEl = document.getElementById('reports-kpi-net');
@@ -29,6 +31,8 @@ export function updateKpiCards(metrics) {
   const taxTotal = metrics.taxTotal || 0;
   const crewGross = metrics.crewTotal || 0;
   const crewCost = metrics.crewCostTotal || 0;
+  const equipmentGross = metrics.equipmentTotal || 0;
+  const equipmentCost = metrics.equipmentCostTotal || 0;
   const net = metrics.netProfit || 0;
   const maintenanceExpense = metrics.maintenanceExpense || 0;
   const marginPercent = revenue > 0 ? Math.round((net / revenue) * 100) : 0;
@@ -89,6 +93,16 @@ export function updateKpiCards(metrics) {
           value: formatCurrency(crewCost),
           hint: translate('reservations.reports.kpi.revenue.details.crewHint', 'تكلفة الطاقم على الشركة', 'Crew cost to company')
         },
+        {
+          label: translate('reservations.reports.kpi.revenue.details.equipmentGross', 'إجمالي المعدات', 'Equipment total'),
+          value: formatCurrency(equipmentGross),
+          hint: translate('reservations.reports.kpi.revenue.details.equipmentGrossHint', 'قيمة المعدات للعميل', 'Equipment price billed to client')
+        },
+        {
+          label: translate('reservations.reports.kpi.revenue.details.equipment', 'تكلفة المعدات', 'Equipment cost'),
+          value: formatCurrency(equipmentCost),
+          hint: translate('reservations.reports.kpi.revenue.details.equipmentHint', 'تكلفة المعدات على الشركة', 'Equipment cost to company')
+        },
       ];
 
       if (maintenanceExpense > 0) {
@@ -132,6 +146,14 @@ export function updateKpiCards(metrics) {
     const txt = translate('reservations.reports.kpi.crewCost.meta', 'المفوترة {billable}', 'Billed {billable}')
       .replace('{billable}', formatCurrency(crewGross));
     crewCostMetaEl.textContent = txt;
+  }
+
+  // Equipment cost (company cost for equipment)
+  if (equipmentCostEl) equipmentCostEl.textContent = formatCurrency(equipmentCost);
+  if (equipmentCostMetaEl) {
+    const txt = translate('reservations.reports.kpi.equipmentCost.meta', 'المفوترة {billable}', 'Billed {billable}')
+      .replace('{billable}', formatCurrency(equipmentGross));
+    equipmentCostMetaEl.textContent = txt;
   }
 
   // Profit margin %

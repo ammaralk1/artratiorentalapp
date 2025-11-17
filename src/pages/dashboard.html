@@ -1479,64 +1479,75 @@
               </div>
             </div>
 
-            <div class="reports-kpi-grid" id="reservations-reports-kpis">
-              <div class="reports-kpi-card" data-kpi="projects">
-                <div class="reports-kpi-icon" aria-hidden="true">📦</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.total.label">إجمالي الحجوزات</p>
-                  <p class="reports-kpi-value" id="reports-kpi-total">0</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-total-meta" data-i18n data-i18n-key="reservations.reports.kpi.total.meta">لم يتم تسجيل بيانات بعد</span>
+            <div class="reports-kpi-carousel">
+              <div class="reports-kpi-grid" id="reservations-reports-kpis">
+                <div class="reports-kpi-card" data-kpi="projects">
+                  <div class="reports-kpi-icon" aria-hidden="true">📦</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.total.label">إجمالي الحجوزات</p>
+                    <p class="reports-kpi-value" id="reports-kpi-total">0</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-total-meta" data-i18n data-i18n-key="reservations.reports.kpi.total.meta">لم يتم تسجيل بيانات بعد</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="totalValue">
+                  <div class="reports-kpi-icon" aria-hidden="true">💰</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</p>
+                    <p class="reports-kpi-value" id="reports-kpi-revenue">0 SR</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="outstanding">
+                  <div class="reports-kpi-icon" aria-hidden="true">💸</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.outstanding.label">قيمة غير مدفوعة</p>
+                    <p class="reports-kpi-value" id="reports-kpi-outstanding">0 SR</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-outstanding-meta" data-i18n data-i18n-key="reservations.reports.kpi.outstanding.meta">—</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="expenses">
+                  <div class="reports-kpi-icon" aria-hidden="true">🛠️</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.crewCost.label">تكلفة الطاقم الفني</p>
+                    <p class="reports-kpi-value" id="reports-kpi-crew-cost">0 SR</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-crew-cost-meta" data-i18n data-i18n-key="reservations.reports.kpi.crewCost.meta">—</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="equipmentCost">
+                  <div class="reports-kpi-icon" aria-hidden="true">🧰</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.equipmentCost.label">تكلفة المعدات</p>
+                    <p class="reports-kpi-value" id="reports-kpi-equipment-cost">0 SR</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-equipment-cost-meta" data-i18n data-i18n-key="reservations.reports.kpi.equipmentCost.meta">—</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="margin">
+                  <div class="reports-kpi-icon" aria-hidden="true">📈</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.margin.label">هامش الربح</p>
+                    <p class="reports-kpi-value" id="reports-kpi-margin">0%</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-margin-meta" data-i18n data-i18n-key="reservations.reports.kpi.margin.meta">—</span>
+                  </div>
+                </div>
+                <div class="reports-kpi-card" data-kpi="netProfit">
+                  <div class="reports-kpi-icon" aria-hidden="true">💹</div>
+                  <div class="reports-kpi-content">
+                    <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.net.label">صافي الربح</p>
+                    <p class="reports-kpi-value" id="reports-kpi-net">0 SR</p>
+                    <span class="reports-kpi-meta" id="reports-kpi-net-meta" data-i18n data-i18n-key="reservations.reports.kpi.net.meta">—</span>
+                  </div>
                 </div>
               </div>
-              <div class="reports-kpi-card" data-kpi="totalValue">
-                <div class="reports-kpi-icon" aria-hidden="true">💰</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.revenue.label">إجمالي الإيرادات</p>
-                  <p class="reports-kpi-value" id="reports-kpi-revenue">0 SR</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-revenue-meta" data-i18n data-i18n-key="reservations.reports.kpi.revenue.meta">متوسط الحجز —</span>
-                </div>
+              <!-- KPIs skeleton while loading -->
+              <div class="reports-kpi-grid" id="reports-kpi-skeleton" aria-hidden="true" style="display:none">
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
+                <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
               </div>
-              <div class="reports-kpi-card" data-kpi="outstanding">
-                <div class="reports-kpi-icon" aria-hidden="true">💸</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.outstanding.label">قيمة غير مدفوعة</p>
-                  <p class="reports-kpi-value" id="reports-kpi-outstanding">0 SR</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-outstanding-meta" data-i18n data-i18n-key="reservations.reports.kpi.outstanding.meta">—</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card" data-kpi="expenses">
-                <div class="reports-kpi-icon" aria-hidden="true">🛠️</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.crewCost.label">تكلفة الطاقم الفني</p>
-                  <p class="reports-kpi-value" id="reports-kpi-crew-cost">0 SR</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-crew-cost-meta" data-i18n data-i18n-key="reservations.reports.kpi.crewCost.meta">—</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card" data-kpi="margin">
-                <div class="reports-kpi-icon" aria-hidden="true">📈</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.margin.label">هامش الربح</p>
-                  <p class="reports-kpi-value" id="reports-kpi-margin">0%</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-margin-meta" data-i18n data-i18n-key="reservations.reports.kpi.margin.meta">—</span>
-                </div>
-              </div>
-              <div class="reports-kpi-card" data-kpi="netProfit">
-                <div class="reports-kpi-icon" aria-hidden="true">💹</div>
-                <div class="reports-kpi-content">
-                  <p class="reports-kpi-label" data-i18n data-i18n-key="reservations.reports.kpi.net.label">صافي الربح</p>
-                  <p class="reports-kpi-value" id="reports-kpi-net">0 SR</p>
-                  <span class="reports-kpi-meta" id="reports-kpi-net-meta" data-i18n data-i18n-key="reservations.reports.kpi.net.meta">—</span>
-                </div>
-              </div>
-            </div>
-            <!-- KPIs skeleton while loading -->
-            <div class="reports-kpi-grid" id="reports-kpi-skeleton" aria-hidden="true" style="display:none">
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
-              <div class="skeleton-card"><div class="skeleton-line w-40"></div><div class="skeleton-amount"></div></div>
             </div>
 
             <!-- بطاقة منفصلة لتفاصيل الإيرادات مثل تقارير المشاريع -->
@@ -1735,6 +1746,41 @@
                   </table>
                 </div>
               </div>
+              <div class="reports-table-card reports-rtl-card reports-table-card--centered">
+                <div class="reports-card-header">
+                  <div class="reports-card-title">
+                    <span class="reports-card-icon" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M4 7h16"></path>
+                        <path d="M6 11h12"></path>
+                        <path d="M8 15h10"></path>
+                        <path d="M10 19h8"></path>
+                      </svg>
+                    </span>
+                    <div class="reports-card-text">
+                      <h4 data-i18n data-i18n-key="reservations.reports.equipmentCosts.title">تكاليف المعدات</h4>
+                      <span class="reports-card-hint" data-i18n data-i18n-key="reservations.reports.equipmentCosts.hint">أعلى المعدات حسب الفوتر والتكلفة وصافي المساهمة</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="reports-table-wrapper">
+                  <table class="reports-table">
+                    <thead>
+                      <tr>
+                        <th data-i18n data-i18n-key="reservations.reports.equipmentCosts.headers.equipment">المعدة</th>
+                        <th data-i18n data-i18n-key="reservations.reports.equipmentCosts.headers.qty">الكمية</th>
+                        <th data-i18n data-i18n-key="reservations.reports.equipmentCosts.headers.billable">فوتر المعدات</th>
+                        <th data-i18n data-i18n-key="reservations.reports.equipmentCosts.headers.cost">تكلفة المعدات</th>
+                        <th data-i18n data-i18n-key="reservations.reports.equipmentCosts.headers.net">صافي المساهمة</th>
+                      </tr>
+                    </thead>
+                    <tbody id="reports-equipment-costs">
+                      <tr><td colspan="5" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               <div class="reports-table-card reports-rtl-card">
                 <div class="reports-card-header">
                   <div class="reports-card-title">
@@ -1871,11 +1917,12 @@
                       <th data-report-column="payment" data-i18n data-i18n-key="reservations.reports.results.headers.payment">الدفع</th>
                       <th class="sortable" data-sort-key="total" data-report-column="total" data-i18n data-i18n-key="reservations.reports.results.headers.total">الإجمالي</th>
                       <th class="sortable" data-sort-key="share" data-report-column="share" data-i18n data-i18n-key="reservations.reports.results.headers.share">نسبة الشركة</th>
+                      <th class="sortable" data-sort-key="equipmentCost" data-report-column="equipmentCost" data-i18n data-i18n-key="reservations.reports.results.headers.equipmentCost">تكلفة المعدات</th>
                       <th class="sortable" data-sort-key="net" data-report-column="net" data-i18n data-i18n-key="reservations.reports.results.headers.net">صافي الربح</th>
                     </tr>
                   </thead>
                   <tbody id="reports-reservations-body">
-                    <tr><td colspan="8" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
+                    <tr><td colspan="9" class="text-base-content/60" data-i18n data-i18n-key="reservations.reports.table.empty">لا توجد بيانات</td></tr>
                   </tbody>
                 </table>
               </div>
