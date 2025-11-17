@@ -869,6 +869,25 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   scroll-snap-align: start;
 }
 
+@media (min-width: 1200px) {
+  .reports-kpi-carousel {
+    overflow-x: visible;
+    padding-inline: 0;
+  }
+  .reports-kpi-carousel .reports-kpi-grid {
+    width: 100%;
+    min-width: auto;
+  }
+  .reports-wrapper--reservations .reports-kpi-grid {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+  .reports-wrapper--reservations .reports-kpi-card {
+    flex: 1 1 180px;
+  }
+}
+
 .reports-kpi-icon {
   width: 40px;
   height: 40px;
