@@ -762,7 +762,7 @@ export async function closeReservationApi(id, notes = null) {
 }
 
 export function mapReservationFromApi(raw = {}) {
-  return toInternalReservation({
+  const mapped = toInternalReservation({
     id: raw.id,
     reservationId: raw.reservation_code ?? raw.reservationId,
     reservation_code: raw.reservation_code,
@@ -793,6 +793,7 @@ export function mapReservationFromApi(raw = {}) {
     payment_history: raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
     paymentHistory: raw.paymentHistory ?? raw.payment_history ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
   });
+  return mergeItemCostsFromExisting(mapped);
 }
 
 export function mapLegacyReservation(raw = {}) {
