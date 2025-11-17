@@ -586,11 +586,10 @@ export function initReports() {
   rangeSelect.addEventListener('change', () => {
     filters.range = rangeSelect.value;
     toggleCustomRange(customRangeWrapper, true);
-    if (filters.range !== 'custom' && !filters.start && !filters.end) {
+    // Always reset start/end when choosing a preset range to avoid stale days
+    if (filters.range !== 'custom') {
       filters.start = null;
       filters.end = null;
-    } else if (filters.range !== 'custom' && (filters.start || filters.end)) {
-      filters.range = 'custom';
     }
     scheduleUrlUpdate();
     scheduleRender({ refresh: true });
@@ -598,6 +597,11 @@ export function initReports() {
 
   statusSelect?.addEventListener('change', () => {
     filters.status = statusSelect.value;
+    // Exclude pending/cancelled from report filters as requested
+    if (filters.status === 'pending' || filters.status === 'cancelled') {
+      filters.status = 'all';
+      statusSelect.value = 'all';
+    }
     scheduleUrlUpdate();
     scheduleRender();
   });
