@@ -1726,6 +1726,7 @@ function buildReservationItemsPayload(items) {
         purchase_price: unitCost,
         internal_cost: unitCost,
         equipment_cost: unitCost,
+        item_cost: unitCost,
         notes: packageItem?.notes ?? null,
       });
     });
@@ -1757,6 +1758,7 @@ function buildReservationItemsPayload(items) {
     purchase_price: unitCost,
     internal_cost: unitCost,
     equipment_cost: unitCost,
+    item_cost: unitCost,
     notes: item.notes ?? null,
   });
 });
@@ -1823,6 +1825,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
               purchase_price: unitCost,
               internal_cost: unitCost,
               equipment_cost: unitCost,
+              item_cost: unitCost,
             };
           })
           .filter(Boolean)
@@ -1848,6 +1851,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
     purchase_price: unitCost,
     internal_cost: unitCost,
     equipment_cost: unitCost,
+    item_cost: unitCost,
     items: packageItems,
   });
 });
