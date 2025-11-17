@@ -1514,7 +1514,7 @@ function ensureReservationEquipmentCostColumn(PDO $pdo): void
         $checked = true;
         error_log('Added unit_cost column to reservation_equipment table automatically.');
     } catch (Throwable $error) {
-        $checked = true;
+        // Do not flip $checked so we retry later; log once per request.
         error_log('Failed to ensure unit_cost column on reservation_equipment table: ' . $error->getMessage());
     }
 }
