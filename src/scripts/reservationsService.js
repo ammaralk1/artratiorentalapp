@@ -30,9 +30,17 @@ function sanitizePriceValue(value) {
 
 const RESERVATION_PACKAGES_CACHE_KEY = '__reservation_packages_cache__';
 const RESERVATION_CREW_CACHE_KEY = '__reservation_crew_cache__';
+const RESERVATION_ITEM_COST_CACHE_KEY = '__reservation_item_cost_cache__';
 const CREW_CACHE_ENABLED = false; // disable crew cache to rely on DB
 
 function getPackagesCacheStorage() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return null;
+  }
+  return window.localStorage;
+}
+
+function getItemCostCacheStorage() {
   if (typeof window === 'undefined' || !window.localStorage) {
     return null;
   }
@@ -61,6 +69,94 @@ function writeReservationPackagesCache(cache) {
   } catch (error) {
     console.warn('[reservationsService] Failed to persist reservation packages cache', error);
   }
+}
+
+function readReservationItemCostCache() {
+  const storage = getItemCostCacheStorage();
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(RESERVATION_ITEM_COST_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (error) {
+    console.warn('[reservationsService] Failed to read reservation item cost cache', error);
+    return {};
+  }
+}
+
+function writeReservationItemCostCache(cache) {
+  const storage = getItemCostCacheStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(RESERVATION_ITEM_COST_CACHE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.warn('[reservationsService] Failed to persist reservation item cost cache', error);
+  }
+}
+
+function normalizeReservationItemForCostCache(item, index = 0) {
+  if (!item || typeof item !== 'object') return null;
+  const equipmentId = item.equipment_id ?? item.equipmentId ?? item.id ?? null;
+  const barcode = normalizeNumbers(String(item.barcode ?? item.code ?? '')).trim();
+  const costValue = sanitizePriceValue(toNumber(item.cost ?? item.unit_cost));
+  const priceValue = sanitizePriceValue(toNumber(item.price ?? item.unit_price));
+  const hasCost = Number.isFinite(costValue);
+  const hasPrice = Number.isFinite(priceValue);
+  if (!hasCost && !hasPrice) return null;
+  return {
+    key: equipmentId != null ? `id:${equipmentId}` : (barcode ? `bc:${barcode}` : `idx:${index}`),
+    equipmentId,
+    barcode,
+    cost: hasCost ? costValue : null,
+    price: hasPrice ? priceValue : null,
+  };
+}
+
+function persistReservationItemCostsToCache(reservationId, items) {
+  if (!reservationId) return;
+  const normalizedItems = Array.isArray(items)
+    ? items.map((item, idx) => normalizeReservationItemForCostCache(item, idx)).filter(Boolean)
+    : [];
+  const cache = readReservationItemCostCache();
+  const key = String(reservationId);
+  if (!normalizedItems.length) {
+    if (cache[key]) {
+      delete cache[key];
+      writeReservationItemCostCache(cache);
+    }
+    return;
+  }
+  cache[key] = normalizedItems;
+  writeReservationItemCostCache(cache);
+}
+
+function syncReservationItemCostCache(reservations = []) {
+  const cache = readReservationItemCostCache();
+  const allowedKeys = new Set();
+  reservations.forEach((reservation) => {
+    const reservationId = reservation?.id ?? reservation?.reservationId ?? reservation?.reservation_code ?? null;
+    if (!reservationId) return;
+    allowedKeys.add(String(reservationId));
+  });
+  let mutated = false;
+  Object.keys(cache).forEach((key) => {
+    if (!allowedKeys.has(key)) {
+      delete cache[key];
+      mutated = true;
+    }
+  });
+  if (mutated) {
+    writeReservationItemCostCache(cache);
+  }
+}
+
+function getCachedReservationItemCosts(reservationId) {
+  if (!reservationId) return [];
+  const cache = readReservationItemCostCache();
+  const key = String(reservationId);
+  const list = cache[key];
+  return Array.isArray(list) ? list : [];
 }
 
 // Infer packages from a flat items list using the packages snapshot
@@ -484,6 +580,7 @@ export function setReservationsState(reservations) {
     if (!reservation) return;
     const reservationId = reservation.id ?? reservation.reservationId ?? reservation.reservationCode;
     persistReservationPackagesToCache(reservationId, reservation.packages);
+    persistReservationItemCostsToCache(reservationId, reservation.items);
     const candidateCrew = reservation.crewAssignments && reservation.crewAssignments.length
       ? reservation.crewAssignments
       : (reservation.techniciansDetails || []);
@@ -492,6 +589,7 @@ export function setReservationsState(reservations) {
       persistReservationCrewToCache(reservationId, candidateCrew);
     }
   });
+  syncReservationItemCostCache(reservationsState);
   // Reduce noisy logs in production; keep in dev for diagnostics
   if (import.meta.env?.DEV) {
     if (reservationsState.length) {
@@ -814,6 +912,70 @@ function mergeItemCostsFromExisting(reservation) {
   return { ...reservation, items: mergedItems };
 }
 
+function mergeItemCostsFromCache(reservation) {
+  if (!reservation || typeof reservation !== 'object') return reservation;
+  if (!Array.isArray(reservation.items) || reservation.items.length === 0) return reservation;
+
+  const idCandidates = [
+    reservation.id,
+    reservation.reservationId,
+    reservation.reservation_code,
+  ].map((v) => (v != null ? String(v) : '')).filter(Boolean);
+  if (!idCandidates.length) return reservation;
+
+  let cachedItems = [];
+  for (const key of idCandidates) {
+    cachedItems = getCachedReservationItemCosts(key);
+    if (cachedItems.length) break;
+  }
+  if (!cachedItems.length) return reservation;
+
+  const cachedIndex = new Map();
+  cachedItems.forEach((entry, idx) => {
+    if (!entry || typeof entry !== 'object') return;
+    const equipmentId = entry.equipmentId ?? entry.equipment_id ?? null;
+    const barcode = normalizeNumbers(String(entry.barcode ?? '')).trim();
+    const key = equipmentId != null ? `id:${equipmentId}` : (barcode ? `bc:${barcode}` : `idx:${idx}`);
+    cachedIndex.set(key, entry);
+  });
+
+  const mergedItems = reservation.items.map((item, idx) => {
+    const equipmentId = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
+    const barcode = normalizeNumbers(String(item?.barcode ?? '')).trim();
+    const keys = [
+      equipmentId != null ? `id:${equipmentId}` : null,
+      barcode ? `bc:${barcode}` : null,
+      `idx:${idx}`,
+    ].filter(Boolean);
+    let cached = null;
+    for (const key of keys) {
+      if (cachedIndex.has(key)) {
+        cached = cachedIndex.get(key);
+        break;
+      }
+    }
+    if (!cached) return item;
+    const merged = { ...item };
+    const cachedCost = sanitizePriceValue(toNumber(cached.cost ?? cached.unit_cost));
+    const cachedPrice = sanitizePriceValue(toNumber(cached.price ?? cached.unit_price));
+    const hasCachedCost = Number.isFinite(cachedCost);
+    const hasCachedPrice = Number.isFinite(cachedPrice);
+    const currentCost = Number(item.cost);
+    const currentPrice = Number(item.price);
+    if (hasCachedCost && (!Number.isFinite(currentCost) || currentCost <= 0)) {
+      merged.cost = cachedCost;
+      merged.unit_cost = cachedCost;
+    }
+    if (hasCachedPrice && (!Number.isFinite(currentPrice) || currentPrice <= 0)) {
+      merged.price = cachedPrice;
+      merged.unit_price = cachedPrice;
+    }
+    return merged;
+  });
+
+  return { ...reservation, items: mergedItems };
+}
+
 export async function deleteReservationApi(id) {
   await apiRequest(`/reservations/?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
   const next = reservationsState.filter((reservation) => String(reservation.id) !== String(id));
@@ -865,7 +1027,7 @@ export function mapReservationFromApi(raw = {}) {
     payment_history: raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
     paymentHistory: raw.paymentHistory ?? raw.payment_history ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
   });
-  return mergeItemCostsFromExistingSafe(mapped);
+  return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
 }
 
 export function mapLegacyReservation(raw = {}) {
