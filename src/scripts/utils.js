@@ -141,6 +141,10 @@ export function showToast(message, typeOrDuration = 3000, maybeDuration) {
   // Fallback: if not visible after a tick (e.g., due to unexpected CSS),
   // re-position the toast as a fixed element directly under body.
   setTimeout(() => {
+    // Avoid moving nodes in test/jsdom environments where layout metrics are zeroed.
+    if (typeof process !== 'undefined' && process.env?.VITEST) {
+      return;
+    }
     try {
       const rect = toast.getBoundingClientRect();
       const offscreen = rect.height < 8 || rect.width < 8 || rect.top < -10 || rect.top > (window.innerHeight + 10);

@@ -8,7 +8,8 @@ import {
   findEquipmentByBarcode,
   getEquipmentAvailabilityStatus,
   isEquipmentUnavailable,
-  isEquipmentAvailable
+  isEquipmentAvailable,
+  resolveEquipmentCost
 } from '../reservationsEquipment.js';
 import { renderEditSummary, DEFAULT_COMPANY_SHARE_PERCENT, calculateReservationDays } from '../reservationsSummary.js';
 import {
@@ -220,7 +221,7 @@ export function renderEditReservationItems(items = []) {
   const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (!items || items.length === 0) {
-    container.innerHTML = `<tr><td colspan="6" class="text-center">${noItemsMessage}</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" class="text-center">${noItemsMessage}</td></tr>`;
     ensureGroupHandler(container);
     return;
   }
@@ -242,6 +243,8 @@ export function renderEditReservationItems(items = []) {
       const quantityDisplay = normalizeNumbers(String(group.count));
       const parsedUnitPrice = parsePriceValue(group.unitPrice);
       const unitPriceNumber = Number.isFinite(parsedUnitPrice) ? sanitizePriceValue(parsedUnitPrice) : 0;
+      const parsedUnitCost = parsePriceValue(group.unitCost);
+      const unitCostNumber = Number.isFinite(parsedUnitCost) ? sanitizePriceValue(parsedUnitCost) : 0;
       const groupDays = (() => {
         try {
           const { start, end } = getEditReservationDateRange();
@@ -255,6 +258,7 @@ export function renderEditReservationItems(items = []) {
         : unitPriceNumber * (Number.isFinite(group.count) ? group.count : 1) * groupDays;
       const totalPriceNumber = sanitizePriceValue(totalPriceRaw);
       const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
 
       const normalizedBarcodes = group.barcodes
@@ -357,6 +361,7 @@ export function renderEditReservationItems(items = []) {
           </td>
           <td><span class="reservation-days-value">${normalizeNumbers(String(groupDays))}</span></td>
           <td>${unitPriceDisplay}</td>
+          <td>${unitCostDisplay}</td>
           <td>${totalPriceDisplay}</td>
           <td>
             <button type="button" class="reservation-remove-button" data-action="remove-edit-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
@@ -736,6 +741,7 @@ function increaseEditReservationGroup(groupKey) {
       desc: candidate.desc || candidate.description || candidate.name || target.description || '',
       qty: 1,
       price: Number.isFinite(Number(candidate.price)) ? Number(candidate.price) : target.unitPrice,
+      cost: resolveEquipmentCost(candidate),
       image: resolveItemImage(candidate)
     }
   ];
@@ -1085,6 +1091,7 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
       desc: equipmentItem.desc,
       qty: 1,
       price: equipmentItem.price,
+      cost: resolveEquipmentCost(equipmentItem),
       image: equipmentItem.image || equipmentItem.imageUrl || equipmentItem.img || null
     }
   ];
@@ -1161,6 +1168,7 @@ export async function addEquipmentToEditingByDescription(inputElement) {
       desc: equipmentItem.desc,
       qty: 1,
       price: equipmentItem.price,
+      cost: resolveEquipmentCost(equipmentItem),
       image: equipmentItem.image || equipmentItem.imageUrl || equipmentItem.img || null
     }
   ];

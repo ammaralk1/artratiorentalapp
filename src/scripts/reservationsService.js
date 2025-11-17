@@ -961,6 +961,7 @@ export function mapReservationItem(item = {}) {
       desc: '',
       qty: 1,
       price: 0,
+      cost: 0,
       notes: null,
       image: null,
     };
@@ -981,6 +982,14 @@ export function mapReservationItem(item = {}) {
       ?? 1
   );
   const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? item.total_price ?? item.total ?? 0);
+  const unitCost = toNumber(
+    item.unit_cost
+      ?? item.unitCost
+      ?? item.cost
+      ?? item.rental_cost
+      ?? item.purchase_price
+      ?? 0
+  );
   const barcode = normalizeNumbers(String(item.barcode ?? item.code ?? item.serial ?? ''));
   const desc = item.description ?? item.desc ?? item.name ?? item.title ?? '';
 
@@ -994,6 +1003,7 @@ export function mapReservationItem(item = {}) {
     qtyPerPackage: null,
     totalQuantity: quantity,
     price: unitPrice,
+    cost: unitCost,
     notes: item.notes ?? null,
     image: item.image ?? item.image_url ?? item.imageUrl ?? null,
   };
@@ -1400,6 +1410,7 @@ function buildReservationItemsPayload(items) {
           equipment_id: resolveEquipmentIdValue(equipmentId),
           quantity: effectiveQuantity,
           unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
+          unit_cost: toNumber(packageItem?.cost ?? packageItem?.unit_cost ?? 0),
           notes: packageItem?.notes ?? null,
         });
       });
@@ -1416,6 +1427,7 @@ function buildReservationItemsPayload(items) {
       equipment_id: resolveEquipmentIdValue(equipmentId),
       quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
       unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+      unit_cost: toNumber(item.cost ?? item.unit_cost ?? 0),
       notes: item.notes ?? null,
     });
   });
@@ -1467,6 +1479,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
                   ?? 1
               ),
               unit_price: toNumber(child?.price ?? child?.unit_price ?? 0),
+              unit_cost: toNumber(child?.cost ?? child?.unit_cost ?? 0),
             };
           })
           .filter(Boolean)
@@ -1477,6 +1490,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       name: item.desc ?? item.name ?? '',
       quantity: packageQuantity,
       unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+      unit_cost: toNumber(item.cost ?? item.unit_cost ?? 0),
       items: packageItems,
     });
   });

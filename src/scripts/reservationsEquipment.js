@@ -75,6 +75,25 @@ export function resolveEquipmentPrice(item = {}) {
   return 0;
 }
 
+export function resolveEquipmentCost(item = {}) {
+  const candidates = [
+    item.cost,
+    item.unit_cost,
+    item.unitCost,
+    item.rental_cost,
+    item.rentalCost,
+    item.purchase_price,
+    item.purchasePrice,
+  ];
+  for (const value of candidates) {
+    const number = Number(value);
+    if (Number.isFinite(number)) {
+      return number;
+    }
+  }
+  return 0;
+}
+
 export function getEquipmentRecordByBarcode(barcode) {
   if (!barcode) return null;
   const normalized = normalizeBarcodeValue(barcode);

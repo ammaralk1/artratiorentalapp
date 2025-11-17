@@ -57,6 +57,16 @@ function toInternalEquipment(raw = {}) {
   const sub = raw.subcategory ?? raw.sub ?? "";
   const qty = parseInteger(raw.quantity ?? raw.qty ?? 0);
   const price = parseFloatSafe(raw.unit_price ?? raw.price ?? 0);
+  const cost = parseFloatSafe(
+    raw.unit_cost
+      ?? raw.unitCost
+      ?? raw.cost
+      ?? raw.rental_cost
+      ?? raw.rentalCost
+      ?? raw.purchase_price
+      ?? raw.purchasePrice
+      ?? 0
+  );
   const barcode = normalizeNumbers(String(raw.barcode ?? "").trim());
   const status = normalizeStatusValue(raw.status ?? raw.state ?? raw.status_label ?? raw.statusLabel ?? "available");
   const imageUrl = raw.image_url ?? raw.imageUrl ?? raw.image ?? "";
@@ -78,6 +88,7 @@ function toInternalEquipment(raw = {}) {
     name,
     qty,
     price,
+    cost,
     barcode,
     status,
     image: imageUrl,
@@ -515,6 +526,7 @@ function getEquipmentFormElements() {
     description: document.getElementById('edit-equipment-description'),
     quantity: document.getElementById('edit-equipment-quantity'),
     price: document.getElementById('edit-equipment-price'),
+    cost: document.getElementById('edit-equipment-cost'),
     image: document.getElementById('edit-equipment-image'),
     barcode: document.getElementById('edit-equipment-barcode'),
     status: document.getElementById('edit-equipment-status'),
@@ -530,6 +542,7 @@ function captureEquipmentFormValues() {
     description: elements.description?.value ?? '',
     quantity: elements.quantity?.value ?? '',
     price: elements.price?.value ?? '',
+    cost: elements.cost?.value ?? '',
     image: elements.image?.value ?? '',
     barcode: elements.barcode?.value ?? '',
     status: elements.status?.value ?? '',
@@ -544,6 +557,7 @@ function applyEquipmentFormValues(values = {}) {
   if (elements.description) elements.description.value = values.description ?? '';
   if (elements.quantity) elements.quantity.value = values.quantity != null ? normalizeNumbers(String(values.quantity)) : '';
   if (elements.price) elements.price.value = values.price != null ? normalizeNumbers(String(values.price)) : '';
+  if (elements.cost) elements.cost.value = values.cost != null ? normalizeNumbers(String(values.cost)) : '';
   if (elements.image) elements.image.value = values.image ?? '';
   if (elements.barcode) elements.barcode.value = values.barcode ?? '';
   if (elements.status) elements.status.value = values.status ?? '';
@@ -567,6 +581,7 @@ function setEquipmentEditMode(isEditing) {
     elements.description,
     elements.quantity,
     elements.price,
+    elements.cost,
     elements.image,
     elements.lessor,
   ];
@@ -643,6 +658,7 @@ export async function uploadEquipmentFromExcel(file) {
         const description = row["الوصف"] ?? row.description ?? row.name ?? "";
         const quantity = row["الكمية"] ?? row.quantity ?? 0;
         const unitPrice = row["السعر"] ?? row.price ?? 0;
+        const unitCost = row["التكلفة"] ?? row.cost ?? row.unit_cost ?? row.unitCost ?? 0;
         const barcodeRaw = row["الباركود"] ?? row.barcode ?? "";
         const imageUrl = row["الصورة"] ?? row.image_url ?? row.image ?? "";
         const lessor = row["المؤجر"] ?? row["المؤجر "] ?? row["Lessor"] ?? row["lessor"] ?? row.lessor ?? "";
@@ -661,6 +677,7 @@ export async function uploadEquipmentFromExcel(file) {
             description,
             quantity,
             unit_price: unitPrice,
+            unit_cost: unitCost,
             barcode: cleanedBarcode,
             image_url: imageUrl,
             lessor,
@@ -747,6 +764,7 @@ export async function downloadEquipmentToExcel({ onlyAvailable = false } = {}) {
       'الوصف': item.desc || item.description || item.name || '',
       'الكمية': Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0,
       'السعر': Number.isFinite(Number(item.price)) ? Number(item.price) : 0,
+      'التكلفة': Number.isFinite(Number(item.cost)) ? Number(item.cost) : 0,
       'الباركود': item.barcode || '',
       'الصورة': getEquipmentImage(item) || '',
       'المؤجر': (item.lessor || ''),
@@ -834,6 +852,7 @@ function buildEquipmentPayload({
   description = "",
   quantity = 0,
   unit_price = 0,
+  unit_cost = 0,
   barcode = "",
   status = "متاح",
   image_url = "",
@@ -849,6 +868,7 @@ function buildEquipmentPayload({
     description: description?.trim() || null,
     quantity: parseInteger(quantity),
     unit_price: parseFloatSafe(unit_price),
+    unit_cost: parseFloatSafe(unit_cost),
     barcode: cleanedBarcode,
     status: normalizedStatus,
     image_url: image_url?.trim() || null,
@@ -1022,6 +1042,7 @@ function renderEquipmentItem({ item, index }) {
     alias: t("equipment.card.labels.alias", "الاسم"),
     quantity: t("equipment.card.labels.quantity", "الكمية"),
     price: t("equipment.card.labels.price", "السعر"),
+    cost: t("equipment.card.labels.cost", "التكلفة"),
     category: t("equipment.card.labels.category", "القسم"),
     subcategory: t("equipment.card.labels.subcategory", "القسم الثانوي"),
     barcode: t("equipment.card.labels.barcode", "الباركود"),
@@ -1029,8 +1050,13 @@ function renderEquipmentItem({ item, index }) {
   };
   const qtyNumber = Number.isFinite(Number(item.qty)) ? Number(item.qty) : 0;
   const priceNumber = Number.isFinite(Number(item.price)) ? Number(item.price) : 0;
+  const costNumber = Number.isFinite(Number(item.cost)) ? Number(item.cost) : 0;
   const qtyDisplay = qtyNumber.toLocaleString("en-US");
   const priceDisplay = priceNumber.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  const costDisplay = costNumber.toLocaleString("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
@@ -1080,6 +1106,7 @@ function renderEquipmentItem({ item, index }) {
   const metricItems = [
     { label: labels.quantity, value: qtyDisplay },
     { label: labels.price, value: `${priceDisplay} ${currencyLabel}` },
+    { label: labels.cost, value: `${costDisplay} ${currencyLabel}` },
   ];
 
   const metricsRowHtml = `
@@ -1604,6 +1631,7 @@ async function handleAddEquipmentSubmit(event) {
   const rawBarcode = form.querySelector("#new-equipment-barcode")?.value || "";
   const barcode = normalizeNumbers(rawBarcode).trim();
   const price = parseFloatSafe(form.querySelector("#new-equipment-price")?.value || "0");
+  const cost = parseFloatSafe(form.querySelector("#new-equipment-cost")?.value || "0");
   const qty = parseInteger(form.querySelector("#new-equipment-qty")?.value || "1");
   const image = form.querySelector("#new-equipment-image")?.value?.trim() || "";
   const category = form.querySelector("#new-equipment-category")?.value?.trim() || "";
@@ -1622,6 +1650,7 @@ async function handleAddEquipmentSubmit(event) {
     description: desc,
     quantity: qty,
     unit_price: price,
+    unit_cost: cost,
     barcode,
     status: statusValue,
     image_url: image,
@@ -1702,6 +1731,7 @@ async function editEquipment(index, updatedData) {
     description: updatedData.desc,
     quantity: updatedData.qty,
     unit_price: updatedData.price,
+    unit_cost: updatedData.cost,
     barcode: updatedData.barcode,
     status: updatedData.status,
     image_url: updatedData.image,
@@ -1751,6 +1781,7 @@ function openEditEquipmentModal(index) {
     description: primary.desc || primary.description || '',
     quantity: String(primary.qty || 0),
     price: primary.price != null ? String(primary.price) : '0',
+    cost: primary.cost != null ? String(primary.cost) : '0',
     image: getEquipmentImage(primary) || '',
     barcode: primary.barcode || '',
     status: primary.status || normalizeStatusValue(primary.status),
@@ -2000,6 +2031,7 @@ function wireUpEquipmentUI() {
   [
     'edit-equipment-quantity',
     'edit-equipment-price',
+    'edit-equipment-cost',
     'edit-equipment-barcode',
   ].forEach((id) => {
     const input = document.getElementById(id);
@@ -2026,6 +2058,7 @@ document.getElementById("save-equipment-changes")?.addEventListener("click", asy
     desc: document.getElementById("edit-equipment-description").value,
     qty: parseInteger(document.getElementById("edit-equipment-quantity").value) || 1,
     price: parseFloatSafe(document.getElementById("edit-equipment-price").value) || 0,
+    cost: parseFloatSafe(document.getElementById("edit-equipment-cost").value) || 0,
     barcode: normalizeNumbers(document.getElementById("edit-equipment-barcode").value).trim(),
     status: document.getElementById("edit-equipment-status").value,
     image: document.getElementById("edit-equipment-image").value,

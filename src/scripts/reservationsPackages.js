@@ -70,6 +70,7 @@ export function resolvePackageItems(packageEntry) {
         normalizedBarcode,
         qty: 1,
         price: 0,
+        cost: 0,
         desc: '',
       });
       return;
@@ -102,6 +103,15 @@ export function resolvePackageItems(packageEntry) {
       item.price,
       item.daily_rate,
     ].find((value) => Number.isFinite(Number(value)));
+    const costCandidate = [
+      item.unit_cost,
+      item.unitCost,
+      item.cost,
+      item.rental_cost,
+      item.rentalCost,
+      item.purchase_price,
+      item.purchasePrice,
+    ].find((value) => Number.isFinite(Number(value)));
 
     const quantityCandidate = [
       item.quantity,
@@ -115,6 +125,7 @@ export function resolvePackageItems(packageEntry) {
       normalizedBarcode,
       qty: normalizePerPackageQty(quantityCandidate),
       price: priceCandidate != null ? Number(priceCandidate) : 0,
+      cost: costCandidate != null ? Number(costCandidate) : 0,
       desc: item.description ?? item.desc ?? item.name ?? '',
       image: item.image ?? item.imageUrl ?? item.img ?? null,
     });
@@ -166,6 +177,13 @@ export function resolvePackageItems(packageEntry) {
             entry.price = parsedPrice;
           }
         }
+        if (entry.cost == null || entry.cost === 0) {
+          const costValue = record.cost ?? record.unit_cost ?? record.unitCost ?? record.rental_cost ?? record.purchase_price;
+          const parsedCost = Number(costValue);
+          if (Number.isFinite(parsedCost) && parsedCost >= 0 && parsedCost < 1_000_000) {
+            entry.cost = parsedCost;
+          }
+        }
         if (!entry.image) {
           entry.image = record.image || record.imageUrl || record.img || null;
         }
@@ -184,6 +202,13 @@ export function resolvePackageItems(packageEntry) {
           const parsedPrice = Number(priceValue);
           if (Number.isFinite(parsedPrice) && parsedPrice >= 0 && parsedPrice < 1_000_000) {
             entry.price = parsedPrice;
+          }
+        }
+        if (entry.cost == null || entry.cost === 0) {
+          const costValue = record.cost ?? record.unit_cost ?? record.unitCost ?? record.rental_cost ?? record.purchase_price;
+          const parsedCost = Number(costValue);
+          if (Number.isFinite(parsedCost) && parsedCost >= 0 && parsedCost < 1_000_000) {
+            entry.cost = parsedCost;
           }
         }
         if (!entry.image) {
@@ -205,6 +230,9 @@ export function resolvePackageItems(packageEntry) {
     existing.qty += entry.qty;
     if (!existing.price && entry.price) {
       existing.price = entry.price;
+    }
+    if (!existing.cost && entry.cost) {
+      existing.cost = entry.cost;
     }
     if (!existing.desc && entry.desc) {
       existing.desc = entry.desc;
@@ -284,6 +312,7 @@ export function summarizePackageItems(packageEntry) {
     normalizedBarcode: item.normalizedBarcode,
     qty: item.qty,
     price: item.price,
+    cost: item.cost ?? 0,
     desc: item.desc,
     image: item.image ?? null,
   }));

@@ -149,6 +149,7 @@ export function computeReservationFinancials(reservation) {
     return {
       rentalDays: 1,
       equipmentTotal: 0,
+      equipmentCostTotal: 0,
       crewTotal: 0,
       crewCostTotal: 0,
       discountAmount: 0,
@@ -225,6 +226,7 @@ export function computeReservationFinancials(reservation) {
   const normalized = {
     rentalDays: breakdown.rentalDays,
     equipmentTotal: breakdown.equipmentTotal,
+    equipmentCostTotal: breakdown.equipmentCostTotal,
     crewTotal: breakdown.crewTotal,
     crewCostTotal: breakdown.crewCostTotal,
     discountAmount: breakdown.discountAmount,

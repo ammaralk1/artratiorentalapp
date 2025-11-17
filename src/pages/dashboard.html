@@ -737,6 +737,10 @@
                 <label for="new-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
                 <input type="number" class="form-control" id="new-equipment-price" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.price">
               </div>
+              <div class="form-field">
+                <label for="new-equipment-cost" class="form-label" data-i18n data-i18n-key="equipment.form.labels.cost">💸 التكلفة</label>
+                <input type="number" class="form-control" id="new-equipment-cost" placeholder="0" min="0" step="0.01" data-i18n data-i18n-placeholder-key="equipment.form.placeholders.cost">
+              </div>
 
               <div class="form-field">
                 <label for="new-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
@@ -1284,6 +1288,7 @@
                         <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
                         <th data-i18n data-i18n-key="reservations.equipment.table.days">الأيام</th>
                         <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                        <th data-i18n data-i18n-key="reservations.equipment.table.unitCost">تكلفة الوحدة</th>
                         <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
                         <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
                       </tr>
@@ -1960,6 +1965,10 @@
                 <label for="edit-equipment-price" class="form-label" data-i18n data-i18n-key="equipment.form.labels.price">💵 السعر</label>
                 <input type="number" class="form-control" id="edit-equipment-price" min="0" step="0.01" disabled>
               </div>
+              <div class="equipment-details-field">
+                <label for="edit-equipment-cost" class="form-label" data-i18n data-i18n-key="equipment.form.labels.cost">💸 التكلفة</label>
+                <input type="number" class="form-control" id="edit-equipment-cost" min="0" step="0.01" disabled>
+              </div>
 
               <div class="equipment-details-field equipment-details-field--wide">
                 <label for="edit-equipment-image" class="form-label" data-i18n data-i18n-key="equipment.form.labels.image">🖼️ رابط الصورة</label>
@@ -2235,12 +2244,13 @@
                       <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
                       <th data-i18n data-i18n-key="reservations.equipment.table.days">الأيام</th>
                       <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
+                      <th data-i18n data-i18n-key="reservations.equipment.table.unitCost">تكلفة الوحدة</th>
                       <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
                       <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody id="edit-res-items">
-                    <tr><td colspan="6" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
+                    <tr><td colspan="7" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
                   </tbody>
                 </table>
               </div>

@@ -331,6 +331,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   });
 
   const equipmentTotal = sanitizePriceValue(breakdown.equipmentTotal);
+  const equipmentCostTotal = sanitizePriceValue(breakdown.equipmentCostTotal);
   const crewTotal = sanitizePriceValue(breakdown.crewTotal);
   const crewCostTotal = sanitizePriceValue(breakdown.crewCostTotal);
   const discountAmount = sanitizePriceValue(breakdown.discountAmount);
@@ -351,6 +352,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const endDisplay = reservation.end ? normalizeNumbers(formatDateTime(reservation.end)) : '-';
   const techniciansCountDisplay = normalizeNumbers(String(crewAssignments.length));
   const equipmentTotalDisplay = normalizeNumbers(equipmentTotal.toFixed(2));
+  const equipmentCostDisplay = normalizeNumbers(equipmentCostTotal.toFixed(2));
   const discountAmountDisplay = normalizeNumbers(discountAmount.toFixed(2));
   const subtotalAfterDiscountDisplay = normalizeNumbers(subtotalAfterDiscount.toFixed(2));
   const taxAmountDisplay = normalizeNumbers(taxAmount.toFixed(2));
@@ -365,11 +367,13 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const durationLabel = t('reservations.details.labels.duration', 'عدد الأيام');
   const companyShareLabel = t('reservations.details.labels.companyShare', '🏦 نسبة الشركة');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
+  const equipmentCostLabel = t('reservations.details.labels.equipmentCost', 'تكلفة المعدات');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const tableHeaders = {
     item: t('reservations.equipment.table.item', 'المعدة'),
     quantity: t('reservations.equipment.table.quantity', 'الكمية'),
     unitPrice: t('reservations.equipment.table.unitPrice', 'سعر الوحدة'),
+    unitCost: t('reservations.equipment.table.unitCost', 'تكلفة الوحدة'),
     total: t('reservations.equipment.table.total', 'الإجمالي'),
     actions: t('reservations.equipment.table.actions', 'الإجراءات')
   };
@@ -406,6 +410,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const notesFallback = t('reservations.list.noNotes', 'لا توجد ملاحظات');
   const itemsCountLabel = t('reservations.details.labels.itemsCount', 'عدد المعدات');
   const itemsTotalLabel = t('reservations.details.labels.itemsTotal', 'إجمالي المعدات');
+  const itemsCostLabel = equipmentCostLabel;
   const paymentHistoryTitle = t('reservations.paymentHistory.title', 'سجل الدفعات');
   const paymentHistoryEmpty = t('reservations.paymentHistory.empty', 'لا توجد دفعات مسجلة');
   const unknownCustomer = t('reservations.list.unknownCustomer', 'غير معروف');
@@ -559,6 +564,8 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
   const summaryDetails = [
     { icon: '💼', label: itemsTotalLabel, value: `${equipmentTotalDisplay} ${currencyLabel}` }
   ];
+
+  summaryDetails.push({ icon: '💸', label: itemsCostLabel, value: `${equipmentCostDisplay} ${currencyLabel}` });
 
   summaryDetails.push({ icon: '😎', label: crewTotalLabel, value: `${crewTotalDisplay} ${currencyLabel}` });
   // Show internal crew cost directly under crew total
@@ -922,6 +929,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         };
 
         let unitPriceNumber;
+        let unitCostNumber;
         let totalPriceNumber;
 
         if (isPackageGroup) {
@@ -943,6 +951,17 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
 
           if (!Number.isFinite(unitPriceNumber)) {
             unitPriceNumber = 0;
+          }
+
+          const unitCostCandidates = [
+            representative?.cost,
+            representative?.unit_cost,
+            representative?.unitCost,
+            group.unitCost
+          ];
+          unitCostNumber = resolvePriceCandidate(unitCostCandidates, { preferPositive: true });
+          if (!Number.isFinite(unitCostNumber)) {
+            unitCostNumber = 0;
           }
 
           const totalCandidates = [
@@ -985,6 +1004,18 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             unitPriceNumber = 0;
           }
 
+          const costCandidates = [
+            representative?.cost,
+            representative?.unit_cost,
+            representative?.unitCost,
+            group.unitCost
+          ];
+
+          unitCostNumber = resolvePriceCandidate(costCandidates, { preferPositive: true });
+          if (!Number.isFinite(unitCostNumber) || unitCostNumber < 0) {
+            unitCostNumber = 0;
+          }
+
           totalPriceNumber = parsePriceValue(group.totalPrice ?? representative?.total ?? representative?.total_price);
           if (!Number.isFinite(totalPriceNumber)) {
             totalPriceNumber = unitPriceNumber * quantityValue;
@@ -992,9 +1023,11 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         }
 
         unitPriceNumber = sanitizePriceValue(unitPriceNumber);
+        unitCostNumber = sanitizePriceValue(unitCostNumber);
         totalPriceNumber = sanitizePriceValue(totalPriceNumber);
 
         const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+        const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
         const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
         const normalizedBarcodes = group.barcodes
           .map((code) => normalizeNumbers(String(code || '')))
@@ -1100,11 +1133,12 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             </td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(t('reservations.details.table.headers.days', 'الأيام'))}">${daysDisplay}</td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitPrice)}">${unitPriceDisplay}</td>
+            <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.unitCost)}">${unitCostDisplay}</td>
             <td class="reservation-modal-items-table__cell" data-label="${escapeHtml(tableHeaders.total)}">${rowTotalDisplay}</td>
           </tr>
         `;
       }).join('')
-    : `<tr><td colspan="5" class="text-center">${noItemsText}</td></tr>`;
+    : `<tr><td colspan="6" class="text-center">${noItemsText}</td></tr>`;
 
 
   const itemsTable = `
@@ -1116,6 +1150,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
             <th>${tableHeaders.quantity}</th>
             <th>${t('reservations.details.table.headers.days', 'الأيام')}</th>
             <th>${tableHeaders.unitPrice}</th>
+            <th>${tableHeaders.unitCost}</th>
             <th>${tableHeaders.total}</th>
           </tr>
         </thead>

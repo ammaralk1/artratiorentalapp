@@ -343,32 +343,45 @@ export function calculateDraftFinancialBreakdown({
     return false;
   };
   let equipmentTotalRaw = 0;
+  let equipmentCostTotalRaw = 0;
   (Array.isArray(groups) ? groups : []).forEach((group) => {
     const qty = Number.isFinite(Number(group?.quantity)) ? Number(group.quantity) : 0;
     const unit = Number.isFinite(Number(group?.unitPrice)) ? Number(group.unitPrice) : 0;
+    const unitCost = Number.isFinite(Number(group?.unitCost)) ? Number(group.unitCost) : 0;
     const isPackage = String(group?.type || '').toLowerCase() === 'package';
     const inferredFixed = inferGroupIsFixed(group);
 
     const appliedDays = (overrideNoDays || inferredFixed) ? 1 : rentalDays;
 
     if (isPackage) {
-      const unitCandidate = Number(group?.unitPrice);
-      if (Number.isFinite(unitCandidate) && unitCandidate > 0) {
-        equipmentTotalRaw += (qty * unitCandidate * appliedDays);
-      } else {
-        const pkgRef = {
-          package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
-          packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
-        };
-        const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: appliedDays });
-        const contrib = Number.isFinite(Number(pricing.total)) ? Number(pricing.total) : (qty * unit * appliedDays);
-        equipmentTotalRaw += contrib;
-      }
+      const pkgRef = {
+        package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
+        packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
+      };
+      const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: appliedDays });
+      const priceContrib = Number.isFinite(Number(pricing.total))
+        ? Number(pricing.total)
+        : (qty * (Number.isFinite(unit) ? unit : 0) * appliedDays);
+      const costContrib = (() => {
+        const totalCostCandidate = Number(pricing?.costTotal);
+        if (Number.isFinite(totalCostCandidate)) {
+          return totalCostCandidate;
+        }
+        const perDayCostCandidate = Number(pricing?.perDayCostTotal);
+        if (Number.isFinite(perDayCostCandidate)) {
+          return perDayCostCandidate * appliedDays;
+        }
+        return qty * (Number.isFinite(unitCost) ? unitCost : 0) * appliedDays;
+      })();
+      equipmentTotalRaw += priceContrib;
+      equipmentCostTotalRaw += costContrib;
     } else {
       equipmentTotalRaw += (qty * unit * appliedDays);
+      equipmentCostTotalRaw += (qty * unitCost * appliedDays);
     }
   });
   const equipmentTotal = sanitizePriceValue(equipmentTotalRaw);
+  const equipmentCostTotal = sanitizePriceValue(equipmentCostTotalRaw);
   const assignments = Array.isArray(crewAssignments) ? crewAssignments : [];
   const normalizedTechnicianIds = assignments.length
     ? assignments.map((assignment) => assignment?.technicianId).filter(Boolean)
@@ -435,11 +448,15 @@ export function calculateDraftFinancialBreakdown({
   const interimTotal = taxableAmount + taxAmount;
   const finalTotal = Math.max(0, Number(interimTotal.toFixed(2)));
 
-  const netProfit = Math.max(0, Math.max(0, equipmentTotal + crewTotal - discountAmount) - crewCostTotal);
+  const netProfit = Math.max(
+    0,
+    Math.max(0, equipmentTotal + crewTotal - discountAmount) - crewCostTotal - equipmentCostTotal
+  );
 
   return {
     rentalDays,
     equipmentTotal,
+    equipmentCostTotal,
     crewTotal,
     crewCostTotal,
     discountAmount,
@@ -512,7 +529,8 @@ export function buildSummaryHtml({
   netProfit = null,
   totalKey = 'reservations.summary.total',
   equipmentTotal = null,
-  crewTotal = null
+  crewTotal = null,
+  equipmentCostTotal = null
 }) {
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const totalDisplay = normalizeNumbers(String(total));
@@ -538,12 +556,16 @@ export function buildSummaryHtml({
   const daysLabel = t('reservations.summary.durationLabel', '⏱️ عدد الأيام');
   const crewLabel = t('reservations.summary.crewLabel', '😎 عدد الفريق');
   const equipmentTotalLabel = t('reservations.details.labels.itemsTotal', '💼 إجمالي المعدات');
+  const equipmentCostLabel = t('reservations.details.labels.equipmentCost', '💸 تكلفة المعدات');
   const crewTotalLabel = t('reservations.details.labels.crewTotal', '😎 إجمالي الفريق');
   const taxLabelShort = t('reservations.summary.taxLabelShort', '🧾 الضريبة');
   const paymentLabel = t('reservations.summary.paymentLabelShort', '💳 حالة الدفع');
   // Always use the unified label key to avoid malformed keys like
   // `reservations.summary.totalLabelAfterEdit`.
-  const totalLabel = t('reservations.summary.totalLabel', '💰 التكلفة الإجمالية');
+  const totalLabelKey = totalKey === 'reservations.summary.totalAfterEdit'
+    ? 'reservations.summary.totalLabelAfterEdit'
+    : (totalKey || 'reservations.summary.totalLabel');
+  const totalLabel = t(totalLabelKey, t('reservations.summary.totalLabel', '💰 التكلفة الإجمالية'));
   const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
   const netProfitValue = Number.isFinite(netProfit) ? Math.max(0, Number(netProfit)) : null;
@@ -561,6 +583,16 @@ export function buildSummaryHtml({
     summaryRows.push({
       label: equipmentTotalLabel,
       value: `${normalizeNumbers(equipmentTotalNumber.toFixed(2))} ${currencyLabel}`
+    });
+  }
+
+  const equipmentCostNumber = Number.isFinite(Number(equipmentCostTotal))
+    ? Math.max(0, Number(equipmentCostTotal))
+    : null;
+  if (equipmentCostNumber != null) {
+    summaryRows.push({
+      label: equipmentCostLabel,
+      value: `${normalizeNumbers(equipmentCostNumber.toFixed(2))} ${currencyLabel}`
     });
   }
 
@@ -693,7 +725,8 @@ export function renderDraftSummary({
     taxAmount: breakdown.taxAmount,
     netProfit: breakdown.netProfit,
     equipmentTotal: breakdown.equipmentTotal,
-    crewTotal: breakdown.crewTotal
+    crewTotal: breakdown.crewTotal,
+    equipmentCostTotal: breakdown.equipmentCostTotal
   });
 
   const summaryData = {
@@ -775,7 +808,8 @@ export function renderEditSummary({
     netProfit: breakdown.netProfit,
     totalKey: 'reservations.summary.totalAfterEdit',
     equipmentTotal: breakdown.equipmentTotal,
-    crewTotal: breakdown.crewTotal
+    crewTotal: breakdown.crewTotal,
+    equipmentCostTotal: breakdown.equipmentCostTotal
   });
 
   const summaryData = {

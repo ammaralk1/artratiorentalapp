@@ -7,7 +7,8 @@ import {
   findEquipmentByBarcode,
   getEquipmentAvailabilityStatus,
   isEquipmentUnavailable,
-  isEquipmentAvailable
+  isEquipmentAvailable,
+  resolveEquipmentCost
 } from '../reservationsEquipment.js';
 import { getSelectedCrewAssignments, getSelectedTechnicians, resetSelectedTechnicians, setSelectedTechnicians } from '../reservationsTechnicians.js';
 import {
@@ -1463,6 +1464,7 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
     desc: item.desc,
     qty: 1,
     price: item.price,
+    cost: resolveEquipmentCost(item),
     image: resolveItemImage(item)
   });
 
@@ -1511,6 +1513,7 @@ function addDraftEquipmentByDescription(inputElement) {
     desc: equipmentItem.desc || equipmentItem.description || equipmentItem.name || '',
     qty: 1,
     price: Number.isFinite(Number(equipmentItem.price)) ? Number(equipmentItem.price) : 0,
+    cost: resolveEquipmentCost(equipmentItem),
     image: resolveItemImage(equipmentItem)
   };
 
@@ -1977,6 +1980,13 @@ export function buildReservationPackageEntry(packageId, {
     };
   }
 
+  const packageCost = packageItems.reduce((sum, item) => {
+    const costValue = Number(item?.cost);
+    const qtyValue = Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1;
+    const safeQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+    return sum + (Number.isFinite(costValue) ? costValue : 0) * safeQty;
+  }, 0);
+
   const packagePayload = {
     id: `package::${normalizedId}`,
     packageId: normalizedId,
@@ -1984,6 +1994,7 @@ export function buildReservationPackageEntry(packageId, {
     desc: packageInfo.name || `Package ${normalizedId}`,
     qty: 1,
     price: Number.isFinite(Number(packageInfo.price)) ? Number(packageInfo.price) : 0,
+    cost: Number.isFinite(Number(packageInfo.cost)) ? Number(packageInfo.cost) : Number(packageCost.toFixed(2)),
     barcode: packageInfo.code || packageInfo.raw?.package_code || `pkg-${normalizedId}`,
     packageItems: packageItems.map((item) => ({
       equipmentId: item?.equipmentId ?? null,
@@ -1992,6 +2003,7 @@ export function buildReservationPackageEntry(packageId, {
       desc: item?.desc ?? '',
       qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
       price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
+      cost: Number.isFinite(Number(item?.cost)) ? Number(item.cost) : 0,
     })),
     image: packageItems.find((item) => item?.image)?.image ?? null,
   };
@@ -2116,7 +2128,7 @@ function renderReservationItems(containerId = 'reservation-items') {
   const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
 
   if (items.length === 0) {
-    container.innerHTML = `<tr><td colspan="6" class="text-center">${noItemsMessage}</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" class="text-center">${noItemsMessage}</td></tr>`;
     return;
   }
 
@@ -2142,6 +2154,8 @@ function renderReservationItems(containerId = 'reservation-items') {
       const totalPriceNumber = unitPriceNumber * group.count * groupDays;
       const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const unitCostNumber = Number.isFinite(Number(group.unitCost)) ? Number(group.unitCost) : 0;
+      const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
 
       const isPackageGroup = group.items.some((item) => item?.type === 'package');
 
@@ -2221,6 +2235,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           </td>
           <td><span class="reservation-days-value">${daysDisplay}</span></td>
           <td>${unitPriceDisplay}</td>
+          <td>${unitCostDisplay}</td>
           <td>${totalPriceDisplay}</td>
           <td>
             <button type="button" class="reservation-remove-button" data-action="remove-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>

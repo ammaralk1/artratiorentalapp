@@ -165,6 +165,7 @@ export function groupReservationItems(items = []) {
       const description = item?.desc || item?.description || item?.name || '';
       const normalizedDescription = normalizeText(description);
       const unitPrice = toPriceNumber(item);
+      const unitCost = toCostNumber(item);
       const image = item?.image || item?.imageUrl || item?.img || '';
 
       map.set(key, {
@@ -172,6 +173,7 @@ export function groupReservationItems(items = []) {
         description,
         normalizedDescription,
         unitPrice,
+        unitCost,
         image,
         items: [],
         itemIndices: [],
@@ -200,9 +202,20 @@ export function groupReservationItems(items = []) {
     const totalPrice = sanitizePriceValue(totalPriceRaw);
     const existingUnitPrice = parsePriceValue(group.unitPrice);
     const unitPriceBase = Number.isFinite(existingUnitPrice) ? existingUnitPrice : 0;
+    const totalCostRaw = group.items.reduce((sum, entry) => {
+      const cost = toCostNumber(entry);
+      const itemQty = getItemQuantity(entry);
+      return sum + (cost * itemQty);
+    }, 0);
+    const totalCost = sanitizePriceValue(totalCostRaw);
+    const existingUnitCost = parsePriceValue(group.unitCost);
+    const unitCostBase = Number.isFinite(existingUnitCost) ? existingUnitCost : 0;
     const unitPrice = quantity > 0
       ? sanitizePriceValue(totalPrice / quantity)
       : sanitizePriceValue(unitPriceBase);
+    const unitCost = quantity > 0
+      ? sanitizePriceValue(totalCost / quantity)
+      : sanitizePriceValue(unitCostBase);
 
     return {
       ...group,
@@ -210,6 +223,8 @@ export function groupReservationItems(items = []) {
       count: quantity, // backward compatible alias
       totalPrice,
       unitPrice,
+      totalCost,
+      unitCost,
     };
   });
 }
@@ -230,6 +245,16 @@ function normalizePackageItemsForGroup(packageEntry = {}) {
     qtyPerPackage: 1,
     price: (() => {
       const parsed = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
+      return Number.isFinite(parsed) ? parsed : 0;
+    })(),
+    cost: (() => {
+      const parsed = parsePriceValue(
+        item?.cost
+          ?? item?.unit_cost
+          ?? item?.unitCost
+          ?? item?.rental_cost
+          ?? item?.purchase_price
+      );
       return Number.isFinite(parsed) ? parsed : 0;
     })(),
   }));
@@ -267,8 +292,17 @@ export function buildPackageEquipmentLines(packageRef = {}, { packageQuantity = 
     const qtyPerPackage = 1;
     const unitPriceCandidate = parsePriceValue(item?.price ?? item?.unit_price ?? item?.unitPrice);
     const unitPrice = Number.isFinite(unitPriceCandidate) ? sanitizePriceValue(unitPriceCandidate) : 0;
+    const unitCostCandidate = parsePriceValue(
+      item?.cost
+        ?? item?.unit_cost
+        ?? item?.unitCost
+        ?? item?.rental_cost
+        ?? item?.purchase_price
+    );
+    const unitCost = Number.isFinite(unitCostCandidate) ? sanitizePriceValue(unitCostCandidate) : 0;
     const totalUnitsPerDay = qtyPerPackage * q;
     const linePerDayTotal = sanitizePriceValue(unitPrice * totalUnitsPerDay);
+    const linePerDayCost = sanitizePriceValue(unitCost * totalUnitsPerDay);
     return {
       equipmentId: item?.equipmentId ?? item?.equipment_id ?? null,
       barcode: item?.barcode ?? item?.normalizedBarcode ?? '',
@@ -278,6 +312,8 @@ export function buildPackageEquipmentLines(packageRef = {}, { packageQuantity = 
       totalUnits: totalUnitsPerDay,
       unitPrice,
       perDayTotal: linePerDayTotal,
+      unitCost,
+      perDayCost: linePerDayCost,
     };
   });
 }
@@ -293,8 +329,10 @@ export function computePackageTotalFromLines(lines = [], { days = 1 } = {}) {
 export function computePackagePricing(packageRef = {}, { packageQuantity = 1, days = 1 } = {}) {
   const lines = buildPackageEquipmentLines(packageRef, { packageQuantity });
   const perDayTotal = sanitizePriceValue(lines.reduce((sum, l) => sum + (Number(l.perDayTotal) || 0), 0));
+  const perDayCostTotal = sanitizePriceValue(lines.reduce((sum, l) => sum + (Number(l.perDayCost) || 0), 0));
   const total = sanitizePriceValue(perDayTotal * (Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 1));
-  return { lines, perDayTotal, total };
+  const costTotal = sanitizePriceValue(perDayCostTotal * (Number.isFinite(Number(days)) && Number(days) > 0 ? Number(days) : 1));
+  return { lines, perDayTotal, total, perDayCostTotal, costTotal };
 }
 
 function resolvePackageQuantity(packageEntry = {}) {
@@ -483,6 +521,33 @@ export function buildReservationDisplayGroups(reservation = {}) {
     }
     unitPrice = sanitizePriceValue(unitPrice);
 
+    const unitCostCandidates = [
+      primarySource?.unit_cost,
+      primarySource?.unitCost,
+      primarySource?.cost,
+      secondarySource?.unit_cost,
+      secondarySource?.unitCost,
+      secondarySource?.cost,
+    ];
+    let unitCost = 0;
+    for (const candidate of unitCostCandidates) {
+      const parsed = parsePriceValue(candidate);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        unitCost = sanitizePriceValue(parsed);
+        break;
+      }
+    }
+    if (!unitCost && Array.isArray(resolvedItems) && resolvedItems.length) {
+      const perPackageCost = resolvedItems.reduce((sum, item) => {
+        const parsedCost = parsePriceValue(item?.cost);
+        const qtyPerPackage = Number.isFinite(Number(item?.qtyPerPackage)) && Number(item.qtyPerPackage) > 0
+          ? Number(item.qtyPerPackage)
+          : 1;
+        return sum + (Number.isFinite(parsedCost) ? parsedCost : 0) * qtyPerPackage;
+      }, 0);
+      unitCost = sanitizePriceValue(perPackageCost);
+    }
+
     // Resolve pricing mode: daily or fixed (default to daily unless explicitly fixed)
     const resolvePricingMode = () => {
       const candidates = [
@@ -588,6 +653,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
       description,
       normalizedDescription: normalizeNumbers(String(description)),
       unitPrice,
+      unitCost,
       totalPrice,
       pricingMode,
       quantity: packageQty,
@@ -603,6 +669,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
         packageId: normalizedId,
         desc: description,
         price: unitPrice,
+        cost: unitCost,
         qty: displayQty,
         barcode: packageDisplayCode,
       }],
@@ -710,6 +777,27 @@ function toPriceNumber(entry = {}) {
     entry?.unitPrice,
     entry?.unit_rate,
     entry?.unitRate,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parsePriceValue(candidate);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function toCostNumber(entry = {}) {
+  const candidates = [
+    entry?.cost,
+    entry?.unit_cost,
+    entry?.unitCost,
+    entry?.rental_cost,
+    entry?.rentalCost,
+    entry?.purchase_price,
+    entry?.purchasePrice,
   ];
 
   for (const candidate of candidates) {

@@ -2014,6 +2014,7 @@ function collectReservationFinancials(reservation, crewAssignments, project) {
 
   const totals = {
     equipmentTotal: breakdown.equipmentTotal,
+    equipmentCostTotal: breakdown.equipmentCostTotal,
     crewTotal: breakdown.crewTotal,
     crewCostTotal: breakdown.crewCostTotal,
     discountAmount: breakdown.discountAmount,
@@ -2028,6 +2029,7 @@ function collectReservationFinancials(reservation, crewAssignments, project) {
 
   const totalsDisplay = {
     equipmentTotal: formatMoney(breakdown.equipmentTotal),
+    equipmentCostTotal: formatMoney(breakdown.equipmentCostTotal),
     crewTotal: formatMoney(breakdown.crewTotal),
     discountAmount: formatMoney(breakdown.discountAmount),
     subtotalAfterDiscount: formatMoney(breakdown.subtotalAfterDiscount),
