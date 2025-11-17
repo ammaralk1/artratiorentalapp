@@ -730,11 +730,13 @@ function mergeItemCostsFromPayload(items, payloadItems) {
     }
     if (!payloadEntry) return item;
     const merged = { ...item };
-    if ((!Number.isFinite(merged.cost) || Number(merged.cost) === 0) && Number.isFinite(payloadEntry.cost)) {
+    if (Number.isFinite(payloadEntry.cost)) {
       merged.cost = payloadEntry.cost;
+      merged.unit_cost = payloadEntry.cost;
     }
-    if ((!Number.isFinite(merged.price) || Number(merged.price) === 0) && Number.isFinite(payloadEntry.price)) {
+    if (Number.isFinite(payloadEntry.price)) {
       merged.price = payloadEntry.price;
+      merged.unit_price = payloadEntry.price;
     }
     return merged;
   });
