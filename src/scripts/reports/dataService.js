@@ -105,7 +105,7 @@ export function hydrateReportsFromCache() {
   return true;
 }
 
-export async function loadReportsData({ silent = false, force = false, signature = null } = {}) {
+export async function loadReportsData({ silent = false, force = false, signature = null, autoRender = false } = {}) {
   // If a fetch is in-flight, queue the latest signature and exit
   if (reportsState.loading) {
     if (signature) {
@@ -211,12 +211,12 @@ export async function loadReportsData({ silent = false, force = false, signature
       reportsState.pendingFetchForce = false;
       // Fire asynchronously to allow call stack to unwind
       setTimeout(() => {
-        loadReportsData({ silent: true, force: nextForce, signature: nextSignature }).catch((err) => {
+        loadReportsData({ silent: true, force: nextForce, signature: nextSignature, autoRender: true }).catch((err) => {
           console.error('❌ [reports] Queued refresh failed', err);
         });
       }, 0);
     }
-    if (!silent) {
+    if (!silent || autoRender) {
       reportsState.callbacks.onAfterRender?.();
     }
   }

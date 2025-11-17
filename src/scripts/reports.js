@@ -175,7 +175,7 @@ function scheduleRender({ refresh = false } = {}) {
     renderReports();
     if (refresh) {
       const signature = buildFiltersSignature();
-      loadReportsData({ silent: true, signature }).catch(() => {});
+      loadReportsData({ silent: true, signature, autoRender: true }).catch(() => {});
     }
   }, 140);
 }
@@ -484,7 +484,7 @@ function setupDrilldownInteractions() {
 
 function handleReportsDataMutation() {
   const signature = buildFiltersSignature();
-  loadReportsData({ silent: true, signature }).catch((error) => {
+  loadReportsData({ silent: true, signature, autoRender: true }).catch((error) => {
     console.error('❌ [reports] Background refresh failed', error);
   });
 }
