@@ -955,6 +955,9 @@ export function filterReservations(reservations, filters, customers, equipment, 
 
     const { statusValue, confirmed, paid, paidStatus } = computeReportStatus(reservation);
 
+    // Exclude unconfirmed reservations from reports; allow cancelled to remain visible.
+    if (!confirmed && statusValue !== 'cancelled') return false;
+
     if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed' || confirmed)) return false;
     if (filters.status === 'pending' && statusValue !== 'pending') return false;
     if (filters.status === 'completed' && statusValue !== 'completed') return false;
