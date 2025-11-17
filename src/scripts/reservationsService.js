@@ -610,6 +610,9 @@ export async function updateReservationApi(id, payload) {
     body: payload,
   });
   const updated = mapReservationFromApi(response?.data ?? {});
+  if (Array.isArray(payload?.items) && Array.isArray(updated.items)) {
+    updated.items = mergeItemCostsFromPayload(updated.items, payload.items);
+  }
   console.debug('[reservationsService] updateReservationApi mapped history', updated.paymentHistory);
   if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
     updated.companySharePercent = Number(payload.company_share_percent) || 0;
@@ -674,6 +677,54 @@ export async function updateReservationApi(id, payload) {
   );
   setReservationsState(next);
   return updated;
+}
+
+function mergeItemCostsFromPayload(items, payloadItems) {
+  if (!Array.isArray(items) || !Array.isArray(payloadItems)) return items;
+  const payloadMap = new Map();
+  payloadItems.forEach((entry, idx) => {
+    if (!entry || typeof entry !== 'object') return;
+    const equipmentId = entry.equipment_id ?? entry.equipmentId ?? entry.id ?? null;
+    const barcode = normalizeNumbers(String(entry.barcode ?? '')).trim();
+    const key = equipmentId != null ? `id:${equipmentId}` : (barcode ? `bc:${barcode}` : `idx:${idx}`);
+    const costValue = Number.isFinite(Number(entry.unit_cost))
+      ? Number(entry.unit_cost)
+      : Number.isFinite(Number(entry.cost))
+        ? Number(entry.cost)
+        : null;
+    const priceValue = Number.isFinite(Number(entry.unit_price))
+      ? Number(entry.unit_price)
+      : Number.isFinite(Number(entry.price))
+        ? Number(entry.price)
+        : null;
+    payloadMap.set(key, { cost: costValue, price: priceValue });
+  });
+
+  return items.map((item, idx) => {
+    const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? null;
+    const barcode = normalizeNumbers(String(item.barcode ?? '')).trim();
+    const keyCandidates = [
+      equipmentId != null ? `id:${equipmentId}` : null,
+      barcode ? `bc:${barcode}` : null,
+      `idx:${idx}`,
+    ].filter(Boolean);
+    let payloadEntry = null;
+    for (const key of keyCandidates) {
+      if (payloadMap.has(key)) {
+        payloadEntry = payloadMap.get(key);
+        break;
+      }
+    }
+    if (!payloadEntry) return item;
+    const merged = { ...item };
+    if ((!Number.isFinite(merged.cost) || Number(merged.cost) === 0) && Number.isFinite(payloadEntry.cost)) {
+      merged.cost = payloadEntry.cost;
+    }
+    if ((!Number.isFinite(merged.price) || Number(merged.price) === 0) && Number.isFinite(payloadEntry.price)) {
+      merged.price = payloadEntry.price;
+    }
+    return merged;
+  });
 }
 
 export async function deleteReservationApi(id) {
