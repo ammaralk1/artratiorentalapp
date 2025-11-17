@@ -925,6 +925,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 /* Color-code KPI numbers */
 .reports-kpi-card[data-kpi="outstanding"] .reports-kpi-value { color: #ef4444 !important; }
 .reports-kpi-card[data-kpi="expenses"] .reports-kpi-value { color: #f59e0b !important; }
+.reports-kpi-card[data-kpi="equipmentCost"] .reports-kpi-value { color: #f59e0b !important; }
 .reports-kpi-card[data-kpi="netProfit"] .reports-kpi-value { color: #16a34a !important; }
 /* Make profit margin percentage green too (to match net profit visual cue) */
 .reports-kpi-card[data-kpi="margin"] .reports-kpi-value { color: #16a34a !important; }
