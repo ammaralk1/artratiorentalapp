@@ -1994,17 +1994,18 @@ function refreshVariantsIfNeeded() {
 
   if (!isEquipmentEditMode) {
     const primary = activeItem;
-    applyEquipmentFormValues({
-      category: primary.category || '',
-      subcategory: primary.sub || '',
-      description: primary.desc || primary.description || '',
-      quantity: String(primary.qty || 0),
-      price: primary.price != null ? String(primary.price) : '0',
-      image: getEquipmentImage(primary) || '',
-      barcode: primary.barcode || '',
-      status: primary.status || normalizeStatusValue(primary.status),
-      lessor: primary.lessor || '',
-    });
+  applyEquipmentFormValues({
+    category: primary.category || '',
+    subcategory: primary.sub || '',
+    description: primary.desc || primary.description || '',
+    quantity: String(primary.qty || 0),
+    price: primary.price != null ? String(primary.price) : '0',
+    cost: primary.cost != null ? String(primary.cost) : '0',
+    image: getEquipmentImage(primary) || '',
+    barcode: primary.barcode || '',
+    status: primary.status || normalizeStatusValue(primary.status),
+    lessor: primary.lessor || '',
+  });
 
     currentEquipmentSnapshot = captureEquipmentFormValues();
   }
