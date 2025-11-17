@@ -47,7 +47,12 @@ function mapLegacyEquipment(raw = {}) {
 }
 
 function mapApiEquipment(raw = {}) {
-  return toInternalEquipment(raw);
+  const mapped = toInternalEquipment(raw);
+  const existing = findExistingEquipment(raw);
+  if ((!Number.isFinite(mapped.cost) || Number(mapped.cost) === 0) && existing && Number.isFinite(Number(existing.cost)) && Number(existing.cost) > 0) {
+    mapped.cost = Number(existing.cost);
+  }
+  return mapped;
 }
 
 function toInternalEquipment(raw = {}) {
@@ -97,6 +102,30 @@ function toInternalEquipment(raw = {}) {
     created_at: raw.created_at ?? null,
     updated_at: raw.updated_at ?? null,
   };
+}
+
+function findExistingEquipment(raw = {}) {
+  const idCandidates = [
+    raw.id,
+    raw.equipment_id,
+    raw.equipmentId,
+    raw.item_id,
+    raw.itemId,
+  ]
+    .map((v) => (v != null ? String(v) : ''))
+    .filter(Boolean);
+  const comparableBarcode = normalizeNumbers(String(raw.barcode ?? '')).trim();
+
+  return getAllEquipment().find((item) => {
+    if (idCandidates.length && idCandidates.some((id) => id && String(item.id) === id)) {
+      return true;
+    }
+    if (comparableBarcode) {
+      const itemBarcode = normalizeNumbers(String(item.barcode || '')).trim();
+      if (itemBarcode && itemBarcode === comparableBarcode) return true;
+    }
+    return false;
+  }) || null;
 }
 
 function hasValue(value) {
