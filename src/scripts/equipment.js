@@ -2114,6 +2114,23 @@ document.getElementById("save-equipment-changes")?.addEventListener("click", asy
 
   try {
     await editEquipment(index, updatedData);
+    const refreshed = getAllEquipment()[index];
+    if (refreshed) {
+      applyEquipmentFormValues({
+        category: refreshed.category || '',
+        subcategory: refreshed.sub || '',
+        description: refreshed.desc || refreshed.description || '',
+        quantity: String(refreshed.qty || 0),
+        price: refreshed.price != null ? String(refreshed.price) : '0',
+        cost: refreshed.cost != null ? String(refreshed.cost) : '0',
+        image: getEquipmentImage(refreshed) || '',
+        barcode: refreshed.barcode || '',
+        status: refreshed.status || normalizeStatusValue(refreshed.status),
+        lessor: refreshed.lessor || '',
+      });
+      updateEquipmentHeaderMedia(refreshed);
+      updateEquipmentLessorBadge(refreshed);
+    }
     currentEquipmentSnapshot = captureEquipmentFormValues();
     setEquipmentEditMode(false);
     refreshVariantsIfNeeded();
