@@ -247,7 +247,7 @@ html.dark-mode .projects-hero-text {
 
 .project-filters-compact .filters-bar--inline {
   padding: 10px 14px;
-  gap: 12px;
+  gap: 14px 16px;
   align-items: center;
 }
 
