@@ -33,6 +33,7 @@ import {
   renderTopEquipment,
   renderTopOutstanding,
   renderCrewWork,
+  renderMaintenanceExpenses,
   renderPaymentForecast,
 } from './reports/presenters/exporters.js';
 import {
@@ -502,6 +503,7 @@ export function renderReports() {
   renderTopEquipment(topEquipment);
   renderTopOutstanding(topOutstanding);
   renderCrewWork(crewWork);
+  renderMaintenanceExpenses(maintenanceSummary, maintenance);
   try { renderPaymentForecast(forecast); } catch (_) {}
   const tableRows = renderReservationsTable(filtered, customers, technicians);
   applyColumnVisibility();

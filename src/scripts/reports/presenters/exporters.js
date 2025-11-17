@@ -286,3 +286,59 @@ export function renderTopOutstanding(rows) {
     `)
     .join('');
 }
+
+export function renderMaintenanceExpenses(summary, tickets = []) {
+  const tbody = document.getElementById('reports-maintenance-costs');
+  if (!tbody) return;
+
+  const items = Array.isArray(summary?.items) ? summary.items : [];
+  const maintenanceTickets = Array.isArray(tickets) ? tickets : [];
+
+  if (!items.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    return;
+  }
+
+  const fallbackEquipment = translate('reservations.reports.maintenance.noEquipment', 'معدة غير معروفة', 'Unknown equipment');
+  const fallbackStatus = translate('reservations.reports.maintenance.noStatus', 'غير محددة', 'Not specified');
+
+  const normalizedTime = (value) => {
+    if (!value) return 0;
+    const t = new Date(value).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  const enriched = items
+    .map((item) => {
+      const ticket = maintenanceTickets.find((t) => String(t.id) === String(item.id));
+      const equipment = ticket?.equipmentDesc || ticket?.equipmentBarcode || fallbackEquipment;
+      const status = ticket?.statusLabel || ticket?.status || fallbackStatus;
+      const barcode = ticket?.equipmentBarcode || '';
+      return {
+        ...item,
+        equipment,
+        status,
+        barcode,
+      };
+    })
+    .sort((a, b) => normalizedTime(b?.date) - normalizedTime(a?.date));
+
+  tbody.innerHTML = enriched
+    .map((entry) => {
+      const ticketLabel = entry?.id != null ? `#${escapeHtml(String(entry.id))}` : translate('common.placeholder.empty', '—', '—');
+      const dateLabel = entry?.date ? formatDateInput(entry.date) : translate('common.placeholder.empty', '—', '—');
+      const equipmentLabel = escapeHtml(entry.equipment || fallbackEquipment);
+      const statusLabel = escapeHtml(entry.status || fallbackStatus);
+      const barcode = entry.barcode ? `<div class="text-xs text-base-content/70">${escapeHtml(entry.barcode)}</div>` : '';
+      return `
+        <tr>
+          <td>${ticketLabel}</td>
+          <td>${equipmentLabel}${barcode}</td>
+          <td>${statusLabel}</td>
+          <td>${dateLabel}</td>
+          <td>${formatCurrency(entry.cost || 0)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+}
