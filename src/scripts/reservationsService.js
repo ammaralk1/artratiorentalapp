@@ -549,6 +549,14 @@ export async function createReservationApi(payload) {
     body: payload,
   });
   const created = mapReservationFromApi(response?.data ?? {});
+  const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
+  if (payloadItems) {
+    if (Array.isArray(created.items) && created.items.length) {
+      created.items = mergeItemCostsFromPayload(created.items, payloadItems);
+    } else {
+      created.items = payloadItems.map(mapReservationItem);
+    }
+  }
   if (!Number.isFinite(created.companySharePercent) && payload?.company_share_percent != null) {
     created.companySharePercent = Number(payload.company_share_percent) || 0;
   }
@@ -610,8 +618,13 @@ export async function updateReservationApi(id, payload) {
     body: payload,
   });
   const updated = mapReservationFromApi(response?.data ?? {});
-  if (Array.isArray(payload?.items) && Array.isArray(updated.items)) {
-    updated.items = mergeItemCostsFromPayload(updated.items, payload.items);
+  const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
+  if (payloadItems) {
+    if (Array.isArray(updated.items) && updated.items.length) {
+      updated.items = mergeItemCostsFromPayload(updated.items, payloadItems);
+    } else {
+      updated.items = payloadItems.map(mapReservationItem);
+    }
   }
   console.debug('[reservationsService] updateReservationApi mapped history', updated.paymentHistory);
   if (!Number.isFinite(updated.companySharePercent) && payload?.company_share_percent != null) {
