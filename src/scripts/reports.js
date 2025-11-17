@@ -142,26 +142,38 @@ function initPresetsUI() {
 
 function handleLanguageChange() {
   resetFormatters();
-  renderReports();
+  scheduleRender();
   // Delay to allow translation bundle to flush
   setTimeout(() => {
     resetFormatters();
-    renderReports();
+    scheduleRender();
     setupCustomRangePickers();
     updateReportsStickyOffset();
   }, 0);
-  setTimeout(() => {
-    resetFormatters();
-    renderReports();
-    setupCustomRangePickers();
-    updateReportsStickyOffset();
-  }, 60);
   setupCustomRangePickers();
   updateReportsStickyOffset();
 }
 
+let renderTimer = null;
+let refreshTimer = null;
+let urlUpdateTimer = null;
+
+function scheduleRender({ refresh = false } = {}) {
+  if (renderTimer) clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => {
+    renderReports();
+  }, 140);
+
+  if (refresh) {
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => {
+      loadReportsData({ silent: true }).catch(() => {});
+    }, 220);
+  }
+}
+
 function renderIfCustomRange() {
-  renderReports();
+  scheduleRender({ refresh: true });
 }
 
 function setupCustomRangePickers(startInput, endInput) {
@@ -347,7 +359,6 @@ function readFiltersFromUrl() {
   }
 }
 
-let urlUpdateTimer = null;
 function scheduleUrlUpdate() {
   if (urlUpdateTimer) clearTimeout(urlUpdateTimer);
   urlUpdateTimer = setTimeout(() => {
@@ -573,27 +584,25 @@ export function initReports() {
       filters.range = 'custom';
     }
     scheduleUrlUpdate();
-    renderReports();
-    // Background refresh to align server-side dataset with selected range
-    loadReportsData({ silent: true }).catch(() => {});
+    scheduleRender({ refresh: true });
   });
 
   statusSelect?.addEventListener('change', () => {
     filters.status = statusSelect.value;
     scheduleUrlUpdate();
-    renderReports();
+    scheduleRender();
   });
 
   paymentSelect?.addEventListener('change', () => {
     filters.payment = paymentSelect.value;
     scheduleUrlUpdate();
-    renderReports();
+    scheduleRender();
   });
 
   shareSelect?.addEventListener('change', () => {
     filters.share = shareSelect.value;
     scheduleUrlUpdate();
-    renderReports();
+    scheduleRender();
   });
 
   searchInput?.addEventListener('input', () => {
@@ -601,7 +610,7 @@ export function initReports() {
     applySearchFilter(value, () => {
       syncFilterControls();
       scheduleUrlUpdate();
-      renderReports();
+      scheduleRender();
     });
   });
 
@@ -612,9 +621,6 @@ export function initReports() {
     }
     scheduleUrlUpdate();
     renderIfCustomRange();
-    if (filters.range === 'custom') {
-      loadReportsData({ silent: true }).catch(() => {});
-    }
   });
 
   endInput?.addEventListener('change', () => {
@@ -624,9 +630,6 @@ export function initReports() {
     }
     scheduleUrlUpdate();
     renderIfCustomRange();
-    if (filters.range === 'custom') {
-      loadReportsData({ silent: true }).catch(() => {});
-    }
   });
 
   // لا يوجد زر تحديث الآن؛ يتم التحديث تلقائياً عند تغيير الفلاتر
