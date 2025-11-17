@@ -105,8 +105,12 @@ export function hydrateReportsFromCache() {
   return true;
 }
 
-export async function loadReportsData({ silent = false } = {}) {
+export async function loadReportsData({ silent = false, force = false, signature = null } = {}) {
   if (reportsState.loading) return;
+  const now = Date.now();
+  if (!force && signature && reportsState.lastFetchSignature === signature && (now - reportsState.lastFetchAt) < 1200) {
+    return;
+  }
   reportsState.loading = true;
   reportsState.errorMessage = '';
 
@@ -179,6 +183,8 @@ export async function loadReportsData({ silent = false } = {}) {
       : [];
     reportsState.techniciansIndex = new Map((reportsState.data.technicians || []).map((tech) => [String(tech.id), tech]));
     try { clearReportsMemo(); } catch (_) {}
+    reportsState.lastFetchSignature = signature || null;
+    reportsState.lastFetchAt = Date.now();
   } catch (error) {
     console.error('❌ [reports] Failed to load reports data', error);
     // Preserve last known snapshot to avoid wiping UI to zeros

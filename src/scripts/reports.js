@@ -49,6 +49,18 @@ import {
 import { renderActiveFilters, renderQuickChips } from './reports/presenters/ui.js';
 
 const filters = reportsState.filters;
+function buildFiltersSignature() {
+  const payload = {
+    range: filters.range,
+    status: filters.status,
+    payment: filters.payment,
+    share: filters.share,
+    search: (filters.search || '').trim(),
+    start: filters.start,
+    end: filters.end,
+  };
+  return JSON.stringify(payload);
+}
 
 function updateReportsStickyOffset() {
   try {
@@ -155,21 +167,17 @@ function handleLanguageChange() {
 }
 
 let renderTimer = null;
-let refreshTimer = null;
 let urlUpdateTimer = null;
 
 function scheduleRender({ refresh = false } = {}) {
   if (renderTimer) clearTimeout(renderTimer);
   renderTimer = setTimeout(() => {
     renderReports();
+    if (refresh) {
+      const signature = buildFiltersSignature();
+      loadReportsData({ silent: true, signature }).catch(() => {});
+    }
   }, 140);
-
-  if (refresh) {
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(() => {
-      loadReportsData({ silent: true }).catch(() => {});
-    }, 220);
-  }
 }
 
 function renderIfCustomRange() {
@@ -475,7 +483,8 @@ function setupDrilldownInteractions() {
 }
 
 function handleReportsDataMutation() {
-  loadReportsData({ silent: true }).catch((error) => {
+  const signature = buildFiltersSignature();
+  loadReportsData({ silent: true, signature }).catch((error) => {
     console.error('❌ [reports] Background refresh failed', error);
   });
 }
@@ -751,7 +760,8 @@ export function initReports() {
     });
   });
 
-  loadReportsData().catch((error) => {
+  const signature = buildFiltersSignature();
+  loadReportsData({ signature }).catch((error) => {
     console.error('❌ [reports] Failed to initialise reports data', error);
   });
 }
