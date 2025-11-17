@@ -1707,16 +1707,20 @@ function buildReservationItemsPayload(items) {
         const childQuantity = toPositiveInt(packageItem?.qty ?? packageItem?.quantity ?? 1);
         const effectiveQuantity = packageQuantity * childQuantity;
 
-        normalized.push({
-          equipment_id: resolveEquipmentIdValue(equipmentId),
-          quantity: effectiveQuantity,
-          unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
-          unit_cost: toNumber(packageItem?.cost ?? packageItem?.unit_cost ?? 0),
-          notes: packageItem?.notes ?? null,
-        });
+      const unitCost = toNumber(packageItem?.cost ?? packageItem?.unit_cost ?? packageItem?.rental_cost ?? 0);
+      normalized.push({
+        equipment_id: resolveEquipmentIdValue(equipmentId),
+        quantity: effectiveQuantity,
+        unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
+        unit_cost: unitCost,
+        cost: unitCost,
+        rental_cost: unitCost,
+        purchase_price: unitCost,
+        notes: packageItem?.notes ?? null,
       });
+    });
 
-      return;
+  return;
     }
 
     const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? null;
@@ -1724,16 +1728,20 @@ function buildReservationItemsPayload(items) {
       return;
     }
 
-    normalized.push({
-      equipment_id: resolveEquipmentIdValue(equipmentId),
-      quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
-      unit_price: toNumber(item.price ?? item.unit_price ?? 0),
-      unit_cost: toNumber(item.cost ?? item.unit_cost ?? 0),
-      notes: item.notes ?? null,
-    });
+  const unitCost = toNumber(item.cost ?? item.unit_cost ?? item.rental_cost ?? 0);
+  normalized.push({
+    equipment_id: resolveEquipmentIdValue(equipmentId),
+    quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
+    unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+    unit_cost: unitCost,
+    cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    notes: item.notes ?? null,
   });
+});
 
-  return normalized;
+return normalized;
 }
 
 function resolveEquipmentIdValue(value) {
@@ -1764,6 +1772,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             if (childId == null) {
               return null;
             }
+            const unitCost = toNumber(child?.cost ?? child?.unit_cost ?? child?.rental_cost ?? 0);
             return {
               equipment_id: resolveEquipmentIdValue(childId),
               quantity: toPositiveInt(
@@ -1780,23 +1789,30 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
                   ?? 1
               ),
               unit_price: toNumber(child?.price ?? child?.unit_price ?? 0),
-              unit_cost: toNumber(child?.cost ?? child?.unit_cost ?? 0),
+              unit_cost: unitCost,
+              cost: unitCost,
+              rental_cost: unitCost,
+              purchase_price: unitCost,
             };
           })
           .filter(Boolean)
       : [];
 
-    packages.push({
-      package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
-      name: item.desc ?? item.name ?? '',
-      quantity: packageQuantity,
-      unit_price: toNumber(item.price ?? item.unit_price ?? 0),
-      unit_cost: toNumber(item.cost ?? item.unit_cost ?? 0),
-      items: packageItems,
-    });
+  const unitCost = toNumber(item.cost ?? item.unit_cost ?? item.rental_cost ?? 0);
+  packages.push({
+    package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
+    name: item.desc ?? item.name ?? '',
+    quantity: packageQuantity,
+    unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+    unit_cost: unitCost,
+    cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    items: packageItems,
   });
+});
 
-  return packages;
+return packages;
 }
 
 function normalizeReservationItemType(value) {
