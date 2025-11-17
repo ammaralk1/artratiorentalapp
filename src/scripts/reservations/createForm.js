@@ -2159,7 +2159,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           data-group-key="${group.key}"
           min="0"
           step="0.01"
-          value="${normalizeNumbers(unitPriceNumber.toFixed(2))}"
+          value="${normalizeNumbers(String(unitPriceNumber))}"
           aria-label="${t('reservations.equipment.table.unitPrice', 'سعر الوحدة')}"
         >
       `;
@@ -2245,7 +2245,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           </td>
           <td><span class="reservation-days-value">${daysDisplay}</span></td>
           <td>${unitPriceDisplay}</td>
-          <td><input type="number" class="form-control form-control-sm reservation-unit-cost-input" data-group-key="${group.key}" min="0" step="0.01" value="${normalizeNumbers(unitCostNumber.toFixed(2))}" aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"></td>
+          <td><input type="number" class="form-control form-control-sm reservation-unit-cost-input" data-group-key="${group.key}" min="0" step="0.01" value="${normalizeNumbers(String(unitCostNumber))}" aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"></td>
           <td>${totalPriceDisplay}</td>
           <td>
             <button type="button" class="reservation-remove-button" data-action="remove-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
@@ -3138,7 +3138,7 @@ function setupReservationButtons() {
     }
   });
 
-  container.addEventListener('input', (event) => {
+  container.addEventListener('change', (event) => {
     const priceInput = event.target.closest('.reservation-unit-price-input');
     if (priceInput) {
       const groupKey = priceInput.dataset.groupKey;

@@ -257,7 +257,17 @@ export function renderEditReservationItems(items = []) {
         ? parsedTotalPrice
         : unitPriceNumber * (Number.isFinite(group.count) ? group.count : 1) * groupDays;
       const totalPriceNumber = sanitizePriceValue(totalPriceRaw);
-      const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const unitPriceInput = `
+        <input
+          type="number"
+          class="form-control form-control-sm reservation-unit-price-input"
+          data-group-key="${group.key}"
+          min="0"
+          step="0.01"
+          value="${normalizeNumbers(String(unitPriceNumber))}"
+          aria-label="${t('reservations.equipment.table.unitPrice', 'سعر الوحدة')}"
+        >
+      `;
       const unitCostInputId = `edit-unit-cost-${group.key}`;
       const unitCostInput = `
         <input
@@ -267,7 +277,7 @@ export function renderEditReservationItems(items = []) {
           data-group-key="${group.key}"
           min="0"
           step="0.01"
-          value="${normalizeNumbers(unitCostNumber.toFixed(2))}"
+          value="${normalizeNumbers(String(unitCostNumber))}"
           aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"
         >
       `;
@@ -372,7 +382,7 @@ export function renderEditReservationItems(items = []) {
             </div>
           </td>
           <td><span class="reservation-days-value">${normalizeNumbers(String(groupDays))}</span></td>
-          <td>${unitPriceDisplay}</td>
+          <td>${unitPriceInput}</td>
           <td>${unitCostInput}</td>
           <td>${totalPriceDisplay}</td>
           <td>
@@ -788,6 +798,27 @@ function updateEditReservationGroupCost(groupKey, rawValue) {
   updateEditReservationSummary();
 }
 
+function updateEditReservationGroupPrice(groupKey, rawValue) {
+  const parsed = parsePriceValue(rawValue);
+  const unitPrice = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : 0;
+  const { index: editingIndex, items } = getEditingState();
+  if (!Array.isArray(items)) return;
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target || !Array.isArray(target.itemIndices)) return;
+
+  const nextItems = [...items];
+  target.itemIndices.forEach((itemIndex) => {
+    if (nextItems[itemIndex]) {
+      nextItems[itemIndex] = { ...nextItems[itemIndex], price: unitPrice, unit_price: unitPrice };
+    }
+  });
+
+  setEditingState(editingIndex, nextItems);
+  renderEditReservationItems(nextItems);
+  updateEditReservationSummary();
+}
+
 // days column reflects reservation duration only; no manual controls
 
 function ensureGroupHandler(container) {
@@ -824,12 +855,20 @@ function ensureGroupHandler(container) {
     }
   });
 
-  container.addEventListener('input', (event) => {
+  container.addEventListener('change', (event) => {
     const input = event.target.closest('.reservation-unit-cost-input');
     if (!input) return;
     const groupKey = input.dataset.groupKey;
     if (!groupKey) return;
     updateEditReservationGroupCost(groupKey, input.value);
+  });
+
+  container.addEventListener('change', (event) => {
+    const input = event.target.closest('.reservation-unit-price-input');
+    if (!input) return;
+    const groupKey = input.dataset.groupKey;
+    if (!groupKey) return;
+    updateEditReservationGroupPrice(groupKey, input.value);
   });
 
   container.dataset.groupListenerAttached = 'true';

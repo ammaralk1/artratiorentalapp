@@ -564,7 +564,7 @@ export function buildSummaryHtml({
   // `reservations.summary.totalLabelAfterEdit`.
   const totalLabelKey = totalKey === 'reservations.summary.totalAfterEdit'
     ? 'reservations.summary.totalLabelAfterEdit'
-    : (totalKey || 'reservations.summary.totalLabel');
+    : 'reservations.summary.totalLabel';
   const totalLabel = t(totalLabelKey, t('reservations.summary.totalLabel', '💰 التكلفة الإجمالية'));
   const companyShareLabel = t('reservations.summary.companyShareLabel', '🏦 نسبة الشركة');
   const netProfitLabel = t('reservations.details.labels.netProfit', '💵 صافي الربح');
