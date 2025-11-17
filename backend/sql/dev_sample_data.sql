@@ -172,6 +172,7 @@ CREATE TABLE reservation_equipment (
   equipment_id BIGINT UNSIGNED NOT NULL,
   quantity INT NOT NULL DEFAULT 1,
   unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
   notes TEXT,
   FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE,
   FOREIGN KEY (equipment_id) REFERENCES equipment(id) ON DELETE CASCADE
@@ -323,10 +324,10 @@ INSERT INTO reservations (
 INSERT INTO reservation_payments (reservation_id, payment_type, value, amount, percentage, note, recorded_at) VALUES
 (1, 'amount', 12000, 12000, 42.86, 'دفعة مقدمة من العميل', '2025-08-30 12:00:00');
 
-INSERT INTO reservation_equipment (reservation_id, equipment_id, quantity, unit_price, notes) VALUES
-(1, 1, 4, 4500, 'تركيب كامل مع مشغل'),
-(1, 2, 1, 12000, NULL),
-(2, 2, 1, 12000, NULL);
+INSERT INTO reservation_equipment (reservation_id, equipment_id, quantity, unit_price, unit_cost, notes) VALUES
+(1, 1, 4, 4500, 2500, 'تركيب كامل مع مشغل'),
+(1, 2, 1, 12000, 8000, NULL),
+(2, 2, 1, 12000, 8000, NULL);
 
 INSERT INTO reservation_technicians (reservation_id, technician_id, role, hours_worked) VALUES
 (1, 1, 'Lead Lighting', 12),

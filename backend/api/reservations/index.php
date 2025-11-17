@@ -172,6 +172,7 @@ function handleReservationsGet(PDO $pdo): void
 function handleReservationsCreate(PDO $pdo): void
 {
     ensureReservationProjectColumn($pdo);
+    ensureReservationEquipmentCostColumn($pdo);
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
 
@@ -231,6 +232,7 @@ function handleReservationsUpdate(PDO $pdo): void
     }
 
     ensureReservationProjectColumn($pdo);
+    ensureReservationEquipmentCostColumn($pdo);
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), true, $pdo, $id);
 
@@ -549,6 +551,13 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
 
                 if ($unitPrice < 0) {
                     $errors["items.$index.unit_price"] = 'Unit price must be zero or greater';
+                }
+
+                $unitCost = isset($item['unit_cost'])
+                    ? (float) $item['unit_cost']
+                    : (isset($item['cost']) ? (float) $item['cost'] : null);
+                if ($unitCost !== null && $unitCost < 0) {
+                    $errors["items.$index.unit_cost"] = 'Unit cost must be zero or greater';
                 }
             }
         }
@@ -1000,6 +1009,9 @@ function updateReservation(PDO $pdo, int $id, array $data): void
 
 function upsertReservationItems(PDO $pdo, int $reservationId, array $items): void
 {
+    ensureReservationEquipmentCostColumn($pdo);
+    $hasUnitCostColumn = tableColumnExists($pdo, 'reservation_equipment', 'unit_cost');
+
     $pdo->prepare('DELETE FROM reservation_equipment WHERE reservation_id = :id')->execute(['id' => $reservationId]);
 
     if (!$items) {
@@ -1010,24 +1022,32 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
         reservation_id,
         equipment_id,
         quantity,
-        unit_price,
+        unit_price,' . ($hasUnitCostColumn ? '
+        unit_cost,' : '') . '
         notes
     ) VALUES (
         :reservation_id,
         :equipment_id,
         :quantity,
-        :unit_price,
+        :unit_price,' . ($hasUnitCostColumn ? '
+        :unit_cost,' : '') . '
         :notes
     )';
 
     $statement = $pdo->prepare($sql);
 
     foreach ($items as $item) {
+        $unitCost = isset($item['unit_cost'])
+            ? (float) $item['unit_cost']
+            : (isset($item['cost']) ? (float) $item['cost'] : 0);
+
         $statement->execute([
             'reservation_id' => $reservationId,
             'equipment_id' => (int) $item['equipment_id'],
             'quantity' => isset($item['quantity']) ? (int) $item['quantity'] : 1,
             'unit_price' => isset($item['unit_price']) ? (float) $item['unit_price'] : 0,
+            // When the column is missing (unlikely after ensure), PDO will ignore the extra param.
+            'unit_cost' => $unitCost,
             'notes' => $item['notes'] ?? null,
         ]);
     }
@@ -1225,8 +1245,24 @@ function decorateReservation(PDO $pdo, array $reservation): array
 
 function fetchReservationItems(PDO $pdo, int $reservationId): array
 {
+    ensureReservationEquipmentCostColumn($pdo);
+    $hasUnitCostColumn = tableColumnExists($pdo, 'reservation_equipment', 'unit_cost');
+    $unitCostSelect = $hasUnitCostColumn
+        ? 'COALESCE(re.unit_cost, 0) AS unit_cost'
+        : '0 AS unit_cost';
+
     $statement = $pdo->prepare(
-        'SELECT re.*, e.description, e.name, e.barcode, e.image_url
+        'SELECT 
+             re.id,
+             re.equipment_id,
+             re.quantity,
+             re.unit_price,
+             ' . $unitCostSelect . ',
+             re.notes,
+             e.description,
+             e.name,
+             e.barcode,
+             e.image_url
          FROM reservation_equipment re
          INNER JOIN equipment e ON e.id = re.equipment_id
          WHERE re.reservation_id = :id'
@@ -1234,11 +1270,19 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
     $statement->execute(['id' => $reservationId]);
     $items = [];
     while ($row = $statement->fetch()) {
+        $unitCost = isset($row['unit_cost']) ? (float) $row['unit_cost'] : 0;
         $items[] = [
             'id' => (int) $row['id'],
             'equipment_id' => (int) $row['equipment_id'],
             'quantity' => (int) $row['quantity'],
             'unit_price' => (float) $row['unit_price'],
+            'unit_cost' => $unitCost,
+            'cost' => $unitCost,
+            'rental_cost' => $unitCost,
+            'purchase_price' => $unitCost,
+            'internal_cost' => $unitCost,
+            'equipment_cost' => $unitCost,
+            'item_cost' => $unitCost,
             'notes' => $row['notes'] ?? null,
             'description' => $row['description'] ?? $row['name'] ?? '',
             'barcode' => $row['barcode'] ?? '',
@@ -1442,6 +1486,32 @@ function ensureReservationProjectColumn(PDO $pdo): void
     } catch (Throwable $error) {
         $checked = true;
         error_log('Failed to ensure project_id column on reservations table: ' . $error->getMessage());
+    }
+}
+
+function ensureReservationEquipmentCostColumn(PDO $pdo): void
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    try {
+        $statement = $pdo->query("SHOW COLUMNS FROM reservation_equipment LIKE 'unit_cost'");
+        $columnExists = $statement && $statement->fetch();
+
+        if ($columnExists) {
+            $checked = true;
+            return;
+        }
+
+        $pdo->exec('ALTER TABLE reservation_equipment ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price');
+        $checked = true;
+        error_log('Added unit_cost column to reservation_equipment table automatically.');
+    } catch (Throwable $error) {
+        $checked = true;
+        error_log('Failed to ensure unit_cost column on reservation_equipment table: ' . $error->getMessage());
     }
 }
 
