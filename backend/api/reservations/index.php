@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../bootstrap.php';
 
 use InvalidArgumentException;
 use PDO;
+use PDOException;
 use RuntimeException;
 use Throwable;
 
@@ -1010,7 +1011,7 @@ function updateReservation(PDO $pdo, int $id, array $data): void
 function upsertReservationItems(PDO $pdo, int $reservationId, array $items): void
 {
     ensureReservationEquipmentCostColumn($pdo);
-    $hasUnitCostColumn = tableColumnExists($pdo, 'reservation_equipment', 'unit_cost');
+    $hasUnitCostColumn = true; // assume present; fallback handled below
 
     $pdo->prepare('DELETE FROM reservation_equipment WHERE reservation_id = :id')->execute(['id' => $reservationId]);
 
@@ -1018,23 +1019,42 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
         return;
     }
 
-    $sql = 'INSERT INTO reservation_equipment (
+    $sqlWithCost = 'INSERT INTO reservation_equipment (
         reservation_id,
         equipment_id,
         quantity,
-        unit_price,' . ($hasUnitCostColumn ? '
-        unit_cost,' : '') . '
+        unit_price,
+        unit_cost,
         notes
     ) VALUES (
         :reservation_id,
         :equipment_id,
         :quantity,
-        :unit_price,' . ($hasUnitCostColumn ? '
-        :unit_cost,' : '') . '
+        :unit_price,
+        :unit_cost,
+        :notes
+    )';
+    $sqlWithoutCost = 'INSERT INTO reservation_equipment (
+        reservation_id,
+        equipment_id,
+        quantity,
+        unit_price,
+        notes
+    ) VALUES (
+        :reservation_id,
+        :equipment_id,
+        :quantity,
+        :unit_price,
         :notes
     )';
 
-    $statement = $pdo->prepare($sql);
+    try {
+        $statement = $pdo->prepare($sqlWithCost);
+    } catch (PDOException $_) {
+        // Fallback for legacy tables: retry without unit_cost
+        $hasUnitCostColumn = false;
+        $statement = $pdo->prepare($sqlWithoutCost);
+    }
 
     foreach ($items as $item) {
         $unitCost = isset($item['unit_cost'])
@@ -1053,7 +1073,21 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
             $params['unit_cost'] = $unitCost;
         }
 
-        $statement->execute($params);
+        try {
+            $statement->execute($params);
+        } catch (PDOException $error) {
+            // If unit_cost is unknown, retry without it after ensuring the column
+            $message = strtolower($error->getMessage());
+            if ($hasUnitCostColumn && (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column'))) {
+                $hasUnitCostColumn = false;
+                ensureReservationEquipmentCostColumn($pdo);
+                $statement = $pdo->prepare($sqlWithoutCost);
+                unset($params['unit_cost']);
+                $statement->execute($params);
+                continue;
+            }
+            throw $error;
+        }
     }
 }
 
@@ -1250,28 +1284,59 @@ function decorateReservation(PDO $pdo, array $reservation): array
 function fetchReservationItems(PDO $pdo, int $reservationId): array
 {
     ensureReservationEquipmentCostColumn($pdo);
-    $hasUnitCostColumn = tableColumnExists($pdo, 'reservation_equipment', 'unit_cost');
-    $unitCostSelect = $hasUnitCostColumn
-        ? 'COALESCE(re.unit_cost, 0) AS unit_cost'
-        : '0 AS unit_cost';
+    $statement = null;
+    $fallback = false;
 
-    $statement = $pdo->prepare(
-        'SELECT 
-             re.id,
-             re.equipment_id,
-             re.quantity,
-             re.unit_price,
-             ' . $unitCostSelect . ',
-             re.notes,
-             e.description,
-             e.name,
-             e.barcode,
-             e.image_url
-         FROM reservation_equipment re
-         INNER JOIN equipment e ON e.id = re.equipment_id
-         WHERE re.reservation_id = :id'
-    );
-    $statement->execute(['id' => $reservationId]);
+    $sqlWithCost = 'SELECT 
+         re.id,
+         re.equipment_id,
+         re.quantity,
+         re.unit_price,
+         COALESCE(re.unit_cost, 0) AS unit_cost,
+         re.notes,
+         e.description,
+         e.name,
+         e.barcode,
+         e.image_url
+     FROM reservation_equipment re
+     INNER JOIN equipment e ON e.id = re.equipment_id
+     WHERE re.reservation_id = :id';
+
+    $sqlWithoutCost = 'SELECT 
+         re.id,
+         re.equipment_id,
+         re.quantity,
+         re.unit_price,
+         0 AS unit_cost,
+         re.notes,
+         e.description,
+         e.name,
+         e.barcode,
+         e.image_url
+     FROM reservation_equipment re
+     INNER JOIN equipment e ON e.id = re.equipment_id
+     WHERE re.reservation_id = :id';
+
+    try {
+        $statement = $pdo->prepare($sqlWithCost);
+    } catch (PDOException $_) {
+        $fallback = true;
+        $statement = $pdo->prepare($sqlWithoutCost);
+    }
+
+    try {
+        $statement->execute(['id' => $reservationId]);
+    } catch (PDOException $error) {
+        $message = strtolower($error->getMessage());
+        if (!$fallback && (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column'))) {
+            $fallback = true;
+            $statement = $pdo->prepare($sqlWithoutCost);
+            $statement->execute(['id' => $reservationId]);
+        } else {
+            throw $error;
+        }
+    }
+
     $items = [];
     while ($row = $statement->fetch()) {
         $unitCost = isset($row['unit_cost']) ? (float) $row['unit_cost'] : 0;
