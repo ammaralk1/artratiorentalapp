@@ -346,6 +346,9 @@ function escapeHtml(value = '') {
 
 function resolveTechnicianCostRate(technician = {}) {
   const candidates = [
+    technician.positionCost,
+    technician.position_cost,
+    technician.cost,
     technician.dailyWage,
     technician.daily_rate,
     technician.dailyRate,
