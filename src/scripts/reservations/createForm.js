@@ -2152,7 +2152,17 @@ function renderReservationItems(containerId = 'reservation-items') {
       })();
       const daysDisplay = normalizeNumbers(String(groupDays));
       const totalPriceNumber = unitPriceNumber * group.count * groupDays;
-      const unitPriceDisplay = `${normalizeNumbers(unitPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const unitPriceDisplay = `
+        <input
+          type="number"
+          class="form-control form-control-sm reservation-unit-price-input"
+          data-group-key="${group.key}"
+          min="0"
+          step="0.01"
+          value="${normalizeNumbers(unitPriceNumber.toFixed(2))}"
+          aria-label="${t('reservations.equipment.table.unitPrice', 'سعر الوحدة')}"
+        >
+      `;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
       const unitCostNumber = Number.isFinite(Number(group.unitCost)) ? Number(group.unitCost) : 0;
       const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
@@ -2235,7 +2245,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           </td>
           <td><span class="reservation-days-value">${daysDisplay}</span></td>
           <td>${unitPriceDisplay}</td>
-          <td>${unitCostDisplay}</td>
+          <td><input type="number" class="form-control form-control-sm reservation-unit-cost-input" data-group-key="${group.key}" min="0" step="0.01" value="${normalizeNumbers(unitCostNumber.toFixed(2))}" aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"></td>
           <td>${totalPriceDisplay}</td>
           <td>
             <button type="button" class="reservation-remove-button" data-action="remove-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
@@ -2267,6 +2277,56 @@ function removeReservationGroup(groupKey) {
   setSelectedItems(filtered);
   renderReservationItems();
   renderDraftReservationSummary();
+}
+
+function updateDraftReservationGroupPrice(groupKey, rawValue) {
+  const parsed = parsePriceValueLocal(rawValue);
+  const unitPrice = Number.isFinite(parsed) && parsed >= 0 ? sanitizePrice(parsed) : 0;
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target || !Array.isArray(target.itemIndices)) return;
+
+  const nextItems = [...items];
+  target.itemIndices.forEach((idx) => {
+    if (nextItems[idx]) {
+      nextItems[idx] = { ...nextItems[idx], price: unitPrice, unit_price: unitPrice };
+    }
+  });
+  setSelectedItems(nextItems);
+  renderReservationItems();
+  renderDraftReservationSummary();
+}
+
+function updateDraftReservationGroupCost(groupKey, rawValue) {
+  const parsed = parsePriceValueLocal(rawValue);
+  const unitCost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePrice(parsed) : 0;
+  const items = getSelectedItems();
+  const groups = groupReservationItems(items);
+  const target = groups.find((entry) => entry.key === groupKey);
+  if (!target || !Array.isArray(target.itemIndices)) return;
+
+  const nextItems = [...items];
+  target.itemIndices.forEach((idx) => {
+    if (nextItems[idx]) {
+      nextItems[idx] = { ...nextItems[idx], cost: unitCost, unit_cost: unitCost };
+    }
+  });
+  setSelectedItems(nextItems);
+  renderReservationItems();
+  renderDraftReservationSummary();
+}
+
+function parsePriceValueLocal(value) {
+  const normalized = normalizeNumbers(String(value ?? '')).replace(/[^0-9.,-]/g, '').replace(/,/g, '.');
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function sanitizePrice(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return 0;
+  return Number(num.toFixed(2));
 }
 
 function increaseReservationGroup(groupKey) {
@@ -2315,6 +2375,7 @@ function increaseReservationGroup(groupKey) {
     desc: candidate.desc || candidate.description || candidate.name || target.description || '',
     qty: 1,
     price: Number.isFinite(Number(candidate.price)) ? Number(candidate.price) : target.unitPrice,
+    cost: Number.isFinite(Number(candidate.cost)) ? Number(candidate.cost) : Number.isFinite(Number(candidate.unit_cost)) ? Number(candidate.unit_cost) : Number(target.unitCost) || 0,
     image: resolveItemImage(candidate)
   });
 
@@ -3074,6 +3135,24 @@ function setupReservationButtons() {
     if (action === 'remove-group' && groupKey) {
       removeReservationGroup(groupKey);
       return;
+    }
+  });
+
+  container.addEventListener('input', (event) => {
+    const priceInput = event.target.closest('.reservation-unit-price-input');
+    if (priceInput) {
+      const groupKey = priceInput.dataset.groupKey;
+      if (groupKey) {
+        updateDraftReservationGroupPrice(groupKey, priceInput.value);
+      }
+      return;
+    }
+    const costInput = event.target.closest('.reservation-unit-cost-input');
+    if (costInput) {
+      const groupKey = costInput.dataset.groupKey;
+      if (groupKey) {
+        updateDraftReservationGroupCost(groupKey, costInput.value);
+      }
     }
   });
 
