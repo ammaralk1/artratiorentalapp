@@ -246,7 +246,9 @@ html.dark-mode .projects-hero-text {
 }
 
 .project-filters-compact .filters-bar--inline {
-  padding: 8px 12px;
+  padding: 10px 14px;
+  gap: 8px 10px;
+  align-items: center;
 }
 
 .project-filters-compact .filters-bar--inline > * {
@@ -260,8 +262,9 @@ html.dark-mode .projects-hero-text {
 }
 
 .project-filters-compact .filters-bar--inline input[type="date"] {
-  flex: 0 1 10%;
-  min-width: 100px;
+  flex: 0 1 5%;
+  min-width: 72px;
+  max-width: 110px;
 }
 
 
