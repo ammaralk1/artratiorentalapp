@@ -202,6 +202,21 @@ CREATE TABLE reservation_payments (
   FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE reservation_packages (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reservation_id BIGINT UNSIGNED NOT NULL,
+  package_code VARCHAR(100) DEFAULT NULL,
+  name VARCHAR(255) DEFAULT NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+  unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
+  items_json LONGTEXT DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_reservation_packages_reservation_id (reservation_id),
+  FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE maintenance_requests (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   equipment_id BIGINT UNSIGNED NOT NULL,
@@ -328,6 +343,9 @@ INSERT INTO reservation_equipment (reservation_id, equipment_id, quantity, unit_
 (1, 1, 4, 4500, 2500, 'تركيب كامل مع مشغل'),
 (1, 2, 1, 12000, 8000, NULL),
 (2, 2, 1, 12000, 8000, NULL);
+
+INSERT INTO reservation_packages (reservation_id, package_code, name, quantity, unit_price, unit_cost, items_json) VALUES
+(1, 'PKG-LIGHT-01', 'حزمة إضاءة أساسية', 1, 8000, 5000, '[{\"equipment_id\":1,\"quantity\":2,\"unit_price\":4500,\"unit_cost\":2500}]');
 
 INSERT INTO reservation_technicians (reservation_id, technician_id, role, hours_worked) VALUES
 (1, 1, 'Lead Lighting', 12),

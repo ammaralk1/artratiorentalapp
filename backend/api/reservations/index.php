@@ -174,6 +174,8 @@ function handleReservationsCreate(PDO $pdo): void
 {
     ensureReservationProjectColumn($pdo);
     ensureReservationEquipmentCostColumn($pdo);
+    ensureReservationPackagesTable($pdo);
+    ensureReservationPackagesTable($pdo);
 
     [$data, $errors] = validateReservationPayload(readJsonPayload(), false, $pdo);
 
@@ -187,6 +189,9 @@ function handleReservationsCreate(PDO $pdo): void
     try {
         $reservationId = insertReservation($pdo, $data);
         upsertReservationItems($pdo, $reservationId, $data['items'] ?? []);
+        if (array_key_exists('packages', $data)) {
+            upsertReservationPackages($pdo, $reservationId, $data['packages']);
+        }
         upsertReservationTechnicians($pdo, $reservationId, $data['technicians'] ?? []);
         if (array_key_exists('payments', $data)) {
             upsertReservationPayments($pdo, $reservationId, $data['payments']);
@@ -252,6 +257,10 @@ function handleReservationsUpdate(PDO $pdo): void
 
         if (array_key_exists('items', $data)) {
             upsertReservationItems($pdo, $id, $data['items']);
+        }
+
+        if (array_key_exists('packages', $data)) {
+            upsertReservationPackages($pdo, $id, $data['packages']);
         }
 
         if (array_key_exists('technicians', $data)) {
@@ -516,6 +525,7 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
     }
 
     $items = array_key_exists('items', $payload) ? $payload['items'] : null;
+    $packages = array_key_exists('packages', $payload) ? $payload['packages'] : null;
     if ($items !== null) {
         if (!is_array($items)) {
             $errors['items'] = 'Items must be an array';
@@ -559,6 +569,40 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
                     : (isset($item['cost']) ? (float) $item['cost'] : null);
                 if ($unitCost !== null && $unitCost < 0) {
                     $errors["items.$index.unit_cost"] = 'Unit cost must be zero or greater';
+                }
+            }
+        }
+    }
+
+    if ($packages !== null) {
+        if (!is_array($packages)) {
+            $errors['packages'] = 'Packages must be an array';
+        } else {
+            foreach ($packages as $index => $package) {
+                if (!is_array($package)) {
+                    $errors["packages.$index"] = 'Package entry must be an object';
+                    continue;
+                }
+                $qty = isset($package['quantity']) ? (int) $package['quantity'] : 1;
+                $unitPrice = isset($package['unit_price']) ? (float) $package['unit_price'] : 0;
+                $unitCost = isset($package['unit_cost'])
+                    ? (float) $package['unit_cost']
+                    : (isset($package['cost']) ? (float) $package['cost'] : 0);
+
+                if ($qty < 1) {
+                    $errors["packages.$index.quantity"] = 'Quantity must be at least 1';
+                }
+
+                if ($unitPrice < 0) {
+                    $errors["packages.$index.unit_price"] = 'Unit price must be zero or greater';
+                }
+
+                if ($unitCost < 0) {
+                    $errors["packages.$index.unit_cost"] = 'Unit cost must be zero or greater';
+                }
+
+                if (isset($package['package_code']) && mb_strlen((string) $package['package_code']) > 100) {
+                    $errors["packages.$index.package_code"] = 'Package code is too long (max 100 characters)';
                 }
             }
         }
@@ -666,6 +710,10 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
 
     if (!$isUpdate || array_key_exists('items', $payload)) {
         $data['items'] = $items ?? [];
+    }
+
+    if (!$isUpdate || array_key_exists('packages', $payload)) {
+        $data['packages'] = $packages ?? [];
     }
 
     if (!$isUpdate || array_key_exists('technicians', $payload)) {
@@ -986,7 +1034,7 @@ function updateReservation(PDO $pdo, int $id, array $data): void
     $params = ['id' => $id];
 
     foreach ($data as $column => $value) {
-        if ($column === 'items' || $column === 'technicians' || $column === 'payments') {
+        if (in_array($column, ['items', 'packages', 'technicians', 'payments'], true)) {
             continue;
         }
         $fields[] = sprintf('%s = :%s', $column, $column);
@@ -1088,6 +1136,51 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
             }
             throw $error;
         }
+    }
+}
+
+function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages): void
+{
+    ensureReservationPackagesTable($pdo);
+
+    $pdo->prepare('DELETE FROM reservation_packages WHERE reservation_id = :id')->execute(['id' => $reservationId]);
+
+    if (!$packages) {
+        return;
+    }
+
+    $sql = 'INSERT INTO reservation_packages (
+        reservation_id,
+        package_code,
+        name,
+        quantity,
+        unit_price,
+        unit_cost,
+        items_json
+    ) VALUES (
+        :reservation_id,
+        :package_code,
+        :name,
+        :quantity,
+        :unit_price,
+        :unit_cost,
+        :items_json
+    )';
+
+    $statement = $pdo->prepare($sql);
+
+    foreach ($packages as $package) {
+        $statement->execute([
+            'reservation_id' => $reservationId,
+            'package_code' => isset($package['package_code']) ? (string) $package['package_code'] : null,
+            'name' => isset($package['name']) ? (string) $package['name'] : null,
+            'quantity' => isset($package['quantity']) ? (int) $package['quantity'] : 1,
+            'unit_price' => isset($package['unit_price']) ? (float) $package['unit_price'] : 0,
+            'unit_cost' => isset($package['unit_cost'])
+                ? (float) $package['unit_cost']
+                : (isset($package['cost']) ? (float) $package['cost'] : 0),
+            'items_json' => json_encode($package['items'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        ]);
     }
 }
 
@@ -1270,6 +1363,7 @@ function decorateReservation(PDO $pdo, array $reservation): array
         : null;
 
     $reservation['items'] = fetchReservationItems($pdo, (int) $reservation['id']);
+    $reservation['packages'] = fetchReservationPackages($pdo, (int) $reservation['id']);
     $reservation['technicians'] = fetchReservationTechnicians($pdo, (int) $reservation['id']);
     // Provide rich crew arrays so frontend prefers assigned position data in details view
     $reservation['crewAssignments'] = $reservation['technicians'];
@@ -1353,6 +1447,44 @@ function fetchReservationItems(PDO $pdo, int $reservationId): array
         ];
     }
     return $items;
+}
+
+function fetchReservationPackages(PDO $pdo, int $reservationId): array
+{
+    ensureReservationPackagesTable($pdo);
+
+    try {
+        $statement = $pdo->prepare(
+            'SELECT id, package_code, name, quantity, unit_price, unit_cost, items_json
+             FROM reservation_packages
+             WHERE reservation_id = :id'
+        );
+    } catch (PDOException $_) {
+        return [];
+    }
+
+    $statement->execute(['id' => $reservationId]);
+    $packages = [];
+    while ($row = $statement->fetch()) {
+        $items = [];
+        if (!empty($row['items_json'])) {
+            $decoded = json_decode($row['items_json'], true);
+            if (is_array($decoded)) {
+                $items = $decoded;
+            }
+        }
+        $packages[] = [
+            'id' => (int) $row['id'],
+            'package_code' => $row['package_code'] ?? null,
+            'name' => $row['name'] ?? null,
+            'quantity' => isset($row['quantity']) ? (int) $row['quantity'] : 0,
+            'unit_price' => isset($row['unit_price']) ? (float) $row['unit_price'] : 0,
+            'unit_cost' => isset($row['unit_cost']) ? (float) $row['unit_cost'] : 0,
+            'items' => $items,
+        ];
+    }
+
+    return $packages;
 }
 
 function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
@@ -1575,6 +1707,37 @@ function ensureReservationEquipmentCostColumn(PDO $pdo): void
     } catch (Throwable $error) {
         // Do not flip $checked so we retry later; log once per request.
         error_log('Failed to ensure unit_cost column on reservation_equipment table: ' . $error->getMessage());
+    }
+}
+
+function ensureReservationPackagesTable(PDO $pdo): void
+{
+    static $checked = false;
+
+    if ($checked) {
+        return;
+    }
+
+    try {
+        $pdo->exec('
+            CREATE TABLE IF NOT EXISTS reservation_packages (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                reservation_id BIGINT UNSIGNED NOT NULL,
+                package_code VARCHAR(100) DEFAULT NULL,
+                name VARCHAR(255) DEFAULT NULL,
+                quantity INT NOT NULL DEFAULT 1,
+                unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+                unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
+                items_json LONGTEXT DEFAULT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_reservation_packages_reservation_id (reservation_id),
+                FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ');
+        $checked = true;
+    } catch (Throwable $error) {
+        error_log('Failed to ensure reservation_packages table: ' . $error->getMessage());
     }
 }
 
