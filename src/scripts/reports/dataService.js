@@ -106,7 +106,14 @@ export function hydrateReportsFromCache() {
 }
 
 export async function loadReportsData({ silent = false, force = false, signature = null } = {}) {
-  if (reportsState.loading) return;
+  // If a fetch is in-flight, queue the latest signature and exit
+  if (reportsState.loading) {
+    if (signature) {
+      reportsState.pendingFetchSignature = signature;
+      reportsState.pendingFetchForce = force || reportsState.pendingFetchForce;
+    }
+    return;
+  }
   const now = Date.now();
   if (!force && signature && reportsState.lastFetchSignature === signature && (now - reportsState.lastFetchAt) < 1200) {
     return;
@@ -196,6 +203,19 @@ export async function loadReportsData({ silent = false, force = false, signature
     }
   } finally {
     reportsState.loading = false;
+    // If a newer request is queued, fire it now
+    if (reportsState.pendingFetchSignature) {
+      const nextSignature = reportsState.pendingFetchSignature;
+      const nextForce = reportsState.pendingFetchForce;
+      reportsState.pendingFetchSignature = null;
+      reportsState.pendingFetchForce = false;
+      // Fire asynchronously to allow call stack to unwind
+      setTimeout(() => {
+        loadReportsData({ silent: true, force: nextForce, signature: nextSignature }).catch((err) => {
+          console.error('❌ [reports] Queued refresh failed', err);
+        });
+      }, 0);
+    }
     if (!silent) {
       reportsState.callbacks.onAfterRender?.();
     }

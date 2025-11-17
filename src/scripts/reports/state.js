@@ -79,6 +79,8 @@ export const reportsState = {
   endDateInputRef: null,
   lastFetchSignature: null,
   lastFetchAt: 0,
+  pendingFetchSignature: null,
+  pendingFetchForce: false,
   callbacks: {
     onRender: null,
     onBeforeRender: null,
