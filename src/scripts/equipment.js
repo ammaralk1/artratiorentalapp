@@ -1666,7 +1666,13 @@ async function handleAddEquipmentSubmit(event) {
       method: "POST",
       body: payload,
     });
-    const created = mapApiEquipment(response?.data);
+    const createdRaw = mapApiEquipment(response?.data);
+    const resolvedCost = Number.isFinite(Number(createdRaw?.cost))
+      ? Number(createdRaw.cost)
+      : Number.isFinite(Number(payload.unit_cost))
+        ? Number(payload.unit_cost)
+        : 0;
+    const created = { ...createdRaw, cost: resolvedCost };
     const updated = [...getAllEquipment(), created];
     setEquipment(updated);
     renderEquipment();
@@ -1747,7 +1753,15 @@ async function editEquipment(index, updatedData) {
       method: "PATCH",
       body: payload,
     });
-    const updatedItem = mapApiEquipment(response?.data);
+    const updatedItemRaw = mapApiEquipment(response?.data);
+    const resolvedCost = Number.isFinite(Number(updatedItemRaw?.cost))
+      ? Number(updatedItemRaw.cost)
+      : Number.isFinite(Number(updatedData.cost))
+        ? Number(updatedData.cost)
+        : Number.isFinite(Number(item.cost))
+          ? Number(item.cost)
+          : 0;
+    const updatedItem = { ...updatedItemRaw, cost: resolvedCost };
     const merged = [...items];
     merged[index] = updatedItem;
     setEquipment(merged);
