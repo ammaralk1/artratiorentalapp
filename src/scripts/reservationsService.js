@@ -1695,45 +1695,9 @@ function buildReservationItemsPayload(items) {
       return;
     }
 
-    if (item.type === 'package' && Array.isArray(item.packageItems) && item.packageItems.length) {
-      const packageQuantity = toPositiveInt(item.qty ?? item.quantity ?? 1);
-
-      item.packageItems.forEach((packageItem) => {
-        const equipmentId = packageItem?.equipmentId ?? packageItem?.equipment_id ?? packageItem?.id ?? null;
-        if (equipmentId == null) {
-          return;
-        }
-
-        const childQuantity = toPositiveInt(packageItem?.qty ?? packageItem?.quantity ?? 1);
-        const effectiveQuantity = packageQuantity * childQuantity;
-
-      const unitCost = toNumber(
-        packageItem?.cost
-          ?? packageItem?.unit_cost
-          ?? packageItem?.rental_cost
-        ?? packageItem?.internal_cost
-        ?? packageItem?.purchase_price
-        ?? packageItem?.equipment_cost
-        ?? packageItem?.item_cost
-        ?? 0
-      );
-      normalized.push({
-        equipment_id: resolveEquipmentIdValue(equipmentId),
-        quantity: effectiveQuantity,
-        unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
-        unit_cost: unitCost,
-        cost: unitCost,
-        total_cost: Number.isFinite(unitCost) ? Number((unitCost * effectiveQuantity).toFixed(2)) : 0,
-        rental_cost: unitCost,
-        purchase_price: unitCost,
-        internal_cost: unitCost,
-        equipment_cost: unitCost,
-        item_cost: unitCost,
-        notes: packageItem?.notes ?? null,
-      });
-    });
-
-  return;
+    // لا نوسّع عناصر الحزمة داخل items؛ نكتفي بتمرير الحزمة عبر packages
+    if (item.type === 'package') {
+      return;
     }
 
     const packageItems = Array.isArray(item.packageItems) ? item.packageItems : [];
@@ -1860,11 +1824,10 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
         ?? packageDefinition?.package_qty
         ?? 1
     );
-    // Always prefer definition items to avoid inflated packageItems from expanded items list
     const resolvedDefinitionItems = resolvePackageItems(packageDefinition || {}) || [];
-    const basePackageItems = resolvedDefinitionItems.length
-      ? resolvedDefinitionItems
-      : (Array.isArray(item.packageItems) ? item.packageItems : []);
+    const basePackageItems = Array.isArray(item.packageItems) && item.packageItems.length
+      ? item.packageItems
+      : resolvedDefinitionItems;
 
     const packageItems = Array.isArray(basePackageItems)
       ? basePackageItems
@@ -1920,7 +1883,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           .filter(Boolean)
       : [];
 
-  // أولوية: خذ التكلفة المرسلة من الـ payload كما هي، ولا تشتقها من السعر
+  // أولوية: خذ التكلفة المرسلة من الـ payload كما هي، ولا تشتقها من السعر أو الأبناء
   let unitCost = toNumber(
     item.unit_cost
     ?? item.cost
