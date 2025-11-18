@@ -1,7 +1,12 @@
 import { t } from './language.js';
 import { loadData } from './storage.js';
 import { showToast, normalizeNumbers } from './utils.js';
-import { resolveReservationProjectState, resolveEquipmentIdentifier } from './reservationsShared.js';
+import {
+  resolveReservationProjectState,
+  resolveEquipmentIdentifier,
+  parsePriceValue,
+  sanitizePriceValue,
+} from './reservationsShared.js';
 import {
   setEditingTechnicians,
   resetEditingTechnicians,
