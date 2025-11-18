@@ -1817,8 +1817,15 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
   if (Array.isArray(items)) {
     items.forEach((item) => {
       const id = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
-      const costVal = toNumber(item?.unit_cost ?? item?.cost ?? item?.rental_cost ?? item?.purchase_price);
-      if (id != null && Number.isFinite(costVal) && costVal > 0) {
+      if (id == null) return;
+      let costVal = toNumber(item?.unit_cost ?? item?.cost ?? item?.rental_cost ?? item?.purchase_price);
+      if (!Number.isFinite(costVal) || costVal <= 0) {
+        const fromStore = resolveEquipmentCostFromStore(id);
+        if (Number.isFinite(fromStore) && fromStore > 0) {
+          costVal = fromStore;
+        }
+      }
+      if (Number.isFinite(costVal) && costVal > 0) {
         equipmentCostMap.set(String(id), costVal);
       }
     });
