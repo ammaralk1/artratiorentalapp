@@ -1201,6 +1201,51 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
     }
 
     foreach ($packages as $package) {
+        // Resolve unit cost with tolerant fallbacks and optional derivation from items
+        $packageItems = is_array($package['items'] ?? null) ? $package['items'] : [];
+        $unitCost = null;
+        $unitCostCandidates = [
+            $package['unit_cost'] ?? null,
+            $package['unitCost'] ?? null,
+            $package['cost'] ?? null,
+            $package['package_cost'] ?? null,
+            $package['packageCost'] ?? null,
+        ];
+        foreach ($unitCostCandidates as $candidate) {
+            if ($candidate === null || $candidate === '') {
+                continue;
+            }
+            $val = (float) $candidate;
+            if ($val >= 0) {
+                $unitCost = $val;
+                break;
+            }
+        }
+        // Derive from items when not provided: sum(unit_cost * quantity) of child items
+        if ($unitCost === null && $packageItems) {
+            $sum = 0;
+            foreach ($packageItems as $child) {
+                $qty = isset($child['quantity']) ? (int) $child['quantity'] : (isset($child['qty']) ? (int) $child['qty'] : 1);
+                if ($qty < 1) {
+                    $qty = 1;
+                }
+                $childUnitCost = null;
+                foreach (['unit_cost', 'unitCost', 'cost', 'rental_cost', 'purchase_price', 'internal_cost', 'equipment_cost'] as $key) {
+                    if (isset($child[$key])) {
+                        $childUnitCost = (float) $child[$key];
+                        break;
+                    }
+                }
+                if ($childUnitCost !== null && $childUnitCost >= 0) {
+                    $sum += $childUnitCost * $qty;
+                }
+            }
+            $unitCost = $sum;
+        }
+        if ($unitCost === null) {
+            $unitCost = 0.0;
+        }
+
         $params = [
             'reservation_id' => $reservationId,
             'package_id' => isset($package['package_id']) ? (int) $package['package_id'] : (isset($package['packageId']) ? (int) $package['packageId'] : null),
@@ -1208,10 +1253,8 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             'package_name' => isset($package['name']) ? (string) $package['name'] : (isset($package['package_name']) ? (string) $package['package_name'] : null),
             'quantity' => isset($package['quantity']) ? (int) $package['quantity'] : 1,
             'unit_price' => isset($package['unit_price']) ? (float) $package['unit_price'] : 0,
-            'unit_cost' => isset($package['unit_cost'])
-                ? (float) $package['unit_cost']
-                : (isset($package['cost']) ? (float) $package['cost'] : 0),
-            'items_json' => json_encode($package['items'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'unit_cost' => $unitCost,
+            'items_json' => json_encode($packageItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'package_metadata' => json_encode($package['package_metadata'] ?? $package['metadata'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
