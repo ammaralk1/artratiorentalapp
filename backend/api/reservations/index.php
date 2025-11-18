@@ -413,6 +413,7 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         ? parseDecimalValue($payload['payment_progress_value'])
         : null;
     $rawPaymentHistory = $payload['payment_history'] ?? ($payload['paymentHistory'] ?? null);
+    $rawPaymentsAlias = $payload['payments'] ?? null;
     $paidStatus = isset($payload['paid_status']) ? trim((string) $payload['paid_status']) : null;
     $confirmed = isset($payload['confirmed']) ? (bool) $payload['confirmed'] : null;
     $rawProjectId = $payload['project_id'] ?? null;
@@ -516,8 +517,9 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
     }
 
     $normalizedPayments = null;
-    if ($rawPaymentHistory !== null) {
-        $normalizedPayments = normalisePaymentHistoryPayload($rawPaymentHistory, $errors);
+    $paymentSource = $rawPaymentHistory !== null ? $rawPaymentHistory : $rawPaymentsAlias;
+    if ($paymentSource !== null) {
+        $normalizedPayments = normalisePaymentHistoryPayload($paymentSource, $errors);
     }
 
     if ($normalizedPayments === null && !$isUpdate) {
@@ -720,7 +722,7 @@ function validateReservationPayload(array $payload, bool $isUpdate, PDO $pdo, ?i
         $data['technicians'] = $technicians ?? [];
     }
 
-    if (!$isUpdate || array_key_exists('payment_history', $payload) || array_key_exists('paymentHistory', $payload)) {
+    if (!$isUpdate || array_key_exists('payment_history', $payload) || array_key_exists('paymentHistory', $payload) || array_key_exists('payments', $payload)) {
         $data['payments'] = $normalizedPayments ?? [];
     }
 
@@ -1368,7 +1370,7 @@ function upsertReservationPayments(PDO $pdo, int $reservationId, array $payments
     foreach ($payments as $payment) {
         $statement->execute([
             'reservation_id' => $reservationId,
-            'payment_type' => $payment['payment_type'],
+            'payment_type' => $payment['payment_type'] ?? $payment['type'],
             'value' => $payment['value'],
             'amount' => $payment['amount'],
             'percentage' => $payment['percentage'],
