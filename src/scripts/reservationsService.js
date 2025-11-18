@@ -1709,8 +1709,8 @@ function buildReservationItemsPayload(items) {
 
       const unitCost = toNumber(
         packageItem?.cost
-        ?? packageItem?.unit_cost
-        ?? packageItem?.rental_cost
+          ?? packageItem?.unit_cost
+          ?? packageItem?.rental_cost
         ?? packageItem?.internal_cost
         ?? packageItem?.purchase_price
         ?? packageItem?.equipment_cost
@@ -1722,6 +1722,7 @@ function buildReservationItemsPayload(items) {
         unit_price: toNumber(packageItem?.price ?? packageItem?.unit_price ?? 0),
         unit_cost: unitCost,
         cost: unitCost,
+        total_cost: Number.isFinite(unitCost) ? Number((unitCost * effectiveQuantity).toFixed(2)) : 0,
         rental_cost: unitCost,
         purchase_price: unitCost,
         internal_cost: unitCost,
@@ -1786,6 +1787,7 @@ function buildReservationItemsPayload(items) {
     unit_price: toNumber(item.price ?? item.unit_price ?? 0),
     unit_cost: unitCost,
     cost: unitCost,
+    total_cost: Number.isFinite(unitCost) ? Number((unitCost * toPositiveInt(item.qty ?? item.quantity ?? 1)).toFixed(2)) : 0,
     rental_cost: unitCost,
     purchase_price: unitCost,
     internal_cost: unitCost,
@@ -1879,6 +1881,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
     unit_price: toNumber(item.price ?? item.unit_price ?? 0),
     unit_cost: unitCost,
     cost: unitCost,
+    total_cost: Number.isFinite(unitCost) ? Number((unitCost * packageQuantity).toFixed(2)) : 0,
     rental_cost: unitCost,
     purchase_price: unitCost,
     internal_cost: unitCost,
@@ -2475,6 +2478,7 @@ function mergePackageRecords(base, incoming) {
     merged.unit_cost = safeCost;
     merged.unitCost = safeCost;
     merged.cost = safeCost;
+    merged.total_cost = Number.isFinite(incoming.total_cost) ? incoming.total_cost : merged.total_cost;
     if (!Number.isFinite(merged.rental_cost)) merged.rental_cost = safeCost;
     if (!Number.isFinite(merged.purchase_price)) merged.purchase_price = safeCost;
     if (!Number.isFinite(merged.internal_cost)) merged.internal_cost = safeCost;
@@ -2662,6 +2666,7 @@ function convertReservationPackageEntry(entry, index = 0) {
 
     const quantity = 1;
     const total = Number((unitPrice * quantity).toFixed(2));
+    const totalCost = Number((unitCost * quantity).toFixed(2));
 
     return {
       id: `package::${normalizedId || index}`,
@@ -2678,6 +2683,7 @@ function convertReservationPackageEntry(entry, index = 0) {
       unit_cost: unitCost,
       unitCost,
       cost: unitCost,
+      total_cost: totalCost,
       rental_cost: unitCost,
       purchase_price: unitCost,
       internal_cost: unitCost,
@@ -2765,6 +2771,7 @@ function convertReservationPackageEntry(entry, index = 0) {
   const unitCost = resolveUnitCost();
   const totalRaw = entry.total_price ?? entry.totalPrice ?? entry.total ?? (unitPrice * quantity);
   const total = Number.isFinite(Number(totalRaw)) ? toNumber(totalRaw) : Number((unitPrice * quantity).toFixed(2));
+  const totalCost = Number.isFinite(unitCost) ? Number((unitCost * quantity).toFixed(2)) : 0;
   const packageCode = entry.package_code ?? entry.packageCode ?? entry.code ?? normalizedId;
   const barcode = normalizeNumbers(String(entry.barcode ?? packageCode ?? ''));
 
@@ -2788,6 +2795,7 @@ function convertReservationPackageEntry(entry, index = 0) {
     unit_cost: unitCost,
     unitCost,
     cost: unitCost,
+    total_cost: totalCost,
     rental_cost: unitCost,
     purchase_price: unitCost,
     internal_cost: unitCost,
