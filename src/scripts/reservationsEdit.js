@@ -1264,6 +1264,32 @@ export async function saveReservationChanges({
     history: paymentHistory,
   });
 
+  // التقط آخر قيم تكلفة الوحدة من واجهة التحرير وطبّقها على العناصر (خصوصاً الحزم)
+  const groupCostOverrides = new Map();
+  document.querySelectorAll('.reservation-unit-cost-input[data-group-key]').forEach((input) => {
+    const key = input.dataset.groupKey;
+    if (!key) return;
+    const parsed = parsePriceValue(input.value);
+    const cost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : null;
+    if (cost !== null) {
+      groupCostOverrides.set(key, cost);
+    }
+  });
+  const itemsWithCostOverrides = editingItems.map((item) => {
+    const key = resolveReservationItemGroupKey(item);
+    if (!key || !groupCostOverrides.has(key)) return item;
+    const cost = groupCostOverrides.get(key);
+    return {
+      ...item,
+      cost,
+      unit_cost: cost,
+      rental_cost: cost,
+      purchase_price: cost,
+      internal_cost: cost,
+      equipment_cost: cost,
+    };
+  });
+
   const effectivePaidStatus = determinePaymentStatus({
     manualStatus: paidStatus,
     paidAmount: paymentProgress.paidAmount,
@@ -1320,7 +1346,7 @@ export async function saveReservationChanges({
     applyTax,
     paidStatus: effectivePaidStatus,
     confirmed: effectiveConfirmed,
-    items: editingItems.map((item) => ({
+    items: itemsWithCostOverrides.map((item) => ({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
     })),
