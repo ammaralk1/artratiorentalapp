@@ -1777,24 +1777,6 @@ function resolveEquipmentIdValue(value) {
 
 function buildReservationPackagesPayload(items, packagesFromCaller) {
   const packages = Array.isArray(packagesFromCaller) ? packagesFromCaller.slice() : [];
-  // Build a quick lookup of known equipment costs from the items list
-  const equipmentCostMap = new Map();
-  if (Array.isArray(items)) {
-    items.forEach((item) => {
-      const id = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
-      if (id == null) return;
-      let costVal = toNumber(item?.unit_cost ?? item?.cost ?? item?.rental_cost ?? item?.purchase_price);
-      if (!Number.isFinite(costVal) || costVal <= 0) {
-        const fromStore = resolveEquipmentCostFromStore(id);
-        if (Number.isFinite(fromStore) && fromStore > 0) {
-          costVal = fromStore;
-        }
-      }
-      if (Number.isFinite(costVal) && costVal > 0) {
-        equipmentCostMap.set(String(id), costVal);
-      }
-    });
-  }
 
   if (!Array.isArray(items)) {
     return packages;
@@ -1851,8 +1833,6 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
               const fallbackCost = resolveEquipmentCostFromStore(childId);
               if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
                 unitCost = fallbackCost;
-              } else if (equipmentCostMap.has(String(childId))) {
-                unitCost = equipmentCostMap.get(String(childId));
               }
             }
             return {
@@ -1883,40 +1863,52 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           .filter(Boolean)
       : [];
 
-  // أولوية: خذ التكلفة المرسلة من الـ payload كما هي، ولا تشتقها من السعر أو الأبناء
-  let unitCost = toNumber(
-    item.unit_cost
-    ?? item.cost
-    ?? item.rental_cost
-    ?? item.internal_cost
-    ?? item.purchase_price
-    ?? item.equipment_cost
-    ?? 0
-  );
-  if ((!Number.isFinite(unitCost) || unitCost === 0) && item.equipmentId != null) {
-    const fallbackCost = resolveEquipmentCostFromStore(item.equipmentId);
-    if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
-      unitCost = fallbackCost;
-    } else if (equipmentCostMap.has(String(item.equipmentId))) {
-      unitCost = equipmentCostMap.get(String(item.equipmentId));
+    // أولوية: خذ تكلفة الحزمة نفسها (ولوا كانت صفر) ولا تشتقها من عناصر المعدات
+    const unitCostCandidates = [
+      item.package_cost,
+      item.packageCost,
+      item.unit_cost,
+      item.unitCost,
+      item.cost,
+      item.rental_cost,
+      item.internal_cost,
+      item.purchase_price,
+      item.equipment_cost,
+      item.item_cost,
+      packageDefinition?.package_cost,
+      packageDefinition?.packageCost,
+      packageDefinition?.unit_cost,
+      packageDefinition?.unitCost,
+      packageDefinition?.cost,
+      packageDefinition?.rental_cost,
+      packageDefinition?.purchase_price,
+      packageDefinition?.internal_cost,
+    ];
+    let unitCost = 0;
+    for (const candidate of unitCostCandidates) {
+      const numeric = toNumber(candidate);
+      if (Number.isFinite(numeric) && numeric >= 0) {
+        unitCost = numeric;
+        break;
+      }
     }
-  }
-  packages.push({
-    package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
-    name: item.desc ?? item.name ?? '',
-    quantity: packageQuantity,
-    unit_price: toNumber(item.price ?? item.unit_price ?? 0),
-    unit_cost: unitCost,
-    cost: unitCost,
-    total_cost: Number.isFinite(unitCost) ? Number((unitCost * packageQuantity).toFixed(2)) : 0,
-    rental_cost: unitCost,
-    purchase_price: unitCost,
-    internal_cost: unitCost,
-    equipment_cost: unitCost,
-    item_cost: unitCost,
-    items: packageItems,
+
+    packages.push({
+      package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
+      name: item.desc ?? item.name ?? '',
+      quantity: packageQuantity,
+      unit_price: toNumber(item.price ?? item.unit_price ?? 0),
+      unit_cost: unitCost,
+      cost: unitCost,
+      total_cost: Number.isFinite(unitCost) ? Number((unitCost * packageQuantity).toFixed(2)) : 0,
+      rental_cost: unitCost,
+      purchase_price: unitCost,
+      internal_cost: unitCost,
+      equipment_cost: unitCost,
+      item_cost: unitCost,
+      items: packageItems,
+    });
   });
-});
 
 return packages;
 }
@@ -2069,38 +2061,34 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
       ?? fallback.unitPrice
       ?? 0
   );
-  let unitCost = toNumber(
-    pkg.unit_cost
-      ?? pkg.unitCost
-      ?? pkg.cost
-      ?? pkg.rental_cost
-      ?? pkg.internal_cost
-      ?? pkg.purchase_price
-      ?? pkg.equipment_cost
-      ?? pkg.item_cost
-      ?? fallback.unit_cost
-      ?? fallback.unitCost
-      ?? fallback.cost
-      ?? 0
-  );
-  if ((!Number.isFinite(unitCost) || unitCost === 0) && Array.isArray(pkg.packageItems) && pkg.packageItems.length) {
-    const derivedCost = pkg.packageItems.reduce((sum, pkgItem) => {
-      const cost = toNumber(
-        pkgItem.cost
-          ?? pkgItem.unit_cost
-          ?? pkgItem.unitCost
-          ?? pkgItem.rental_cost
-          ?? pkgItem.purchase_price
-          ?? pkgItem.internal_cost
-          ?? pkgItem.equipment_cost
-          ?? pkgItem.item_cost
-          ?? 0
-      );
-      const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
-      return sum + (cost * qty);
-    }, 0);
-    if (derivedCost > 0) {
-      unitCost = Number(derivedCost.toFixed(2));
+  const costCandidates = [
+    pkg.package_cost,
+    pkg.packageCost,
+    pkg.unit_cost,
+    pkg.unitCost,
+    pkg.cost,
+    pkg.rental_cost,
+    pkg.internal_cost,
+    pkg.purchase_price,
+    pkg.equipment_cost,
+    pkg.item_cost,
+    fallback.package_cost,
+    fallback.packageCost,
+    fallback.unit_cost,
+    fallback.unitCost,
+    fallback.cost,
+    fallback.rental_cost,
+    fallback.internal_cost,
+    fallback.purchase_price,
+    fallback.equipment_cost,
+    fallback.item_cost,
+  ];
+  let unitCost = 0;
+  for (const candidate of costCandidates) {
+    const numeric = toNumber(candidate);
+    if (Number.isFinite(numeric) && numeric >= 0) {
+      unitCost = numeric;
+      break;
     }
   }
   const barcode = normalizeNumbers(String(
@@ -2234,43 +2222,26 @@ function derivePackagesFromItemsList(items = []) {
       const group = groups.get(normalizedId);
       const base = group.base || item;
       const packageItems = group.items.map((child) => normalizePackageItemRecord(child, 1));
-      const unitCost = (() => {
-        const explicit = toNumber(
-          base.unit_cost
-            ?? base.unitCost
-            ?? base.cost
-            ?? base.rental_cost
-            ?? base.internal_cost
-            ?? base.purchase_price
-            ?? base.equipment_cost
-            ?? base.item_cost
-            ?? 0
-        );
-        if (Number.isFinite(explicit) && explicit > 0) {
-          return explicit;
+      const costCandidates = [
+        base.package_cost,
+        base.packageCost,
+        base.unit_cost,
+        base.unitCost,
+        base.cost,
+        base.rental_cost,
+        base.internal_cost,
+        base.purchase_price,
+        base.equipment_cost,
+        base.item_cost,
+      ];
+      let unitCost = 0;
+      for (const candidate of costCandidates) {
+        const numeric = toNumber(candidate);
+        if (Number.isFinite(numeric) && numeric >= 0) {
+          unitCost = numeric;
+          break;
         }
-        if (packageItems.length) {
-          const sum = packageItems.reduce((acc, pkgItem) => {
-            const cost = toNumber(
-              pkgItem.cost
-                ?? pkgItem.unit_cost
-                ?? pkgItem.unitCost
-                ?? pkgItem.rental_cost
-                ?? pkgItem.internal_cost
-                ?? pkgItem.purchase_price
-                ?? pkgItem.equipment_cost
-                ?? pkgItem.item_cost
-                ?? 0
-            );
-            const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
-            return acc + (cost * qty);
-          }, 0);
-          if (sum > 0) {
-            return Number(sum.toFixed(2));
-          }
-        }
-        return explicit;
-      })();
+      }
       const derivedPackage = {
         packageId: normalizedId,
         package_id: normalizedId,
@@ -2493,6 +2464,7 @@ function mergePackageRecords(base, incoming) {
     merged.unit_cost
       ?? merged.unitCost
       ?? merged.cost
+      ?? merged.package_cost
       ?? merged.rental_cost
       ?? merged.purchase_price
       ?? merged.internal_cost
@@ -2503,6 +2475,7 @@ function mergePackageRecords(base, incoming) {
     incoming.unit_cost
       ?? incoming.unitCost
       ?? incoming.cost
+      ?? incoming.package_cost
       ?? incoming.rental_cost
       ?? incoming.purchase_price
       ?? incoming.internal_cost
@@ -2694,35 +2667,22 @@ function convertReservationPackageEntry(entry, index = 0) {
       ? toNumber(definition.price ?? definition.unit_price ?? definition.unitPrice ?? 0)
       : 0;
     const resolveDefinitionCost = () => {
-      const explicitCost = definition?.unit_cost
-        ?? definition?.unitCost
-        ?? definition?.cost
-        ?? definition?.rental_cost
-        ?? definition?.internal_cost
-        ?? definition?.purchase_price
-        ?? definition?.equipment_cost
-        ?? definition?.item_cost;
-      if (Number.isFinite(Number(explicitCost))) {
-        return toNumber(explicitCost);
-      }
-      if (Array.isArray(packageItems) && packageItems.length) {
-        const perPackageCost = packageItems.reduce((sum, pkgItem) => {
-          const cost = toNumber(
-            pkgItem.cost
-              ?? pkgItem.unit_cost
-              ?? pkgItem.unitCost
-              ?? pkgItem.rental_cost
-              ?? pkgItem.internal_cost
-              ?? pkgItem.purchase_price
-              ?? pkgItem.equipment_cost
-              ?? pkgItem.item_cost
-              ?? 0
-          );
-          const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
-          return sum + (cost * qty);
-        }, 0);
-        if (perPackageCost > 0) {
-          return Number(perPackageCost.toFixed(2));
+      const candidates = [
+        definition?.package_cost,
+        definition?.packageCost,
+        definition?.unit_cost,
+        definition?.unitCost,
+        definition?.cost,
+        definition?.rental_cost,
+        definition?.internal_cost,
+        definition?.purchase_price,
+        definition?.equipment_cost,
+        definition?.item_cost,
+      ];
+      for (const candidate of candidates) {
+        const numeric = toNumber(candidate);
+        if (Number.isFinite(numeric) && numeric >= 0) {
+          return numeric;
         }
       }
       return 0;
@@ -2794,41 +2754,22 @@ function convertReservationPackageEntry(entry, index = 0) {
   const packageItems = normalizeReservationPackageItemsFromEntry(entry, normalizedId);
   const unitPrice = derivePackageUnitPrice(entry, packageItems, quantity);
   const resolveUnitCost = () => {
-    const explicitCost = entry.unit_cost
-      ?? entry.unitCost
-      ?? entry.cost
-      ?? entry.rental_cost
-      ?? entry.internal_cost
-      ?? entry.purchase_price
-      ?? entry.equipment_cost
-      ?? entry.item_cost;
-    if (Number.isFinite(Number(explicitCost))) {
-      return toNumber(explicitCost);
-    }
-    if (Array.isArray(packageItems) && packageItems.length) {
-      const perPackageCost = packageItems.reduce((sum, pkgItem) => {
-        const cost = toNumber(
-          pkgItem.cost
-            ?? pkgItem.unit_cost
-            ?? pkgItem.unitCost
-            ?? pkgItem.rental_cost
-            ?? pkgItem.internal_cost
-            ?? pkgItem.purchase_price
-            ?? pkgItem.equipment_cost
-            ?? pkgItem.item_cost
-            ?? 0
-        );
-        const qty = toPositiveInt(
-          pkgItem.qtyPerPackage
-            ?? pkgItem.qty
-            ?? pkgItem.quantity
-            ?? pkgItem.count
-            ?? 1
-        );
-        return sum + (cost * qty);
-      }, 0);
-      if (perPackageCost > 0) {
-        return Number(perPackageCost.toFixed(2));
+    const candidates = [
+      entry.package_cost,
+      entry.packageCost,
+      entry.unit_cost,
+      entry.unitCost,
+      entry.cost,
+      entry.rental_cost,
+      entry.internal_cost,
+      entry.purchase_price,
+      entry.equipment_cost,
+      entry.item_cost,
+    ];
+    for (const candidate of candidates) {
+      const numeric = toNumber(candidate);
+      if (Number.isFinite(numeric) && numeric >= 0) {
+        return numeric;
       }
     }
     return 0;
