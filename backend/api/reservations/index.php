@@ -1151,36 +1151,44 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
 
     $sqlWithCost = 'INSERT INTO reservation_packages (
         reservation_id,
+        package_id,
         package_code,
-        name,
+        package_name,
         quantity,
         unit_price,
         unit_cost,
-        items_json
+        items_json,
+        package_metadata
     ) VALUES (
         :reservation_id,
+        :package_id,
         :package_code,
-        :name,
+        :package_name,
         :quantity,
         :unit_price,
         :unit_cost,
-        :items_json
+        :items_json,
+        :package_metadata
     )';
 
     $sqlWithoutCost = 'INSERT INTO reservation_packages (
         reservation_id,
+        package_id,
         package_code,
-        name,
+        package_name,
         quantity,
         unit_price,
-        items_json
+        items_json,
+        package_metadata
     ) VALUES (
         :reservation_id,
+        :package_id,
         :package_code,
-        :name,
+        :package_name,
         :quantity,
         :unit_price,
-        :items_json
+        :items_json,
+        :package_metadata
     )';
 
     try {
@@ -1193,14 +1201,16 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
     foreach ($packages as $package) {
         $params = [
             'reservation_id' => $reservationId,
+            'package_id' => isset($package['package_id']) ? (int) $package['package_id'] : (isset($package['packageId']) ? (int) $package['packageId'] : null),
             'package_code' => isset($package['package_code']) ? (string) $package['package_code'] : null,
-            'name' => isset($package['name']) ? (string) $package['name'] : null,
+            'package_name' => isset($package['name']) ? (string) $package['name'] : (isset($package['package_name']) ? (string) $package['package_name'] : null),
             'quantity' => isset($package['quantity']) ? (int) $package['quantity'] : 1,
             'unit_price' => isset($package['unit_price']) ? (float) $package['unit_price'] : 0,
             'unit_cost' => isset($package['unit_cost'])
                 ? (float) $package['unit_cost']
                 : (isset($package['cost']) ? (float) $package['cost'] : 0),
             'items_json' => json_encode($package['items'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'package_metadata' => json_encode($package['package_metadata'] ?? $package['metadata'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
         try {
@@ -1501,10 +1511,10 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
 {
     ensureReservationPackagesTable($pdo);
 
-    $sqlWithCost = 'SELECT id, package_code, name, quantity, unit_price, unit_cost, items_json
+    $sqlWithCost = 'SELECT id, package_id, package_code, package_name, name, quantity, unit_price, unit_cost, items_json, package_metadata
          FROM reservation_packages
          WHERE reservation_id = :id';
-    $sqlWithoutCost = 'SELECT id, package_code, name, quantity, unit_price, 0 AS unit_cost, items_json
+    $sqlWithoutCost = 'SELECT id, package_id, package_code, package_name, name, quantity, unit_price, 0 AS unit_cost, items_json, package_metadata
          FROM reservation_packages
          WHERE reservation_id = :id';
 
@@ -1546,12 +1556,16 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
         }
         $packages[] = [
             'id' => (int) $row['id'],
+            'package_id' => isset($row['package_id']) ? (int) $row['package_id'] : null,
             'package_code' => $row['package_code'] ?? null,
-            'name' => $row['name'] ?? null,
+            'name' => $row['package_name'] ?? $row['name'] ?? null,
             'quantity' => isset($row['quantity']) ? (int) $row['quantity'] : 0,
             'unit_price' => isset($row['unit_price']) ? (float) $row['unit_price'] : 0,
             'unit_cost' => isset($row['unit_cost']) ? (float) $row['unit_cost'] : 0,
             'items' => $items,
+            'package_metadata' => !empty($row['package_metadata'])
+                ? (json_decode($row['package_metadata'], true) ?: [])
+                : [],
         ];
     }
 
@@ -1794,12 +1808,15 @@ function ensureReservationPackagesTable(PDO $pdo): void
             CREATE TABLE IF NOT EXISTS reservation_packages (
                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 reservation_id BIGINT UNSIGNED NOT NULL,
+                package_id BIGINT UNSIGNED DEFAULT NULL,
                 package_code VARCHAR(100) DEFAULT NULL,
+                package_name VARCHAR(255) DEFAULT NULL,
                 name VARCHAR(255) DEFAULT NULL,
                 quantity INT NOT NULL DEFAULT 1,
                 unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
                 unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
                 items_json LONGTEXT DEFAULT NULL,
+                package_metadata LONGTEXT DEFAULT NULL,
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_reservation_packages_reservation_id (reservation_id),
@@ -1807,9 +1824,13 @@ function ensureReservationPackagesTable(PDO $pdo): void
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ');
         // Backfill columns in case table exists without new fields
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_id')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_id BIGINT UNSIGNED DEFAULT NULL AFTER reservation_id"); } } catch (Throwable $_) {}
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_name')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_name VARCHAR(255) DEFAULT NULL AFTER package_code"); } } catch (Throwable $_) {}
         try { if (!tableColumnExists($pdo, 'reservation_packages', 'unit_cost')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price"); } } catch (Throwable $_) {}
         try { if (!tableColumnExists($pdo, 'reservation_packages', 'items_json')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN items_json LONGTEXT DEFAULT NULL AFTER unit_cost"); } } catch (Throwable $_) {}
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_metadata')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_metadata LONGTEXT DEFAULT NULL AFTER items_json"); } } catch (Throwable $_) {}
         try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_code')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_code VARCHAR(100) DEFAULT NULL AFTER reservation_id"); } } catch (Throwable $_) {}
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'name')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN name VARCHAR(255) DEFAULT NULL AFTER package_name"); } } catch (Throwable $_) {}
         $checked = true;
     } catch (Throwable $error) {
         error_log('Failed to ensure reservation_packages table: ' . $error->getMessage());
