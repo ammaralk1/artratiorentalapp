@@ -287,6 +287,7 @@ function renderPackagesTable() {
     });
 
     const itemCount = resolvedItems.reduce((sum, item) => sum + (Number(item.qty ?? item.quantity ?? 1) || 0), 0);
+    const totalQuantity = Number((pkg.items_total_quantity ?? pkg.itemsTotalQuantity ?? itemCount) || 0);
     const priceDisplay = `${normalizeNumbers(pkg.price.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
 
     return `
@@ -294,6 +295,7 @@ function renderPackagesTable() {
         <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
         <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
         <td>${priceDisplay}</td>
+        <td>${normalizeNumbers(String(totalQuantity))}</td>
         <td>
           <details>
             <summary>${normalizeNumbers(String(itemCount || 0))}</summary>

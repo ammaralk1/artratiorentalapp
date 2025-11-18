@@ -311,14 +311,26 @@ function fetchPackageById(PDO $pdo, int $id): ?array
 function mapPackageRow(array $row): array
 {
     $items = [];
+    $itemsCount = 0;
+    $itemsQuantity = 0;
     if (!empty($row['equipment_ids'])) {
         $decoded = json_decode($row['equipment_ids'], true);
         if (is_array($decoded)) {
             $items = normalizePackageItemsArray($decoded);
+            foreach ($items as $item) {
+                $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+                if ($qty < 1) {
+                    $qty = 1;
+                }
+                $itemsQuantity += $qty;
+                $itemsCount += 1;
+            }
         }
     }
 
     $row['items'] = $items;
+    $row['items_count'] = $itemsCount;
+    $row['items_total_quantity'] = $itemsQuantity;
     return $row;
 }
 
