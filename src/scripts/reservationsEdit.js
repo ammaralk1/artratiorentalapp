@@ -1286,6 +1286,24 @@ export async function saveReservationChanges({
     statusForPayload = confirmed ? 'confirmed' : 'pending';
   }
 
+  // جمع الحزم من العناصر لإرسالها صراحةً (حتى لا تختفي تكلفة الحزمة)
+  const packagesFromItems = editingItems
+    .filter((item) => String(item?.type || '').toLowerCase() === 'package')
+    .map((item) => {
+      const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
+      const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
+      const unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
+      return {
+        package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
+        name: item.name ?? item.desc ?? item.package_name ?? null,
+        quantity: qty,
+        unit_price: unitPrice,
+        unit_cost: unitCost,
+        cost: unitCost,
+        items: Array.isArray(item.packageItems) ? item.packageItems : [],
+      };
+    });
+
   const payload = buildReservationPayload({
     reservationCode: reservation.reservationCode ?? reservation.reservationId ?? null,
     customerId: reservation.customerId,
@@ -1314,6 +1332,7 @@ export async function saveReservationChanges({
     paymentProgressType: paymentProgress.paymentProgressType,
     paymentProgressValue: paymentProgress.paymentProgressValue,
     paymentHistory,
+    packages: packagesFromItems,
   });
 
   try {
