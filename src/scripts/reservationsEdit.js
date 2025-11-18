@@ -257,22 +257,8 @@ function normalizePackageEntryForEditing(pkg, index = 0) {
     0
   );
   if ((!unitCost || unitCost === 0) && packageItems.length) {
-    const summedCost = packageItems.reduce((sum, item) => {
-      const itemCost = toPriceNumberSafe(
-        item.cost
-          ?? item.unit_cost
-          ?? item.unitCost
-          ?? item.rental_cost
-          ?? item.purchase_price
-          ?? 0,
-        0
-      );
-      const qty = toPositiveIntSafe(item.qty ?? item.quantity ?? item.qtyPerPackage ?? 1);
-      return sum + (itemCost * qty);
-    }, 0);
-    if (summedCost > 0) {
-      unitCost = Number(summedCost.toFixed(2));
-    }
+    // لا نشتق التكلفة من عناصر الحزمة؛ تبقى تكلفة الحزمة كما وصلت من الباك‑إند أو 0
+    unitCost = 0;
   }
 
   const barcode = pkg.package_code ?? pkg.packageCode ?? pkg.barcode ?? null;
