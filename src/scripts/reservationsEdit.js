@@ -6,6 +6,7 @@ import {
   resolveEquipmentIdentifier,
   parsePriceValue,
   sanitizePriceValue,
+  resolveReservationItemGroupKey,
 } from './reservationsShared.js';
 import {
   setEditingTechnicians,
