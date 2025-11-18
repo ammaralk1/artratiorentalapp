@@ -1735,6 +1735,8 @@ function buildReservationItemsPayload(items) {
   return;
     }
 
+    const packageItems = Array.isArray(item.packageItems) ? item.packageItems : [];
+
     const equipmentId = item.equipmentId ?? item.equipment_id ?? item.id ?? null;
     if (equipmentId == null) {
       return;
