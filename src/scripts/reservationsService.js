@@ -1841,9 +1841,30 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       return;
     }
 
-    const packageQuantity = toPositiveInt(item.qty ?? item.quantity ?? 1);
-    const packageItems = Array.isArray(item.packageItems)
+    const normalizedPackageId = normalizePackageIdentifier(
+      item.packageId
+        ?? item.package_id
+        ?? item.package_code
+        ?? item.packageCode
+        ?? item.bundleId
+        ?? item.bundle_id
+        ?? null
+    );
+    const packageDefinition = normalizedPackageId ? findPackageById(normalizedPackageId) : null;
+    const packageQuantity = toPositiveInt(
+      item.package_qty
+        ?? item.packageQty
+        ?? item.qty
+        ?? item.quantity
+        ?? packageDefinition?.package_qty
+        ?? 1
+    );
+    const basePackageItems = Array.isArray(item.packageItems) && item.packageItems.length
       ? item.packageItems
+      : resolvePackageItems(packageDefinition || {}) || [];
+
+    const packageItems = Array.isArray(basePackageItems)
+      ? basePackageItems
           .map((child) => {
             const childId = child?.equipmentId ?? child?.equipment_id ?? child?.id ?? null;
             if (childId == null) {
@@ -1852,10 +1873,12 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             let unitCost = toNumber(
               child?.cost
               ?? child?.unit_cost
+              ?? child?.unitCost
               ?? child?.rental_cost
               ?? child?.internal_cost
               ?? child?.purchase_price
               ?? child?.equipment_cost
+              ?? child?.item_cost
               ?? 0
             );
             if ((!Number.isFinite(unitCost) || unitCost === 0) && childId != null) {
