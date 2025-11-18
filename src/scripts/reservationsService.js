@@ -2195,6 +2195,43 @@ function derivePackagesFromItemsList(items = []) {
       const group = groups.get(normalizedId);
       const base = group.base || item;
       const packageItems = group.items.map((child) => normalizePackageItemRecord(child, 1));
+      const unitCost = (() => {
+        const explicit = toNumber(
+          base.unit_cost
+            ?? base.unitCost
+            ?? base.cost
+            ?? base.rental_cost
+            ?? base.internal_cost
+            ?? base.purchase_price
+            ?? base.equipment_cost
+            ?? base.item_cost
+            ?? 0
+        );
+        if (Number.isFinite(explicit) && explicit > 0) {
+          return explicit;
+        }
+        if (packageItems.length) {
+          const sum = packageItems.reduce((acc, pkgItem) => {
+            const cost = toNumber(
+              pkgItem.cost
+                ?? pkgItem.unit_cost
+                ?? pkgItem.unitCost
+                ?? pkgItem.rental_cost
+                ?? pkgItem.internal_cost
+                ?? pkgItem.purchase_price
+                ?? pkgItem.equipment_cost
+                ?? pkgItem.item_cost
+                ?? 0
+            );
+            const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
+            return acc + (cost * qty);
+          }, 0);
+          if (sum > 0) {
+            return Number(sum.toFixed(2));
+          }
+        }
+        return explicit;
+      })();
       const derivedPackage = {
         packageId: normalizedId,
         package_id: normalizedId,
@@ -2205,6 +2242,14 @@ function derivePackagesFromItemsList(items = []) {
         name: base.package_name ?? base.packageName ?? base.desc ?? base.name ?? `Package ${normalizedId}`,
         quantity: toPositiveInt(base.package_quantity ?? base.packageQty ?? 1, { fallback: 1, max: 9_999 }),
         unit_price: toNumber(base.package_price ?? base.packagePrice ?? base.price ?? 0),
+        unit_cost: unitCost,
+        unitCost,
+        cost: unitCost,
+        rental_cost: unitCost,
+        purchase_price: unitCost,
+        internal_cost: unitCost,
+        equipment_cost: unitCost,
+        item_cost: unitCost,
         packageItems,
         image: base.image ?? null,
       };
