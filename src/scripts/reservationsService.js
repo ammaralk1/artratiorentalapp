@@ -2251,7 +2251,16 @@ function derivePackagesFromItemsList(items = []) {
         items: [],
       });
     }
-    groups.get(key).items.push(item);
+    const group = groups.get(key);
+    // Prefer the package entry itself as the base; children stay in items list
+    if (item.type === 'package') {
+      group.base = item;
+      return;
+    }
+    if (!group.base) {
+      group.base = item;
+    }
+    group.items.push(item);
   });
 
   if (!groups.size) {
