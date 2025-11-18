@@ -1830,7 +1830,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             if (childId == null) {
               return null;
             }
-            const unitCost = toNumber(
+            let unitCost = toNumber(
               child?.cost
               ?? child?.unit_cost
               ?? child?.rental_cost
@@ -1839,6 +1839,12 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
               ?? child?.equipment_cost
               ?? 0
             );
+            if ((!Number.isFinite(unitCost) || unitCost === 0) && childId != null) {
+              const fallbackCost = resolveEquipmentCostFromStore(childId);
+              if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
+                unitCost = fallbackCost;
+              }
+            }
             return {
               equipment_id: resolveEquipmentIdValue(childId),
               quantity: toPositiveInt(
@@ -1867,7 +1873,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           .filter(Boolean)
       : [];
 
-  const unitCost = toNumber(
+  let unitCost = toNumber(
     item.cost
     ?? item.unit_cost
     ?? item.rental_cost
@@ -1876,6 +1882,32 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
     ?? item.equipment_cost
     ?? 0
   );
+  if ((!Number.isFinite(unitCost) || unitCost === 0) && item.equipmentId != null) {
+    const fallbackCost = resolveEquipmentCostFromStore(item.equipmentId);
+    if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
+      unitCost = fallbackCost;
+    }
+  }
+  if ((!Number.isFinite(unitCost) || unitCost === 0) && packageItems.length) {
+    const sum = packageItems.reduce((acc, pkgItem) => {
+      const cost = toNumber(
+        pkgItem.cost
+          ?? pkgItem.unit_cost
+          ?? pkgItem.unitCost
+          ?? pkgItem.rental_cost
+          ?? pkgItem.internal_cost
+          ?? pkgItem.purchase_price
+          ?? pkgItem.equipment_cost
+          ?? pkgItem.item_cost
+          ?? 0
+      );
+      const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
+      return acc + (cost * qty);
+    }, 0);
+    if (sum > 0) {
+      unitCost = Number(sum.toFixed(2));
+    }
+  }
   packages.push({
     package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
     name: item.desc ?? item.name ?? '',
@@ -2616,6 +2648,35 @@ function mergePackageCollections(primary = [], secondary = []) {
   append(secondary);
 
   return result;
+}
+
+function resolveEquipmentCostFromStore(equipmentId) {
+  if (equipmentId == null) return 0;
+  const snapshot = loadData() || {};
+  const list = Array.isArray(snapshot.equipment) ? snapshot.equipment : [];
+  const match = list.find((eq) => {
+    const candidates = [
+      eq.id,
+      eq.equipment_id,
+      eq.equipmentId,
+      eq.item_id,
+      eq.itemId,
+    ];
+    return candidates.some((val) => String(val) === String(equipmentId));
+  });
+  if (!match) return 0;
+  const costValue = toNumber(
+    match.cost
+      ?? match.unit_cost
+      ?? match.unitCost
+      ?? match.rental_cost
+      ?? match.purchase_price
+      ?? match.internal_cost
+      ?? match.equipment_cost
+      ?? match.item_cost
+      ?? 0
+  );
+  return Number.isFinite(costValue) && costValue > 0 ? costValue : 0;
 }
 
 function convertReservationPackageEntry(entry, index = 0) {
