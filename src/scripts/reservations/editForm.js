@@ -789,13 +789,21 @@ function updateEditReservationGroupCost(groupKey, rawValue) {
         ...nextItems[itemIndex],
         cost: unitCost,
         unit_cost: unitCost,
+        rental_cost: unitCost,
+        purchase_price: unitCost,
+        internal_cost: unitCost,
+        equipment_cost: unitCost,
       };
       // عند كون العنصر حزمة، مرر قيمة التكلفة إلى عناصر الحزمة أيضاً
       if (item.type === 'package' && Array.isArray(item.packageItems)) {
         item.packageItems = item.packageItems.map((child) => ({
           ...child,
-          cost: child?.cost && Number.isFinite(Number(child.cost)) ? Number(child.cost) : unitCost,
-          unit_cost: child?.unit_cost && Number.isFinite(Number(child.unit_cost)) ? Number(child.unit_cost) : unitCost,
+          cost: unitCost,
+          unit_cost: unitCost,
+          rental_cost: unitCost,
+          purchase_price: unitCost,
+          internal_cost: unitCost,
+          equipment_cost: unitCost,
         }));
       }
       nextItems[itemIndex] = item;
@@ -864,21 +872,26 @@ function ensureGroupHandler(container) {
     }
   });
 
-  container.addEventListener('change', (event) => {
+  const handlePriceCostChange = (event) => {
     const input = event.target.closest('.reservation-unit-cost-input');
     if (!input) return;
     const groupKey = input.dataset.groupKey;
     if (!groupKey) return;
     updateEditReservationGroupCost(groupKey, input.value);
-  });
+  };
 
-  container.addEventListener('change', (event) => {
+  const handlePriceChange = (event) => {
     const input = event.target.closest('.reservation-unit-price-input');
     if (!input) return;
     const groupKey = input.dataset.groupKey;
     if (!groupKey) return;
     updateEditReservationGroupPrice(groupKey, input.value);
-  });
+  };
+
+  container.addEventListener('change', handlePriceCostChange);
+  container.addEventListener('input', handlePriceCostChange);
+  container.addEventListener('change', handlePriceChange);
+  container.addEventListener('input', handlePriceChange);
 
   container.dataset.groupListenerAttached = 'true';
 }

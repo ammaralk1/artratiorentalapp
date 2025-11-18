@@ -2309,13 +2309,25 @@ function updateDraftReservationGroupCost(groupKey, rawValue) {
   const nextItems = [...items];
   target.itemIndices.forEach((idx) => {
     if (nextItems[idx]) {
-      const item = { ...nextItems[idx], cost: unitCost, unit_cost: unitCost };
+      const item = {
+        ...nextItems[idx],
+        cost: unitCost,
+        unit_cost: unitCost,
+        rental_cost: unitCost,
+        purchase_price: unitCost,
+        internal_cost: unitCost,
+        equipment_cost: unitCost,
+      };
       // إذا كان العنصر حزمة، انقل قيمة التكلفة إلى محتوياتها لضمان إرسالها للباك‑اند
       if (item.type === 'package' && Array.isArray(item.packageItems)) {
         item.packageItems = item.packageItems.map((child) => ({
           ...child,
-          cost: child?.cost && Number.isFinite(Number(child.cost)) ? Number(child.cost) : unitCost,
-          unit_cost: child?.unit_cost && Number.isFinite(Number(child.unit_cost)) ? Number(child.unit_cost) : unitCost,
+          cost: unitCost,
+          unit_cost: unitCost,
+          rental_cost: unitCost,
+          purchase_price: unitCost,
+          internal_cost: unitCost,
+          equipment_cost: unitCost,
         }));
       }
       nextItems[idx] = item;
@@ -3147,7 +3159,7 @@ function setupReservationButtons() {
     }
   });
 
-  container.addEventListener('change', (event) => {
+  const handlePriceCostChange = (event) => {
     const priceInput = event.target.closest('.reservation-unit-price-input');
     if (priceInput) {
       const groupKey = priceInput.dataset.groupKey;
@@ -3163,7 +3175,10 @@ function setupReservationButtons() {
         updateDraftReservationGroupCost(groupKey, costInput.value);
       }
     }
-  });
+  };
+
+  container.addEventListener('change', handlePriceCostChange);
+  container.addEventListener('input', handlePriceCostChange);
 
   container.dataset.listenerAttached = 'true';
 }
