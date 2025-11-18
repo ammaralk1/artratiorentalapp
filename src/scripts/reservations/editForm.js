@@ -797,18 +797,6 @@ function updateEditReservationGroupCost(groupKey, rawValue) {
         internal_cost: unitCost,
         equipment_cost: unitCost,
       };
-      // عند كون العنصر حزمة، مرر قيمة التكلفة إلى عناصر الحزمة أيضاً
-      if (item.type === 'package' && Array.isArray(item.packageItems)) {
-        item.packageItems = item.packageItems.map((child) => ({
-          ...child,
-          cost: unitCost,
-          unit_cost: unitCost,
-          rental_cost: unitCost,
-          purchase_price: unitCost,
-          internal_cost: unitCost,
-          equipment_cost: unitCost,
-        }));
-      }
       nextItems[itemIndex] = item;
     }
   });

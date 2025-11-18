@@ -1980,13 +1980,6 @@ export function buildReservationPackageEntry(packageId, {
     };
   }
 
-  const packageCost = packageItems.reduce((sum, item) => {
-    const costValue = Number(item?.cost);
-    const qtyValue = Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1;
-    const safeQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
-    return sum + (Number.isFinite(costValue) ? costValue : 0) * safeQty;
-  }, 0);
-
   const packagePayload = {
     id: `package::${normalizedId}`,
     packageId: normalizedId,
@@ -1994,7 +1987,8 @@ export function buildReservationPackageEntry(packageId, {
     desc: packageInfo.name || `Package ${normalizedId}`,
     qty: 1,
     price: Number.isFinite(Number(packageInfo.price)) ? Number(packageInfo.price) : 0,
-    cost: Number.isFinite(Number(packageInfo.cost)) ? Number(packageInfo.cost) : Number(packageCost.toFixed(2)),
+    // نعامل الحزمة كبند واحد: التكلفة تأتي من الحزمة نفسها فقط (لا نحسبها من عناصرها)
+    cost: Number.isFinite(Number(packageInfo.cost)) ? Number(packageInfo.cost) : 0,
     barcode: packageInfo.code || packageInfo.raw?.package_code || `pkg-${normalizedId}`,
     packageItems: packageItems.map((item) => ({
       equipmentId: item?.equipmentId ?? null,
@@ -2003,7 +1997,8 @@ export function buildReservationPackageEntry(packageId, {
       desc: item?.desc ?? '',
       qty: Number.isFinite(Number(item?.qty)) ? Number(item.qty) : 1,
       price: Number.isFinite(Number(item?.price)) ? Number(item.price) : 0,
-      cost: Number.isFinite(Number(item?.cost)) ? Number(item.cost) : 0,
+      // لا نستخدم تكلفة عناصر الحزمة في التسعير/التخزين بعد الآن
+      cost: 0,
     })),
     image: packageItems.find((item) => item?.image)?.image ?? null,
   };
@@ -2318,18 +2313,6 @@ function updateDraftReservationGroupCost(groupKey, rawValue) {
         internal_cost: unitCost,
         equipment_cost: unitCost,
       };
-      // إذا كان العنصر حزمة، انقل قيمة التكلفة إلى محتوياتها لضمان إرسالها للباك‑اند
-      if (item.type === 'package' && Array.isArray(item.packageItems)) {
-        item.packageItems = item.packageItems.map((child) => ({
-          ...child,
-          cost: unitCost,
-          unit_cost: unitCost,
-          rental_cost: unitCost,
-          purchase_price: unitCost,
-          internal_cost: unitCost,
-          equipment_cost: unitCost,
-        }));
-      }
       nextItems[idx] = item;
     }
   });
