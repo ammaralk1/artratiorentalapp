@@ -1848,6 +1848,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
         ?? item.packageCode
         ?? item.bundleId
         ?? item.bundle_id
+        ?? item.id
         ?? null
     );
     const packageDefinition = normalizedPackageId ? findPackageById(normalizedPackageId) : null;
@@ -1859,9 +1860,10 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
         ?? packageDefinition?.package_qty
         ?? 1
     );
-    const basePackageItems = Array.isArray(item.packageItems) && item.packageItems.length
-      ? item.packageItems
-      : resolvePackageItems(packageDefinition || {}) || [];
+    // Always prefer definition items to avoid inflated packageItems from expanded items list
+    const basePackageItems = Array.isArray(resolvePackageItems(packageDefinition || {})) && resolvePackageItems(packageDefinition || {}).length
+      ? resolvePackageItems(packageDefinition || {})
+      : (Array.isArray(item.packageItems) ? item.packageItems : []);
 
     const packageItems = Array.isArray(basePackageItems)
       ? basePackageItems
