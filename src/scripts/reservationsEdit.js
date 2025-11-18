@@ -1319,7 +1319,7 @@ export async function saveReservationChanges({
   }
 
   // جمع الحزم من العناصر لإرسالها صراحةً (حتى لا تختفي تكلفة الحزمة)
-  const packagesFromItems = editingItems
+  const packagesFromItems = itemsWithCostOverrides
     .filter((item) => String(item?.type || '').toLowerCase() === 'package')
     .map((item) => {
       const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
