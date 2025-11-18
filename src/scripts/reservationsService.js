@@ -642,6 +642,11 @@ export async function refreshReservationsFromApi(params = {}) {
 }
 
 export async function createReservationApi(payload) {
+  try {
+    if (Array.isArray(payload?.packages)) {
+      console.debug('[reservationsService] createReservationApi payload.packages', payload.packages);
+    }
+  } catch (_) { /* ignore debug errors */ }
   const response = await apiRequest('/reservations/', {
     method: 'POST',
     body: payload,
@@ -711,7 +716,7 @@ export async function createReservationApi(payload) {
 }
 
 export async function updateReservationApi(id, payload) {
-  // Debug: log payload packages unit_cost to verify user input is preserved
+  // Debug: log payload packages to verify user input is preserved
   try {
     if (Array.isArray(payload?.packages)) {
       console.debug('[reservationsService] updateReservationApi payload.packages', payload.packages);
