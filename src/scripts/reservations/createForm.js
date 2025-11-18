@@ -2309,7 +2309,16 @@ function updateDraftReservationGroupCost(groupKey, rawValue) {
   const nextItems = [...items];
   target.itemIndices.forEach((idx) => {
     if (nextItems[idx]) {
-      nextItems[idx] = { ...nextItems[idx], cost: unitCost, unit_cost: unitCost };
+      const item = { ...nextItems[idx], cost: unitCost, unit_cost: unitCost };
+      // إذا كان العنصر حزمة، انقل قيمة التكلفة إلى محتوياتها لضمان إرسالها للباك‑اند
+      if (item.type === 'package' && Array.isArray(item.packageItems)) {
+        item.packageItems = item.packageItems.map((child) => ({
+          ...child,
+          cost: child?.cost && Number.isFinite(Number(child.cost)) ? Number(child.cost) : unitCost,
+          unit_cost: child?.unit_cost && Number.isFinite(Number(child.unit_cost)) ? Number(child.unit_cost) : unitCost,
+        }));
+      }
+      nextItems[idx] = item;
     }
   });
   setSelectedItems(nextItems);
