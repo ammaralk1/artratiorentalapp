@@ -1863,7 +1863,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           .filter(Boolean)
       : [];
 
-    // أولوية: خذ تكلفة الحزمة نفسها (ولوا كانت صفر) ولا تشتقها من عناصر المعدات
+    // أولوية: خذ تكلفة الحزمة من إدخال المستخدم فقط (لا fallback من تعريف الحزمة أو عناصرها)
     const unitCostCandidates = [
       item.package_cost,
       item.packageCost,
@@ -1875,14 +1875,6 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       item.purchase_price,
       item.equipment_cost,
       item.item_cost,
-      packageDefinition?.package_cost,
-      packageDefinition?.packageCost,
-      packageDefinition?.unit_cost,
-      packageDefinition?.unitCost,
-      packageDefinition?.cost,
-      packageDefinition?.rental_cost,
-      packageDefinition?.purchase_price,
-      packageDefinition?.internal_cost,
     ];
     let unitCost = 0;
     for (const candidate of unitCostCandidates) {
