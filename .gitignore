@@ -7,5 +7,11 @@ backend/config.php
 .env.local
 cookies.txt
 
+# Local artifacts
+tmp/
+tmp.out
+backups/*.xlsx
+backups/mysql/*.sql.gz
+
 # Deployment SSH key
 .github/deploy/gh_actions_deploy*
