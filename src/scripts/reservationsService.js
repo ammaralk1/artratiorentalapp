@@ -1714,6 +1714,8 @@ function buildReservationItemsPayload(items) {
         ?? packageItem?.internal_cost
         ?? packageItem?.purchase_price
         ?? packageItem?.equipment_cost
+        ?? packageItem?.item_cost
+        ?? packageItem?.price // fallback: use price if cost missing
         ?? 0
       );
       normalized.push({
@@ -1766,6 +1768,7 @@ function buildReservationItemsPayload(items) {
             ?? pkgItem.purchase_price
             ?? pkgItem.equipment_cost
             ?? pkgItem.item_cost
+            ?? pkgItem.price // fallback to price if cost missing
             ?? 0
         );
         const childQty = toPositiveInt(
@@ -1863,6 +1866,11 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
                 unitCost = fallbackCost;
               } else if (equipmentCostMap.has(String(childId))) {
                 unitCost = equipmentCostMap.get(String(childId));
+              } else {
+                const priceFallback = toNumber(child?.price ?? child?.unit_price ?? 0);
+                if ((!Number.isFinite(unitCost) || unitCost === 0) && Number.isFinite(priceFallback) && priceFallback > 0) {
+                  unitCost = priceFallback;
+                }
               }
             }
             return {
@@ -1908,6 +1916,11 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       unitCost = fallbackCost;
     } else if (equipmentCostMap.has(String(item.equipmentId))) {
       unitCost = equipmentCostMap.get(String(item.equipmentId));
+    } else {
+      const priceFallback = toNumber(item?.price ?? item?.unit_price ?? 0);
+      if ((!Number.isFinite(unitCost) || unitCost === 0) && Number.isFinite(priceFallback) && priceFallback > 0) {
+        unitCost = priceFallback;
+      }
     }
   }
   if ((!Number.isFinite(unitCost) || unitCost === 0) && packageItems.length) {
@@ -1921,6 +1934,7 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           ?? pkgItem.purchase_price
           ?? pkgItem.equipment_cost
           ?? pkgItem.item_cost
+          ?? pkgItem.price // fallback to price when cost missing
           ?? 0
       );
       const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
