@@ -711,6 +711,12 @@ export async function createReservationApi(payload) {
 }
 
 export async function updateReservationApi(id, payload) {
+  // Debug: log payload packages unit_cost to verify user input is preserved
+  try {
+    if (Array.isArray(payload?.packages)) {
+      console.debug('[reservationsService] updateReservationApi payload.packages', payload.packages);
+    }
+  } catch (_) { /* ignore */ }
   const response = await apiRequest(`/reservations/?id=${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: payload,
