@@ -1861,8 +1861,9 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
         ?? 1
     );
     // Always prefer definition items to avoid inflated packageItems from expanded items list
-    const basePackageItems = Array.isArray(resolvePackageItems(packageDefinition || {})) && resolvePackageItems(packageDefinition || {}).length
-      ? resolvePackageItems(packageDefinition || {})
+    const resolvedDefinitionItems = resolvePackageItems(packageDefinition || {}) || [];
+    const basePackageItems = resolvedDefinitionItems.length
+      ? resolvedDefinitionItems
       : (Array.isArray(item.packageItems) ? item.packageItems : []);
 
     const packageItems = Array.isArray(basePackageItems)
@@ -1919,9 +1920,10 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
           .filter(Boolean)
       : [];
 
+  // أولوية: خذ التكلفة المرسلة من الـ payload كما هي، ولا تشتقها من السعر
   let unitCost = toNumber(
-    item.cost
-    ?? item.unit_cost
+    item.unit_cost
+    ?? item.cost
     ?? item.rental_cost
     ?? item.internal_cost
     ?? item.purchase_price
