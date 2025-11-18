@@ -1812,6 +1812,17 @@ function resolveEquipmentIdValue(value) {
 
 function buildReservationPackagesPayload(items, packagesFromCaller) {
   const packages = Array.isArray(packagesFromCaller) ? packagesFromCaller.slice() : [];
+  // Build a quick lookup of known equipment costs from the items list
+  const equipmentCostMap = new Map();
+  if (Array.isArray(items)) {
+    items.forEach((item) => {
+      const id = item?.equipmentId ?? item?.equipment_id ?? item?.id ?? null;
+      const costVal = toNumber(item?.unit_cost ?? item?.cost ?? item?.rental_cost ?? item?.purchase_price);
+      if (id != null && Number.isFinite(costVal) && costVal > 0) {
+        equipmentCostMap.set(String(id), costVal);
+      }
+    });
+  }
 
   if (!Array.isArray(items)) {
     return packages;
@@ -1843,6 +1854,8 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
               const fallbackCost = resolveEquipmentCostFromStore(childId);
               if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
                 unitCost = fallbackCost;
+              } else if (equipmentCostMap.has(String(childId))) {
+                unitCost = equipmentCostMap.get(String(childId));
               }
             }
             return {
@@ -1886,6 +1899,8 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
     const fallbackCost = resolveEquipmentCostFromStore(item.equipmentId);
     if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
       unitCost = fallbackCost;
+    } else if (equipmentCostMap.has(String(item.equipmentId))) {
+      unitCost = equipmentCostMap.get(String(item.equipmentId));
     }
   }
   if ((!Number.isFinite(unitCost) || unitCost === 0) && packageItems.length) {
