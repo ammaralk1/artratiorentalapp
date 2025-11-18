@@ -1222,52 +1222,7 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
                 break;
             }
         }
-        // Derive from items when not provided: sum(unit_cost * quantity) of child items
-        $derivedUnitCost = 0;
-        if ($packageItems) {
-            foreach ($packageItems as $index => $child) {
-                $qty = isset($child['quantity']) ? (int) $child['quantity'] : (isset($child['qty']) ? (int) $child['qty'] : 1);
-                if ($qty < 1) {
-                    $qty = 1;
-                }
-                $childUnitCost = null;
-                foreach (['unit_cost', 'unitCost', 'cost', 'rental_cost', 'purchase_price', 'internal_cost', 'equipment_cost'] as $key) {
-                    if (isset($child[$key])) {
-                        $childUnitCost = (float) $child[$key];
-                        break;
-                    }
-                }
-                if ($childUnitCost === null || $childUnitCost < 0) {
-                    // Try to look up equipment base unit_cost
-                    $childEquipmentId = $child['equipment_id'] ?? $child['equipmentId'] ?? null;
-                    if ($childEquipmentId !== null) {
-                        $cacheKey = (string) $childEquipmentId;
-                        if (array_key_exists($cacheKey, $equipmentCostCache)) {
-                            $childUnitCost = $equipmentCostCache[$cacheKey];
-                        } else {
-                            try {
-                                $stmtCost = $pdo->prepare('SELECT unit_cost FROM equipment WHERE id = :id LIMIT 1');
-                                $stmtCost->execute(['id' => $childEquipmentId]);
-                                $dbCost = $stmtCost->fetchColumn();
-                                $childUnitCost = $dbCost !== false ? (float) $dbCost : null;
-                                $equipmentCostCache[$cacheKey] = $childUnitCost ?? 0.0;
-                            } catch (Throwable $_) {
-                                $childUnitCost = null;
-                            }
-                        }
-                    }
-                }
-                if ($childUnitCost === null || $childUnitCost < 0) {
-                    $childUnitCost = 0.0;
-                }
-                $derivedUnitCost += $childUnitCost * $qty;
-                // Persist normalized child cost into items_json
-                $packageItems[$index]['unit_cost'] = $childUnitCost;
-            }
-        }
-        if ($unitCost === null) {
-            $unitCost = $derivedUnitCost;
-        }
+        // إذا لم تُرسل تكلفة للحزمة، لا نرجع لسعرها؛ نكتفي بما وصل أو 0
         if ($unitCost === null) {
             $unitCost = 0.0;
         }
