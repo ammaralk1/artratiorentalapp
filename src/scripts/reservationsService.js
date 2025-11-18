@@ -1938,26 +1938,6 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       unitCost = equipmentCostMap.get(String(item.equipmentId));
     }
   }
-  if ((!Number.isFinite(unitCost) || unitCost === 0) && packageItems.length) {
-    const sum = packageItems.reduce((acc, pkgItem) => {
-      const cost = toNumber(
-        pkgItem.cost
-          ?? pkgItem.unit_cost
-          ?? pkgItem.unitCost
-          ?? pkgItem.rental_cost
-          ?? pkgItem.internal_cost
-          ?? pkgItem.purchase_price
-          ?? pkgItem.equipment_cost
-          ?? pkgItem.item_cost
-          ?? 0
-      );
-      const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
-      return acc + (cost * qty);
-    }, 0);
-    if (sum > 0) {
-      unitCost = Number(sum.toFixed(2));
-    }
-  }
   packages.push({
     package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
     name: item.desc ?? item.name ?? '',
