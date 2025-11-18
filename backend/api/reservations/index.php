@@ -1183,7 +1183,12 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         :items_json
     )';
 
-    $statement = $pdo->prepare($sqlWithCost);
+    try {
+        $statement = $pdo->prepare($sqlWithCost);
+    } catch (PDOException $_) {
+        ensureReservationPackagesTable($pdo);
+        $statement = $pdo->prepare($sqlWithCost);
+    }
 
     foreach ($packages as $package) {
         $params = [
@@ -1202,13 +1207,20 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             $statement->execute($params);
         } catch (PDOException $error) {
             $message = strtolower($error->getMessage());
-            if (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column')) {
-                // Fallback for legacy schema without unit_cost
-                ensureReservationPackagesTable($pdo); // attempt to migrate
-                $statement = $pdo->prepare($sqlWithoutCost);
-                unset($params['unit_cost']);
-                $statement->execute($params);
-                continue;
+            if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
+                // Try to patch missing columns, then retry
+                ensureReservationPackagesTable($pdo);
+                try {
+                    $statement = $pdo->prepare($sqlWithCost);
+                    $statement->execute($params);
+                    continue;
+                } catch (PDOException $_retry) {
+                    // Final fallback: drop unit_cost/items_json bindings
+                    $statement = $pdo->prepare($sqlWithoutCost);
+                    unset($params['unit_cost'], $params['items_json']);
+                    $statement->execute($params);
+                    continue;
+                }
             }
             throw $error;
         }
@@ -1506,9 +1518,13 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
         $statement->execute(['id' => $reservationId]);
     } catch (PDOException $error) {
         $message = strtolower($error->getMessage());
-        if (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column')) {
+        if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
             ensureReservationPackagesTable($pdo);
-            $statement = $pdo->prepare($sqlWithoutCost);
+            try {
+                $statement = $pdo->prepare($sqlWithCost);
+            } catch (PDOException $_prep) {
+                $statement = $pdo->prepare($sqlWithoutCost);
+            }
             $statement->execute(['id' => $reservationId]);
         } else {
             throw $error;
@@ -1791,15 +1807,9 @@ function ensureReservationPackagesTable(PDO $pdo): void
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ');
         // Backfill columns in case table exists without new fields
-        if (!tableColumnExists($pdo, 'reservation_packages', 'unit_cost')) {
-            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price");
-        }
-        if (!tableColumnExists($pdo, 'reservation_packages', 'items_json')) {
-            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN items_json LONGTEXT DEFAULT NULL AFTER unit_cost");
-        }
-        if (!tableColumnExists($pdo, 'reservation_packages', 'package_code')) {
-            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_code VARCHAR(100) DEFAULT NULL AFTER reservation_id");
-        }
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'unit_cost')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price"); } } catch (Throwable $_) {}
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'items_json')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN items_json LONGTEXT DEFAULT NULL AFTER unit_cost"); } } catch (Throwable $_) {}
+        try { if (!tableColumnExists($pdo, 'reservation_packages', 'package_code')) { $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_code VARCHAR(100) DEFAULT NULL AFTER reservation_id"); } } catch (Throwable $_) {}
         $checked = true;
     } catch (Throwable $error) {
         error_log('Failed to ensure reservation_packages table: ' . $error->getMessage());
