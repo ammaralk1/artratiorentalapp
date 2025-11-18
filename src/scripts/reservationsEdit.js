@@ -198,6 +198,14 @@ function normalizePackageItemForEditing(pkgItem = {}) {
     desc: pkgItem.desc ?? pkgItem.description ?? pkgItem.name ?? '',
     qty: toPositiveIntSafe(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.count ?? 1),
     price: toPriceNumberSafe(pkgItem.price ?? pkgItem.unit_price ?? pkgItem.unitPrice ?? 0),
+    cost: toPriceNumberSafe(
+      pkgItem.cost
+        ?? pkgItem.unit_cost
+        ?? pkgItem.unitCost
+        ?? pkgItem.rental_cost
+        ?? pkgItem.purchase_price
+        ?? 0
+    ),
     image: pkgItem.image ?? pkgItem.image_url ?? pkgItem.imageUrl ?? null,
   };
 }
@@ -237,6 +245,36 @@ function normalizePackageEntryForEditing(pkg, index = 0) {
     }
   }
 
+  let unitCost = toPriceNumberSafe(
+    pkg.unit_cost
+      ?? pkg.unitCost
+      ?? pkg.cost
+      ?? pkg.rental_cost
+      ?? pkg.purchase_price
+      ?? pkg.internal_cost
+      ?? pkg.equipment_cost
+      ?? null,
+    0
+  );
+  if ((!unitCost || unitCost === 0) && packageItems.length) {
+    const summedCost = packageItems.reduce((sum, item) => {
+      const itemCost = toPriceNumberSafe(
+        item.cost
+          ?? item.unit_cost
+          ?? item.unitCost
+          ?? item.rental_cost
+          ?? item.purchase_price
+          ?? 0,
+        0
+      );
+      const qty = toPositiveIntSafe(item.qty ?? item.quantity ?? item.qtyPerPackage ?? 1);
+      return sum + (itemCost * qty);
+    }, 0);
+    if (summedCost > 0) {
+      unitCost = Number(summedCost.toFixed(2));
+    }
+  }
+
   const barcode = pkg.package_code ?? pkg.packageCode ?? pkg.barcode ?? null;
   const descriptionCandidates = [
     pkg.name,
@@ -265,6 +303,12 @@ function normalizePackageEntryForEditing(pkg, index = 0) {
     name: normalizeNumbers(String(description)),
     qty: quantity,
     price: unitPrice,
+    cost: unitCost,
+    unit_cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
     barcode,
     packageItems,
     image,

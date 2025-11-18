@@ -1739,15 +1739,47 @@ function buildReservationItemsPayload(items) {
       return;
     }
 
-  const unitCost = toNumber(
-    item.cost
-    ?? item.unit_cost
-    ?? item.rental_cost
-    ?? item.internal_cost
-    ?? item.purchase_price
-    ?? item.equipment_cost
-    ?? 0
-  );
+  const unitCost = (() => {
+    const explicit = toNumber(
+      item.cost
+      ?? item.unit_cost
+      ?? item.rental_cost
+      ?? item.internal_cost
+      ?? item.purchase_price
+      ?? item.equipment_cost
+      ?? 0
+    );
+    if (Number.isFinite(explicit) && explicit > 0) {
+      return explicit;
+    }
+    if (packageItems.length) {
+      const sum = packageItems.reduce((total, pkgItem) => {
+        const childCost = toNumber(
+          pkgItem.cost
+            ?? pkgItem.unit_cost
+            ?? pkgItem.unitCost
+            ?? pkgItem.rental_cost
+            ?? pkgItem.internal_cost
+            ?? pkgItem.purchase_price
+            ?? pkgItem.equipment_cost
+            ?? pkgItem.item_cost
+            ?? 0
+        );
+        const childQty = toPositiveInt(
+          pkgItem.qty
+            ?? pkgItem.quantity
+            ?? pkgItem.qtyPerPackage
+            ?? pkgItem.unit_qty
+            ?? 1
+        );
+        return total + (childCost * childQty);
+      }, 0);
+      if (sum > 0) {
+        return Number(sum.toFixed(2));
+      }
+    }
+    return explicit;
+  })();
   normalized.push({
     equipment_id: resolveEquipmentIdValue(equipmentId),
     quantity: toPositiveInt(item.qty ?? item.quantity ?? 1),
@@ -1896,6 +1928,13 @@ function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
       qtyPerPackage: 1,
       price: 0,
       unit_price: 0,
+      cost: 0,
+      unit_cost: 0,
+      rental_cost: 0,
+      purchase_price: 0,
+      internal_cost: 0,
+      equipment_cost: 0,
+      item_cost: 0,
       barcode,
       normalizedBarcode: normalizeBarcodeValueLoose(barcode),
       desc: '',
@@ -1918,6 +1957,17 @@ function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
       ?? 1
   );
   const unitPrice = toNumber(item.unit_price ?? item.unitPrice ?? item.price ?? 0);
+  const unitCost = toNumber(
+    item.cost
+      ?? item.unit_cost
+      ?? item.unitCost
+      ?? item.rental_cost
+      ?? item.internal_cost
+      ?? item.purchase_price
+      ?? item.equipment_cost
+      ?? item.item_cost
+      ?? 0
+  );
   const barcode = normalizeNumbers(String(item.barcode ?? item.normalizedBarcode ?? item.code ?? item.serial ?? ''));
   const perPackageCandidate = item.qtyPerPackage
     ?? item.qty_per_package
@@ -1947,6 +1997,13 @@ function normalizePackageItemRecord(item = {}, packageQuantity = 1) {
     totalQuantity: quantity,
     price: unitPrice,
     unit_price: unitPrice,
+    cost: unitCost,
+    unit_cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
+    item_cost: unitCost,
     barcode,
     normalizedBarcode: normalizeBarcodeValueLoose(item.normalizedBarcode ?? barcode),
     desc: item.desc ?? item.description ?? item.name ?? '',
@@ -1982,6 +2039,40 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
       ?? fallback.unitPrice
       ?? 0
   );
+  let unitCost = toNumber(
+    pkg.unit_cost
+      ?? pkg.unitCost
+      ?? pkg.cost
+      ?? pkg.rental_cost
+      ?? pkg.internal_cost
+      ?? pkg.purchase_price
+      ?? pkg.equipment_cost
+      ?? pkg.item_cost
+      ?? fallback.unit_cost
+      ?? fallback.unitCost
+      ?? fallback.cost
+      ?? 0
+  );
+  if ((!Number.isFinite(unitCost) || unitCost === 0) && Array.isArray(pkg.packageItems) && pkg.packageItems.length) {
+    const derivedCost = pkg.packageItems.reduce((sum, pkgItem) => {
+      const cost = toNumber(
+        pkgItem.cost
+          ?? pkgItem.unit_cost
+          ?? pkgItem.unitCost
+          ?? pkgItem.rental_cost
+          ?? pkgItem.purchase_price
+          ?? pkgItem.internal_cost
+          ?? pkgItem.equipment_cost
+          ?? pkgItem.item_cost
+          ?? 0
+      );
+      const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
+      return sum + (cost * qty);
+    }, 0);
+    if (derivedCost > 0) {
+      unitCost = Number(derivedCost.toFixed(2));
+    }
+  }
   const barcode = normalizeNumbers(String(
     pkg.package_code
       ?? pkg.packageCode
@@ -2000,6 +2091,13 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
     qty: quantity,
     quantity,
     price: unitPrice,
+    cost: unitCost,
+    unit_cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
+    item_cost: unitCost,
     notes: fallback.notes ?? null,
     image: pkg.image ?? fallback.image ?? null,
     type: 'package',
@@ -2307,6 +2405,38 @@ function mergePackageRecords(base, incoming) {
     merged.price = incoming.price;
   }
 
+  const mergedCostCandidate = toNumber(
+    merged.unit_cost
+      ?? merged.unitCost
+      ?? merged.cost
+      ?? merged.rental_cost
+      ?? merged.purchase_price
+      ?? merged.internal_cost
+      ?? merged.equipment_cost
+      ?? merged.item_cost
+  );
+  const incomingCostCandidate = toNumber(
+    incoming.unit_cost
+      ?? incoming.unitCost
+      ?? incoming.cost
+      ?? incoming.rental_cost
+      ?? incoming.purchase_price
+      ?? incoming.internal_cost
+      ?? incoming.equipment_cost
+      ?? incoming.item_cost
+  );
+  if ((!Number.isFinite(mergedCostCandidate) || mergedCostCandidate === 0) && Number.isFinite(incomingCostCandidate)) {
+    const safeCost = incomingCostCandidate;
+    merged.unit_cost = safeCost;
+    merged.unitCost = safeCost;
+    merged.cost = safeCost;
+    if (!Number.isFinite(merged.rental_cost)) merged.rental_cost = safeCost;
+    if (!Number.isFinite(merged.purchase_price)) merged.purchase_price = safeCost;
+    if (!Number.isFinite(merged.internal_cost)) merged.internal_cost = safeCost;
+    if (!Number.isFinite(merged.equipment_cost)) merged.equipment_cost = safeCost;
+    if (!Number.isFinite(merged.item_cost)) merged.item_cost = safeCost;
+  }
+
   if ((!Number.isFinite(Number(merged.total_price)) || merged.total_price === 0) && Number.isFinite(Number(incoming.total_price))) {
     merged.total_price = incoming.total_price;
     merged.total = incoming.total;
@@ -2341,6 +2471,37 @@ function mergePackageItemCollections(primary = [], secondary = []) {
         if ((!existing.price || existing.price === 0) && item.price) {
           existing.price = item.price;
           existing.unit_price = item.unit_price;
+        }
+        const currentCost = toNumber(
+          existing.cost
+            ?? existing.unit_cost
+            ?? existing.unitCost
+            ?? existing.rental_cost
+            ?? existing.purchase_price
+            ?? existing.internal_cost
+            ?? existing.equipment_cost
+            ?? existing.item_cost
+        );
+        const incomingCost = toNumber(
+          item.cost
+            ?? item.unit_cost
+            ?? item.unitCost
+            ?? item.rental_cost
+            ?? item.purchase_price
+            ?? item.internal_cost
+            ?? item.equipment_cost
+            ?? item.item_cost
+        );
+        if ((!Number.isFinite(currentCost) || currentCost === 0) && Number.isFinite(incomingCost)) {
+          const safeCost = incomingCost;
+          existing.cost = safeCost;
+          existing.unit_cost = safeCost;
+          existing.unitCost = safeCost;
+          if (!Number.isFinite(existing.rental_cost)) existing.rental_cost = safeCost;
+          if (!Number.isFinite(existing.purchase_price)) existing.purchase_price = safeCost;
+          if (!Number.isFinite(existing.internal_cost)) existing.internal_cost = safeCost;
+          if (!Number.isFinite(existing.equipment_cost)) existing.equipment_cost = safeCost;
+          if (!Number.isFinite(existing.item_cost)) existing.item_cost = safeCost;
         }
         if (!existing.desc && item.desc) {
           existing.desc = item.desc;
@@ -2418,6 +2579,41 @@ function convertReservationPackageEntry(entry, index = 0) {
     const unitPrice = definition
       ? toNumber(definition.price ?? definition.unit_price ?? definition.unitPrice ?? 0)
       : 0;
+    const resolveDefinitionCost = () => {
+      const explicitCost = definition?.unit_cost
+        ?? definition?.unitCost
+        ?? definition?.cost
+        ?? definition?.rental_cost
+        ?? definition?.internal_cost
+        ?? definition?.purchase_price
+        ?? definition?.equipment_cost
+        ?? definition?.item_cost;
+      if (Number.isFinite(Number(explicitCost))) {
+        return toNumber(explicitCost);
+      }
+      if (Array.isArray(packageItems) && packageItems.length) {
+        const perPackageCost = packageItems.reduce((sum, pkgItem) => {
+          const cost = toNumber(
+            pkgItem.cost
+              ?? pkgItem.unit_cost
+              ?? pkgItem.unitCost
+              ?? pkgItem.rental_cost
+              ?? pkgItem.internal_cost
+              ?? pkgItem.purchase_price
+              ?? pkgItem.equipment_cost
+              ?? pkgItem.item_cost
+              ?? 0
+          );
+          const qty = toPositiveInt(pkgItem.qty ?? pkgItem.quantity ?? pkgItem.qtyPerPackage ?? 1);
+          return sum + (cost * qty);
+        }, 0);
+        if (perPackageCost > 0) {
+          return Number(perPackageCost.toFixed(2));
+        }
+      }
+      return 0;
+    };
+    const unitCost = resolveDefinitionCost();
 
     const quantity = 1;
     const total = Number((unitPrice * quantity).toFixed(2));
@@ -2434,6 +2630,14 @@ function convertReservationPackageEntry(entry, index = 0) {
       unit_price: unitPrice,
       unitPrice: unitPrice,
       price: unitPrice,
+      unit_cost: unitCost,
+      unitCost,
+      cost: unitCost,
+      rental_cost: unitCost,
+      purchase_price: unitCost,
+      internal_cost: unitCost,
+      equipment_cost: unitCost,
+      item_cost: unitCost,
       total,
       total_price: total,
       barcode: normalizeNumbers(String(entry)),
@@ -2473,6 +2677,47 @@ function convertReservationPackageEntry(entry, index = 0) {
   );
   const packageItems = normalizeReservationPackageItemsFromEntry(entry, normalizedId);
   const unitPrice = derivePackageUnitPrice(entry, packageItems, quantity);
+  const resolveUnitCost = () => {
+    const explicitCost = entry.unit_cost
+      ?? entry.unitCost
+      ?? entry.cost
+      ?? entry.rental_cost
+      ?? entry.internal_cost
+      ?? entry.purchase_price
+      ?? entry.equipment_cost
+      ?? entry.item_cost;
+    if (Number.isFinite(Number(explicitCost))) {
+      return toNumber(explicitCost);
+    }
+    if (Array.isArray(packageItems) && packageItems.length) {
+      const perPackageCost = packageItems.reduce((sum, pkgItem) => {
+        const cost = toNumber(
+          pkgItem.cost
+            ?? pkgItem.unit_cost
+            ?? pkgItem.unitCost
+            ?? pkgItem.rental_cost
+            ?? pkgItem.internal_cost
+            ?? pkgItem.purchase_price
+            ?? pkgItem.equipment_cost
+            ?? pkgItem.item_cost
+            ?? 0
+        );
+        const qty = toPositiveInt(
+          pkgItem.qtyPerPackage
+            ?? pkgItem.qty
+            ?? pkgItem.quantity
+            ?? pkgItem.count
+            ?? 1
+        );
+        return sum + (cost * qty);
+      }, 0);
+      if (perPackageCost > 0) {
+        return Number(perPackageCost.toFixed(2));
+      }
+    }
+    return 0;
+  };
+  const unitCost = resolveUnitCost();
   const totalRaw = entry.total_price ?? entry.totalPrice ?? entry.total ?? (unitPrice * quantity);
   const total = Number.isFinite(Number(totalRaw)) ? toNumber(totalRaw) : Number((unitPrice * quantity).toFixed(2));
   const packageCode = entry.package_code ?? entry.packageCode ?? entry.code ?? normalizedId;
@@ -2495,6 +2740,14 @@ function convertReservationPackageEntry(entry, index = 0) {
     unit_price: unitPrice,
     unitPrice,
     price: unitPrice,
+    unit_cost: unitCost,
+    unitCost,
+    cost: unitCost,
+    rental_cost: unitCost,
+    purchase_price: unitCost,
+    internal_cost: unitCost,
+    equipment_cost: unitCost,
+    item_cost: unitCost,
     total,
     total_price: total,
     barcode,
