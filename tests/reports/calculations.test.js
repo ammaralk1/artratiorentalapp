@@ -68,9 +68,9 @@ describe('reports/calculations', () => {
 
     it('excludes reservations linked to projects', () => {
       const input = [
-        { id: '1', start: '2025-01-10T00:00:00', projectId: '10' },
-        { id: '2', start: '2025-01-11T00:00:00' },
-        { id: '3', start: '2025-01-12T00:00:00' },
+        { id: '1', start: '2025-01-10T00:00:00', projectId: '10', status: 'confirmed' },
+        { id: '2', start: '2025-01-11T00:00:00', status: 'confirmed' },
+        { id: '3', start: '2025-01-12T00:00:00', status: 'completed' },
       ];
       const out = calculations.filterReservations(input, baseFilters, customers, equipment, technicians);
       expect(out.map((r) => r.id)).toEqual(['2', '3']);
@@ -78,8 +78,8 @@ describe('reports/calculations', () => {
 
     it('filters by payment status (paid/unpaid)', () => {
       const input = [
-        { id: '1', start: '2025-01-10T00:00:00', paid: true },
-        { id: '2', start: '2025-01-11T00:00:00', paid: false },
+        { id: '1', start: '2025-01-10T00:00:00', paid: true, status: 'confirmed' },
+        { id: '2', start: '2025-01-11T00:00:00', paid: false, status: 'confirmed' },
       ];
       let out = calculations.filterReservations(input, { ...baseFilters, payment: 'paid' }, customers, equipment, technicians);
       expect(out.map((r) => r.id)).toEqual(['1']);
@@ -98,9 +98,9 @@ describe('reports/calculations', () => {
 
     it('filters by custom date range', () => {
       const input = [
-        { id: '1', start: '2025-01-01T13:00:00' },
-        { id: '2', start: '2025-01-15T13:00:00' },
-        { id: '3', start: '2025-02-01T13:00:00' },
+        { id: '1', start: '2025-01-01T13:00:00', status: 'confirmed' },
+        { id: '2', start: '2025-01-15T13:00:00', status: 'completed' },
+        { id: '3', start: '2025-02-01T13:00:00', status: 'confirmed' },
       ];
       const filters = { ...baseFilters, range: 'custom', start: '2025-01-01', end: '2025-01-15' };
       const out = calculations.filterReservations(input, filters, customers, equipment, technicians);

@@ -9,6 +9,7 @@ const findEquipmentByBarcodeMock = vi.fn();
 const getEquipmentAvailabilityStatusMock = vi.fn();
 const isEquipmentAvailableMock = vi.fn();
 const isEquipmentUnavailableMock = vi.fn();
+const resolveEquipmentCostMock = vi.fn();
 const renderEditSummaryMock = vi.fn();
 const editReservationMock = vi.fn();
 const setupEditReservationModalEventsMock = vi.fn();
@@ -45,7 +46,8 @@ vi.mock('../../src/scripts/reservationsEquipment.js', () => ({
   findEquipmentByBarcode: findEquipmentByBarcodeMock,
   getEquipmentAvailabilityStatus: getEquipmentAvailabilityStatusMock,
   isEquipmentAvailable: isEquipmentAvailableMock,
-  isEquipmentUnavailable: isEquipmentUnavailableMock
+  isEquipmentUnavailable: isEquipmentUnavailableMock,
+  resolveEquipmentCost: resolveEquipmentCostMock
 }));
 vi.mock('../../src/scripts/reservationsSummary.js', () => ({
   renderEditSummary: renderEditSummaryMock
@@ -110,6 +112,7 @@ describe('reservations/editForm module', () => {
     getEquipmentAvailabilityStatusMock.mockReset().mockReturnValue('available');
     isEquipmentAvailableMock.mockReset().mockReturnValue(true);
     isEquipmentUnavailableMock.mockReset().mockReturnValue(false);
+    resolveEquipmentCostMock.mockReset().mockReturnValue(0);
     renderEditSummaryMock.mockReset().mockReturnValue('<div>summary</div>');
     getEditingStateMock.mockReset().mockReturnValue({ index: 0, items: [] });
     setEditingStateMock.mockReset();
@@ -384,7 +387,7 @@ describe('reservations/editForm module', () => {
 
   it('addEquipmentToEditingByDescription adds equipment when available', async () => {
     const input = { value: 'Camera' };
-    findEquipmentByDescriptionMock.mockReturnValue({ id: 9, barcode: 'C9', desc: 'Camera', price: 120 });
+    findEquipmentByDescriptionMock.mockReturnValue({ id: 9, barcode: 'C9', desc: 'Camera', price: 120, status: 'confirmed' });
     const start = document.createElement('input');
     start.id = 'edit-res-start';
     start.value = '2024-04-01';
@@ -407,7 +410,7 @@ describe('reservations/editForm module', () => {
 
   it('addEquipmentToEditingByDescription blocks reserved equipment via conflict check', async () => {
     const input = { value: 'Lens' };
-    findEquipmentByDescriptionMock.mockReturnValue({ id: 3, barcode: 'L3', desc: 'Lens', price: 50 });
+    findEquipmentByDescriptionMock.mockReturnValue({ id: 3, barcode: 'L3', desc: 'Lens', price: 50, status: 'confirmed' });
     getEquipmentAvailabilityStatusMock.mockReturnValueOnce('reserved');
     hasEquipmentConflictMock.mockReturnValueOnce(true);
 

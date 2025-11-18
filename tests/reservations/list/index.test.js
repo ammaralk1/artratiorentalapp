@@ -9,6 +9,12 @@ const loadDataMock = vi.fn();
 const resolveItemImageMock = vi.fn();
 const calculateReservationDaysMock = vi.fn();
 const calculateDraftFinancialBreakdownMock = vi.fn();
+const calculatePaymentProgressMock = vi.fn(() => ({
+  paymentProgressType: 'percent',
+  paymentProgressValue: 0,
+  paidPercent: 0,
+  paidAmount: 0,
+}));
 
 vi.mock('../../../src/scripts/reservationsShared.js', async () => {
   const actual = await vi.importActual('../../../src/scripts/reservationsShared.js');
@@ -39,6 +45,8 @@ vi.mock('../../../src/scripts/reservationsEquipment.js', () => ({
 vi.mock('../../../src/scripts/reservationsSummary.js', () => ({
   calculateReservationDays: calculateReservationDaysMock,
   calculateDraftFinancialBreakdown: calculateDraftFinancialBreakdownMock,
+  calculatePaymentProgress: calculatePaymentProgressMock,
+  determinePaymentStatus: vi.fn(() => 'unpaid'),
 }));
 
 describe('reservations/list helpers', () => {

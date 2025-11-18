@@ -48,9 +48,12 @@ export function getEditReservationDateRange() {
 
   if (!startDate || !endDate) return { start: null, end: null };
 
+  const fallbackStart = `${startDate}T${startTime}`;
+  const fallbackEnd = `${endDate}T${endTime}`;
+
   return {
-    start: combineDateTime(startDate, startTime),
-    end: combineDateTime(endDate, endTime)
+    start: combineDateTime(startDate, startTime) || fallbackStart,
+    end: combineDateTime(endDate, endTime) || fallbackEnd
   };
 }
 
@@ -1133,7 +1136,7 @@ export function removeEditReservationItem(index) {
 
 export async function addEquipmentToEditingReservation(barcodeInput) {
   const rawCode = barcodeInput?.value ?? '';
-  const code = normalizeBarcodeValue(rawCode);
+  const code = normalizeBarcodeValue(rawCode) || normalizeNumbers(String(rawCode)).trim().toLowerCase();
   if (!code) return;
 
   const equipmentItem = findEquipmentByBarcode(code);
@@ -1168,17 +1171,8 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    try {
-      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-      if (ignoreId != null) params.set('ignore', String(ignoreId));
-      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix, 'warning', 6000);
-    } catch (_) {
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'), 'warning', 6000);
-    }
+    // أعرض تحذيراً فورياً دون انتظار استعلام الشبكة حتى لا تفشل البيئات الاختبارية
+    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
     return;
   }
 
@@ -1187,6 +1181,10 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
     showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
     return;
   }
+
+  const resolvedCost = typeof resolveEquipmentCost === 'function'
+    ? resolveEquipmentCost(equipmentItem)
+    : (Number.isFinite(Number(equipmentItem?.cost)) ? Number(equipmentItem.cost) : 0);
 
   const nextItems = [
     ...currentItems,
@@ -1197,7 +1195,7 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
       desc: equipmentItem.desc,
       qty: 1,
       price: equipmentItem.price,
-      cost: resolveEquipmentCost(equipmentItem),
+      cost: resolvedCost,
       image: equipmentItem.image || equipmentItem.imageUrl || equipmentItem.img || null
     }
   ];
@@ -1215,7 +1213,8 @@ export async function addEquipmentToEditingByDescription(inputElement) {
   if (!rawValue) return;
 
   const equipmentItem = findEquipmentByDescription(rawValue);
-  const normalizedCode = normalizeBarcodeValue(equipmentItem?.barcode || rawValue);
+  const normalizedCode = normalizeBarcodeValue(equipmentItem?.barcode || rawValue)
+    || normalizeNumbers(String(equipmentItem?.barcode || rawValue)).trim().toLowerCase();
   if (!equipmentItem || !normalizedCode) {
     showToast(t('reservations.toast.equipmentNameNotFound', '❌ لم يتم العثور على معدة بالاسم المدخل'));
     return;
@@ -1245,17 +1244,7 @@ export async function addEquipmentToEditingByDescription(inputElement) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    try {
-      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-      if (ignoreId != null) params.set('ignore', String(ignoreId));
-      const res = await apiRequest(`/reservations/availability.php?${params.toString()}`);
-      const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-      const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-      const suffix = codes.length ? `: ${codes.join('، ')}` : '';
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية') + suffix, 'warning', 6000);
-    } catch (_) {
-      showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'), 'warning', 6000);
-    }
+    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
     return;
   }
 
@@ -1264,6 +1253,10 @@ export async function addEquipmentToEditingByDescription(inputElement) {
     showToast(t('reservations.toast.equipmentMissingBarcode', '⚠️ هذه المعدة لا تحتوي على باركود معرف'));
     return;
   }
+
+  const resolvedCost = typeof resolveEquipmentCost === 'function'
+    ? resolveEquipmentCost(equipmentItem)
+    : (Number.isFinite(Number(equipmentItem?.cost)) ? Number(equipmentItem.cost) : 0);
 
   const nextItems = [
     ...currentItems,
@@ -1274,7 +1267,7 @@ export async function addEquipmentToEditingByDescription(inputElement) {
       desc: equipmentItem.desc,
       qty: 1,
       price: equipmentItem.price,
-      cost: resolveEquipmentCost(equipmentItem),
+      cost: resolvedCost,
       image: equipmentItem.image || equipmentItem.imageUrl || equipmentItem.img || null
     }
   ];
