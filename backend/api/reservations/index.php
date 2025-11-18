@@ -1149,7 +1149,7 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         return;
     }
 
-    $sql = 'INSERT INTO reservation_packages (
+    $sqlWithCost = 'INSERT INTO reservation_packages (
         reservation_id,
         package_code,
         name,
@@ -1167,10 +1167,26 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         :items_json
     )';
 
-    $statement = $pdo->prepare($sql);
+    $sqlWithoutCost = 'INSERT INTO reservation_packages (
+        reservation_id,
+        package_code,
+        name,
+        quantity,
+        unit_price,
+        items_json
+    ) VALUES (
+        :reservation_id,
+        :package_code,
+        :name,
+        :quantity,
+        :unit_price,
+        :items_json
+    )';
+
+    $statement = $pdo->prepare($sqlWithCost);
 
     foreach ($packages as $package) {
-        $statement->execute([
+        $params = [
             'reservation_id' => $reservationId,
             'package_code' => isset($package['package_code']) ? (string) $package['package_code'] : null,
             'name' => isset($package['name']) ? (string) $package['name'] : null,
@@ -1180,7 +1196,22 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
                 ? (float) $package['unit_cost']
                 : (isset($package['cost']) ? (float) $package['cost'] : 0),
             'items_json' => json_encode($package['items'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ]);
+        ];
+
+        try {
+            $statement->execute($params);
+        } catch (PDOException $error) {
+            $message = strtolower($error->getMessage());
+            if (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column')) {
+                // Fallback for legacy schema without unit_cost
+                ensureReservationPackagesTable($pdo); // attempt to migrate
+                $statement = $pdo->prepare($sqlWithoutCost);
+                unset($params['unit_cost']);
+                $statement->execute($params);
+                continue;
+            }
+            throw $error;
+        }
     }
 }
 
@@ -1453,17 +1484,32 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
 {
     ensureReservationPackagesTable($pdo);
 
+    $sqlWithCost = 'SELECT id, package_code, name, quantity, unit_price, unit_cost, items_json
+         FROM reservation_packages
+         WHERE reservation_id = :id';
+    $sqlWithoutCost = 'SELECT id, package_code, name, quantity, unit_price, 0 AS unit_cost, items_json
+         FROM reservation_packages
+         WHERE reservation_id = :id';
+
     try {
-        $statement = $pdo->prepare(
-            'SELECT id, package_code, name, quantity, unit_price, unit_cost, items_json
-             FROM reservation_packages
-             WHERE reservation_id = :id'
-        );
+        $statement = $pdo->prepare($sqlWithCost);
     } catch (PDOException $_) {
-        return [];
+        $statement = $pdo->prepare($sqlWithoutCost);
     }
 
-    $statement->execute(['id' => $reservationId]);
+    try {
+        $statement->execute(['id' => $reservationId]);
+    } catch (PDOException $error) {
+        $message = strtolower($error->getMessage());
+        if (str_contains($message, 'unit_cost') || str_contains($message, 'unknown column')) {
+            ensureReservationPackagesTable($pdo);
+            $statement = $pdo->prepare($sqlWithoutCost);
+            $statement->execute(['id' => $reservationId]);
+        } else {
+            throw $error;
+        }
+    }
+
     $packages = [];
     while ($row = $statement->fetch()) {
         $items = [];
@@ -1735,6 +1781,16 @@ function ensureReservationPackagesTable(PDO $pdo): void
                 FOREIGN KEY (reservation_id) REFERENCES reservations(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ');
+        // Backfill columns in case table exists without new fields
+        if (!tableColumnExists($pdo, 'reservation_packages', 'unit_cost')) {
+            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER unit_price");
+        }
+        if (!tableColumnExists($pdo, 'reservation_packages', 'items_json')) {
+            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN items_json LONGTEXT DEFAULT NULL AFTER unit_cost");
+        }
+        if (!tableColumnExists($pdo, 'reservation_packages', 'package_code')) {
+            $pdo->exec("ALTER TABLE reservation_packages ADD COLUMN package_code VARCHAR(100) DEFAULT NULL AFTER reservation_id");
+        }
         $checked = true;
     } catch (Throwable $error) {
         error_log('Failed to ensure reservation_packages table: ' . $error->getMessage());
