@@ -1,4 +1,4 @@
-import{r as T,t as L}from"./calculations.BpXTkEaK.js";import{buildA4ReportPages as $,exportA4ReportPdf as _}from"./a4Unified.Cl_sSKtA.js";import"./reservationsService.-wTqKyyz.js";import"./auth.BLFzWQsL.js";import"./state.DZCwr8Fl.js";function H(){const l=document.createElement("div");return l.className="modal fade quote-preview-modal",l.setAttribute("tabindex","-1"),l.setAttribute("aria-hidden","true"),l.innerHTML=`
+import{r as T,t as L}from"./calculations.D3FPwpKT.js";import{buildA4ReportPages as $,exportA4ReportPdf as _}from"./a4Unified.CxBqzrjy.js";import"./reservationsService.CQ44sZgn.js";import"./auth.BLFzWQsL.js";import"./state.DZCwr8Fl.js";function H(){const l=document.createElement("div");return l.className="modal fade quote-preview-modal",l.setAttribute("tabindex","-1"),l.setAttribute("aria-hidden","true"),l.innerHTML=`
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
