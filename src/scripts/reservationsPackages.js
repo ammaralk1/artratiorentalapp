@@ -34,7 +34,11 @@ export function findPackageById(packageId) {
   if (!normalizedId) return null;
   const packages = getPackagesSnapshot();
   return (
-    packages.find((entry) => normalizePackageId(entry?.id ?? entry?.packageId ?? entry?.package_id) === normalizedId)
+    packages.find((entry) => {
+      const idMatch = normalizePackageId(entry?.id ?? entry?.packageId ?? entry?.package_id) === normalizedId;
+      const codeMatch = normalizePackageId(entry?.package_code ?? entry?.code) === normalizedId;
+      return idMatch || codeMatch;
+    })
     || null
   );
 }
