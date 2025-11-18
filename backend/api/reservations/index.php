@@ -1394,7 +1394,12 @@ function decorateReservation(PDO $pdo, array $reservation): array
         : null;
 
     $reservation['items'] = fetchReservationItems($pdo, (int) $reservation['id']);
-    $reservation['packages'] = fetchReservationPackages($pdo, (int) $reservation['id']);
+    try {
+        $reservation['packages'] = fetchReservationPackages($pdo, (int) $reservation['id']);
+    } catch (Throwable $error) {
+        error_log('Failed to fetch reservation packages: ' . $error->getMessage());
+        $reservation['packages'] = [];
+    }
     $reservation['technicians'] = fetchReservationTechnicians($pdo, (int) $reservation['id']);
     // Provide rich crew arrays so frontend prefers assigned position data in details view
     $reservation['crewAssignments'] = $reservation['technicians'];
@@ -1514,9 +1519,13 @@ function fetchReservationPackages(PDO $pdo, int $reservationId): array
     while ($row = $statement->fetch()) {
         $items = [];
         if (!empty($row['items_json'])) {
-            $decoded = json_decode($row['items_json'], true);
-            if (is_array($decoded)) {
-                $items = $decoded;
+            try {
+                $decoded = json_decode($row['items_json'], true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    $items = $decoded;
+                }
+            } catch (Throwable $_) {
+                $items = [];
             }
         }
         $packages[] = [
