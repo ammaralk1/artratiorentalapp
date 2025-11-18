@@ -1283,16 +1283,17 @@ export async function saveReservationChanges({
   });
   const itemsWithCostOverrides = editingItems.map((item) => {
     const key = resolveReservationItemGroupKey(item);
-    if (!key || !groupCostOverrides.has(key)) return item;
-    const cost = groupCostOverrides.get(key);
+    if (!key) return item;
+    const override = groupCostOverrides.get(key);
+    if (override === undefined) return item;
     return {
       ...item,
-      cost,
-      unit_cost: cost,
-      rental_cost: cost,
-      purchase_price: cost,
-      internal_cost: cost,
-      equipment_cost: cost,
+      cost: override,
+      unit_cost: override,
+      rental_cost: override,
+      purchase_price: override,
+      internal_cost: override,
+      equipment_cost: override,
     };
   });
 
