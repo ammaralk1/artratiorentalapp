@@ -11,6 +11,8 @@ try {
     $pdo = getDatabaseConnection();
     requireAuthenticated();
 
+    ensurePackageQuantityColumn($pdo);
+
     switch ($method) {
         case 'GET':
             handlePackagesGet($pdo);
@@ -122,8 +124,8 @@ function handlePackagesCreate(PDO $pdo): void
         return;
     }
 
-    $sql = 'INSERT INTO equipment_packages (package_code, slug, name, description, price, equipment_ids, is_active)
-        VALUES (:package_code, :slug, :name, :description, :price, :equipment_ids, :is_active)';
+    $sql = 'INSERT INTO equipment_packages (package_code, slug, name, description, price, package_qty, equipment_ids, is_active)
+        VALUES (:package_code, :slug, :name, :description, :price, :package_qty, :equipment_ids, :is_active)';
 
     $statement = $pdo->prepare($sql);
     $statement->execute($data);
@@ -215,6 +217,20 @@ function handlePackagesDelete(PDO $pdo): void
     respond(['deleted' => true]);
 }
 
+/**
+ * Adds package_qty column to equipment_packages if missing.
+ */
+function ensurePackageQuantityColumn(PDO $pdo): void
+{
+    try {
+        if (!tableColumnExists($pdo, 'equipment_packages', 'package_qty')) {
+            $pdo->exec("ALTER TABLE equipment_packages ADD COLUMN package_qty INT NOT NULL DEFAULT 1 AFTER price");
+        }
+    } catch (Throwable $_) {
+        // best-effort; ignore if cannot alter
+    }
+}
+
 function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packageId = null): array
 {
     if (!is_array($payload)) {
@@ -228,6 +244,7 @@ function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packag
     $name = trim((string)($payload['name'] ?? ''));
     $description = trim((string)($payload['description'] ?? ''));
     $price = $payload['price'] ?? 0;
+    $packageQtyRaw = $payload['package_qty'] ?? $payload['packageQty'] ?? null;
     $itemsRaw = $payload['items'] ?? $payload['equipment_ids'] ?? [];
     $isActive = $payload['is_active'] ?? true;
 
@@ -261,6 +278,15 @@ function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packag
     if ($price !== null || !$isUpdate) {
         $numericPrice = filter_var($price, FILTER_VALIDATE_FLOAT);
         $data['price'] = $numericPrice !== false ? round($numericPrice, 2) : 0;
+    }
+
+    if ($packageQtyRaw !== null || !$isUpdate) {
+        $qty = filter_var($packageQtyRaw, FILTER_VALIDATE_INT);
+        if ($qty === false || $qty < 1) {
+            $errors['package_qty'] = 'package_qty must be at least 1';
+        } else {
+            $data['package_qty'] = $qty;
+        }
     }
 
     $itemsNormalized = normalizePackageItemsArray($itemsRaw);
@@ -297,6 +323,20 @@ function validatePackagePayload(PDO $pdo, $payload, bool $isUpdate, ?int $packag
     return [$data, $errors];
 }
 
+/**
+ * Checks if a given column exists on a table (best-effort, safe to use at runtime).
+ */
+function tableColumnExists(PDO $pdo, string $table, string $column): bool
+{
+    try {
+        $stmt = $pdo->prepare("SHOW COLUMNS FROM `{$table}` LIKE :col");
+        $stmt->execute(['col' => $column]);
+        return (bool) $stmt->fetch();
+    } catch (Throwable $_) {
+        return false;
+    }
+}
+
 function fetchPackageById(PDO $pdo, int $id): ?array
 {
     $statement = $pdo->prepare('SELECT * FROM equipment_packages WHERE id = :id LIMIT 1');
@@ -331,6 +371,7 @@ function mapPackageRow(array $row): array
     $row['items'] = $items;
     $row['items_count'] = $itemsCount;
     $row['items_total_quantity'] = $itemsQuantity;
+    $row['package_qty'] = isset($row['package_qty']) ? (int)$row['package_qty'] : 1;
     return $row;
 }
 

@@ -28,6 +28,7 @@ function cacheElements() {
   elements.nameInput = document.getElementById('equipment-package-name');
   elements.codeInput = document.getElementById('equipment-package-code');
   elements.priceInput = document.getElementById('equipment-package-price');
+  elements.qtyInput = document.getElementById('equipment-package-qty');
   elements.descriptionInput = document.getElementById('equipment-package-description');
   elements.openSelector = document.getElementById('equipment-package-open-selector');
   elements.selectionWrapper = document.getElementById('equipment-package-selection-active');
@@ -94,6 +95,9 @@ function mapPackageRecord(raw = {}) {
     name: raw.name ?? raw.title ?? raw.label ?? '',
     description: raw.description ?? '',
     price: normalizePrice(raw.price ?? raw.total_price ?? raw.package_price ?? 0),
+    package_qty: Number.isFinite(Number(raw.package_qty ?? raw.packageQty)) && Number(raw.package_qty ?? raw.packageQty) > 0
+      ? Number(raw.package_qty ?? raw.packageQty)
+      : 1,
     is_active: normalizeBoolean(raw.is_active ?? raw.active ?? true),
     items,
     created_at: raw.created_at ?? null,
@@ -287,7 +291,7 @@ function renderPackagesTable() {
     });
 
     const itemCount = resolvedItems.reduce((sum, item) => sum + (Number(item.qty ?? item.quantity ?? 1) || 0), 0);
-    const totalQuantity = Number((pkg.items_total_quantity ?? pkg.itemsTotalQuantity ?? itemCount) || 0);
+    const packageQty = Number(pkg.package_qty ?? 1);
     const priceDisplay = `${normalizeNumbers(pkg.price.toFixed(2))} ${t('reservations.create.summary.currency', 'SR')}`;
 
     return `
@@ -295,7 +299,7 @@ function renderPackagesTable() {
         <td>${pkg.name || t('common.placeholder.empty', '—')}</td>
         <td>${pkg.package_code || t('common.placeholder.empty', '—')}</td>
         <td>${priceDisplay}</td>
-        <td>${normalizeNumbers(String(totalQuantity))}</td>
+        <td>${normalizeNumbers(String(packageQty))}</td>
         <td>
           <details>
             <summary>${normalizeNumbers(String(itemCount || 0))}</summary>
@@ -329,6 +333,9 @@ function resetPackageForm() {
     elements.priceInput.value = '';
     elements.priceInput.dataset.autoCalculated = 'true';
   }
+  if (elements.qtyInput) {
+    elements.qtyInput.value = '1';
+  }
   if (elements.descriptionInput) elements.descriptionInput.value = '';
   if (elements.submitButton) {
     elements.submitButton.textContent = t('equipment.packages.form.actions.save', '💾 حفظ الحزمة');
@@ -346,6 +353,9 @@ function loadPackageIntoForm(pkg) {
   if (elements.priceInput) {
     elements.priceInput.value = pkg.price != null ? String(pkg.price) : '';
     elements.priceInput.dataset.autoCalculated = pkg.price != null ? 'false' : 'true';
+  }
+  if (elements.qtyInput) {
+    elements.qtyInput.value = pkg.package_qty != null ? String(pkg.package_qty) : '1';
   }
   if (elements.descriptionInput) elements.descriptionInput.value = pkg.description || '';
   if (elements.submitButton) {
@@ -533,6 +543,8 @@ function buildPackagePayload() {
   const description = elements.descriptionInput?.value.trim() ?? '';
   const priceValue = elements.priceInput?.value ?? '';
   const price = Number.parseFloat(normalizeNumbers(priceValue));
+  const qtyValue = elements.qtyInput?.value ?? '';
+  const qty = Number.parseInt(normalizeNumbers(qtyValue), 10);
 
   if (!name) {
     showToast(t('equipment.packages.validation.nameRequired', '⚠️ يرجى إدخال اسم الحزمة'));
@@ -560,6 +572,7 @@ function buildPackagePayload() {
     name,
     description,
     price: Number.isFinite(price) ? price : 0,
+    package_qty: Number.isFinite(qty) && qty > 0 ? qty : 1,
     is_active: true,
     items: normalizedItems,
   };
