@@ -731,10 +731,17 @@ export async function updateReservationApi(id, payload) {
     body: payload,
   });
   const responseData = response?.data ?? {};
-  if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {
-    responseData.packages = payload.packages;
+  const hasServerPackages = Array.isArray(responseData.packages) && responseData.packages.length > 0;
+  const payloadPackages = Array.isArray(payload?.packages) && payload.packages.length
+    ? payload.packages
+    : null;
+  if (!hasServerPackages && payloadPackages) {
+    responseData.packages = payloadPackages;
   }
-  const updated = applyPayloadPackages(mapReservationFromApi(responseData), payload?.packages);
+  const updated = applyPayloadPackages(
+    mapReservationFromApi(responseData),
+    hasServerPackages ? null : payloadPackages
+  );
   const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
   if (payloadItems) {
     if (Array.isArray(updated.items) && updated.items.length) {
