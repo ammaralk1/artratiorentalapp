@@ -40,6 +40,7 @@ if (!defined('API_INCLUDE_MODE')) {
             'details' => $exception->getMessage(),
         ]);
     }
+}
 
 function handleReservationsGet(PDO $pdo): void
 {
