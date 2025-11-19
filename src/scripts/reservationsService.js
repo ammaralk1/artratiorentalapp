@@ -1039,6 +1039,48 @@ function derivePackageMergeKey(entry = {}) {
   return null;
 }
 
+function dedupePackages(packages = []) {
+  if (!Array.isArray(packages) || packages.length === 0) return [];
+  const map = new Map();
+  packages.forEach((pkg, index) => {
+    if (!pkg || typeof pkg !== 'object') return;
+    const key = derivePackageMergeKey(pkg) ?? `pkg-${index}`;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, pkg);
+      return;
+    }
+    const existingCost = parsePriceValue(
+      existing.unit_cost
+        ?? existing.unitCost
+        ?? existing.cost
+        ?? existing.package_cost
+        ?? existing.rental_cost
+        ?? existing.purchase_price
+        ?? existing.internal_cost
+        ?? existing.equipment_cost
+        ?? existing.item_cost
+    );
+    const incomingCost = parsePriceValue(
+      pkg.unit_cost
+        ?? pkg.unitCost
+        ?? pkg.cost
+        ?? pkg.package_cost
+        ?? pkg.rental_cost
+        ?? pkg.purchase_price
+        ?? pkg.internal_cost
+        ?? pkg.equipment_cost
+        ?? pkg.item_cost
+    );
+    if (Number.isFinite(incomingCost) && (!Number.isFinite(existingCost) || incomingCost >= existingCost)) {
+      map.set(key, { ...existing, ...pkg, unit_cost: incomingCost });
+    } else {
+      map.set(key, { ...pkg, ...existing });
+    }
+  });
+  return Array.from(map.values());
+}
+
 function mergeItemCostsFromCache(reservation) {
   if (!reservation || typeof reservation !== 'object') return reservation;
   if (!Array.isArray(reservation.items) || reservation.items.length === 0) return reservation;
@@ -1170,6 +1212,7 @@ export function mapReservationFromApi(raw = {}) {
   } else {
     mapped.packagesRaw = Array.isArray(mapped.packagesRaw) ? mapped.packagesRaw : [];
   }
+  mapped.packages = dedupePackages(mapped.packages);
   debugLogPackages('mapReservationFromApi', mapped.packages);
   return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
 }
@@ -1191,6 +1234,7 @@ function applyPayloadPackages(reservation, payloadPackages) {
   } catch (_) {
     reservation.packagesRaw = payloadPackages;
   }
+  reservation.packages = dedupePackages(reservation.packages);
   debugLogPackages('applyPayloadPackages', payloadPackages);
   return reservation;
 }
