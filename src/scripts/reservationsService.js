@@ -651,7 +651,11 @@ export async function createReservationApi(payload) {
     method: 'POST',
     body: payload,
   });
-  const created = mapReservationFromApi(response?.data ?? {});
+  const responseData = response?.data ?? {};
+  if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {
+    responseData.packages = payload.packages;
+  }
+  const created = mapReservationFromApi(responseData);
   const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
   if (payloadItems) {
     if (Array.isArray(created.items) && created.items.length) {
@@ -726,7 +730,11 @@ export async function updateReservationApi(id, payload) {
     method: 'PATCH',
     body: payload,
   });
-  const updated = mapReservationFromApi(response?.data ?? {});
+  const responseData = response?.data ?? {};
+  if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {
+    responseData.packages = payload.packages;
+  }
+  const updated = mapReservationFromApi(responseData);
   const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
   if (payloadItems) {
     if (Array.isArray(updated.items) && updated.items.length) {
