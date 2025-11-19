@@ -1356,43 +1356,38 @@ export async function saveReservationChanges({
 
   // التقط آخر قيم تكلفة الوحدة من واجهة التحرير وطبّقها على العناصر (خصوصاً الحزم)
   const groupCostOverrides = new Map();
+  const packageIndexOverrides = new Map();
   const editReservationModal = document.getElementById('editReservationModal');
-  const scopedCostInputs = editReservationModal
-    ? editReservationModal.querySelectorAll('.reservation-unit-cost-input[data-group-key]')
-    : document.querySelectorAll('.reservation-unit-cost-input[data-group-key]');
-  // أولاً: اقرأ من حقول التكلفة حسب group key
+  const inputsRoot = editReservationModal || document;
+  const scopedCostInputs = inputsRoot.querySelectorAll('.reservation-unit-cost-input[data-group-key]');
+  // أولاً: اقرأ من حقول التكلفة حسب group key (وكذلك المؤشر المباشر إن توفر)
   scopedCostInputs.forEach((input) => {
-    const key = input.dataset.groupKey;
-    if (!key) return;
     const parsed = parsePriceValue(input.value);
     const cost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : null;
-    if (cost !== null) {
+    if (cost === null) {
+      return;
+    }
+    const packageIndexAttr = input.dataset.packageIndex;
+    if (packageIndexAttr !== undefined && packageIndexAttr !== '') {
+      const parsedIndex = Number.parseInt(packageIndexAttr, 10);
+      if (Number.isInteger(parsedIndex) && parsedIndex >= 0) {
+        packageIndexOverrides.set(parsedIndex, cost);
+        return;
+      }
+    }
+    const key = input.dataset.groupKey;
+    if (key) {
       groupCostOverrides.set(key, cost);
     }
   });
-  // ثانياً: التقط تكلفة الحزمة مباشرة من صف الحزمة (type=package) إذا لم نجدها في الخريطة
-  editingItems.forEach((item) => {
-    if (String(item?.type || '').toLowerCase() !== 'package') return;
-    const key = resolveReservationItemGroupKey(item);
-    if (!key || groupCostOverrides.has(key)) return;
-    // حاول إيجاد الحقل المقابل لهذه الحزمة عبر مطابقة النص/الكود
-    const candidateInputs = Array.from(scopedCostInputs);
-    const match = candidateInputs.find((input) => {
-      const groupKey = input.dataset.groupKey || '';
-      return groupKey === key;
-    });
-    if (match) {
-      const parsed = parsePriceValue(match.value);
-      const cost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : null;
-      if (cost !== null) {
-        groupCostOverrides.set(key, cost);
+  const itemsWithCostOverrides = editingItems.map((item, idx) => {
+    let override = packageIndexOverrides.has(idx) ? packageIndexOverrides.get(idx) : undefined;
+    if (override === undefined) {
+      const key = resolveReservationItemGroupKey(item);
+      if (key) {
+        override = groupCostOverrides.get(key);
       }
     }
-  });
-  const itemsWithCostOverrides = editingItems.map((item) => {
-    const key = resolveReservationItemGroupKey(item);
-    if (!key) return item;
-    const override = groupCostOverrides.get(key);
     if (override === undefined) return item;
     return {
       ...item,

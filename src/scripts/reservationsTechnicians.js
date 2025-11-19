@@ -8,13 +8,13 @@ import {
   ensureTechnicianPositionsLoaded,
   getTechnicianPositionsCache,
   findPositionByName,
-  updateTechnicianPosition,
 } from './technicianPositions.js';
 
 const DEFAULT_CURRENCY_LABEL = () => t('reservations.create.summary.currency', 'SR');
 
 let cachedTechnicians = [];
 let cachedPositions = [];
+const positionOverrides = new Map(); // reservation-scoped overrides for position pricing
 let selectedAssignments = [];
 let editingAssignments = [];
 let crewPickerContext = 'create';
@@ -217,8 +217,84 @@ function enrichAssignment(rawAssignment = {}) {
   return assignment;
 }
 
-function ensurePositionsCached() {
-  cachedPositions = getTechnicianPositionsCache();
+function ensurePositionsCached({ forceRefresh = false } = {}) {
+  if (forceRefresh || !cachedPositions.length) {
+    cachedPositions = getTechnicianPositionsCache();
+  } else {
+    cachedPositions = cachedPositions.map((item) => ({ ...item }));
+  }
+  cachedPositions = cachedPositions.map((position) => {
+    const key = String(position.id);
+    if (!positionOverrides.has(key)) {
+      return position;
+    }
+    const override = positionOverrides.get(key);
+    return {
+      ...position,
+      ...(override?.cost !== undefined ? { cost: override.cost } : {}),
+      ...(override?.clientPrice !== undefined ? { clientPrice: override.clientPrice } : {}),
+    };
+  });
+}
+
+function applyPositionOverrideLocally(positionId, { cost, clientPrice }) {
+  if (positionId == null) {
+    return false;
+  }
+  const key = String(positionId);
+  const payload = {
+    ...(positionOverrides.get(key) || {}),
+  };
+  if (cost !== undefined) {
+    payload.cost = cost;
+  }
+  if (clientPrice !== undefined) {
+    payload.clientPrice = clientPrice;
+  }
+  positionOverrides.set(key, payload);
+  cachedPositions = cachedPositions.map((position) => (
+    String(position.id) === key
+      ? { ...position, ...payload }
+      : position
+  ));
+
+  const targetPosition = cachedPositions.find((position) => String(position.id) === key);
+  const normalizedName = targetPosition?.name ? String(targetPosition.name).toLowerCase() : null;
+  const matchAssignment = (assignment) => {
+    if (!assignment) return false;
+    if (assignment.positionId != null && String(assignment.positionId) === key) {
+      return true;
+    }
+    if (!normalizedName) {
+      return false;
+    }
+    const rawKey = assignment.positionKey
+      ?? assignment.position_key
+      ?? assignment.positionName
+      ?? assignment.position_name
+      ?? assignment.position;
+    if (!rawKey) {
+      return false;
+    }
+    return String(rawKey).toLowerCase() === normalizedName;
+  };
+  const applyToAssignments = (assignments) => {
+    assignments.forEach((assignment) => {
+      if (!matchAssignment(assignment)) {
+        return;
+      }
+      if (cost !== undefined && Number.isFinite(cost)) {
+        assignment.positionCost = cost;
+      }
+      if (clientPrice !== undefined && Number.isFinite(clientPrice)) {
+        assignment.positionClientPrice = clientPrice;
+      }
+    });
+  };
+  applyToAssignments(selectedAssignments);
+  applyToAssignments(editingAssignments);
+  refreshCrewAssignmentsUi();
+  return true;
 }
 
 function normalizeAssignmentsInput(input = []) {
@@ -749,54 +825,48 @@ function renderPositionList() {
   // Save/Cancel handlers
   container.querySelectorAll('.crew-position-save-btn').forEach((btn) => {
     if (!btn.dataset.listenerAttached) {
-      btn.addEventListener('click', async (event) => {
+      btn.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         const card = btn.closest('.crew-position-card');
         const id = btn.dataset.positionId;
         if (!card || !id) return;
-        try {
-          const costEl = card.querySelector('.crew-position-edit-cost');
-          const clientEl = card.querySelector('.crew-position-edit-client');
-          const rawCost = normalizeNumbers(costEl?.value || '').trim();
-          const rawClient = normalizeNumbers(clientEl?.value || '').trim();
-          const cost = rawCost === '' ? 0 : Number.parseFloat(rawCost);
-          const clientPrice = rawClient === '' ? null : Number.parseFloat(rawClient);
-          if (!Number.isFinite(cost) || cost < 0) {
-            showToast(t('positions.toast.invalidCost', '⚠️ أدخل قيمة صحيحة للتكلفة'));
-            costEl?.focus();
-            return;
-          }
-          if (clientPrice != null && (!Number.isFinite(clientPrice) || clientPrice < 0)) {
-            showToast(t('positions.toast.invalidClientPrice', '⚠️ أدخل قيمة صحيحة لسعر العميل'));
-            clientEl?.focus();
-            return;
-          }
-
-          // Fetch latest snapshot to preserve name/labels
-          ensurePositionsCached();
-          const current = cachedPositions.find((p) => String(p.id) === String(id));
-          if (!current) {
-            showToast(t('positions.toast.notFound', '⚠️ تعذر العثور على بيانات المنصب'), 'error');
-            return;
-          }
-          await updateTechnicianPosition(id, {
-            name: current.name,
-            cost: Number(cost.toFixed(2)),
-            clientPrice: clientPrice == null ? null : Number(clientPrice.toFixed(2)),
-            labelAr: current.labelAr,
-            labelEn: current.labelEn,
-          });
-          showToast(t('positions.toast.saveSuccess', '✅ تم حفظ بيانات المنصب'));
-          // Re-render list to reflect updates
-          renderPositionList();
-          // Optionally, keep assignments table visible/up-to-date
-          renderAssignmentsTable();
-        } catch (error) {
-          console.error('❌ [crew-picker] update position failed', error);
-          const message = error?.message || t('positions.toast.saveFailed', '⚠️ تعذر حفظ بيانات المنصب، حاول مرة أخرى');
-          showToast(message, 'error');
+        const costEl = card.querySelector('.crew-position-edit-cost');
+        const clientEl = card.querySelector('.crew-position-edit-client');
+        const rawCost = normalizeNumbers(costEl?.value || '').trim();
+        const rawClient = normalizeNumbers(clientEl?.value || '').trim();
+        const parsedCost = rawCost === '' ? null : Number.parseFloat(rawCost);
+        const parsedClient = rawClient === '' ? null : Number.parseFloat(rawClient);
+        if (parsedCost != null && (!Number.isFinite(parsedCost) || parsedCost < 0)) {
+          showToast(t('positions.toast.invalidCost', '⚠️ أدخل قيمة صحيحة للتكلفة'));
+          costEl?.focus();
+          return;
         }
+        if (parsedClient != null && (!Number.isFinite(parsedClient) || parsedClient < 0)) {
+          showToast(t('positions.toast.invalidClientPrice', '⚠️ أدخل قيمة صحيحة لسعر العميل'));
+          clientEl?.focus();
+          return;
+        }
+
+        ensurePositionsCached();
+        const target = cachedPositions.find((p) => String(p.id) === String(id));
+        if (!target) {
+          showToast(t('positions.toast.notFound', '⚠️ تعذر العثور على بيانات المنصب'), 'error');
+          return;
+        }
+
+        const normalizedCost = parsedCost == null ? Number(target.cost ?? 0) : Number(parsedCost.toFixed(2));
+        const normalizedClient = parsedClient == null
+          ? (Number.isFinite(Number(target.clientPrice)) ? Number(target.clientPrice) : 0)
+          : Number(parsedClient.toFixed(2));
+
+        applyPositionOverrideLocally(id, {
+          cost: normalizedCost,
+          clientPrice: normalizedClient,
+        });
+
+        showToast(t('technicians.picker.toast.positionOverrideSaved', '✅ تم تطبيق التعديل على هذا الحجز فقط'));
+        renderPositionList();
       });
       btn.dataset.listenerAttached = 'true';
     }
@@ -1062,6 +1132,15 @@ function renderCrewSummary(containerId, assignments = [], context = 'create') {
       btn.dataset.listenerAttached = 'true';
     }
   });
+}
+
+function refreshCrewAssignmentsUi() {
+  renderAssignmentsTable();
+  renderCrewSummary('selected-technicians-list', selectedAssignments, 'create');
+  renderCrewSummary('edit-selected-technicians-list', editingAssignments, 'edit');
+  updateCrewPickerInfo();
+  onDraftSelectionChange();
+  onEditSelectionChange();
 }
 
 function setupCrewPickerInternal() {

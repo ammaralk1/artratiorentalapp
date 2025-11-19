@@ -272,12 +272,17 @@ export function renderEditReservationItems(items = []) {
         >
       `;
       const unitCostInputId = `edit-unit-cost-${group.key}`;
+      const packageItemIndex = group.itemIndices.find((idx) => {
+        const sourceItem = items[idx];
+        return sourceItem && String(sourceItem.type || '').toLowerCase() === 'package';
+      });
       const unitCostInput = `
         <input
           type="number"
           class="form-control form-control-sm reservation-unit-cost-input"
           id="${unitCostInputId}"
           data-group-key="${group.key}"
+          ${packageItemIndex != null ? `data-package-index="${packageItemIndex}"` : ''}
           min="0"
           step="0.01"
           value="${normalizeNumbers(String(unitCostNumber))}"

@@ -975,6 +975,7 @@ registerTranslations({
     'technicians.picker.assignments.hint': 'استخدم قائمة المناصب على اليسار لإضافة طاقم العمل.',
     'technicians.picker.optionAssigned': '(مستخدم)',
     'technicians.picker.selectedCount': 'تم اختيار {count} عضو',
+    'technicians.picker.toast.positionOverrideSaved': '✅ تم تطبيق التعديل على هذا الحجز فقط',
     // Crew picker positions panel + assignments labels
     'technicians.picker.positions.label': '🏷️ اختر المناصب',
     'technicians.picker.positions.search': '🔍 ابحث باسم المنصب...',
@@ -2032,6 +2033,7 @@ registerTranslations({
     'technicians.picker.assignments.hint': 'Use the positions list on the left to add crew roles.',
     'technicians.picker.optionAssigned': '(Assigned)',
     'technicians.picker.selectedCount': 'Selected {count} member(s)',
+    'technicians.picker.toast.positionOverrideSaved': '✅ This change now applies to this reservation only',
     // Crew picker positions panel + assignments labels
     'technicians.picker.positions.label': '🏷️ Choose positions',
     'technicians.picker.positions.search': '🔍 Search by position name...',
