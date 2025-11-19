@@ -48,6 +48,17 @@ function handleReservationsGet(PDO $pdo): void
 
     if ($id) {
         $reservation = fetchReservationById($pdo, $id);
+
+        try {
+            if (array_key_exists('packages', $data)) {
+                error_log(sprintf('[reservations] updateReservation payload packages (id=%d): %s', $id, json_encode($data['packages'], JSON_UNESCAPED_UNICODE)));
+            }
+            if (isset($reservation['packages'])) {
+                error_log(sprintf('[reservations] updateReservation DB packages (id=%d): %s', $id, json_encode($reservation['packages'], JSON_UNESCAPED_UNICODE)));
+            }
+        } catch (Throwable $_logError) {
+            // avoid crashing on logging failure
+        }
         if (!$reservation) {
             respondError('Reservation not found', 404);
             return;
@@ -1146,6 +1157,30 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
     ensureReservationPackagesTable($pdo);
     static $equipmentCostCache = [];
 
+    // Capture existing package costs before deletion so we can reuse them when payload omits unit_cost.
+    $existingCostByKey = [];
+    try {
+        $existingPackages = fetchReservationPackages($pdo, $reservationId);
+        foreach ($existingPackages as $existingPackage) {
+            if (!is_array($existingPackage)) {
+                continue;
+            }
+            $key = normalizeReservationPackageKey($existingPackage);
+            if (!$key) {
+                continue;
+            }
+            $cost = isset($existingPackage['unit_cost']) ? (float) $existingPackage['unit_cost'] : 0.0;
+            if ($cost <= 0) {
+                continue;
+            }
+            if (!isset($existingCostByKey[$key]) || $existingCostByKey[$key] < $cost) {
+                $existingCostByKey[$key] = $cost;
+            }
+        }
+    } catch (Throwable $fetchError) {
+        error_log('⚠️ Failed to read existing reservation packages before update: ' . $fetchError->getMessage());
+    }
+
     $pdo->prepare('DELETE FROM reservation_packages WHERE reservation_id = :id')->execute(['id' => $reservationId]);
 
     if (!$packages) {
@@ -1205,14 +1240,7 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
     $normalizedPackages = [];
 
     foreach ($packages as $package) {
-        $key = null;
-        if (!empty($package['package_code'])) {
-            $key = 'code:' . strtolower((string) $package['package_code']);
-        } elseif (!empty($package['package_id'])) {
-            $key = 'id:' . (string) $package['package_id'];
-        } elseif (!empty($package['packageId'])) {
-            $key = 'id:' . (string) $package['packageId'];
-        }
+        $key = normalizeReservationPackageKey($package);
 
         // Resolve unit cost with tolerant fallbacks and optional derivation from items
         $packageItems = is_array($package['items'] ?? null) ? $package['items'] : [];
@@ -1233,6 +1261,9 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
                 $unitCost = $val;
                 break;
             }
+        }
+        if ($unitCost === null && $key !== null && isset($existingCostByKey[$key])) {
+            $unitCost = $existingCostByKey[$key];
         }
         // إذا لم تُرسل تكلفة للحزمة، لا نرجع لسعرها؛ نكتفي بما وصل أو 0
         if ($unitCost === null) {
@@ -1287,6 +1318,23 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             throw $error;
         }
     }
+}
+
+function normalizeReservationPackageKey(array $package): ?string
+{
+    if (!empty($package['package_code'])) {
+        return 'code:' . strtolower((string) $package['package_code']);
+    }
+    if (!empty($package['package_id'])) {
+        return 'id:' . (string) $package['package_id'];
+    }
+    if (!empty($package['packageId'])) {
+        return 'id:' . (string) $package['packageId'];
+    }
+    if (!empty($package['id'])) {
+        return 'id:' . (string) $package['id'];
+    }
+    return null;
 }
 
 function upsertReservationTechnicians(PDO $pdo, int $reservationId, array $technicians): void
