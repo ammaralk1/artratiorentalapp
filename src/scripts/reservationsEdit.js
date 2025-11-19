@@ -1466,6 +1466,8 @@ export async function saveReservationChanges({
           quantity: qty,
           unit_price: unitPrice,
           unit_cost: unitCost,
+          package_cost: unitCost,
+          packageCost: unitCost,
           cost: unitCost,
           items: Array.isArray(item.packageItems) ? item.packageItems : [],
         });
