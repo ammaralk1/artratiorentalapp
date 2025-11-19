@@ -530,17 +530,6 @@ export function buildReservationDisplayGroups(reservation = {}) {
         break;
       }
     }
-    if (!unitCost && Array.isArray(resolvedItems) && resolvedItems.length) {
-      const perPackageCost = resolvedItems.reduce((sum, item) => {
-        const parsedCost = parsePriceValue(item?.cost);
-        const qtyPerPackage = Number.isFinite(Number(item?.qtyPerPackage)) && Number(item.qtyPerPackage) > 0
-          ? Number(item.qtyPerPackage)
-          : 1;
-        return sum + (Number.isFinite(parsedCost) ? parsedCost : 0) * qtyPerPackage;
-      }, 0);
-      unitCost = sanitizePriceValue(perPackageCost);
-    }
-
     // Resolve pricing mode: daily or fixed (default to daily unless explicitly fixed)
     const resolvePricingMode = () => {
       const candidates = [
