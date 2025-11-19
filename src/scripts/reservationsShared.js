@@ -103,15 +103,7 @@ export function sanitizePriceValue(value) {
   if (!Number.isFinite(parsed)) {
     return 0;
   }
-
-  let result = parsed;
-  let iterations = 0;
-  while (Math.abs(result) > 100_000 && iterations < 8) {
-    result /= 10;
-    iterations += 1;
-  }
-
-  return Number(result.toFixed(2));
+  return Number(parsed.toFixed(2));
 }
 
 function normalizeBarcodeValueLocal(value) {
