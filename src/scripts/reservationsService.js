@@ -2004,7 +2004,16 @@ function resolveEquipmentIdValue(value) {
 }
 
 function buildReservationPackagesPayload(items, packagesFromCaller) {
-  const packages = Array.isArray(packagesFromCaller) ? packagesFromCaller.slice() : [];
+  const packages = Array.isArray(packagesFromCaller)
+    ? packagesFromCaller.map((pkg) => (pkg && typeof pkg === 'object' ? { ...pkg } : pkg))
+    : [];
+  const packagesByKey = new Map();
+  packages.forEach((pkg, index) => {
+    if (!pkg || typeof pkg !== 'object') return;
+    const key = resolvePackageMergeKey(pkg);
+    if (!key) return;
+    packagesByKey.set(key, index);
+  });
 
   if (!Array.isArray(items)) {
     return packages;
@@ -2113,8 +2122,18 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       }
     }
 
-    packages.push({
-      package_code: item.packageId ?? item.package_id ?? item.barcode ?? null,
+    const packageCode = item.package_code
+      ?? item.packageCode
+      ?? item.barcode
+      ?? item.code
+      ?? item.packageId
+      ?? item.package_id
+      ?? null;
+
+    const packageEntry = {
+      packageId: normalizedPackageId || null,
+      package_id: normalizedPackageId || null,
+      package_code: packageCode,
       name: item.desc ?? item.name ?? '',
       quantity: packageQuantity,
       unit_price: toNumber(item.price ?? item.unit_price ?? 0),
@@ -2127,10 +2146,30 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       equipment_cost: unitCost,
       item_cost: unitCost,
       items: packageItems,
-    });
+    };
+
+    const mergeKey = resolvePackageMergeKey(packageEntry);
+    if (mergeKey && packagesByKey.has(mergeKey)) {
+      const existingIndex = packagesByKey.get(mergeKey);
+      const merged = mergePackageRecords(
+        packages[existingIndex] && typeof packages[existingIndex] === 'object'
+          ? packages[existingIndex]
+          : {},
+        packageEntry
+      );
+      packages[existingIndex] = merged;
+      packagesByKey.set(mergeKey, existingIndex);
+      return;
+    }
+
+    const nextIndex = packages.length;
+    packages.push(packageEntry);
+    if (mergeKey) {
+      packagesByKey.set(mergeKey, nextIndex);
+    }
   });
 
-return packages;
+  return packages;
 }
 
 function normalizeReservationItemType(value) {
