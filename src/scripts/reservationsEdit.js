@@ -1372,7 +1372,6 @@ export async function saveReservationChanges({
       const parsedIndex = Number.parseInt(packageIndexAttr, 10);
       if (Number.isInteger(parsedIndex) && parsedIndex >= 0) {
         packageIndexOverrides.set(parsedIndex, cost);
-        return;
       }
     }
     const key = input.dataset.groupKey;
@@ -1448,7 +1447,8 @@ export async function saveReservationChanges({
         const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
         let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
         const groupKey = resolveReservationItemGroupKey(item);
-        const override = groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined;
+        const override = (packageIndexOverrides.has(index) ? packageIndexOverrides.get(index) : undefined)
+          ?? (groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined);
         if (override !== undefined && Number.isFinite(override)) {
           unitCost = sanitizePriceValue(override);
         }
