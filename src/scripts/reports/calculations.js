@@ -1068,11 +1068,13 @@ export function calculateCrewWorkReport(reservations, technicians) {
         const techId = a?.technicianId != null ? String(a.technicianId) : null;
         if (!techId) return;
         const tech = techMap.get(techId) || getTechnicianRecordById(techId) || {};
-        const perDayBillable = Number.isFinite(Number(a?.positionClientPrice)) && Number(a.positionClientPrice) > 0
-          ? Number(a.positionClientPrice)
+        const billableCandidate = Number(a?.positionClientPrice);
+        const perDayBillable = Number.isFinite(billableCandidate)
+          ? billableCandidate
           : resolveTechnicianTotalRateForReports(tech);
-        const perDayCost = Number.isFinite(Number(a?.positionCost)) && Number(a.positionCost) > 0
-          ? Number(a.positionCost)
+        const costCandidate = Number(a?.positionCost);
+        const perDayCost = Number.isFinite(costCandidate)
+          ? costCandidate
           : resolveTechnicianDailyRateForReports(tech);
         const billable = perDayBillable * days;
         const cost = perDayCost * days;

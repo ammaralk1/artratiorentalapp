@@ -1226,7 +1226,7 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.internal_cost
         ?? 0
     ));
-    let positionClientPrice = sanitizePriceValue(parsePriceValue(
+    const positionClientPrice = sanitizePriceValue(parsePriceValue(
       assignment.positionClientPrice
         ?? assignment.position_client_price
         ?? assignment.client_price
@@ -1238,24 +1238,6 @@ export function buildReservationDetailsHtml(reservation, customer, techniciansLi
         ?? assignment.total
         ?? 0
     ));
-
-    if (!Number.isFinite(positionClientPrice) || positionClientPrice <= 0) {
-      try {
-        const positions = getTechnicianPositionsCache ? getTechnicianPositionsCache() : [];
-        const byId = assignment.positionId
-          ? positions.find((p) => String(p.id) === String(assignment.positionId))
-          : null;
-        const byKey = !byId && assignment.positionKey
-          ? positions.find((p) => String(p.name).toLowerCase() === String(assignment.positionKey).toLowerCase())
-          : null;
-        const pos = byId || byKey || null;
-        if (pos && Number.isFinite(Number(pos.clientPrice))) {
-          positionClientPrice = sanitizePriceValue(Number(pos.clientPrice));
-        }
-      } catch (_e) {
-        /* optional cache fallback only */
-      }
-    }
 
     const clientPriceDisplay = `${normalizeNumbers(positionClientPrice.toFixed(2))} ${currencyLabel}`;
     const costDisplay = positionCost > 0

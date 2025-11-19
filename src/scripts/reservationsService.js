@@ -302,8 +302,8 @@ function hasRichCrewData(assignments = []) {
     const label = (a.positionLabel ?? '').trim();
     const hasLabel = label.length > 0;
     const hasKey = a.positionId != null || (a.positionKey != null && String(a.positionKey).trim() !== '');
-    const hasPrice = Number.isFinite(Number(a.positionClientPrice)) && Number(a.positionClientPrice) > 0;
-    const hasCost = Number.isFinite(Number(a.positionCost)) && Number(a.positionCost) > 0;
+    const hasPrice = Number.isFinite(Number(a.positionClientPrice));
+    const hasCost = Number.isFinite(Number(a.positionCost));
     return hasLabel || hasKey || hasPrice || hasCost;
   });
 }
@@ -2121,6 +2121,8 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
       quantity: packageQuantity,
       unit_price: toNumber(item.price ?? item.unit_price ?? 0),
       unit_cost: unitCost,
+      package_cost: unitCost,
+      packageCost: unitCost,
       cost: unitCost,
       total_cost: Number.isFinite(unitCost) ? Number((unitCost * packageQuantity).toFixed(2)) : 0,
       rental_cost: unitCost,
@@ -2386,6 +2388,8 @@ function buildReservationPackageItem(pkg = {}, fallback = {}) {
     price: unitPrice,
     cost: unitCost,
     unit_cost: unitCost,
+    package_cost: unitCost,
+    packageCost: unitCost,
     rental_cost: unitCost,
     purchase_price: unitCost,
     internal_cost: unitCost,
@@ -3037,6 +3041,8 @@ function convertReservationPackageEntry(entry, index = 0) {
     price: unitPrice,
     unit_cost: unitCost,
     unitCost,
+    package_cost: unitCost,
+    packageCost: unitCost,
     cost: unitCost,
     total_cost: totalCost,
     rental_cost: unitCost,

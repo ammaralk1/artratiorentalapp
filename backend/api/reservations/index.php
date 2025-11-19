@@ -1673,9 +1673,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
         $sql = 'SELECT 
             rt.*,
             t.full_name AS technician_name,
-            COALESCE(rt.position_name, tp.label_ar, tp.label_en, tp.name) AS effective_position_name,
-            COALESCE(NULLIF(rt.position_cost,0), tp.cost, 0) AS effective_position_cost,
-            COALESCE(NULLIF(rt.position_client_price,0), tp.client_price, 0) AS effective_position_client_price
+            COALESCE(rt.position_name, tp.label_ar, tp.label_en, tp.name) AS effective_position_name
          FROM reservation_technicians rt
          INNER JOIN technicians t ON t.id = rt.technician_id
          LEFT JOIN technician_positions tp ON (' . $joinCondition . ')
@@ -1688,9 +1686,7 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             'SELECT 
                 rt.*,
                 t.full_name AS technician_name,
-                rt.position_name AS effective_position_name,
-                rt.position_cost AS effective_position_cost,
-                rt.position_client_price AS effective_position_client_price
+                rt.position_name AS effective_position_name
              FROM reservation_technicians rt
              INNER JOIN technicians t ON t.id = rt.technician_id
              WHERE rt.reservation_id = :id'
@@ -1721,8 +1717,8 @@ function fetchReservationTechnicians(PDO $pdo, int $reservationId): array
             'position_name' => $label,
             'position_label_ar' => $row['position_label_ar'] ?? null,
             'position_label_en' => $row['position_label_en'] ?? null,
-            'position_cost' => isset($row['effective_position_cost']) ? (float) $row['effective_position_cost'] : (isset($row['position_cost']) ? (float) $row['position_cost'] : 0),
-            'position_client_price' => isset($row['effective_position_client_price']) ? (float) $row['effective_position_client_price'] : (isset($row['position_client_price']) ? (float) $row['position_client_price'] : 0),
+            'position_cost' => isset($row['position_cost']) ? (float) $row['position_cost'] : 0,
+            'position_client_price' => isset($row['position_client_price']) ? (float) $row['position_client_price'] : 0,
             'assignment_id' => $row['assignment_id'] ?? null,
         ];
     }
