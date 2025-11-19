@@ -2962,3 +2962,52 @@ function normalisePaidStatus(status) {
 export function isApiError(error) {
   return error instanceof ApiError;
 }
+const hasPackageCost = (pkg = {}) => {
+  const candidate = parsePriceValue(
+    pkg.unit_cost
+      ?? pkg.unitCost
+      ?? pkg.cost
+      ?? pkg.package_cost
+      ?? pkg.rental_cost
+      ?? pkg.purchase_price
+      ?? pkg.internal_cost
+      ?? pkg.equipment_cost
+      ?? pkg.item_cost
+  );
+  return Number.isFinite(candidate) && candidate > 0;
+};
+
+function resolveReservationIdentifier(reservation = {}) {
+  return (
+    reservation.id
+      ?? reservation.reservationId
+      ?? reservation.reservation_id
+      ?? reservation.reservationCode
+      ?? reservation.reservation_code
+      ?? null
+  );
+}
+
+export function reservationPackagesNeedHydration(reservation = {}) {
+  const packages = reservation?.packages;
+  if (!Array.isArray(packages) || packages.length === 0) {
+    return true;
+  }
+  return packages.some((pkg) => !hasPackageCost(pkg));
+}
+
+export async function fetchReservationWithDetails(id) {
+  if (!id) return null;
+  const response = await apiRequest(`/reservations/?id=${encodeURIComponent(id)}`);
+  const payload = response?.data;
+  if (!payload || Array.isArray(payload)) {
+    return null;
+  }
+  const mapped = mapReservationFromApi(payload);
+  const identifier = resolveReservationIdentifier(mapped);
+  const next = reservationsState.some((entry) => resolveReservationIdentifier(entry) === identifier)
+    ? reservationsState.map((entry) => (resolveReservationIdentifier(entry) === identifier ? mapped : entry))
+    : [...reservationsState, mapped];
+  setReservationsState(next);
+  return mapped;
+}

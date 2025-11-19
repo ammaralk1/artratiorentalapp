@@ -33,6 +33,8 @@ import {
   buildReservationPayload,
   refreshReservationsFromApi,
   isApiError,
+  reservationPackagesNeedHydration,
+  fetchReservationWithDetails,
 } from './reservationsService.js';
 import { closeReservation as closeReservationAction, reopenReservation as reopenReservationAction } from './reservationsActions.js';
 import { normalizePackageId, resolvePackageItems } from './reservationsPackages.js';
@@ -693,11 +695,22 @@ export async function editReservation(index, {
 } = {}) {
   const { customers, projects } = loadData();
   const reservations = getReservationsState();
-  const reservation = reservations?.[index];
+  let reservation = reservations?.[index];
 
   if (!reservation) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
     return;
+  }
+
+  if (reservationPackagesNeedHydration(reservation)) {
+    try {
+      const hydrated = await fetchReservationWithDetails(reservation.id || reservation.reservationId || reservation.reservation_code);
+      if (hydrated) {
+        reservation = hydrated;
+      }
+    } catch (error) {
+      console.warn('[reservationsEdit] Failed to hydrate reservation packages', error);
+    }
   }
 
   modalEventsContext = {

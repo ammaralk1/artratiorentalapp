@@ -1,5 +1,5 @@
 import { loadData } from '../storage.js';
-import { toInternalReservation } from '../reservationsService.js';
+import { toInternalReservation, reservationPackagesNeedHydration, fetchReservationWithDetails } from '../reservationsService.js';
 import { syncTechniciansStatuses } from '../technicians.js';
 import { t } from '../language.js';
 import { showToast } from '../utils.js';
@@ -126,12 +126,19 @@ export function renderReservationDetails(index, {
     return false;
   }
 
-  const normalizedReservation = normalizedReservations[index] ?? toInternalReservation(reservation);
+  let normalizedReservation = normalizedReservations[index] ?? toInternalReservation(reservation);
 
   const customer = customers.find((c) => String(c.id) === String(reservation.customerId));
   const project = reservation.projectId ? projects.find((p) => String(p.id) === String(reservation.projectId)) : null;
   const body = document.getElementById('reservation-details-body');
   const modalEl = document.getElementById('reservationDetailsModal');
+
+  const renderBody = (reservationData, techniciansListOverride = null) => {
+    if (body) {
+      const techniciansList = techniciansListOverride ?? (syncTechniciansStatuses() || []);
+      body.innerHTML = buildReservationDetailsHtml(reservationData, customer, techniciansList, index, project);
+    }
+  };
 
   const bindDetailsActions = () => {
     const closeModal = () => {
@@ -246,23 +253,29 @@ export function renderReservationDetails(index, {
   };
 
   if (body) {
-    // Initial synchronous render using current cache
-    const techniciansList = syncTechniciansStatuses() || [];
-    body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, techniciansList, index, project);
+    renderBody(normalizedReservation);
     bindDetailsActions();
 
-    // Try to refresh positions cache asynchronously, then re-render for accurate labels
     ensureTechnicianPositionsLoaded()
       .then(() => {
         const refreshedTechs = syncTechniciansStatuses() || [];
-        body.innerHTML = buildReservationDetailsHtml(normalizedReservation, customer, refreshedTechs, index, project);
+        renderBody(normalizedReservation, refreshedTechs);
         bindDetailsActions();
       })
-      .catch(() => {
-        /* non-fatal */
-      });
+      .catch(() => {});
   }
 
+  if (reservationPackagesNeedHydration(normalizedReservation)) {
+    const identifier = normalizedReservation.id || normalizedReservation.reservationId || normalizedReservation.reservation_code;
+    fetchReservationWithDetails(identifier)
+      .then((fresh) => {
+        if (!fresh) return;
+        normalizedReservation = fresh;
+        renderBody(normalizedReservation);
+        bindDetailsActions();
+      })
+      .catch(() => {});
+  }
 
   if (modalEl && window.bootstrap?.Modal) {
     window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
