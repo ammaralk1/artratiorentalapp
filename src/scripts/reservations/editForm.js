@@ -247,7 +247,7 @@ export function renderEditReservationItems(items = []) {
       const parsedUnitPrice = parsePriceValue(group.unitPrice);
       const unitPriceNumber = Number.isFinite(parsedUnitPrice) ? sanitizePriceValue(parsedUnitPrice) : 0;
       const parsedUnitCost = parsePriceValue(group.unitCost);
-      const unitCostNumber = Number.isFinite(parsedUnitCost) ? sanitizePriceValue(parsedUnitCost) : 0;
+      let unitCostNumber = Number.isFinite(parsedUnitCost) ? sanitizePriceValue(parsedUnitCost) : 0;
       const groupDays = (() => {
         try {
           const { start, end } = getEditReservationDateRange();
@@ -274,21 +274,35 @@ export function renderEditReservationItems(items = []) {
       const unitCostInputId = `edit-unit-cost-${group.key}`;
       const packageItemIndex = (() => {
         if (!Array.isArray(group.items)) return null;
+        if (!Array.isArray(group.itemIndices)) return null;
         for (let i = 0; i < group.items.length; i += 1) {
           const entry = group.items[i];
           if (entry && String(entry.type || '').toLowerCase() === 'package') {
-            return group.itemIndices?.[i] ?? null;
+            const candidateIndex = group.itemIndices[i];
+            return Number.isInteger(candidateIndex) ? candidateIndex : null;
           }
         }
         return null;
       })();
+      if (packageItemIndex != null && Number.isInteger(packageItemIndex) && items[packageItemIndex]) {
+        const packageEntry = items[packageItemIndex];
+        const packageCostParsed = parsePriceValue(
+          packageEntry.unit_cost
+            ?? packageEntry.cost
+            ?? packageEntry.package_cost
+            ?? packageEntry.packageCost
+        );
+        if (Number.isFinite(packageCostParsed)) {
+          unitCostNumber = sanitizePriceValue(packageCostParsed);
+        }
+      }
       const unitCostInput = `
         <input
           type="number"
           class="form-control form-control-sm reservation-unit-cost-input"
           id="${unitCostInputId}"
           data-group-key="${group.key}"
-          ${packageItemIndex != null ? `data-package-index="${packageItemIndex}"` : ''}
+          ${packageItemIndex != null && Number.isInteger(packageItemIndex) ? `data-package-index="${packageItemIndex}"` : ''}
           min="0"
           step="0.01"
           value="${normalizeNumbers(String(unitCostNumber))}"
@@ -787,17 +801,22 @@ function increaseEditReservationGroup(groupKey) {
   updateEditReservationSummary();
 }
 
-function updateEditReservationGroupCost(groupKey, rawValue) {
+function updateEditReservationGroupCost(groupKey, rawValue, packageIndex = null) {
   const parsed = parsePriceValue(rawValue);
   const unitCost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : 0;
   const { index: editingIndex, items } = getEditingState();
   if (!Array.isArray(items)) return;
   const groups = groupReservationItems(items);
   const target = groups.find((entry) => entry.key === groupKey);
-  if (!target || !Array.isArray(target.itemIndices)) return;
+  if (!target) return;
+
+  const targetItemIndices = Number.isInteger(packageIndex)
+    ? [packageIndex]
+    : (Array.isArray(target.itemIndices) ? target.itemIndices : []);
+  if (!targetItemIndices.length) return;
 
   const nextItems = [...items];
-  target.itemIndices.forEach((itemIndex) => {
+  targetItemIndices.forEach((itemIndex) => {
     if (nextItems[itemIndex]) {
       const item = {
         ...nextItems[itemIndex],
@@ -879,7 +898,9 @@ function ensureGroupHandler(container) {
     if (!input) return;
     const groupKey = input.dataset.groupKey;
     if (!groupKey) return;
-    updateEditReservationGroupCost(groupKey, input.value);
+    const packageIndexAttr = input.dataset.packageIndex ?? '';
+    const packageIndex = packageIndexAttr !== '' ? Number.parseInt(packageIndexAttr, 10) : null;
+    updateEditReservationGroupCost(groupKey, input.value, Number.isInteger(packageIndex) ? packageIndex : null);
   };
 
   const handlePriceChange = (event) => {
