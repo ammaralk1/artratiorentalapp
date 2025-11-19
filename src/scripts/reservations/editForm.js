@@ -273,13 +273,11 @@ export function renderEditReservationItems(items = []) {
       `;
       const unitCostInputId = `edit-unit-cost-${group.key}`;
       const packageItemIndex = (() => {
-        if (!Array.isArray(group.items)) return null;
-        if (!Array.isArray(group.itemIndices)) return null;
-        for (let i = 0; i < group.items.length; i += 1) {
-          const entry = group.items[i];
-          if (entry && String(entry.type || '').toLowerCase() === 'package') {
-            const candidateIndex = group.itemIndices[i];
-            return Number.isInteger(candidateIndex) ? candidateIndex : null;
+        for (let i = 0; i < items.length; i += 1) {
+          const entry = items[i];
+          if (!entry || String(entry.type || '').toLowerCase() !== 'package') continue;
+          if (resolveReservationItemGroupKey(entry) === group.key) {
+            return i;
           }
         }
         return null;
