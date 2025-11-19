@@ -932,9 +932,7 @@ function ensureGroupHandler(container) {
   };
 
   container.addEventListener('change', handlePriceCostChange);
-  container.addEventListener('input', handlePriceCostChange);
   container.addEventListener('change', handlePriceChange);
-  container.addEventListener('input', handlePriceChange);
 
   container.dataset.groupListenerAttached = 'true';
 }

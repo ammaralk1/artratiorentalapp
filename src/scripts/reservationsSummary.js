@@ -354,25 +354,25 @@ export function calculateDraftFinancialBreakdown({
     const appliedDays = (overrideNoDays || inferredFixed) ? 1 : rentalDays;
 
     if (isPackage) {
+      const customPrice = Number.isFinite(unit) ? unit * qty * appliedDays : null;
+      const customCost = Number.isFinite(unitCost) ? unitCost * qty * appliedDays : null;
       const pkgRef = {
         package_code: group?.package_code || group?.packageDisplayCode || group?.barcode || group?.packageId || group?.key,
         packageItems: Array.isArray(group?.packageItems) ? group.packageItems : undefined,
       };
       const pricing = computePackagePricing(pkgRef, { packageQuantity: qty, days: appliedDays });
-      const priceContrib = Number.isFinite(Number(pricing.total))
-        ? Number(pricing.total)
-        : (qty * (Number.isFinite(unit) ? unit : 0) * appliedDays);
-      const costContrib = (() => {
-        const totalCostCandidate = Number(pricing?.costTotal);
-        if (Number.isFinite(totalCostCandidate)) {
-          return totalCostCandidate;
-        }
-        const perDayCostCandidate = Number(pricing?.perDayCostTotal);
-        if (Number.isFinite(perDayCostCandidate)) {
-          return perDayCostCandidate * appliedDays;
-        }
-        return qty * (Number.isFinite(unitCost) ? unitCost : 0) * appliedDays;
-      })();
+      const pricingTotal = Number(pricing?.total);
+      const priceContrib = Number.isFinite(customPrice)
+        ? customPrice
+        : (Number.isFinite(pricingTotal) ? pricingTotal : 0);
+      const pricingCostTotal = Number(pricing?.costTotal);
+      const pricingCostPerDay = Number(pricing?.perDayCostTotal);
+      const computedCost = Number.isFinite(pricingCostTotal)
+        ? pricingCostTotal
+        : (Number.isFinite(pricingCostPerDay) ? pricingCostPerDay * appliedDays : null);
+      const costContrib = Number.isFinite(customCost)
+        ? customCost
+        : (Number.isFinite(computedCost) ? computedCost : 0);
       equipmentTotalRaw += priceContrib;
       equipmentCostTotalRaw += costContrib;
     } else {
