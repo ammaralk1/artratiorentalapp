@@ -1041,6 +1041,14 @@ export function mapReservationFromApi(raw = {}) {
     payment_history: raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
     paymentHistory: raw.paymentHistory ?? raw.payment_history ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
   });
+  try {
+    const rawPackages = mapReservationPackagesFromSource({ packages: raw.packages });
+    if (rawPackages.length) {
+      mapped.packages = mergePackageCollections(rawPackages, mapped.packages || []);
+    }
+  } catch (_) {
+    /* ignore raw package merge errors */
+  }
   return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
 }
 
