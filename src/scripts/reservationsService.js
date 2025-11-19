@@ -779,7 +779,7 @@ export async function updateReservationApi(id, payload) {
   // Align packages with what the caller submitted. If the caller provided
   // an empty packages array, treat it as an explicit intent to clear any
   // cached/inferred packages for this reservation.
-  if (Array.isArray(payload?.packages)) {
+  if (!hasServerPackages && Array.isArray(payload?.packages)) {
     if (payload.packages.length) {
       const fallbackPackages = mapReservationPackagesFromSource({ packages: payload.packages });
       updated.packages = mergePackageCollections(updated.packages, fallbackPackages);
