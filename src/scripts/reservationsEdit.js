@@ -1356,8 +1356,12 @@ export async function saveReservationChanges({
 
   // التقط آخر قيم تكلفة الوحدة من واجهة التحرير وطبّقها على العناصر (خصوصاً الحزم)
   const groupCostOverrides = new Map();
+  const editReservationModal = document.getElementById('editReservationModal');
+  const scopedCostInputs = editReservationModal
+    ? editReservationModal.querySelectorAll('.reservation-unit-cost-input[data-group-key]')
+    : document.querySelectorAll('.reservation-unit-cost-input[data-group-key]');
   // أولاً: اقرأ من حقول التكلفة حسب group key
-  document.querySelectorAll('.reservation-unit-cost-input[data-group-key]').forEach((input) => {
+  scopedCostInputs.forEach((input) => {
     const key = input.dataset.groupKey;
     if (!key) return;
     const parsed = parsePriceValue(input.value);
@@ -1372,7 +1376,7 @@ export async function saveReservationChanges({
     const key = resolveReservationItemGroupKey(item);
     if (!key || groupCostOverrides.has(key)) return;
     // حاول إيجاد الحقل المقابل لهذه الحزمة عبر مطابقة النص/الكود
-    const candidateInputs = Array.from(document.querySelectorAll('.reservation-unit-cost-input[data-group-key]'));
+    const candidateInputs = Array.from(scopedCostInputs);
     const match = candidateInputs.find((input) => {
       const groupKey = input.dataset.groupKey || '';
       return groupKey === key;
