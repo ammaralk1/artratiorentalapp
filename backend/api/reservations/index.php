@@ -1167,12 +1167,12 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             if (!$key) {
                 continue;
             }
-            $cost = isset($existingPackage['unit_cost']) ? (float) $existingPackage['unit_cost'] : 0.0;
-            if ($cost <= 0) {
+            $existingCost = isset($existingPackage['unit_cost']) ? (float) $existingPackage['unit_cost'] : 0.0;
+            if ($existingCost <= 0) {
                 continue;
             }
-            if (!isset($existingCostByKey[$key]) || $existingCostByKey[$key] < $cost) {
-                $existingCostByKey[$key] = $cost;
+            if (!isset($existingCostByKey[$key]) || $existingCostByKey[$key] < $existingCost) {
+                $existingCostByKey[$key] = $existingCost;
             }
         }
     } catch (Throwable $error) {
@@ -1197,50 +1197,44 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             continue;
         }
 
-        $quantity = 1;
-        if (isset($package['quantity'])) {
-            $quantity = (int) $package['quantity'];
-        } elseif (isset($package['qty'])) {
-            $quantity = (int) $package['qty'];
-        }
+        $quantity = isset($package['quantity'])
+            ? (int) $package['quantity']
+            : (isset($package['qty']) ? (int) $package['qty'] : 1);
         if ($quantity < 1) {
             $quantity = 1;
         }
 
         $unitPrice = 0.0;
-        if (isset($package['unit_price'])) {
-            $unitPrice = max(0.0, (float) $package['unit_price']);
-        } elseif (isset($package['price'])) {
-            $unitPrice = max(0.0, (float) $package['price']);
+        if (isset($package['unit_price']) && is_numeric($package['unit_price'])) {
+            $unitPrice = (float) $package['unit_price'];
+        } elseif (isset($package['price']) && is_numeric($package['price'])) {
+            $unitPrice = (float) $package['price'];
+        }
+        if ($unitPrice < 0) {
+            $unitPrice = 0.0;
         }
 
         $unitCost = null;
-        $unitCostCandidates = [
-            $package['unit_cost'] ?? null,
-            $package['unitCost'] ?? null,
-            $package['cost'] ?? null,
-            $package['package_cost'] ?? null,
-            $package['packageCost'] ?? null,
-        ];
-        foreach ($unitCostCandidates as $candidate) {
-            if ($candidate === null || $candidate === '') {
-                continue;
-            }
-            $numericCandidate = (float) $candidate;
-            if ($numericCandidate >= 0) {
-                $unitCost = $numericCandidate;
-                break;
-            }
+        if (array_key_exists('unit_cost', $package) && is_numeric($package['unit_cost'])) {
+            $unitCost = (float) $package['unit_cost'];
+        } elseif (array_key_exists('package_cost', $package) && is_numeric($package['package_cost'])) {
+            $unitCost = (float) $package['package_cost'];
+        } elseif (array_key_exists('packageCost', $package) && is_numeric($package['packageCost'])) {
+            $unitCost = (float) $package['packageCost'];
+        } elseif (array_key_exists('cost', $package) && is_numeric($package['cost'])) {
+            $unitCost = (float) $package['cost'];
         }
         if ($unitCost === null && isset($existingCostByKey[$key])) {
             $unitCost = $existingCostByKey[$key];
         }
-        if ($unitCost === null) {
+        if ($unitCost === null || $unitCost < 0) {
             $unitCost = 0.0;
         }
 
-        $items = is_array($package['items'] ?? null) ? $package['items'] : null;
-        $itemsJson = $items && count($items) ? json_encode($items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+        $itemsJson = null;
+        if (isset($package['items']) && is_array($package['items']) && count($package['items'])) {
+            $itemsJson = json_encode($package['items'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
 
         $packageCode = null;
         if (!empty($package['package_code'])) {
@@ -1268,7 +1262,9 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         if ($unitCost > $existing['unit_cost']) {
             $existing['unit_cost'] = $unitCost;
         }
-        $existing['unit_price'] = $unitPrice;
+        if ($unitPrice >= 0) {
+            $existing['unit_price'] = $unitPrice;
+        }
         if ($packageCode !== null) {
             $existing['package_code'] = $packageCode;
         }
@@ -1276,6 +1272,10 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             $existing['items_json'] = $itemsJson;
         }
         $normalizedPackages[$key] = $existing;
+    }
+
+    if (!$normalizedPackages) {
+        return;
     }
 
     $statement = $pdo->prepare(
