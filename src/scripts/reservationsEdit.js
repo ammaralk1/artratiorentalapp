@@ -1357,8 +1357,24 @@ export async function saveReservationChanges({
   // التقط آخر قيم تكلفة الوحدة من واجهة التحرير وطبّقها على العناصر (خصوصاً الحزم)
   const groupCostOverrides = new Map();
   const packageIndexOverrides = new Map();
+  const packageIdentityOverrides = new Map();
   const editReservationModal = document.getElementById('editReservationModal');
   const inputsRoot = editReservationModal || document;
+  const buildPackageIdentityKey = (item) => {
+    const normalized = normalizePackageId(
+      item.packageId
+        ?? item.package_id
+        ?? item.package_code
+        ?? item.packageCode
+        ?? item.barcode
+        ?? item.id
+        ?? null
+    );
+    if (normalized) return normalized;
+    const candidate = item.package_code ?? item.packageCode ?? item.barcode ?? null;
+    if (!candidate) return null;
+    return normalizeNumbers(String(candidate)).trim().toLowerCase();
+  };
   const scopedCostInputs = inputsRoot.querySelectorAll('.reservation-unit-cost-input[data-group-key]');
   // أولاً: اقرأ من حقول التكلفة حسب group key (وكذلك المؤشر المباشر إن توفر)
   scopedCostInputs.forEach((input) => {
@@ -1372,6 +1388,13 @@ export async function saveReservationChanges({
       const parsedIndex = Number.parseInt(packageIndexAttr, 10);
       if (Number.isInteger(parsedIndex) && parsedIndex >= 0) {
         packageIndexOverrides.set(parsedIndex, cost);
+        const packageEntry = editingItems[parsedIndex];
+        if (packageEntry) {
+          const identity = buildPackageIdentityKey(packageEntry);
+          if (identity) {
+            packageIdentityOverrides.set(identity, cost);
+          }
+        }
       }
     }
     const key = input.dataset.groupKey;
@@ -1422,21 +1445,6 @@ export async function saveReservationChanges({
   }
 
   // جمع الحزم من العناصر لإرسالها صراحةً (حتى لا تختفي تكلفة الحزمة)
-  const buildPackageIdentityKey = (item) => {
-    const normalized = normalizePackageId(
-      item.packageId
-        ?? item.package_id
-        ?? item.package_code
-        ?? item.packageCode
-        ?? item.barcode
-        ?? item.id
-        ?? null
-    );
-    if (normalized) return normalized;
-    const candidate = item.package_code ?? item.packageCode ?? item.barcode ?? null;
-    if (!candidate) return null;
-    return normalizeNumbers(String(candidate)).trim().toLowerCase();
-  };
 
   const packagesFromItems = (() => {
     const entries = [];
@@ -1449,12 +1457,13 @@ export async function saveReservationChanges({
         const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
         let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
         const groupKey = resolveReservationItemGroupKey(item);
+        const identityKey = buildPackageIdentityKey(item);
         const override = (packageIndexOverrides.has(itemIndex) ? packageIndexOverrides.get(itemIndex) : undefined)
+          ?? (identityKey ? packageIdentityOverrides.get(identityKey) : undefined)
           ?? (groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined);
         if (override !== undefined && Number.isFinite(override)) {
           unitCost = sanitizePriceValue(override);
         }
-        const identityKey = buildPackageIdentityKey(item);
         const priority = override !== undefined
           ? 2
           : (Number.isFinite(unitCost) && unitCost > 0 ? 1 : 0);
