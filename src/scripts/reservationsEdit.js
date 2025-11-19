@@ -1397,6 +1397,14 @@ export async function saveReservationChanges({
         }
       }
     }
+    const identityAttr = input.dataset.packageIdentity;
+    if (identityAttr) {
+      const normalizedIdentity = normalizePackageId(identityAttr)
+        || normalizeNumbers(String(identityAttr)).trim().toLowerCase();
+      if (normalizedIdentity) {
+        packageIdentityOverrides.set(normalizedIdentity, cost);
+      }
+    }
     const key = input.dataset.groupKey;
     if (key) {
       groupCostOverrides.set(key, cost);

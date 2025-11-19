@@ -294,12 +294,34 @@ export function renderEditReservationItems(items = []) {
           unitCostNumber = sanitizePriceValue(packageCostParsed);
         }
       }
+      const packageIdentity = (() => {
+        if (!isPackageGroup) return null;
+        const candidates = [
+          group.packageId,
+          group.package_id,
+          group.packageCode,
+          group.package_code,
+          group.packageDisplayCode,
+          group.barcode,
+          group.key,
+        ];
+        for (const candidate of candidates) {
+          if (!candidate) continue;
+          const normalized = normalizePackageId(candidate);
+          if (normalized) return normalized;
+          const normalizedNumbers = normalizeNumbers(String(candidate)).trim().toLowerCase();
+          if (normalizedNumbers) return normalizedNumbers;
+        }
+        return null;
+      })();
+      const packageIdentityAttr = packageIdentity ? `data-package-identity="${packageIdentity}"` : '';
       const unitCostInput = `
         <input
           type="number"
           class="form-control form-control-sm reservation-unit-cost-input"
           id="${unitCostInputId}"
           data-group-key="${group.key}"
+          ${packageIdentityAttr}
           ${packageItemIndex != null && Number.isInteger(packageItemIndex) ? `data-package-index="${packageItemIndex}"` : ''}
           min="0"
           step="0.01"
