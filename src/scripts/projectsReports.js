@@ -109,6 +109,17 @@ const KPI_ICONS = Object.freeze({
 
 let ChartLib = null;
 const STATUS_OPTIONS = ['upcoming', 'ongoing', 'completed'];
+const CLOSED_STATUS_KEYWORDS = new Set([
+  'completed',
+  'closed',
+  'done',
+  'finished',
+  'resolved',
+  'مغلق',
+  'مكتمل',
+  'منتهي',
+  'منتهية'
+]);
 
 // Basic sort state for projects table
 const sortState = { key: 'value', dir: 'desc' };
@@ -119,6 +130,57 @@ const sortState = { key: 'value', dir: 'desc' };
 let __mutationRefreshInFlight = false;
 let __lastMutationRefreshAt = 0;
 const MUTATION_REFRESH_MIN_INTERVAL_MS = 1500; // throttle a bit when many events fire
+
+function normalizeStatusValue(value) {
+  if (value == null) return '';
+  return String(value).trim().toLowerCase();
+}
+
+function isProjectClosed(project) {
+  if (!project) return false;
+  const raw = project.raw || project;
+  const candidates = [
+    raw?.status,
+    raw?.project_status,
+    raw?.projectStatus,
+    raw?.state,
+    raw?.project_state,
+    raw?.projectState,
+    raw?.status_label,
+    raw?.statusLabel,
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeStatusValue(candidate);
+    if (!normalized) continue;
+    if (CLOSED_STATUS_KEYWORDS.has(normalized)) return true;
+    if (normalized.includes('closed')) return true;
+  }
+
+  const flags = [
+    raw?.closed,
+    raw?.isClosed,
+    raw?.is_closed,
+    raw?.closed_at,
+    raw?.closedAt
+  ];
+  if (flags.some((flag) => {
+    if (flag == null) return false;
+    if (flag === true) return true;
+    if (typeof flag === 'number') return flag === 1;
+    const normalized = normalizeStatusValue(flag);
+    return normalized === 'true' || normalized === 'yes';
+  })) {
+    return true;
+  }
+
+  return false;
+}
+
+function isProjectEligibleForReports(project) {
+  if (!project || project.cancelled) return false;
+  if (project.confirmed === true) return true;
+  return isProjectClosed(project);
+}
 
 async function loadReportsData({ forceProjects = false } = {}) {
   try {
@@ -303,9 +365,10 @@ function loadAllData() {
   const customerMap = new Map(state.customers.map((customer) => [String(customer.id), customer]));
 
   const projects = getProjectsState();
-  state.projects = Array.isArray(projects)
+  const snapshots = Array.isArray(projects)
     ? projects.map((project) => buildProjectSnapshot(project, customerMap))
     : [];
+  state.projects = snapshots.filter((project) => isProjectEligibleForReports(project));
 
   state.totalProjects = state.projects.length;
 }
@@ -805,6 +868,7 @@ function getFilteredProjects() {
     return state.projects.filter((project) => {
       // Global rule: exclude cancelled projects everywhere
       if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
+      if (!isProjectEligibleForReports(project)) return false;
       if (!isStatusAllowed(project, statuses)) return false;
       if (!isPaymentAllowed(project, payment)) return false;
       if (!matchesSearch(project, searchTerm)) return false;
@@ -821,6 +885,7 @@ function getFilteredProjects() {
   return state.projects.filter((project) => {
     // Global rule: exclude cancelled projects everywhere
     if (project?.cancelled === true || String(project?.status).toLowerCase() === 'cancelled' || String(project?.status).toLowerCase() === 'canceled') return false;
+    if (!isProjectEligibleForReports(project)) return false;
     if (!isStatusAllowed(project, statuses)) return false;
     if (!isPaymentAllowed(project, payment)) return false;
     if (!matchesSearch(project, searchTerm)) return false;
@@ -841,10 +906,10 @@ function isPaymentAllowed(project, payment) {
 }
 
 function isConfirmedAllowed(project, confirmed) {
-  if (!confirmed || confirmed === 'all') return true;
+  if (!confirmed || confirmed === 'all' || confirmed === 'no') return true;
   const isConfirmed = project?.confirmed === true;
   if (confirmed === 'yes') return isConfirmed;
-  if (confirmed === 'no') return !isConfirmed;
+  if (confirmed === 'closed') return isProjectClosed(project);
   return true;
 }
 
