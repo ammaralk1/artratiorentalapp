@@ -1441,13 +1441,15 @@ export async function saveReservationChanges({
   const packagesFromItems = (() => {
     const entries = [];
     itemsWithCostOverrides
-      .filter((item) => String(item?.type || '').toLowerCase() === 'package')
-      .forEach((item, index) => {
+      .forEach((item, itemIndex) => {
+        if (String(item?.type || '').toLowerCase() !== 'package') {
+          return;
+        }
         const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
         const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
         let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
         const groupKey = resolveReservationItemGroupKey(item);
-        const override = (packageIndexOverrides.has(index) ? packageIndexOverrides.get(index) : undefined)
+        const override = (packageIndexOverrides.has(itemIndex) ? packageIndexOverrides.get(itemIndex) : undefined)
           ?? (groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined);
         if (override !== undefined && Number.isFinite(override)) {
           unitCost = sanitizePriceValue(override);
@@ -1458,7 +1460,7 @@ export async function saveReservationChanges({
           : (Number.isFinite(unitCost) && unitCost > 0 ? 1 : 0);
 
         entries.push({
-          __dedupeKey: identityKey ?? `pkg-${index}`,
+          __dedupeKey: identityKey ?? `pkg-${itemIndex}`,
           __priority: priority,
           package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
           name: item.name ?? item.desc ?? item.package_name ?? null,
