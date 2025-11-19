@@ -2055,23 +2055,6 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
             if (childId == null) {
               return null;
             }
-            let unitCost = toNumber(
-              child?.cost
-              ?? child?.unit_cost
-              ?? child?.unitCost
-              ?? child?.rental_cost
-              ?? child?.internal_cost
-              ?? child?.purchase_price
-              ?? child?.equipment_cost
-              ?? child?.item_cost
-              ?? 0
-            );
-            if ((!Number.isFinite(unitCost) || unitCost === 0) && childId != null) {
-              const fallbackCost = resolveEquipmentCostFromStore(childId);
-              if (Number.isFinite(fallbackCost) && fallbackCost > 0) {
-                unitCost = fallbackCost;
-              }
-            }
             return {
               equipment_id: resolveEquipmentIdValue(childId),
               quantity: toPositiveInt(
@@ -2088,13 +2071,13 @@ function buildReservationPackagesPayload(items, packagesFromCaller) {
                   ?? 1
               ),
               unit_price: toNumber(child?.price ?? child?.unit_price ?? 0),
-              unit_cost: unitCost,
-              cost: unitCost,
-              rental_cost: unitCost,
-              purchase_price: unitCost,
-              internal_cost: unitCost,
-              equipment_cost: unitCost,
-              item_cost: unitCost,
+              unit_cost: 0,
+              cost: 0,
+              rental_cost: 0,
+              purchase_price: 0,
+              internal_cost: 0,
+              equipment_cost: 0,
+              item_cost: 0,
             };
           })
           .filter(Boolean)
@@ -2906,35 +2889,6 @@ function mergePackageCollections(primary = [], secondary = []) {
   append(secondary);
 
   return result;
-}
-
-function resolveEquipmentCostFromStore(equipmentId) {
-  if (equipmentId == null) return 0;
-  const snapshot = loadData() || {};
-  const list = Array.isArray(snapshot.equipment) ? snapshot.equipment : [];
-  const match = list.find((eq) => {
-    const candidates = [
-      eq.id,
-      eq.equipment_id,
-      eq.equipmentId,
-      eq.item_id,
-      eq.itemId,
-    ];
-    return candidates.some((val) => String(val) === String(equipmentId));
-  });
-  if (!match) return 0;
-  const costValue = toNumber(
-    match.cost
-      ?? match.unit_cost
-      ?? match.unitCost
-      ?? match.rental_cost
-      ?? match.purchase_price
-      ?? match.internal_cost
-      ?? match.equipment_cost
-      ?? match.item_cost
-      ?? 0
-  );
-  return Number.isFinite(costValue) && costValue > 0 ? costValue : 0;
 }
 
 function convertReservationPackageEntry(entry, index = 0) {
