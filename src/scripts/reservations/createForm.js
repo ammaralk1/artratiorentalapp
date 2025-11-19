@@ -19,7 +19,14 @@ import {
   determinePaymentStatus,
   calculateReservationDays,
 } from '../reservationsSummary.js';
-import { normalizeText, groupReservationItems, resolveReservationItemGroupKey, resolveEquipmentIdentifier } from '../reservationsShared.js';
+import {
+  normalizeText,
+  groupReservationItems,
+  resolveReservationItemGroupKey,
+  resolveEquipmentIdentifier,
+  parsePriceValue,
+  sanitizePriceValue,
+} from '../reservationsShared.js';
 import {
   getSelectedItems,
   addSelectedItem,
@@ -2110,6 +2117,43 @@ function setupEquipmentModeControls() {
   applyEquipmentModeUi(activeMode);
 }
 
+function buildPackageIdentityKeyFromGroup(group = {}) {
+  const candidates = [
+    group.packageId,
+    group.package_id,
+    group.packageCode,
+    group.package_code,
+    group.packageDisplayCode,
+    group.barcode,
+    group.key,
+  ];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = normalizePackageId(candidate);
+    if (normalized) return normalized;
+    const normalizedNumbers = normalizeNumbers(String(candidate)).trim().toLowerCase();
+    if (normalizedNumbers) return normalizedNumbers;
+  }
+  return null;
+}
+
+function buildPackageIdentityKeyFromItem(item = {}) {
+  if (!item || typeof item !== 'object') return null;
+  const normalized = normalizePackageId(
+    item.packageId
+      ?? item.package_id
+      ?? item.package_code
+      ?? item.packageCode
+      ?? item.barcode
+      ?? item.id
+      ?? null
+  );
+  if (normalized) return normalized;
+  const candidate = item.package_code ?? item.packageCode ?? item.barcode ?? null;
+  if (!candidate) return null;
+  return normalizeNumbers(String(candidate)).trim().toLowerCase();
+}
+
 function renderReservationItems(containerId = 'reservation-items') {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -2160,7 +2204,6 @@ function renderReservationItems(containerId = 'reservation-items') {
       `;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
       const unitCostNumber = Number.isFinite(Number(group.unitCost)) ? Number(group.unitCost) : 0;
-      const unitCostDisplay = `${normalizeNumbers(unitCostNumber.toFixed(2))} ${currencyLabel}`;
 
       const isPackageGroup = group.items.some((item) => item?.type === 'package');
 
@@ -2220,6 +2263,36 @@ function renderReservationItems(containerId = 'reservation-items') {
         }
       }
 
+      const packageItemIndex = (() => {
+        if (!isPackageGroup) return null;
+        for (let i = 0; i < items.length; i += 1) {
+          const entry = items[i];
+          if (!entry || String(entry.type || '').toLowerCase() !== 'package') continue;
+          if (resolveReservationItemGroupKey(entry) === group.key) {
+            return i;
+          }
+        }
+        return null;
+      })();
+      const packageIdentity = isPackageGroup ? buildPackageIdentityKeyFromGroup(group) : null;
+      const packageIdentityAttr = packageIdentity ? `data-package-identity="${packageIdentity}"` : '';
+      const packageIndexAttr = packageItemIndex != null && Number.isInteger(packageItemIndex)
+        ? `data-package-index="${packageItemIndex}"`
+        : '';
+      const unitCostInput = `
+        <input
+          type="number"
+          class="form-control form-control-sm reservation-unit-cost-input"
+          data-group-key="${group.key}"
+          ${packageIdentityAttr}
+          ${packageIndexAttr}
+          min="0"
+          step="0.01"
+          value="${normalizeNumbers(String(unitCostNumber))}"
+          aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"
+        >
+      `;
+
       return `
         <tr data-group-key="${group.key}">
           <td>
@@ -2240,7 +2313,7 @@ function renderReservationItems(containerId = 'reservation-items') {
           </td>
           <td><span class="reservation-days-value">${daysDisplay}</span></td>
           <td>${unitPriceDisplay}</td>
-          <td><input type="number" class="form-control form-control-sm reservation-unit-cost-input" data-group-key="${group.key}" min="0" step="0.01" value="${normalizeNumbers(String(unitCostNumber))}" aria-label="${t('reservations.equipment.table.unitCost', 'تكلفة الوحدة')}"></td>
+          <td>${unitCostInput}</td>
           <td>${totalPriceDisplay}</td>
           <td>
             <button type="button" class="reservation-remove-button" data-action="remove-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
@@ -2930,6 +3003,122 @@ async function handleReservationSubmit() {
     ? projectPaidRaw
     : 'unpaid';
 
+  const groupCostOverrides = new Map();
+  const packageIndexOverrides = new Map();
+  const packageIdentityOverrides = new Map();
+  const scopedCostInputs = document.querySelectorAll('.reservation-unit-cost-input[data-group-key]');
+  scopedCostInputs.forEach((input) => {
+    const parsed = parsePriceValue(input.value);
+    const cost = Number.isFinite(parsed) && parsed >= 0 ? sanitizePriceValue(parsed) : null;
+    if (cost === null) {
+      return;
+    }
+    const packageIndexAttr = input.dataset.packageIndex;
+    if (packageIndexAttr !== undefined && packageIndexAttr !== '') {
+      const parsedIndex = Number.parseInt(packageIndexAttr, 10);
+      if (Number.isInteger(parsedIndex) && parsedIndex >= 0) {
+        packageIndexOverrides.set(parsedIndex, cost);
+        const packageEntry = draftItems[parsedIndex];
+        if (packageEntry) {
+          const identity = buildPackageIdentityKeyFromItem(packageEntry);
+          if (identity) {
+            packageIdentityOverrides.set(identity, cost);
+          }
+        }
+      }
+    }
+    const identityAttr = input.dataset.packageIdentity;
+    if (identityAttr) {
+      const normalizedIdentity = normalizePackageId(identityAttr)
+        || normalizeNumbers(String(identityAttr)).trim().toLowerCase();
+      if (normalizedIdentity) {
+        packageIdentityOverrides.set(normalizedIdentity, cost);
+      }
+    }
+    const key = input.dataset.groupKey;
+    if (key) {
+      groupCostOverrides.set(key, cost);
+    }
+  });
+
+  const itemsWithCostOverrides = draftItems.map((item, idx) => {
+    let override = packageIndexOverrides.has(idx) ? packageIndexOverrides.get(idx) : undefined;
+    if (override === undefined) {
+      const identity = buildPackageIdentityKeyFromItem(item);
+      if (identity) {
+        override = packageIdentityOverrides.get(identity);
+      }
+    }
+    if (override === undefined) {
+      const key = resolveReservationItemGroupKey(item);
+      if (key) {
+        override = groupCostOverrides.get(key);
+      }
+    }
+    if (override === undefined) return item;
+    return {
+      ...item,
+      cost: override,
+      unit_cost: override,
+      rental_cost: override,
+      purchase_price: override,
+      internal_cost: override,
+      equipment_cost: override,
+      package_cost: override,
+      packageCost: override,
+    };
+  });
+
+  const packagesFromItems = (() => {
+    const entries = [];
+    itemsWithCostOverrides.forEach((item, itemIndex) => {
+      if (String(item?.type || '').toLowerCase() !== 'package') {
+        return;
+      }
+      const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
+      const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
+      let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
+      const groupKey = resolveReservationItemGroupKey(item);
+      const identityKey = buildPackageIdentityKeyFromItem(item);
+      const override = (packageIndexOverrides.has(itemIndex) ? packageIndexOverrides.get(itemIndex) : undefined)
+        ?? (identityKey ? packageIdentityOverrides.get(identityKey) : undefined)
+        ?? (groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined);
+      if (override !== undefined && Number.isFinite(override)) {
+        unitCost = sanitizePriceValue(override);
+      }
+      const priority = override !== undefined
+        ? 2
+        : (Number.isFinite(unitCost) && unitCost > 0 ? 1 : 0);
+
+      entries.push({
+        __dedupeKey: identityKey ?? `pkg-${itemIndex}`,
+        __priority: priority,
+        package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
+        name: item.name ?? item.desc ?? item.package_name ?? null,
+        quantity: qty,
+        unit_price: unitPrice,
+        unit_cost: unitCost,
+        package_cost: unitCost,
+        packageCost: unitCost,
+        cost: unitCost,
+        items: Array.isArray(item.packageItems) ? item.packageItems : [],
+      });
+    });
+
+    const deduped = new Map();
+    entries.forEach((entry) => {
+      const key = entry.__dedupeKey;
+      if (!deduped.has(key) || (entry.__priority ?? 0) >= (deduped.get(key).__priority ?? 0)) {
+        deduped.set(key, entry);
+      }
+    });
+
+    return Array.from(deduped.values()).map((entry) => {
+      const { __dedupeKey, __priority, ...rest } = entry;
+      return rest;
+    });
+  })();
+
   const payload = buildReservationPayload({
     reservationCode,
     customerId: customerId,
@@ -2946,10 +3135,11 @@ async function handleReservationSubmit() {
     applyTax,
     paidStatus: projectLinked ? projectPaidStatus : effectivePaidStatus,
     confirmed: projectConfirmed,
-    items: draftItems.map((item) => ({
+    items: itemsWithCostOverrides.map((item) => ({
       ...item,
       equipmentId: item.equipmentId ?? item.id,
     })),
+    packages: packagesFromItems,
     crewAssignments,
     companySharePercent: projectLinked || !companyShareEnabled ? null : companySharePercent,
     companyShareEnabled: projectLinked ? false : companyShareEnabled,
