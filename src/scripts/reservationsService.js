@@ -928,7 +928,115 @@ function mergeItemCostsFromExisting(reservation) {
     return merged;
   });
 
-  return { ...reservation, items: mergedItems };
+  const reservationWithMergedItems = { ...reservation, items: mergedItems };
+  return mergePackageCostsFromExisting(reservationWithMergedItems);
+}
+
+function mergePackageCostsFromExisting(reservation) {
+  if (!reservation || typeof reservation !== 'object') return reservation;
+  const hasPackages = Array.isArray(reservation.packages) && reservation.packages.length;
+  const hasRawPackages = Array.isArray(reservation.packagesRaw) && reservation.packagesRaw.length;
+  if (!hasPackages && !hasRawPackages) return reservation;
+
+  const idCandidates = [
+    reservation.id,
+    reservation.reservationId,
+    reservation.reservation_id,
+    reservation.reservationCode,
+    reservation.reservation_code,
+  ].map((v) => (v != null ? String(v) : '')).filter(Boolean);
+  if (!idCandidates.length) return reservation;
+
+  const existing = reservationsState.find((r) => {
+    if (!r) return false;
+    const rid = r.id != null ? String(r.id) : '';
+    const rc = r.reservationId != null ? String(r.reservationId) : '';
+    const rcode = r.reservation_code != null ? String(r.reservation_code) : '';
+    return (rid && idCandidates.includes(rid))
+      || (rc && idCandidates.includes(rc))
+      || (rcode && idCandidates.includes(rcode));
+  });
+  if (!existing) return reservation;
+
+  const existingPackages = []
+    .concat(Array.isArray(existing.packages) ? existing.packages : [])
+    .concat(Array.isArray(existing.packagesRaw) ? existing.packagesRaw : []);
+
+  const existingMap = new Map();
+  existingPackages.forEach((pkg) => {
+    if (!pkg || typeof pkg !== 'object') return;
+    const key = derivePackageMergeKey(pkg);
+    if (!key) return;
+    const cost = parsePriceValue(
+      pkg.unit_cost
+        ?? pkg.unitCost
+        ?? pkg.cost
+        ?? pkg.package_cost
+        ?? pkg.rental_cost
+        ?? pkg.purchase_price
+        ?? pkg.internal_cost
+        ?? pkg.equipment_cost
+        ?? pkg.item_cost
+    );
+    if (!Number.isFinite(cost) || cost <= 0) return;
+    if (!existingMap.has(key)) {
+      existingMap.set(key, cost);
+    }
+  });
+  if (!existingMap.size) return reservation;
+
+  const applyCost = (pkg) => {
+    if (!pkg || typeof pkg !== 'object') return;
+    const currentCost = parsePriceValue(
+      pkg.unit_cost
+        ?? pkg.unitCost
+        ?? pkg.cost
+        ?? pkg.package_cost
+        ?? pkg.rental_cost
+        ?? pkg.purchase_price
+        ?? pkg.internal_cost
+        ?? pkg.equipment_cost
+        ?? pkg.item_cost
+    );
+    if (Number.isFinite(currentCost) && currentCost > 0) return;
+    const key = derivePackageMergeKey(pkg);
+    if (!key || !existingMap.has(key)) return;
+    const cost = sanitizePriceValue(existingMap.get(key));
+    pkg.unit_cost = cost;
+    pkg.unitCost = cost;
+    pkg.cost = cost;
+    if (typeof pkg.total_cost !== 'number' || !Number.isFinite(pkg.total_cost) || pkg.total_cost === 0) {
+      const qty = Number.isFinite(Number(pkg.quantity)) ? Number(pkg.quantity) : 1;
+      pkg.total_cost = Number((cost * qty).toFixed(2));
+    }
+    if (!Number.isFinite(parsePriceValue(pkg.rental_cost))) pkg.rental_cost = cost;
+    if (!Number.isFinite(parsePriceValue(pkg.purchase_price))) pkg.purchase_price = cost;
+    if (!Number.isFinite(parsePriceValue(pkg.internal_cost))) pkg.internal_cost = cost;
+    if (!Number.isFinite(parsePriceValue(pkg.equipment_cost))) pkg.equipment_cost = cost;
+    if (!Number.isFinite(parsePriceValue(pkg.item_cost))) pkg.item_cost = cost;
+  };
+
+  if (Array.isArray(reservation.packages)) {
+    reservation.packages.forEach(applyCost);
+  }
+  if (Array.isArray(reservation.packagesRaw)) {
+    reservation.packagesRaw.forEach(applyCost);
+  }
+  return reservation;
+}
+
+function derivePackageMergeKey(entry = {}) {
+  const normalizedId = normalizePackageIdentifier(
+    entry?.packageId
+      ?? entry?.package_id
+      ?? entry?.id
+      ?? entry?.code
+      ?? null
+  );
+  if (normalizedId) return normalizedId;
+  const code = normalizeNumbers(String(entry?.package_code ?? entry?.code ?? entry?.barcode ?? '')).trim().toLowerCase();
+  if (code) return code;
+  return null;
 }
 
 function mergeItemCostsFromCache(reservation) {
