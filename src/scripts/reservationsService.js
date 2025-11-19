@@ -1062,6 +1062,7 @@ export function mapReservationFromApi(raw = {}) {
   } else {
     mapped.packagesRaw = Array.isArray(mapped.packagesRaw) ? mapped.packagesRaw : [];
   }
+  debugLogPackages('mapReservationFromApi', mapped.packages);
   return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
 }
 
@@ -1082,6 +1083,7 @@ function applyPayloadPackages(reservation, payloadPackages) {
   } catch (_) {
     reservation.packagesRaw = payloadPackages;
   }
+  debugLogPackages('applyPayloadPackages', payloadPackages);
   return reservation;
 }
 
@@ -2940,6 +2942,50 @@ function mapReservationPackagesFromSource(raw = {}) {
 function toNumber(value) {
   const parsed = parsePriceValue(value);
   return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
+}
+
+function debugLogPackages(label, packages = []) {
+  try {
+    if (!packages || typeof console === 'undefined') return;
+    console.groupCollapsed(`📦 [reservations] ${label}`);
+    console.table(
+      (packages || []).map((pkg, index) => ({
+        index,
+        key: pkg?.package_code ?? pkg?.packageId ?? pkg?.id ?? pkg?.name ?? `pkg-${index}`,
+        unitCost: pkg?.unit_cost ?? pkg?.unitCost ?? pkg?.cost ?? 0,
+        unitPrice: pkg?.unit_price ?? pkg?.unitPrice ?? pkg?.price ?? 0,
+      }))
+    );
+    console.groupEnd();
+  } catch (_) {
+    /* ignore logging errors */
+  }
+}
+
+try {
+  if (typeof window !== 'undefined' && !window.__dumpReservationPackages) {
+    window.__dumpReservationPackages = (id) => {
+      const target = reservationsState.find((r) => {
+        const candidates = [
+          r?.id,
+          r?.reservationId,
+          r?.reservation_id,
+          r?.reservationCode,
+          r?.reservation_code,
+        ].map((value) => (value != null ? String(value) : null));
+        const normalizedId = id != null ? String(id) : null;
+        return normalizedId && candidates.includes(normalizedId);
+      });
+      if (!target) {
+        console.warn('[reservations] __dumpReservationPackages: reservation not found', id);
+        return null;
+      }
+      debugLogPackages(`__dumpReservationPackages(${id})`, target.packages);
+      return target;
+    };
+  }
+} catch (_) {
+  /* noop */
 }
 
 function toPositiveInt(value, { fallback = 1, max = 1_000_000 } = {}) {
