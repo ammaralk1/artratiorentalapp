@@ -1345,7 +1345,18 @@ export async function saveReservationChanges({
     .map((item) => {
       const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
       const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
-      const unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
+      let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
+      // محاولة إضافية: اقرأ تكلفة الحزمة من حقل الإدخال الخاص بها إن وُجد
+      const groupKey = resolveReservationItemGroupKey(item);
+      if (unitCost === 0 && groupKey) {
+        const input = document.getElementById(`edit-unit-cost-${groupKey}`);
+        if (input) {
+          const parsed = parsePriceValue(input.value);
+          if (Number.isFinite(parsed) && parsed >= 0) {
+            unitCost = sanitizePriceValue(parsed);
+          }
+        }
+      }
       return {
         package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
         name: item.name ?? item.desc ?? item.package_name ?? null,
