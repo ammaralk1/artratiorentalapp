@@ -1155,9 +1155,7 @@ function upsertReservationItems(PDO $pdo, int $reservationId, array $items): voi
 function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages): void
 {
     ensureReservationPackagesTable($pdo);
-    static $equipmentCostCache = [];
 
-    // Capture existing package costs before deletion so we can reuse them when payload omits unit_cost.
     $existingCostByKey = [];
     try {
         $existingPackages = fetchReservationPackages($pdo, $reservationId);
@@ -1177,8 +1175,8 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
                 $existingCostByKey[$key] = $cost;
             }
         }
-    } catch (Throwable $fetchError) {
-        error_log('⚠️ Failed to read existing reservation packages before update: ' . $fetchError->getMessage());
+    } catch (Throwable $error) {
+        error_log('⚠️ Failed to fetch existing reservation packages before update: ' . $error->getMessage());
     }
 
     $pdo->prepare('DELETE FROM reservation_packages WHERE reservation_id = :id')->execute(['id' => $reservationId]);
@@ -1187,63 +1185,35 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         return;
     }
 
-    $sqlWithCost = 'INSERT INTO reservation_packages (
-        reservation_id,
-        package_id,
-        package_code,
-        package_name,
-        quantity,
-        unit_price,
-        unit_cost,
-        items_json,
-        package_metadata
-    ) VALUES (
-        :reservation_id,
-        :package_id,
-        :package_code,
-        :package_name,
-        :quantity,
-        :unit_price,
-        :unit_cost,
-        :items_json,
-        :package_metadata
-    )';
-
-    $sqlWithoutCost = 'INSERT INTO reservation_packages (
-        reservation_id,
-        package_id,
-        package_code,
-        package_name,
-        quantity,
-        unit_price,
-        items_json,
-        package_metadata
-    ) VALUES (
-        :reservation_id,
-        :package_id,
-        :package_code,
-        :package_name,
-        :quantity,
-        :unit_price,
-        :items_json,
-        :package_metadata
-    )';
-
-    try {
-        $statement = $pdo->prepare($sqlWithCost);
-    } catch (PDOException $_) {
-        ensureReservationPackagesTable($pdo);
-        $statement = $pdo->prepare($sqlWithCost);
-    }
-
-    // Deduplicate packages by code/id and prefer higher unit_cost when duplicates exist
     $normalizedPackages = [];
 
     foreach ($packages as $package) {
-        $key = normalizeReservationPackageKey($package);
+        if (!is_array($package)) {
+            continue;
+        }
 
-        // Resolve unit cost with tolerant fallbacks and optional derivation from items
-        $packageItems = is_array($package['items'] ?? null) ? $package['items'] : [];
+        $key = normalizeReservationPackageKey($package);
+        if (!$key) {
+            continue;
+        }
+
+        $quantity = 1;
+        if (isset($package['quantity'])) {
+            $quantity = (int) $package['quantity'];
+        } elseif (isset($package['qty'])) {
+            $quantity = (int) $package['qty'];
+        }
+        if ($quantity < 1) {
+            $quantity = 1;
+        }
+
+        $unitPrice = 0.0;
+        if (isset($package['unit_price'])) {
+            $unitPrice = max(0.0, (float) $package['unit_price']);
+        } elseif (isset($package['price'])) {
+            $unitPrice = max(0.0, (float) $package['price']);
+        }
+
         $unitCost = null;
         $unitCostCandidates = [
             $package['unit_cost'] ?? null,
@@ -1256,64 +1226,76 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             if ($candidate === null || $candidate === '') {
                 continue;
             }
-            $val = (float) $candidate;
-            if ($val >= 0) {
-                $unitCost = $val;
+            $numericCandidate = (float) $candidate;
+            if ($numericCandidate >= 0) {
+                $unitCost = $numericCandidate;
                 break;
             }
         }
-        if ($unitCost === null && $key !== null && isset($existingCostByKey[$key])) {
+        if ($unitCost === null && isset($existingCostByKey[$key])) {
             $unitCost = $existingCostByKey[$key];
         }
-        // إذا لم تُرسل تكلفة للحزمة، لا نرجع لسعرها؛ نكتفي بما وصل أو 0
         if ($unitCost === null) {
             $unitCost = 0.0;
         }
 
-        $params = [
-            'reservation_id' => $reservationId,
-            'package_id' => isset($package['package_id']) ? (int) $package['package_id'] : (isset($package['packageId']) ? (int) $package['packageId'] : null),
-            'package_code' => isset($package['package_code']) ? (string) $package['package_code'] : null,
-            'package_name' => isset($package['name']) ? (string) $package['name'] : (isset($package['package_name']) ? (string) $package['package_name'] : null),
-            'quantity' => isset($package['quantity']) ? (int) $package['quantity'] : 1,
-            'unit_price' => isset($package['unit_price']) ? (float) $package['unit_price'] : 0,
-            'unit_cost' => $unitCost,
-            'items_json' => json_encode($packageItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            'package_metadata' => json_encode($package['package_metadata'] ?? $package['metadata'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ];
+        $items = is_array($package['items'] ?? null) ? $package['items'] : null;
+        $itemsJson = $items && count($items) ? json_encode($items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
 
-        if ($key !== null) {
-            if (isset($normalizedPackages[$key])) {
-                $existing = $normalizedPackages[$key];
-                if (isset($existing['unit_cost']) && (float)$existing['unit_cost'] >= (float)$unitCost) {
-                    continue; // keep higher/equal cost
-                }
-            }
-            $normalizedPackages[$key] = $params;
-        } else {
-            $normalizedPackages[] = $params;
+        $packageCode = null;
+        if (!empty($package['package_code'])) {
+            $packageCode = (string) $package['package_code'];
+        } elseif (!empty($package['code'])) {
+            $packageCode = (string) $package['code'];
+        } elseif (!empty($package['packageId'])) {
+            $packageCode = (string) $package['packageId'];
         }
+
+        if (!isset($normalizedPackages[$key])) {
+            $normalizedPackages[$key] = [
+                'reservation_id' => $reservationId,
+                'package_code'   => $packageCode,
+                'quantity'       => $quantity,
+                'unit_price'     => $unitPrice,
+                'unit_cost'      => $unitCost,
+                'items_json'     => $itemsJson,
+            ];
+            continue;
+        }
+
+        $existing = $normalizedPackages[$key];
+        $existing['quantity'] = $quantity;
+        if ($unitCost > $existing['unit_cost']) {
+            $existing['unit_cost'] = $unitCost;
+        }
+        $existing['unit_price'] = $unitPrice;
+        if ($packageCode !== null) {
+            $existing['package_code'] = $packageCode;
+        }
+        if ($itemsJson !== null) {
+            $existing['items_json'] = $itemsJson;
+        }
+        $normalizedPackages[$key] = $existing;
     }
 
-    foreach (array_values($normalizedPackages) as $params) {
+    $statement = $pdo->prepare(
+        'INSERT INTO reservation_packages (reservation_id, package_code, quantity, unit_price, unit_cost, items_json)
+         VALUES (:reservation_id, :package_code, :quantity, :unit_price, :unit_cost, :items_json)'
+    );
+
+    foreach ($normalizedPackages as $params) {
         try {
             $statement->execute($params);
         } catch (PDOException $error) {
             $message = strtolower($error->getMessage());
             if (str_contains($message, 'unit_cost') || str_contains($message, 'items_json') || str_contains($message, 'unknown column')) {
-                // Try to patch missing columns, then retry
                 ensureReservationPackagesTable($pdo);
-                try {
-                    $statement = $pdo->prepare($sqlWithCost);
-                    $statement->execute($params);
-                    continue;
-                } catch (PDOException $_retry) {
-                    // Final fallback: drop unit_cost/items_json bindings
-                    $statement = $pdo->prepare($sqlWithoutCost);
-                    unset($params['unit_cost'], $params['items_json']);
-                    $statement->execute($params);
-                    continue;
-                }
+                $statement = $pdo->prepare(
+                    'INSERT INTO reservation_packages (reservation_id, package_code, quantity, unit_price, unit_cost, items_json)
+                     VALUES (:reservation_id, :package_code, :quantity, :unit_price, :unit_cost, :items_json)'
+                );
+                $statement->execute($params);
+                continue;
             }
             throw $error;
         }
