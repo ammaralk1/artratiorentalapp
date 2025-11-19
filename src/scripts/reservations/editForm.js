@@ -272,10 +272,16 @@ export function renderEditReservationItems(items = []) {
         >
       `;
       const unitCostInputId = `edit-unit-cost-${group.key}`;
-      const packageItemIndex = group.itemIndices.find((idx) => {
-        const sourceItem = items[idx];
-        return sourceItem && String(sourceItem.type || '').toLowerCase() === 'package';
-      });
+      const packageItemIndex = (() => {
+        if (!Array.isArray(group.items)) return null;
+        for (let i = 0; i < group.items.length; i += 1) {
+          const entry = group.items[i];
+          if (entry && String(entry.type || '').toLowerCase() === 'package') {
+            return group.itemIndices?.[i] ?? null;
+          }
+        }
+        return null;
+      })();
       const unitCostInput = `
         <input
           type="number"
