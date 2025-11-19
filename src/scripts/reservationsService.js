@@ -655,7 +655,7 @@ export async function createReservationApi(payload) {
   if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {
     responseData.packages = payload.packages;
   }
-  const created = mapReservationFromApi(responseData);
+  const created = applyPayloadPackages(mapReservationFromApi(responseData), payload?.packages);
   const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
   if (payloadItems) {
     if (Array.isArray(created.items) && created.items.length) {
@@ -734,7 +734,7 @@ export async function updateReservationApi(id, payload) {
   if ((!Array.isArray(responseData.packages) || responseData.packages.length === 0) && Array.isArray(payload?.packages) && payload.packages.length) {
     responseData.packages = payload.packages;
   }
-  const updated = mapReservationFromApi(responseData);
+  const updated = applyPayloadPackages(mapReservationFromApi(responseData), payload?.packages);
   const payloadItems = Array.isArray(payload?.items) ? payload.items : null;
   if (payloadItems) {
     if (Array.isArray(updated.items) && updated.items.length) {
@@ -1063,6 +1063,26 @@ export function mapReservationFromApi(raw = {}) {
     mapped.packagesRaw = Array.isArray(mapped.packagesRaw) ? mapped.packagesRaw : [];
   }
   return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
+}
+
+function applyPayloadPackages(reservation, payloadPackages) {
+  if (!reservation || !Array.isArray(payloadPackages) || payloadPackages.length === 0) {
+    return reservation;
+  }
+  try {
+    const normalized = mapReservationPackagesFromSource({ packages: payloadPackages });
+    if (normalized.length) {
+      reservation.packages = mergePackageCollections(normalized, reservation.packages || []);
+    }
+  } catch (error) {
+    console.warn('[reservationsService] Failed to normalize payload packages', error);
+  }
+  try {
+    reservation.packagesRaw = payloadPackages.map((pkg) => ({ ...pkg }));
+  } catch (_) {
+    reservation.packagesRaw = payloadPackages;
+  }
+  return reservation;
 }
 
 export function mapLegacyReservation(raw = {}) {
