@@ -2152,6 +2152,39 @@ function normalizePackageIdentifier(value) {
   return normalizePackageId(raw);
 }
 
+function resolvePackageMergeKey(entry, codeToIdMap = null) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+  const codeCandidates = [
+    entry.package_code,
+    entry.packageCode,
+    entry.code,
+    entry.barcode,
+  ];
+  for (const candidate of codeCandidates) {
+    const normalized = normalizePackageIdentifier(candidate ?? '');
+    if (normalized) {
+      if (codeToIdMap && codeToIdMap.has(normalized)) {
+        return codeToIdMap.get(normalized) || normalized;
+      }
+      return normalized;
+    }
+  }
+  const idCandidates = [
+    entry.packageId,
+    entry.package_id,
+    entry.id,
+  ];
+  for (const candidate of idCandidates) {
+    const normalized = normalizePackageIdentifier(candidate ?? '');
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
 function normalizeBarcodeValueLoose(value) {
   if (value === null || value === undefined) {
     return '';
@@ -2355,14 +2388,14 @@ function normalizeItemsWithPackages(items = [], packages = []) {
 
   const packagesById = new Map();
   workingPackages.forEach((pkg) => {
-    const normalizedId = normalizePackageIdentifier(pkg.packageId ?? pkg.package_id ?? pkg.id);
-    if (!normalizedId) return;
-    packagesById.set(normalizedId, pkg);
+    const key = resolvePackageMergeKey(pkg);
+    if (!key) return;
+    packagesById.set(key, pkg);
   });
 
   // Ensure each package has its packageItems populated from derived data when missing
   derived.packages.forEach((derivedPkg) => {
-    const normalizedId = normalizePackageIdentifier(derivedPkg.packageId ?? derivedPkg.package_id ?? derivedPkg.id);
+    const normalizedId = resolvePackageMergeKey(derivedPkg);
     if (!normalizedId) return;
     const target = packagesById.get(normalizedId);
     if (!target) return;
@@ -2812,16 +2845,7 @@ function mergePackageCollections(primary = [], secondary = []) {
     if (code) codeToId.set(code, idNorm || code);
   });
 
-  const deriveKey = (entry) => {
-    const idNorm = normalizePackageIdentifier(
-      entry?.packageId ?? entry?.package_id ?? entry?.id ?? null
-    );
-    const codeRaw = String(entry?.package_code ?? entry?.code ?? entry?.barcode ?? '').trim().toLowerCase();
-    const code = codeRaw ? normalizeNumbers(codeRaw) : '';
-    if (idNorm) return idNorm;
-    if (code && codeToId.has(code)) return codeToId.get(code);
-    return code || null;
-  };
+  const deriveKey = (entry) => resolvePackageMergeKey(entry, codeToId);
 
   const append = (collection) => {
     if (!Array.isArray(collection)) return;
