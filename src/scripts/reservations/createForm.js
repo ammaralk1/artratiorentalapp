@@ -3161,7 +3161,6 @@ function setupReservationButtons() {
   };
 
   container.addEventListener('change', handlePriceCostChange);
-  container.addEventListener('input', handlePriceCostChange);
 
   container.dataset.listenerAttached = 'true';
 }
