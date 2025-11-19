@@ -472,9 +472,10 @@ export function buildReservationDisplayGroups(reservation = {}) {
   const packageEquipmentIds = new Set();
 
   packagesMap.forEach(({ source: pkg, itemSource = null, normalizedId }, mapKey) => {
-    // Prefer canonical package definition as the primary source when available
+    // Prefer reservation-specific data over canonical definitions to keep user overrides (cost, price, etc.)
     const canonicalDef = normalizedId ? findPackageById(normalizedId) : null;
-    const primarySource = canonicalDef || pkg || {};
+    const pkgSource = pkg && typeof pkg === 'object' ? pkg : {};
+    const primarySource = canonicalDef ? { ...canonicalDef, ...pkgSource } : pkgSource;
     const secondarySource = itemSource && typeof itemSource === 'object' ? itemSource : null;
 
     let resolvedItems = normalizePackageItemsForGroup(primarySource);
