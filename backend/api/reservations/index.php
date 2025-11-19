@@ -1259,9 +1259,8 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
 
         $existing = $normalizedPackages[$key];
         $existing['quantity'] = $quantity;
-        if ($unitCost > $existing['unit_cost']) {
-            $existing['unit_cost'] = $unitCost;
-        }
+        // Always trust the latest incoming cost even if it is lower than the previous value.
+        $existing['unit_cost'] = $unitCost;
         if ($unitPrice >= 0) {
             $existing['unit_price'] = $unitPrice;
         }
