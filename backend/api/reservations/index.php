@@ -1201,7 +1201,19 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
         $statement = $pdo->prepare($sqlWithCost);
     }
 
+    // Deduplicate packages by code/id and prefer higher unit_cost when duplicates exist
+    $normalizedPackages = [];
+
     foreach ($packages as $package) {
+        $key = null;
+        if (!empty($package['package_code'])) {
+            $key = 'code:' . strtolower((string) $package['package_code']);
+        } elseif (!empty($package['package_id'])) {
+            $key = 'id:' . (string) $package['package_id'];
+        } elseif (!empty($package['packageId'])) {
+            $key = 'id:' . (string) $package['packageId'];
+        }
+
         // Resolve unit cost with tolerant fallbacks and optional derivation from items
         $packageItems = is_array($package['items'] ?? null) ? $package['items'] : [];
         $unitCost = null;
@@ -1239,6 +1251,20 @@ function upsertReservationPackages(PDO $pdo, int $reservationId, array $packages
             'package_metadata' => json_encode($package['package_metadata'] ?? $package['metadata'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         ];
 
+        if ($key !== null) {
+            if (isset($normalizedPackages[$key])) {
+                $existing = $normalizedPackages[$key];
+                if (isset($existing['unit_cost']) && (float)$existing['unit_cost'] >= (float)$unitCost) {
+                    continue; // keep higher/equal cost
+                }
+            }
+            $normalizedPackages[$key] = $params;
+        } else {
+            $normalizedPackages[] = $params;
+        }
+    }
+
+    foreach (array_values($normalizedPackages) as $params) {
         try {
             $statement->execute($params);
         } catch (PDOException $error) {
