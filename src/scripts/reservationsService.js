@@ -1041,13 +1041,18 @@ export function mapReservationFromApi(raw = {}) {
     payment_history: raw.payment_history ?? raw.paymentHistory ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
     paymentHistory: raw.paymentHistory ?? raw.payment_history ?? raw.payments ?? raw.paymentLogs ?? raw.payment_records,
   });
-  try {
-    const rawPackages = mapReservationPackagesFromSource({ packages: raw.packages });
-    if (rawPackages.length) {
-      mapped.packages = mergePackageCollections(rawPackages, mapped.packages || []);
+  if (Array.isArray(raw.packages)) {
+    try {
+      mapped.packagesRaw = raw.packages.map((pkg) => ({ ...pkg }));
+      const rawPackages = mapReservationPackagesFromSource({ packages: raw.packages });
+      if (rawPackages.length) {
+        mapped.packages = mergePackageCollections(rawPackages, mapped.packages || []);
+      }
+    } catch (_) {
+      mapped.packagesRaw = Array.isArray(mapped.packagesRaw) ? mapped.packagesRaw : [];
     }
-  } catch (_) {
-    /* ignore raw package merge errors */
+  } else {
+    mapped.packagesRaw = Array.isArray(mapped.packagesRaw) ? mapped.packagesRaw : [];
   }
   return mergeItemCostsFromCache(mergeItemCostsFromExistingSafe(mapped));
 }
@@ -1063,6 +1068,10 @@ export function toInternalReservation(raw = {}) {
   let items = Array.isArray(raw.items)
     ? raw.items.map(mapReservationItem)
     : [];
+
+  const rawPackagesSnapshot = Array.isArray(raw.packagesRaw)
+    ? raw.packagesRaw.map((pkg) => ({ ...pkg }))
+    : (Array.isArray(raw.packages) ? raw.packages.map((pkg) => ({ ...pkg })) : []);
 
   let packages = mapReservationPackagesFromSource(raw);
 
@@ -1269,6 +1278,7 @@ export function toInternalReservation(raw = {}) {
     endDatetime: end,
     customerPhone: raw.customer_phone ?? raw.customerPhone ?? null,
     packages,
+    packagesRaw: rawPackagesSnapshot,
     companySharePercent,
     companyShareAmount,
     companyShareEnabled,

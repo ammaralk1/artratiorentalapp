@@ -417,6 +417,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
   };
 
   const packagesMap = new Map();
+  const rawPackagesLookup = new Map();
 
   const registerPackageSource = (pkg, indexHint = 0, origin = 'packages') => {
     if (!pkg || typeof pkg !== 'object') return;
@@ -455,8 +456,24 @@ export function buildReservationDisplayGroups(reservation = {}) {
     }
   };
 
+  const registerRawPackage = (pkg) => {
+    if (!pkg || typeof pkg !== 'object') return;
+    const key = derivePackageKey(pkg);
+    if (!key) return;
+    if (!rawPackagesLookup.has(key)) {
+      rawPackagesLookup.set(key, pkg);
+    }
+  };
+
+  if (Array.isArray(reservation?.packagesRaw)) {
+    reservation.packagesRaw.forEach(registerRawPackage);
+  }
+
   if (Array.isArray(reservation?.packages)) {
-    reservation.packages.forEach((pkg, idx) => registerPackageSource(pkg, idx, 'packages'));
+    reservation.packages.forEach((pkg, idx) => {
+      registerPackageSource(pkg, idx, 'packages');
+      registerRawPackage(pkg);
+    });
   }
 
   items.forEach((item, idx) => {
@@ -528,6 +545,23 @@ export function buildReservationDisplayGroups(reservation = {}) {
       if (Number.isFinite(parsed) && parsed >= 0) {
         unitCost = sanitizePriceValue(parsed);
         break;
+      }
+    }
+    if ((!unitCost || unitCost === 0) && rawPackagesLookup.has(mapKey)) {
+      const rawEntry = rawPackagesLookup.get(mapKey);
+      const rawCost = parsePriceValue(
+        rawEntry?.unit_cost
+        ?? rawEntry?.unitCost
+        ?? rawEntry?.cost
+        ?? rawEntry?.package_cost
+        ?? rawEntry?.rental_cost
+        ?? rawEntry?.purchase_price
+        ?? rawEntry?.internal_cost
+        ?? rawEntry?.equipment_cost
+        ?? rawEntry?.item_cost
+      );
+      if (Number.isFinite(rawCost) && rawCost > 0) {
+        unitCost = sanitizePriceValue(rawCost);
       }
     }
     // Resolve pricing mode: daily or fixed (default to daily unless explicitly fixed)

@@ -324,7 +324,78 @@ function decrementPackageCounters(counterMap, keys = [], amount = 0) {
 
 function mergeReservationPackagesIntoItems(reservation = {}, items = []) {
   const baseItems = Array.isArray(items) ? items.map((item) => ({ ...item })) : [];
-  const packagesSource = Array.isArray(reservation?.packages) ? reservation.packages : [];
+  const rawPackagesMap = new Map();
+  if (Array.isArray(reservation?.packagesRaw)) {
+    reservation.packagesRaw.forEach((pkg) => {
+      if (!pkg || typeof pkg !== 'object') return;
+      const key = normalizePackageId(
+        pkg.packageId
+          ?? pkg.package_id
+          ?? pkg.package_code
+          ?? pkg.packageCode
+          ?? pkg.code
+          ?? pkg.id
+          ?? ''
+      );
+      if (!key) return;
+      rawPackagesMap.set(key, pkg);
+    });
+  }
+  const packagesSourceOriginal = Array.isArray(reservation?.packages) ? reservation.packages : [];
+  const packagesSource = packagesSourceOriginal.map((pkg) => {
+    const key = normalizePackageId(
+      pkg.packageId
+        ?? pkg.package_id
+        ?? pkg.package_code
+        ?? pkg.packageCode
+        ?? pkg.code
+        ?? pkg.id
+        ?? ''
+    );
+    if (!key || !rawPackagesMap.has(key)) {
+      return pkg;
+    }
+    const existingCost = parsePriceValue(
+      pkg.unit_cost
+        ?? pkg.unitCost
+        ?? pkg.cost
+        ?? pkg.rental_cost
+        ?? pkg.purchase_price
+        ?? pkg.internal_cost
+        ?? pkg.equipment_cost
+        ?? pkg.item_cost
+    );
+    if (Number.isFinite(existingCost) && existingCost > 0) {
+      return pkg;
+    }
+    const rawEntry = rawPackagesMap.get(key);
+    const rawCost = parsePriceValue(
+      rawEntry.unit_cost
+        ?? rawEntry.unitCost
+        ?? rawEntry.cost
+        ?? rawEntry.package_cost
+        ?? rawEntry.rental_cost
+        ?? rawEntry.purchase_price
+        ?? rawEntry.internal_cost
+        ?? rawEntry.equipment_cost
+        ?? rawEntry.item_cost
+    );
+    if (!Number.isFinite(rawCost) || rawCost <= 0) {
+      return pkg;
+    }
+    const sanitized = sanitizePriceValue(rawCost);
+    return {
+      ...pkg,
+      unit_cost: sanitized,
+      unitCost: sanitized,
+      cost: sanitized,
+      rental_cost: pkg.rental_cost ?? sanitized,
+      purchase_price: pkg.purchase_price ?? sanitized,
+      internal_cost: pkg.internal_cost ?? sanitized,
+      equipment_cost: pkg.equipment_cost ?? sanitized,
+      item_cost: pkg.item_cost ?? sanitized,
+    };
+  });
   if (!packagesSource.length) {
     return baseItems;
   }
