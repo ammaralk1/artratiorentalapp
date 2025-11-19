@@ -1424,46 +1424,66 @@ export async function saveReservationChanges({
   }
 
   // جمع الحزم من العناصر لإرسالها صراحةً (حتى لا تختفي تكلفة الحزمة)
-  const packagesFromItems = itemsWithCostOverrides
-    .filter((item) => String(item?.type || '').toLowerCase() === 'package')
-    .map((item) => {
-      const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
-      const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
-      let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
-      // محاولة إضافية: اقرأ تكلفة الحزمة من حقل الإدخال الخاص بها إن وُجد
-      const groupKey = resolveReservationItemGroupKey(item);
-      if (unitCost === 0 && groupKey) {
-        // أولوية: cost override عبر الخريطة
-        const override = groupCostOverrides.get(groupKey);
+  const buildPackageIdentityKey = (item) => {
+    const normalized = normalizePackageId(
+      item.packageId
+        ?? item.package_id
+        ?? item.package_code
+        ?? item.packageCode
+        ?? item.barcode
+        ?? item.id
+        ?? null
+    );
+    if (normalized) return normalized;
+    const candidate = item.package_code ?? item.packageCode ?? item.barcode ?? null;
+    if (!candidate) return null;
+    return normalizeNumbers(String(candidate)).trim().toLowerCase();
+  };
+
+  const packagesFromItems = (() => {
+    const entries = [];
+    itemsWithCostOverrides
+      .filter((item) => String(item?.type || '').toLowerCase() === 'package')
+      .forEach((item, index) => {
+        const qty = Number.isFinite(Number(item.qty ?? item.quantity)) ? Number(item.qty ?? item.quantity) : 1;
+        const unitPrice = Number.isFinite(Number(item.unit_price ?? item.price)) ? Number(item.unit_price ?? item.price) : 0;
+        let unitCost = Number.isFinite(Number(item.unit_cost ?? item.cost)) ? Number(item.unit_cost ?? item.cost) : 0;
+        const groupKey = resolveReservationItemGroupKey(item);
+        const override = groupKey !== undefined ? groupCostOverrides.get(groupKey) : undefined;
         if (override !== undefined && Number.isFinite(override)) {
-          unitCost = override;
-        } else {
-          // بديل: ابحث عن أي حقل تكلفة في الصف يحتوي على اسم/كود الحزمة
-          const inputs = Array.from(document.querySelectorAll('.reservation-unit-cost-input'));
-          const match = inputs.find((input) => {
-            const rowText = (input.closest('tr')?.textContent || '').toLowerCase();
-            const code = (item.package_code || '').toLowerCase();
-            const name = (item.name || item.desc || item.package_name || '').toLowerCase();
-            return (code && rowText.includes(code)) || (name && rowText.includes(name));
-          });
-          if (match) {
-            const parsed = parsePriceValue(match.value);
-            if (Number.isFinite(parsed) && parsed >= 0) {
-              unitCost = sanitizePriceValue(parsed);
-            }
-          }
+          unitCost = sanitizePriceValue(override);
         }
+        const identityKey = buildPackageIdentityKey(item);
+        const priority = override !== undefined
+          ? 2
+          : (Number.isFinite(unitCost) && unitCost > 0 ? 1 : 0);
+
+        entries.push({
+          __dedupeKey: identityKey ?? `pkg-${index}`,
+          __priority: priority,
+          package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
+          name: item.name ?? item.desc ?? item.package_name ?? null,
+          quantity: qty,
+          unit_price: unitPrice,
+          unit_cost: unitCost,
+          cost: unitCost,
+          items: Array.isArray(item.packageItems) ? item.packageItems : [],
+        });
+      });
+
+    const deduped = new Map();
+    entries.forEach((entry) => {
+      const key = entry.__dedupeKey;
+      if (!deduped.has(key) || (entry.__priority ?? 0) >= (deduped.get(key).__priority ?? 0)) {
+        deduped.set(key, entry);
       }
-      return {
-        package_code: item.package_code ?? item.packageCode ?? item.barcode ?? item.code ?? null,
-        name: item.name ?? item.desc ?? item.package_name ?? null,
-        quantity: qty,
-        unit_price: unitPrice,
-        unit_cost: unitCost,
-        cost: unitCost,
-        items: Array.isArray(item.packageItems) ? item.packageItems : [],
-      };
     });
+
+    return Array.from(deduped.values()).map((entry) => {
+      const { __dedupeKey, __priority, ...rest } = entry;
+      return rest;
+    });
+  })();
 
   const payload = buildReservationPayload({
     reservationCode: reservation.reservationCode ?? reservation.reservationId ?? null,
