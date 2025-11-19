@@ -1349,11 +1349,24 @@ export async function saveReservationChanges({
       // محاولة إضافية: اقرأ تكلفة الحزمة من حقل الإدخال الخاص بها إن وُجد
       const groupKey = resolveReservationItemGroupKey(item);
       if (unitCost === 0 && groupKey) {
-        const input = document.getElementById(`edit-unit-cost-${groupKey}`);
-        if (input) {
-          const parsed = parsePriceValue(input.value);
-          if (Number.isFinite(parsed) && parsed >= 0) {
-            unitCost = sanitizePriceValue(parsed);
+        // أولوية: cost override عبر الخريطة
+        const override = groupCostOverrides.get(groupKey);
+        if (override !== undefined && Number.isFinite(override)) {
+          unitCost = override;
+        } else {
+          // بديل: ابحث عن أي حقل تكلفة في الصف يحتوي على اسم/كود الحزمة
+          const inputs = Array.from(document.querySelectorAll('.reservation-unit-cost-input'));
+          const match = inputs.find((input) => {
+            const rowText = (input.closest('tr')?.textContent || '').toLowerCase();
+            const code = (item.package_code || '').toLowerCase();
+            const name = (item.name || item.desc || item.package_name || '').toLowerCase();
+            return (code && rowText.includes(code)) || (name && rowText.includes(name));
+          });
+          if (match) {
+            const parsed = parsePriceValue(match.value);
+            if (Number.isFinite(parsed) && parsed >= 0) {
+              unitCost = sanitizePriceValue(parsed);
+            }
           }
         }
       }
