@@ -593,15 +593,35 @@ const INFO_ALIGN_TARGETS = [
   'projectDetails',
 ];
 const INFO_ALIGN_DEFAULTS = {
-  customer: 'right',
-  reservation: 'right',
-  project: 'right',
+  customer: 'left',
+  reservation: 'left',
+  project: 'left',
   projectCustomer: 'right',
   projectDetails: 'right',
+};
+const INFO_ALIGN_CONTEXT_DEFAULTS = {
+  project: {
+    customer: 'right',
+    projectCustomer: 'left',
+    projectDetails: 'left',
+  },
+  reservationChecklist: {
+    customer: 'left',
+    reservation: 'left',
+    project: 'left',
+    projectCustomer: 'right',
+    projectDetails: 'right',
+  },
 };
 let blockDragMode = false;
 let blockDragDirty = false;
 let initializedInfoAlignments = false;
+const DEFAULT_BLOCK_OFFSETS = {
+  project: {
+    'project-title': { x: -182.78680419921875, y: -5.0181427001953125 },
+    'project-content': { x: -140.1977996826172, y: -4.7384796142578125 },
+  },
+};
 
 function getBlockDragContext(state = activeQuoteState) {
   return state?.context || 'reservation';
@@ -637,7 +657,11 @@ function persistStoredBlockOffsets(contextName, offsets = {}) {
 function initializeQuoteBlockOffsets(state) {
   if (!state) return;
   const contextName = getBlockDragContext(state);
-  state.blockOffsets = { ...loadStoredBlockOffsets(contextName) };
+  const stored = loadStoredBlockOffsets(contextName);
+  state.blockOffsets = {
+    ...(DEFAULT_BLOCK_OFFSETS[contextName] || {}),
+    ...stored,
+  };
   blockDragDirty = false;
   blockDragMode = false;
   updateBlockDragButtons();
@@ -708,9 +732,9 @@ function persistCurrentBlockOffsets() {
 
 function resetStoredBlockOffsets() {
   if (!activeQuoteState) return;
-  activeQuoteState.blockOffsets = {};
   const contextName = getBlockDragContext(activeQuoteState);
-  persistStoredBlockOffsets(contextName, {});
+  activeQuoteState.blockOffsets = { ...(DEFAULT_BLOCK_OFFSETS[contextName] || {}) };
+  persistStoredBlockOffsets(contextName, activeQuoteState.blockOffsets);
   markBlockOffsetsDirty(false);
   renderQuotePreview();
   showToast(t('reservations.quote.drag.reset', '↺ تمت إعادة مواضع البلوكات للوضع الافتراضي.'));
@@ -749,6 +773,7 @@ function initializeInfoAlignments(state) {
   const stored = loadInfoAlignmentPrefs(contextName);
   state.infoAlignments = {
     ...INFO_ALIGN_DEFAULTS,
+    ...(INFO_ALIGN_CONTEXT_DEFAULTS[contextName] || {}),
     ...(stored || {}),
   };
   initializedInfoAlignments = true;
@@ -4920,8 +4945,11 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
+  const effectiveOffsets = activeQuoteState?.blockOffsets && Object.keys(activeQuoteState.blockOffsets).length
+    ? activeQuoteState.blockOffsets
+    : (DEFAULT_BLOCK_OFFSETS[getBlockDragContext(activeQuoteState)] || {});
   try {
-    applyQuoteBlockOffsets(root, activeQuoteState?.blockOffsets);
+    applyQuoteBlockOffsets(root, effectiveOffsets);
   } catch (_) {
     /* non-fatal */
   }
