@@ -585,11 +585,19 @@ let quoteAssetWarningShown = false;
 const BLOCK_DRAG_STORAGE_KEY = 'quoteBlockOffsets';
 const BLOCK_DRAG_LIMIT_PX = 1800;
 const INFO_ALIGN_STORAGE_KEY = 'quoteInfoAlignments';
-const INFO_ALIGN_TARGETS = ['customer', 'reservation', 'project'];
+const INFO_ALIGN_TARGETS = [
+  'customer',
+  'reservation',
+  'project',
+  'projectCustomer',
+  'projectDetails',
+];
 const INFO_ALIGN_DEFAULTS = {
   customer: 'right',
   reservation: 'right',
   project: 'right',
+  projectCustomer: 'right',
+  projectDetails: 'right',
 };
 let blockDragMode = false;
 let blockDragDirty = false;
@@ -3230,7 +3238,7 @@ function buildProjectQuotationHtml({
     customerFieldItems.push(renderPlainItem(t('projects.details.labels.clientEmail', 'البريد الإلكتروني'), clientInfo.email || '-'));
   }
 
-  const projectCustomerInfoClass = buildInfoPlainClass(activeQuoteState, 'customer');
+const projectCustomerInfoClass = buildInfoPlainClass(activeQuoteState, 'projectCustomer');
 
   const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
@@ -3265,7 +3273,7 @@ function buildProjectQuotationHtml({
     projectFieldItems.push(renderPlainItem(t('projects.details.status', 'حالة المشروع'), projectInfo.statusLabel || '-'));
   }
 
-  const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'project');
+const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDetails');
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? `<section class="quote-section quote-section--plain quote-section--project">
@@ -3512,7 +3520,7 @@ function buildProjectQuotationHtml({
         }
         return `<section class="quote-section quote-section--financial">
           ${wrapSectionWithDragHandles(
-            'project',
+            'projectFinancial',
             `<h3>${escapeHtml(t('projects.quote.sections.financial', 'الملخص المالي'))}</h3>`,
             `<div class="totals-block">
               ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
@@ -5139,6 +5147,7 @@ function renderQuotePreview() {
   const { previewFrame } = quoteModalRefs;
   if (!previewFrame) return;
 
+  refreshAlignmentOptions();
   const context = activeQuoteState.context || 'reservation';
   const html = buildQuotationHtml({
     context,
@@ -5577,7 +5586,7 @@ function ensureQuoteModal() {
     });
   });
   updateBlockDragButtons();
-  updateInfoAlignmentControls();
+  refreshAlignmentOptions();
 
   if (termsInput) {
     termsInput.addEventListener('input', handleQuoteTermsInput);
@@ -6247,4 +6256,32 @@ export async function exportProjectPdf({ project }) {
   initializeInfoAlignments(activeQuoteState);
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
+}
+function getAlignmentOptionsForContext(context = 'reservation') {
+  if (context === 'project') {
+    return [
+      { value: 'projectCustomer', label: t('projects.quote.sections.customer', 'بيانات العميل')} ,
+      { value: 'projectDetails', label: t('projects.quote.sections.project', 'بيانات المشروع') },
+    ];
+  }
+  return [
+    { value: 'customer', label: t('reservations.quote.sections.customer', 'بيانات العميل') },
+    { value: 'reservation', label: t('reservations.quote.sections.reservation', 'تفاصيل الحجز') },
+    { value: 'project', label: t('reservations.quote.sections.project', 'بيانات المشروع') },
+  ];
+}
+
+function refreshAlignmentOptions() {
+  if (!quoteModalRefs?.alignTarget) return;
+  const context = activeQuoteState?.context || 'reservation';
+  const options = getAlignmentOptionsForContext(context);
+  const select = quoteModalRefs.alignTarget;
+  const previous = select.value;
+  select.innerHTML = options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join('');
+  if (options.some((option) => option.value === previous)) {
+    select.value = previous;
+  } else {
+    select.value = options[0]?.value || '';
+  }
+  updateInfoAlignmentControls();
 }
