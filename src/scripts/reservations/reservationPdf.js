@@ -5465,9 +5465,15 @@ function ensureQuoteModal() {
   const dragControls = document.createElement('div');
   dragControls.className = 'quote-preview-zoom-controls quote-preview-drag-controls';
   dragControls.innerHTML = `
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle>${escapeHtml(t('reservations.quote.drag.enable', '🎯 وضع تحريك البلوكات'))}</button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled>${escapeHtml(t('reservations.quote.drag.save', '💾 تثبيت المواضع'))}</button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset>${escapeHtml(t('reservations.quote.drag.resetBtn', '↺ تصفير المواضع'))}</button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle title="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}">
+      <span aria-hidden="true">↕️</span>
+    </button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled title="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}">
+      <span aria-hidden="true">💾</span>
+    </button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset title="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}">
+      <span aria-hidden="true">⟲</span>
+    </button>
   `;
   const alignControls = document.createElement('div');
   alignControls.className = 'quote-preview-zoom-controls quote-preview-align-controls';
