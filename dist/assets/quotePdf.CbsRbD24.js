@@ -356,9 +356,6 @@ body,
 .quote-section--customer .info-plain {
   width: 100%;
   align-self: stretch;
-  text-align: right;
-  align-items: flex-end;
-  justify-content: flex-end;
   margin-left: 0;
   margin-right: 0;
 }
@@ -366,8 +363,6 @@ body,
 .quote-section--project .info-plain__item,
 .quote-section--customer .info-plain__item {
   width: 100%;
-  justify-content: flex-end;
-  text-align: right;
 }
 
 .quote-section--reservation {
@@ -575,30 +570,30 @@ body,
 }
 
 .info-plain--align-right {
-  text-align: right;
-  align-items: flex-end;
+  text-align: right !important;
+  align-items: flex-end !important;
 }
 
 .info-plain--align-right .info-plain__item {
-  justify-content: flex-end;
+  justify-content: flex-end !important;
 }
 
 .info-plain--align-center {
-  text-align: center;
-  align-items: center;
+  text-align: center !important;
+  align-items: center !important;
 }
 
 .info-plain--align-center .info-plain__item {
-  justify-content: center;
+  justify-content: center !important;
 }
 
 .info-plain--align-left {
-  text-align: left;
-  align-items: flex-start;
+  text-align: left !important;
+  align-items: flex-start !important;
 }
 
 .info-plain--align-left .info-plain__item {
-  justify-content: flex-start;
+  justify-content: flex-start !important;
 }
 
 .info-block h4,
