@@ -583,7 +583,7 @@ let manualQuoteBackdrop = null;
 let manualQuoteEscapeHandler = null;
 let quoteAssetWarningShown = false;
 const BLOCK_DRAG_STORAGE_KEY = 'quoteBlockOffsets';
-const BLOCK_DRAG_LIMIT_PX = 280;
+const BLOCK_DRAG_LIMIT_PX = 1800;
 let blockDragMode = false;
 let blockDragDirty = false;
 
