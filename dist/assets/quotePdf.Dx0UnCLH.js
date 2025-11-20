@@ -307,8 +307,8 @@ body,
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: 'left right';
   column-gap: 18px;
-  align-items: start;
-  /* Neutralize RTL influence on column indexing; text alignment handled per-section */
+  align-items: stretch;
+  justify-items: stretch;
   direction: ltr;
 }
 
@@ -317,16 +317,12 @@ body,
 .quote-section-row--primary .quote-section--customer { grid-area: right; }
 
 #quotation-pdf-root[dir="rtl"] .quote-section-row--primary {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-start;
-  gap: 18px;
   direction: rtl;
+  grid-template-areas: 'right left';
 }
 
-#quotation-pdf-root[dir="rtl"] .quote-section-row--primary .quote-section {
-  flex: 1 1 0;
-}
+#quotation-pdf-root[dir="rtl"] .quote-section-row--primary .quote-section--project { grid-area: left; }
+#quotation-pdf-root[dir="rtl"] .quote-section-row--primary .quote-section--customer { grid-area: right; }
 
 .quote-section--project,
 .quote-section--customer {
