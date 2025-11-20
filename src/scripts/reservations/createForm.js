@@ -6,8 +6,6 @@ import {
   getEquipmentRecordByBarcode,
   findEquipmentByBarcode,
   getEquipmentAvailabilityStatus,
-  isEquipmentUnavailable,
-  isEquipmentAvailable,
   resolveEquipmentCost
 } from '../reservationsEquipment.js';
 import { getSelectedCrewAssignments, getSelectedTechnicians, resetSelectedTechnicians, setSelectedTechnicians } from '../reservationsTechnicians.js';
@@ -62,7 +60,8 @@ import {
   activateEquipmentSelection,
   clearEquipmentSelection,
   EQUIPMENT_SELECTION_EVENTS,
-  isEquipmentSelectionActive
+  isEquipmentSelectionActive,
+  updateEquipmentSelectionContext
 } from './equipmentSelection.js';
 import {
   buildPackageOptionsSnapshot,
@@ -1239,6 +1238,13 @@ function getCreateReservationDateRange() {
     start: combineDateTime(startDate, startTime),
     end: combineDateTime(endDate, endTime)
   };
+}
+
+function refreshActiveEquipmentSelectionRange() {
+  if (!isEquipmentSelectionActive()) return;
+  const { start, end } = getCreateReservationDateRange();
+  if (!start || !end) return;
+  updateEquipmentSelectionContext({ start, end });
 }
 
 export function findEquipmentByDescription(term) {
@@ -2463,7 +2469,8 @@ function increaseReservationGroup(groupKey) {
       price: Number(record?.price) || 0,
     });
     if (candidateKey !== groupKey) return false;
-    if (!isEquipmentAvailable(record)) return false;
+    const availability = getEquipmentAvailabilityStatus(record);
+    if (availability === 'maintenance' || availability === 'retired') return false;
     return !hasEquipmentConflict(barcodeNormalized, start, end);
   });
 
@@ -2655,7 +2662,10 @@ function setupReservationTimeSync() {
     const endDateInput = document.getElementById('res-end');
     if (startDateInput && !startDateInput.dataset.persistAttached) {
       const persist = () => { try { persistCreateReservationDraft(); } catch (_) {} };
-      const rerender = () => { try { renderReservationItems(); renderDraftReservationSummary(); } catch (_) {} };
+      const rerender = () => {
+        try { renderReservationItems(); renderDraftReservationSummary(); } catch (_) {}
+        refreshActiveEquipmentSelectionRange();
+      };
       startDateInput.addEventListener('input', persist);
       startDateInput.addEventListener('change', persist);
       startDateInput.addEventListener('input', rerender);
@@ -2664,7 +2674,10 @@ function setupReservationTimeSync() {
     }
     if (endDateInput && !endDateInput.dataset.persistAttached) {
       const persist = () => { try { persistCreateReservationDraft(); } catch (_) {} };
-      const rerender = () => { try { renderReservationItems(); renderDraftReservationSummary(); } catch (_) {} };
+      const rerender = () => {
+        try { renderReservationItems(); renderDraftReservationSummary(); } catch (_) {}
+        refreshActiveEquipmentSelectionRange();
+      };
       endDateInput.addEventListener('input', persist);
       endDateInput.addEventListener('change', persist);
       endDateInput.addEventListener('input', rerender);
@@ -2696,6 +2709,7 @@ function setupReservationTimeSync() {
 
     renderDraftReservationSummary();
     try { renderReservationItems(); } catch (_) {}
+    refreshActiveEquipmentSelectionRange();
   };
 
   startTimeInput.addEventListener('change', syncEndTimeWithStart);
@@ -2712,10 +2726,14 @@ function setupReservationTimeSync() {
     }
     try { persistCreateReservationDraft(); } catch (_) { /* ignore */ }
     try { renderReservationItems(); renderDraftReservationSummary(); } catch (_) {}
+    refreshActiveEquipmentSelectionRange();
   });
 
   // Persist when time fields change explicitly
-  const persistTime = () => { try { persistCreateReservationDraft(); } catch (_) {} };
+  const persistTime = () => {
+    try { persistCreateReservationDraft(); } catch (_) {}
+    refreshActiveEquipmentSelectionRange();
+  };
   startTimeInput.addEventListener('input', persistTime);
   startTimeInput.addEventListener('change', persistTime);
   endTimeInput.addEventListener('change', persistTime);

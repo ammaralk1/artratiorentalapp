@@ -7,8 +7,6 @@ import {
   resolveItemImage,
   findEquipmentByBarcode,
   getEquipmentAvailabilityStatus,
-  isEquipmentUnavailable,
-  isEquipmentAvailable,
   resolveEquipmentCost
 } from '../reservationsEquipment.js';
 import { renderEditSummary, DEFAULT_COMPANY_SHARE_PERCENT, calculateReservationDays } from '../reservationsSummary.js';
@@ -970,7 +968,8 @@ function increaseEditReservationGroup(groupKey) {
       price: Number(record?.price) || 0,
     });
     if (candidateKey !== groupKey) return false;
-    if (!isEquipmentAvailable(record)) return false;
+    const availability = getEquipmentAvailabilityStatus(record);
+    if (availability === 'maintenance' || availability === 'retired') return false;
     return !hasEquipmentConflict(barcodeNormalized, start, end, ignoreId);
   });
 
