@@ -584,8 +584,16 @@ let manualQuoteEscapeHandler = null;
 let quoteAssetWarningShown = false;
 const BLOCK_DRAG_STORAGE_KEY = 'quoteBlockOffsets';
 const BLOCK_DRAG_LIMIT_PX = 1800;
+const INFO_ALIGN_STORAGE_KEY = 'quoteInfoAlignments';
+const INFO_ALIGN_TARGETS = ['customer', 'reservation', 'project'];
+const INFO_ALIGN_DEFAULTS = {
+  customer: 'right',
+  reservation: 'right',
+  project: 'right',
+};
 let blockDragMode = false;
 let blockDragDirty = false;
+let initializedInfoAlignments = false;
 
 function getBlockDragContext(state = activeQuoteState) {
   return state?.context || 'reservation';
@@ -702,6 +710,75 @@ function resetStoredBlockOffsets() {
 
 function clampDragOffset(value) {
   return Math.min(Math.max(value, -BLOCK_DRAG_LIMIT_PX), BLOCK_DRAG_LIMIT_PX);
+}
+
+function loadInfoAlignmentPrefs(contextName = 'reservation') {
+  try {
+    const raw = JSON.parse(localStorage.getItem(INFO_ALIGN_STORAGE_KEY) || '{}');
+    const entry = raw?.[contextName];
+    if (entry && typeof entry === 'object') {
+      return { ...entry };
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return null;
+}
+
+function persistInfoAlignmentPrefs(contextName, alignments = {}) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(INFO_ALIGN_STORAGE_KEY) || '{}');
+    raw[contextName] = alignments;
+    localStorage.setItem(INFO_ALIGN_STORAGE_KEY, JSON.stringify(raw));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function initializeInfoAlignments(state) {
+  if (!state || initializedInfoAlignments) return;
+  const contextName = getBlockDragContext(state);
+  const stored = loadInfoAlignmentPrefs(contextName);
+  state.infoAlignments = {
+    ...INFO_ALIGN_DEFAULTS,
+    ...(stored || {}),
+  };
+  initializedInfoAlignments = true;
+}
+
+function getInfoAlignment(state, key) {
+  const defaults = INFO_ALIGN_DEFAULTS[key] || 'right';
+  return state?.infoAlignments?.[key] || defaults;
+}
+
+function buildInfoPlainClass(state, key) {
+  const align = getInfoAlignment(state, key);
+  return `info-plain info-plain--align-${align}`;
+}
+
+function applyInfoAlignment(target, alignment) {
+  if (!activeQuoteState) return;
+  const normalizedTarget = INFO_ALIGN_TARGETS.includes(target) ? target : 'customer';
+  const normalizedAlignment = ['left', 'center', 'right'].includes(alignment) ? alignment : 'right';
+  if (!activeQuoteState.infoAlignments) {
+    activeQuoteState.infoAlignments = { ...INFO_ALIGN_DEFAULTS };
+  }
+  activeQuoteState.infoAlignments[normalizedTarget] = normalizedAlignment;
+  const contextName = getBlockDragContext(activeQuoteState);
+  persistInfoAlignmentPrefs(contextName, activeQuoteState.infoAlignments);
+  renderQuotePreview();
+  updateInfoAlignmentControls();
+}
+
+function updateInfoAlignmentControls() {
+  if (!quoteModalRefs?.alignTarget) return;
+  const target = quoteModalRefs.alignTarget.value || 'customer';
+  const current = getInfoAlignment(activeQuoteState, target);
+  (quoteModalRefs.alignButtons || []).forEach((button) => {
+    const value = button.dataset.alignValue;
+    if (!value) return;
+    button.classList.toggle('is-active', value === current);
+  });
 }
 
 function setupPreviewBlockDrag(doc) {
@@ -3153,12 +3230,14 @@ function buildProjectQuotationHtml({
     customerFieldItems.push(renderPlainItem(t('projects.details.labels.clientEmail', 'البريد الإلكتروني'), clientInfo.email || '-'));
   }
 
+  const projectCustomerInfoClass = buildInfoPlainClass(activeQuoteState, 'customer');
+
   const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
         ${wrapSectionWithDragHandles(
-          'projectCustomer',
+          'customer',
           `<h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.customer', 'بيانات العميل'))}</h3>`,
-          customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage
+          customerFieldItems.length ? `<div class="${projectCustomerInfoClass}">${customerFieldItems.join('')}</div>` : noFieldsMessage
         )}
       </section>`
     : '';
@@ -3186,12 +3265,14 @@ function buildProjectQuotationHtml({
     projectFieldItems.push(renderPlainItem(t('projects.details.status', 'حالة المشروع'), projectInfo.statusLabel || '-'));
   }
 
+  const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'project');
+
   const projectSectionMarkup = includeSection('projectInfo')
     ? `<section class="quote-section quote-section--plain quote-section--project">
         ${wrapSectionWithDragHandles(
-          'projectDetails',
+          'project',
           `<h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.project', 'بيانات المشروع'))}</h3>`,
-          projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage
+          projectFieldItems.length ? `<div class="${projectDetailsInfoClass}">${projectFieldItems.join('')}</div>` : noFieldsMessage
         )}
       </section>`
     : '';
@@ -3431,7 +3512,7 @@ function buildProjectQuotationHtml({
         }
         return `<section class="quote-section quote-section--financial">
           ${wrapSectionWithDragHandles(
-            'projectFinancial',
+            'project',
             `<h3>${escapeHtml(t('projects.quote.sections.financial', 'الملخص المالي'))}</h3>`,
             `<div class="totals-block">
               ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
@@ -3800,13 +3881,15 @@ function buildQuotationHtml(options) {
     customerFieldItems.push(renderPlainItem(t('reservations.details.labels.email', 'البريد'), customerEmail));
   }
 
+  const customerInfoClass = buildInfoPlainClass(activeQuoteState, 'customer');
+
   const customerSectionMarkup = includeSection('customerInfo')
     ? (customerFieldItems.length
         ? `<section class="quote-section quote-section--plain quote-section--customer">
             ${wrapSectionWithDragHandles(
               'customer',
               `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>`,
-              `<div class="info-plain">${customerFieldItems.join('')}</div>`
+              `<div class="${customerInfoClass}">${customerFieldItems.join('')}</div>`
             )}
           </section>`
         : '')
@@ -3826,13 +3909,15 @@ function buildQuotationHtml(options) {
     reservationFieldItems.push(renderPlainItem(t('reservations.details.labels.duration', 'عدد الأيام'), rentalDaysDisplay));
   }
 
+  const reservationInfoClass = buildInfoPlainClass(activeQuoteState, 'reservation');
+
   const reservationSectionMarkup = includeSection('reservationInfo')
     ? (reservationFieldItems.length
         ? `<section class="quote-section quote-section--plain quote-section--reservation">
             ${wrapSectionWithDragHandles(
               'reservation',
               `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>`,
-              `<div class="info-plain">${reservationFieldItems.join('')}</div>`
+              `<div class="${reservationInfoClass}">${reservationFieldItems.join('')}</div>`
             )}
           </section>`
         : '')
@@ -3846,13 +3931,15 @@ function buildQuotationHtml(options) {
     projectFieldItems.push(renderPlainItem(t('reservations.details.labels.code', 'الرمز'), projectCode || '-'));
   }
 
+  const projectInfoClass = buildInfoPlainClass(activeQuoteState, 'project');
+
   const projectSectionMarkup = includeSection('projectInfo')
     ? (projectFieldItems.length
         ? `<section class="quote-section quote-section--plain quote-section--project">
             ${wrapSectionWithDragHandles(
               'project',
               `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>`,
-              `<div class="info-plain">${projectFieldItems.join('')}</div>`
+              `<div class="${projectInfoClass}">${projectFieldItems.join('')}</div>`
             )}
           </section>`
         : '')
@@ -5154,6 +5241,7 @@ function renderQuotePreview() {
     } catch (_) { /* non-fatal */ }
       setupPreviewBlockDrag(doc);
       syncBlockDragModeToPreview(doc);
+      updateInfoAlignmentControls();
       const pagesContainer = doc?.querySelector('.quote-preview-pages');
       const baseWidth = A4_WIDTH_PX;
 
@@ -5372,6 +5460,23 @@ function ensureQuoteModal() {
     <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled>${escapeHtml(t('reservations.quote.drag.save', '💾 تثبيت المواضع'))}</button>
     <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset>${escapeHtml(t('reservations.quote.drag.resetBtn', '↺ تصفير المواضع'))}</button>
   `;
+  const alignControls = document.createElement('div');
+  alignControls.className = 'quote-preview-zoom-controls quote-preview-align-controls';
+  const alignCustomerLabel = escapeHtml(t('reservations.quote.align.customer', 'بيانات العميل'));
+  const alignReservationLabel = escapeHtml(t('reservations.quote.align.reservation', 'تفاصيل الحجز'));
+  const alignProjectLabel = escapeHtml(t('reservations.quote.align.project', 'بيانات المشروع'));
+  alignControls.innerHTML = `
+    <select class="quote-preview-align-select" data-align-target>
+      <option value="customer">${alignCustomerLabel}</option>
+      <option value="reservation">${alignReservationLabel}</option>
+      <option value="project">${alignProjectLabel}</option>
+    </select>
+    <div class="quote-preview-align-buttons">
+      <button type="button" class="quote-preview-zoom-btn" data-align-value="left" title="${escapeHtml(t('reservations.quote.align.left', 'محاذاة يسار'))}">⬅️</button>
+      <button type="button" class="quote-preview-zoom-btn" data-align-value="center" title="${escapeHtml(t('reservations.quote.align.center', 'محاذاة وسط'))}">↔️</button>
+      <button type="button" class="quote-preview-zoom-btn" data-align-value="right" title="${escapeHtml(t('reservations.quote.align.right', 'محاذاة يمين'))}">➡️</button>
+    </div>
+  `;
 
   const frameWrapper = document.createElement('div');
   frameWrapper.className = 'quote-preview-frame-wrapper';
@@ -5395,6 +5500,7 @@ function ensureQuoteModal() {
   preview.appendChild(statusIndicator);
   headerActions.appendChild(zoomControls);
   headerActions.appendChild(dragControls);
+  headerActions.appendChild(alignControls);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
@@ -5447,7 +5553,9 @@ function ensureQuoteModal() {
     userAdjustedZoom: false,
     blockDragToggle: dragControls.querySelector('[data-block-drag-toggle]'),
     blockDragSave: dragControls.querySelector('[data-block-drag-save]'),
-    blockDragReset: dragControls.querySelector('[data-block-drag-reset]')
+    blockDragReset: dragControls.querySelector('[data-block-drag-reset]'),
+    alignTarget: alignControls.querySelector('[data-align-target]'),
+    alignButtons: Array.from(alignControls.querySelectorAll('[data-align-value]')),
   };
 
   const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
@@ -5460,7 +5568,16 @@ function ensureQuoteModal() {
   quoteModalRefs.blockDragToggle?.addEventListener('click', () => setBlockDragMode(!blockDragMode));
   quoteModalRefs.blockDragSave?.addEventListener('click', persistCurrentBlockOffsets);
   quoteModalRefs.blockDragReset?.addEventListener('click', resetStoredBlockOffsets);
+  quoteModalRefs.alignTarget?.addEventListener('change', () => updateInfoAlignmentControls());
+  (quoteModalRefs.alignButtons || []).forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = quoteModalRefs.alignTarget?.value || 'customer';
+      const value = button.dataset.alignValue || 'right';
+      applyInfoAlignment(target, value);
+    });
+  });
   updateBlockDragButtons();
+  updateInfoAlignmentControls();
 
   if (termsInput) {
     termsInput.addEventListener('input', handleQuoteTermsInput);
@@ -5984,9 +6101,11 @@ export async function exportReservationPdf({ reservation, customer, project }) {
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
   };
+  initializedInfoAlignments = false;
 
   applyQuoteTogglePreferences(activeQuoteState);
   initializeQuoteBlockOffsets(activeQuoteState);
+  initializeInfoAlignments(activeQuoteState);
   openQuoteModal();
   // Attach live update listeners once per session
   try { attachQuoteLiveListeners(); } catch (_) {}
@@ -6033,9 +6152,11 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
   };
+  initializedInfoAlignments = false;
 
   applyQuoteTogglePreferences(activeQuoteState);
   initializeQuoteBlockOffsets(activeQuoteState);
+  initializeInfoAlignments(activeQuoteState);
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
@@ -6119,9 +6240,11 @@ export async function exportProjectPdf({ project }) {
     projectNotes: projectData.notes,
     paymentHistory: projectData.paymentHistory
   };
+  initializedInfoAlignments = false;
 
   applyQuoteTogglePreferences(activeQuoteState);
   initializeQuoteBlockOffsets(activeQuoteState);
+  initializeInfoAlignments(activeQuoteState);
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
