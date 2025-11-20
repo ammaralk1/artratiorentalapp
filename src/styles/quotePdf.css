@@ -317,16 +317,15 @@ body,
 .quote-section-row--primary .quote-section--customer { grid-area: right; }
 
 #quotation-pdf-root[dir="rtl"] .quote-section-row--primary {
-  /* Stack both sections on the right so each block sits directly under its heading */
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 18px;
   direction: rtl;
-  gap: 12px;
 }
 
 #quotation-pdf-root[dir="rtl"] .quote-section-row--primary .quote-section {
-  width: 100%;
+  flex: 1 1 0;
 }
 
 .quote-section--project,
