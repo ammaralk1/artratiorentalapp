@@ -380,9 +380,15 @@ function resolvePackageUnitPrice(packageEntry = {}, packageItems = [], quantityO
   return 0;
 }
 
-export function buildReservationDisplayGroups(reservation = {}) {
+export function buildReservationDisplayGroups(reservation = {}, options = {}) {
+  const { preserveOriginalOrder = false } = options || {};
   const items = Array.isArray(reservation?.items) ? reservation.items : [];
   const groupedItems = groupReservationItems(items);
+  const orderKeys = preserveOriginalOrder ? [] : null;
+  const pushOrderKey = (key) => {
+    if (!orderKeys || !key) return;
+    orderKeys.push(key);
+  };
 
   // Build snapshot maps to unify package keys (id/code)
   const pkgDefs = getPackagesSnapshot();
@@ -418,6 +424,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
 
   const packagesMap = new Map();
   const rawPackagesLookup = new Map();
+  const packageGroupItemIndices = new Map();
 
   const registerPackageSource = (pkg, indexHint = 0, origin = 'packages') => {
     if (!pkg || typeof pkg !== 'object') return;
@@ -481,7 +488,19 @@ export function buildReservationDisplayGroups(reservation = {}) {
       const key = derivePackageKey(item, idx + packagesMap.size);
       // Avoid adding a second source with a different ad-hoc key for the same package
       registerPackageSource({ ...item, package_id: key, packageId: key, package_code: item.package_code ?? item.code }, idx + packagesMap.size, 'items');
+      if (key) {
+        const groupKey = `package::${key}`;
+        if (!packageGroupItemIndices.has(groupKey)) {
+          packageGroupItemIndices.set(groupKey, []);
+        }
+        packageGroupItemIndices.get(groupKey).push(idx);
+        pushOrderKey(groupKey);
+        return;
+      }
     }
+
+    const fallbackKey = resolveReservationItemGroupKey(item);
+    pushOrderKey(fallbackKey);
   });
 
   const packageGroups = [];
@@ -692,6 +711,7 @@ export function buildReservationDisplayGroups(reservation = {}) {
       type: 'package',
       packageItems: resolvedItems,
       packageId: normalizedId,
+      itemIndices: packageGroupItemIndices.get(`package::${mapKey}`) || [],
     });
   });
 
@@ -760,8 +780,33 @@ export function buildReservationDisplayGroups(reservation = {}) {
     ? [...uniquePackageGroups, ...filteredGroupedItems]
     : groupedItems;
 
+  let orderedGroups = displayGroups;
+  if (orderKeys && orderKeys.length) {
+    const visited = new Set();
+    const groupLookup = new Map();
+    displayGroups.forEach((group) => {
+      if (!groupLookup.has(group.key)) {
+        groupLookup.set(group.key, group);
+      }
+    });
+    const sorted = [];
+    orderKeys.forEach((key) => {
+      if (visited.has(key)) return;
+      const group = groupLookup.get(key);
+      if (!group) return;
+      sorted.push(group);
+      visited.add(key);
+    });
+    displayGroups.forEach((group) => {
+      if (visited.has(group.key)) return;
+      sorted.push(group);
+      visited.add(group.key);
+    });
+    orderedGroups = sorted;
+  }
+
   return {
-    groups: displayGroups,
+    groups: orderedGroups,
     packageGroups,
     groupedItems,
     filteredGroupedItems,

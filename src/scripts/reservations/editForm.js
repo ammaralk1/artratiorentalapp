@@ -232,7 +232,8 @@ export function renderEditReservationItems(items = []) {
   // Use the same display grouping used in details/quotes so that
   // packages render as single rows and their child items are not
   // duplicated with inflated quantities (e.g. days multipliers).
-  const { groups: displayGroups } = buildReservationDisplayGroups({ items });
+  const { groups: displayGroups } = buildReservationDisplayGroups({ items }, { preserveOriginalOrder: true });
+  const dragHandleLabel = t('reservations.equipment.table.reorder', 'اسحب لإعادة الترتيب');
 
   container.innerHTML = displayGroups
     .map((group) => {
@@ -255,11 +256,15 @@ export function renderEditReservationItems(items = []) {
           return Number.isFinite(d) && d > 0 ? d : 1;
         } catch (_) { return 1; }
       })();
-      const parsedTotalPrice = parsePriceValue(group.totalPrice);
-      const totalPriceRaw = Number.isFinite(parsedTotalPrice)
-        ? parsedTotalPrice
-        : unitPriceNumber * (Number.isFinite(group.count) ? group.count : 1) * groupDays;
-      const totalPriceNumber = sanitizePriceValue(totalPriceRaw);
+      const groupCount = (() => {
+        const raw = group.count ?? group.quantity ?? 1;
+        if (typeof raw === 'number') {
+          return Number.isFinite(raw) && raw > 0 ? raw : 1;
+        }
+        const parsed = Number.parseFloat(normalizeNumbers(String(raw)).replace(/[^0-9.]/g, ''));
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+      })();
+      const totalPriceNumber = sanitizePriceValue(unitPriceNumber * groupCount * groupDays);
       const unitPriceInput = `
         <input
           type="number"
@@ -330,6 +335,19 @@ export function renderEditReservationItems(items = []) {
         >
       `;
       const totalPriceDisplay = `${normalizeNumbers(totalPriceNumber.toFixed(2))} ${currencyLabel}`;
+      const dragHandle = `
+        <span
+          class="reservation-row-handle"
+          data-drag-handle="true"
+          draggable="true"
+          title="${dragHandleLabel}"
+          aria-label="${dragHandleLabel}"
+          role="button"
+          tabindex="0"
+        >
+          ⋮⋮
+        </span>
+      `;
 
       const normalizedBarcodes = group.barcodes
         .map((code) => normalizeNumbers(String(code || '')))
@@ -415,6 +433,9 @@ export function renderEditReservationItems(items = []) {
         <tr data-group-key="${group.key}">
           <td>
             <div class="reservation-item-info">
+              <div class="reservation-item-drag">
+                ${dragHandle}
+              </div>
               <div class="reservation-item-thumb-wrapper">${imageCell}</div>
               <div class="reservation-item-copy">
                 <div class="reservation-item-title">${group.description || '-'}</div>
@@ -441,7 +462,127 @@ export function renderEditReservationItems(items = []) {
     })
     .join('');
 
+  enableEditReservationDragAndDrop(container);
   ensureGroupHandler(container);
+}
+
+function applyEditReservationGroupOrder(orderedKeys = []) {
+  if (!Array.isArray(orderedKeys) || !orderedKeys.length) return;
+  const { index: editingIndex, items } = getEditingState();
+  if (!Array.isArray(items) || !items.length) return;
+
+  const { groups } = buildReservationDisplayGroups({ items }, { preserveOriginalOrder: true });
+  const keyToIndices = new Map();
+  groups.forEach((group) => {
+    if (Array.isArray(group.itemIndices) && group.itemIndices.length) {
+      keyToIndices.set(group.key, [...group.itemIndices]);
+    }
+  });
+
+  const used = new Set();
+  const reordered = [];
+  orderedKeys.forEach((key) => {
+    const indices = keyToIndices.get(key);
+    if (!indices || !indices.length) return;
+    indices.forEach((idx) => {
+      if (used.has(idx)) return;
+      if (items[idx]) {
+        reordered.push(items[idx]);
+        used.add(idx);
+      }
+    });
+  });
+
+  if (!reordered.length) return;
+  items.forEach((item, idx) => {
+    if (!used.has(idx)) {
+      reordered.push(item);
+    }
+  });
+
+  if (reordered.length !== items.length) return;
+  const unchanged = reordered.every((item, idx) => item === items[idx]);
+  if (unchanged) {
+    renderEditReservationItems(items);
+    return;
+  }
+
+  setEditingState(editingIndex, reordered);
+  renderEditReservationItems(reordered);
+  updateEditReservationSummary();
+}
+
+function enableEditReservationDragAndDrop(container) {
+  if (!container || container.dataset.dragListenerAttached === 'true') return;
+
+  let dragState = null;
+  const getRowsOrder = () => Array.from(container.querySelectorAll('tr[data-group-key]')).map((row) => row.dataset.groupKey);
+
+  const finalize = (shouldApply) => {
+    const draggingRow = container.querySelector('tr[data-group-key].is-dragging');
+    if (draggingRow) {
+      draggingRow.classList.remove('is-dragging');
+    }
+    if (!dragState) return;
+    const initialOrder = dragState.initialOrder || [];
+    dragState = null;
+    if (!shouldApply) {
+      renderEditReservationItems(getEditingState().items);
+      return;
+    }
+    const nextOrder = getRowsOrder();
+    const sameOrder = initialOrder.length === nextOrder.length
+      && initialOrder.every((key, idx) => key === nextOrder[idx]);
+    if (sameOrder) {
+      renderEditReservationItems(getEditingState().items);
+      return;
+    }
+    applyEditReservationGroupOrder(nextOrder);
+  };
+
+  container.addEventListener('dragstart', (event) => {
+    const handle = event.target.closest('[data-drag-handle]');
+    if (!handle) return;
+    const row = handle.closest('tr[data-group-key]');
+    if (!row) return;
+    dragState = {
+      key: row.dataset.groupKey,
+      initialOrder: getRowsOrder(),
+    };
+    row.classList.add('is-dragging');
+    try {
+      event.dataTransfer?.setData?.('text/plain', row.dataset.groupKey || '');
+      event.dataTransfer.effectAllowed = 'move';
+    } catch (_) { /* noop */ }
+  });
+
+  container.addEventListener('dragover', (event) => {
+    if (!dragState) return;
+    const targetRow = event.target.closest('tr[data-group-key]');
+    const draggingRow = container.querySelector('tr[data-group-key].is-dragging');
+    if (!targetRow || !draggingRow || targetRow === draggingRow) return;
+    event.preventDefault();
+    const rect = targetRow.getBoundingClientRect();
+    const shouldPlaceAfter = event.clientY > rect.top + (rect.height / 2);
+    if (shouldPlaceAfter) {
+      targetRow.after(draggingRow);
+    } else {
+      targetRow.before(draggingRow);
+    }
+  });
+
+  container.addEventListener('drop', (event) => {
+    if (!dragState) return;
+    event.preventDefault();
+    finalize(true);
+  });
+
+  container.addEventListener('dragend', () => {
+    if (!dragState) return;
+    finalize(false);
+  });
+
+  container.dataset.dragListenerAttached = 'true';
 }
 
 

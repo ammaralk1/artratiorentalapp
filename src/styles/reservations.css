@@ -2171,6 +2171,51 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   text-align: start;
 }
 
+.reservation-item-drag {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline-end: 4px;
+}
+
+.reservation-row-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  background: rgba(243, 244, 246, 0.9);
+  color: rgba(31, 45, 82, 0.8);
+  font-size: 0.8rem;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reservation-row-handle:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.35);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.reservation-row-handle:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+:is(html.dark-mode, body.dark-mode) .reservation-row-handle {
+  border-color: rgba(129, 140, 248, 0.45);
+  background: rgba(30, 41, 59, 0.85);
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.reservation-items-table tr.is-dragging {
+  opacity: 0.65;
+}
+
 .reservation-item-thumb-wrapper {
   flex: none;
 }
