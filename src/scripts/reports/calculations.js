@@ -279,15 +279,18 @@ export function isReservationPaid(reservation) {
 export function computeReportStatus(reservation) {
   const project = getProjectForReservation(reservation);
   const projectState = resolveReservationProjectState(reservation, project);
-  const projectStatus = normalizeStatusValue(projectState.projectStatus);
+  const projectStatusRaw = projectState.projectStatus || '';
+  const projectStatus = normalizeStatusValue(projectStatusRaw);
 
-  let statusValue = normalizeStatusValue(
+  const baseStatusValue = normalizeStatusValue(
     reservation?.status
       ?? reservation?.reservationStatus
       ?? reservation?.reservation_status
       ?? reservation?.state
       ?? ''
   );
+
+  let statusValue = baseStatusValue;
 
   if (projectState.projectLinked && projectStatus && statusValue !== 'cancelled') {
     statusValue = projectStatus;
@@ -302,9 +305,14 @@ export function computeReportStatus(reservation) {
     statusValue = 'completed';
   }
 
-  let confirmed = projectState.effectiveConfirmed
-    || statusValue === 'confirmed'
-    || statusValue === 'completed';
+  const projectStatusConfirms = projectStatusRaw === 'confirmed' || projectStatusRaw === 'in_progress';
+  const explicitProjectConfirmed = project?.confirmed === true || project?.confirmed === 'true';
+  const baseReservationConfirmed = projectState.reservationConfirmed || baseStatusValue === 'confirmed';
+
+  let confirmed = baseReservationConfirmed;
+  if (projectState.projectLinked) {
+    confirmed = explicitProjectConfirmed || projectStatusConfirms || baseReservationConfirmed;
+  }
 
   // If reservation is cancelled, do NOT mark as confirmed and do NOT override label
   if (statusValue === 'cancelled') {
@@ -333,7 +341,7 @@ export function getReservationStatusValue(reservation) {
 }
 
 export function calculateMetrics(reservations) {
-  const total = reservations.length;
+  let total = 0;
   let confirmed = 0;
   let completed = 0;
   let cancelled = 0;
@@ -351,15 +359,19 @@ export function calculateMetrics(reservations) {
 
   reservations.forEach((reservation) => {
     const { statusValue, confirmed: isConfirmed, paid, paidStatus } = computeReportStatus(reservation);
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    total += 1;
     if (statusValue === 'completed') {
       completed += 1;
     }
     if (statusValue === 'cancelled') {
       cancelled += 1;
     }
-    if (isConfirmed) {
-      confirmed += 1;
-    }
+    confirmed += 1;
     if (paid && statusValue !== 'cancelled') {
       paidCount += 1;
     }
