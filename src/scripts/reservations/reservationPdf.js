@@ -625,8 +625,64 @@ const DEFAULT_BLOCK_OFFSETS = {
   },
 };
 
-function getBlockDragContext(state = activeQuoteState) {
-  return state?.context || 'reservation';
+const QUOTE_LAYOUT_DATA_ATTRS = {
+  blockOffsets: 'data-block-offsets',
+  infoAlignments: 'data-info-alignments',
+  context: 'data-quote-source-context',
+};
+
+function encodeLayoutDataset(value) {
+  try {
+    return encodeURIComponent(JSON.stringify(value));
+  } catch (_) {
+    return '';
+  }
+}
+
+function parseLayoutDatasetAttr(node, attr) {
+  if (!node) return null;
+  const raw = node.getAttribute(attr);
+  if (!raw) return null;
+  try {
+    return JSON.parse(decodeURIComponent(raw));
+  } catch (_) {
+    return null;
+  }
+}
+
+function buildRootLayoutAttributes(layoutState = {}) {
+  const attrs = [];
+  const contextName = layoutState.context || getBlockDragContext(layoutState);
+  if (contextName) {
+    attrs.push(`${QUOTE_LAYOUT_DATA_ATTRS.context}="${escapeHtml(String(contextName))}"`);
+  }
+  if (layoutState.blockOffsets && Object.keys(layoutState.blockOffsets).length) {
+    const encodedOffsets = encodeLayoutDataset(layoutState.blockOffsets);
+    if (encodedOffsets) {
+      attrs.push(`${QUOTE_LAYOUT_DATA_ATTRS.blockOffsets}="${encodedOffsets}"`);
+    }
+  }
+  if (layoutState.infoAlignments && Object.keys(layoutState.infoAlignments).length) {
+    const encodedAlign = encodeLayoutDataset(layoutState.infoAlignments);
+    if (encodedAlign) {
+      attrs.push(`${QUOTE_LAYOUT_DATA_ATTRS.infoAlignments}="${encodedAlign}"`);
+    }
+  }
+  return attrs.length ? ` ${attrs.join(' ')}` : '';
+}
+
+let renderLayoutStateOverride = null;
+
+function resolveActiveLayoutState(preferred) {
+  if (preferred && typeof preferred === 'object') return preferred;
+  if (renderLayoutStateOverride) return renderLayoutStateOverride;
+  if (activeQuoteState) return activeQuoteState;
+  return null;
+}
+
+function getBlockDragContext(state = null) {
+  const source = resolveActiveLayoutState(state);
+  return source?.context || 'reservation';
 }
 
 function loadStoredBlockOffsets(contextName = 'reservation') {
@@ -783,8 +839,16 @@ function initializeInfoAlignments(state) {
 }
 
 function getInfoAlignment(state, key) {
-  const defaults = INFO_ALIGN_DEFAULTS[key] || 'right';
-  return state?.infoAlignments?.[key] || defaults;
+  const source = resolveActiveLayoutState(state);
+  const alignments = source?.infoAlignments;
+  if (alignments && Object.prototype.hasOwnProperty.call(alignments, key)) {
+    return alignments[key];
+  }
+  const contextName = getBlockDragContext(source);
+  if (INFO_ALIGN_CONTEXT_DEFAULTS[contextName]?.[key]) {
+    return INFO_ALIGN_CONTEXT_DEFAULTS[contextName][key];
+  }
+  return INFO_ALIGN_DEFAULTS[key] || 'right';
 }
 
 function buildInfoPlainClass(state, key) {
@@ -3230,7 +3294,8 @@ function buildProjectQuotationHtml({
   fieldSelections = {},
   quoteNumber,
   quoteDate,
-  terms = DEFAULT_TERMS
+  terms = DEFAULT_TERMS,
+  rootAttributes = ''
 }) {
   // Project quotes never use checklist mode; keep explicit boolean to avoid NameError
   const isChecklist = false;
@@ -3840,7 +3905,7 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
   `.trim();
 
   return `
-    <div id="quotation-pdf-root" dir="rtl" data-lang="${escapeHtml(lang)}">
+    <div id="quotation-pdf-root" dir="rtl" data-lang="${escapeHtml(lang)}"${rootAttributes}>
       <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
       <div class="quote-document" data-quote-document>
         <div class="quote-preview-pages" data-quote-pages></div>
@@ -3853,26 +3918,36 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
   `;
 }
 
-function buildQuotationHtml(options) {
-  if (options?.context === 'project') {
-    return buildProjectQuotationHtml(options);
-  }
+function buildQuotationHtml(options = {}) {
+  const layoutState = {
+    context: options?.context || getBlockDragContext(),
+    blockOffsets: options?.blockOffsets || activeQuoteState?.blockOffsets || null,
+    infoAlignments: options?.infoAlignments || activeQuoteState?.infoAlignments || null,
+  };
+  const rootAttributes = buildRootLayoutAttributes(layoutState);
+  const previousLayoutState = renderLayoutStateOverride;
+  renderLayoutStateOverride = layoutState;
 
-  const {
-    reservation,
-    customer,
-    project,
-    crewAssignments,
-    totals,
-    totalsDisplay,
-    rentalDays,
-    currencyLabel,
-    sections,
-    fieldSelections = {},
-    quoteNumber,
-    quoteDate,
-    terms = DEFAULT_TERMS
-  } = options;
+  try {
+    if (options?.context === 'project') {
+      return buildProjectQuotationHtml({ ...options, rootAttributes });
+    }
+
+    const {
+      reservation,
+      customer,
+      project,
+      crewAssignments,
+      totals,
+      totalsDisplay,
+      rentalDays,
+      currencyLabel,
+      sections,
+      fieldSelections = {},
+      quoteNumber,
+      quoteDate,
+      terms = DEFAULT_TERMS
+    } = options;
   const reservationId = normalizeNumbers(String(reservation?.reservationId ?? reservation?.id ?? ''));
   const langCurrent = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'ar';
   const startDisplay = reservation.start ? normalizeNumbers(formatDateTime(reservation.start)) : '-';
@@ -4626,18 +4701,21 @@ function buildQuotationHtml(options) {
   `.trim();
 
   const rootDir = (isChecklist && lang === 'en') ? 'ltr' : 'rtl';
-  return `
-    <div id="quotation-pdf-root" dir="${escapeHtml(rootDir)}" data-lang="${escapeHtml(lang)}">
-      <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
-      <div class="quote-document" data-quote-document>
-        <div class="quote-preview-pages" data-quote-pages></div>
-        <div class="quote-content-source" data-quote-source>
-          ${headerTemplateHtml}
-          ${orderedBlocks.join('')}
+    return `
+      <div id="quotation-pdf-root" dir="${escapeHtml(rootDir)}" data-lang="${escapeHtml(lang)}"${rootAttributes}>
+        <style>${PDF_FONT_FACE}${QUOTE_PDF_STYLES}</style>
+        <div class="quote-document" data-quote-document>
+          <div class="quote-preview-pages" data-quote-pages></div>
+          <div class="quote-content-source" data-quote-source>
+            ${headerTemplateHtml}
+            ${orderedBlocks.join('')}
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
+  } finally {
+    renderLayoutStateOverride = previousLayoutState;
+  }
 }
 
 async function ensurePackagesAvailable() {
@@ -4726,6 +4804,8 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   pagesContainer.innerHTML = '';
 
   const blockNodes = Array.from(sourceContainer.querySelectorAll(':scope > [data-quote-block]'));
+  const datasetContext = root.getAttribute(QUOTE_LAYOUT_DATA_ATTRS.context) || null;
+  const datasetOffsets = parseLayoutDatasetAttr(root, QUOTE_LAYOUT_DATA_ATTRS.blockOffsets);
 
   let currentPage = null;
   let currentBody = null;
@@ -4948,9 +5028,12 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
-  const effectiveOffsets = activeQuoteState?.blockOffsets && Object.keys(activeQuoteState.blockOffsets).length
-    ? activeQuoteState.blockOffsets
-    : (DEFAULT_BLOCK_OFFSETS[getBlockDragContext(activeQuoteState)] || {});
+  const hasOffsets = (value) => value && typeof value === 'object' && Object.keys(value).length > 0;
+  const fallbackContextSource = activeQuoteState || (datasetContext ? { context: datasetContext } : null);
+  const defaultOffsets = DEFAULT_BLOCK_OFFSETS[getBlockDragContext(fallbackContextSource)] || {};
+  const effectiveOffsets = hasOffsets(datasetOffsets)
+    ? datasetOffsets
+    : (hasOffsets(activeQuoteState?.blockOffsets) ? activeQuoteState.blockOffsets : defaultOffsets);
   try {
     applyQuoteBlockOffsets(root, effectiveOffsets);
   } catch (_) {
@@ -5239,7 +5322,9 @@ function renderQuotePreview() {
     projectInfo: activeQuoteState.projectInfo,
     clientInfo: activeQuoteState.clientInfo,
     paymentSummary: activeQuoteState.paymentSummary,
-    projectTotals: activeQuoteState.projectTotals
+    projectTotals: activeQuoteState.projectTotals,
+    blockOffsets: activeQuoteState.blockOffsets,
+    infoAlignments: activeQuoteState.infoAlignments
   });
 
   showQuotePreviewStatus('render');
@@ -5836,12 +5921,14 @@ async function exportQuoteAsPdf() {
       headerOffset: Number(activeQuoteState.headerOffset || 0),
       projectCrew: activeQuoteState.projectCrew,
       projectExpenses: activeQuoteState.projectExpenses,
-      projectEquipment: activeQuoteState.projectEquipment,
-      projectInfo: activeQuoteState.projectInfo,
-      clientInfo: activeQuoteState.clientInfo,
-      paymentSummary: activeQuoteState.paymentSummary,
-      projectTotals: activeQuoteState.projectTotals
-    });
+    projectEquipment: activeQuoteState.projectEquipment,
+    projectInfo: activeQuoteState.projectInfo,
+    clientInfo: activeQuoteState.clientInfo,
+    paymentSummary: activeQuoteState.paymentSummary,
+    projectTotals: activeQuoteState.projectTotals,
+    blockOffsets: activeQuoteState.blockOffsets,
+    infoAlignments: activeQuoteState.infoAlignments
+  });
 
     container = document.createElement('div');
     container.innerHTML = html;
