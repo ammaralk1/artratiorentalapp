@@ -74,6 +74,11 @@ export function updateKpiCards(metrics) {
           hint: translate('reservations.reports.kpi.revenue.details.grossHint', 'إجمالي قيمة الحجوزات (قبل الخصومات)', 'Total bookings value (before discounts)')
         },
         {
+          label: translate('reservations.reports.kpi.revenue.details.discount', 'الخصومات', 'Discounts'),
+          value: metrics.discountTotal > 0 ? `−${formatCurrency(metrics.discountTotal)}` : formatCurrency(0),
+          hint: translate('reservations.reports.kpi.revenue.details.discountHint', 'إجمالي الخصومات المطبقة على الحجوزات المؤكدة', 'Sum of discounts applied to confirmed reservations')
+        },
+        {
           label: translate('reservations.reports.kpi.revenue.details.share', 'نسبة الشركة', 'Company share'),
           value: formatCurrency(companyShareTotal),
           hint: translate('reservations.reports.kpi.revenue.details.shareHint', 'تُحسب بعد الخصم، وتُضاف للإجمالي', 'Applied after discount and added to total')

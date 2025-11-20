@@ -356,6 +356,7 @@ export function calculateMetrics(reservations) {
   let equipmentCostTotal = 0;
   let netProfit = 0;
   let outstandingTotal = 0;
+  let discountTotal = 0;
 
   reservations.forEach((reservation) => {
     const { statusValue, confirmed: isConfirmed, paid, paidStatus } = computeReportStatus(reservation);
@@ -389,6 +390,9 @@ export function calculateMetrics(reservations) {
       crewCostTotal += financials.crewCostTotal ?? 0;
       equipmentTotal += financials.equipmentTotal ?? 0;
       equipmentCostTotal += financials.equipmentCostTotal ?? 0;
+      if (Number.isFinite(financials.discountAmount) && financials.discountAmount > 0) {
+        discountTotal += financials.discountAmount;
+      }
       netProfit += financials.netProfit;
       // اجمع المبلغ غير المدفوع (المستحق) عند توفره
       const outstanding = computeOutstandingAmount(reservation);
@@ -417,6 +421,7 @@ export function calculateMetrics(reservations) {
     crewCostTotal,
     equipmentTotal,
     equipmentCostTotal,
+    discountTotal,
     netProfit,
   };
 }

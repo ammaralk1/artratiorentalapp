@@ -882,9 +882,11 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
+    align-content: center;
   }
   .reports-wrapper--reservations .reports-kpi-card {
-    flex: 1 1 180px;
+    flex: 0 0 clamp(190px, 20vw, 220px);
+    max-width: clamp(190px, 20vw, 220px);
   }
 }
 
