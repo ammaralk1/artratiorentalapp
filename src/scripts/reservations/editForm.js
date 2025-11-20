@@ -40,21 +40,58 @@ import {
 
 import { buildPackageOptionsSnapshot } from '../reservationsPackages.js';
 
+function readCachedEditRange() {
+  try {
+    const cache = window.__EDIT_RESERVATION_RANGE__;
+    if (cache && typeof cache === 'object') {
+      return {
+        start: typeof cache.start === 'string' ? cache.start : null,
+        end: typeof cache.end === 'string' ? cache.end : null
+      };
+    }
+  } catch (_) { /* noop */ }
+  return { start: null, end: null };
+}
+
+function updateCachedEditRange(start, end) {
+  const cache = readCachedEditRange();
+  const next = {
+    start: start || cache.start || null,
+    end: end || cache.end || null
+  };
+  try {
+    window.__EDIT_RESERVATION_RANGE__ = next;
+  } catch (_) { /* noop */ }
+  return next;
+}
+
 export function getEditReservationDateRange() {
   const startDate = document.getElementById('edit-res-start')?.value?.trim();
   const endDate = document.getElementById('edit-res-end')?.value?.trim();
   const startTime = document.getElementById('edit-res-start-time')?.value?.trim() || '00:00';
   const endTime = document.getElementById('edit-res-end-time')?.value?.trim() || '00:00';
 
-  if (!startDate || !endDate) return { start: null, end: null };
+  let start = null;
+  let end = null;
 
-  const fallbackStart = `${startDate}T${startTime}`;
-  const fallbackEnd = `${endDate}T${endTime}`;
+  if (startDate) {
+    const combined = combineDateTime(startDate, startTime);
+    start = combined || `${startDate}T${startTime}`;
+  }
+  if (endDate) {
+    const combined = combineDateTime(endDate, endTime);
+    end = combined || `${endDate}T${endTime}`;
+  }
 
-  return {
-    start: combineDateTime(startDate, startTime) || fallbackStart,
-    end: combineDateTime(endDate, endTime) || fallbackEnd
-  };
+  if (!start || !end) {
+    const cached = updateCachedEditRange(start, end);
+    start = start || cached.start;
+    end = end || cached.end;
+  } else {
+    updateCachedEditRange(start, end);
+  }
+
+  return { start: start || null, end: end || null };
 }
 
 function escapeHtml(value = '') {

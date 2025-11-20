@@ -841,6 +841,21 @@ export async function editReservation(index, {
   setFlatpickrValue?.('edit-res-end', splitEnd.date);
   setFlatpickrValue?.('edit-res-end-time', splitEnd.time);
 
+  const combineForCache = (date, time, fallback) => {
+    if (!date && fallback) return fallback;
+    if (!date) return '';
+    const safeTime = time && time.length ? time : '00:00';
+    return `${date}T${safeTime}`;
+  };
+  const initialStart = combineForCache(splitStart.date, splitStart.time, reservation.start);
+  const initialEnd = combineForCache(splitEnd.date, splitEnd.time, reservation.end);
+  try {
+    window.__EDIT_RESERVATION_RANGE__ = {
+      start: initialStart || null,
+      end: initialEnd || null
+    };
+  } catch (_) { /* noop */ }
+
   const notesInput = document.getElementById('edit-res-notes');
   if (notesInput) notesInput.value = reservation.notes || '';
 
