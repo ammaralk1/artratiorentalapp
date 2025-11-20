@@ -385,7 +385,7 @@ body,
 }
 
 @media (max-width: 900px) {
-  #quotation-pdf-root[data-quote-render-context="preview"] .quote-section--financial {
+  #quotation-pdf-root[data-quote-render-context] .quote-section--financial {
     max-width: 100%;
   }
 }
@@ -765,11 +765,6 @@ body,
   word-break: break-word;
 }
 
-/* Make exported PDF table fonts match preview sizing more closely */
-#quotation-pdf-root[data-quote-render-context="export"] .quote-table {
-  font-size: 10px;
-}
-
 .quote-table thead,
 .quote-table tbody,
 .quote-table tr,
@@ -921,7 +916,6 @@ body,
 .quote-page { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 /* معاينة داخل الجذر أخف، وتصدير أقوى */
 #quotation-pdf-root { --bubble-text-nudge: -3px; --bubble-text-nudge-inner: -0.06em; }
-#quotation-pdf-root[data-quote-render-context="export"] { --bubble-text-nudge: -8px; --bubble-text-nudge-inner: -0.28em; }
 #reports-a4-root { --bubble-text-nudge: -3px; }
 #reports-a4-root[data-render-context="export"] { --bubble-text-nudge: -3.5px; }
 
@@ -938,11 +932,6 @@ body,
   position: relative;
   transform: none;
 }
-
-/* الحشوات تبقى متساوية، نعتمد الرفع بالتحويل فقط */
-#quotation-pdf-root[data-quote-render-context="export"] .totals-inline__item { padding: 6px 12px; }
-#quotation-pdf-root[data-quote-render-context="export"] .totals-item--final { padding: 10px 16px; }
-#quotation-pdf-root[data-quote-render-context="export"] .quote-table-subtotal__pill { padding: 8px 14px; }
 
 /* رَفعة طفيفة للنص داخل الفقاعة بوحدة em لضبط أدق مع اختلاف كثافات البيكسل */
 #quotation-pdf-root .totals-inline__label,
