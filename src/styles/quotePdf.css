@@ -1111,8 +1111,8 @@ body,
 }
 
 /* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain__item,
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain__item {
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain:not(.info-plain--align-left):not(.info-plain--align-center):not(.info-plain--align-right) .info-plain__item,
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain:not(.info-plain--align-left):not(.info-plain--align-center):not(.info-plain--align-right) .info-plain__item {
   /* Ensure items render: [label][separator][value] starting from the right */
   direction: rtl !important;
   justify-content: flex-end !important;
