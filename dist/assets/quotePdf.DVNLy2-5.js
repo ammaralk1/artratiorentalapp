@@ -316,6 +316,19 @@ body,
 .quote-section-row--primary .quote-section--project { grid-area: left; }
 .quote-section-row--primary .quote-section--customer { grid-area: right; }
 
+#quotation-pdf-root[dir="rtl"] .quote-section-row--primary {
+  /* Stack both sections on the right so each block sits directly under its heading */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  direction: rtl;
+  gap: 12px;
+}
+
+#quotation-pdf-root[dir="rtl"] .quote-section-row--primary .quote-section {
+  width: 100%;
+}
+
 .quote-section--project,
 .quote-section--customer {
   display: flex;
