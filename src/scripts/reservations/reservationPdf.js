@@ -3126,6 +3126,19 @@ function buildProjectQuotationHtml({
     </div>`
   );
 
+  const wrapSectionWithDragHandles = (key, titleHtml, bodyHtml) => {
+    const titleKey = `${key}-title`;
+    const bodyKey = `${key}-content`;
+    return `
+      <div class="quote-section__head" data-drag-key="${escapeHtml(titleKey)}">
+        ${titleHtml}
+      </div>
+      <div class="quote-section__body" data-drag-key="${escapeHtml(bodyKey)}">
+        ${bodyHtml}
+      </div>
+    `;
+  };
+
   const customerFieldItems = [];
   if (isFieldEnabled('customerInfo', 'customerName')) {
     customerFieldItems.push(renderPlainItem(t('projects.details.client', 'العميل'), clientInfo.name || '-'));
@@ -3142,8 +3155,11 @@ function buildProjectQuotationHtml({
 
   const customerSectionMarkup = includeSection('customerInfo')
     ? `<section class="quote-section quote-section--plain quote-section--customer">
-        <h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.customer', 'بيانات العميل'))}</h3>
-        ${customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage}
+        ${wrapSectionWithDragHandles(
+          'projectCustomer',
+          `<h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.customer', 'بيانات العميل'))}</h3>`,
+          customerFieldItems.length ? `<div class="info-plain">${customerFieldItems.join('')}</div>` : noFieldsMessage
+        )}
       </section>`
     : '';
 
@@ -3172,8 +3188,11 @@ function buildProjectQuotationHtml({
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? `<section class="quote-section quote-section--plain quote-section--project">
-        <h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.project', 'بيانات المشروع'))}</h3>
-        ${projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage}
+        ${wrapSectionWithDragHandles(
+          'projectDetails',
+          `<h3 class="quote-section__title">${escapeHtml(t('projects.quote.sections.project', 'بيانات المشروع'))}</h3>`,
+          projectFieldItems.length ? `<div class="info-plain">${projectFieldItems.join('')}</div>` : noFieldsMessage
+        )}
       </section>`
     : '';
 
@@ -3411,11 +3430,14 @@ function buildProjectQuotationHtml({
           return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
         }
         return `<section class="quote-section quote-section--financial">
-          <div class="totals-block">
-            <h3>${escapeHtml(t('projects.quote.sections.financial', 'الملخص المالي'))}</h3>
-            ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
-            ${financialFinalItems.length ? `<div class="totals-final">${financialFinalItems.join('')}</div>` : ''}
-          </div>
+          ${wrapSectionWithDragHandles(
+            'projectFinancial',
+            `<h3>${escapeHtml(t('projects.quote.sections.financial', 'الملخص المالي'))}</h3>`,
+            `<div class="totals-block">
+              ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
+              ${financialFinalItems.length ? `<div class="totals-final">${financialFinalItems.join('')}</div>` : ''}
+            </div>`
+          )}
         </section>`;
       })()
     : '';
