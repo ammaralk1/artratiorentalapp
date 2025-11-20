@@ -522,15 +522,15 @@ body,
   display: flex;
   flex-direction: column;
   gap: 5px;
-  align-items: flex-start;
-  text-align: left;
+  align-items: flex-end;
+  text-align: right;
   font-size: 0.68rem;
   color: #000000 !important;
 }
 
 .info-plain__item {
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 4px;
   align-items: baseline;
 }
