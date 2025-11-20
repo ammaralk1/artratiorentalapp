@@ -789,6 +789,38 @@ function updateInfoAlignmentControls() {
   });
 }
 
+async function exportCurrentLayoutSettings() {
+  try {
+    if (!activeQuoteState) return;
+    const context = getBlockDragContext(activeQuoteState);
+    const offsetsRaw = JSON.parse(localStorage.getItem(BLOCK_DRAG_STORAGE_KEY) || '{}');
+    const alignRaw = JSON.parse(localStorage.getItem(INFO_ALIGN_STORAGE_KEY) || '{}');
+    const payload = {
+      context,
+      blockOffsets: activeQuoteState.blockOffsets || offsetsRaw[context] || {},
+      infoAlignments: activeQuoteState.infoAlignments || alignRaw[context] || {},
+    };
+    const serialized = JSON.stringify(payload, null, 2);
+    let copied = false;
+    if (navigator?.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(serialized);
+        copied = true;
+      } catch (_) {
+        copied = false;
+      }
+    }
+    if (!copied) {
+      window.prompt(t('reservations.quote.align.copyPrompt', 'انسخ الإعدادات التالية'), serialized);
+    } else {
+      showToast(t('reservations.quote.align.copied', '✅ تم نسخ الإعدادات إلى الحافظة'));
+    }
+  } catch (error) {
+    console.error('[quote align export] failed', error);
+    showToast(t('reservations.quote.align.copyFailed', '⚠️ تعذر نسخ الإعدادات، الرجاء المحاولة لاحقاً'), 'error');
+  }
+}
+
 function setupPreviewBlockDrag(doc) {
   try {
     const root = doc?.getElementById('quotation-pdf-root');
@@ -5491,6 +5523,7 @@ function ensureQuoteModal() {
       <button type="button" class="quote-preview-zoom-btn" data-align-value="center" title="${escapeHtml(t('reservations.quote.align.center', 'محاذاة وسط'))}">↔️</button>
       <button type="button" class="quote-preview-zoom-btn" data-align-value="right" title="${escapeHtml(t('reservations.quote.align.right', 'محاذاة يمين'))}">➡️</button>
     </div>
+    <button type="button" class="quote-preview-zoom-btn" data-layout-export title="${escapeHtml(t('reservations.quote.align.export', 'نسخ الإعدادات الحالية'))}">📋</button>
   `;
 
   const frameWrapper = document.createElement('div');
@@ -5571,6 +5604,7 @@ function ensureQuoteModal() {
     blockDragReset: dragControls.querySelector('[data-block-drag-reset]'),
     alignTarget: alignControls.querySelector('[data-align-target]'),
     alignButtons: Array.from(alignControls.querySelectorAll('[data-align-value]')),
+    layoutExportBtn: alignControls.querySelector('[data-layout-export]')
   };
 
   const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
@@ -5591,6 +5625,7 @@ function ensureQuoteModal() {
       applyInfoAlignment(target, value);
     });
   });
+  quoteModalRefs.layoutExportBtn?.addEventListener('click', exportCurrentLayoutSettings);
   updateBlockDragButtons();
   refreshAlignmentOptions();
 
