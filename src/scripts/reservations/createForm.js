@@ -47,6 +47,7 @@ import {
   getEquipmentBookingMode,
   setEquipmentBookingMode,
   getBlockingPackagesForEquipment,
+  getEquipmentConflictingReservationCodes,
   hasPackageConflict
 } from './state.js';
 import { syncEquipmentStatuses } from '../equipment.js';
@@ -106,6 +107,27 @@ let isSyncingShareTaxCreate = false;
 let linkedProjectReturnContext = null;
 let equipmentSelectionEventsRegistered = false;
 let packageOptionsCache = [];
+
+export function buildEquipmentConflictToastMessage(conflictCodes = [], fallbackMessage) {
+  const codes = Array.isArray(conflictCodes)
+    ? conflictCodes
+        .map((code) => normalizeNumbers(String(code ?? '')).trim())
+        .filter(Boolean)
+    : [];
+
+  if (!codes.length) {
+    return fallbackMessage || t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+  }
+
+  if (codes.length === 1) {
+    return t('reservations.toast.equipmentConflictSingle', '⚠️ هذه المعدة محجوزة مسبقاً في حجز رقم {code}')
+      .replace('{code}', codes[0]);
+  }
+
+  const list = codes.join('، ');
+  return t('reservations.toast.equipmentConflictMultiple', '⚠️ هذه المعدة محجوزة مسبقاً في حجوزات أرقام: {codes}')
+    .replace('{codes}', list);
+}
 
 // ===== Draft persistence (keep form on refresh) =====
 const RESERVATION_FORM_DRAFT_STORAGE_KEY = 'reservations:create:draft';
@@ -1425,22 +1447,28 @@ function addDraftEquipmentByBarcode(rawCode, inputElement, options = {}) {
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
     const base = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
+    const localCodes = getEquipmentConflictingReservationCodes([normalizedCode], start, end);
+    const message = buildEquipmentConflictToastMessage(localCodes, base);
     if (!silent) {
-      try {
-        const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-        apiRequest(`/reservations/availability.php?${params.toString()}`)
-          .then((res) => {
-            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-            const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-            const msg = codes.length ? `${base}: ${codes.join('، ')}` : base;
-            showToast(msg);
-          })
-          .catch(() => showToast(base));
-      } catch (_) {
-        showToast(base);
+      if (localCodes.length) {
+        showToast(message);
+      } else {
+        try {
+          const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+          apiRequest(`/reservations/availability.php?${params.toString()}`)
+            .then((res) => {
+              const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+              const remoteCodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+              const apiMessage = buildEquipmentConflictToastMessage(remoteCodes, base);
+              showToast(apiMessage);
+            })
+            .catch(() => showToast(message));
+        } catch (_) {
+          showToast(message);
+        }
       }
     }
-    return { success: false, message: base };
+    return { success: false, message };
   }
 
   const item = findEquipmentByBarcode(normalizedCode);
@@ -1546,18 +1574,24 @@ function addDraftEquipmentByDescription(inputElement) {
 
   if (hasEquipmentConflict(normalizedCode, start, end)) {
     const base = t('reservations.toast.equipmentTimeConflict', '⚠️ لا يمكن إضافة المعدة لأنها محجوزة في نفس الفترة الزمنية');
-    try {
-      const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
-      apiRequest(`/reservations/availability.php?${params.toString()}`)
-        .then((res) => {
-          const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
-          const codes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
-          const msg = codes.length ? `${base}: ${codes.join('، ')}` : base;
-          showToast(msg);
-        })
-        .catch(() => showToast(base));
-    } catch (_) {
-      showToast(base);
+    const localCodes = getEquipmentConflictingReservationCodes([normalizedCode], start, end);
+    const message = buildEquipmentConflictToastMessage(localCodes, base);
+    if (localCodes.length) {
+      showToast(message);
+    } else {
+      try {
+        const params = new URLSearchParams({ type: 'equipment', id: normalizedCode, start, end });
+        apiRequest(`/reservations/availability.php?${params.toString()}`)
+          .then((res) => {
+            const conflicts = Array.isArray(res?.conflicts) ? res.conflicts : [];
+            const remoteCodes = Array.from(new Set(conflicts.map((c) => c?.reservation_code || (c?.reservation_id != null ? `#${c.reservation_id}` : null)).filter(Boolean)));
+            const apiMessage = buildEquipmentConflictToastMessage(remoteCodes, base);
+            showToast(apiMessage);
+          })
+          .catch(() => showToast(message));
+      } catch (_) {
+        showToast(message);
+      }
     }
     return;
   }

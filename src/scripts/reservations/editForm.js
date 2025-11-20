@@ -26,7 +26,7 @@ import {
   getEditPaymentProgressType,
   parseEditPaymentProgressValue,
 } from '../reservationsEdit.js';
-import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict, hasPackageConflict } from './state.js';
+import { normalizeBarcodeValue, combineDateTime, hasEquipmentConflict, hasTechnicianConflict, hasPackageConflict, getEquipmentConflictingReservationCodes } from './state.js';
 import { normalizePackageId } from '../reservationsPackages.js';
 import {
   findEquipmentByDescription,
@@ -35,7 +35,8 @@ import {
   getCompanySharePercent,
   ensureCompanyShareEnabled,
   getEquipmentUnavailableMessage,
-  buildReservationPackageEntry
+  buildReservationPackageEntry,
+  buildEquipmentConflictToastMessage
 } from './createForm.js';
 
 import { buildPackageOptionsSnapshot } from '../reservationsPackages.js';
@@ -1391,8 +1392,10 @@ export async function addEquipmentToEditingReservation(barcodeInput) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    // أعرض تحذيراً فورياً دون انتظار استعلام الشبكة حتى لا تفشل البيئات الاختبارية
-    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    const base = t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية');
+    const codes = getEquipmentConflictingReservationCodes([normalizedCode], start, end, ignoreId);
+    const message = buildEquipmentConflictToastMessage(codes, base);
+    showToast(message);
     return;
   }
 
@@ -1464,7 +1467,10 @@ export async function addEquipmentToEditingByDescription(inputElement) {
   const ignoreId = currentReservation?.id ?? currentReservation?.reservationId ?? null;
 
   if (hasEquipmentConflict(normalizedCode, start, end, ignoreId)) {
-    showToast(t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية'));
+    const base = t('reservations.toast.equipmentTimeConflictSimple', '⚠️ هذه المعدة محجوزة في نفس الفترة الزمنية');
+    const codes = getEquipmentConflictingReservationCodes([normalizedCode], start, end, ignoreId);
+    const message = buildEquipmentConflictToastMessage(codes, base);
+    showToast(message);
     return;
   }
 
