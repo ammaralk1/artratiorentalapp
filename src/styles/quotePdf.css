@@ -323,51 +323,32 @@ body,
   gap: 6px;
   width: 100%;
   flex: 1 1 0;
-}
-
-.quote-section--project {
-  /* Place project block on the far left; align content to the left */
-  text-align: left;
-  align-items: flex-start;
-}
-
-.quote-section--customer {
-  /* Place customer block on the far right; align content to the right */
   text-align: right;
   align-items: flex-end;
 }
 
-.quote-section--project .quote-section__title {
-  text-align: left;
-  width: 100%;
-}
-
+.quote-section--project .quote-section__title,
 .quote-section--customer .quote-section__title {
   width: 100%;
+  text-align: right;
 }
 
 .quote-section--project .info-plain,
-.quote-section--project .info-plain__item {
-  text-align: left;
-  align-items: flex-start;
-  justify-content: flex-start;
-  align-self: flex-start;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.quote-section--customer .info-plain,
-.quote-section--customer .info-plain__item {
-  text-align: right;
-  align-items: flex-end;
-  justify-content: flex-end;
-  margin-right: 0;
-  margin-left: 0;
-}
-
 .quote-section--customer .info-plain {
   width: 100%;
   align-self: stretch;
+  text-align: right;
+  align-items: flex-end;
+  justify-content: flex-end;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.quote-section--project .info-plain__item,
+.quote-section--customer .info-plain__item {
+  width: 100%;
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .quote-section--reservation {
@@ -1067,41 +1048,33 @@ body,
 /* Keep table headers centered in both languages */
 #quotation-pdf-root .quote-table th { text-align: center !important; }
 
-/* In EN, align Customer/Project info blocks to the right side so content sits under the section title placed on the right column */
+/* English layout keeps LTR alignment */
 #quotation-pdf-root[data-lang="en"] .quote-section--customer,
 #quotation-pdf-root[data-lang="en"] .quote-section--project {
-  text-align: right !important;
-  align-items: flex-end !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+}
+#quotation-pdf-root[data-lang="en"] .quote-section--customer .quote-section__title,
+#quotation-pdf-root[data-lang="en"] .quote-section--project .quote-section__title {
+  text-align: left !important;
 }
 #quotation-pdf-root[data-lang="en"] .quote-section--customer .info-plain,
 #quotation-pdf-root[data-lang="en"] .quote-section--project .info-plain {
-  text-align: right !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+}
+#quotation-pdf-root[data-lang="en"] .quote-section--customer .info-plain__item,
+#quotation-pdf-root[data-lang="en"] .quote-section--project .info-plain__item {
+  justify-content: flex-start !important;
 }
 
 /* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
-/* Arabic-specific alignment: labels start from the right, then values */
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project,
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer {
-  text-align: right !important;
-  align-items: flex-end !important;
-}
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title,
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .quote-section__title {
-  text-align: right !important;
-}
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain,
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain {
-  width: 100% !important;
-  text-align: right !important;
-  align-items: flex-end !important;
-  justify-content: flex-end !important;
-  align-self: stretch !important;
-}
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain__item,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain__item {
   /* Ensure items render: [label][separator][value] starting from the right */
   direction: rtl !important;
-  justify-content: flex-start !important; /* start = right in RTL */
+  justify-content: flex-end !important;
 }
 
 /* Explicit item ordering to avoid UA differences */
