@@ -602,6 +602,8 @@ const INFO_ALIGN_DEFAULTS = {
 const INFO_ALIGN_CONTEXT_DEFAULTS = {
   project: {
     customer: 'right',
+    reservation: 'left',
+    project: 'left',
     projectCustomer: 'left',
     projectDetails: 'left',
   },
