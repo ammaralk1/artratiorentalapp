@@ -1094,3 +1094,36 @@ body,
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__separator,
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__slash { order: 2; }
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__value { order: 3; }
+
+.quote-block-drag-handle {
+  position: absolute;
+  top: 6px;
+  inset-inline-start: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid rgba(15, 23, 42, 0.35);
+  background: rgba(248, 250, 252, 0.95);
+  color: #0f172a;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+  padding: 0;
+  z-index: 5;
+}
+
+.quote-block-drag-handle:active {
+  cursor: grabbing;
+}
+
+#quotation-pdf-root[data-block-drag-mode="on"] .quote-block-drag-handle {
+  display: inline-flex;
+}
+
+#quotation-pdf-root[data-block-drag-mode="on"] [data-drag-key] {
+  outline: 1px dashed rgba(148, 163, 184, 0.6);
+}

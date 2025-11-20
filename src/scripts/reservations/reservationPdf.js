@@ -582,6 +582,204 @@ let ensureHtml2CanvasPromise = null;
 let manualQuoteBackdrop = null;
 let manualQuoteEscapeHandler = null;
 let quoteAssetWarningShown = false;
+const BLOCK_DRAG_STORAGE_KEY = 'quoteBlockOffsets';
+const BLOCK_DRAG_LIMIT_PX = 280;
+let blockDragMode = false;
+let blockDragDirty = false;
+
+function getBlockDragContext(state = activeQuoteState) {
+  return state?.context || 'reservation';
+}
+
+function loadStoredBlockOffsets(contextName = 'reservation') {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BLOCK_DRAG_STORAGE_KEY) || '{}');
+    const entry = raw?.[contextName];
+    if (entry && typeof entry === 'object') {
+      return JSON.parse(JSON.stringify(entry));
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return {};
+}
+
+function persistStoredBlockOffsets(contextName, offsets = {}) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BLOCK_DRAG_STORAGE_KEY) || '{}');
+    if (offsets && Object.keys(offsets).length > 0) {
+      raw[contextName] = offsets;
+    } else {
+      delete raw[contextName];
+    }
+    localStorage.setItem(BLOCK_DRAG_STORAGE_KEY, JSON.stringify(raw));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function initializeQuoteBlockOffsets(state) {
+  if (!state) return;
+  const contextName = getBlockDragContext(state);
+  state.blockOffsets = { ...loadStoredBlockOffsets(contextName) };
+  blockDragDirty = false;
+  blockDragMode = false;
+  updateBlockDragButtons();
+}
+
+function applyQuoteBlockOffsets(root, offsets = {}) {
+  if (!root) return;
+  const blocks = root.querySelectorAll('[data-drag-key]');
+  blocks.forEach((block) => {
+    const key = block.dataset.dragKey;
+    const value = offsets?.[key];
+    const x = Number(value?.x) || 0;
+    const y = Number(value?.y) || 0;
+    if (x || y) {
+      block.style.transform = `translate(${x}px, ${y}px)`;
+    } else {
+      block.style.transform = '';
+    }
+    block.dataset.dragX = String(x);
+    block.dataset.dragY = String(y);
+  });
+}
+
+function syncBlockDragModeToPreview(doc) {
+  try {
+    const root = doc?.getElementById('quotation-pdf-root');
+    if (!root) return;
+    root.dataset.blockDragMode = blockDragMode ? 'on' : 'off';
+  } catch (_) {}
+}
+
+function updateBlockDragButtons() {
+  const toggleBtn = quoteModalRefs?.blockDragToggle;
+  if (toggleBtn) {
+    const label = blockDragMode
+      ? t('reservations.quote.drag.disable', '🔒 إنهاء وضع التحريك')
+      : t('reservations.quote.drag.enable', '🎯 وضع تحريك البلوكات');
+    toggleBtn.textContent = label;
+    toggleBtn.classList.toggle('is-active', blockDragMode);
+  }
+  const saveBtn = quoteModalRefs?.blockDragSave;
+  if (saveBtn) {
+    saveBtn.disabled = !blockDragDirty;
+  }
+}
+
+function setBlockDragMode(enabled) {
+  blockDragMode = Boolean(enabled);
+  updateBlockDragButtons();
+  try {
+    syncBlockDragModeToPreview(quoteModalRefs?.previewFrame?.contentDocument);
+  } catch (_) {}
+}
+
+function markBlockOffsetsDirty(value = true) {
+  blockDragDirty = Boolean(value);
+  updateBlockDragButtons();
+}
+
+function persistCurrentBlockOffsets() {
+  if (!activeQuoteState) return;
+  const contextName = getBlockDragContext(activeQuoteState);
+  const offsets = activeQuoteState.blockOffsets || {};
+  persistStoredBlockOffsets(contextName, offsets);
+  markBlockOffsetsDirty(false);
+  showToast(t('reservations.quote.drag.saved', '✅ تم حفظ مواضع البلوكات.'));
+}
+
+function resetStoredBlockOffsets() {
+  if (!activeQuoteState) return;
+  activeQuoteState.blockOffsets = {};
+  const contextName = getBlockDragContext(activeQuoteState);
+  persistStoredBlockOffsets(contextName, {});
+  markBlockOffsetsDirty(false);
+  renderQuotePreview();
+  showToast(t('reservations.quote.drag.reset', '↺ تمت إعادة مواضع البلوكات للوضع الافتراضي.'));
+}
+
+function clampDragOffset(value) {
+  return Math.min(Math.max(value, -BLOCK_DRAG_LIMIT_PX), BLOCK_DRAG_LIMIT_PX);
+}
+
+function setupPreviewBlockDrag(doc) {
+  try {
+    const root = doc?.getElementById('quotation-pdf-root');
+    if (!root) return;
+    const blocks = Array.from(root.querySelectorAll('[data-drag-key]'));
+    blocks.forEach((block) => {
+      if (block.dataset.blockDragHandleAttached === 'true') return;
+      block.style.position = block.style.position || 'relative';
+      block.style.touchAction = 'none';
+      const handle = doc.createElement('button');
+      handle.type = 'button';
+      handle.className = 'quote-block-drag-handle';
+      handle.setAttribute('data-block-handle', block.dataset.dragKey || '');
+      handle.setAttribute('aria-label', t('reservations.quote.drag.handle', 'اسحب لتحريك هذا القسم'));
+      handle.innerHTML = '<span aria-hidden="true">⠿</span>';
+      const startDrag = (event) => {
+        if (root.dataset.blockDragMode !== 'on') return;
+        beginBlockDrag(event, block);
+      };
+      handle.addEventListener('pointerdown', startDrag);
+      block.prepend(handle);
+      block.dataset.blockDragHandleAttached = 'true';
+    });
+    syncBlockDragModeToPreview(doc);
+  } catch (_) {
+    /* ignore drag init errors */
+  }
+}
+
+function beginBlockDrag(event, block) {
+  if (!block || !activeQuoteState) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const doc = block.ownerDocument || document;
+  const pointerId = event.pointerId;
+  block.setPointerCapture?.(pointerId);
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const baseX = Number(block.dataset.dragX || 0);
+  const baseY = Number(block.dataset.dragY || 0);
+  let currentX = baseX;
+  let currentY = baseY;
+  const key = block.dataset.dragKey;
+  const onPointerMove = (moveEvent) => {
+    moveEvent.preventDefault();
+    const deltaX = (moveEvent.clientX - startX);
+    const deltaY = (moveEvent.clientY - startY);
+    currentX = clampDragOffset(baseX + deltaX);
+    currentY = clampDragOffset(baseY + deltaY);
+    block.style.transform = `translate(${currentX}px, ${currentY}px)`;
+    block.dataset.dragTempX = String(currentX);
+    block.dataset.dragTempY = String(currentY);
+  };
+  const onPointerUp = () => {
+    doc.removeEventListener('pointermove', onPointerMove);
+    doc.removeEventListener('pointerup', onPointerUp);
+    block.releasePointerCapture?.(pointerId);
+    const finalX = Number(block.dataset.dragTempX ?? baseX);
+    const finalY = Number(block.dataset.dragTempY ?? baseY);
+    block.dataset.dragX = String(finalX);
+    block.dataset.dragY = String(finalY);
+    block.dataset.dragTempX = '';
+    block.dataset.dragTempY = '';
+    if (!activeQuoteState.blockOffsets) {
+      activeQuoteState.blockOffsets = {};
+    }
+    if (Math.abs(finalX) <= 0.5 && Math.abs(finalY) <= 0.5) {
+      delete activeQuoteState.blockOffsets[key];
+    } else {
+      activeQuoteState.blockOffsets[key] = { x: finalX, y: finalY };
+    }
+    markBlockOffsetsDirty(true);
+  };
+  doc.addEventListener('pointermove', onPointerMove);
+  doc.addEventListener('pointerup', onPointerUp);
+}
 
 function showQuotePreviewStatus(type = 'render', {
   message,
@@ -3569,7 +3767,7 @@ function buildQuotationHtml(options) {
 
   const customerSectionMarkup = includeSection('customerInfo')
     ? (customerFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--customer">
+        ? `<section class="quote-section quote-section--plain quote-section--customer" data-drag-key="customer">
             <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
             <div class="info-plain">${customerFieldItems.join('')}</div>
           </section>`
@@ -3592,7 +3790,7 @@ function buildQuotationHtml(options) {
 
   const reservationSectionMarkup = includeSection('reservationInfo')
     ? (reservationFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--reservation">
+        ? `<section class="quote-section quote-section--plain quote-section--reservation" data-drag-key="reservation">
             <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
             <div class="info-plain">${reservationFieldItems.join('')}</div>
           </section>`
@@ -3609,7 +3807,7 @@ function buildQuotationHtml(options) {
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? (projectFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--project">
+        ? `<section class="quote-section quote-section--plain quote-section--project" data-drag-key="project">
             <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
             <div class="info-plain">${projectFieldItems.join('')}</div>
           </section>`
@@ -3656,7 +3854,7 @@ function buildQuotationHtml(options) {
         if (!financialInlineItems.length && !showFinalTotal) {
           return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
         }
-        return `<section class="quote-section quote-section--financial">
+        return `<section class="quote-section quote-section--financial" data-drag-key="financial">
           <div class="totals-block">
             <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
             ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
@@ -4548,6 +4746,11 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
+  try {
+    applyQuoteBlockOffsets(root, activeQuoteState?.blockOffsets);
+  } catch (_) {
+    /* non-fatal */
+  }
 
   if (isPreview) {
     pagesContainer.style.display = 'flex';
@@ -4899,9 +5102,11 @@ function renderQuotePreview() {
             header.addEventListener('mousedown', onDown);
             header.addEventListener('touchstart', onDown, { passive: true });
             header.dataset.dragReady = 'true';
-          }
         }
-      } catch (_) { /* non-fatal */ }
+      }
+    } catch (_) { /* non-fatal */ }
+      setupPreviewBlockDrag(doc);
+      syncBlockDragModeToPreview(doc);
       const pagesContainer = doc?.querySelector('.quote-preview-pages');
       const baseWidth = A4_WIDTH_PX;
 
@@ -5113,6 +5318,13 @@ function ensureQuoteModal() {
     <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="${escapeHtml(t('reservations.quote.zoom.in', 'تكبير'))}">+</button>
     <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="${escapeHtml(t('reservations.quote.zoom.reset', 'إعادة الضبط'))}">1:1</button>
   `;
+  const dragControls = document.createElement('div');
+  dragControls.className = 'quote-preview-zoom-controls quote-preview-drag-controls';
+  dragControls.innerHTML = `
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle>${escapeHtml(t('reservations.quote.drag.enable', '🎯 وضع تحريك البلوكات'))}</button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled>${escapeHtml(t('reservations.quote.drag.save', '💾 تثبيت المواضع'))}</button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset>${escapeHtml(t('reservations.quote.drag.resetBtn', '↺ تصفير المواضع'))}</button>
+  `;
 
   const frameWrapper = document.createElement('div');
   frameWrapper.className = 'quote-preview-frame-wrapper';
@@ -5135,6 +5347,7 @@ function ensureQuoteModal() {
   `;
   preview.appendChild(statusIndicator);
   headerActions.appendChild(zoomControls);
+  headerActions.appendChild(dragControls);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
@@ -5184,7 +5397,10 @@ function ensureQuoteModal() {
     termsInput,
     termsReset,
     statusKind: null,
-    userAdjustedZoom: false
+    userAdjustedZoom: false,
+    blockDragToggle: dragControls.querySelector('[data-block-drag-toggle]'),
+    blockDragSave: dragControls.querySelector('[data-block-drag-save]'),
+    blockDragReset: dragControls.querySelector('[data-block-drag-reset]')
   };
 
   const zoomOutBtn = zoomControls.querySelector('[data-zoom-out]');
@@ -5194,6 +5410,10 @@ function ensureQuoteModal() {
   zoomOutBtn?.addEventListener('click', () => adjustPreviewZoom(-0.1));
   zoomInBtn?.addEventListener('click', () => adjustPreviewZoom(0.1));
   zoomResetBtn?.addEventListener('click', () => setPreviewZoom(1, { markManual: true }));
+  quoteModalRefs.blockDragToggle?.addEventListener('click', () => setBlockDragMode(!blockDragMode));
+  quoteModalRefs.blockDragSave?.addEventListener('click', persistCurrentBlockOffsets);
+  quoteModalRefs.blockDragReset?.addEventListener('click', resetStoredBlockOffsets);
+  updateBlockDragButtons();
 
   if (termsInput) {
     termsInput.addEventListener('input', handleQuoteTermsInput);
@@ -5719,6 +5939,7 @@ export async function exportReservationPdf({ reservation, customer, project }) {
   };
 
   applyQuoteTogglePreferences(activeQuoteState);
+  initializeQuoteBlockOffsets(activeQuoteState);
   openQuoteModal();
   // Attach live update listeners once per session
   try { attachQuoteLiveListeners(); } catch (_) {}
@@ -5767,6 +5988,7 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
   };
 
   applyQuoteTogglePreferences(activeQuoteState);
+  initializeQuoteBlockOffsets(activeQuoteState);
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
@@ -5852,6 +6074,7 @@ export async function exportProjectPdf({ project }) {
   };
 
   applyQuoteTogglePreferences(activeQuoteState);
+  initializeQuoteBlockOffsets(activeQuoteState);
   openQuoteModal();
   try { attachQuoteLiveListeners(); } catch (_) {}
 }
