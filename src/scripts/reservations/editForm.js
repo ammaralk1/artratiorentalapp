@@ -430,7 +430,7 @@ export function renderEditReservationItems(items = []) {
       const disableQuantityAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
 
       return `
-        <tr data-group-key="${group.key}">
+        <tr data-group-key="${group.key}" data-drag-row="true" draggable="true">
           <td>
             <div class="reservation-item-info">
               <div class="reservation-item-drag">
@@ -541,9 +541,13 @@ function enableEditReservationDragAndDrop(container) {
   };
 
   container.addEventListener('dragstart', (event) => {
-    const handle = event.target.closest('[data-drag-handle]');
-    if (!handle) return;
-    const row = handle.closest('tr[data-group-key]');
+    const interactive = event.target.closest('button, input, textarea, select, a[href]');
+    if (interactive && !event.target.closest('[data-drag-handle]')) {
+      return;
+    }
+    const dragAnchor = event.target.closest('[data-drag-handle], tr[data-group-key]');
+    if (!dragAnchor) return;
+    const row = dragAnchor.closest('tr[data-group-key]');
     if (!row) return;
     dragState = {
       key: row.dataset.groupKey,
