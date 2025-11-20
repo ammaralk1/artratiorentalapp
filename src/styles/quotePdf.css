@@ -341,6 +341,17 @@ body,
   text-align: right;
 }
 
+.quote-section__head,
+.quote-section__body {
+  width: 100%;
+  position: relative;
+  display: block;
+}
+
+.quote-section__body {
+  margin-top: 4px;
+}
+
 .quote-section--project .info-plain,
 .quote-section--customer .info-plain {
   width: 100%;

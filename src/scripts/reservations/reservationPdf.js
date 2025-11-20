@@ -3751,6 +3751,19 @@ function buildQuotationHtml(options) {
     </div>`;
   };
 
+  const wrapSectionWithDragHandles = (key, titleHtml, bodyHtml) => {
+    const titleKey = `${key}-title`;
+    const bodyKey = `${key}-content`;
+    return `
+      <div class="quote-section__head" data-drag-key="${escapeHtml(titleKey)}">
+        ${titleHtml}
+      </div>
+      <div class="quote-section__body" data-drag-key="${escapeHtml(bodyKey)}">
+        ${bodyHtml}
+      </div>
+    `;
+  };
+
   const customerFieldItems = [];
   if (isFieldEnabled('customerInfo', 'customerName')) {
     customerFieldItems.push(renderPlainItem(t('reservations.details.labels.customer', 'العميل'), customerName));
@@ -3767,9 +3780,12 @@ function buildQuotationHtml(options) {
 
   const customerSectionMarkup = includeSection('customerInfo')
     ? (customerFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--customer" data-drag-key="customer">
-            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>
-            <div class="info-plain">${customerFieldItems.join('')}</div>
+        ? `<section class="quote-section quote-section--plain quote-section--customer">
+            ${wrapSectionWithDragHandles(
+              'customer',
+              `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.customer', 'بيانات العميل'))}</h3>`,
+              `<div class="info-plain">${customerFieldItems.join('')}</div>`
+            )}
           </section>`
         : '')
     : '';
@@ -3790,9 +3806,12 @@ function buildQuotationHtml(options) {
 
   const reservationSectionMarkup = includeSection('reservationInfo')
     ? (reservationFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--reservation" data-drag-key="reservation">
-            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>
-            <div class="info-plain">${reservationFieldItems.join('')}</div>
+        ? `<section class="quote-section quote-section--plain quote-section--reservation">
+            ${wrapSectionWithDragHandles(
+              'reservation',
+              `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.reservation', 'تفاصيل الحجز'))}</h3>`,
+              `<div class="info-plain">${reservationFieldItems.join('')}</div>`
+            )}
           </section>`
         : '')
     : '';
@@ -3807,9 +3826,12 @@ function buildQuotationHtml(options) {
 
   const projectSectionMarkup = includeSection('projectInfo')
     ? (projectFieldItems.length
-        ? `<section class="quote-section quote-section--plain quote-section--project" data-drag-key="project">
-            <h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>
-            <div class="info-plain">${projectFieldItems.join('')}</div>
+        ? `<section class="quote-section quote-section--plain quote-section--project">
+            ${wrapSectionWithDragHandles(
+              'project',
+              `<h3 class="quote-section__title">${escapeHtml(t('reservations.quote.sections.project', 'بيانات المشروع'))}</h3>`,
+              `<div class="info-plain">${projectFieldItems.join('')}</div>`
+            )}
           </section>`
         : '')
     : '';
@@ -3854,12 +3876,15 @@ function buildQuotationHtml(options) {
         if (!financialInlineItems.length && !showFinalTotal) {
           return `<section class="quote-section quote-section--financial">${noFieldsMessage}</section>`;
         }
-        return `<section class="quote-section quote-section--financial" data-drag-key="financial">
-          <div class="totals-block">
-            <h3>${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>
-            ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
-            ${financialFinalHtml}
-          </div>
+        return `<section class="quote-section quote-section--financial">
+          ${wrapSectionWithDragHandles(
+            'financial',
+            `<h3 class="quote-section__title">${escapeHtml(t('reservations.details.labels.summary', 'الملخص المالي'))}</h3>`,
+            `<div class="totals-block">
+              ${financialInlineItems.length ? `<div class="totals-inline">${financialInlineItems.join('')}</div>` : ''}
+              ${financialFinalHtml}
+            </div>`
+          )}
         </section>`;
       })()
     : '';
