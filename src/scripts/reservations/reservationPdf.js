@@ -701,7 +701,8 @@ function updateBlockDragButtons() {
     const label = blockDragMode
       ? t('reservations.quote.drag.disable', '🔒 إنهاء وضع التحريك')
       : t('reservations.quote.drag.enable', '🎯 وضع تحريك البلوكات');
-    toggleBtn.textContent = label;
+    toggleBtn.setAttribute('aria-label', label);
+    toggleBtn.setAttribute('title', label);
     toggleBtn.classList.toggle('is-active', blockDragMode);
   }
   const saveBtn = quoteModalRefs?.blockDragSave;
@@ -5527,13 +5528,13 @@ function ensureQuoteModal() {
   const dragControls = document.createElement('div');
   dragControls.className = 'quote-preview-zoom-controls quote-preview-drag-controls';
   dragControls.innerHTML = `
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle title="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}">
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle title="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}" aria-label="${escapeHtml(t('reservations.quote.drag.enable', 'وضع تحريك البلوكات'))}">
       <span aria-hidden="true">↕️</span>
     </button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled title="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}">
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled title="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}" aria-label="${escapeHtml(t('reservations.quote.drag.save', 'تثبيت المواضع'))}">
       <span aria-hidden="true">💾</span>
     </button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset title="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}">
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset title="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}" aria-label="${escapeHtml(t('reservations.quote.drag.resetBtn', 'تصفير المواضع'))}">
       <span aria-hidden="true">⟲</span>
     </button>
   `;
