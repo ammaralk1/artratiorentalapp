@@ -320,9 +320,15 @@ import{n as E,j as pt,t as r,d as dn,b as Ea,h as Na,p as oe,B as Ia,y as mt,C a
     <button type="button" class="quote-preview-zoom-btn" data-zoom-in title="${l(r("reservations.quote.zoom.in","تكبير"))}">+</button>
     <button type="button" class="quote-preview-zoom-btn" data-zoom-reset title="${l(r("reservations.quote.zoom.reset","إعادة الضبط"))}">1:1</button>
   `;const v=document.createElement("div");v.className="quote-preview-zoom-controls quote-preview-drag-controls",v.innerHTML=`
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle>${l(r("reservations.quote.drag.enable","🎯 وضع تحريك البلوكات"))}</button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled>${l(r("reservations.quote.drag.save","💾 تثبيت المواضع"))}</button>
-    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset>${l(r("reservations.quote.drag.resetBtn","↺ تصفير المواضع"))}</button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-toggle title="${l(r("reservations.quote.drag.enable","وضع تحريك البلوكات"))}">
+      <span aria-hidden="true">↕️</span>
+    </button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-save disabled title="${l(r("reservations.quote.drag.save","تثبيت المواضع"))}">
+      <span aria-hidden="true">💾</span>
+    </button>
+    <button type="button" class="quote-preview-zoom-btn" data-block-drag-reset title="${l(r("reservations.quote.drag.resetBtn","تصفير المواضع"))}">
+      <span aria-hidden="true">⟲</span>
+    </button>
   `;const h=document.createElement("div");h.className="quote-preview-zoom-controls quote-preview-align-controls";const M=l(r("reservations.quote.align.customer","بيانات العميل")),S=l(r("reservations.quote.align.reservation","تفاصيل الحجز")),C=l(r("reservations.quote.align.project","بيانات المشروع"));h.innerHTML=`
     <select class="quote-preview-align-select" data-align-target>
       <option value="customer">${M}</option>
