@@ -14,6 +14,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   const statusConfirmedText = t('reservations.list.status.confirmed', '✅ مؤكد');
   const statusPendingText = t('reservations.list.status.pending', '⏳ غير مؤكد');
   const statusCompletedText = t('reservations.list.status.completed', '📁 مغلق');
+  const statusCancelledText = t('reservations.list.status.cancelled', '❌ ملغي');
   const paymentPaidText = t('reservations.list.payment.paid', '💳 مدفوع');
   const paymentUnpaidText = t('reservations.list.payment.unpaid', '💳 غير مدفوع');
   const paymentPartialText = t('reservations.list.payment.partial', '💳 مدفوع جزئياً');
@@ -35,6 +36,8 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
     const completed = isReservationCompleted(reservation);
+    const rawStatusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
+    const isCancelled = rawStatusValue === 'cancelled' || rawStatusValue === 'canceled';
 
     // Compute display cost first (used for payment progress), then derive paid/isPartial
 
@@ -156,21 +159,28 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     const { effectiveConfirmed, projectLinked } = resolveReservationProjectState(reservation, project);
     const statusClass = effectiveConfirmed ? 'status-confirmed' : 'status-pending';
     const paymentClass = paid ? 'status-paid' : (isPartial ? 'status-partial' : 'status-unpaid');
-    let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
     const paymentLabel = paid ? paymentPaidText : (isPartial ? paymentPartialText : paymentUnpaidText);
+    let statusBadge = `<span class="reservation-chip status-chip ${statusClass}">${effectiveConfirmed ? statusConfirmedText : statusPendingText}</span>`;
     let paymentBadge = `<span class="reservation-chip status-chip ${paymentClass}">${paymentLabel}</span>`;
-    let stateClass = paid ? ' tile-paid' : (isPartial ? ' tile-partial' : ' tile-unpaid');
-    if (completed) stateClass += ' tile-completed';
+    let stateClass = '';
     let completedAttr = '';
-    if (completed) {
-      statusBadge = `<span class=\"reservation-chip status-chip status-completed\">${statusCompletedText}</span>`;
-      paymentBadge = `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`;
-      const ribbonTextRaw = t('reservations.list.ribbon.completed', 'مغلق');
-      const ribbonTextAttr = ribbonTextRaw.replace(/\"/g, '&quot;');
-      completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
+    if (isCancelled) {
+      statusBadge = `<span class="reservation-chip status-chip status-cancelled">${statusCancelledText}</span>`;
+      paymentBadge = '';
+      stateClass = ' tile-cancelled';
+    } else {
+      stateClass = paid ? ' tile-paid' : (isPartial ? ' tile-partial' : ' tile-unpaid');
+      if (completed) {
+        stateClass += ' tile-completed';
+        statusBadge = `<span class=\"reservation-chip status-chip status-completed\">${statusCompletedText}</span>`;
+        paymentBadge = `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`;
+        const ribbonTextRaw = t('reservations.list.ribbon.completed', 'مغلق');
+        const ribbonTextAttr = ribbonTextRaw.replace(/\"/g, '&quot;');
+        completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
+      }
     }
     let confirmButtonHtml = '';
-    if (!projectLinked) {
+    if (!projectLinked && !isCancelled) {
       if (!effectiveConfirmed) {
         confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`;
       } else if (!completed) {
