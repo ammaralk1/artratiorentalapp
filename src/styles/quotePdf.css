@@ -361,9 +361,13 @@ body,
   text-align: right;
   align-items: flex-end;
   justify-content: flex-end;
-  align-self: flex-end;
   margin-right: 0;
   margin-left: 0;
+}
+
+.quote-section--customer .info-plain {
+  width: 100%;
+  align-self: stretch;
 }
 
 .quote-section--reservation {
@@ -1081,18 +1085,17 @@ body,
   text-align: right !important;
   align-items: flex-end !important;
 }
+#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .quote-section__title {
   text-align: right !important;
-}
-/* Project title stays on the far left in Arabic */
-#quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .quote-section__title {
-  text-align: left !important;
 }
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain {
   width: 100% !important;
   text-align: right !important;
   align-items: flex-end !important;
+  justify-content: flex-end !important;
+  align-self: stretch !important;
 }
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--project .info-plain__item,
 #quotation-pdf-root:not([data-lang="en"]) .quote-section-row--primary .quote-section--customer .info-plain__item {
@@ -1106,4 +1109,3 @@ body,
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__separator,
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__slash { order: 2; }
 #quotation-pdf-root:not([data-lang="en"]) .info-plain__value { order: 3; }
-}
