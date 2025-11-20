@@ -916,11 +916,12 @@ export function calculateEquipmentCostReport(reservations) {
       const billable = sanitizePriceValue(qty * unitPrice * days);
       const cost = sanitizePriceValue(qty * unitCost * days);
 
-      const entry = totals.get(keyName) || { name, quantity: 0, billable: 0, cost: 0 };
+      const entry = totals.get(keyName) || { name, quantity: 0, billable: 0, cost: 0, days: 0 };
       entry.name = name;
       entry.quantity += qty;
       entry.billable += billable;
       entry.cost += cost;
+      entry.days += qty * days;
       totals.set(keyName, entry);
     });
   });
@@ -1024,9 +1025,8 @@ export function filterReservations(reservations, filters, customers, equipment, 
 
     const { statusValue, confirmed, paid, paidStatus } = computeReportStatus(reservation);
 
-    // منطق التقارير: عرض الحجوزات المؤكدة أو المكتملة فقط؛ استبعاد الكل ما عدا ذلك
-    const eligibleForReports = statusValue === 'confirmed' || statusValue === 'completed';
-    if (!eligibleForReports) return false;
+    // لا نعتمد أي حجوزات غير مؤكدة (سواء كانت قيد التأكيد أو مغلقة تلقائياً)
+    if (!confirmed) return false;
 
     if (filters.status === 'confirmed' && !(statusValue === 'confirmed' || statusValue === 'completed' || confirmed)) return false;
     if (filters.status === 'pending' && statusValue !== 'pending') return false;

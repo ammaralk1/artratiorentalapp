@@ -232,7 +232,7 @@ export function renderEquipmentCosts(rows) {
   if (!tbody) return;
 
   if (!rows || rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return;
   }
 
@@ -241,6 +241,7 @@ export function renderEquipmentCosts(rows) {
       <tr class="hover:bg-base-200">
         <td>${escapeHtml(row.name)}</td>
         <td>${formatNumber(row.quantity)}</td>
+        <td>${formatNumber(row.days ?? 0)}</td>
         <td>${formatCurrency(row.billable)}</td>
         <td>${formatCurrency(row.cost)}</td>
         <td>${formatCurrency(row.net)}</td>
