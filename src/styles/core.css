@@ -2656,11 +2656,74 @@ textarea {
   transform: translateY(-1px);
 }
 
-:where(html.dark-mode, body.dark-mode, html.dark, body.dark) #equipment-tab .back-to-top-btn {
+:is(html.dark-mode, body.dark-mode, html.dark, body.dark) #equipment-tab .back-to-top-btn {
   border-color: hsl(var(--p) / 0.32);
   background: linear-gradient(135deg, hsl(var(--b1) / 0.94), hsl(var(--b2) / 0.88));
   color: hsl(var(--bc));
   box-shadow: 0 18px 36px hsl(var(--bc) / 0.25);
+}
+
+#equipment-tab .equipment-return-btn {
+  position: fixed;
+  inset-inline-end: 22px;
+  bottom: 94px;
+  z-index: 61;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 52px;
+  padding: 0 1.25rem;
+  border-radius: 18px;
+  border: 1px solid hsl(var(--bc) / 0.1);
+  background: linear-gradient(135deg, hsl(var(--p) / 0.16), hsl(var(--p) / 0.05));
+  color: hsl(var(--bc));
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 16px 34px hsl(var(--bc) / 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+#equipment-tab .equipment-return-btn[hidden] {
+  display: none;
+}
+
+#equipment-tab .equipment-return-btn:hover,
+#equipment-tab .equipment-return-btn:focus-visible {
+  transform: translateY(-2px);
+  border-color: hsl(var(--p) / 0.35);
+  box-shadow: 0 20px 40px hsl(var(--bc) / 0.25), 0 0 0 3px hsl(var(--p) / 0.12);
+  outline: none;
+}
+
+#equipment-tab .equipment-return-btn:active {
+  transform: translateY(-1px);
+}
+
+:where(html.dark-mode, body.dark-mode, html.dark, body.dark) #equipment-tab .equipment-return-btn {
+  border-color: hsl(var(--p) / 0.4);
+  background: linear-gradient(135deg, hsl(var(--b1) / 0.9), hsl(var(--b2) / 0.85));
+  color: hsl(var(--bc));
+  box-shadow: 0 20px 38px hsl(var(--bc) / 0.32);
+}
+
+@media (max-width: 640px) {
+  #equipment-tab .equipment-return-btn {
+    inset-inline-end: 16px;
+    bottom: 88px;
+    min-height: 48px;
+    padding-inline: 1rem;
+    font-size: 0.9rem;
+    border-radius: 16px;
+  }
+
+  #equipment-tab .back-to-top-btn {
+    inset-inline-end: 16px;
+    bottom: 18px;
+  }
 }
 
 :is(html.dark-mode, body.dark-mode) .theme-toggle-btn {
