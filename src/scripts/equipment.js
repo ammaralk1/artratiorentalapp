@@ -2201,6 +2201,12 @@ document.addEventListener('equipment:changed', () => {
   populateAddEquipmentDatalists();
 });
 
+document.addEventListener('reservations:changed', () => {
+  // When reservations mutate (confirm/close/cancel), refresh equipment availability
+  syncEquipmentStatuses();
+  renderEquipment();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   const modalElement = document.getElementById('editEquipmentModal');
   if (modalElement && !modalElement.dataset.variantsListenerAttached) {

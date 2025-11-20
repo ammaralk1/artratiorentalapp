@@ -58,6 +58,32 @@ export function activateEquipmentSelection(context = {}) {
   return sanitized;
 }
 
+export function updateEquipmentSelectionContext(updates = {}) {
+  if (!activeSelection) return null;
+  const sanitized = sanitizeSelectionContext(updates);
+  let changed = false;
+
+  Object.entries(sanitized).forEach(([key, value]) => {
+    if (value == null || value === '') return;
+    if (activeSelection[key] !== value) {
+      activeSelection[key] = value;
+      changed = true;
+    }
+  });
+
+  if (!changed) {
+    return { ...activeSelection };
+  }
+
+  activeSelection.updatedAt = Date.now();
+  dispatchSelectionEvent(EQUIPMENT_SELECTION_EVENTS.change, {
+    active: true,
+    selection: { ...activeSelection },
+    reason: 'selection-updated',
+  });
+  return { ...activeSelection };
+}
+
 export function clearEquipmentSelection(reason = 'manual') {
   if (!activeSelection) return;
   const previous = activeSelection;
