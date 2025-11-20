@@ -8,7 +8,10 @@ export function renderReservationsTable(reservations, customers, technicians) {
   const tbody = document.getElementById('reports-reservations-body');
   if (!tbody) return [];
 
-  if (!reservations || reservations.length === 0) {
+  const confirmedReservations = (Array.isArray(reservations) ? reservations : [])
+    .filter((reservation) => ensureReportStatus(reservation)?.confirmed);
+
+  if (confirmedReservations.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="text-base-content/60">${translate('reservations.reports.table.emptyPeriod', 'لا توجد بيانات في هذه الفترة.', 'No data for this period.')}</td></tr>`;
     return [];
   }
@@ -39,7 +42,7 @@ export function renderReservationsTable(reservations, customers, technicians) {
     net: translate('reservations.reports.results.headers.net', 'صافي الربح', 'Net profit'),
   };
 
-  const sorted = sortReservations([...reservations]);
+  const sorted = sortReservations([...confirmedReservations]);
   const { page, pageSize } = reportsState.pagination;
   const startIndex = Math.max(0, (page - 1) * pageSize);
   const pageItems = sorted.slice(startIndex, startIndex + pageSize);
@@ -142,8 +145,8 @@ function compareByKey(a, b, key) {
     case 'date':
       return new Date(a?.start || 0) - new Date(b?.start || 0);
     case 'status': {
-      const sA = computeReportStatus(a)?.statusValue || '';
-      const sB = computeReportStatus(b)?.statusValue || '';
+      const sA = ensureReportStatus(a)?.statusValue || '';
+      const sB = ensureReportStatus(b)?.statusValue || '';
       return String(sA).localeCompare(String(sB), 'ar');
     }
     case 'total': {
@@ -169,6 +172,18 @@ function compareByKey(a, b, key) {
     default:
       return new Date(a?.start || 0) - new Date(b?.start || 0);
   }
+}
+
+function ensureReportStatus(reservation) {
+  if (!reservation) {
+    return computeReportStatus(reservation);
+  }
+  if (reservation.__reportsStatusCache) {
+    return reservation.__reportsStatusCache;
+  }
+  const status = computeReportStatus(reservation);
+  reservation.__reportsStatusCache = status;
+  return status;
 }
 
 function renderPagination(totalItems) {
@@ -232,7 +247,7 @@ function formatReservationRow(reservation, customerMap, technicianMap) {
   const customerName = customer?.customerName
     || translate('reservations.reports.topCustomers.unknown', 'عميل غير معروف', 'Unknown customer');
 
-  const statusInfo = computeReportStatus(reservation);
+  const statusInfo = ensureReportStatus(reservation);
   const statusLabel = getReservationStatusLabel(statusInfo.statusValue);
   const statusChip = createStatusChip(statusInfo.statusValue, statusLabel);
 

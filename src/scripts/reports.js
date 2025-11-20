@@ -51,6 +51,16 @@ import {
 import { renderActiveFilters, renderQuickChips } from './reports/presenters/ui.js';
 
 const filters = reportsState.filters;
+const ALLOWED_STATUS_FILTERS = new Set(['all', 'confirmed', 'completed']);
+
+function normalizeStatusFilterValue(value) {
+  const key = value || 'all';
+  return ALLOWED_STATUS_FILTERS.has(key) ? key : 'all';
+}
+
+function enforceStatusFilter() {
+  filters.status = normalizeStatusFilterValue(filters.status);
+}
 function buildFiltersSignature() {
   const payload = {
     range: filters.range,
@@ -315,6 +325,7 @@ function toggleCustomRange(wrapper, isActive) {
 }
 
 function syncFilterControls() {
+  enforceStatusFilter();
   const rangeSelect = document.getElementById('reports-range');
   const statusSelect = document.getElementById('reports-status-filter');
   const paymentSelect = document.getElementById('reports-payment-filter');
@@ -364,6 +375,7 @@ function readFiltersFromUrl() {
     if (filters.start || filters.end) {
       filters.range = 'custom';
     }
+    enforceStatusFilter();
   } catch (_) {
     // ignore URL parse errors
   }
@@ -492,6 +504,7 @@ function handleReportsDataMutation() {
 }
 
 export function renderReports() {
+  enforceStatusFilter();
   syncFilterControls();
   scheduleUrlUpdate();
 
@@ -601,12 +614,8 @@ export function initReports() {
   });
 
   statusSelect?.addEventListener('change', () => {
-    filters.status = statusSelect.value;
-    // Exclude pending/cancelled from report filters as requested
-    if (filters.status === 'pending' || filters.status === 'cancelled') {
-      filters.status = 'all';
-      statusSelect.value = 'all';
-    }
+    filters.status = normalizeStatusFilterValue(statusSelect.value);
+    statusSelect.value = filters.status;
     scheduleUrlUpdate();
     scheduleRender();
   });

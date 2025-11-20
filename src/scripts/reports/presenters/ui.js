@@ -167,7 +167,7 @@ export function renderQuickChips(statusData = [], paymentData = []) {
   };
   const find = (arr, k) => arr.find((x) => (x.filterKey || '').toLowerCase() === k);
   const chips = [];
-  const statuses = ['confirmed','pending','completed','cancelled'];
+  const statuses = ['confirmed','completed'];
   statuses.forEach((k) => {
     const item = find(s, k) || { label: k, rawCount: 0 };
     chips.push(makeChip(k, item.label || k, item.rawCount || 0, 'status', activeStatus === k));
