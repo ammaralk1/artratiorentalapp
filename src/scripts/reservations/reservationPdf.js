@@ -5409,13 +5409,42 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       pageClone.style.position = 'relative';
       pageClone.style.background = '#ffffff';
       enforceQuoteTextColor(pageClone);
-      captureWrapper.appendChild(pageClone);
+
+      const captureRoot = doc.createElement('div');
+      const sourceAttributes = Array.from(root?.attributes || []);
+      const rootId = (root?.id && typeof root.id === 'string' && root.id.trim().length)
+        ? root.id
+        : 'quotation-pdf-root';
+      captureRoot.id = rootId;
+      sourceAttributes.forEach((attr) => {
+        if (!attr?.name || attr.name === 'id') return;
+        captureRoot.setAttribute(attr.name, attr.value);
+      });
+      if (!captureRoot.hasAttribute('dir')) {
+        const fallbackDir = root?.getAttribute('dir')
+          || doc.documentElement?.getAttribute('dir')
+          || 'rtl';
+        captureRoot.setAttribute('dir', fallbackDir);
+      }
+
+      const captureDocument = doc.createElement('div');
+      captureDocument.className = 'quote-document';
+      captureDocument.setAttribute('data-quote-document', '');
+      const capturePages = doc.createElement('div');
+      capturePages.className = 'quote-preview-pages';
+      capturePages.setAttribute('data-quote-pages', '');
+      capturePages.appendChild(pageClone);
+
+      captureDocument.appendChild(capturePages);
+      captureRoot.appendChild(captureDocument);
+
+      captureWrapper.appendChild(captureRoot);
       doc.body.appendChild(captureWrapper);
 
       let canvas;
       try {
-        await waitForQuoteAssets(pageClone);
-        canvas = await html2canvasFn(pageClone, {
+        await waitForQuoteAssets(captureRoot);
+        canvas = await html2canvasFn(captureRoot, {
           ...html2canvasBaseOptions,
           scale: captureScale,
           backgroundColor: '#ffffff',
