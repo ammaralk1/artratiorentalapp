@@ -1005,7 +1005,7 @@ function enforceProjectInfoAlignmentInline(root) {
     item.style.flexDirection = 'row';
     item.style.justifyContent = 'flex-end';
     item.style.textAlign = 'right';
-    item.style.direction = 'rtl';
+    item.style.direction = 'ltr';
   };
   const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
   sections.forEach((section) => {
