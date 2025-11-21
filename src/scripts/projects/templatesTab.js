@@ -833,7 +833,7 @@ function getSelectedReservations(projectId) {
 }
 
 const COMPANY_INFO = {
-  logoUrl: 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png',
+  logoUrl: 'https://art-ratio.sirv.com/AR%20Logo%20v3.5%20dark%20blue%20curved.png',
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   companyCR: '4030485240',
   companyLicense: '159460'

@@ -320,7 +320,7 @@ function ensureSidebarStructure() {
     brand.innerHTML = `
       <div class="flex items-center gap-3">
         <div class="sidebar-brand-logo">
-          <img src="https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
+          <img src="https://art-ratio.sirv.com/AR%20Logo%20v3.5%20dark%20blue%20curved.png" alt="Art Ratio" class="sidebar-logo-img" loading="lazy" decoding="async">
         </div>
         <div class="text-start sidebar-brand-text">
           <p class="text-xs text-base-content/60">Art Ratio</p>

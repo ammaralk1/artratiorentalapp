@@ -38,7 +38,7 @@ const QUOTE_TOGGLE_PREFS_STORAGE_KEYS = {
 const QUOTE_TROUBLESHOOT_URL = 'https://help.artratio.sa/guide/quote-preview';
 
 const QUOTE_COMPANY_INFO = {
-  logoUrl: 'https://art-ratio.sirv.com/AR-Logo-v3.5-curved.png',
+  logoUrl: 'https://art-ratio.sirv.com/AR%20Logo%20v3.5%20dark%20blue%20curved.png',
   companyName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
   commercialRegistry: '4030485240',
   beneficiaryName: 'شركة فود آرت للدعاية والإعلان (شركة شخص واحد)',
@@ -5409,13 +5409,44 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       pageClone.style.position = 'relative';
       pageClone.style.background = '#ffffff';
       enforceQuoteTextColor(pageClone);
-      captureWrapper.appendChild(pageClone);
+
+      // Recreate the root wrapper so selectors scoped to #quotation-pdf-root stay active during capture
+      const captureRoot = doc.createElement('div');
+      const sourceAttributes = Array.from(root?.attributes || []);
+      const rootId = (root?.id && typeof root.id === 'string' && root.id.trim().length)
+        ? root.id
+        : 'quotation-pdf-root';
+      captureRoot.id = rootId;
+      sourceAttributes.forEach((attr) => {
+        if (!attr?.name || attr.name === 'id') return;
+        captureRoot.setAttribute(attr.name, attr.value);
+      });
+      if (!captureRoot.hasAttribute('dir')) {
+        const fallbackDir = root?.getAttribute('dir')
+          || doc.documentElement?.getAttribute('dir')
+          || 'rtl';
+        captureRoot.setAttribute('dir', fallbackDir);
+      }
+      if (!captureRoot.hasAttribute('data-lang')) {
+        captureRoot.setAttribute('data-lang', root?.getAttribute('data-lang') || 'ar');
+      }
+
+      const captureDocument = doc.createElement('div');
+      captureDocument.className = 'quote-document';
+      captureDocument.setAttribute('data-quote-document', '');
+      const capturePages = doc.createElement('div');
+      capturePages.className = 'quote-preview-pages';
+      capturePages.setAttribute('data-quote-pages', '');
+      captureDocument.appendChild(capturePages);
+      captureRoot.appendChild(captureDocument);
+      capturePages.appendChild(pageClone);
+      captureWrapper.appendChild(captureRoot);
       doc.body.appendChild(captureWrapper);
 
       let canvas;
       try {
-        await waitForQuoteAssets(pageClone);
-        canvas = await html2canvasFn(pageClone, {
+        await waitForQuoteAssets(captureRoot);
+        canvas = await html2canvasFn(captureRoot, {
           ...html2canvasBaseOptions,
           scale: captureScale,
           backgroundColor: '#ffffff',
