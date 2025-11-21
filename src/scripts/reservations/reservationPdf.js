@@ -987,16 +987,16 @@ function enforceProjectInfoAlignmentInline(root) {
   if (contextName !== 'project') {
     return;
   }
-  const forceLeft = (node) => {
+  const alignSection = (node) => {
     if (!node) return;
-    node.style.textAlign = 'left';
-    node.style.alignItems = 'flex-start';
+    node.style.textAlign = 'right';
+    node.style.alignItems = 'flex-end';
   };
-  const ensureAlignClass = (node) => {
+  const ensureRightAlignClass = (node) => {
     if (!node || !node.classList) return;
-    node.classList.remove('info-plain--align-right', 'info-plain--align-center');
-    if (!node.classList.contains('info-plain--align-left')) {
-      node.classList.add('info-plain--align-left');
+    node.classList.remove('info-plain--align-left', 'info-plain--align-center');
+    if (!node.classList.contains('info-plain--align-right')) {
+      node.classList.add('info-plain--align-right');
     }
   };
   const reorderInfoItem = (item) => {
@@ -1004,19 +1004,19 @@ function enforceProjectInfoAlignmentInline(root) {
     item.style.display = 'flex';
     item.style.flexDirection = 'row-reverse';
     item.style.justifyContent = 'flex-end';
-    item.style.textAlign = 'left';
+    item.style.textAlign = 'right';
   };
   const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
   sections.forEach((section) => {
-    forceLeft(section);
+    alignSection(section);
     const title = section.querySelector('.quote-section__title');
     if (title) {
-      title.style.textAlign = 'left';
+      title.style.textAlign = 'right';
     }
     const infoBlocks = section.querySelectorAll('.info-plain');
     infoBlocks.forEach((info) => {
-      forceLeft(info);
-      ensureAlignClass(info);
+      alignSection(info);
+      ensureRightAlignClass(info);
       const items = info.querySelectorAll('.info-plain__item');
       items.forEach((item) => reorderInfoItem(item));
     });
