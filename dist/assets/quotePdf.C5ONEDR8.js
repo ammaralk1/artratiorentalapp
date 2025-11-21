@@ -1103,19 +1103,19 @@ body,
 /* Force project/customer info blocks to stay left-aligned in exported PDF pages */
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer {
-  text-align: left !important;
-  align-items: flex-start !important;
+  text-align: right !important;
+  align-items: flex-end !important;
 }
 
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project .quote-section__title,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .quote-section__title {
-  text-align: left !important;
+  text-align: right !important;
 }
 
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project .info-plain,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain {
-  text-align: left !important;
-  align-items: flex-start !important;
+  text-align: right !important;
+  align-items: flex-end !important;
 }
 
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project .info-plain__item,
