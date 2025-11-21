@@ -4806,6 +4806,16 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   const blockNodes = Array.from(sourceContainer.querySelectorAll(':scope > [data-quote-block]'));
   const datasetContext = root.getAttribute(QUOTE_LAYOUT_DATA_ATTRS.context) || null;
   const datasetOffsets = parseLayoutDatasetAttr(root, QUOTE_LAYOUT_DATA_ATTRS.blockOffsets);
+  const datasetAlignments = parseLayoutDatasetAttr(root, QUOTE_LAYOUT_DATA_ATTRS.infoAlignments);
+  const previousLayoutOverride = renderLayoutStateOverride;
+  const layoutOverrideActive = datasetContext || datasetOffsets || datasetAlignments;
+  if (layoutOverrideActive) {
+    renderLayoutStateOverride = {
+      context: datasetContext || null,
+      blockOffsets: datasetOffsets || null,
+      infoAlignments: datasetAlignments || null,
+    };
+  }
 
   let currentPage = null;
   let currentBody = null;
@@ -4979,9 +4989,10 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
     } catch (_) {}
   };
 
-  if (!blockNodes.length) {
-    return;
-  }
+  try {
+    if (!blockNodes.length) {
+      return;
+    }
 
   blockNodes.forEach((blockNode) => {
     const type = blockNode.getAttribute('data-block-type');
@@ -5028,16 +5039,21 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
-  const hasOffsets = (value) => value && typeof value === 'object' && Object.keys(value).length > 0;
-  const fallbackContextSource = activeQuoteState || (datasetContext ? { context: datasetContext } : null);
-  const defaultOffsets = DEFAULT_BLOCK_OFFSETS[getBlockDragContext(fallbackContextSource)] || {};
-  const effectiveOffsets = hasOffsets(datasetOffsets)
-    ? datasetOffsets
-    : (hasOffsets(activeQuoteState?.blockOffsets) ? activeQuoteState.blockOffsets : defaultOffsets);
-  try {
-    applyQuoteBlockOffsets(root, effectiveOffsets);
-  } catch (_) {
-    /* non-fatal */
+    const hasOffsets = (value) => value && typeof value === 'object' && Object.keys(value).length > 0;
+    const fallbackContextSource = activeQuoteState || (datasetContext ? { context: datasetContext } : null);
+    const defaultOffsets = DEFAULT_BLOCK_OFFSETS[getBlockDragContext(fallbackContextSource)] || {};
+    const effectiveOffsets = hasOffsets(datasetOffsets)
+      ? datasetOffsets
+      : (hasOffsets(activeQuoteState?.blockOffsets) ? activeQuoteState.blockOffsets : defaultOffsets);
+    try {
+      applyQuoteBlockOffsets(root, effectiveOffsets);
+    } catch (_) {
+      /* non-fatal */
+    }
+  } finally {
+    if (layoutOverrideActive) {
+      renderLayoutStateOverride = previousLayoutOverride;
+    }
   }
 
   if (isPreview) {
