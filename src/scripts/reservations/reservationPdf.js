@@ -991,7 +991,6 @@ function enforceProjectInfoAlignmentInline(root) {
     if (!node) return;
     node.style.textAlign = 'left';
     node.style.alignItems = 'flex-start';
-    node.style.direction = 'ltr';
   };
   const ensureAlignClass = (node) => {
     if (!node || !node.classList) return;
@@ -999,6 +998,13 @@ function enforceProjectInfoAlignmentInline(root) {
     if (!node.classList.contains('info-plain--align-left')) {
       node.classList.add('info-plain--align-left');
     }
+  };
+  const reorderInfoItem = (item) => {
+    if (!item) return;
+    item.style.display = 'flex';
+    item.style.flexDirection = 'row-reverse';
+    item.style.justifyContent = 'flex-end';
+    item.style.textAlign = 'left';
   };
   const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
   sections.forEach((section) => {
@@ -1012,10 +1018,7 @@ function enforceProjectInfoAlignmentInline(root) {
       forceLeft(info);
       ensureAlignClass(info);
       const items = info.querySelectorAll('.info-plain__item');
-      items.forEach((item) => {
-        item.style.justifyContent = 'flex-start';
-        item.style.direction = 'ltr';
-      });
+      items.forEach((item) => reorderInfoItem(item));
     });
   });
 }

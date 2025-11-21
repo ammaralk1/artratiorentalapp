@@ -1116,13 +1116,12 @@ body,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain {
   text-align: left !important;
   align-items: flex-start !important;
-  direction: ltr !important;
 }
 
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project .info-plain__item,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain__item {
-  justify-content: flex-start !important;
-  direction: ltr !important;
+  justify-content: flex-end !important;
+  flex-direction: row-reverse !important;
 }
 
 /* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
