@@ -1002,9 +1002,10 @@ function enforceProjectInfoAlignmentInline(root) {
   const reorderInfoItem = (item) => {
     if (!item) return;
     item.style.display = 'flex';
-    item.style.flexDirection = 'row-reverse';
+    item.style.flexDirection = 'row';
     item.style.justifyContent = 'flex-end';
     item.style.textAlign = 'right';
+    item.style.direction = 'rtl';
   };
   const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
   sections.forEach((section) => {
