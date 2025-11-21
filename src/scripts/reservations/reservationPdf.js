@@ -549,6 +549,9 @@ function attachQuoteLiveListeners() {
       activeQuoteState.totals = totals;
       activeQuoteState.totalsDisplay = totalsDisplay;
       activeQuoteState.rentalDays = rentalDays;
+      if (activeQuoteState.context === 'reservationChecklist') {
+        refreshChecklistLessorOptions();
+      }
       updateQuoteMeta();
       renderQuotePreview();
     } catch (err) {
@@ -630,6 +633,241 @@ const QUOTE_LAYOUT_DATA_ATTRS = {
   infoAlignments: 'data-info-alignments',
   context: 'data-quote-source-context',
 };
+
+function normalizeLessorKey(value) {
+  return normalizeNumbers(String(value ?? '')).trim().toLowerCase();
+}
+
+function normalizeBarcodeForLookup(value) {
+  if (value == null) return '';
+  return normalizeNumbers(String(value)).trim().toLowerCase();
+}
+
+function buildChecklistEquipmentLookup() {
+  const snapshot = loadData() || {};
+  const equipmentList = Array.isArray(snapshot.equipment) ? snapshot.equipment : [];
+  const byId = new Map();
+  const byBarcode = new Map();
+  equipmentList.forEach((entry) => {
+    if (!entry || typeof entry !== 'object') return;
+    [
+      entry.id,
+      entry.equipment_id,
+      entry.equipmentId,
+      entry.item_id,
+      entry.itemId
+    ].forEach((candidate) => {
+      if (candidate == null || candidate === '') return;
+      byId.set(String(candidate), entry);
+    });
+    const normalizedBarcode = normalizeBarcodeForLookup(entry.barcode);
+    if (normalizedBarcode) {
+      byBarcode.set(normalizedBarcode, entry);
+    }
+  });
+  return { byId, byBarcode };
+}
+
+function findEquipmentRecordForItem(item = {}, lookup) {
+  if (!lookup) return null;
+  const idCandidates = [
+    item.equipmentId,
+    item.equipment_id,
+    item.id,
+    item.itemId,
+    item.item_id,
+  ];
+  for (const candidate of idCandidates) {
+    if (candidate == null || candidate === '') continue;
+    const key = String(candidate);
+    if (lookup.byId.has(key)) {
+      return lookup.byId.get(key);
+    }
+  }
+  const barcodeCandidates = [
+    item.barcode,
+    item.normalizedBarcode,
+    item.code,
+  ];
+  for (const candidate of barcodeCandidates) {
+    const normalized = normalizeBarcodeForLookup(candidate);
+    if (normalized && lookup.byBarcode.has(normalized)) {
+      return lookup.byBarcode.get(normalized);
+    }
+  }
+  return null;
+}
+
+function resolveItemLessorLabels(item, lookup, visited = new Set()) {
+  const labels = new Set();
+  if (!item || typeof item !== 'object') return labels;
+  const push = (label) => {
+    const value = typeof label === 'string' ? label.trim() : '';
+    if (value) labels.add(value);
+  };
+  push(item.lessor ?? item.owner ?? item.lessor_name ?? item.lessorName);
+
+  const hasPackageChildren = Array.isArray(item.packageItems) && item.packageItems.length > 0;
+  if (hasPackageChildren && !visited.has(item)) {
+    visited.add(item);
+    item.packageItems.forEach((pkgItem) => {
+      resolveItemLessorLabels(pkgItem, lookup, visited).forEach((label) => labels.add(label));
+    });
+    visited.delete(item);
+  }
+
+  if (!labels.size) {
+    const equipmentRecord = findEquipmentRecordForItem(item, lookup);
+    if (equipmentRecord) {
+      push(equipmentRecord.lessor ?? equipmentRecord.owner ?? equipmentRecord.lessor_name ?? equipmentRecord.lessorName);
+    }
+  }
+
+  return labels;
+}
+
+function itemMatchesLessorFilter(item, filterSet, lookup) {
+  if (!(filterSet instanceof Set) || filterSet.size === 0) {
+    return true;
+  }
+  const labels = resolveItemLessorLabels(item, lookup);
+  if (!labels.size) {
+    return false;
+  }
+  for (const label of labels) {
+    const key = normalizeLessorKey(label);
+    if (key && filterSet.has(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function collectChecklistLessorOptions(reservation, lookup) {
+  const items = Array.isArray(reservation?.items) ? reservation.items : [];
+  const counter = new Map();
+  items.forEach((item) => {
+    resolveItemLessorLabels(item, lookup).forEach((label) => {
+      const key = normalizeLessorKey(label);
+      if (!key) return;
+      if (!counter.has(key)) {
+        counter.set(key, { key, label, count: 0 });
+      }
+      counter.get(key).count += 1;
+    });
+  });
+  const collator = new Intl.Collator('ar', { sensitivity: 'base' });
+  return Array.from(counter.values()).sort((a, b) => collator.compare(a.label, b.label));
+}
+
+function refreshChecklistLessorOptions() {
+  if (!activeQuoteState || activeQuoteState.context !== 'reservationChecklist') return;
+  const lookup = buildChecklistEquipmentLookup();
+  activeQuoteState.checklistEquipmentLookup = lookup;
+  const options = collectChecklistLessorOptions(activeQuoteState.reservation, lookup);
+  const optionKeys = new Set(options.map((opt) => opt.key));
+  const filter = activeQuoteState.checklistLessorFilter instanceof Set
+    ? activeQuoteState.checklistLessorFilter
+    : new Set();
+  Array.from(filter).forEach((key) => {
+    if (!optionKeys.has(key)) {
+      filter.delete(key);
+    }
+  });
+  activeQuoteState.checklistLessorOptions = options;
+  activeQuoteState.checklistLessorFilter = filter;
+  renderChecklistLessorFilters();
+}
+
+function renderChecklistLessorFilters() {
+  if (!quoteModalRefs?.checklistLessorContainer) return;
+  const container = quoteModalRefs.checklistLessorContainer;
+  const host = quoteModalRefs.checklistLessorOptionsHost;
+  if (!activeQuoteState || activeQuoteState.context !== 'reservationChecklist') {
+    container.hidden = true;
+    return;
+  }
+  const options = Array.isArray(activeQuoteState.checklistLessorOptions)
+    ? activeQuoteState.checklistLessorOptions
+    : [];
+  const filter = activeQuoteState.checklistLessorFilter instanceof Set
+    ? activeQuoteState.checklistLessorFilter
+    : new Set();
+  if (!host) {
+    container.hidden = true;
+    return;
+  }
+
+  if (!options.length) {
+    container.hidden = true;
+    host.innerHTML = `<p class="text-muted" data-lessor-empty>${escapeHtml(t('reservations.checklist.controls.lessors.empty', 'لا توجد معلومات مؤجر مرتبطة بالمعدات.'))}</p>`;
+    const clearButton = container.querySelector('[data-lessor-clear]');
+    if (clearButton) {
+      clearButton.disabled = true;
+    }
+    return;
+  }
+
+  container.hidden = false;
+  host.innerHTML = options.map((option) => {
+    const checkboxId = `checklist-lessor-${option.key}`;
+    const countLabel = option.count
+      ? ` <small>(${escapeHtml(normalizeNumbers(String(option.count)))})</small>`
+      : '';
+    return `
+      <label for="${checkboxId}" style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="${checkboxId}" value="${option.key}" ${filter.has(option.key) ? 'checked' : ''}>
+        <span>${escapeHtml(option.label)}${countLabel}</span>
+      </label>
+    `;
+  }).join('');
+  host.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      if (!(activeQuoteState.checklistLessorFilter instanceof Set)) {
+        activeQuoteState.checklistLessorFilter = new Set();
+      }
+      if (input.checked) {
+        activeQuoteState.checklistLessorFilter.add(input.value);
+      } else {
+        activeQuoteState.checklistLessorFilter.delete(input.value);
+      }
+      renderChecklistLessorFilters();
+      renderQuotePreview();
+    });
+  });
+  const clearButton = container.querySelector('[data-lessor-clear]');
+  if (clearButton) {
+    clearButton.disabled = filter.size === 0;
+    clearButton.onclick = () => {
+      if (activeQuoteState.checklistLessorFilter instanceof Set) {
+        activeQuoteState.checklistLessorFilter.clear();
+        renderChecklistLessorFilters();
+        renderQuotePreview();
+      }
+    };
+  }
+}
+
+function getChecklistPreviewReservation() {
+  if (!activeQuoteState?.reservation || activeQuoteState.context !== 'reservationChecklist') {
+    return activeQuoteState?.reservation || null;
+  }
+  const filter = activeQuoteState.checklistLessorFilter;
+  if (!(filter instanceof Set) || filter.size === 0) {
+    return activeQuoteState.reservation;
+  }
+  const lookup = activeQuoteState.checklistEquipmentLookup || buildChecklistEquipmentLookup();
+  activeQuoteState.checklistEquipmentLookup = lookup;
+  const items = Array.isArray(activeQuoteState.reservation.items) ? activeQuoteState.reservation.items : [];
+  const filteredItems = items.filter((item) => itemMatchesLessorFilter(item, filter, lookup));
+  if (filteredItems.length === items.length) {
+    return activeQuoteState.reservation;
+  }
+  return {
+    ...activeQuoteState.reservation,
+    items: filteredItems,
+  };
+}
 
 function encodeLayoutDataset(value) {
   try {
@@ -5311,9 +5549,12 @@ function renderQuotePreview() {
 
   refreshAlignmentOptions();
   const context = activeQuoteState.context || 'reservation';
+  const reservationForPreview = context === 'reservationChecklist'
+    ? getChecklistPreviewReservation()
+    : activeQuoteState.reservation;
   const html = buildQuotationHtml({
     context,
-    reservation: activeQuoteState.reservation,
+    reservation: reservationForPreview || activeQuoteState.reservation,
     customer: activeQuoteState.customer,
     project: activeQuoteState.project,
     crewAssignments: activeQuoteState.crewAssignments,
@@ -5912,11 +6153,14 @@ async function exportQuoteAsPdf() {
     logPdfDebug('html2pdf ensured');
 
     const context = activeQuoteState.context || 'reservation';
+    const reservationForExport = context === 'reservationChecklist'
+      ? getChecklistPreviewReservation()
+      : activeQuoteState.reservation;
     // Do not reserve server-side sequences; we use digits-only from reservation/project identifiers for both contexts.
     // Keeping this block disabled preserves deterministic quote numbers and avoids server dependency.
     const html = buildQuotationHtml({
       context,
-      reservation: activeQuoteState.reservation,
+      reservation: reservationForExport || activeQuoteState.reservation,
       customer: activeQuoteState.customer,
       project: activeQuoteState.project,
       crewAssignments: activeQuoteState.crewAssignments,
@@ -6068,6 +6312,8 @@ function openQuoteModal() {
         const langBtnLabel = lang === 'en'
           ? escapeHtml(t('language.toggle.labelAr', '🇸🇦 العربية'))
           : escapeHtml(t('language.toggle.labelEn', '🇬🇧 English'));
+        const lessorTitle = escapeHtml(t('reservations.checklist.controls.lessors.title', '🏢 تصفية حسب المؤجر'));
+        const lessorClearLabel = escapeHtml(t('reservations.checklist.controls.lessors.clear', 'إظهار كل المؤجرين'));
 
         controls.innerHTML = `
           <div class="quote-meta-card" style="margin-bottom:10px">
@@ -6104,6 +6350,13 @@ function openQuoteModal() {
             <input id="checklist-notes-title-input" class="quote-terms-editor__input" type="text" value="${escapeHtml(t('reservations.checklist.controls.notes.sectionTitleDefault', 'ملاحظات'))}" data-i18n-value-key="reservations.checklist.controls.notes.sectionTitleDefault">
             <label class="quote-terms-editor__label" for="checklist-notes-input" data-i18n data-i18n-key="reservations.checklist.controls.notes.title">${notesTitle}</label>
             <textarea id="checklist-notes-input" class="quote-terms-editor__textarea" rows="4" data-i18n-placeholder-key="reservations.checklist.controls.notes.placeholder" placeholder="${notesPlaceholder}"></textarea>
+          </div>
+          <div class="quote-meta-card" data-checklist-lessors hidden>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+              <span data-i18n data-i18n-key="reservations.checklist.controls.lessors.title">${lessorTitle}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-lessor-clear>${lessorClearLabel}</button>
+            </div>
+            <div data-lessor-options style="display:flex;flex-direction:column;gap:6px;"></div>
           </div>
         `;
         sidebar.prepend(controls);
@@ -6212,6 +6465,11 @@ function openQuoteModal() {
           renderQuotePreview();
         });
       }
+
+      refs.checklistControls = controls;
+      refs.checklistLessorContainer = controls.querySelector('[data-checklist-lessors]');
+      refs.checklistLessorOptionsHost = controls.querySelector('[data-lessor-options]');
+      renderChecklistLessorFilters();
 
       if (titleEl) {
         titleEl.textContent = activeQuoteState.checklistType === 'crew' ? 'قائمة الفريق الفني' : 'قائمة المعدات';
@@ -6336,8 +6594,12 @@ export async function exportReservationChecklistPdf({ reservation, customer, pro
     quoteDateLabel: formatQuoteDate(now),
     sequenceCommitted: false
   };
+  activeQuoteState.checklistLessorFilter = new Set();
+  activeQuoteState.checklistLessorOptions = [];
+  activeQuoteState.checklistEquipmentLookup = buildChecklistEquipmentLookup();
   initializedInfoAlignments = false;
 
+  refreshChecklistLessorOptions();
   applyQuoteTogglePreferences(activeQuoteState);
   initializeQuoteBlockOffsets(activeQuoteState);
   initializeInfoAlignments(activeQuoteState);

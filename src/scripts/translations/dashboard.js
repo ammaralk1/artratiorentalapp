@@ -26,6 +26,9 @@ registerTranslations({
     'reservations.checklist.controls.notes.titleLabel': 'عنوان الملاحظات',
     'reservations.checklist.controls.notes.sectionTitleDefault': 'ملاحظات',
     'reservations.checklist.controls.notes.placeholder': 'اكتب أي ملاحظات خاصة بهذه اللستة',
+    'reservations.checklist.controls.lessors.title': '🏢 تصفية حسب المؤجر',
+    'reservations.checklist.controls.lessors.clear': 'إظهار كل المؤجرين',
+    'reservations.checklist.controls.lessors.empty': 'لا توجد معلومات مؤجر مرتبطة بالمعدات.',
     // Packages
     'reservations.packages.selectOption': '📦 اختر الحزمة',
     // Shared table headers
@@ -1090,6 +1093,9 @@ registerTranslations({
     'reservations.checklist.controls.notes.titleLabel': 'Notes title',
     'reservations.checklist.controls.notes.sectionTitleDefault': 'Notes',
     'reservations.checklist.controls.notes.placeholder': 'Type any notes specific to this checklist',
+    'reservations.checklist.controls.lessors.title': '🏢 Filter by lessor',
+    'reservations.checklist.controls.lessors.clear': 'Show all lessors',
+    'reservations.checklist.controls.lessors.empty': 'No lessor details are linked to the equipment.',
     // Packages
     'reservations.packages.selectOption': '📦 Select a package',
     // Shared table headers
