@@ -5899,6 +5899,65 @@ function ensureQuoteModal() {
   if (modalHeader) {
     modalHeader.insertBefore(headerActions, headerCloseButton || null);
   }
+  const dropdownRegistry = [];
+  const closeAllDropdowns = (exceptEntry = null) => {
+    dropdownRegistry.forEach((entry) => {
+      if (entry !== exceptEntry) {
+        entry.menu.hidden = true;
+        entry.toggle.setAttribute('aria-expanded', 'false');
+        entry.wrapper.classList.remove('is-open');
+      }
+    });
+  };
+  const registerDropdown = (wrapper, toggle, menu) => {
+    dropdownRegistry.push({ wrapper, toggle, menu });
+  };
+  const handleDropdownOutsideClick = (event) => {
+    if (!dropdownRegistry.length) return;
+    const target = event.target;
+    const insideDropdown = dropdownRegistry.some((entry) => entry.wrapper.contains(target));
+    if (!insideDropdown) {
+      closeAllDropdowns();
+    }
+  };
+  document.addEventListener('click', handleDropdownOutsideClick);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeAllDropdowns();
+    }
+  });
+  const createControlsDropdown = ({ label, icon, content }) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'quote-controls-dropdown';
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'quote-controls-dropdown__toggle';
+    toggle.setAttribute('aria-haspopup', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.innerHTML = `
+      ${icon ? `<span class="quote-controls-dropdown__icon" aria-hidden="true">${escapeHtml(icon)}</span>` : ''}
+      <span class="quote-controls-dropdown__label">${escapeHtml(label)}</span>
+      <span class="quote-controls-dropdown__caret" aria-hidden="true">▾</span>
+    `;
+    const menu = document.createElement('div');
+    menu.className = 'quote-controls-dropdown__menu';
+    menu.hidden = true;
+    menu.appendChild(content);
+    wrapper.appendChild(toggle);
+    wrapper.appendChild(menu);
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = wrapper.classList.contains('is-open');
+      closeAllDropdowns();
+      if (!isOpen) {
+        wrapper.classList.add('is-open');
+        menu.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+      }
+    });
+    registerDropdown(wrapper, toggle, menu);
+    return wrapper;
+  };
 
   const previewFrame = document.createElement('iframe');
   previewFrame.className = 'quote-preview-frame';
@@ -5965,9 +6024,13 @@ function ensureQuoteModal() {
     <button type="button" class="quote-preview-status-action" data-quote-status-action hidden></button>
   `;
   preview.appendChild(statusIndicator);
+  const dragDropdownLabel = t('reservations.quote.dropdown.drag', 'التحريك', 'Adjust layout');
+  const alignDropdownLabel = t('reservations.quote.dropdown.align', 'المحاذاة', 'Alignment');
+  const dragDropdown = createControlsDropdown({ label: dragDropdownLabel, icon: '🎚️', content: dragControls });
+  const alignDropdown = createControlsDropdown({ label: alignDropdownLabel, icon: '📐', content: alignControls });
   headerActions.appendChild(zoomControls);
-  headerActions.appendChild(dragControls);
-  headerActions.appendChild(alignControls);
+  headerActions.appendChild(dragDropdown);
+  headerActions.appendChild(alignDropdown);
 
   downloadBtn?.addEventListener('click', async () => {
     if (!activeQuoteState) return;
