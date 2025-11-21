@@ -992,20 +992,20 @@ function enforceProjectInfoAlignmentInline(root) {
     node.style.textAlign = 'right';
     node.style.alignItems = 'flex-end';
   };
-  const ensureRightAlignClass = (node) => {
+  const ensureLeftAlignClass = (node) => {
     if (!node || !node.classList) return;
-    node.classList.remove('info-plain--align-left', 'info-plain--align-center');
-    if (!node.classList.contains('info-plain--align-right')) {
-      node.classList.add('info-plain--align-right');
+    node.classList.remove('info-plain--align-right', 'info-plain--align-center');
+    if (!node.classList.contains('info-plain--align-left')) {
+      node.classList.add('info-plain--align-left');
     }
   };
   const reorderInfoItem = (item) => {
     if (!item) return;
     item.style.display = 'flex';
     item.style.flexDirection = 'row';
-    item.style.justifyContent = 'flex-end';
+    item.style.justifyContent = 'flex-start';
     item.style.textAlign = 'left';
-    item.style.direction = 'rtl';
+    item.style.direction = 'ltr';
   };
   const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
   sections.forEach((section) => {
@@ -1016,8 +1016,9 @@ function enforceProjectInfoAlignmentInline(root) {
     }
     const infoBlocks = section.querySelectorAll('.info-plain');
     infoBlocks.forEach((info) => {
-      alignSection(info);
-      ensureRightAlignClass(info);
+      info.style.textAlign = 'left';
+      info.style.alignItems = 'flex-start';
+      ensureLeftAlignClass(info);
       const items = info.querySelectorAll('.info-plain__item');
       items.forEach((item) => reorderInfoItem(item));
     });
