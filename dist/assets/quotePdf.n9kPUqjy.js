@@ -1122,7 +1122,7 @@ body,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain__item {
   justify-content: flex-end !important;
   flex-direction: row !important;
-  direction: rtl !important;
+  direction: ltr !important;
 }
 
 /* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
