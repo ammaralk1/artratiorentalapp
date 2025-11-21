@@ -402,9 +402,37 @@ function navigateBackToReservationForm() {
     window.requestAnimationFrame(() => {
       setTimeout(() => {
         document.querySelector('#sub-tab-trigger-create-tab')?.click();
-        document.getElementById('equipment-barcode')?.focus();
+        const barcodeInput = document.getElementById('equipment-barcode');
+        if (barcodeInput) {
+          try {
+            barcodeInput.focus({ preventScroll: true });
+          } catch (_) {
+            barcodeInput.focus();
+          }
+        }
+        scrollToReservationEquipmentSection();
+        setTimeout(scrollToReservationEquipmentSection, 150);
       }, 200);
     });
+  }
+}
+
+function scrollToReservationEquipmentSection() {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  const createTab = document.getElementById('create-tab');
+  if (!createTab) return;
+  const equipmentSection = createTab.querySelector('.reservation-equipment-table')
+    || createTab.querySelector('.reservation-equipment-heading');
+  if (!equipmentSection) return;
+
+  const headerOffset = 110;
+  const bounding = equipmentSection.getBoundingClientRect();
+  const targetPosition = Math.max((window.scrollY || window.pageYOffset || 0) + bounding.top - headerOffset, 0);
+  const scrollOptions = { top: targetPosition, behavior: 'smooth' };
+  try {
+    window.scrollTo(scrollOptions);
+  } catch (_) {
+    window.scrollTo(0, targetPosition);
   }
 }
 
