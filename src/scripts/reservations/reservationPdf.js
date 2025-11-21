@@ -599,23 +599,23 @@ const INFO_ALIGN_DEFAULTS = {
   customer: 'left',
   reservation: 'left',
   project: 'left',
-  projectCustomer: 'right',
-  projectDetails: 'right',
+  projectCustomer: 'left',
+  projectDetails: 'left',
 };
 const INFO_ALIGN_CONTEXT_DEFAULTS = {
   project: {
-    customer: 'right',
+    customer: 'left',
     reservation: 'left',
     project: 'left',
-    projectCustomer: 'right',
-    projectDetails: 'right',
+    projectCustomer: 'left',
+    projectDetails: 'left',
   },
   reservationChecklist: {
     customer: 'left',
     reservation: 'left',
     project: 'left',
-    projectCustomer: 'right',
-    projectDetails: 'right',
+    projectCustomer: 'left',
+    projectDetails: 'left',
   },
 };
 let blockDragMode = false;
