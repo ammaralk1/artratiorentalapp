@@ -576,6 +576,7 @@ body,
 
 .info-plain--align-right .info-plain__item {
   justify-content: flex-end !important;
+  direction: rtl;
 }
 
 .info-plain--align-center {
