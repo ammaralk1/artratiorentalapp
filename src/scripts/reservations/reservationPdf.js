@@ -5427,6 +5427,13 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
         captureRoot.setAttribute('dir', fallbackDir);
       }
 
+      // Clone style nodes at the root level to preserve scoped PDF styles
+      Array.from(root.children || []).forEach((child) => {
+        if (child && child.tagName === 'STYLE') {
+          captureRoot.appendChild(child.cloneNode(true));
+        }
+      });
+
       const captureDocument = doc.createElement('div');
       captureDocument.className = 'quote-document';
       captureDocument.setAttribute('data-quote-document', '');
@@ -5444,6 +5451,10 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       let canvas;
       try {
         await waitForQuoteAssets(captureRoot);
+        const viewForCapture = doc.defaultView || window;
+        sanitizeComputedColorFunctions(captureRoot, viewForCapture);
+        enforceLegacyColorFallback(captureRoot, viewForCapture);
+        scrubUnsupportedColorFunctions(captureRoot);
         canvas = await html2canvasFn(captureRoot, {
           ...html2canvasBaseOptions,
           scale: captureScale,
