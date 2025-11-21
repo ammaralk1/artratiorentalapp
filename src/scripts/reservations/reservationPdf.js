@@ -981,6 +981,45 @@ function applyQuoteBlockOffsets(root, offsets = {}) {
   });
 }
 
+function enforceProjectInfoAlignmentInline(root) {
+  if (!root) return;
+  const contextName = root.getAttribute(QUOTE_LAYOUT_DATA_ATTRS.context);
+  if (contextName !== 'project') {
+    return;
+  }
+  const forceLeft = (node) => {
+    if (!node) return;
+    node.style.textAlign = 'left';
+    node.style.alignItems = 'flex-start';
+    node.style.direction = 'ltr';
+  };
+  const ensureAlignClass = (node) => {
+    if (!node || !node.classList) return;
+    node.classList.remove('info-plain--align-right', 'info-plain--align-center');
+    if (!node.classList.contains('info-plain--align-left')) {
+      node.classList.add('info-plain--align-left');
+    }
+  };
+  const sections = root.querySelectorAll('.quote-section--project, .quote-section--customer');
+  sections.forEach((section) => {
+    forceLeft(section);
+    const title = section.querySelector('.quote-section__title');
+    if (title) {
+      title.style.textAlign = 'left';
+    }
+    const infoBlocks = section.querySelectorAll('.info-plain');
+    infoBlocks.forEach((info) => {
+      forceLeft(info);
+      ensureAlignClass(info);
+      const items = info.querySelectorAll('.info-plain__item');
+      items.forEach((item) => {
+        item.style.justifyContent = 'flex-start';
+        item.style.direction = 'ltr';
+      });
+    });
+  });
+}
+
 function syncBlockDragModeToPreview(doc) {
   try {
     const root = doc?.getElementById('quotation-pdf-root');
@@ -5277,6 +5316,13 @@ async function layoutQuoteDocument(root, { context = 'preview' } = {}) {
   currentBody = lastPage?.querySelector('.quote-body') || null;
 
   await waitForQuoteAssets(pagesContainer);
+  if (!isPreview) {
+    try {
+      enforceProjectInfoAlignmentInline(root);
+    } catch (_) {
+      /* non-fatal */
+    }
+  }
     const hasOffsets = (value) => value && typeof value === 'object' && Object.keys(value).length > 0;
     const fallbackContextSource = activeQuoteState || (datasetContext ? { context: datasetContext } : null);
     const defaultOffsets = DEFAULT_BLOCK_OFFSETS[getBlockDragContext(fallbackContextSource)] || {};
