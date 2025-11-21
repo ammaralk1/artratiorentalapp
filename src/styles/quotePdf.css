@@ -1114,7 +1114,7 @@ body,
 
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--project .info-plain,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain {
-  text-align: right !important;
+  text-align: left !important;
   align-items: flex-end !important;
 }
 
@@ -1122,7 +1122,7 @@ body,
 #quotation-pdf-root[data-quote-render-context="export"][data-quote-source-context="project"] .quote-section--customer .info-plain__item {
   justify-content: flex-end !important;
   flex-direction: row !important;
-  direction: ltr !important;
+  direction: rtl !important;
 }
 
 /* Strong anchoring for Arabic layout: ensure info blocks sit directly under their titles */
