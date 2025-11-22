@@ -1108,14 +1108,58 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// تعيين معالج كسول لتفاصيل الحجز لتجنّب سحب وحدة الحجوزات في التحميل الأولي
+const loadTechnicianReservationsModule = (() => {
+  let modulePromise = null;
+  let globalsRegistered = false;
+  return () => {
+    if (!modulePromise) {
+      modulePromise = import('./reservationsUI.js')
+        .then((module) => {
+          if (!globalsRegistered && typeof module.registerReservationGlobals === 'function') {
+            try {
+              module.registerReservationGlobals();
+              globalsRegistered = true;
+            } catch (error) {
+              console.warn('⚠️ [technicianPage] Failed to register reservation globals', error);
+            }
+          }
+          return module;
+        });
+    }
+    return modulePromise;
+  };
+})();
+
+function invokeTechnicianReservationHandler(handlerName, ...args) {
+  loadTechnicianReservationsModule()
+    .then((module) => {
+      const handler = module?.[handlerName];
+      if (typeof handler === 'function') {
+        handler(...args);
+      } else {
+        console.warn(`⚠️ [technicianPage] Reservation handler "${handlerName}" is unavailable`);
+      }
+    })
+    .catch((error) => {
+      console.error(`❌ [technicianPage] Failed to execute reservation handler "${handlerName}"`, error);
+    });
+}
+
 setReservationsUIHandlers({
   showReservationDetails(index) {
-    import('./reservationsUI.js')
-      .then((m) => {
-        try { m.showReservationDetails?.(index); } catch (e) { console.error('❌ showReservationDetails failed', e); }
-      })
-      .catch((e) => console.error('❌ Failed to load reservations UI module', e));
+    invokeTechnicianReservationHandler('showReservationDetails', index);
+  },
+  openReservationEditor(index, payload = {}) {
+    invokeTechnicianReservationHandler('openReservationEditor', index, payload?.reservation ?? null);
+  },
+  confirmReservation(index, event) {
+    invokeTechnicianReservationHandler('confirmReservation', index, event);
+  },
+  deleteReservation(index) {
+    invokeTechnicianReservationHandler('deleteReservation', index);
+  },
+  reopenReservation(index) {
+    invokeTechnicianReservationHandler('reopenReservation', index);
   }
 });
 

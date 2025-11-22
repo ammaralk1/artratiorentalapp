@@ -29,14 +29,58 @@ if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
   logoutBtn.dataset.listenerAttached = 'true';
 }
 
-// تعيين معالج كسول لتفاصيل الحجز لتجنّب سحب وحدة الحجوزات في التحميل الأولي
+const loadReservationsModule = (() => {
+  let modulePromise = null;
+  let globalsRegistered = false;
+  return () => {
+    if (!modulePromise) {
+      modulePromise = import('./reservationsUI.js')
+        .then((module) => {
+          if (!globalsRegistered && typeof module.registerReservationGlobals === 'function') {
+            try {
+              module.registerReservationGlobals();
+              globalsRegistered = true;
+            } catch (error) {
+              console.warn('⚠️ [customerPage] Failed to register reservation globals', error);
+            }
+          }
+          return module;
+        });
+    }
+    return modulePromise;
+  };
+})();
+
+function invokeReservationsHandler(handlerName, ...args) {
+  loadReservationsModule()
+    .then((module) => {
+      const handler = module?.[handlerName];
+      if (typeof handler === 'function') {
+        handler(...args);
+      } else {
+        console.warn(`⚠️ [customerPage] Reservation handler "${handlerName}" is unavailable`);
+      }
+    })
+    .catch((error) => {
+      console.error(`❌ [customerPage] Failed to execute reservation handler "${handlerName}"`, error);
+    });
+}
+
 setReservationsUIHandlers({
   showReservationDetails(index) {
-    import('./reservationsUI.js')
-      .then((m) => {
-        try { m.showReservationDetails?.(index); } catch (e) { console.error('❌ showReservationDetails failed', e); }
-      })
-      .catch((e) => console.error('❌ Failed to load reservations UI module', e));
+    invokeReservationsHandler('showReservationDetails', index);
+  },
+  openReservationEditor(index, payload = {}) {
+    invokeReservationsHandler('openReservationEditor', index, payload?.reservation ?? null);
+  },
+  confirmReservation(index, event) {
+    invokeReservationsHandler('confirmReservation', index, event);
+  },
+  deleteReservation(index) {
+    invokeReservationsHandler('deleteReservation', index);
+  },
+  reopenReservation(index) {
+    invokeReservationsHandler('reopenReservation', index);
   }
 });
 
