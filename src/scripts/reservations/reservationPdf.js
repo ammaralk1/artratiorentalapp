@@ -26,7 +26,8 @@ import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
   enforceLegacyColorFallback,
-  scrubUnsupportedColorFunctions
+  scrubUnsupportedColorFunctions,
+  MODERN_COLOR_REGEX
 } from '../canvasColorUtils.js';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
@@ -633,6 +634,50 @@ const QUOTE_LAYOUT_DATA_ATTRS = {
   infoAlignments: 'data-info-alignments',
   context: 'data-quote-source-context',
 };
+
+function disableColorFunctionStyles(doc, scope) {
+  if (!doc) return () => {};
+  const records = [];
+  const nodes = Array.from(doc.querySelectorAll('style, link[rel="stylesheet"]'));
+  nodes.forEach((node) => {
+    try {
+      if (scope && scope.contains(node)) {
+        return;
+      }
+      let hasModernColor = false;
+      if (node.tagName === 'STYLE') {
+        hasModernColor = MODERN_COLOR_REGEX.test(node.textContent || '');
+      } else if (node.tagName === 'LINK') {
+        const sheet = node.sheet;
+        const rules = sheet?.cssRules;
+        if (rules) {
+          for (let i = 0; i < rules.length; i += 1) {
+            if (MODERN_COLOR_REGEX.test(rules[i]?.cssText || '')) {
+              hasModernColor = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!hasModernColor) {
+        return;
+      }
+      records.push({ node, disabled: node.disabled === true });
+      node.disabled = true;
+    } catch (_) {
+      /* Ignore security/access errors */
+    }
+  });
+  return () => {
+    records.forEach(({ node, disabled }) => {
+      try {
+        node.disabled = disabled;
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  };
+}
 
 function normalizeLessorKey(value) {
   return normalizeNumbers(String(value ?? '')).trim().toLowerCase();
@@ -5448,6 +5493,7 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
       captureWrapper.appendChild(captureRoot);
       doc.body.appendChild(captureWrapper);
 
+      const restoreStyles = disableColorFunctionStyles(doc, captureRoot);
       let canvas;
       try {
         await waitForQuoteAssets(captureRoot);
@@ -5466,6 +5512,11 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
         handlePdfError(captureError, 'pageCapture', { toastMessage: browserLimitMessage });
         throw captureError;
       } finally {
+        try {
+          restoreStyles?.();
+        } catch (_) {
+          /* ignore */
+        }
         captureWrapper.parentNode?.removeChild(captureWrapper);
       }
 
