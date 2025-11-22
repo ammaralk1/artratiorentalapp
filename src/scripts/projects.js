@@ -10,7 +10,18 @@ applyStoredTheme();
 migrateOldData();
 checkAuth();
 registerReservationGlobals();
-setupEditReservationModalEvents(getReservationsEditContext());
+const initProjectsReservationModal = () => {
+  try {
+    setupEditReservationModalEvents(getReservationsEditContext());
+  } catch (error) {
+    console.warn('⚠️ [projects] Failed to initialize reservation edit modal', error);
+  }
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProjectsReservationModal, { once: true });
+} else {
+  initProjectsReservationModal();
+}
 
 initProjectsPage();
 

@@ -30,7 +30,18 @@ if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
 }
 
 registerReservationGlobals();
-setupEditReservationModalEvents(getReservationsEditContext());
+const initReservationModalEvents = () => {
+  try {
+    setupEditReservationModalEvents(getReservationsEditContext());
+  } catch (error) {
+    console.warn('⚠️ [customerPage] Failed to initialize reservation modal events', error);
+  }
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initReservationModalEvents, { once: true });
+} else {
+  initReservationModalEvents();
+}
 
 const params = new URLSearchParams(window.location.search);
 const customerId = params.get('id');

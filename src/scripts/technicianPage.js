@@ -22,7 +22,18 @@ applyStoredTheme();
 checkAuth();
 initDashboardShell();
 registerReservationGlobals();
-setupEditReservationModalEvents(getReservationsEditContext());
+const initTechnicianReservationModal = () => {
+  try {
+    setupEditReservationModalEvents(getReservationsEditContext());
+  } catch (error) {
+    console.warn('⚠️ [technicianPage] Failed to initialize reservation edit modal', error);
+  }
+};
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initTechnicianReservationModal, { once: true });
+} else {
+  initTechnicianReservationModal();
+}
 
 const urlParams = new URLSearchParams(window.location.search);
 const technicianId = urlParams.get('id');
