@@ -1186,6 +1186,10 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   margin-inline: auto; /* center horizontally */
 }
 
+.reports-chart-card--centered.reports-chart-card--wide {
+  max-width: none;
+}
+
 .reports-chart-card {
   padding: 24px;
   display: flex;
