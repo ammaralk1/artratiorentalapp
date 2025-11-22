@@ -1197,6 +1197,8 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 .reports-chart-card--wide {
   grid-column: 1 / -1; /* take full row and center with parent width */
   margin-inline: auto;
+  max-width: none;
+  width: 100%;
 }
 
 .reports-card-body--column {
@@ -1231,7 +1233,7 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 }
 
 /* If a centered modifier is present inside analytics grid, constrain to same width */
-.reports-analytics-grid .reports-chart-card--centered {
+.reports-analytics-grid .reports-chart-card--centered:not(.reports-chart-card--wide) {
   max-width: 560px;
   grid-column: auto; /* allow side-by-side placement inside grid */
   height: 100%;
