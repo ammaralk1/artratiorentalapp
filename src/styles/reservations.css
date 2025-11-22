@@ -2300,6 +2300,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   width: var(--reservation-unit-column-width, 110px);
   max-width: var(--reservation-unit-column-width, 110px);
   white-space: nowrap;
+  padding-inline: 8px;
 }
 
 @media (max-width: 992px) {
@@ -2330,6 +2331,18 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
     width: var(--reservation-unit-column-width-sm, 96px);
     max-width: var(--reservation-unit-column-width-sm, 96px);
   }
+}
+
+/* Keep unit price/cost inputs compact inside the narrower cells */
+#editReservationModal .reservation-unit-price-input,
+#editReservationModal .reservation-unit-cost-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.85rem;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .reservation-items-table img,
