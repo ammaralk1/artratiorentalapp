@@ -2,7 +2,6 @@ import '../styles/app.css';
 import { getTechnicianById, syncTechniciansStatuses } from './technicians.js';
 import { refreshTechniciansFromApi } from './techniciansService.js';
 import { renderTechnicianReservations, renderTechnicianProjects, normalizeTechnicianAssignments } from './technicianDetails.js';
-import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { normalizeNumbers, showToast } from './utils.js';
 import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
@@ -17,10 +16,13 @@ import { refreshProjectsFromApi } from './projectsService.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
 import { apiRequest } from './apiClient.js';
+import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 
 applyStoredTheme();
 checkAuth();
 initDashboardShell();
+registerReservationGlobals();
+setupEditReservationModalEvents(getReservationsEditContext());
 
 const urlParams = new URLSearchParams(window.location.search);
 const technicianId = urlParams.get('id');
@@ -1105,61 +1107,6 @@ if (financialModalEl && !financialModalEl.dataset.listenerAttached) {
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && financialModalEl && financialModalEl.classList.contains('modal-open')) {
     closeFinancialModal();
-  }
-});
-
-const loadTechnicianReservationsModule = (() => {
-  let modulePromise = null;
-  let globalsRegistered = false;
-  return () => {
-    if (!modulePromise) {
-      modulePromise = import('./reservationsUI.js')
-        .then((module) => {
-          if (!globalsRegistered && typeof module.registerReservationGlobals === 'function') {
-            try {
-              module.registerReservationGlobals();
-              globalsRegistered = true;
-            } catch (error) {
-              console.warn('⚠️ [technicianPage] Failed to register reservation globals', error);
-            }
-          }
-          return module;
-        });
-    }
-    return modulePromise;
-  };
-})();
-
-function invokeTechnicianReservationHandler(handlerName, ...args) {
-  loadTechnicianReservationsModule()
-    .then((module) => {
-      const handler = module?.[handlerName];
-      if (typeof handler === 'function') {
-        handler(...args);
-      } else {
-        console.warn(`⚠️ [technicianPage] Reservation handler "${handlerName}" is unavailable`);
-      }
-    })
-    .catch((error) => {
-      console.error(`❌ [technicianPage] Failed to execute reservation handler "${handlerName}"`, error);
-    });
-}
-
-setReservationsUIHandlers({
-  showReservationDetails(index) {
-    invokeTechnicianReservationHandler('showReservationDetails', index);
-  },
-  openReservationEditor(index, payload = {}) {
-    invokeTechnicianReservationHandler('openReservationEditor', index, payload?.reservation ?? null);
-  },
-  confirmReservation(index, event) {
-    invokeTechnicianReservationHandler('confirmReservation', index, event);
-  },
-  deleteReservation(index) {
-    invokeTechnicianReservationHandler('deleteReservation', index);
-  },
-  reopenReservation(index) {
-    invokeTechnicianReservationHandler('reopenReservation', index);
   }
 });
 

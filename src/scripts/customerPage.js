@@ -3,7 +3,6 @@ import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { checkAuth, logout } from './auth.js';
 import { loadData, saveData, migrateOldData } from './storage.js';
 import { renderCustomerReservations, renderCustomerProjects } from './customerDetails.js';
-import { setReservationsUIHandlers } from './reservations/uiBridge.js';
 import { showToast, normalizeNumbers } from './utils.js';
 import { t } from './language.js';
 import { apiRequest, ApiError } from './apiClient.js';
@@ -16,6 +15,7 @@ import { resolveProjectTotals, resolveReservationNetTotal, PROJECT_TAX_RATE } fr
 import { calculatePaymentProgress } from './reservationsSummary.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
+import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 
 applyStoredTheme();
 checkAuth();
@@ -29,60 +29,8 @@ if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
   logoutBtn.dataset.listenerAttached = 'true';
 }
 
-const loadReservationsModule = (() => {
-  let modulePromise = null;
-  let globalsRegistered = false;
-  return () => {
-    if (!modulePromise) {
-      modulePromise = import('./reservationsUI.js')
-        .then((module) => {
-          if (!globalsRegistered && typeof module.registerReservationGlobals === 'function') {
-            try {
-              module.registerReservationGlobals();
-              globalsRegistered = true;
-            } catch (error) {
-              console.warn('⚠️ [customerPage] Failed to register reservation globals', error);
-            }
-          }
-          return module;
-        });
-    }
-    return modulePromise;
-  };
-})();
-
-function invokeReservationsHandler(handlerName, ...args) {
-  loadReservationsModule()
-    .then((module) => {
-      const handler = module?.[handlerName];
-      if (typeof handler === 'function') {
-        handler(...args);
-      } else {
-        console.warn(`⚠️ [customerPage] Reservation handler "${handlerName}" is unavailable`);
-      }
-    })
-    .catch((error) => {
-      console.error(`❌ [customerPage] Failed to execute reservation handler "${handlerName}"`, error);
-    });
-}
-
-setReservationsUIHandlers({
-  showReservationDetails(index) {
-    invokeReservationsHandler('showReservationDetails', index);
-  },
-  openReservationEditor(index, payload = {}) {
-    invokeReservationsHandler('openReservationEditor', index, payload?.reservation ?? null);
-  },
-  confirmReservation(index, event) {
-    invokeReservationsHandler('confirmReservation', index, event);
-  },
-  deleteReservation(index) {
-    invokeReservationsHandler('deleteReservation', index);
-  },
-  reopenReservation(index) {
-    invokeReservationsHandler('reopenReservation', index);
-  }
-});
+registerReservationGlobals();
+setupEditReservationModalEvents(getReservationsEditContext());
 
 const params = new URLSearchParams(window.location.search);
 const customerId = params.get('id');
