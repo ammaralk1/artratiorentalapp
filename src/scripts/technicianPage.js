@@ -17,6 +17,7 @@ import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
 import { apiRequest } from './apiClient.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
+import mountReservationModalsIfNeeded from './reservations/modals.js';
 
 applyStoredTheme();
 checkAuth();
@@ -30,8 +31,12 @@ const initTechnicianReservationModal = () => {
   }
 };
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initTechnicianReservationModal, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    mountReservationModalsIfNeeded();
+    initTechnicianReservationModal();
+  }, { once: true });
 } else {
+  mountReservationModalsIfNeeded();
   initTechnicianReservationModal();
 }
 

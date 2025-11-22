@@ -3,6 +3,7 @@ import { applyStoredTheme, initThemeToggle } from './theme.js';
 import { migrateOldData } from './storage.js';
 import { checkAuth } from './auth.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
+import mountReservationModalsIfNeeded from './reservations/modals.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { initProjectsPage } from './projects/app.js';
 
@@ -18,8 +19,12 @@ const initProjectsReservationModal = () => {
   }
 };
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initProjectsReservationModal, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    mountReservationModalsIfNeeded();
+    initProjectsReservationModal();
+  }, { once: true });
 } else {
+  mountReservationModalsIfNeeded();
   initProjectsReservationModal();
 }
 

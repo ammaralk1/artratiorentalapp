@@ -16,6 +16,7 @@ import { calculatePaymentProgress } from './reservationsSummary.js';
 import { refreshEquipmentFromApi } from './equipment.js';
 import { initDashboardMetrics } from './dashboardMetrics.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
+import mountReservationModalsIfNeeded from './reservations/modals.js';
 
 applyStoredTheme();
 checkAuth();
@@ -37,9 +38,20 @@ const initReservationModalEvents = () => {
     console.warn('⚠️ [customerPage] Failed to initialize reservation modal events', error);
   }
 };
+const ensureReservationModals = () => {
+  try {
+    mountReservationModalsIfNeeded();
+  } catch (error) {
+    console.warn('⚠️ [customerPage] Failed to mount reservation modals', error);
+  }
+};
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initReservationModalEvents, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    ensureReservationModals();
+    initReservationModalEvents();
+  }, { once: true });
 } else {
+  ensureReservationModals();
   initReservationModalEvents();
 }
 
