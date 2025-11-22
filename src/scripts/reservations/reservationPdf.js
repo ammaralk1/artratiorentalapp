@@ -2963,62 +2963,130 @@ function formatPercentageValue(value, fractionDigits = 2) {
   return `${normalizeNumbers(Number(value).toFixed(digits))}%`;
 }
 
-function getActiveCompanySharePercent() {
-  const percentCandidates = [
-    activeQuoteState?.totals?.companySharePercent,
-    activeQuoteState?.projectTotals?.companySharePercent,
-    activeQuoteState?.projectTotals?.projectSharePercent,
-    DEFAULT_COMPANY_SHARE_PERCENT,
-  ];
-  for (let i = 0; i < percentCandidates.length; i += 1) {
-    const candidate = percentCandidates[i];
-    if (candidate == null) continue;
-    const numeric = Number(candidate);
+function isCompanyShareEnabledForState() {
+  if (!activeQuoteState) return false;
+  const context = activeQuoteState.context || 'reservation';
+  if (context === 'project') {
+    const project = activeQuoteState.project || {};
+    if ([
+      project.companyShareEnabled,
+      project.company_share_enabled,
+      project.companyShareApplied,
+      project.company_share_applied,
+    ].some((value) => value === true || value === 'true')) {
+      return true;
+    }
+    const totals = activeQuoteState.projectTotals || {};
+    if (Number.isFinite(Number(totals.companyShareAmount)) && Number(totals.companyShareAmount) > 0) {
+      return true;
+    }
+    return false;
+  }
+  const reservation = activeQuoteState.reservation || {};
+  if ([
+    reservation.companyShareEnabled,
+    reservation.company_share_enabled,
+    reservation.companyShareApplied,
+    reservation.company_share_applied,
+  ].some((value) => value === true || value === 'true')) {
+    return true;
+  }
+  const totals = activeQuoteState.totals || {};
+  return Number.isFinite(Number(totals.companyShareAmount)) && Number(totals.companyShareAmount) > 0;
+}
+
+function isTaxEnabledForShare() {
+  if (!activeQuoteState) return false;
+  const context = activeQuoteState.context || 'reservation';
+  if (context === 'project') {
+    const project = activeQuoteState.project || {};
+    if ([project.applyTax, project.apply_tax].some((value) => value === true || value === 'true')) {
+      return true;
+    }
+    const totals = activeQuoteState.projectTotals || {};
+    if ([totals.applyTax].some((value) => value === true || value === 'true')) {
+      return true;
+    }
+    return Number.isFinite(Number(totals.taxAmount)) && Number(totals.taxAmount) > 0;
+  }
+  const reservation = activeQuoteState.reservation || {};
+  if ([
+    reservation.applyTax,
+    reservation.apply_tax,
+    reservation.taxApplied,
+    reservation.tax_applied,
+  ].some((value) => value === true || value === 'true')) {
+    return true;
+  }
+  const totals = activeQuoteState.totals || {};
+  return Number.isFinite(Number(totals.taxAmount)) && Number(totals.taxAmount) > 0;
+}
+
+function shouldDisplayCompanyShareOnItems() {
+  return isCompanyShareEnabledForState() && isTaxEnabledForShare();
+}
+
+function resolveCompanySharePercentFromState() {
+  if (!activeQuoteState) return null;
+  const context = activeQuoteState.context || 'reservation';
+  const sources = context === 'project'
+    ? [
+        activeQuoteState.project?.companySharePercent,
+        activeQuoteState.project?.company_share_percent,
+        activeQuoteState.project?.companyShare,
+        activeQuoteState.project?.company_share,
+        activeQuoteState.projectTotals?.companySharePercent,
+        activeQuoteState.projectTotals?.projectSharePercent,
+      ]
+    : [
+        activeQuoteState.reservation?.companySharePercent,
+        activeQuoteState.reservation?.company_share_percent,
+        activeQuoteState.reservation?.companyShare,
+        activeQuoteState.reservation?.company_share,
+        activeQuoteState.totals?.companySharePercent,
+      ];
+  for (let i = 0; i < sources.length; i += 1) {
+    const value = sources[i];
+    const numeric = Number(value);
     if (Number.isFinite(numeric) && numeric > 0) {
       return numeric;
     }
   }
+  return null;
+}
+
+function getActiveCompanySharePercent() {
+  if (!isCompanyShareEnabledForState()) {
+    return 0;
+  }
+  const resolved = resolveCompanySharePercentFromState();
+  if (Number.isFinite(resolved) && resolved > 0) {
+    return resolved;
+  }
   return DEFAULT_COMPANY_SHARE_PERCENT;
 }
 
-function formatCompanyShareHeader(percent = DEFAULT_COMPANY_SHARE_PERCENT) {
-  const value = Number(percent);
-  const digits = Number.isInteger(value) ? 0 : 2;
-  const suffix = normalizeNumbers(value.toFixed(digits));
-  return `${t('reservations.quote.columns.companyShare', 'نسبة الشركة')} (${suffix}%)`;
-}
-
-function computeCompanyShareAmount(amount, percent = getActiveCompanySharePercent()) {
-  const base = Number(amount);
-  const pct = Number(percent);
-  if (!Number.isFinite(base) || base <= 0 || !Number.isFinite(pct) || pct <= 0) {
-    return 0;
-  }
-  return Number((base * (pct / 100)).toFixed(2));
-}
-
-function buildCompanyShareColumn({ id = 'companyShare', currencyLabel = 'SR', amountResolver } = {}) {
-  if (typeof amountResolver !== 'function') {
-    return null;
+function getCompanyShareMultiplier() {
+  if (!shouldDisplayCompanyShareOnItems()) {
+    return 1;
   }
   const percent = getActiveCompanySharePercent();
   if (!(percent > 0)) {
-    return null;
+    return 1;
   }
-  return {
-    id,
-    labelKey: null,
-    fallback: formatCompanyShareHeader(percent),
-    render: (row) => {
-      try {
-        const baseAmount = Number(amountResolver(row));
-        const shareAmount = computeCompanyShareAmount(baseAmount, percent);
-        return escapeHtml(`${formatMoney(shareAmount)} ${currencyLabel}`);
-      } catch (_) {
-        return escapeHtml(`0 ${currencyLabel}`);
-      }
-    }
-  };
+  return 1 + (percent / 100);
+}
+
+function applyCompanyShareToUnitAmount(value) {
+  const base = Number(value);
+  if (!Number.isFinite(base) || base <= 0) {
+    return base;
+  }
+  const multiplier = getCompanyShareMultiplier();
+  if (multiplier === 1) {
+    return base;
+  }
+  return Number((base * multiplier).toFixed(2));
 }
 
 function calculateProjectDurationDays(project) {
@@ -3801,7 +3869,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
                 : 0;
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * qty * days;
+              const sharedUnit = applyCompanyShareToUnitAmount(unit);
+              const total = sharedUnit * qty * days;
               return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
             }
           });
@@ -3814,7 +3883,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
                 ? Number(assignment.positionClientPrice)
                 : 0;
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * days;
+              const sharedUnit = applyCompanyShareToUnitAmount(unit);
+              const total = sharedUnit * days;
               return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
             }
           });
@@ -3827,7 +3897,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
             const unit = Number.isFinite(Number(assignment?.positionClientPrice))
               ? Number(assignment.positionClientPrice)
               : 0;
-            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            return escapeHtml(`${formatMoney(sharedUnit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -3846,20 +3917,6 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
     }
-    const crewShareColumn = buildCompanyShareColumn({
-      currencyLabel,
-      amountResolver: (assignment) => {
-        const unit = Number.isFinite(Number(assignment?.positionClientPrice))
-          ? Number(assignment.positionClientPrice)
-          : 0;
-        const qty = Math.max(1, Number(assignment?.__count || 1));
-        const daysValue = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-        return unit * qty * daysValue;
-      }
-    });
-    if (crewShareColumn) {
-      cols.push(crewShareColumn);
-    }
     // Reorder to: rowNumber, position, unitPrice, quantity, days, price, then others
     const map = new Map(cols.map((c) => [c.id, c]));
     const seen = new Set();
@@ -3871,7 +3928,6 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
     pushIf('quantity');
     pushIf('days');
     pushIf('price');
-    pushIf('companyShare');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     return out;
   })();
@@ -3897,7 +3953,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
       const sum = (projectCrewSource || []).reduce((acc, a) => {
         const unit = Number.isFinite(Number(a?.positionClientPrice)) ? Number(a.positionClientPrice) : 0;
         const qty = Math.max(1, Number(a?.__count || 1));
-        return acc + (unit * qty * days);
+        const sharedUnit = applyCompanyShareToUnitAmount(unit);
+        return acc + (sharedUnit * qty * days);
       }, 0);
       return formatMoney(sum);
     } catch (_) { return '0.00'; }
@@ -3970,20 +4027,32 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
   const expensesColumnsBase = PROJECT_EXPENSES_COLUMN_DEFS.filter((column) => isFieldEnabled('projectExpenses', column.id));
   const expensesColumns = (() => {
     const cols = [...expensesColumnsBase];
-    const shareColumn = buildCompanyShareColumn({
-      currencyLabel,
-      amountResolver: (expense) => {
-        if (!expense) return 0;
+    cols.forEach((column) => {
+      if (column.id === 'amount') {
+        column.render = (expense) => {
+          const saleValue = expense?.salePrice ?? expense?.sale_price;
+          const amountValue = saleValue != null ? saleValue : expense?.amount;
+          const numeric = Number(amountValue);
+          const sharedValue = applyCompanyShareToUnitAmount(Number.isFinite(numeric) ? numeric : 0);
+          return escapeHtml(formatCurrencyValue(sharedValue, currencyLabel));
+        };
+      }
+    });
+    return cols;
+  })();
+  const expensesSubtotalDisplay = (() => {
+    try {
+      const sum = projectExpenses.reduce((acc, expense) => {
         const saleValue = expense?.salePrice ?? expense?.sale_price;
         const amountValue = saleValue != null ? saleValue : expense?.amount;
         const numeric = Number(amountValue);
-        return Number.isFinite(numeric) ? numeric : 0;
-      }
-    });
-    if (shareColumn) {
-      cols.push(shareColumn);
+        const sharedValue = applyCompanyShareToUnitAmount(Number.isFinite(numeric) ? numeric : 0);
+        return acc + sharedValue;
+      }, 0);
+      return formatMoney(sum);
+    } catch (_) {
+      return formatMoney(0);
     }
-    return cols;
   })();
   const expensesSectionMarkup = includeSection('projectExpenses')
     ? (expensesColumns.length
@@ -4002,7 +4071,7 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
               <div class="quote-table-subtotal">
                 <span class="quote-table-subtotal__pill">
                   <span class="quote-table-subtotal__label">${escapeHtml(t('projects.details.expensesTotal', 'إجمالي الخدمات الإنتاجية'))}</span>
-                  <span class="quote-table-subtotal__value">${escapeHtml(totalsDisplay.expensesTotal || formatCurrencyValue(0, currencyLabel))}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${expensesSubtotalDisplay} ${currencyLabel}`)}</span>
                 </span>
               </div>
             ` : ''}
@@ -4025,7 +4094,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-            const total = unit * qty * days;
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            const total = sharedUnit * qty * days;
             return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
@@ -4034,7 +4104,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
           ...col,
           render: (item) => {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            return escapeHtml(`${formatMoney(sharedUnit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -4052,22 +4123,10 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
     }
-    const projectShareColumn = buildCompanyShareColumn({
-      currencyLabel,
-      amountResolver: (item) => {
-        const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-        const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
-        const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-        return unit * qty * days;
-      }
-    });
-    if (projectShareColumn) {
-      cols.push(projectShareColumn);
-    }
     // Reorder tail: unitPrice -> quantity -> days -> price
     const map = new Map(cols.map((c) => [c.id, c]));
     const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
-    const tail = ['unitPrice','quantity','days','price','companyShare'].map((id) => map.get(id)).filter(Boolean);
+    const tail = ['unitPrice','quantity','days','price'].map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
   })();
@@ -4078,7 +4137,8 @@ const projectDetailsInfoClass = buildInfoPlainClass(activeQuoteState, 'projectDe
       const sum = (equipmentItems || []).reduce((acc, it) => {
         const unit = Number.isFinite(Number(it?.unitPriceValue)) ? Number(it.unitPriceValue) : 0;
         const qty = Number.isFinite(Number(it?.qty)) ? Math.max(1, Number(it.qty)) : 1;
-        return acc + (unit * qty * days);
+        const sharedUnit = applyCompanyShareToUnitAmount(unit);
+        return acc + (sharedUnit * qty * days);
       }, 0);
       return formatMoney(sum);
     } catch (_) { return '0.00'; }
@@ -4597,7 +4657,8 @@ function buildQuotationHtml(options = {}) {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
             const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
             const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-            const total = unit * qty * days;
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            const total = sharedUnit * qty * days;
             return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
@@ -4606,7 +4667,8 @@ function buildQuotationHtml(options = {}) {
           ...col,
           render: (item) => {
             const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            return escapeHtml(`${formatMoney(sharedUnit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
@@ -4624,26 +4686,12 @@ function buildQuotationHtml(options = {}) {
         render: () => escapeHtml(normalizeNumbers(String(days)))
       });
     }
-    const shareColumn = buildCompanyShareColumn({
-      currencyLabel,
-      amountResolver: (item) => {
-        const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
-        const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
-        return unit * qty * days;
-      }
-    });
-    if (shareColumn) {
-      cols.push(shareColumn);
-    }
     // Reorder tail: unitPrice -> quantity -> (days?) -> price
     const map = new Map(cols.map((c) => [c.id, c]));
     const keep = cols.filter((c) => !['unitPrice','quantity','days','price'].includes(c.id));
     const tailOrder = ['unitPrice','quantity'];
     if (map.has('days')) tailOrder.push('days');
     tailOrder.push('price');
-    if (map.has('companyShare')) {
-      tailOrder.push('companyShare');
-    }
     const tail = tailOrder.map((id) => map.get(id)).filter(Boolean);
     cols = [...keep, ...tail];
     return cols;
@@ -4656,6 +4704,20 @@ function buildQuotationHtml(options = {}) {
   const itemsBodyRows = hasItems
     ? quoteItems.map((item, index) => `<tr>${itemColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(item, index)}</div></td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(itemColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noItems', '📦 لا توجد معدات ضمن هذا الحجز حالياً.'))}</td></tr>`;
+  const equipmentSubtotalDisplay = (() => {
+    try {
+      const daysValue = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+      const sum = quoteItems.reduce((acc, item) => {
+        const unit = Number.isFinite(Number(item?.unitPriceValue)) ? Number(item.unitPriceValue) : 0;
+        const qty = Number.isFinite(Number(item?.qty)) ? Math.max(1, Number(item.qty)) : 1;
+        const sharedUnit = applyCompanyShareToUnitAmount(unit);
+        return acc + (sharedUnit * qty * daysValue);
+      }, 0);
+      return formatMoney(sum);
+    } catch (_) {
+      return formatMoney(0);
+    }
+  })();
 
   const itemsSectionMarkup = includeSection('items')
     ? (hasItemColumns
@@ -4671,7 +4733,7 @@ function buildQuotationHtml(options = {}) {
               <div class="quote-table-subtotal">
                 <span class="quote-table-subtotal__pill">
                   <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.equipmentTotal', 'إجمالي المعدات'))}</span>
-                  <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.equipmentTotal} ${currencyLabel}`)}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${equipmentSubtotalDisplay} ${currencyLabel}`)}</span>
                 </span>
               </div>
             ` : ''}
@@ -4782,7 +4844,8 @@ function buildQuotationHtml(options = {}) {
                 : 0;
               const qty = Math.max(1, Number(assignment?.__count || 1));
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * qty * days;
+              const sharedUnit = applyCompanyShareToUnitAmount(unit);
+              const total = sharedUnit * qty * days;
               return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
             }
           });
@@ -4795,7 +4858,8 @@ function buildQuotationHtml(options = {}) {
                 ? Number(assignment.positionClientPrice)
                 : 0;
               const days = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-              const total = unit * days;
+              const sharedUnit = applyCompanyShareToUnitAmount(unit);
+              const total = sharedUnit * days;
               return escapeHtml(`${formatMoney(total)} ${t('reservations.create.summary.currency', 'SR')}`);
             }
           });
@@ -4808,27 +4872,14 @@ function buildQuotationHtml(options = {}) {
             const unit = Number.isFinite(Number(assignment?.positionClientPrice))
               ? Number(assignment.positionClientPrice)
               : 0;
-            return escapeHtml(`${formatMoney(unit)} ${t('reservations.create.summary.currency', 'SR')}`);
+            const sharedUnit = applyCompanyShareToUnitAmount(unit);
+            return escapeHtml(`${formatMoney(sharedUnit)} ${t('reservations.create.summary.currency', 'SR')}`);
           }
         });
       } else {
         cols.push(col);
       }
     });
-    const shareColumn = buildCompanyShareColumn({
-      currencyLabel,
-      amountResolver: (assignment) => {
-        const unit = Number.isFinite(Number(assignment?.positionClientPrice))
-          ? Number(assignment.positionClientPrice)
-          : 0;
-        const qty = groupCrew ? Math.max(1, Number(assignment?.__count || 1)) : 1;
-        const daysValue = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
-        return unit * qty * daysValue;
-      }
-    });
-    if (shareColumn) {
-      cols.push(shareColumn);
-    }
     // Ensure quantity column is present only if allowed
     if (quantityColumn) {
       cols.push(quantityColumn);
@@ -4856,7 +4907,6 @@ function buildQuotationHtml(options = {}) {
     pushIf('quantity');
     pushIf('days');
     pushIf('price');
-    pushIf('companyShare');
     cols.forEach((c) => { if (!seen.has(c.id)) { out.push(c); seen.add(c.id);} });
     cols = out;
     return cols;
@@ -4883,6 +4933,22 @@ function buildQuotationHtml(options = {}) {
   const crewBodyRows = crewSource.length
     ? crewSource.map((assignment, index) => `<tr>${crewColumns.map((column) => `<td><div class=\"quote-cell\">${column.render(assignment, index)}</div></td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${Math.max(crewColumns.length, 1)}" class="empty">${escapeHtml(t('reservations.details.noCrew', '😎 لا يوجد فريق مرتبط بهذا الحجز.'))}</td></tr>`;
+  const crewSubtotalDisplay = (() => {
+    try {
+      const daysValue = Math.max(1, Number(activeQuoteState?.rentalDays || 1));
+      const sum = crewSource.reduce((acc, assignment) => {
+        const unit = Number.isFinite(Number(assignment?.positionClientPrice))
+          ? Number(assignment.positionClientPrice)
+          : 0;
+        const qty = Math.max(1, Number(assignment?.__count || 1));
+        const sharedUnit = applyCompanyShareToUnitAmount(unit);
+        return acc + (sharedUnit * qty * daysValue);
+      }, 0);
+      return formatMoney(sum);
+    } catch (_) {
+      return formatMoney(0);
+    }
+  })();
 
   const crewSectionMarkup = includeSection('crew')
     ? (hasCrewColumns
@@ -4898,7 +4964,7 @@ function buildQuotationHtml(options = {}) {
               <div class="quote-table-subtotal">
                 <span class="quote-table-subtotal__pill">
                   <span class="quote-table-subtotal__label">${escapeHtml(t('reservations.details.labels.crewTotal', 'إجمالي الفريق'))}</span>
-                  <span class="quote-table-subtotal__value">${escapeHtml(`${totalsDisplay.crewTotal} ${currencyLabel}`)}</span>
+                  <span class="quote-table-subtotal__value">${escapeHtml(`${crewSubtotalDisplay} ${currencyLabel}`)}</span>
                 </span>
               </div>
             ` : ''}
