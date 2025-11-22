@@ -24,6 +24,7 @@ initThemeToggle();
 initDashboardShell();
 migrateOldData();
 
+mountReservationModalsIfNeeded();
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn && !logoutBtn.dataset.listenerAttached) {
   logoutBtn.addEventListener('click', () => logout());
@@ -38,20 +39,9 @@ const initReservationModalEvents = () => {
     console.warn('⚠️ [customerPage] Failed to initialize reservation modal events', error);
   }
 };
-const ensureReservationModals = () => {
-  try {
-    mountReservationModalsIfNeeded();
-  } catch (error) {
-    console.warn('⚠️ [customerPage] Failed to mount reservation modals', error);
-  }
-};
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    ensureReservationModals();
-    initReservationModalEvents();
-  }, { once: true });
+  document.addEventListener('DOMContentLoaded', initReservationModalEvents, { once: true });
 } else {
-  ensureReservationModals();
   initReservationModalEvents();
 }
 

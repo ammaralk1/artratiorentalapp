@@ -7,6 +7,7 @@ import mountReservationModalsIfNeeded from './reservations/modals.js';
 import { initDashboardShell } from './dashboardShell.js';
 import { initProjectsPage } from './projects/app.js';
 
+mountReservationModalsIfNeeded();
 applyStoredTheme();
 migrateOldData();
 checkAuth();
@@ -19,12 +20,8 @@ const initProjectsReservationModal = () => {
   }
 };
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    mountReservationModalsIfNeeded();
-    initProjectsReservationModal();
-  }, { once: true });
+  document.addEventListener('DOMContentLoaded', initProjectsReservationModal, { once: true });
 } else {
-  mountReservationModalsIfNeeded();
   initProjectsReservationModal();
 }
 

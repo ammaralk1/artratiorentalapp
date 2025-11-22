@@ -19,6 +19,7 @@ import { apiRequest } from './apiClient.js';
 import { registerReservationGlobals, getReservationsEditContext, setupEditReservationModalEvents } from './reservations/controller.js';
 import mountReservationModalsIfNeeded from './reservations/modals.js';
 
+mountReservationModalsIfNeeded();
 applyStoredTheme();
 checkAuth();
 initDashboardShell();
@@ -31,12 +32,8 @@ const initTechnicianReservationModal = () => {
   }
 };
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    mountReservationModalsIfNeeded();
-    initTechnicianReservationModal();
-  }, { once: true });
+  document.addEventListener('DOMContentLoaded', initTechnicianReservationModal, { once: true });
 } else {
-  mountReservationModalsIfNeeded();
   initTechnicianReservationModal();
 }
 
