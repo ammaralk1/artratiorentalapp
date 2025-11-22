@@ -213,6 +213,74 @@ body.dark-mode {
   color: var(--clr-text);
 }
 
+/* Templates tab controls layout */
+#templates-controls {
+  width: 100%;
+  gap: 12px !important;
+  align-items: flex-end;
+}
+
+#templates-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 320px;
+}
+
+#templates-actions > * {
+  flex: 0 1 auto;
+}
+
+#templates-actions input,
+#templates-actions select,
+#templates-actions-dd {
+  min-width: 180px;
+}
+
+@media (max-width: 992px) {
+  #templates-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #templates-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-inline-start: 0 !important;
+  }
+
+  #templates-actions > * {
+    flex: 1 1 100%;
+  }
+
+  #templates-actions input,
+  #templates-actions select,
+  #templates-actions-dd,
+  #tpl-zoom-controls {
+    width: 100%;
+  }
+
+  #templates-actions .btn,
+  #templates-actions select,
+  #templates-actions input {
+    width: 100%;
+  }
+
+  #templates-actions-dd {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #templates-actions-menu {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
+}
+
 .reports-wrapper--reservations :where(h1, h2, h3, h4, h5, h6) {
   margin: 0;
   font-weight: 700;
