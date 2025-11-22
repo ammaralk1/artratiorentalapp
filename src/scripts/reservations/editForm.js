@@ -252,22 +252,15 @@ export function renderEditReservationItems(items = []) {
   const container = document.getElementById('edit-res-items');
   if (!container) return;
 
-  const projectLinked = isEditLinkedProject();
-  const parentTable = container.closest('table');
-  if (parentTable) {
-    parentTable.dataset.linkedProject = projectLinked ? 'true' : 'false';
-  }
-
   const noItemsMessage = t('reservations.create.equipment.none', 'لا توجد معدات');
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const imageAlt = t('reservations.create.equipment.imageAlt', 'صورة');
   const increaseLabel = t('reservations.equipment.actions.increase', 'زيادة الكمية');
   const decreaseLabel = t('reservations.equipment.actions.decrease', 'تقليل الكمية');
   const removeLabel = t('reservations.equipment.actions.remove', 'إزالة البند');
-  const emptyStateColspan = projectLinked ? 6 : 7;
 
   if (!items || items.length === 0) {
-    container.innerHTML = `<tr><td colspan="${emptyStateColspan}" class="text-center">${noItemsMessage}</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" class="text-center">${noItemsMessage}</td></tr>`;
     ensureGroupHandler(container);
     return;
   }
@@ -472,18 +465,6 @@ export function renderEditReservationItems(items = []) {
         : 'reservation-quantity-control';
       const disableQuantityAttr = isPackageGroup ? ' disabled aria-disabled="true" tabindex="-1"' : '';
 
-      const lockedActions = `
-        <td class="reservation-items-table__actions reservation-items-table__actions--locked">
-          <span class="reservation-linked-pill">${t('reservations.edit.linkedProjectLocked', '🔒 مرتبط بمشروع')}</span>
-        </td>
-      `;
-
-      const actionsCell = projectLinked
-        ? lockedActions
-        : `<td>
-            <button type="button" class="reservation-remove-button" data-action="remove-edit-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
-          </td>`;
-
       return `
         <tr data-group-key="${group.key}" data-drag-row="true" draggable="true">
           <td>
@@ -509,7 +490,9 @@ export function renderEditReservationItems(items = []) {
           <td>${unitPriceInput}</td>
           <td>${unitCostInput}</td>
           <td>${totalPriceDisplay}</td>
-          ${actionsCell}
+          <td>
+            <button type="button" class="reservation-remove-button" data-action="remove-edit-group" data-group-key="${group.key}" aria-label="${removeLabel}">🗑️</button>
+          </td>
         </tr>
       `;
     })
@@ -1087,11 +1070,6 @@ function ensureGroupHandler(container) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const { action, groupKey, itemIndex } = button.dataset;
-
-    if (isEditLinkedProject() && ['remove-edit-group', 'remove-edit-item'].includes(action)) {
-      showToast(t('reservations.toast.linkedProjectDisabled', 'لا يمكن تمكين هذا الإجراء؛ يرجى تنفيذ هذه التعديلات من شاشة المشروع.'), 'error');
-      return;
-    }
 
     if (action === 'decrease-edit-group' && groupKey) {
       decreaseEditReservationGroup(groupKey);
