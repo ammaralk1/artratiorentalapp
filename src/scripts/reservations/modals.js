@@ -1,3 +1,5 @@
+import { ensurePackagesCached } from '../packagesCache.js';
+
 const MODAL_SNIPPETS = {
   reservationDetailsModal: `
   <div class="modal fade" id="reservationDetailsModal" tabindex="-1" aria-hidden="true">
@@ -315,6 +317,11 @@ export function mountReservationModalsIfNeeded() {
     wrapper.innerHTML = markup;
     document.body.appendChild(wrapper);
   });
+  try {
+    ensurePackagesCached();
+  } catch (error) {
+    console.warn('[reservations/modals] Failed to ensure packages cache', error);
+  }
 }
 
 export default mountReservationModalsIfNeeded;
