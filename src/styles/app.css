@@ -6183,3 +6183,23 @@
 :is(html.dark, body.dark) .reservation-equipment-hint {
   color: #cbd5f5;
 }
+
+/* Keep notification template actions within their container on mobile */
+.notifications-template-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .notifications-template-actions {
+    width: 100%;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .notifications-template-actions .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
