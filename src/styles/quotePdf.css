@@ -1053,6 +1053,19 @@ body,
   text-align: right;
   padding-inline-start: 0;
   padding-inline-end: 18px;
+  list-style: none;
+}
+
+.quote-footer ul li {
+  position: relative;
+  padding-inline-end: 12px;
+}
+
+.quote-footer ul li::before {
+  content: '•';
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0.15em;
 }
 
 @media print {
