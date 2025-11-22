@@ -1,3 +1,8 @@
+:root {
+  --reservation-unit-column-width: 110px;
+  --reservation-unit-column-width-sm: 96px;
+}
+
 /* Reservation Layout */
 .reservation-card {
   position: relative;
@@ -2292,8 +2297,8 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 #editReservationModal .reservation-items-table td:nth-child(4),
 #editReservationModal .reservation-items-table th:nth-child(5),
 #editReservationModal .reservation-items-table td:nth-child(5) {
-  width: 120px;
-  max-width: 120px;
+  width: var(--reservation-unit-column-width, 110px);
+  max-width: var(--reservation-unit-column-width, 110px);
   white-space: nowrap;
 }
 
@@ -2302,8 +2307,28 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   #editReservationModal .reservation-items-table td:nth-child(4),
   #editReservationModal .reservation-items-table th:nth-child(5),
   #editReservationModal .reservation-items-table td:nth-child(5) {
-    width: 100px;
-    max-width: 100px;
+    width: var(--reservation-unit-column-width-sm, 96px);
+    max-width: var(--reservation-unit-column-width-sm, 96px);
+  }
+}
+
+/* Match reservation details modal columns with edit modal */
+.reservation-modal-items-table th:nth-child(4),
+.reservation-modal-items-table td:nth-child(4),
+.reservation-modal-items-table th:nth-child(5),
+.reservation-modal-items-table td:nth-child(5) {
+  width: var(--reservation-unit-column-width, 110px);
+  max-width: var(--reservation-unit-column-width, 110px);
+  white-space: nowrap;
+}
+
+@media (max-width: 992px) {
+  .reservation-modal-items-table th:nth-child(4),
+  .reservation-modal-items-table td:nth-child(4),
+  .reservation-modal-items-table th:nth-child(5),
+  .reservation-modal-items-table td:nth-child(5) {
+    width: var(--reservation-unit-column-width-sm, 96px);
+    max-width: var(--reservation-unit-column-width-sm, 96px);
   }
 }
 
