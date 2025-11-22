@@ -1278,12 +1278,35 @@ body[dir="rtl"] .reservation-summary-card {
 .reservation-modal-items-wrapper .table-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .reservation-equipment-table > table,
 .reservation-modal-items-table,
 .reservation-modal-items-wrapper > table {
   min-width: 680px;
+}
+
+.reservation-modal-items-table {
+  min-width: 900px;
+}
+
+.reservation-modal-items-table th:first-child,
+.reservation-modal-items-table td:first-child {
+  width: 52%;
+  min-width: 360px;
+  white-space: normal;
+}
+
+@media (max-width: 992px) {
+  .reservation-modal-items-table {
+    min-width: 860px;
+  }
+
+  .reservation-modal-items-table th:first-child,
+  .reservation-modal-items-table td:first-child {
+    min-width: 320px;
+  }
 }
 
 .reservation-equipment-inputs {
@@ -2297,6 +2320,57 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 #editReservationModal .reservation-items-table th:nth-child(3),
 #editReservationModal .reservation-items-table td:nth-child(3) {
   width: 96px;
+}
+
+#editReservationModal .table-responsive {
+  overflow-x: auto;
+}
+
+#editReservationModal .reservation-items-table {
+  min-width: 940px;
+}
+
+#editReservationModal .reservation-items-table th:first-child,
+#editReservationModal .reservation-items-table td:first-child {
+  width: 50%;
+  min-width: 360px;
+  text-align: start;
+  white-space: normal;
+  word-break: break-word;
+}
+
+#editReservationModal .reservation-items-table td:not(:first-child),
+#editReservationModal .reservation-items-table th:not(:first-child) {
+  white-space: nowrap;
+}
+
+#editReservationModal .reservation-items-table[data-linked-project="true"] th:last-child,
+#editReservationModal .reservation-items-table[data-linked-project="true"] td:last-child {
+  width: 140px;
+  max-width: 160px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#editReservationModal .reservation-items-table[data-linked-project="true"] .reservation-remove-button {
+  display: none;
+}
+
+#editReservationModal .reservation-linked-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-linked-pill {
+  background: rgba(96, 165, 250, 0.16);
+  color: rgba(219, 234, 254, 0.92);
 }
 
 /* Keep edit modal styling consistent on standalone pages */
