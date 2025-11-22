@@ -1871,6 +1871,8 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
   align-items: center;
   gap: 12px;
   margin-inline-start: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .quote-controls-dropdown {
@@ -1996,6 +1998,44 @@ details[open] > .quote-toggle-summary .quote-toggle-caret {
 
 :is(html.dark-mode, body.dark-mode) .quote-preview-zoom-btn.is-active {
   color: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .quote-preview-modal .modal-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .quote-preview-header-actions {
+    width: 100%;
+    margin-inline-start: 0;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .quote-preview-header-actions > * {
+    width: 100%;
+  }
+
+  .quote-preview-header-actions > .quote-preview-zoom-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .quote-preview-zoom-controls .quote-preview-zoom-value {
+    min-width: 56px;
+    text-align: center;
+  }
+
+  .quote-controls-dropdown {
+    width: 100%;
+  }
+
+  .quote-controls-dropdown__toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 .quote-preview-align-controls {

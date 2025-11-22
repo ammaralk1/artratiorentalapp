@@ -17,22 +17,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script type="module" crossorigin src="../../assets/projects.DzPUQpsW.js"></script>
-  <link rel="modulepreload" crossorigin href="../../assets/auth.cvA2IY6V.js">
-  <link rel="modulepreload" crossorigin href="../../assets/dashboard.Gq99ZckX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectsService.DnNBVhDJ.js">
-  <link rel="modulepreload" crossorigin href="../../assets/state.B0ShMcdD.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.DnWhB9yI.js">
-  <link rel="modulepreload" crossorigin href="../../assets/uiBridge.CAPcXWOD.js">
-  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.CzZHDth0.js">
+  <script type="module" crossorigin src="../../assets/projects.BB3IV76a.js"></script>
+  <link rel="modulepreload" crossorigin href="../../assets/auth.CfSWwk88.js">
+  <link rel="modulepreload" crossorigin href="../../assets/dashboard.Dk-7wPrI.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectsService.DGUdVQyF.js">
+  <link rel="modulepreload" crossorigin href="../../assets/state.r7LAfWRX.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsService.xTOvDkMk.js">
+  <link rel="modulepreload" crossorigin href="../../assets/uiBridge.COTfT8h5.js">
+  <link rel="modulepreload" crossorigin href="../../assets/reservationsActions.DlJBPW9u.js">
   <link rel="modulepreload" crossorigin href="../../assets/quotePdf.WC1ebubv.js">
   <link rel="modulepreload" crossorigin href="../../assets/canvasColorUtils.CviLtv6S.js">
-  <link rel="modulepreload" crossorigin href="../../assets/controller.BeqHvTP3.js">
-  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.DEelpcuX.js">
-  <link rel="modulepreload" crossorigin href="../../assets/customers.BIJHhGyq.js">
+  <link rel="modulepreload" crossorigin href="../../assets/controller.D81DiyQ4.js">
+  <link rel="modulepreload" crossorigin href="../../assets/projectDetails.Ca_h4741.js">
+  <link rel="modulepreload" crossorigin href="../../assets/customers.1JIKifv9.js">
   <link rel="modulepreload" crossorigin href="../../assets/dashboardShell.DF2kUed9.js">
-  <link rel="modulepreload" crossorigin href="../../assets/calculations.DgT5wLVq.js">
-  <link rel="stylesheet" crossorigin href="../../assets/auth.hbYKETTA.css">
+  <link rel="modulepreload" crossorigin href="../../assets/calculations.DLKEbUWg.js">
+  <link rel="stylesheet" crossorigin href="../../assets/auth.CQBXRZUV.css">
   <link rel="stylesheet" crossorigin href="../../assets/projects.Dgb_COkJ.css">
 </head>
 <body class="page-shell theme-loading projects-page" data-theme="light">
@@ -1100,233 +1100,6 @@
       </div>
     </div>
   </div>
-
-  <!-- ✅ مودال تعديل الحجز (مطلوب لفتح التعديل مباشرة من تفاصيل المشروع) -->
-  <!-- ✅ مودال تعديل الحجز -->
-  <div class="modal fade" id="editReservationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" data-i18n data-i18n-key="reservations.edit.modalTitle">✏️ تعديل الحجز</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق" data-i18n data-i18n-aria-label-key="actions.close"></button>
-        </div>
-        <div class="modal-body">
-          <form id="edit-reservation-form" class="row g-3">
-            <input type="hidden" id="edit-res-index">
-            <input type="hidden" id="edit-res-confirmed" value="false">
-
-            <div class="col-12">
-              <div class="edit-reservation-field-row">
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-id" data-i18n data-i18n-key="reservations.edit.labels.id">🆔 رقم الحجز</label>
-                  <input type="text" class="form-control" id="edit-res-id" disabled>
-                </div>
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-customer" data-i18n data-i18n-key="reservations.edit.labels.customer">👤 العميل</label>
-                  <input type="text" class="form-control" id="edit-res-customer" disabled>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="edit-reservation-field-row">
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-start" data-i18n data-i18n-key="reservations.edit.labels.startDate">📅 تاريخ البداية</label>
-                  <input type="text" class="form-control" id="edit-res-start">
-                </div>
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-end" data-i18n data-i18n-key="reservations.edit.labels.endDate">📅 تاريخ النهاية</label>
-                  <input type="text" class="form-control" id="edit-res-end">
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="edit-reservation-field-row">
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-start-time" data-i18n data-i18n-key="reservations.edit.labels.startTime">⏰ وقت البداية</label>
-                  <input type="text" class="form-control" id="edit-res-start-time">
-                </div>
-                <div class="edit-reservation-field">
-                  <label class="form-label" for="edit-res-end-time" data-i18n data-i18n-key="reservations.edit.labels.endTime">⏰ وقت النهاية</label>
-                  <input type="text" class="form-control" id="edit-res-end-time">
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="edit-reservation-field-row edit-reservation-field-row--single">
-                <div class="edit-reservation-field edit-reservation-field--wide">
-                  <label class="form-label edit-reservation-notes-label" for="edit-res-notes" data-i18n data-i18n-key="reservations.edit.labels.notes">📝 الملاحظات</label>
-                  <textarea class="form-control reservation-notes reservation-notes--compact reservation-notes--short" id="edit-res-notes" rows="2" placeholder="اكتب أي ملاحظات..." data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.notes"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <div class="edit-reservation-field-row edit-reservation-field-row--single">
-                <div class="edit-reservation-field edit-reservation-field--wide reservation-terms-wrapper">
-                  <h5 class="reservation-terms__title" data-i18n data-i18n-key="reservations.edit.terms.title">📄 الشروط العامة لعرض السعر</h5>
-                  <p class="reservation-terms__hint" data-i18n data-i18n-key="reservations.edit.terms.hint">يمكنك تعديل البنود قبل إرسال عرض السعر. اكتب كل شرط في سطر مستقل.</p>
-                  <textarea class="reservation-terms__textarea" id="edit-res-terms" rows="3" placeholder="اكتب الشروط هنا..." data-i18n data-i18n-placeholder-key="reservations.edit.terms.placeholder"></textarea>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" for="edit-res-project" data-i18n data-i18n-key="reservations.edit.labels.project">📁 المشروع المرتبط</label>
-              <select id="edit-res-project" class="form-select">
-                <option value="" data-i18n data-i18n-key="reservations.create.placeholders.project">اختر مشروعاً (اختياري)</option>
-              </select>
-            </div>
-
-            <div class="col-12 col-xl-8">
-              <div class="reservation-payment-card">
-                <div class="reservation-payment-card__header">
-                  <span class="reservation-payment-card__title" data-i18n data-i18n-key="reservations.edit.paymentCard.title">💰 تفاصيل الدفع</span>
-                </div>
-                <div class="reservation-payment-card__body">
-                  <div class="reservation-payment-card__toggles">
-                    <div class="reservation-option-card">
-                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-company-share" data-company-share="10">
-                      <label class="reservation-option-card__label" for="edit-res-company-share">
-                        <span class="reservation-option-card__check" aria-hidden="true"></span>
-                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.create.billing.companyShareToggle">إضافة نسبة الشركة (10٪)</span>
-                      </label>
-                    </div>
-                    <div class="reservation-option-card">
-                      <input type="checkbox" class="reservation-option-card__input" id="edit-res-tax">
-                      <label class="reservation-option-card__label" for="edit-res-tax">
-                        <span class="reservation-option-card__check" aria-hidden="true"></span>
-                        <span class="reservation-option-card__text" data-i18n data-i18n-key="reservations.edit.labels.tax">شامل الضريبة (15%)</span>
-                      </label>
-                    </div>
-                  </div>
-                  <div class="reservation-payment-card__field">
-                    <label class="form-label" for="edit-res-discount" data-i18n data-i18n-key="reservations.edit.labels.discount">💵 الخصم</label>
-                    <div class="input-group">
-                      <select id="edit-res-discount-type" class="form-select">
-                        <option value="percent" data-i18n data-i18n-key="reservations.edit.discount.percent">٪ نسبة</option>
-                        <option value="amount" data-i18n data-i18n-key="reservations.edit.discount.amount">💵 مبلغ</option>
-                      </select>
-                      <input type="text" class="form-control" id="edit-res-discount" placeholder="ادخل قيمة الخصم" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.discount">
-                    </div>
-                  </div>
-                  <div class="reservation-payment-card__field">
-                    <label class="form-label" for="edit-res-paid" data-i18n data-i18n-key="reservations.edit.labels.paymentStatus">💳 حالة الدفع</label>
-                    <select id="edit-res-paid" class="form-select payment-status-select">
-                      <option value="paid" data-i18n data-i18n-key="reservations.edit.payment.paid">مدفوع</option>
-                      <option value="partial" data-i18n data-i18n-key="reservations.edit.payment.partial">مدفوع جزئياً</option>
-                      <option value="unpaid" selected data-i18n data-i18n-key="reservations.edit.payment.unpaid">لم يتم الدفع</option>
-                    </select>
-                  </div>
-                  <div class="reservation-payment-card__field">
-                    <label class="form-label" for="edit-res-payment-progress-value" data-i18n data-i18n-key="reservations.edit.paymentProgress.label">💰 الدفعات المستلمة</label>
-                    <div class="reservation-payment-progress reservation-payment-progress--flush">
-                      <div class="reservation-payment-progress__grid">
-                        <select id="edit-res-payment-progress-type" class="form-select reservation-payment-progress__select">
-                          <option value="amount" data-i18n data-i18n-key="reservations.edit.paymentProgress.amount">💵 مبلغ</option>
-                          <option value="percent" selected data-i18n data-i18n-key="reservations.edit.paymentProgress.percent">٪ نسبة</option>
-                        </select>
-                        <input type="text" class="form-control reservation-payment-progress__input" id="edit-res-payment-progress-value" placeholder="50" data-i18n data-i18n-placeholder-key="reservations.edit.paymentProgress.placeholder">
-                      </div>
-                      <div class="reservation-payment-progress__actions">
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="edit-res-payment-add" data-i18n data-i18n-key="reservations.paymentHistory.actions.add">➕ إضافة دفعة</button>
-                        <small class="form-text reservation-payment-progress__hint" data-i18n data-i18n-key="reservations.edit.paymentProgress.hint">حدّد مقدار الدفعة التي استلمتها من الحجز</small>
-                      </div>
-                    </div>
-                    <div class="reservation-payment-history-block">
-                      <div class="reservation-payment-history__header">
-                        <h6 class="reservation-payment-history__title" data-i18n data-i18n-key="reservations.paymentHistory.title">سجل الدفعات</h6>
-                      </div>
-                      <div id="edit-res-payment-history" class="reservation-payment-history"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-xl-4" id="edit-res-confirmed-wrapper">
-              <label class="form-label" for="edit-res-confirmed-btn" data-i18n data-i18n-key="reservations.edit.confirmation.label">✅ حالة التأكيد</label>
-              <button type="button" class="btn btn-outline-secondary w-100 btn-confirm-toggle" id="edit-res-confirmed-btn" aria-pressed="false" data-i18n data-i18n-key="reservations.edit.confirmation.pendingLabel">⏳ بانتظار التأكيد</button>
-              <div class="mt-2">
-                <div class="d-flex gap-2">
-                  <button type="button" class="btn btn-warning flex-fill" id="edit-res-close-btn" data-i18n data-i18n-key="reservations.edit.actions.close">🔒 إغلاق الحجز</button>
-                  <button type="button" class="btn btn-outline-secondary flex-fill" id="edit-res-reopen-btn" data-i18n data-i18n-key="reservations.edit.actions.reopen">↩️ إلغاء الإغلاق</button>
-                </div>
-              </div>
-            </div>
-            <div class="col-12 col-xl-4" id="edit-res-cancelled-wrapper">
-              <label class="form-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="edit-res-cancelled">
-                <label class="form-check-label" for="edit-res-cancelled" data-i18n data-i18n-key="reservations.edit.labels.cancelled">❌ ملغي</label>
-              </div>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" data-i18n data-i18n-key="technicians.picker.selectedLabel">😎 طاقم العمل المشارك</label>
-              <div id="edit-selected-technicians-list" class="selected-technicians-list"></div>
-              <button type="button" class="btn btn-outline btn-primary mt-2" id="open-edit-technician-picker" data-i18n data-i18n-key="technicians.picker.editButton">🔁 تعديل الطاقم</button>
-            </div>
-
-            <div class="col-12">
-              <div id="edit-res-summary" class="alert alert-info"></div>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label" data-i18n data-i18n-key="reservations.edit.labels.addEquipment">🎥 إضافة معدة</label>
-              <div class="reservation-equipment-inputs reservation-equipment-inputs--single mb-2" data-equipment-section="single">
-                <div class="reservation-equipment-field">
-                  <input type="text" class="form-control" id="edit-res-equipment-barcode" placeholder="🔍 امسح أو أدخل الباركود ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.barcode">
-                </div>
-                <div class="reservation-equipment-field">
-                  <input type="text" class="form-control" id="edit-res-equipment-description" list="edit-res-equipment-description-options" placeholder="🎥 اكتب اسم المعدة ثم اضغط Enter" data-i18n data-i18n-placeholder-key="reservations.edit.placeholders.description">
-                  <datalist id="edit-res-equipment-description-options"></datalist>
-                </div>
-              </div>
-              <div class="reservation-equipment-inputs reservation-equipment-inputs--package mb-2" data-equipment-section="package">
-                <h6 class="reservation-equipment-subtitle" data-i18n data-i18n-key="reservations.create.equipment.subtitle.package">📦 إضافة حزمة معدات</h6>
-                <div class="reservation-equipment-field reservation-equipment-field--package-select">
-                  <select class="form-select" id="edit-res-package-select" data-i18n data-i18n-placeholder-key="reservations.edit.packages.placeholder">
-                    <option value="" selected disabled data-i18n data-i18n-key="reservations.packages.selectOption">📦 اختر الحزمة</option>
-                  </select>
-                </div>
-                <div class="reservation-equipment-field reservation-equipment-field--package-action">
-                  <button type="button" class="btn btn-primary" id="edit-add-reservation-package" data-i18n data-i18n-key="reservations.create.packages.addButton">➕ إضافة الحزمة</button>
-                </div>
-                <div class="reservation-equipment-hint" id="edit-res-package-hint" data-i18n data-i18n-key="reservations.edit.packages.hint">حدد الحزمة ثم اضغط على الزر لإضافتها للحجز.</div>
-              </div>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover align-middle reservation-items-table">
-                  <thead class="table-light">
-                    <tr>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.item">المعدة</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.quantity">الكمية</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.days">الأيام</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.unitPrice">سعر الوحدة</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.unitCost">تكلفة الوحدة</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.total">الإجمالي</th>
-                      <th data-i18n data-i18n-key="reservations.equipment.table.actions">الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody id="edit-res-items">
-                    <tr><td colspan="7" class="text-center" data-i18n data-i18n-key="reservations.edit.table.empty">لا توجد معدات</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn modal-close-btn" data-bs-dismiss="modal" data-i18n data-i18n-key="actions.cancel">إلغاء</button>
-          <button type="button" class="btn btn-primary" id="save-reservation-changes" data-i18n data-i18n-key="reservations.edit.actions.save">💾 حفظ التعديلات</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </body>
