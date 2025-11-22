@@ -2158,7 +2158,7 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 .reservation-items-table {
-  background: var(--clr-card);
+  background: var(--clr-card, #ffffff);
   border: 1px solid rgba(76, 110, 245, 0.18);
   border-radius: 18px;
   overflow: hidden;
@@ -2237,6 +2237,74 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 #editReservationModal .reservation-items-table th:nth-child(3),
 #editReservationModal .reservation-items-table td:nth-child(3) {
   width: 96px;
+}
+
+/* Keep edit modal styling consistent on standalone pages */
+#editReservationModal .reservation-equipment-inputs {
+  background: var(--clr-card, #ffffff);
+  border: 1px solid rgba(76, 110, 245, 0.12);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+#editReservationModal .reservation-items-table {
+  background: var(--clr-card, #ffffff);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#editReservationModal .reservation-items-table thead,
+#editReservationModal .reservation-items-table thead tr,
+#editReservationModal .reservation-items-table thead th {
+  background: rgba(76, 110, 245, 0.08);
+  color: #1d2b56;
+}
+
+#editReservationModal .reservation-items-table tbody tr:hover {
+  background: rgba(76, 110, 245, 0.04);
+}
+
+#editReservationModal .reservation-items-table td,
+#editReservationModal .reservation-items-table th {
+  border-color: rgba(76, 110, 245, 0.16);
+  color: var(--clr-text, #1f2937);
+}
+
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table {
+  background: rgba(24, 33, 59, 0.92);
+  border-color: rgba(93, 133, 255, 0.2);
+}
+
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table thead,
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table thead tr,
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table thead th {
+  background: rgba(37, 55, 88, 0.95) !important;
+  color: #f1f5f9 !important;
+}
+
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table td,
+:is(html.dark-mode, body.dark-mode) #editReservationModal .reservation-items-table th {
+  border-color: rgba(37, 55, 88, 0.55);
+}
+
+/* Match unit price/unit cost widths with reservation details modal */
+#editReservationModal .reservation-items-table th:nth-child(4),
+#editReservationModal .reservation-items-table td:nth-child(4),
+#editReservationModal .reservation-items-table th:nth-child(5),
+#editReservationModal .reservation-items-table td:nth-child(5) {
+  width: 120px;
+  max-width: 120px;
+  white-space: nowrap;
+}
+
+@media (max-width: 992px) {
+  #editReservationModal .reservation-items-table th:nth-child(4),
+  #editReservationModal .reservation-items-table td:nth-child(4),
+  #editReservationModal .reservation-items-table th:nth-child(5),
+  #editReservationModal .reservation-items-table td:nth-child(5) {
+    width: 100px;
+    max-width: 100px;
+  }
 }
 
 .reservation-items-table img,
