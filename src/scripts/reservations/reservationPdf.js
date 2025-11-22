@@ -26,8 +26,7 @@ import {
   patchHtml2CanvasColorParsing,
   sanitizeComputedColorFunctions,
   enforceLegacyColorFallback,
-  scrubUnsupportedColorFunctions,
-  MODERN_COLOR_REGEX
+  scrubUnsupportedColorFunctions
 } from '../canvasColorUtils.js';
 
 const QUOTE_SEQUENCE_STORAGE_KEY = 'reservations.quote.sequence';
@@ -634,50 +633,6 @@ const QUOTE_LAYOUT_DATA_ATTRS = {
   infoAlignments: 'data-info-alignments',
   context: 'data-quote-source-context',
 };
-
-function disableColorFunctionStyles(doc, scope) {
-  if (!doc) return () => {};
-  const records = [];
-  const nodes = Array.from(doc.querySelectorAll('style, link[rel="stylesheet"]'));
-  nodes.forEach((node) => {
-    try {
-      if (scope && scope.contains(node)) {
-        return;
-      }
-      let hasModernColor = false;
-      if (node.tagName === 'STYLE') {
-        hasModernColor = MODERN_COLOR_REGEX.test(node.textContent || '');
-      } else if (node.tagName === 'LINK') {
-        const sheet = node.sheet;
-        const rules = sheet?.cssRules;
-        if (rules) {
-          for (let i = 0; i < rules.length; i += 1) {
-            if (MODERN_COLOR_REGEX.test(rules[i]?.cssText || '')) {
-              hasModernColor = true;
-              break;
-            }
-          }
-        }
-      }
-      if (!hasModernColor) {
-        return;
-      }
-      records.push({ node, disabled: node.disabled === true });
-      node.disabled = true;
-    } catch (_) {
-      /* Ignore security/access errors */
-    }
-  });
-  return () => {
-    records.forEach(({ node, disabled }) => {
-      try {
-        node.disabled = disabled;
-      } catch (_) {
-        /* ignore */
-      }
-    });
-  };
-}
 
 function normalizeLessorKey(value) {
   return normalizeNumbers(String(value ?? '')).trim().toLowerCase();
@@ -5472,32 +5427,52 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
         captureRoot.setAttribute('dir', fallbackDir);
       }
 
-      // Clone style nodes at the root level to preserve scoped PDF styles
+      const sandboxIframe = doc.createElement('iframe');
+      sandboxIframe.setAttribute('title', 'quote-pdf-capture');
+      Object.assign(sandboxIframe.style, {
+        position: 'absolute',
+        width: `${A4_WIDTH_PX}px`,
+        height: `${A4_HEIGHT_PX}px`,
+        border: '0',
+        top: '0',
+        left: '0',
+        opacity: '0',
+        pointerEvents: 'none'
+      });
+      captureWrapper.appendChild(sandboxIframe);
+      doc.body.appendChild(captureWrapper);
+
+      const sandboxDoc = sandboxIframe.contentDocument || sandboxIframe.contentWindow?.document;
+      sandboxDoc.open();
+      sandboxDoc.write('<!DOCTYPE html><html><head></head><body></body></html>');
+      sandboxDoc.close();
+      sandboxDoc.documentElement.setAttribute('dir', captureRoot.getAttribute('dir') || 'rtl');
+      const sandboxHead = sandboxDoc.head;
+      const sandboxBody = sandboxDoc.body;
+
+      // Clone style nodes to sandbox head
       Array.from(root.children || []).forEach((child) => {
         if (child && child.tagName === 'STYLE') {
-          captureRoot.appendChild(child.cloneNode(true));
+          sandboxHead.appendChild(child.cloneNode(true));
         }
       });
 
-      const captureDocument = doc.createElement('div');
+      const captureDocument = sandboxDoc.createElement('div');
       captureDocument.className = 'quote-document';
       captureDocument.setAttribute('data-quote-document', '');
-      const capturePages = doc.createElement('div');
+      const capturePages = sandboxDoc.createElement('div');
       capturePages.className = 'quote-preview-pages';
       capturePages.setAttribute('data-quote-pages', '');
       capturePages.appendChild(pageClone);
 
       captureDocument.appendChild(capturePages);
       captureRoot.appendChild(captureDocument);
+      sandboxBody.appendChild(captureRoot);
 
-      captureWrapper.appendChild(captureRoot);
-      doc.body.appendChild(captureWrapper);
-
-      const restoreStyles = disableColorFunctionStyles(doc, captureRoot);
       let canvas;
       try {
         await waitForQuoteAssets(captureRoot);
-        const viewForCapture = doc.defaultView || window;
+        const viewForCapture = sandboxDoc.defaultView || sandboxIframe.contentWindow || window;
         sanitizeComputedColorFunctions(captureRoot, viewForCapture);
         enforceLegacyColorFallback(captureRoot, viewForCapture);
         scrubUnsupportedColorFunctions(captureRoot);
@@ -5512,11 +5487,6 @@ async function renderQuotePagesAsPdf(root, { filename, safariWindowRef = null, m
         handlePdfError(captureError, 'pageCapture', { toastMessage: browserLimitMessage });
         throw captureError;
       } finally {
-        try {
-          restoreStyles?.();
-        } catch (_) {
-          /* ignore */
-        }
         captureWrapper.parentNode?.removeChild(captureWrapper);
       }
 
