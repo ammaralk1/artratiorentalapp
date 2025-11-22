@@ -466,7 +466,13 @@ body[dir="rtl"] .reports-filters {
 .reports-presets-select .reports-filter-control { min-height: 48px; }
 
 /* Preset actions grouping */
-.reports-presets-actions { display: flex; gap: 8px; align-items: center; }
+.reports-presets-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
 
 /* Unify preset buttons with theme look and feel */
 .reports-presets-actions .reports-preset-btn {
@@ -493,6 +499,38 @@ body[dir="rtl"] .reports-filters {
 :is(html.dark-mode, body.dark-mode) .reports-presets-actions .reports-preset-btn:focus-visible {
   border-color: var(--reports-accent);
   box-shadow: 0 0 0 2px rgba(var(--reports-accent-rgb, 147,197,253), 0.25);
+}
+
+@media (max-width: 640px) {
+  .reports-presets-controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-presets-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .reports-presets-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .reports-presets-actions .reports-preset-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .reports-filters-footer .reports-actions {
+    width: 100%;
+  }
+
+  .reports-filters-footer .reports-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 
