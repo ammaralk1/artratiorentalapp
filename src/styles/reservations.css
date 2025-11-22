@@ -1,6 +1,8 @@
 :root {
   --reservation-unit-column-width: 110px;
   --reservation-unit-column-width-sm: 96px;
+  --reservation-qty-column-width: 88px;
+  --reservation-qty-column-width-sm: 74px;
 }
 
 /* Reservation Layout */
@@ -2221,8 +2223,12 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 
 /* Tighter quantity controls inside Edit Reservation modal */
 #editReservationModal .reservation-quantity-control {
-  gap: 6px;
-  padding: 2px 8px;
+  gap: 4px;
+  padding: 2px 6px;
+  width: 100%;
+  max-width: var(--reservation-qty-column-width, 88px);
+  justify-content: center;
+  margin-inline: auto;
 }
 
 #editReservationModal .reservation-qty-btn {
@@ -2232,13 +2238,22 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
 }
 
 #editReservationModal .reservation-qty-value {
-  min-width: 20px;
+  min-width: 18px;
   font-size: 0.85rem;
 }
 
 /* Narrower qty/days columns inside Edit Reservation modal specifically */
 #editReservationModal .reservation-items-table th:nth-child(2),
-#editReservationModal .reservation-items-table td:nth-child(2),
+#editReservationModal .reservation-items-table td:nth-child(2) {
+  width: var(--reservation-qty-column-width, 88px);
+  max-width: var(--reservation-qty-column-width, 88px);
+  padding-inline: 6px;
+}
+
+#editReservationModal .reservation-quantity-control {
+  max-width: var(--reservation-qty-column-width, 88px);
+}
+
 #editReservationModal .reservation-items-table th:nth-child(3),
 #editReservationModal .reservation-items-table td:nth-child(3) {
   width: 96px;
@@ -2310,6 +2325,18 @@ body[dir="ltr"] .reservation-summary-card .summary-details-value {
   #editReservationModal .reservation-items-table td:nth-child(5) {
     width: var(--reservation-unit-column-width-sm, 96px);
     max-width: var(--reservation-unit-column-width-sm, 96px);
+  }
+}
+
+@media (max-width: 992px) {
+  #editReservationModal .reservation-items-table th:nth-child(2),
+  #editReservationModal .reservation-items-table td:nth-child(2) {
+    width: var(--reservation-qty-column-width-sm, 74px);
+    max-width: var(--reservation-qty-column-width-sm, 74px);
+  }
+
+  #editReservationModal .reservation-quantity-control {
+    max-width: var(--reservation-qty-column-width-sm, 74px);
   }
 }
 
