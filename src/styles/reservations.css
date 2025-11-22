@@ -3260,6 +3260,14 @@ body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
   box-shadow: 0 10px 18px rgba(76, 110, 245, 0.22);
 }
 
+/* Container for create/clear reservation buttons; wraps on small screens */
+.reservation-primary-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 :is(html.dark-mode, body.dark-mode) .reservation-tech-button,
 :is(html.dark-mode, body.dark-mode) .reservation-primary-action {
   box-shadow: 0 14px 34px rgba(8, 17, 40, 0.55);
@@ -3271,6 +3279,12 @@ body[dir="ltr"] .slider-btn--next { inset-inline-end: 8px; }
 }
 
 @media (max-width: 768px) {
+  .reservation-primary-actions {
+    width: 100%;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
   .reservation-tech-button,
   .reservation-primary-action {
     width: 100%;
