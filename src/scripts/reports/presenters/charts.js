@@ -115,10 +115,16 @@ export async function renderTrendChart(data) {
       },
     ];
 
+    const viewportWidth = typeof window !== 'undefined'
+      ? (window.innerWidth || document.documentElement?.clientWidth || 1024)
+      : 1024;
+    const compactView = Number.isFinite(viewportWidth) && viewportWidth < 768;
+    const chartHeight = compactView ? 420 : 340;
+
     const options = {
       chart: {
         type: 'line',
-        height: 320,
+        height: chartHeight,
         stacked: false,
         toolbar: { show: false },
         background: 'transparent',

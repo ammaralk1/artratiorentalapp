@@ -1211,6 +1211,10 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
   min-height: 260px;
 }
 
+#reports-volume-chart {
+  min-height: 340px;
+}
+
 /* Revenue details card: keep a compact width and center */
 #reservations-revenue-card {
   /* make it half of the previous width and keep centered */
@@ -1242,6 +1246,12 @@ body[dir="rtl"] .reports-filters .reports-refresh-btn {
 
 /* Ensure the charts inside analytics grid visually align by raising their min-height */
 .reports-analytics-grid .reports-chart-area { min-height: 320px; }
+
+@media (max-width: 768px) {
+  #reports-volume-chart {
+    min-height: 420px;
+  }
+}
 
 .reports-chart-area .apexcharts-title-text,
 .reports-chart-area .apexcharts-legend-text,
