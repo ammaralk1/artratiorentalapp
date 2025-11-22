@@ -197,6 +197,41 @@ export async function updateLinkedReservationsConfirmation(projectId) {
   return changed;
 }
 
+export async function updateLinkedReservationsUnconfirmation(projectId) {
+  if (!projectId) return false;
+
+  const reservations = getReservationsState();
+  const targets = reservations.filter((reservation) => String(reservation.projectId) === String(projectId));
+
+  if (!targets.length) {
+    return false;
+  }
+
+  let changed = false;
+
+  for (const reservation of targets) {
+    const reservationId = reservation.id ?? reservation.reservationId;
+    if (!reservationId) continue;
+    const statusRaw = String(reservation.status || '').toLowerCase();
+    if (statusRaw === 'completed' || statusRaw === 'cancelled' || statusRaw === 'canceled') {
+      continue;
+    }
+    const alreadyPending = (reservation.confirmed === false || reservation.confirmed === 'false') && (statusRaw === 'pending' || statusRaw === '');
+    if (alreadyPending) continue;
+    await updateReservationApi(reservationId, {
+      confirmed: false,
+      status: 'pending'
+    });
+    changed = true;
+  }
+
+  if (changed) {
+    state.reservations = getReservationsState();
+  }
+
+  return changed;
+}
+
 export async function handleProjectReservationSync(projectId, paymentStatus) {
   if (!projectId) return false;
   const reservationsUpdated = await updateLinkedReservationsPaymentStatus(projectId, paymentStatus);

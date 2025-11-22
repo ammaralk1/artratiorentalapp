@@ -58,6 +58,7 @@ import {
 import {
   handleProjectReservationSync,
   updateLinkedReservationsConfirmation,
+  updateLinkedReservationsUnconfirmation,
   removeProject,
   updateLinkedReservationsCancelled,
   updateLinkedReservationsSchedule,
@@ -972,6 +973,11 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
   const paymentSummaryContainer = form.querySelector('#project-edit-payment-summary');
   const currencyLabel = t('reservations.create.summary.currency', 'SR');
   const cancelProjectCheckbox = form.querySelector('#project-cancelled');
+  const confirmToggleBtn = form.querySelector('#project-edit-confirm-toggle');
+  const confirmStateInput = form.querySelector('#project-edit-confirmed');
+  const confirmStatusLabel = form.querySelector('#project-edit-confirm-label');
+  const confirmHint = form.querySelector('#project-edit-confirm-hint');
+  const initialConfirmed = project.confirmed === true || project.confirmed === 'true';
 
   let isSyncingShareTax = false;
 
@@ -1076,6 +1082,39 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     }
     return editState.payments;
   };
+
+  const setConfirmationUi = () => {
+    const isConfirmed = confirmStateInput?.value === 'true';
+    if (confirmToggleBtn) {
+      confirmToggleBtn.dataset.state = isConfirmed ? 'confirmed' : 'pending';
+      confirmToggleBtn.classList.toggle('btn-success', !isConfirmed);
+      confirmToggleBtn.classList.toggle('btn-outline-warning', isConfirmed);
+      confirmToggleBtn.textContent = isConfirmed
+        ? t('projects.form.actions.unconfirm', '↩️ إلغاء التأكيد')
+        : t('projects.focus.actions.confirm', '✔️ تأكيد المشروع');
+    }
+    if (confirmStatusLabel) {
+      confirmStatusLabel.textContent = isConfirmed
+        ? t('projects.focus.confirmed', '✅ مشروع مؤكد')
+        : t('projects.focus.pending', '⏳ غير مؤكد');
+      confirmStatusLabel.classList.toggle('bg-success', isConfirmed);
+      confirmStatusLabel.classList.toggle('bg-secondary', !isConfirmed);
+    }
+    if (confirmHint) {
+      confirmHint.textContent = isConfirmed
+        ? t('projects.form.hints.unconfirm', 'اضغط لإلغاء التأكيد وإعادة الحجوزات إلى غير مؤكدة')
+        : t('projects.form.hints.confirm', 'اضغط لتأكيد المشروع وجميع الحجوزات المرتبطة');
+    }
+  };
+
+  if (confirmToggleBtn && confirmStateInput) {
+    confirmToggleBtn.addEventListener('click', () => {
+      const next = confirmStateInput.value !== 'true';
+      confirmStateInput.value = next ? 'true' : 'false';
+      setConfirmationUi();
+    });
+    setConfirmationUi();
+  }
 
   // No manual input for "سعر البيع" in Edit modal; value is derived from services table
 
@@ -1766,6 +1805,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
     }
 
     editState.payments = paymentHistory;
+    const confirmedNext = confirmStateInput?.value === 'true';
 
     const payload = buildProjectPayload({
       projectCode: project.projectCode,
@@ -1789,7 +1829,7 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       companyShareAmount: finance.companyShareAmount,
       taxAmount: finance.taxAmount,
       totalWithTax: finance.totalWithTax,
-      confirmed: project.confirmed,
+      confirmed: confirmedNext,
       technicians: Array.isArray(project.technicians) ? project.technicians : [],
       equipment: mapProjectEquipmentToApi(project),
       paidAmount: paymentProgress.paidAmount,
@@ -1822,6 +1862,16 @@ function bindProjectEditForm(project, editState = { expenses: [] }) {
       await handleProjectReservationSync(identifier, paymentStatusValue);
       if (wantCancel) {
         try { await updateLinkedReservationsCancelled(identifier); } catch (e) { console.warn('⚠️ failed to cancel linked reservations', e); }
+      } else {
+        try {
+          if (confirmedNext && !initialConfirmed) {
+            await updateLinkedReservationsConfirmation(identifier);
+          } else if (!confirmedNext && initialConfirmed) {
+            await updateLinkedReservationsUnconfirmation(identifier);
+          }
+        } catch (e) {
+          console.warn('⚠️ failed to sync linked reservations confirmation toggle', e);
+        }
       }
       state.projects = getProjectsState();
       state.reservations = getReservationsState();
@@ -1950,6 +2000,7 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
   const isCancelled = (project?.cancelled === true || project?.cancelled === 'true')
     || String(project?.status || '').toLowerCase() === 'cancelled'
     || String(project?.status || '').toLowerCase() === 'canceled';
+  const isConfirmed = project.confirmed === true || project.confirmed === 'true';
 
   return `
     <form id="project-details-edit-form" class="project-edit-form">
@@ -1989,6 +2040,23 @@ function buildProjectEditForm(project, editState = { clientName: '', clientCompa
         <div class="col-12">
           <label class="form-label">${escapeHtml(t('projects.form.labels.description', 'الوصف'))}</label>
           <textarea class="form-control project-edit-textarea" name="project-description" rows="5">${escapeHtml(project.description || '')}</textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label d-flex align-items-center gap-2">
+            ${escapeHtml(t('projects.form.labels.confirmation', 'حالة التأكيد'))}
+          </label>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <input type="hidden" id="project-edit-confirmed" value="${isConfirmed ? 'true' : 'false'}">
+            <span id="project-edit-confirm-label" class="badge ${isConfirmed ? 'bg-success' : 'bg-secondary'}">
+              ${escapeHtml(isConfirmed ? t('projects.focus.confirmed', '✅ مشروع مؤكد') : t('projects.focus.pending', '⏳ غير مؤكد'))}
+            </span>
+            <button type="button" class="btn ${isConfirmed ? 'btn-outline-warning' : 'btn-success'}" id="project-edit-confirm-toggle" data-state="${isConfirmed ? 'confirmed' : 'pending'}">
+              ${escapeHtml(isConfirmed ? t('projects.form.actions.unconfirm', '↩️ إلغاء التأكيد') : t('projects.focus.actions.confirm', '✔️ تأكيد المشروع'))}
+            </button>
+            <small id="project-edit-confirm-hint" class="text-muted">
+              ${escapeHtml(isConfirmed ? t('projects.form.hints.unconfirm', 'اضغط لإلغاء التأكيد وإعادة الحجوزات إلى غير مؤكدة') : t('projects.form.hints.confirm', 'اضغط لتأكيد المشروع وجميع الحجوزات المرتبطة'))}
+            </small>
+          </div>
         </div>
         <div class="col-12">
           <div class="form-check mt-2">
