@@ -3133,22 +3133,8 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? Number(parsed.toFixed(2)) : 0;
 }
 
-function debugLogPackages(label, packages = []) {
-  try {
-    if (!packages || typeof console === 'undefined') return;
-    console.groupCollapsed(`📦 [reservations] ${label}`);
-    console.table(
-      (packages || []).map((pkg, index) => ({
-        index,
-        key: pkg?.package_code ?? pkg?.packageId ?? pkg?.id ?? pkg?.name ?? `pkg-${index}`,
-        unitCost: pkg?.unit_cost ?? pkg?.unitCost ?? pkg?.cost ?? 0,
-        unitPrice: pkg?.unit_price ?? pkg?.unitPrice ?? pkg?.price ?? 0,
-      }))
-    );
-    console.groupEnd();
-  } catch (_) {
-    /* ignore logging errors */
-  }
+function debugLogPackages() {
+  // Logging disabled to keep console clean in reservations tab
 }
 
 try {
