@@ -663,8 +663,28 @@ export function buildReservationDisplayGroups(reservation = {}, options = {}) {
       .filter(Boolean);
 
     const resolvePackageDescription = () => {
+      const packagesSnapshot = getPackagesSnapshot();
+      const normalizeCode = (value) => normalizeNumbers(String(value ?? '')).trim().toLowerCase();
+      const codeCandidates = [
+        packageDisplayCode,
+        primarySource?.package_code,
+        primarySource?.code,
+        primarySource?.barcode,
+        secondarySource?.package_code,
+        secondarySource?.code,
+        secondarySource?.barcode,
+        normalizedId,
+        mapKey,
+      ].filter(Boolean).map((c) => normalizeCode(c));
+      const resolvedFromSnapshot = packagesSnapshot.find((pkg) => {
+        const pkgId = normalizePackageId(pkg?.id ?? pkg?.packageId ?? pkg?.package_id ?? pkg?.code ?? pkg?.package_code);
+        const pkgCode = normalizeCode(pkg?.package_code ?? pkg?.code ?? pkg?.barcode);
+        return codeCandidates.some((candidate) => candidate && (candidate === pkgId || candidate === pkgCode));
+      });
+
       const rawEntry = rawPackagesLookup.get(mapKey);
       const nameCandidates = [
+        resolvedFromSnapshot ? getPackageDisplayName(resolvedFromSnapshot) : null,
         getPackageDisplayName(primarySource),
         primarySource?.packageName,
         primarySource?.package_title,
