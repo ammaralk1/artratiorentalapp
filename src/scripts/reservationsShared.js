@@ -1,5 +1,5 @@
 import { normalizeNumbers } from './utils.js';
-import { resolvePackageItems, normalizePackageId, getPackagesSnapshot, findPackageById } from './reservationsPackages.js';
+import { resolvePackageItems, normalizePackageId, getPackagesSnapshot, findPackageById, getPackageDisplayName } from './reservationsPackages.js';
 
 function stripExtraDots(candidate) {
   const parts = candidate.split('.');
@@ -662,18 +662,33 @@ export function buildReservationDisplayGroups(reservation = {}, options = {}) {
       .map((item) => normalizeNumbers(String(item?.barcode ?? item?.normalizedBarcode ?? '')))
       .filter(Boolean);
 
-    const descriptionCandidates = [
-      primarySource?.name,
-      primarySource?.package_name,
-      primarySource?.title,
-      secondarySource?.name,
-      secondarySource?.desc,
-      secondarySource?.package_name,
-      packageDisplayCode,
-      normalizeNumbers(String(mapKey)),
-    ];
-    const description = descriptionCandidates.find((value) => value != null && String(value).trim() !== '')
-      || normalizeNumbers(String(packageDisplayCode || mapKey));
+    const resolvePackageDescription = () => {
+      const nameCandidates = [
+        getPackageDisplayName(primarySource),
+        primarySource?.package_name_ar,
+        primarySource?.packageNameAr,
+        primarySource?.package_name_en,
+        primarySource?.packageNameEn,
+        primarySource?.desc,
+        getPackageDisplayName(secondarySource),
+        secondarySource?.package_name_ar,
+        secondarySource?.packageNameAr,
+        secondarySource?.package_name_en,
+        secondarySource?.packageNameEn,
+        secondarySource?.desc,
+      ];
+      const resolvedName = nameCandidates.find((value) => value != null && String(value).trim() !== '');
+      if (resolvedName) {
+        return resolvedName;
+      }
+      const fallbackCandidates = [
+        packageDisplayCode,
+        normalizeNumbers(String(mapKey)),
+      ];
+      const fallback = fallbackCandidates.find((value) => value != null && String(value).trim() !== '');
+      return fallback || normalizeNumbers(String(packageDisplayCode || mapKey));
+    };
+    const description = resolvePackageDescription();
 
     const imageSource = (resolvedItems.find((item) => item?.image)?.image)
       ?? primarySource?.image

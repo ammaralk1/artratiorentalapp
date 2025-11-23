@@ -272,14 +272,30 @@ export function resolvePackagePrice(packageEntry) {
 
 export function getPackageDisplayName(packageEntry) {
   if (!packageEntry || typeof packageEntry !== 'object') return '';
-  return (
-    packageEntry.name
-    ?? packageEntry.title
-    ?? packageEntry.label
-    ?? packageEntry.package_name
-    ?? packageEntry.packageName
-    ?? ''
-  );
+  const candidates = [
+    packageEntry.displayName,
+    packageEntry.display_name,
+    packageEntry.name,
+    packageEntry.title,
+    packageEntry.label,
+    packageEntry.package_name,
+    packageEntry.packageName,
+    packageEntry.package_name_ar,
+    packageEntry.packageNameAr,
+    packageEntry.package_name_en,
+    packageEntry.packageNameEn,
+    packageEntry.name_ar,
+    packageEntry.nameAr,
+    packageEntry.name_en,
+    packageEntry.nameEn,
+    packageEntry.label_ar,
+    packageEntry.labelAr,
+    packageEntry.label_en,
+    packageEntry.labelEn,
+  ];
+
+  const resolved = candidates.find((value) => value != null && String(value).trim() !== '');
+  return resolved ? String(resolved) : '';
 }
 
 export function buildPackageOptionsSnapshot() {
