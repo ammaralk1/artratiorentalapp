@@ -381,16 +381,34 @@ export function paginateGenericTplTables({ headerFooter = false, logoUrl = '', i
       const colTpl = table.querySelector('colgroup');
       const rows = Array.from(table.querySelectorAll('tbody > tr'));
       if (!rows.length) { table.setAttribute('data-split-done', '1'); return; }
+      const wrapNode = table.closest('.callsheet-v1'); // keep callsheet tables inside their wrapper to preserve styling
+      const wrapTemplate = wrapNode ? wrapNode.cloneNode(false) : null;
+      const dataEditable = table.getAttribute('data-editable-table') || '';
       const makeTable = () => {
-        const t = document.createElement('table'); t.className = table.className; if (colTpl) t.appendChild(colTpl.cloneNode(true));
-        const hd = thead ? thead.cloneNode(true) : document.createElement('thead'); t.appendChild(hd); t.appendChild(document.createElement('tbody')); return t;
+        const t = document.createElement('table');
+        t.className = table.className;
+        if (dataEditable) t.setAttribute('data-editable-table', dataEditable);
+        if (colTpl) t.appendChild(colTpl.cloneNode(true));
+        const hd = thead ? thead.cloneNode(true) : document.createElement('thead');
+        t.appendChild(hd);
+        t.appendChild(document.createElement('tbody'));
+        return t;
+      };
+      const ensureContainer = (targetInner, reuseExisting = false) => {
+        if (!wrapTemplate) return targetInner;
+        if (reuseExisting && wrapNode && wrapNode.parentElement === targetInner) return wrapNode;
+        const nw = wrapTemplate.cloneNode(false);
+        targetInner.appendChild(nw);
+        return nw;
       };
       const fitsInner = () => inner.scrollHeight <= (inner.clientHeight + 0.5);
 
       let currentPage = pg; let currentInner = inner;
-      try { inner.removeChild(table); } catch(_) {}
+      const detachFrom = wrapNode || table.parentElement || inner;
+      try { detachFrom.removeChild(table); } catch(_) {}
       let workingTable = makeTable();
-      currentInner.appendChild(workingTable);
+      let currentContainer = ensureContainer(currentInner, true);
+      currentContainer.appendChild(workingTable);
 
       let i = 0;
       while (i < rows.length) {
@@ -402,13 +420,16 @@ export function paginateGenericTplTables({ headerFooter = false, logoUrl = '', i
           ({ page: currentPage, inner: currentInner } = createPageSection({ headerFooter, logoUrl, landscape: isLandscape }));
           pagesWrap.appendChild(currentPage);
           workingTable = makeTable();
-          currentInner.appendChild(workingTable);
+          currentContainer = ensureContainer(currentInner, false);
+          currentContainer.appendChild(workingTable);
           workingTable.tBodies[0].appendChild(rows[i]);
         }
         i += 1;
       }
       try { const allTables = Array.from(pagesWrap.querySelectorAll('table.tpl-table')); allTables.forEach((t) => { const body = t.tBodies && t.tBodies[0]; const hasRows = !!(body && body.children && body.children.length); if (!hasRows) { try { t.parentElement?.removeChild(t); } catch (_) {} } }); } catch (_) {}
       table.setAttribute('data-split-done', '1');
+      // Keep call sheet sizing consistent after pagination so styles don't flicker
+      try { if (wrapTemplate && typeof window !== 'undefined' && typeof window.__enforceCallsheetSizing === 'function') window.__enforceCallsheetSizing(); } catch (_) {}
     });
   });
 }

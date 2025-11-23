@@ -176,9 +176,10 @@ export function openProjectDetails(projectId) {
   // Build history markup after we finalize the effective total used for progress
   let paymentHistoryMarkup = '';
   const confirmedChipText = t('projects.focus.confirmed', '✅ مشروع مؤكد');
+  const pendingChipText = t('projects.focus.pending', '⏳ غير مؤكد', 'Pending confirmation');
   const confirmedChipHtml = project.confirmed === true || project.confirmed === 'true'
     ? `<span class="reservation-chip status-confirmed">${escapeHtml(confirmedChipText)}</span>`
-    : '';
+    : `<span class="reservation-chip status-info">${escapeHtml(pendingChipText)}</span>`;
 
   // Build detailed financial summary when there are linked reservations
   let summaryDetails = [];
