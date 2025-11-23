@@ -178,7 +178,9 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
       if (completed) {
         stateClass += ' tile-completed';
         statusBadge = `<span class=\"reservation-chip status-chip status-completed\">${statusCompletedText}</span>`;
-        paymentBadge = `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`;
+        paymentBadge = paid
+          ? `<span class=\"reservation-chip status-chip status-completed\">${paymentLabel}</span>`
+          : `<span class=\"reservation-chip status-chip ${paymentClass}\">${paymentLabel}</span>`;
         const ribbonTextRaw = t('reservations.list.ribbon.completed', 'مغلق');
         const ribbonTextAttr = ribbonTextRaw.replace(/\"/g, '&quot;');
         completedAttr = ` data-completed-label=\"${ribbonTextAttr}\"`;
