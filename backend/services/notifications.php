@@ -309,17 +309,39 @@ function appendFooterHtml(string $html): string
 function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
 {
     $metaName = '';
+    $metaCode = '';
+    $metaId = null;
     try {
         $metaRaw = $pkg['package_metadata'] ?? null;
         if (is_string($metaRaw) && trim($metaRaw) !== '') {
             $decoded = json_decode($metaRaw, true);
             if (is_array($decoded)) {
                 $metaName = trim((string)($decoded['name'] ?? $decoded['title'] ?? ''));
+                $metaCode = trim((string)($decoded['code'] ?? $decoded['package_code'] ?? $decoded['packageCode'] ?? ''));
+                if (isset($decoded['id']) && is_numeric($decoded['id'])) {
+                    $metaId = (int) $decoded['id'];
+                }
             }
         } elseif (is_array($metaRaw)) {
             $metaName = trim((string)($metaRaw['name'] ?? $metaRaw['title'] ?? ''));
+            $metaCode = trim((string)($metaRaw['code'] ?? $metaRaw['package_code'] ?? $metaRaw['packageCode'] ?? ''));
+            if (isset($metaRaw['id']) && is_numeric($metaRaw['id'])) {
+                $metaId = (int) $metaRaw['id'];
+            }
         }
     } catch (Throwable $_) {}
+
+    $codeHints = [];
+    foreach (['package_code', 'code'] as $codeField) {
+        $hint = trim((string)($pkg[$codeField] ?? ''));
+        if ($hint !== '') {
+            $codeHints[] = strtolower($hint);
+        }
+    }
+    if ($metaCode !== '') {
+        $codeHints[] = strtolower($metaCode);
+    }
+    $codeHints = array_values(array_unique($codeHints));
 
     $candidates = [
         $pkg['package_name'] ?? null,
@@ -334,6 +356,9 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
     foreach ($candidates as $candidate) {
         $value = trim((string)($candidate ?? ''));
         if ($value !== '') {
+            if ($codeHints && in_array(strtolower($value), $codeHints, true)) {
+                continue;
+            }
             return $value;
         }
     }
@@ -342,6 +367,7 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
         static $packagesTableExists = null;
         static $packageNameCacheById = [];
         static $packageNameCacheByCode = [];
+        static $packageTableColumns = null;
 
         if ($packagesTableExists === null) {
             try {
@@ -357,6 +383,7 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
                 isset($pkg['package_id']) ? (int)$pkg['package_id'] : null,
                 isset($pkg['packageId']) ? (int)$pkg['packageId'] : null,
                 isset($pkg['id']) ? (int)$pkg['id'] : null,
+                $metaId,
             ];
             foreach ($idCandidates as $idCandidate) {
                 if ($idCandidate === null || $idCandidate <= 0) { continue; }
@@ -377,18 +404,58 @@ function resolvePackageNameForNotification(array $pkg, ?PDO $pdo = null): string
                 }
             }
 
-            $codeCandidate = trim((string)($pkg['package_code'] ?? ''));
-            if ($codeCandidate !== '') {
+            if ($packageTableColumns === null) {
+                try {
+                    $colsStmt = $pdo->query('SHOW COLUMNS FROM equipment_packages');
+                    $packageTableColumns = [];
+                    while ($col = $colsStmt->fetch(PDO::FETCH_ASSOC)) {
+                        if (!empty($col['Field'])) {
+                            $packageTableColumns[] = strtolower((string)$col['Field']);
+                        }
+                    }
+                } catch (Throwable $_) {
+                    $packageTableColumns = [];
+                }
+            }
+
+            $codeCandidatesRaw = [
+                $pkg['package_code'] ?? null,
+                $pkg['code'] ?? null,
+                $metaCode !== '' ? $metaCode : null,
+            ];
+            $codeCandidates = [];
+            foreach ($codeCandidatesRaw as $cc) {
+                $cc = trim((string)($cc ?? ''));
+                if ($cc !== '') {
+                    $codeCandidates[] = $cc;
+                }
+            }
+            $codeCandidates = array_values(array_unique($codeCandidates));
+
+            foreach ($codeCandidates as $codeCandidate) {
                 $codeKey = strtolower($codeCandidate);
                 if (array_key_exists($codeKey, $packageNameCacheByCode)) {
                     $cached = $packageNameCacheByCode[$codeKey];
                     if ($cached !== '') { return $cached; }
                 } else {
                     try {
-                        $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE package_code = :code LIMIT 1');
-                        $stmt->execute(['code' => $codeCandidate]);
-                        $found = $stmt->fetchColumn();
-                        $name = $found !== false ? trim((string)$found) : '';
+                        $name = '';
+                        $stmt = null;
+                        if (in_array('package_code', $packageTableColumns, true)) {
+                            $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE package_code = :code LIMIT 1');
+                        } elseif (in_array('code', $packageTableColumns, true)) {
+                            $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE code = :code LIMIT 1');
+                        } elseif (in_array('slug', $packageTableColumns, true)) {
+                            $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE slug = :code LIMIT 1');
+                        } elseif (!$packageTableColumns) {
+                            // If we failed to introspect columns, fall back to the legacy package_code lookup.
+                            $stmt = $pdo->prepare('SELECT name FROM equipment_packages WHERE package_code = :code LIMIT 1');
+                        }
+                        if ($stmt) {
+                            $stmt->execute(['code' => $codeCandidate]);
+                            $found = $stmt->fetchColumn();
+                            $name = $found !== false ? trim((string)$found) : '';
+                        }
                         $packageNameCacheByCode[$codeKey] = $name;
                         if ($name !== '') { return $name; }
                     } catch (Throwable $_) {
