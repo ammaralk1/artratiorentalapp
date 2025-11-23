@@ -418,8 +418,9 @@ function renderSimplePdf(array $lines): string
 
 function buildReservationPdfAttachment(array $reservation, string $eventType): ?array
 {
-    $isCreation = $eventType === 'reservation_created' || strpos($eventType, 'reservation_reminder_') === 0;
-    if (!$isCreation) {
+    // Allow PDF for any reservation_* event (create/reminder/status/assignment)
+    $isReservationEvent = strpos($eventType, 'reservation_') === 0;
+    if (!$isReservationEvent) {
         return null;
     }
 
@@ -738,6 +739,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
     $entityId = (int)$reservation['id'];
     $detailsBlock = buildReservationDetailsBlock($reservation);
     $detailsHtml = formatDetailsBlockHtml($detailsBlock);
+    $attachment = buildReservationPdfAttachment($reservation, $eventType);
     $subject = 'تم تعيينك على حجز: ' . $summary['title'];
     $html = '<p>تم تعيينك على الحجز التالي:</p>' .
         '<ul>' .
@@ -760,7 +762,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
         $contacts = fetchTechnicianContacts($pdo, (int)$techId);
         if (!$contacts) { continue; }
         if ($channels['email'] && !empty($contacts['email'])) {
-            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
+            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $textEmail, $attachment ? [$attachment] : []);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
         if ($channels['telegram']) {
@@ -802,7 +804,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
-                $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText);
+                $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText, $attachment ? [$attachment] : []);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -898,6 +900,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $entityId = (int)$reservation['id'];
     $detailsBlock = buildReservationDetailsBlock($reservation);
     $detailsHtml = formatDetailsBlockHtml($detailsBlock);
+    $attachment = buildReservationPdfAttachment($reservation, $eventType);
     $subject = 'تحديث حالة الحجز: ' . $summary['title'];
     $html = '<p>تم تغيير حالة الحجز.</p><ul>' .
         ($summary['code'] !== '' ? '<li>الكود: ' . htmlspecialchars($summary['code']) . '</li>' : '') .
@@ -922,7 +925,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         $contacts = fetchTechnicianContacts($pdo, $techId);
         if (!$contacts) { continue; }
         if ($channels['email'] && !empty($contacts['email'])) {
-            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $textEmail);
+            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $textEmail, $attachment ? [$attachment] : []);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
         if ($channels['telegram']) {
@@ -961,7 +964,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
                 if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, (string)$email, 'email')) {
-                    $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText);
+                    $ok = sendEmail((string)$email, 'Admin', $adminSubject, $adminHtml, $adminText, $attachment ? [$attachment] : []);
                     recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'admin', (string)$email, 'email', $ok ? 'sent' : 'failed');
                 }
             }
