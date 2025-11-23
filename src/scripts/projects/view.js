@@ -26,6 +26,11 @@ import {
   truncateText
 } from './helpers.js';
 
+const PROJECTS_TABLE_CHUNK_SIZE = 60;
+const TIMELINE_RENDER_LIMIT = 200;
+
+let projectsRenderToken = 0;
+
 function ensureFocusPagination() {
   if (!state.focusPagination) {
     state.focusPagination = { page: 1, pageSize: FOCUS_CARDS_PER_PAGE, totalPages: 1 };
@@ -190,12 +195,44 @@ export function renderProjects() {
   // Reset focus cards pagination when the visible list changes
   ensureFocusPagination().page = 1;
 
-  dom.projectsTableBody.innerHTML = sortedProjects
-    .map((project) => renderProjectRow(project))
-    .join('');
-
+  renderProjectsTableChunked(sortedProjects);
   renderTimeline(sortedProjects);
-  renderFocusCards();
+  renderFocusCardsInternal(sortedProjects);
+}
+
+function scheduleChunk(callback) {
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(callback, { timeout: 120 });
+    return;
+  }
+  setTimeout(callback, 0);
+}
+
+function renderProjectsTableChunked(projects) {
+  if (!dom.projectsTableBody) return;
+  const token = ++projectsRenderToken;
+  dom.projectsTableBody.innerHTML = '';
+
+  const renderChunk = (startIndex = 0) => {
+    if (token !== projectsRenderToken) return;
+    const end = Math.min(projects.length, startIndex + PROJECTS_TABLE_CHUNK_SIZE);
+    const frag = document.createDocumentFragment();
+    for (let i = startIndex; i < end; i += 1) {
+      const rowHtml = renderProjectRow(projects[i]);
+      const wrapper = document.createElement('tbody');
+      wrapper.innerHTML = rowHtml;
+      while (wrapper.firstChild) {
+        frag.appendChild(wrapper.firstChild);
+      }
+    }
+    dom.projectsTableBody.appendChild(frag);
+
+    if (end < projects.length) {
+      scheduleChunk(() => renderChunk(end));
+    }
+  };
+
+  renderChunk(0);
 }
 
 function renderProjectRow(project) {
@@ -316,6 +353,7 @@ function renderTimeline(projectsForTimeline) {
     : (state.visibleProjects.length ? state.visibleProjects : state.projects);
 
   const timelineProjects = sourceProjects
+    .slice(0, TIMELINE_RENDER_LIMIT)
     .map((project) => {
       if (!project?.start) return null;
       const startDate = new Date(project.start);
@@ -422,9 +460,15 @@ function detectTimelineConflicts(items) {
 }
 
 export function renderFocusCards() {
+  renderFocusCardsInternal();
+}
+
+function renderFocusCardsInternal(projectsOverride = null) {
   if (!dom.focusCards) return;
 
-  const sourceProjects = state.visibleProjects.length ? state.visibleProjects : getFilteredProjects();
+  const sourceProjects = Array.isArray(projectsOverride) && projectsOverride.length
+    ? projectsOverride
+    : (state.visibleProjects.length ? state.visibleProjects : getFilteredProjects());
   const allCards = buildFocusCards(sourceProjects, { allowFallback: !hasProjectFilters(), limit: null });
   const pagination = ensureFocusPagination();
   const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
