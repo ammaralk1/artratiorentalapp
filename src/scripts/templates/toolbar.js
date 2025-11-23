@@ -5,7 +5,11 @@ import { paginateGenericTplTables, pruneEmptyA4Pages } from './pagination.js';
 // onAfterChange: optional callback invoked after a structural change (history/autosave/paginate)
 export function ensureCellToolbar({ onAfterChange } = {}) {
   const host = document.getElementById('templates-preview-host');
-  if (!host) { return; }
+  if (!host) {
+    const existing = document.getElementById('tpl-cell-toolbar');
+    if (existing) existing.style.display = 'none';
+    return;
+  }
   const type = document.getElementById('templates-type')?.value || 'expenses';
   let bar = document.getElementById('tpl-cell-toolbar');
   // Enable toolbar for both Call Sheet and Expenses tables
@@ -13,8 +17,8 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'tpl-cell-toolbar';
-    // Use fixed positioning so placement is stable regardless of zoom/scale on the preview root
-    Object.assign(bar.style, { position: 'fixed', display: 'none', zIndex: 9999 });
+    // Use fixed positioning on the document body to avoid overflow/transform clipping in some browsers
+    Object.assign(bar.style, { position: 'fixed', display: 'none', zIndex: 2147483000 });
     bar.innerHTML = `
       <div style="display:inline-flex;gap:4px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(15,23,42,0.12);">
         <button type="button" data-act="row-add" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف</button>
@@ -29,7 +33,7 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
         <button type="button" data-act="cast-add-row" class="btn btn-outline" style="height:28px;padding:0 8px">+ صف اسم/وقت</button>
         <button type="button" data-act="cast-del-row" class="btn btn-outline btn-danger" style="height:28px;padding:0 8px">× صف اسم/وقت</button>
       </div>`;
-    host.appendChild(bar);
+    document.body.appendChild(bar);
     bar.__lock = false; bar.__switchTimer = null; bar.__freezeUntil = 0;
     bar.addEventListener('pointerenter', () => { bar.__lock = true; });
     bar.addEventListener('pointerleave', () => { bar.__lock = false; });
@@ -158,6 +162,10 @@ export function ensureCellToolbar({ onAfterChange } = {}) {
       else if (act === 'cast-add-row' && cast) { castAddRowPair(); updateAfter(); }
       else if (act === 'cast-del-row' && cast) { castRemoveRowPair(); updateAfter(); }
     });
+  } else if (bar.parentElement !== document.body) {
+    // If an older toolbar was mounted inside the preview host, move it to body to avoid clipping under the page
+    try { bar.parentElement.removeChild(bar); } catch (_) {}
+    document.body.appendChild(bar);
   }
 
   const place = (cell) => {
