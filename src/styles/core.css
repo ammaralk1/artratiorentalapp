@@ -1106,6 +1106,15 @@ html.dark-mode .projects-hero-text {
   text-align: start;
 }
 
+#project-focus-pagination .btn.active,
+#project-table-pagination .btn.active,
+.projects-table-pagination .btn.active {
+  background: var(--clr-primary);
+  color: #fff;
+  border-color: var(--clr-primary);
+  box-shadow: 0 8px 16px rgba(76, 110, 245, 0.25);
+}
+
 .project-timeline-legend__chips {
   display: flex;
   flex-wrap: wrap;

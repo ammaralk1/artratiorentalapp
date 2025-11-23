@@ -537,15 +537,18 @@ function renderProjectsPagination(totalPages, currentPage) {
 
   containers.forEach((container) => {
     container.innerHTML = `<div class="btn-group" role="group" aria-label="Projects pagination">${buttonsHtml}</div>`;
-    container.querySelectorAll('button[data-page]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const page = Number.parseInt(btn.dataset.page || '0', 10);
-        if (!Number.isInteger(page) || page < 1 || page > clampedTotal || page === clampedCurrent) return;
-        const pagination = ensureFocusPagination();
-        pagination.page = page;
-        renderProjects();
-      });
-    });
+    container.onclick = (event) => {
+      const target = event.target instanceof HTMLElement
+        ? event.target.closest('button[data-page]')
+        : null;
+      if (!target) return;
+      if (target.disabled) return;
+      const page = Number.parseInt(target.dataset.page || '0', 10);
+      if (!Number.isInteger(page) || page < 1 || page > clampedTotal || page === clampedCurrent) return;
+      const pagination = ensureFocusPagination();
+      pagination.page = page;
+      renderProjects();
+    };
   });
 }
 
