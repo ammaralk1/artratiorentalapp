@@ -170,11 +170,14 @@ export function buildProjectFocusCard(project, {
     `projects.paymentStatus.${paymentStatus}`,
     paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? 'Partially Paid' : 'Unpaid'
   );
-  const paymentChipClass = paymentStatus === 'paid'
+  const paymentChipBaseClass = paymentStatus === 'paid'
     ? 'status-paid'
     : paymentStatus === 'partial'
       ? 'status-partial'
       : 'status-unpaid';
+  const isCompleted = status === 'completed';
+  const shouldHighlightUnpaid = isCompleted && paymentStatus !== 'paid';
+  const paymentChipClass = `${paymentChipBaseClass}${shouldHighlightUnpaid ? ' project-payment-chip--alert' : ''}`;
   const cardStateClasses = [paymentStatus === 'paid' ? 'project-focus-card--paid' : 'project-focus-card--unpaid'];
 
   const confirmed = project?.confirmed === true || project?.confirmed === 'true';

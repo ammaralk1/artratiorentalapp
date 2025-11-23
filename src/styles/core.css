@@ -1073,7 +1073,7 @@ html.dark-mode .projects-hero-text {
 }
 .project-focus-card--completed .reservation-chip,
 .project-focus-card--completed .status-chip,
-.project-focus-card--completed .project-focus-card__payment-chip,
+.project-focus-card--completed .project-focus-card__payment-chip:not(.project-payment-chip--alert),
 .project-focus-card--completed .timeline-status-badge {
   color: #475569 !important;
   background: #e5e7eb !important;
@@ -1095,7 +1095,7 @@ html.dark-mode .projects-hero-text {
 }
 :is(html.dark-mode, body.dark-mode) .project-focus-card--completed .reservation-chip,
 :is(html.dark-mode, body.dark-mode) .project-focus-card--completed .status-chip,
-:is(html.dark-mode, body.dark-mode) .project-focus-card--completed .project-focus-card__payment-chip,
+:is(html.dark-mode, body.dark-mode) .project-focus-card--completed .project-focus-card__payment-chip:not(.project-payment-chip--alert),
 :is(html.dark-mode, body.dark-mode) .project-focus-card--completed .timeline-status-badge {
   color: rgba(226, 232, 240, 0.9) !important;
   background: rgba(71, 85, 105, 0.6) !important;
