@@ -266,6 +266,24 @@ function buildReservationSummary(array $reservation): array
     ];
 }
 
+function formatDetailsBlockHtml(string $detailsBlock): string
+{
+    if ($detailsBlock === '') { return ''; }
+    return '<p><strong>تفاصيل إضافية:</strong><br>' .
+        nl2br(htmlspecialchars(ltrim($detailsBlock), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) .
+        '</p>';
+}
+
+function appendFooterText(string $text): string
+{
+    return rtrim($text) . "\nلمزيد من المعلومات فضلا ادخل على بطاقة الحجز فريق Art Ratio";
+}
+
+function appendFooterHtml(string $html): string
+{
+    return $html . '<p>لمزيد من المعلومات فضلا ادخل على بطاقة الحجز فريق Art Ratio</p>';
+}
+
 function expandReservationForNotifications(PDO $pdo, array $reservation): array
 {
     // If technicians/items/packages are missing, try to reload a full reservation
@@ -288,12 +306,37 @@ function buildReservationDetailsBlock(array $reservation): string
         $lines[] = 'الملاحظات: ' . $notes;
     }
 
-    // Packages (if any)
-    $packages = [];
+    $techs = [];
+    foreach ((array)($reservation['technicians'] ?? []) as $t) {
+        $name = trim((string)($t['name'] ?? $t['technician_name'] ?? ''));
+        $role = trim((string)($t['position_name'] ?? $t['role'] ?? ''));
+        if ($name === '') { continue; }
+        $label = $role !== '' ? ($name . ' — ' . $role) : $name;
+        $techs[] = '- ' . $label;
+    }
+    if ($techs) {
+        $lines[] = 'الفنيون:';
+        $lines = array_merge($lines, $techs);
+    }
+
+    $itemsAndPackages = [];
+    foreach ((array)($reservation['items'] ?? []) as $item) {
+        $title = trim((string)($item['description'] ?? $item['name'] ?? ''));
+        $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+        $note = trim((string)($item['notes'] ?? ''));
+        if ($title === '') { continue; }
+        $line = '- ' . $title . ($qty > 0 ? ' ×' . $qty : '');
+        if ($note !== '') {
+            $line .= ' (' . $note . ')';
+        }
+        $itemsAndPackages[] = $line;
+    }
+
     foreach ((array)($reservation['packages'] ?? []) as $pkg) {
         $name = trim((string)($pkg['name'] ?? $pkg['package_name'] ?? ''));
+        if ($name === '') { $name = 'حزمة'; }
         $qty = isset($pkg['quantity']) ? (int)$pkg['quantity'] : 0;
-        $line = '- ' . ($name !== '' ? $name : 'حزمة') . ($qty > 0 ? ' ×' . $qty : '');
+        $line = '- حزمة: ' . $name . ($qty > 0 ? ' ×' . $qty : '');
         $pkgItems = [];
         try {
             $raw = $pkg['items_json'] ?? null;
@@ -315,41 +358,11 @@ function buildReservationDetailsBlock(array $reservation): string
                 $line .= "\n" . implode("\n", $itemLines);
             }
         }
-        $packages[] = $line;
+        $itemsAndPackages[] = $line;
     }
-    if ($packages) {
-        $lines[] = 'الباقات/الحزم:';
-        $lines = array_merge($lines, $packages);
-    }
-
-    $techs = [];
-    foreach ((array)($reservation['technicians'] ?? []) as $t) {
-        $name = trim((string)($t['name'] ?? $t['technician_name'] ?? ''));
-        $role = trim((string)($t['position_name'] ?? $t['role'] ?? ''));
-        if ($name === '') { continue; }
-        $label = $role !== '' ? ($name . ' — ' . $role) : $name;
-        $techs[] = '- ' . $label;
-    }
-    if ($techs) {
-        $lines[] = 'الفنيون:';
-        $lines = array_merge($lines, $techs);
-    }
-
-    $items = [];
-    foreach ((array)($reservation['items'] ?? []) as $item) {
-        $title = trim((string)($item['description'] ?? $item['name'] ?? ''));
-        $qty = isset($item['quantity']) ? (int)$item['quantity'] : 0;
-        $note = trim((string)($item['notes'] ?? ''));
-        if ($title === '') { continue; }
-        $line = '- ' . $title . ($qty > 0 ? ' ×' . $qty : '');
-        if ($note !== '') {
-            $line .= ' (' . $note . ')';
-        }
-        $items[] = $line;
-    }
-    if ($items) {
-        $lines[] = 'المعدات:';
-        $lines = array_merge($lines, $items);
+    if ($itemsAndPackages) {
+        $lines[] = 'المعدات/الحزم:';
+        $lines = array_merge($lines, $itemsAndPackages);
     }
 
     if (empty($lines)) {
@@ -473,6 +486,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
     $entityId = (int) $reservation['id'];
     $detailsBlock = buildReservationDetailsBlock($reservation);
     $attachment = buildReservationPdfAttachment($reservation, $eventType);
+    $detailsHtml = formatDetailsBlockHtml($detailsBlock);
 
     $subject = 'تم تعيينك على حجز جديد: ' . $summary['title'];
     $html = '<p>مرحباً،</p>' .
@@ -484,16 +498,19 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         ($summary['location'] !== '' ? '<li>الموقع: ' . htmlspecialchars($summary['location']) . '</li>' : '') .
         ($summary['customer'] !== '' ? '<li>العميل: ' . htmlspecialchars($summary['customer']) . '</li>' : '') .
         ($summary['project_code'] !== '' ? '<li>رقم المشروع: ' . htmlspecialchars($summary['project_code']) . '</li>' : '') .
-        '</ul>' .
-        '<p>يرجى تأكيد استلامك.</p>';
-    $text = "تم تعيينك على حجز: {$summary['title']}\n" .
+        '</ul>';
+    $textBase = "تم تعيينك على حجز: {$summary['title']}\n" .
         ($summary['code'] !== '' ? "كود: {$summary['code']}\n" : '') .
         "الوقت: {$summary['when']}\n" .
-        ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
         ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '') .
         'شكراً.';
-    $text .= $detailsBlock;
+    $textEmail = $textBase . ($summary['location'] !== '' ? "\nالموقع: {$summary['location']}" : '') . $detailsBlock;
+    $textEmail = appendFooterText($textEmail);
+    $textTelegram = $textBase . $detailsBlock;
+    $textTelegram = appendFooterText($textTelegram);
+    $html .= $detailsHtml;
+    $html = appendFooterHtml($html);
 
     $techs = (array)($reservation['technicians'] ?? []);
     foreach ($techs as $t) {
@@ -505,7 +522,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         if ($channels['email'] && !empty($contacts['email'])) {
             $recipient = (string) $contacts['email'];
             if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'email')) {
-                $ok = sendEmail($recipient, (string) $contacts['name'], $subject, $html, $text, $attachment ? [$attachment] : []);
+                $ok = sendEmail($recipient, (string) $contacts['name'], $subject, $html, $textEmail, $attachment ? [$attachment] : []);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -513,7 +530,7 @@ function sendReservationNotificationsToTechnicians(PDO $pdo, array $reservation,
         if ($channels['telegram']) {
             $recipient = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
             if ($recipient !== '' && !hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
-                $ok = sendTelegramText($recipient, $text);
+                $ok = sendTelegramText($recipient, $textTelegram);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $recipient, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -531,6 +548,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
     $summary = buildReservationSummary($reservation);
     $detailsBlock = buildReservationDetailsBlock($reservation);
     $attachment = buildReservationPdfAttachment($reservation, $eventType);
+    $detailsHtml = formatDetailsBlockHtml($detailsBlock);
 
     $subject = 'تم إنشاء حجز جديد: ' . $summary['title'];
     $html = '<p>تم إنشاء حجز جديد.</p>' .
@@ -544,9 +562,13 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
     $text = "حجز جديد\n" .
         ($summary['code'] !== '' ? "كود: {$summary['code']}\n" : '') .
         "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
-        ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') .
         ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '');
-    $text .= $detailsBlock;
+    $textEmail = $text . ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') . $detailsBlock;
+    $textEmail = appendFooterText($textEmail);
+    $textTelegram = $text . $detailsBlock;
+    $textTelegram = appendFooterText($textTelegram);
+    $html .= $detailsHtml;
+    $html = appendFooterHtml($html);
 
     $emailRecipients = $settings['admin_only']
         ? $settings['admin_emails']
@@ -555,7 +577,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
         if ($channels['email']) {
             $recipient = (string) $email;
             if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'email')) {
-                $ok = sendEmail($recipient, 'Manager', $subject, $html, $text, $attachment ? [$attachment] : []);
+                $ok = sendEmail($recipient, 'Manager', $subject, $html, $textEmail, $attachment ? [$attachment] : []);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'manager', $recipient, 'email', $ok ? 'sent' : 'failed');
             }
         }
@@ -568,7 +590,7 @@ function sendReservationNotificationsToManagers(PDO $pdo, array $reservation, st
         if ($channels['telegram']) {
             $recipient = (string) $chat;
             if (!hasNotificationBeenSent($pdo, $eventType, 'reservation', $entityId, $recipient, 'telegram')) {
-                $ok = sendTelegramText($recipient, $text);
+                $ok = sendTelegramText($recipient, $textTelegram);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'manager', $recipient, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -715,6 +737,7 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
     $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsHtml = formatDetailsBlockHtml($detailsBlock);
     $subject = 'تم تعيينك على حجز: ' . $summary['title'];
     $html = '<p>تم تعيينك على الحجز التالي:</p>' .
         '<ul>' .
@@ -725,9 +748,13 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
         '</ul>';
     $text = "تم تعيينك على حجز\n" .
         ($summary['code'] !== '' ? "كود: {$summary['code']}\n" : '') .
-        "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n" .
-        ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '');
-    $text .= $detailsBlock;
+        "العنوان: {$summary['title']}\nالوقت: {$summary['when']}\n";
+    $textEmail = $text . ($summary['location'] !== '' ? "الموقع: {$summary['location']}\n" : '') . $detailsBlock;
+    $textEmail = appendFooterText($textEmail);
+    $textTelegram = $text . $detailsBlock;
+    $textTelegram = appendFooterText($textTelegram);
+    $html .= $detailsHtml;
+    $html = appendFooterHtml($html);
 
     foreach ($technicianIds as $techId) {
         $contacts = fetchTechnicianContacts($pdo, (int)$techId);
@@ -769,6 +796,9 @@ function notifyReservationTechnicianAssigned(PDO $pdo, array $reservation, array
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
         $adminText .= $detailsBlock;
+        $adminText = appendFooterText($adminText);
+        $adminHtml .= $detailsHtml;
+        $adminHtml = appendFooterHtml($adminHtml);
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
@@ -867,6 +897,7 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $summary = buildReservationSummary($reservation);
     $entityId = (int)$reservation['id'];
     $detailsBlock = buildReservationDetailsBlock($reservation);
+    $detailsHtml = formatDetailsBlockHtml($detailsBlock);
     $subject = 'تحديث حالة الحجز: ' . $summary['title'];
     $html = '<p>تم تغيير حالة الحجز.</p><ul>' .
         ($summary['code'] !== '' ? '<li>الكود: ' . htmlspecialchars($summary['code']) . '</li>' : '') .
@@ -877,7 +908,12 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
     $text = "تغيير حالة الحجز\n" .
         ($summary['code'] !== '' ? "الكود: {$summary['code']}\n" : '') .
         "من {$oldStatus} إلى {$newStatus}\nالعنوان: {$summary['title']}\nالوقت: {$summary['when']}";
-    $text .= $detailsBlock;
+    $textEmail = $text . ($summary['location'] !== '' ? "\nالموقع: {$summary['location']}" : '') . $detailsBlock;
+    $textEmail = appendFooterText($textEmail);
+    $textTelegram = $text . $detailsBlock;
+    $textTelegram = appendFooterText($textTelegram);
+    $html .= $detailsHtml;
+    $html = appendFooterHtml($html);
 
     // notify technicians currently on reservation
     foreach ((array)($reservation['technicians'] ?? []) as $t) {
@@ -886,13 +922,13 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
         $contacts = fetchTechnicianContacts($pdo, $techId);
         if (!$contacts) { continue; }
         if ($channels['email'] && !empty($contacts['email'])) {
-            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $text);
+            $ok = sendEmail((string)$contacts['email'], (string)$contacts['name'], $subject, $html, $textEmail);
             recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', (string)$contacts['email'], 'email', $ok ? 'sent' : 'failed');
         }
         if ($channels['telegram']) {
             $cid = (string) (getTelegramChatIdForTechnician($pdo, $contacts) ?: '');
             if ($cid !== '') {
-                $ok = sendTelegramText($cid, $text);
+                $ok = sendTelegramText($cid, $textTelegram);
                 recordNotificationEvent($pdo, $eventType, 'reservation', $entityId, 'technician', $cid, 'telegram', $ok ? 'sent' : 'failed');
             }
         }
@@ -918,6 +954,9 @@ function notifyReservationStatusChanged(PDO $pdo, array $reservation, string $ol
             ($summary['customer'] !== '' ? "العميل: {$summary['customer']}\n" : '') .
             ($summary['project_code'] !== '' ? "المشروع: {$summary['project_code']}\n" : '');
         $adminText .= $detailsBlock;
+        $adminText = appendFooterText($adminText);
+        $adminHtml .= $detailsHtml;
+        $adminHtml = appendFooterHtml($adminHtml);
 
         if ($channels['email']) {
             foreach ($settings['admin_emails'] as $email) {
