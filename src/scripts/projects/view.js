@@ -477,7 +477,7 @@ export function renderFocusCards() {
   renderFocusCardsInternal();
 }
 
-function renderFocusCardsInternal(projectsOverride = null) {
+function renderFocusCardsInternal(projectsOverride = null, { totalPagesOverride = null, currentPageOverride = null, prePaged = false } = {}) {
   if (!dom.focusCards) return;
 
   const sourceProjects = Array.isArray(projectsOverride)
@@ -485,12 +485,14 @@ function renderFocusCardsInternal(projectsOverride = null) {
     : (state.visibleProjects.length ? state.visibleProjects : getFilteredProjects());
   const pagination = ensureFocusPagination();
   const pageSize = Number.isFinite(pagination.pageSize) ? pagination.pageSize : FOCUS_CARDS_PER_PAGE;
-  const totalPages = Math.max(1, Math.ceil(sourceProjects.length / pageSize));
-  const currentPage = Math.min(Math.max(1, pagination.page || 1), totalPages);
+  const totalPages = totalPagesOverride ?? Math.max(1, Math.ceil(sourceProjects.length / pageSize));
+  const currentPage = currentPageOverride ?? Math.min(Math.max(1, pagination.page || 1), totalPages);
   pagination.page = currentPage;
   pagination.totalPages = totalPages;
 
-  const pageCards = sourceProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageCards = prePaged
+    ? sourceProjects
+    : sourceProjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (!pageCards.length) {
     const emptyMessage = escapeHtml(t('projects.focus.empty', dom.focusCards.dataset.empty || 'لا توجد مشاريع لليوم أو هذا الأسبوع.'));
