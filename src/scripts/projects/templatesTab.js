@@ -518,8 +518,8 @@ function ensureLogoControls(type = 'expenses') {
   // Font size controls
   const fontDown = document.getElementById('tpl-font-down');
   const fontUp = document.getElementById('tpl-font-up');
-  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -2 : -1); } catch (_) {} });
-  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +2 : +1); } catch (_) {} });
+  fontDown?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? -12 : -6); } catch (_) {} });
+  fontUp?.addEventListener('click', (e) => { try { adjustSelectionFont(e && e.shiftKey ? +12 : +6); } catch (_) {} });
   const fontBold = document.getElementById('tpl-font-bold');
   fontBold?.addEventListener('click', () => { try { toggleSelectionBold(); } catch (_) {} });
 
@@ -1041,7 +1041,7 @@ function adjustSelectionFont(deltaPx = 0) {
 
     // Current base size from target
     const base = Number.parseFloat(getComputedStyle(target).fontSize || '11') || 11;
-    const clamp = (v) => Math.max(7, Math.min(20, v));
+    const clamp = (v) => Math.max(7, Math.min(72, v));
     const next = clamp(base + deltaPx);
 
     const applyToEditable = (el) => {
