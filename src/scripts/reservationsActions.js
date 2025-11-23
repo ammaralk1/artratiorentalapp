@@ -159,9 +159,16 @@ export async function confirmReservation(index, { onAfterChange } = {}) {
   }
 }
 
-export async function closeReservation(index, notes = '', { onAfterChange } = {}) {
+export async function closeReservation(index, notes = '', { onAfterChange, reservationId: reservationIdOverride } = {}) {
   const reservations = getReservationsState();
-  const reservation = reservations[index];
+  let reservation = reservations[index];
+  const targetId = reservationIdOverride != null ? String(reservationIdOverride) : null;
+  if (!reservation && targetId) {
+    reservation = reservations.find((entry) => {
+      const entryId = entry?.id ?? entry?.reservationId ?? entry?.reservation_id;
+      return entryId != null && String(entryId) === targetId;
+    });
+  }
   if (!reservation) {
     showToast(t('reservations.toast.notFound', '⚠️ تعذر العثور على بيانات الحجز'));
     return false;

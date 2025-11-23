@@ -35,6 +35,11 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
   return entries.map(({ reservation, index }) => {
     const customer = customersMap.get(String(reservation.customerId));
     const project = reservation.projectId ? projectsMap?.get?.(String(reservation.projectId)) : null;
+    const reservationIdentifier = reservation.id
+      ?? reservation.reservationId
+      ?? reservation.reservation_code
+      ?? reservation.reservationCode
+      ?? '';
     const completed = isReservationCompleted(reservation);
     const rawStatusValue = String(reservation?.status || reservation?.reservationStatus || '').toLowerCase();
     const isCancelled = rawStatusValue === 'cancelled' || rawStatusValue === 'canceled';
@@ -182,9 +187,9 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
     let confirmButtonHtml = '';
     if (!projectLinked && !isCancelled) {
       if (!effectiveConfirmed) {
-        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"confirm\">${confirmLabel}</button>`;
+        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-reservation-id=\"${reservationIdentifier}\" data-action=\"confirm\">${confirmLabel}</button>`;
       } else if (!completed) {
-        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-action=\"close\">${closeLabel}</button>`;
+        confirmButtonHtml = `<button class=\"tile-confirm\" data-reservation-index=\"${index}\" data-reservation-id=\"${reservationIdentifier}\" data-action=\"close\">${closeLabel}</button>`;
       }
     }
     const confirmSectionHtml = confirmButtonHtml
@@ -206,7 +211,7 @@ export function buildReservationTilesHtml({ entries, customersMap, techniciansMa
 
     return `
       <div class="${wrapperClasses}">
-        <div class="reservation-tile${stateClass}"${completedAttr} data-reservation-index="${index}" data-action="details">
+        <div class="reservation-tile${stateClass}"${completedAttr} data-reservation-index="${index}" data-reservation-id="${reservationIdentifier}" data-action="details">
           <div class="tile-top">
           <div class="tile-id">${reservationIdDisplay}</div>
           <div class="tile-badges">

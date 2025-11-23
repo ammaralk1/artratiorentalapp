@@ -85,7 +85,7 @@ export function renderReservationsList({
   onReopenReservation
 } = {}) {
   const syncedTechnicians = syncTechniciansStatuses();
-  const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
+    const { reservations: rawReservations = [], customers = [], technicians: storedTechnicians = [], projects = [] } = loadData();
   const normalizedReservations = rawReservations.map((reservation) => {
     const normalized = toInternalReservation(reservation);
     return {
@@ -140,32 +140,35 @@ export function renderReservationsList({
   const bindTileActions = () => {
     container.querySelectorAll('[data-action="details"]').forEach((tile) => {
       const index = Number(tile.dataset.reservationIndex);
+      const reservationId = tile.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
       tile.addEventListener('click', () => {
         if (typeof onShowDetails === 'function') {
-          onShowDetails(index);
+          onShowDetails(index, reservationId);
         }
       });
     });
 
     container.querySelectorAll('button[data-action="confirm"]').forEach((btn) => {
       const index = Number(btn.dataset.reservationIndex);
+      const reservationId = btn.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
       btn.addEventListener('click', (event) => {
         event.stopPropagation();
         if (typeof onConfirmReservation === 'function') {
-          onConfirmReservation(index, event);
+          onConfirmReservation(index, event, reservationId);
         }
       });
     });
 
     container.querySelectorAll('button[data-action="close"]').forEach((btn) => {
       const index = Number(btn.dataset.reservationIndex);
+      const reservationId = btn.dataset.reservationId || null;
       if (Number.isNaN(index)) return;
       btn.addEventListener('click', (event) => {
         event.stopPropagation();
         if (typeof onCloseReservation === 'function') {
-          onCloseReservation(index, event);
+          onCloseReservation(index, event, reservationId);
         }
       });
     });

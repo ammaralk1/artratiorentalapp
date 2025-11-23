@@ -114,11 +114,11 @@ describe('reservations/renderers module', () => {
 
     expect(container.querySelector('.reservations-grid')).toBeTruthy();
     container.querySelector('[data-action="details"]').click();
-    expect(onShowDetails).toHaveBeenCalledWith(0);
+    expect(onShowDetails).toHaveBeenCalledWith(0, null);
 
     const confirmBtn = container.querySelector('[data-action="confirm"]');
     confirmBtn.click();
-    expect(onConfirm).toHaveBeenCalledWith(0, expect.any(Event));
+    expect(onConfirm).toHaveBeenCalledWith(0, expect.any(Event), null);
   });
 
   it('renderReservationsList paginates results into pages of 8 with navigation', async () => {
@@ -157,7 +157,7 @@ describe('reservations/renderers module', () => {
     // And detail callbacks still work with original indexes
     const lastDetailBtn = container.querySelector('[data-reservation-index="9"]');
     lastDetailBtn.click();
-    expect(onShowDetails).toHaveBeenCalledWith(9);
+    expect(onShowDetails).toHaveBeenCalledWith(9, null);
     expect(container.dataset.reservationsPage).toBe('2');
   });
 
